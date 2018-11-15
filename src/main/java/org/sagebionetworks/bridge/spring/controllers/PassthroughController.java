@@ -15,13 +15,17 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.config.Config;
@@ -30,7 +34,6 @@ import org.sagebionetworks.bridge.config.Config;
  * Pass-through controller. Takes in HTTP requests that aren't caught by any other controller and forwards them to
  * BridgePF.
  */
-@CrossOrigin
 @RestController
 public class PassthroughController {
     private static final Logger LOG = LoggerFactory.getLogger(PassthroughController.class);
@@ -48,6 +51,9 @@ public class PassthroughController {
 
     /** Passthrough handler. */
     @RequestMapping
+    @CrossOrigin(origins="*", methods = {RequestMethod.GET, RequestMethod.POST, 
+        RequestMethod.DELETE}, allowCredentials="true", allowedHeaders= {
+        "Accept", "Content-Type", "User-Agent", "Bridge-Session", "Origin"})
     public ResponseEntity<String> handleDefault(HttpServletRequest request, @RequestBody(required = false) String body)
             throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
