@@ -36,6 +36,7 @@ public class PassthroughController {
     private static final Logger LOG = LoggerFactory.getLogger(PassthroughController.class);
 
     static final String CONFIG_KEY_BRIDGE_PF_HOST = "bridge.pf.host";
+    static final String HEADER_IP_ADDRESS = "X-Forwarded-For";
     static final String HEADER_REQUEST_ID = "X-Request-Id";
 
     private String bridgePfHost;
@@ -58,7 +59,8 @@ public class PassthroughController {
         // URL. This includes query parameters. Spring provides them to use as a string, so we just append them to the
         // url like a string.
         String url = request.getRequestURI();
-        LOG.info("Received request " + request.getMethod() + " " + url);
+        String ipAddress = request.getRemoteAddr();
+        LOG.info("Received request " + request.getMethod() + " " + url + " from IP address " + ipAddress);
 
         String fullUrl = bridgePfHost + url;
         if (request.getQueryString() != null) {
@@ -85,6 +87,7 @@ public class PassthroughController {
 
         // Headers.
         Enumeration<String> headerNameEnum = request.getHeaderNames();
+        boolean hasIpAddress = false;
         String requestId = null;
         while (headerNameEnum.hasMoreElements()) {
             String headerName = headerNameEnum.nextElement();
@@ -97,9 +100,18 @@ public class PassthroughController {
             String headerValue = request.getHeader(headerName);
             pfRequest.addHeader(headerName, headerValue);
 
+            if (headerName.equalsIgnoreCase(HEADER_IP_ADDRESS)) {
+                hasIpAddress = true;
+            }
+
             if (headerName.equalsIgnoreCase(HEADER_REQUEST_ID)) {
                 requestId = headerValue;
             }
+        }
+
+        // Add IP Address header, if it doesn't exist.
+        if (!hasIpAddress) {
+            pfRequest.addHeader(HEADER_IP_ADDRESS, ipAddress);
         }
 
         // Add request ID header, if it doesn't exist.

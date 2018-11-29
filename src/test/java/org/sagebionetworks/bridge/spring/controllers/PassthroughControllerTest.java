@@ -44,6 +44,8 @@ import org.sagebionetworks.bridge.config.Config;
 public class PassthroughControllerTest extends PowerMockTestCase {
     private static final String BRIDGE_PF_HOST = "http://example.com";
     private static final String DUMMY_BODY = "dummy body";
+    private static final String IP_ADDRESS = "my-ip-address";
+    private static final String OTHER_IP_ADDRESS = "other-ip-address";
     private static final String MIME_TYPE_TEXT_PLAIN = "text/plain";
     private static final String MIME_TYPE_TEXT_PLAIN_WITH_CHARSET = "text/plain;charset=utf-8";
     private static final String QUERY_PARAM_STRING = "key1=value1&key2=value2";
@@ -54,8 +56,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     private static final String EXPECTED_FULL_URL = "http://example.com/v3/dummy/api";
     private static final String EXPECTED_FULL_URL_WITH_QUERY_PARAMS =
             "http://example.com/v3/dummy/api?key1=value1&key2=value2";
-    private static final Map<String, String> EXPECTED_HEADER_MAP_WITH_REQUEST_ID =
-            ImmutableMap.<String, String>builder().put(PassthroughController.HEADER_REQUEST_ID, REQUEST_ID).build();
+    private static final Map<String, String> EXPECTED_DEFAULT_HEADER_MAP = ImmutableMap.<String, String>builder()
+            .put(PassthroughController.HEADER_IP_ADDRESS, IP_ADDRESS)
+            .put(PassthroughController.HEADER_REQUEST_ID, REQUEST_ID)
+            .build();
 
     private PassthroughController controller;
 
@@ -80,6 +84,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("GET");
         when(mockRequest.getQueryString()).thenReturn(QUERY_PARAM_STRING);
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         // Mock HTTP client.
@@ -96,7 +101,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request.
         verifyStatic(Request.class);
         Request.Get(EXPECTED_FULL_URL_WITH_QUERY_PARAMS);
-        assertRequest(mockPfRequest, EXPECTED_HEADER_MAP_WITH_REQUEST_ID, null, null,
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, null, null,
                 null);
     }
 
@@ -107,6 +112,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN);
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         // Mock HTTP client.
@@ -123,7 +129,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request.
         verifyStatic(Request.class);
         Request.Post(EXPECTED_FULL_URL);
-        assertRequest(mockPfRequest, EXPECTED_HEADER_MAP_WITH_REQUEST_ID, DUMMY_BODY, MIME_TYPE_TEXT_PLAIN,
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, DUMMY_BODY, MIME_TYPE_TEXT_PLAIN,
                 null);
     }
 
@@ -134,6 +140,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN_WITH_CHARSET);
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         // Mock HTTP client.
@@ -150,7 +157,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request.
         verifyStatic(Request.class);
         Request.Post(EXPECTED_FULL_URL);
-        assertRequest(mockPfRequest, EXPECTED_HEADER_MAP_WITH_REQUEST_ID, DUMMY_BODY, MIME_TYPE_TEXT_PLAIN,
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, DUMMY_BODY, MIME_TYPE_TEXT_PLAIN,
                 Charsets.UTF_8);
     }
 
@@ -160,6 +167,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("DELETE");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         // Mock HTTP client.
@@ -176,7 +184,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request.
         verifyStatic(Request.class);
         Request.Delete(EXPECTED_FULL_URL);
-        assertRequest(mockPfRequest, EXPECTED_HEADER_MAP_WITH_REQUEST_ID, null, null,
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, null, null,
                 null);
     }
 
@@ -221,6 +229,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         Map<String, String> requestHeaderMap = ImmutableMap.<String, String>builder()
                 .put("Dummy-Header", "dummy header value")
                 .put("Content-Length", "10")
+                .put(PassthroughController.HEADER_IP_ADDRESS, OTHER_IP_ADDRESS)
                 .put(PassthroughController.HEADER_REQUEST_ID, OTHER_REQUEST_ID)
                 .build();
 
@@ -228,6 +237,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN);
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<>(requestHeaderMap.keySet()).elements());
         when(mockRequest.getMethod()).thenReturn("POST");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         when(mockRequest.getHeader(any())).thenAnswer(invocation -> {
@@ -249,6 +259,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request. Note that we filter out the Content-Length.
         Map<String, String> expectedHeaderMap = ImmutableMap.<String, String>builder()
                 .put("Dummy-Header", "dummy header value")
+                .put(PassthroughController.HEADER_IP_ADDRESS, OTHER_IP_ADDRESS)
                 .put(PassthroughController.HEADER_REQUEST_ID, OTHER_REQUEST_ID)
                 .build();
 
@@ -263,6 +274,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("GET");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
 
         // Mock HTTP client.
@@ -286,7 +298,7 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Verify request.
         verifyStatic(Request.class);
         Request.Get(EXPECTED_FULL_URL);
-        assertRequest(mockPfRequest, EXPECTED_HEADER_MAP_WITH_REQUEST_ID, null, null,
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, null, null,
                 null);
     }
 
