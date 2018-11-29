@@ -1,0 +1,17 @@
+language: java
+jdk:
+- oraclejdk8
+sudo: required
+before_deploy: mvn clean verify
+deploy:
+  skip_cleanup: true
+  provider: elasticbeanstalk
+  access_key_id: AKIAJ6YWVFOX3GHDXVRQ
+  secret_access_key: replace with secure key in parent fork
+  region: us-east-1
+  app: BridgeServer2-application
+  env: bridgeserver2-$TRAVIS_BRANCH
+  bucket_name: org-sagebridge-bridgeserver2-deployment-$TRAVIS_BRANCH
+  zip-file: target/BridgeServer2-2.0.war
+  on:
+    all_branches: true
