@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
 
 @PrepareForTest({ EntityUtils.class, Request.class })
 public class PassthroughControllerTest extends PowerMockTestCase {
@@ -199,7 +200,8 @@ public class PassthroughControllerTest extends PowerMockTestCase {
 
         // Execute.
         ResponseEntity<String> response = controller.handleDefault(mockRequest, null);
-        assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+        HttpUtilTest.assertErrorResponse(response, HttpStatus.BAD_REQUEST, PassthroughController.BAD_REQUEST_EXCEPTION,
+                "Method PUT not supported");
     }
 
     // branch coverage
@@ -220,7 +222,8 @@ public class PassthroughControllerTest extends PowerMockTestCase {
 
         // Execute.
         ResponseEntity<String> response = controller.handleDefault(mockRequest, null);
-        assertEquals(response.getStatusCode(), HttpStatus.NOT_IMPLEMENTED);
+        HttpUtilTest.assertErrorResponse(response, HttpStatus.NOT_IMPLEMENTED,
+                PassthroughController.NOT_IMPLEMENTED_EXCEPTION, "Unrecognized status code 499");
     }
 
     @Test

@@ -144,8 +144,9 @@
                         <!-- config is inherently not testable -->
                         <exclude>org/sagebionetworks/bridge/config/*</exclude>
 
-                        <!-- EchoController doesn't need tests -->
+                        <!-- Test controllers don't need tests -->
                         <exclude>org/sagebionetworks/bridge/spring/controllers/EchoController*</exclude>
+                        <exclude>org/sagebionetworks/bridge/spring/controllers/ErrorController*</exclude>
                     </excludes>
                     <rules>
                         <rule>
