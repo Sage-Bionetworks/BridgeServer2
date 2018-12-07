@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 
 /**
  * Pass-through controller. Takes in HTTP requests that aren't caught by any other controller and forwards them to
@@ -35,9 +36,11 @@ import org.sagebionetworks.bridge.config.Config;
 public class PassthroughController {
     private static final Logger LOG = LoggerFactory.getLogger(PassthroughController.class);
 
+    static final String BAD_REQUEST_EXCEPTION = "BadRequestException";
     static final String CONFIG_KEY_BRIDGE_PF_HOST = "bridge.pf.host";
     static final String HEADER_IP_ADDRESS = "X-Forwarded-For";
     static final String HEADER_REQUEST_ID = "X-Request-Id";
+    static final String NOT_IMPLEMENTED_EXCEPTION = "NotImplementedException";
 
     private String bridgePfHost;
 
@@ -82,7 +85,8 @@ public class PassthroughController {
             default:
                 String errorMessage = "Method " + request.getMethod() + " not supported";
                 LOG.warn(errorMessage);
-                return ResponseEntity.badRequest().build();
+                return HttpUtil.convertErrorToJsonResponse(HttpStatus.BAD_REQUEST, BAD_REQUEST_EXCEPTION,
+                        errorMessage);
         }
 
         // Headers.
@@ -134,8 +138,9 @@ public class PassthroughController {
         int statusCode = pfResponse.getStatusLine().getStatusCode();
         HttpStatus springStatus = HttpStatus.resolve(statusCode);
         if (springStatus == null) {
-            LOG.error("Unrecognized status code " + statusCode);
-            return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+            String errMsg = "Unrecognized status code " + statusCode;
+            LOG.error(errMsg);
+            return HttpUtil.convertErrorToJsonResponse(HttpStatus.NOT_IMPLEMENTED, NOT_IMPLEMENTED_EXCEPTION, errMsg);
         }
 
         // Response headers.
