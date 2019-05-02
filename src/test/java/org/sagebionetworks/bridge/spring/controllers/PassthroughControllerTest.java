@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -11,12 +10,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.verifyStatic;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.spring.controllers.PassthroughController.CONFIG_KEY_BRIDGE_PF_HOST;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.nio.charset.Charset;
 import java.util.Map;
-import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.base.Charsets;
@@ -41,7 +42,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.config.Config;
 import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
 
-@PrepareForTest({ EntityUtils.class, Request.class })
+@PrepareForTest({ Request.class, EntityUtils.class })
 public class PassthroughControllerTest extends PowerMockTestCase {
     private static final String BRIDGE_PF_HOST = "http://example.com";
     private static final String DUMMY_BODY = "dummy body";
@@ -58,35 +59,32 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     private static final String EXPECTED_FULL_URL_WITH_QUERY_PARAMS =
             "http://example.com/v3/dummy/api?key1=value1&key2=value2";
     private static final Map<String, String> EXPECTED_DEFAULT_HEADER_MAP = ImmutableMap.<String, String>builder()
-            .put(PassthroughController.HEADER_IP_ADDRESS, IP_ADDRESS)
-            .put(PassthroughController.HEADER_REQUEST_ID, REQUEST_ID)
+            .put(X_FORWARDED_FOR_HEADER, IP_ADDRESS)
+            .put(X_REQUEST_ID_HEADER, REQUEST_ID)
             .build();
 
     private PassthroughController controller;
-
+    
     @BeforeMethod
-    public void beforeClass() {
+    public void beforeMethod() {
         // Mock config.
         Config mockConfig = mock(Config.class);
-        when(mockConfig.get(PassthroughController.CONFIG_KEY_BRIDGE_PF_HOST)).thenReturn(BRIDGE_PF_HOST);
-
+        when(mockConfig.get(CONFIG_KEY_BRIDGE_PF_HOST)).thenReturn(BRIDGE_PF_HOST);
+        
         // Set up controller.
         controller = spy(new PassthroughController());
         controller.setConfig(mockConfig);
-
-        // Spy randomGuid() to make it easier to test.
-        doReturn(REQUEST_ID).when(controller).randomGuid();
     }
 
     @Test
     public void getWithQueryParams() throws Exception {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("GET");
         when(mockRequest.getQueryString()).thenReturn(QUERY_PARAM_STRING);
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client.
         Request mockPfRequest = mock(Request.class);
@@ -111,10 +109,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("POST");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client.
         Request mockPfRequest = mock(Request.class);
@@ -139,10 +137,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN_WITH_CHARSET);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("POST");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client.
         Request mockPfRequest = mock(Request.class);
@@ -166,10 +164,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     public void delete() throws Exception {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("DELETE");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client.
         Request mockPfRequest = mock(Request.class);
@@ -194,9 +192,9 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     public void unsupportedMethod() throws Exception {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("PUT");
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Execute.
         ResponseEntity<String> response = controller.handleDefault(mockRequest, null);
@@ -209,9 +207,9 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     public void unrecognizedStatusCode() throws Exception {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("GET");
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client. Spring MVC doesn't parse status code 499 to anything.
         Request mockPfRequest = mock(Request.class);
@@ -228,25 +226,15 @@ public class PassthroughControllerTest extends PowerMockTestCase {
 
     @Test
     public void requestWithHeaders() throws Exception {
-        // Make request.
-        Map<String, String> requestHeaderMap = ImmutableMap.<String, String>builder()
-                .put("Dummy-Header", "dummy header value")
-                .put("Content-Length", "10")
-                .put(PassthroughController.HEADER_IP_ADDRESS, OTHER_IP_ADDRESS)
-                .put(PassthroughController.HEADER_REQUEST_ID, OTHER_REQUEST_ID)
-                .build();
-
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getContentType()).thenReturn(MIME_TYPE_TEXT_PLAIN);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<>(requestHeaderMap.keySet()).elements());
+        when(mockRequest.getHeader("Dummy-Header")).thenReturn("dummy header value");
+        when(mockRequest.getHeader("Content-Length")).thenReturn("10");
+        when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(OTHER_IP_ADDRESS);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(OTHER_REQUEST_ID);
         when(mockRequest.getMethod()).thenReturn("POST");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
-
-        when(mockRequest.getHeader(any())).thenAnswer(invocation -> {
-            String headerName = invocation.getArgumentAt(0, String.class);
-            return requestHeaderMap.get(headerName);
-        });
 
         // Mock HTTP client.
         Request mockPfRequest = mock(Request.class);
@@ -261,9 +249,8 @@ public class PassthroughControllerTest extends PowerMockTestCase {
 
         // Verify request. Note that we filter out the Content-Length.
         Map<String, String> expectedHeaderMap = ImmutableMap.<String, String>builder()
-                .put("Dummy-Header", "dummy header value")
-                .put(PassthroughController.HEADER_IP_ADDRESS, OTHER_IP_ADDRESS)
-                .put(PassthroughController.HEADER_REQUEST_ID, OTHER_REQUEST_ID)
+                .put(X_REQUEST_ID_HEADER, OTHER_REQUEST_ID)
+                .put(X_FORWARDED_FOR_HEADER, OTHER_IP_ADDRESS)
                 .build();
 
         verifyStatic(Request.class);
@@ -275,25 +262,32 @@ public class PassthroughControllerTest extends PowerMockTestCase {
     public void responseWithHeadersAndBody() throws Exception {
         // Make request.
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>().elements());
         when(mockRequest.getMethod()).thenReturn("GET");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         // Mock HTTP client.
         String expectedResponseBody = "expected response body";
-        Map<String, String> expectedResponseHeaderMap = ImmutableMap.<String, String>builder()
+        Map<String, String> responseHeaderMap = ImmutableMap.<String, String>builder()
                 .put("Content-Type", MIME_TYPE_TEXT_PLAIN)
                 .put("Content-Length", "22")
                 .put("Dummy-Response-Header", "dummy response header value")
                 .build();
 
         Request mockPfRequest = mock(Request.class);
-        mockHttpResponseForRequest(mockPfRequest, 200, expectedResponseHeaderMap, expectedResponseBody);
+        mockHttpResponseForRequest(mockPfRequest, 200, responseHeaderMap, expectedResponseBody);
 
         mockStatic(Request.class);
         when(Request.Get(anyString())).thenReturn(mockPfRequest);
 
+        // Here's what we should copy back from the Bridge response. We do not include every
+        // header.
+        Map<String, String> expectedResponseHeaderMap = ImmutableMap.<String, String>builder()
+                .put("Content-Type", MIME_TYPE_TEXT_PLAIN)
+                .put("Content-Length", "22")
+                .build();
+        
         // Execute.
         ResponseEntity<String> response = controller.handleDefault(mockRequest, null);
         assertResponseEntity(response, HttpStatus.OK, expectedResponseHeaderMap, expectedResponseBody);
@@ -320,7 +314,9 @@ public class PassthroughControllerTest extends PowerMockTestCase {
             headerArray = new Header[headerMap.size()];
             int i = 0;
             for (Map.Entry<String, String> header : headerMap.entrySet()) {
-                headerArray[i] = new BasicHeader(header.getKey(), header.getValue());
+                BasicHeader oneHeader = new BasicHeader(header.getKey(), header.getValue());
+                headerArray[i] = oneHeader;
+                when(mockPfHttpResponse.getFirstHeader(header.getKey())).thenReturn(oneHeader);
                 i++;
             }
         } else {
