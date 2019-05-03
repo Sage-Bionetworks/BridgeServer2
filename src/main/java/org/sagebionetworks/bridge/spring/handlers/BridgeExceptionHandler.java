@@ -11,7 +11,7 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededExce
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public class BridgeExceptionHandler {
     
     // We serialize exceptions to JSON, but do not want any of the root properties of Throwable 
     // to be exposed, so these are removed;
-    public static final Set<String> UNEXPOSED_FIELD_NAMES = Sets.newHashSet("stackTrace", "localizedMessage",
+    public static final Set<String> UNEXPOSED_FIELD_NAMES = ImmutableSet.of("stackTrace", "localizedMessage",
             "suppressed", "cause", "errorType", "errorMessage", "retryable", "requestId", "serviceName", "httpHeaders",
             "errorCode", "rawResponse", "rawResponseContent");
 
