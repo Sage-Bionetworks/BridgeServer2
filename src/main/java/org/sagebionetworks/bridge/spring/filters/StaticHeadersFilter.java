@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StaticHeadersFilter implements Filter {
     
-    public static Map<String,String> HEADERS = new ImmutableMap.Builder<String,String>()
+    public static final Map<String,String> HEADERS = new ImmutableMap.Builder<String,String>()
             // Limits what a web browser will include or execute in a page; only applies to our html pages
             .put("Content-Security-Policy", "default-src 'self' 'unsafe-inline' assets.sagebridge.org")
             // Do not send a cookie across a connection that is not HTTPS

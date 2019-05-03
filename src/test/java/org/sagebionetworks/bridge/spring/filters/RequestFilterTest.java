@@ -112,30 +112,4 @@ public class RequestFilterTest extends Mockito {
         
         assertNull(contextCaptor.getAllValues().get(1));
     }
-
-    @Test
-    public void headerNamesNormalized() throws Exception {
-        Set<String> headerNames = new HashSet<>();
-        headerNames.add("lowercase-header");
-        headerNames.add("Sentencecase-header");
-        headerNames.add("ALL-CAPS-HEADER");
-        headerNames.add("Ideal-Header");
-        when(mockRequest.getHeaderNames()).thenReturn(new Vector<String>(headerNames).elements());
-        when(filter.generateRequestId()).thenReturn("AAABAAA");
-        
-        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
-        
-        verify(mockFilterChain).doFilter(requestCaptor.capture(), eq(mockResponse));
-        
-        HttpServletRequest wrapper = requestCaptor.getValue();
-        Enumeration<String> enumeration = wrapper.getHeaderNames();
-        
-        Set<String> normalizedHeaderNames = new HashSet<>(Collections.list(enumeration));
-        assertTrue(normalizedHeaderNames.contains("Lowercase-Header"));
-        assertTrue(normalizedHeaderNames.contains("Sentencecase-Header"));
-        assertTrue(normalizedHeaderNames.contains("All-Caps-Header"));
-        assertTrue(normalizedHeaderNames.contains("Ideal-Header"));
-        assertTrue(normalizedHeaderNames.contains(BridgeConstants.X_REQUEST_ID_HEADER));
-    }
-
 }
