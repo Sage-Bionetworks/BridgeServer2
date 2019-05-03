@@ -1,8 +1,17 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
+import static org.springframework.http.HttpHeaders.CONTENT_LENGTH;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.springframework.http.HttpHeaders.COOKIE;
+import static org.springframework.http.HttpHeaders.SET_COOKIE;
+import static org.springframework.http.HttpHeaders.USER_AGENT;
+
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
@@ -26,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
 import org.sagebionetworks.bridge.spring.util.HttpUtil;
 
 /**
@@ -38,8 +48,6 @@ public class PassthroughController {
 
     static final String BAD_REQUEST_EXCEPTION = "BadRequestException";
     static final String CONFIG_KEY_BRIDGE_PF_HOST = "bridge.pf.host";
-    static final String HEADER_IP_ADDRESS = "X-Forwarded-For";
-    static final String HEADER_REQUEST_ID = "X-Request-Id";
     static final String NOT_IMPLEMENTED_EXCEPTION = "NotImplementedException";
 
     private String bridgePfHost;
@@ -52,13 +60,12 @@ public class PassthroughController {
 
     /** Passthrough handler. */
     @RequestMapping
-    @CrossOrigin(origins="*", methods = {RequestMethod.GET, RequestMethod.POST, 
-        RequestMethod.DELETE}, allowCredentials="true", allowedHeaders= {
-        "Accept", "Content-Type", "User-Agent", "Bridge-Session", "Origin"})
+    @CrossOrigin(origins = "*", allowCredentials = "true", allowedHeaders = "*", methods = { RequestMethod.GET,
+            RequestMethod.POST, RequestMethod.DELETE, RequestMethod.HEAD })
     public ResponseEntity<String> handleDefault(HttpServletRequest request, @RequestBody(required = false) String body)
             throws IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-
+        
         // URL. This includes query parameters. Spring provides them to use as a string, so we just append them to the
         // url like a string.
         String url = request.getRequestURI();
@@ -82,6 +89,9 @@ public class PassthroughController {
             case "DELETE":
                 pfRequest = Request.Delete(fullUrl);
                 break;
+            case "HEAD":
+                pfRequest = Request.Head(fullUrl);
+                break;
             default:
                 String errorMessage = "Method " + request.getMethod() + " not supported";
                 LOG.warn(errorMessage);
@@ -89,39 +99,40 @@ public class PassthroughController {
                         errorMessage);
         }
 
-        // Headers.
-        Enumeration<String> headerNameEnum = request.getHeaderNames();
-        boolean hasIpAddress = false;
-        String requestId = null;
-        while (headerNameEnum.hasMoreElements()) {
-            String headerName = headerNameEnum.nextElement();
-            if (headerName.equalsIgnoreCase("content-length")) {
-                // Request.body() automatically sets this header for us. We can't set it here, or else we'll get a
-                // "header already present" exception.
-                continue;
-            }
+        // Only carry over the headers that Bridge server directly examines. Let Spring do the Cross-Origin headers.
+        String requestId = request.getHeader(X_REQUEST_ID_HEADER);
+        String userAgent = request.getHeader(USER_AGENT);
+        String acceptLanguage = request.getHeader(ACCEPT_LANGUAGE);
+        String sessionToken = request.getHeader(SESSION_TOKEN_HEADER);
+        // This will only work with the first cookie header. We set only one cookie on the bridge server, so this 
+        // should be sufficient for a testing feature.
+        String cookie = request.getHeader(COOKIE);
 
-            String headerValue = request.getHeader(headerName);
-            pfRequest.addHeader(headerName, headerValue);
-
-            if (headerName.equalsIgnoreCase(HEADER_IP_ADDRESS)) {
-                hasIpAddress = true;
-            }
-
-            if (headerName.equalsIgnoreCase(HEADER_REQUEST_ID)) {
-                requestId = headerValue;
-            }
+        // although we called getRemoteAddr() above, in the original header logic, we then look for this 
+        // forwarding header, so retrieve the value here. If it didn't exist, ipAddress would not be 
+        // overridden.
+        ipAddress = request.getHeader(X_FORWARDED_FOR_HEADER);
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
         }
-
-        // Add IP Address header, if it doesn't exist.
-        if (!hasIpAddress) {
-            pfRequest.addHeader(HEADER_IP_ADDRESS, ipAddress);
+        
+        if (requestId != null) {
+            pfRequest.addHeader(X_REQUEST_ID_HEADER, requestId);    
         }
-
-        // Add request ID header, if it doesn't exist.
-        if (requestId == null) {
-            requestId = randomGuid();
-            pfRequest.addHeader(HEADER_REQUEST_ID, requestId);
+        if (userAgent != null) {
+            pfRequest.addHeader(USER_AGENT, userAgent);    
+        }
+        if (acceptLanguage != null) {
+            pfRequest.addHeader(ACCEPT_LANGUAGE, acceptLanguage);    
+        }
+        if (ipAddress != null) {
+            pfRequest.addHeader(X_FORWARDED_FOR_HEADER, ipAddress);            
+        }
+        if (sessionToken != null) {
+            pfRequest.addHeader(SESSION_TOKEN_HEADER, sessionToken);
+        }
+        if (cookie != null) {
+            pfRequest.addHeader(COOKIE, cookie);
         }
 
         LOG.info("Sending request " + request.getMethod() + " " + url + " w/ requestId=" + requestId);
@@ -143,22 +154,30 @@ public class PassthroughController {
             return HttpUtil.convertErrorToJsonResponse(HttpStatus.NOT_IMPLEMENTED, NOT_IMPLEMENTED_EXCEPTION, errMsg);
         }
 
-        // Response headers.
+        // Response headers. We only pass back Bridge specific headers so there's no interference with Spring filters.
         HttpHeaders springHeaders = new HttpHeaders();
-        for (Header header : pfResponse.getAllHeaders()) {
-            springHeaders.add(header.getName(), header.getValue());
+        springHeaders.add(MetricsFilter.X_PASSTHROUGH, "BridgePF");
+        copyHeader(springHeaders, pfResponse, SESSION_TOKEN_HEADER);
+        copyHeader(springHeaders, pfResponse, BRIDGE_API_STATUS_HEADER);
+        copyHeader(springHeaders, pfResponse, CONTENT_LENGTH);
+        copyHeader(springHeaders, pfResponse, CONTENT_TYPE);
+        copyHeader(springHeaders, pfResponse, SET_COOKIE);
+        
+        // Response body. HEAD and DELETE do not return a response body, check first.
+        String responseBody = null;
+        if (pfResponse.getEntity() != null) {
+            responseBody = EntityUtils.toString(pfResponse.getEntity(), Charsets.UTF_8);    
         }
-
-        // Response body.
-        String responseBody = EntityUtils.toString(pfResponse.getEntity(), Charsets.UTF_8);
-
         LOG.info("Request " + requestId + ", status=" + statusCode + ", took " +
                 stopwatch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return new ResponseEntity<>(responseBody, springHeaders, springStatus);
     }
-
-    // Package-scoped to allow unit tests to spy.
-    String randomGuid() {
-        return UUID.randomUUID().toString();
+    
+    private void copyHeader(HttpHeaders springHeaders, HttpResponse pfResponse, String headerName) {
+        Header header = pfResponse.getFirstHeader(headerName);
+        if (header != null) {
+            springHeaders.add(headerName, header.getValue());
+        }
     }
+
 }
