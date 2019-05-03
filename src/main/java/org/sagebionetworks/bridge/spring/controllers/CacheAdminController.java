@@ -23,7 +23,7 @@ public class CacheAdminController extends BaseController {
     private CacheAdminService cacheAdminService;
 
     @Autowired
-    public void setCacheAdminService(CacheAdminService cacheService) {
+    final void setCacheAdminService(CacheAdminService cacheService) {
         this.cacheAdminService = cacheService;
     }
     

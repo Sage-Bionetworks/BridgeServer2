@@ -32,7 +32,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.WebUtils;
@@ -41,7 +40,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
@@ -366,12 +364,7 @@ public abstract class BaseController {
      * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
     Metrics getMetrics() {
-        String requestId = request().getHeader(X_REQUEST_ID_HEADER);
-        if (requestId != null) {
-            CacheKey key = CacheKey.metricsKey(requestId);
-            return cacheProvider.getObject(key, Metrics.class);
-        }
-        return null;
+        return BridgeUtils.getRequestContext().getMetrics();
     }
 
     /** The user's IP Address, as reported by Amazon. Package-scoped for unit tests. */
@@ -453,7 +446,7 @@ public abstract class BaseController {
      * Helper method to add warning message as an HTTP header.
      * @param msg
      */
-    public void addWarningMessage(String msg) {
+    void addWarningMessage(String msg) {
         if (response().getHeaderNames().contains(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
             String previousWarning = response().getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
             response().setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);

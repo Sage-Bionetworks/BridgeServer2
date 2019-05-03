@@ -62,14 +62,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-logging</artifactId>
         </dependency>
-        <!-- Apparently needed for PowerMock tests to run. I needed to add this for the tests to run. See: 
-        	https://stackoverflow.com/questions/32854688/powermock-java-lang-illegalstateexception-failed-to-transform-class
-        -->
-		<dependency>
-        	<groupId>org.javassist</groupId>
-        	<artifactId>javassist</artifactId>
-        	<version>3.18.2-GA</version>
-    	</dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -113,6 +105,14 @@
             <version>6.10</version>
             <scope>test</scope>
         </dependency>
+        <!-- Apparently needed for PowerMock tests to run. I needed to add this for the tests to run. See: 
+            https://stackoverflow.com/questions/32854688/powermock-java-lang-illegalstateexception-failed-to-transform-class -->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.18.2-GA</version>
+            <scope>test</scope>
+        </dependency>        
     </dependencies>
 
     <repositories>
@@ -165,6 +165,9 @@
                         <!-- Test controllers don't need tests -->
                         <exclude>org/sagebionetworks/bridge/spring/controllers/EchoController*</exclude>
                         <exclude>org/sagebionetworks/bridge/spring/controllers/ErrorController*</exclude>
+                        
+                        <!-- Tests don't need coverage tests -->
+                        <exclude>**/*Test</exclude>
                     </excludes>
                     <rules>
                         <rule>

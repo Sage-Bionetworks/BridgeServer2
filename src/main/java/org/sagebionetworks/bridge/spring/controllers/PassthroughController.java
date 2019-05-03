@@ -5,6 +5,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
+import static org.springframework.http.HttpHeaders.CONTENT_LENGTH;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.springframework.http.HttpHeaders.COOKIE;
+import static org.springframework.http.HttpHeaders.SET_COOKIE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.io.IOException;
@@ -31,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
 import org.sagebionetworks.bridge.spring.util.HttpUtil;
 
 /**
@@ -99,6 +104,10 @@ public class PassthroughController {
         String userAgent = request.getHeader(USER_AGENT);
         String acceptLanguage = request.getHeader(ACCEPT_LANGUAGE);
         String sessionToken = request.getHeader(SESSION_TOKEN_HEADER);
+        // This will only work with the first cookie header. We set only one cookie on the bridge server, so this 
+        // should be sufficient for a testing feature.
+        String cookie = request.getHeader(COOKIE);
+
         // although we called getRemoteAddr() above, in the original header logic, we then look for this 
         // forwarding header, so retrieve the value here. If it didn't exist, ipAddress would not be 
         // overridden.
@@ -122,6 +131,9 @@ public class PassthroughController {
         if (sessionToken != null) {
             pfRequest.addHeader(SESSION_TOKEN_HEADER, sessionToken);
         }
+        if (cookie != null) {
+            pfRequest.addHeader(COOKIE, cookie);
+        }
 
         LOG.info("Sending request " + request.getMethod() + " " + url + " w/ requestId=" + requestId);
 
@@ -144,11 +156,13 @@ public class PassthroughController {
 
         // Response headers. We only pass back Bridge specific headers so there's no interference with Spring filters.
         HttpHeaders springHeaders = new HttpHeaders();
+        springHeaders.add(MetricsFilter.X_PASSTHROUGH, "BridgePF");
         copyHeader(springHeaders, pfResponse, SESSION_TOKEN_HEADER);
         copyHeader(springHeaders, pfResponse, BRIDGE_API_STATUS_HEADER);
-        copyHeader(springHeaders, pfResponse, HttpHeaders.CONTENT_LENGTH);
-        copyHeader(springHeaders, pfResponse, HttpHeaders.CONTENT_TYPE);
-
+        copyHeader(springHeaders, pfResponse, CONTENT_LENGTH);
+        copyHeader(springHeaders, pfResponse, CONTENT_TYPE);
+        copyHeader(springHeaders, pfResponse, SET_COOKIE);
+        
         // Response body. HEAD and DELETE do not return a response body, check first.
         String responseBody = null;
         if (pfResponse.getEntity() != null) {

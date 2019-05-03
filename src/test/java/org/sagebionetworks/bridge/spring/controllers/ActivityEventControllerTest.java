@@ -79,6 +79,7 @@ public class ActivityEventControllerTest extends Mockito {
         assertCrossOrigin(ActivityEventController.class);
         assertCreate(ActivityEventController.class, "createCustomActivityEvent");
         assertGet(ActivityEventController.class, "getSelfActivityEvents");        
+        assertGet(ActivityEventController.class, "getSelfActivityEvents");
     }
     
     @Test

@@ -12,8 +12,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-import com.google.common.base.Joiner;
-
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -24,7 +22,6 @@ import org.sagebionetworks.bridge.RequestContext;
 public class RequestFilter implements Filter {
     
     private static class RequestIdWrapper extends HttpServletRequestWrapper {
-        private static final Joiner JOINER = Joiner.on("-");
         private final String requestId;
         RequestIdWrapper(HttpServletRequest request, String requestId) {
             super(request);
@@ -42,24 +39,12 @@ public class RequestFilter implements Filter {
             Vector<String> vector = new Vector<>();
             Enumeration<String> headerNames = super.getHeaderNames();
             while (headerNames.hasMoreElements()) {
-                vector.add( headerNameCapitalized(headerNames.nextElement()) );
+                vector.add(headerNames.nextElement());
             }
             if (!vector.contains(BridgeConstants.X_REQUEST_ID_HEADER)) {
                 vector.add(BridgeConstants.X_REQUEST_ID_HEADER);    
             }
             return vector.elements();
-        }
-        // Play leaves these headers capitalized while Spring lowercases them. Our implementation 
-        // is not always case insensitive, so we need this behavior to stay the same.
-        private String headerNameCapitalized(String headerName) {
-            String[] elements = headerName.split("-");
-            String[] capitalized = new String[elements.length];
-            for (int i=0; i < elements.length; i++) {
-                String el = elements[i];
-                capitalized[i] = el.substring(0, 1).toUpperCase() + 
-                        el.substring(1, el.length()).toLowerCase();
-            }
-            return JOINER.join(capitalized);
         }
     }
     

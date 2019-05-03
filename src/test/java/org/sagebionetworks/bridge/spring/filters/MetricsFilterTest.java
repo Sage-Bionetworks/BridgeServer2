@@ -14,8 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTimeUtils;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -24,17 +22,13 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.Metrics;
 
 public class MetricsFilterTest extends Mockito {
 
-    @Mock
-    private CacheProvider mockCacheProvider;
-    
     @Mock
     private HttpServletRequest mockRequest;
     
@@ -44,29 +38,24 @@ public class MetricsFilterTest extends Mockito {
     @Mock
     private FilterChain mockFilterChain;
     
-    @Captor
-    ArgumentCaptor<CacheKey> cacheKeyCaptor;
-    
-    @Captor
-    ArgumentCaptor<Metrics> metricsCaptor;
-    
     @InjectMocks
     private MetricsFilter filter = new MetricsFilter();
 
     @BeforeMethod
     private void before() {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withRequestId("request-id").build());
         MockitoAnnotations.initMocks(this);
     }
     
     @AfterMethod
     private void after() {
+        BridgeUtils.setRequestContext(null);
         DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
     public void metricsTest() throws Exception {
-        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn("request-id");
         when(mockRequest.getMethod()).thenReturn("GET");
         when(mockRequest.getServletPath()).thenReturn("/v3/api");
         when(mockRequest.getProtocol()).thenReturn("1");
@@ -76,13 +65,7 @@ public class MetricsFilterTest extends Mockito {
         
         filter.doFilter(mockRequest, mockResponse, mockFilterChain);
         
-        verify(mockCacheProvider).setObject(cacheKeyCaptor.capture(), metricsCaptor.capture(),
-                eq(BridgeConstants.METRICS_EXPIRE_SECONDS));
-        
-        CacheKey key = cacheKeyCaptor.getValue();
-        assertEquals("request-id:Metrics:Metrics", key.toString());
-        
-        Metrics metrics = metricsCaptor.getValue();
+        Metrics metrics = BridgeUtils.getRequestContext().getMetrics();
         JsonNode node = metrics.getJson();
         
         assertEquals("request-id", node.get("request_id").textValue());
@@ -98,7 +81,6 @@ public class MetricsFilterTest extends Mockito {
         assertEquals(201, node.get("status").intValue());
         
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
-        verify(mockCacheProvider).removeObject(any());
     }
     
     @Test
@@ -109,10 +91,7 @@ public class MetricsFilterTest extends Mockito {
         
         filter.doFilter(mockRequest, mockResponse, mockFilterChain);
         
-        verify(mockCacheProvider).setObject(any(), metricsCaptor.capture(),
-                eq(BridgeConstants.METRICS_EXPIRE_SECONDS));
-        
-        Metrics metrics = metricsCaptor.getValue();
+        Metrics metrics = BridgeUtils.getRequestContext().getMetrics();
         JsonNode node = metrics.getJson();
         
         assertEquals("5.6.7.8", node.get("remote_address").textValue());

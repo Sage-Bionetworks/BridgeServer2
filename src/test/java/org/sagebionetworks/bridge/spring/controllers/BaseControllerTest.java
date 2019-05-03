@@ -66,7 +66,6 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
@@ -160,6 +159,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void getSessionIfItExists() {
+        session.setStudyIdentifier(TEST_STUDY);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -468,20 +468,13 @@ public class BaseControllerTest extends Mockito {
     public void getMetrics() {
         Metrics metrics = new Metrics("a-request-id");
         
-        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn("a-request-id");
-        CacheKey key = CacheKey.metricsKey("a-request-id");
-        when(mockCacheProvider.getObject(key, Metrics.class)).thenReturn(metrics);
+        BridgeUtils.setRequestContext(
+                new RequestContext.Builder().withMetrics(metrics).withRequestId("a-request-id").build());
         
         Metrics retrievedMetrics = controller.getMetrics();
         assertEquals(retrievedMetrics, metrics);
     }
 
-    @Test
-    public void getMetricsFails() {
-        Metrics retrievedMetrics = controller.getMetrics();
-        assertNull(retrievedMetrics);
-    }
-    
     @Test
     public void getRemoteAddress() {
         when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
@@ -508,9 +501,9 @@ public class BaseControllerTest extends Mockito {
     public void writeSessionInfoToMetrics() {
         // Mock metrics
         Metrics metrics = new Metrics(REQUEST_ID);
-        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
-        CacheKey key = CacheKey.metricsKey(REQUEST_ID);
-        when(mockCacheProvider.getObject(key, Metrics.class)).thenReturn(metrics);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
+                .withRequestId(REQUEST_ID).build());
         
         session.setInternalSessionToken("internalSessionToken");
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
@@ -528,9 +521,9 @@ public class BaseControllerTest extends Mockito {
     public void writeSessionInfoToMetricsNoSession() {
         // Mock metrics
         Metrics metrics = mock(Metrics.class);
-        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
-        CacheKey key = CacheKey.metricsKey(REQUEST_ID);
-        when(mockCacheProvider.getObject(key, Metrics.class)).thenReturn(metrics);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
+                .withRequestId(REQUEST_ID).build());
         
         controller.writeSessionInfoToMetrics(null);
         verifyNoMoreInteractions(metrics);
@@ -546,6 +539,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void setCookieAndRecordMetrics() {
         session.setSessionToken(SESSION_TOKEN);
+        session.setStudyIdentifier(TEST_STUDY);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
         
@@ -570,6 +564,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void setCookieAndRecordMetricsNoCookieOutsideLocal() throws Exception {
         session.setSessionToken(SESSION_TOKEN);
+        session.setStudyIdentifier(TEST_STUDY);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
         
@@ -997,7 +992,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionPopulatesTheRequestContext() {
         RequestContext context = new RequestContext.Builder().build();
-        assertNull(context.getId());
+        assertNotNull(context.getId());
         assertNull(context.getCallerStudyId());
         assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
         assertEquals(ImmutableSet.of(), context.getCallerRoles());

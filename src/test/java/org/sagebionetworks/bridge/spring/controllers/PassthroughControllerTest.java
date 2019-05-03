@@ -10,11 +10,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.verifyStatic;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.spring.controllers.PassthroughController.CONFIG_KEY_BRIDGE_PF_HOST;
+import static org.sagebionetworks.bridge.spring.filters.MetricsFilter.X_PASSTHROUGH;
+import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
+import static org.springframework.http.HttpHeaders.CONTENT_LENGTH;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.springframework.http.HttpHeaders.COOKIE;
+import static org.springframework.http.HttpHeaders.SET_COOKIE;
+import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -22,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -40,6 +49,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.Config;
+import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
 import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
 
 @PrepareForTest({ Request.class, EntityUtils.class })
@@ -186,6 +196,32 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, null, null,
                 null);
     }
+    
+    @Test
+    public void headRequest() throws Exception {
+        // Make request.
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getMethod()).thenReturn("HEAD");
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
+        when(mockRequest.getRequestURI()).thenReturn(URL);
+        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
+
+        // Mock HTTP client.
+        Request mockPfRequest = mock(Request.class);
+        mockHttpResponseForRequest(mockPfRequest, 200, null, null);
+
+        mockStatic(Request.class);
+        when(Request.Head(anyString())).thenReturn(mockPfRequest);
+
+        // Execute.
+        ResponseEntity<String> response = controller.handleDefault(mockRequest, null);
+        assertResponseEntity(response, HttpStatus.OK, null, null);
+
+        // Verify request.
+        verifyStatic(Request.class);
+        Request.Head(EXPECTED_FULL_URL);
+        assertRequest(mockPfRequest, EXPECTED_DEFAULT_HEADER_MAP, null, null, null);
+    }
 
     // branch coverage
     @Test
@@ -232,6 +268,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getHeader("Content-Length")).thenReturn("10");
         when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(OTHER_IP_ADDRESS);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(OTHER_REQUEST_ID);
+        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("sessionToken");
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en");
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn("app/1");
+        when(mockRequest.getHeader(COOKIE)).thenReturn("one cookie");
         when(mockRequest.getMethod()).thenReturn("POST");
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
@@ -251,6 +291,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         Map<String, String> expectedHeaderMap = ImmutableMap.<String, String>builder()
                 .put(X_REQUEST_ID_HEADER, OTHER_REQUEST_ID)
                 .put(X_FORWARDED_FOR_HEADER, OTHER_IP_ADDRESS)
+                .put(SESSION_TOKEN_HEADER, "sessionToken")
+                .put(ACCEPT_LANGUAGE, "en")
+                .put(USER_AGENT, "app/1")
+                .put(COOKIE, "one cookie")
                 .build();
 
         verifyStatic(Request.class);
@@ -266,15 +310,18 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         when(mockRequest.getRequestURI()).thenReturn(URL);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
-
+        
         // Mock HTTP client.
         String expectedResponseBody = "expected response body";
         Map<String, String> responseHeaderMap = ImmutableMap.<String, String>builder()
-                .put("Content-Type", MIME_TYPE_TEXT_PLAIN)
-                .put("Content-Length", "22")
+                .put(CONTENT_TYPE, MIME_TYPE_TEXT_PLAIN)
+                .put(CONTENT_LENGTH, "22")
                 .put("Dummy-Response-Header", "dummy response header value")
+                .put(SESSION_TOKEN_HEADER, "oneSession")
+                .put(BRIDGE_API_STATUS_HEADER, "warning")
+                .put(SET_COOKIE, "this is not in cookie format")
                 .build();
-
+        
         Request mockPfRequest = mock(Request.class);
         mockHttpResponseForRequest(mockPfRequest, 200, responseHeaderMap, expectedResponseBody);
 
@@ -284,8 +331,12 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         // Here's what we should copy back from the Bridge response. We do not include every
         // header.
         Map<String, String> expectedResponseHeaderMap = ImmutableMap.<String, String>builder()
-                .put("Content-Type", MIME_TYPE_TEXT_PLAIN)
-                .put("Content-Length", "22")
+                .put(CONTENT_TYPE, MIME_TYPE_TEXT_PLAIN)
+                .put(CONTENT_LENGTH, "22")
+                .put(SESSION_TOKEN_HEADER, "oneSession")
+                .put(BRIDGE_API_STATUS_HEADER, "warning")
+                .put(SET_COOKIE, "this is not in cookie format")
+                .put(X_PASSTHROUGH, "BridgePF")
                 .build();
         
         // Execute.
@@ -371,7 +422,10 @@ public class PassthroughControllerTest extends PowerMockTestCase {
         if (expectedHeaderMap != null && !expectedHeaderMap.isEmpty()) {
             assertEquals(responseEntity.getHeaders().toSingleValueMap(), expectedHeaderMap);
         } else {
-            assertTrue(responseEntity.getHeaders().isEmpty());
+            // The only thing that is present is the header indicating this request has been passed 
+            // through (so we don't log it twice)
+            assertEquals(responseEntity.getHeaders().size(), 1);
+            assertEquals(responseEntity.getHeaders().get(MetricsFilter.X_PASSTHROUGH).get(0), "BridgePF");
         }
     }
 }

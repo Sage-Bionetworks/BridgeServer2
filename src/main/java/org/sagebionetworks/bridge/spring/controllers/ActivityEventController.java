@@ -29,7 +29,7 @@ public class ActivityEventController extends BaseController {
     private ActivityEventService activityEventService;
 
     @Autowired
-    public void setActivityEventService(ActivityEventService activityEventService) {
+    final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
 

@@ -49,8 +49,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
-import org.sagebionetworks.bridge.crypto.BridgeEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptor;
 import org.sagebionetworks.bridge.crypto.CmsEncryptorCacheLoader;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
@@ -191,11 +189,6 @@ public class SpringConfig {
     @Bean(name = "annotationBasedTableCreator")
     public AnnotationBasedTableCreator annotationBasedTableCreator(DynamoNamingHelper dynamoNamingHelper) {
         return new AnnotationBasedTableCreator(dynamoNamingHelper);
-    }
-
-    @Bean(name = "healthCodeEncryptor")
-    public BridgeEncryptor healthCodeEncryptor() {
-        return new BridgeEncryptor(new AesGcmEncryptor(bridgeConfig().getHealthCodeKey()));
     }
 
     @Bean(name = "awsCredentials")
@@ -615,8 +608,7 @@ public class SpringConfig {
         
         // Append SSL props to URL
         boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
-        url += (url.contains("?")) ? "&" : "?";
-        url += "requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        url += "?serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
         
         props.put("hibernate.connection.url", url);
 

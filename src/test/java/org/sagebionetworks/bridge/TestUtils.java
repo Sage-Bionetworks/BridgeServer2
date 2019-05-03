@@ -20,8 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import org.sagebionetworks.bridge.spring.controllers.ActivityEventController;
-
 public class TestUtils {
 
     private static class CustomServletInputStream extends ServletInputStream {
