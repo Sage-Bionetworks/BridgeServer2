@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
-import javax.websocket.server.PathParam;
 
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.HtmlUtils;
@@ -93,7 +93,7 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping({"/mobile/{studyId}/startSession.html", "/s/{studyId}"})
-    public String startSessionWithPath(Model model, @PathParam("studyId") String studyId,
+    public String startSessionWithPath(Model model, @PathVariable("studyId") String studyId,
             @RequestParam String email, @RequestParam String token) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
@@ -147,7 +147,7 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping("/r/{token}")
-    public ResponseEntity<String> redirectToURL(@PathParam("token") String token) {
+    public ResponseEntity<String> redirectToURL(@PathVariable("token") String token) {
         if (StringUtils.isBlank(token)) {
             throw new BadRequestException("URL is malformed.");
         }
