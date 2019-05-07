@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 import java.util.List;
 
@@ -160,6 +161,7 @@ public class AppConfigControllerTest extends Mockito {
         
         ResourceList<AppConfig> results = controller.getAppConfigs("false");
         assertEquals(2, results.getItems().size());
+        assertFalse((Boolean)results.getRequestParams().get("includeDeleted"));
         verify(mockService).getAppConfigs(TEST_STUDY, false);
     }
 

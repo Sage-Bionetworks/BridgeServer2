@@ -71,14 +71,14 @@ public class AppConfigController extends BaseController {
     }
     
     @GetMapping("/v3/appconfigs")
-    public ResourceList<AppConfig> getAppConfigs(
-            @RequestParam(name = INCLUDE_DELETED_PARAM, defaultValue = "false") String includeDeleted) {
+    public ResourceList<AppConfig> getAppConfigs(@RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), 
-                Boolean.valueOf(includeDeleted));
-        
-        return new ResourceList<>(results);
+        boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
+
+        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), includeDeletedFlag);
+
+        return new ResourceList<>(results).withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
 
     @PostMapping("/v3/appconfigs")
@@ -115,8 +115,7 @@ public class AppConfigController extends BaseController {
     }
     
     @DeleteMapping("/v3/appconfigs/{guid}")
-    public StatusMessage deleteAppConfig(@PathVariable String guid,
-            @RequestParam(name = "physical", defaultValue = "false") String physical) {
+    public StatusMessage deleteAppConfig(@PathVariable String guid, @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         // physical is set to true for backwards compatiblity, but only admins can delete permanently.

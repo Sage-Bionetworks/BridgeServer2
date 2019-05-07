@@ -39,15 +39,15 @@ public class AppConfigElementsController extends BaseController {
     }
     
     @GetMapping("/v3/appconfigs/elements")
-    public ResourceList<AppConfigElement> getMostRecentElements(
-            @RequestParam(name = INCLUDE_DELETED_PARAM, defaultValue = "false") String includeDeleted) {
+    public ResourceList<AppConfigElement> getMostRecentElements(@RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
+        boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         
         List<AppConfigElement> elements = service.getMostRecentElements(session.getStudyIdentifier(),
-                Boolean.valueOf(includeDeleted));
+                includeDeletedFlag);
         
         return new ResourceList<AppConfigElement>(elements)
-                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeleted);
+                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
     
     @PostMapping("/v3/appconfigs/elements")
@@ -65,14 +65,14 @@ public class AppConfigElementsController extends BaseController {
     
     @GetMapping("/v3/appconfigs/elements/{id}")
     public ResourceList<AppConfigElement> getElementRevisions(@PathVariable String id,
-            @RequestParam(name = INCLUDE_DELETED_PARAM, defaultValue = "false") String includeDeleted) {
+            @RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        
+        boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         List<AppConfigElement> elements = service.getElementRevisions(session.getStudyIdentifier(), id,
-                Boolean.valueOf(includeDeleted));
+                includeDeletedFlag);
         
         return new ResourceList<AppConfigElement>(elements)
-                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeleted);
+                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
     
     @GetMapping("/v3/appconfigs/elements/{id}/recent")
@@ -83,8 +83,7 @@ public class AppConfigElementsController extends BaseController {
     }
 
     @GetMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
-    public AppConfigElement getElementRevision(@PathVariable String id,
-            @PathVariable String revision) {
+    public AppConfigElement getElementRevision(@PathVariable String id, @PathVariable String revision) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {
@@ -94,8 +93,7 @@ public class AppConfigElementsController extends BaseController {
     }
     
     @PostMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
-    public VersionHolder updateElementRevision(@PathVariable String id,
-            @PathVariable String revision) {
+    public VersionHolder updateElementRevision(@PathVariable String id, @PathVariable String revision) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {
@@ -114,8 +112,7 @@ public class AppConfigElementsController extends BaseController {
     }
 
     @DeleteMapping("/v3/appconfigs/elements/{id}")
-    public StatusMessage deleteElementAllRevisions(@PathVariable String id,
-            @RequestParam(name = "physical", defaultValue = "false") String physical) {
+    public StatusMessage deleteElementAllRevisions(@PathVariable String id, @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
@@ -130,7 +127,7 @@ public class AppConfigElementsController extends BaseController {
 
     @DeleteMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public StatusMessage deleteElementRevision(@PathVariable String id, @PathVariable String revision,
-            @RequestParam(name = "physical", defaultValue = "false") String physical) {
+            @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
