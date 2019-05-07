@@ -5,6 +5,9 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -78,6 +81,19 @@ public class AppConfigElementsControllerTest {
         doReturn(mockRequest).when(controller).request();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+    
+    
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertGet(AppConfigElementsController.class, "getMostRecentElements");
+        assertPost(AppConfigElementsController.class, "createElement");
+        assertGet(AppConfigElementsController.class, "getElementRevisions");
+        assertGet(AppConfigElementsController.class, "getMostRecentElement");
+        assertGet(AppConfigElementsController.class, "getElementRevision");
+        assertPost(AppConfigElementsController.class, "updateElementRevision");
+        assertDelete(AppConfigElementsController.class, "deleteElementAllRevisions");
+        assertDelete(AppConfigElementsController.class, "deleteElementRevision");
     }
     
     @Test
