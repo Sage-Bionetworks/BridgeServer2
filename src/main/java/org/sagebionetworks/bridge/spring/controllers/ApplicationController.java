@@ -93,8 +93,8 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping({"/mobile/{studyId}/startSession.html", "/s/{studyId}"})
-    public String startSessionWithPath(Model model, @PathVariable("studyId") String studyId,
-            @RequestParam String email, @RequestParam String token) {
+    public String startSessionWithPath(Model model, @PathVariable String studyId, @RequestParam String email,
+            @RequestParam String token) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         model.addAttribute(STUDY_ID, study.getIdentifier());
@@ -147,7 +147,7 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping("/r/{token}")
-    public ResponseEntity<String> redirectToURL(@PathVariable("token") String token) {
+    public ResponseEntity<String> redirectToURL(@PathVariable String token) {
         if (StringUtils.isBlank(token)) {
             throw new BadRequestException("URL is malformed.");
         }
