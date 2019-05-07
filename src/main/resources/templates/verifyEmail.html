@@ -24,8 +24,8 @@ var supportEmail = document.head.querySelector("meta[name='supportEmail']").getA
 
 var params = {};
 location.search.substr(1).split("&").forEach(function(item) {
-	var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]); 
-	params[k] = v;
+    var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]); 
+    params[k] = v;
 });
 
 function success() {
@@ -46,7 +46,7 @@ try {
         data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
         dataType: "json"
     });
-	// The response in the success case is 412, accept terms of study
+    // The response in the success case is 412, accept terms of study
     p.done(success).fail(function(response) {
         if (response.status === 412) {
             success();

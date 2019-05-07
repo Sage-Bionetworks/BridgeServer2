@@ -60,12 +60,6 @@ public class ApplicationControllerTest extends Mockito {
     @Mock
     Model model;
     
-    @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
-    
-    @Captor
-    ArgumentCaptor<SignIn> signInCaptor;
-    
     @InjectMocks
     @Spy
     ApplicationController controller;
@@ -225,6 +219,7 @@ public class ApplicationControllerTest extends Mockito {
         ResponseEntity<String> response = controller.redirectToURL("ABC");
         assertEquals(302, response.getStatusCodeValue());
         assertEquals("https://long.url.com/", response.getHeaders().get("Location").get(0));
+        verify(urlShortenerService).retrieveUrl("ABC");
     }
     
     @Test(expectedExceptions = BadRequestException.class)

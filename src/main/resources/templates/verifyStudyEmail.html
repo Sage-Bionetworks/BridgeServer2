@@ -22,8 +22,8 @@ var studyName = document.head.querySelector("meta[name='studyName']").getAttribu
 
 var params = {};
 location.search.substr(1).split("&").forEach(function(item) {
-	var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]);
-	params[k] = v;
+    var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]);
+    params[k] = v;
 });
 
 setTimeout(function() {
