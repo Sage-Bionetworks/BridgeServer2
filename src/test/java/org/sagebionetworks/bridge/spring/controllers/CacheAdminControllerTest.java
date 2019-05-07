@@ -52,7 +52,7 @@ public class CacheAdminControllerTest extends Mockito {
     }
 
     @Test
-    public void annotatedCorrectly() throws Exception {
+    public void verifyAnnotations() throws Exception {
         assertCrossOrigin(CacheAdminController.class);
         assertGet(CacheAdminController.class, "listItems");
         assertDelete(CacheAdminController.class, "removeItem");

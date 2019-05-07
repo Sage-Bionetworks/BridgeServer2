@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title th:text="${studyName} + ' Sign In Error'"></title>
+    <link href="//assets.sagebridge.org/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
+    <link href="//assets.sagebridge.org/mobile/styles/skeleton.css" type="text/css" rel="stylesheet"/>
+    <link href="//assets.sagebridge.org/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="form_box">
+	<h3>Please try again on your phone</h3>
+	
+	<p>In order to sign in to <span th:text="${studyName}"></span>, open the sign in email on your phone, 
+		and click the link again to sign in through the app. </p>
+</div>
+</body>
+</html>
