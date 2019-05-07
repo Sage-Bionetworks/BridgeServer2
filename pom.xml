@@ -54,6 +54,15 @@
             <artifactId>BridgeServerLogic</artifactId>
             <version>1.0.3</version>
             <exclusions>
+                <!--
+                    BridgeServerLogic depends on flying-saucer-pdf which depends on itext. For some reason, itext
+                    declares dependencies on two different bcprov-jdk14 packages, which don't interfere with each
+                    other, but interfere with bcprov-jdk15on (which we get from bridge-base). We need to exclude both.
+                 -->
+                <exclusion>
+                    <groupId>bouncycastle</groupId>
+                    <artifactId>bcprov-jdk14</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.bouncycastle</groupId>
                     <artifactId>bcprov-jdk14</artifactId>
