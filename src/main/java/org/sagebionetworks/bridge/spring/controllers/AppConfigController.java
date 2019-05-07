@@ -35,6 +35,7 @@ import org.sagebionetworks.bridge.services.AppConfigService;
 @RestController("appConfigController")
 public class AppConfigController extends BaseController {
 
+    private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
     private AppConfigService appConfigService;
     
     private ViewCache viewCache;
@@ -50,7 +51,7 @@ public class AppConfigController extends BaseController {
     }
 
     @GetMapping("/v3/studies/{studyId}/appconfig")
-    public String getStudyAppConfig(@PathVariable("studyId") String studyId) {
+    public String getStudyAppConfig(@PathVariable String studyId) {
         Study study = studyService.getStudy(studyId);
         
         CriteriaContext context = new CriteriaContext.Builder()
@@ -71,7 +72,7 @@ public class AppConfigController extends BaseController {
     
     @GetMapping("/v3/appconfigs")
     public ResourceList<AppConfig> getAppConfigs(
-            @RequestParam(name = "includeDeleted", defaultValue = "false") String includeDeleted) {
+            @RequestParam(name = INCLUDE_DELETED_PARAM, defaultValue = "false") String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), 
@@ -94,14 +95,14 @@ public class AppConfigController extends BaseController {
     }
 
     @GetMapping("/v3/appconfigs/{guid}")
-    public AppConfig getAppConfig(@PathVariable("guid") String guid) {
+    public AppConfig getAppConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         return appConfigService.getAppConfig(session.getStudyIdentifier(), guid);
     }
 
     @PostMapping("/v3/appconfigs/{guid}")
-    public GuidVersionHolder updateAppConfig(@PathVariable("guid") String guid) {
+    public GuidVersionHolder updateAppConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         AppConfig appConfig = parseJson(AppConfig.class);
@@ -114,7 +115,7 @@ public class AppConfigController extends BaseController {
     }
     
     @DeleteMapping("/v3/appconfigs/{guid}")
-    public StatusMessage deleteAppConfig(@PathVariable("guid") String guid,
+    public StatusMessage deleteAppConfig(@PathVariable String guid,
             @RequestParam(name = "physical", defaultValue = "false") String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
