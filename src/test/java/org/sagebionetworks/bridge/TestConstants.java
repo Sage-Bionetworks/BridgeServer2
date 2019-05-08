@@ -11,7 +11,9 @@ import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -22,6 +24,8 @@ public class TestConstants {
     
     public static final DateTime TIMESTAMP = DateTime.parse("2015-01-27T00:38:32.486Z");
     
+    public static final Phone PHONE = new Phone("9712486796", "US");
+
     public static final String HEALTH_CODE = "healthCode";
     
     public static final String SESSION_TOKEN = "sessionToken";
@@ -41,6 +45,9 @@ public class TestConstants {
     public static final String USER_ID = "userId";
     
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
+    
+    public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
+            .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
     
     public static final ConsentStatus REQUIRED_SIGNED_CURRENT = new ConsentStatus.Builder().withName("Name1")
             .withGuid(SubpopulationGuid.create("foo1")).withRequired(true).withConsented(true)

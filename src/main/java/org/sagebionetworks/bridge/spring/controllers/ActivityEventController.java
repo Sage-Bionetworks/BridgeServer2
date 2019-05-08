@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 
 @CrossOrigin
-@RestController("activityEventController")
+@RestController
 @RequestMapping("/v1/activityevents")
 public class ActivityEventController extends BaseController {
 
