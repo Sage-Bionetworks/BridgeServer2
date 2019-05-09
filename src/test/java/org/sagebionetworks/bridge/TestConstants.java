@@ -18,7 +18,9 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class TestConstants {
 
-    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl("api");
+    public static final String TEST_STUDY_IDENTIFIER = "api";
+    
+    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     
     public static final DateTime TIMESTAMP = DateTime.parse("2015-01-27T00:38:32.486Z");
     
