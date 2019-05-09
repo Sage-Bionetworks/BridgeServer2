@@ -375,7 +375,7 @@ public class ConsentControllerTest extends Mockito {
 
     @Test
     public void resendConsentAgreement() throws Exception {
-        StatusMessage result = controller.resendConsentAgreement(SUBPOP_GUID.getGuid(), null);
+        StatusMessage result = controller.resendConsentAgreement(SUBPOP_GUID.getGuid());
         
         assertEquals(result.getMessage(), "Signed consent agreement resent.");
         

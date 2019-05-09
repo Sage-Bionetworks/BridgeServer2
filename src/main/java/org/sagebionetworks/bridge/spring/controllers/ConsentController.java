@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -68,10 +67,10 @@ public class ConsentController extends BaseController {
 
     @Deprecated
     @PostMapping({"/v3/consents/signature/email", "/api/v1/consent/email"})
-    public StatusMessage emailCopy(@RequestBody(required=false) String body) throws Exception {
+    public StatusMessage emailCopy() throws Exception {
         final UserSession session = getAuthenticatedAndConsentedSession();
         
-        return resendConsentAgreement(session.getStudyIdentifier().getIdentifier(), null);
+        return resendConsentAgreement(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
@@ -157,7 +156,7 @@ public class ConsentController extends BaseController {
     @PostMapping({ "/v3/subpopulations/{guid}/consents/signature/email",
             "/v3/subpopulations/{guid}/consents/signature/resend" })
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage resendConsentAgreement(@PathVariable String guid, @RequestBody(required=false) String body) {
+    public StatusMessage resendConsentAgreement(@PathVariable String guid) {
         final UserSession session = getAuthenticatedAndConsentedSession();
         final Study study = studyService.getStudy(session.getStudyIdentifier());
 

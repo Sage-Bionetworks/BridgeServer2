@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -88,7 +87,7 @@ public class ParticipantController extends BaseController {
     /** Researcher API to allow backfill of SMS notification registrations. */
     @PostMapping("/v3/participants/{userId}/notifications/sms")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createSmsRegistration(@PathVariable String userId, @RequestBody(required=false) String body) {
+    public StatusMessage createSmsRegistration(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -155,7 +154,7 @@ public class ParticipantController extends BaseController {
         
         return new StatusMessage("User deleted.");
     }
-    
+
     @GetMapping("/v3/studies/{studyId}/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String studyId,
             @PathVariable String userId) {
@@ -275,7 +274,7 @@ public class ParticipantController extends BaseController {
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
     }
-
+    
     @GetMapping("/v3/studies/{studyId}/participants/{userId}")
     public String getParticipantForWorker(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(required = false, defaultValue = "true") boolean consents) throws Exception {
@@ -319,8 +318,7 @@ public class ParticipantController extends BaseController {
     }
     
     @PostMapping("/v3/participants/{userId}/signOut")
-    public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken,
-            @RequestBody(required = false) String body) throws Exception {
+    public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -330,7 +328,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/requestResetPassword")
-    public StatusMessage requestResetPassword(@PathVariable String userId, @RequestBody(required = false) String body)
+    public StatusMessage requestResetPassword(@PathVariable String userId)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -376,8 +374,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/resendEmailVerification")
-    public StatusMessage resendEmailVerification(@PathVariable String userId,
-            @RequestBody(required = false) String body) {
+    public StatusMessage resendEmailVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -387,8 +384,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/resendPhoneVerification")
-    public StatusMessage resendPhoneVerification(@PathVariable String userId,
-            @RequestBody(required = false) String body) {
+    public StatusMessage resendPhoneVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -398,8 +394,7 @@ public class ParticipantController extends BaseController {
     }
     
     @PostMapping("/v3/participants/{userId}/consents/{guid}/resendConsent")
-    public StatusMessage resendConsentAgreement(@PathVariable String userId, @PathVariable String guid,
-            @RequestBody(required = false) String body) {
+    public StatusMessage resendConsentAgreement(@PathVariable String userId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         

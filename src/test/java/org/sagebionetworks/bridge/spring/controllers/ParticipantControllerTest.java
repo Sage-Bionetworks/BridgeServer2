@@ -269,7 +269,7 @@ public class ParticipantControllerTest extends Mockito {
                 new StudyParticipant.Builder().copyOf(session.getParticipant()).withRoles(CALLER_ROLES).build());
 
         // Execute.
-        StatusMessage result = controller.createSmsRegistration(USER_ID, null);
+        StatusMessage result = controller.createSmsRegistration(USER_ID);
         assertEquals(result.getMessage(), "SMS notification registration created");
 
         // Verify dependent services.
@@ -364,7 +364,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void signUserOut() throws Exception {
-        StatusMessage result = controller.signOut(USER_ID, false, null);
+        StatusMessage result = controller.signOut(USER_ID, false);
         assertEquals(result.getMessage(), "User signed out.");
 
         verify(mockParticipantService).signUserOut(study, USER_ID, false);
@@ -662,7 +662,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void requestResetPassword() throws Exception {
-        StatusMessage result = controller.requestResetPassword(USER_ID, null);
+        StatusMessage result = controller.requestResetPassword(USER_ID);
         assertEquals(result.getMessage(), "Request to reset password sent to user.");
 
         verify(mockParticipantService).requestResetPassword(study, USER_ID);
@@ -674,7 +674,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(Roles.DEVELOPER)).build();
         session.setParticipant(participant);
 
-        controller.requestResetPassword(USER_ID, null);
+        controller.requestResetPassword(USER_ID);
     }
 
     @Test
@@ -778,7 +778,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void resendEmailVerification() throws Exception {
-        StatusMessage result = controller.resendEmailVerification(USER_ID, null);
+        StatusMessage result = controller.resendEmailVerification(USER_ID);
         assertEquals(result.getMessage(), "Email verification request has been resent to user.");
 
         verify(mockParticipantService).resendVerification(study, ChannelType.EMAIL, USER_ID);
@@ -786,7 +786,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void resendPhoneVerification() throws Exception {
-        StatusMessage result = controller.resendPhoneVerification(USER_ID, null);
+        StatusMessage result = controller.resendPhoneVerification(USER_ID);
         assertEquals(result.getMessage(), "Phone verification request has been resent to user.");
 
         verify(mockParticipantService).resendVerification(study, ChannelType.PHONE, USER_ID);
@@ -794,7 +794,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void resendConsentAgreement() throws Exception {
-        StatusMessage result = controller.resendConsentAgreement(USER_ID, SUBPOP_GUID.getGuid(), null);
+        StatusMessage result = controller.resendConsentAgreement(USER_ID, SUBPOP_GUID.getGuid());
         assertEquals(result.getMessage(), "Consent agreement resent to user.");
 
         verify(mockParticipantService).resendConsentAgreement(study, SUBPOP_GUID, USER_ID);
