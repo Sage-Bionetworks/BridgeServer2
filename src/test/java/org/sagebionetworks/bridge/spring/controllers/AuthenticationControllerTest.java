@@ -521,7 +521,7 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAuthService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
-        StatusMessage result = controller.signOut(null);
+        StatusMessage result = controller.signOut();
         assertEquals(result.getMessage(), "Signed out.");
         
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
@@ -545,7 +545,7 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAuthService.getSession(TEST_SESSION_TOKEN)).thenReturn(session);
 
         // execute and validate
-        StatusMessage result = controller.signOutV4(null);
+        StatusMessage result = controller.signOutV4();
         assertEquals(result.getMessage(), "Signed out.");
 
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
@@ -567,7 +567,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // execute and validate
         try {
-            controller.signOutV4(null);
+            controller.signOutV4();
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             
@@ -585,7 +585,7 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(null).when(controller).getSessionToken();
 
         // execute and validate
-        StatusMessage result = controller.signOut(null);
+        StatusMessage result = controller.signOut();
         assertEquals(result.getMessage(), "Signed out.");
 
         // No session, so no check on metrics or AuthService.signOut()

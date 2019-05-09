@@ -183,7 +183,7 @@ public class AuthenticationController extends BaseController {
 
     @Deprecated
     @PostMapping("/v3/auth/signOut")
-    public StatusMessage signOut(@RequestBody(required=false) String body) throws Exception {
+    public StatusMessage signOut() throws Exception {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         if (session != null) {
@@ -198,11 +198,11 @@ public class AuthenticationController extends BaseController {
     @Deprecated
     @GetMapping("/api/v1/auth/signOut")
     public StatusMessage signOutGet() throws Exception {
-        return signOut(null);
+        return signOut();
     }
     
     @PostMapping("/v4/auth/signOut")
-    public StatusMessage signOutV4(@RequestBody(required=false) String body) throws Exception {
+    public StatusMessage signOutV4() throws Exception {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         Cookie cookie = makeSessionCookie("", 0);
