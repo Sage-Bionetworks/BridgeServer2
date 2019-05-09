@@ -454,4 +454,14 @@ public abstract class BaseController {
             response().setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, msg);
         }
     }
+    
+    protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
+        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
+        cookie.setMaxAge(expireInSeconds);
+        cookie.setPath("/");
+        cookie.setDomain(bridgeConfig.get("domain"));
+        cookie.setHttpOnly(false);
+        cookie.setSecure(false);
+        return cookie;
+    }    
 }

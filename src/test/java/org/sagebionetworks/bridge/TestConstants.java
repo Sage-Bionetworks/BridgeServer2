@@ -12,13 +12,31 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
+import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class TestConstants {
+    
+    public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
+            .withSubject("a subject").withMessage("a message").build();
+    
+    public static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
 
-    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl("api");
+    public static final Phone PHONE = new Phone("9712486796", "US");
+
+    public static final String EMAIL = "email@email.com";
+
+    public static final String PASSWORD = "password";
+
+    public static final String TEST_STUDY_IDENTIFIER = "api";
+    
+    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     
     public static final DateTime TIMESTAMP = DateTime.parse("2015-01-27T00:38:32.486Z");
     
@@ -54,4 +72,15 @@ public class TestConstants {
             .build();
     public static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid()), REQUIRED_UNSIGNED).build();
+    
+    public static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid());
+    
+    public static final ConsentSignature SIGNATURE = new ConsentSignature.Builder().withName("Jack Aubrey")
+            .withBirthdate("1970-10-10").withImageData("data:asdf").withImageMimeType("image/png")
+            .withSignedOn(TIMESTAMP.getMillis()).build();
+    
+    public static final Withdrawal WITHDRAWAL = new Withdrawal("reasons");
+    
+    public static final Activity ACTIVITY_1 = new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")
+            .withPublishedSurvey("identifier1", "AAA").build();
 }
