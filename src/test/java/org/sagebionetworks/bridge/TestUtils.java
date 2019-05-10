@@ -15,7 +15,6 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -60,11 +59,6 @@ public class TestUtils {
     
     public static ServletInputStream toInputStream(String content) {
         return new CustomServletInputStream(content);
-    }
-    
-    public static void mockRequestBody(HttpServletRequest mockRequest, JsonNode node) throws Exception {
-        ServletInputStream stream = new CustomServletInputStream(node.toString());
-        when(mockRequest.getInputStream()).thenReturn(stream);
     }
     
     public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
