@@ -2,6 +2,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -16,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -63,16 +67,16 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
     }
 
-    @AfterMethod
-    public void verifyDeveloperPermissionsUsed() {
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(CompoundActivityDefinitionController.class);
+        assertCreate(CompoundActivityDefinitionController.class, "createCompoundActivityDefinition");
+        assertDelete(CompoundActivityDefinitionController.class, "deleteCompoundActivityDefinition");
+        assertGet(CompoundActivityDefinitionController.class, "getAllCompoundActivityDefinitionsInStudy");
+        assertGet(CompoundActivityDefinitionController.class, "getCompoundActivityDefinition");
+        assertPost(CompoundActivityDefinitionController.class, "updateCompoundActivityDefinition");
     }
-
-    @AfterMethod
-    public void verifyStudyServiceUnused() {
-        verifyZeroInteractions(studyService);
-    }
-
+    
     @Test
     public void create() throws Exception{
         // make input def - Mark it with task ID for tracing. No other params matter.
@@ -102,6 +106,9 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(TASK_ID, serviceInput.getTaskId());
+        
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -112,6 +119,8 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         // verify call through to the service
         verify(defService).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -135,6 +144,8 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         CompoundActivityDefinition controllerOutput = controllerOutputList.get(0);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
         assertNull(controllerOutput.getStudyId());
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -151,6 +162,8 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
         assertNull(controllerOutput.getStudyId());
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verifyZeroInteractions(studyService);
     }
 
     @Test
@@ -181,6 +194,8 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(serviceInput.getTaskId(), TASK_ID);
+        verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
+        verifyZeroInteractions(studyService);
     }
 
     private static CompoundActivityDefinition getDefFromResult(String jsonText) throws Exception {

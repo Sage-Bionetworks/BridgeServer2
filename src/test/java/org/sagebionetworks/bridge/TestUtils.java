@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -9,12 +12,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.function.Consumer;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
-import org.mockito.Mockito;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,7 +26,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
 
 public class TestUtils {
 
@@ -103,6 +108,15 @@ public class TestUtils {
         assertEquals(status.code(), HttpStatus.CREATED);        
     }
     
+    /**
+     * Create calls in our API are POSTs that return 202 (Accepted).
+     */
+    public static void assertAccept(Class<?> controller, String methodName) throws Exception {
+        assertMethodAnn(controller, methodName, PostMapping.class);
+        ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
+        assertEquals(status.code(), HttpStatus.ACCEPTED);        
+    }
+    
     public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
         ServletInputStream stream = new CustomServletInputStream(json);
         when(mockRequest.getInputStream()).thenReturn(stream);
@@ -113,5 +127,24 @@ public class TestUtils {
         String json = BridgeObjectMapper.get().writeValueAsString(object);
         ServletInputStream stream = new CustomServletInputStream(json);
         when(mockRequest.getInputStream()).thenReturn(stream);
-    }    
+    }
+    
+    /**
+     * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and 
+     * that your mock account was correctly edited.
+     * @param mockAccountDao
+     *      A mocked version of the AccountDao interface
+     * @param mockAccount
+     *      A mocked version of the Account interface
+     */
+    @SuppressWarnings("unchecked")
+    public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
+        mockingDetails(mockAccountDao).isMock();
+        mockingDetails(mockAccount).isMock();
+        doAnswer(invocation -> {
+            Consumer<Account> accountEdits = invocation.getArgumentAt(2, Consumer.class);
+            accountEdits.accept(mockAccount);
+            return null;
+        }).when(mockAccountDao).editAccount(any(), any(), any());
+    }
 }
