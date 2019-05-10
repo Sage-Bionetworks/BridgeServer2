@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -38,7 +40,7 @@ public class EmailController extends BaseController {
             // POSTed form data, making this much simpler than in Play.
             String token = request().getParameter("token");
             if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
-                throw new BridgeServiceException("No authentication token provided.", HttpStatus.SC_UNAUTHORIZED);
+                throw new BridgeServiceException("No authentication token provided.", SC_UNAUTHORIZED);
             }
             // Study has to be provided as an URL parameter
             String studyId = request().getParameter("study");
@@ -67,7 +69,7 @@ public class EmailController extends BaseController {
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {
             String errorMsg = "Unknown error";
-            if (StringUtils.isNotBlank(throwable.getMessage())) {
+            if (isNotBlank(throwable.getMessage())) {
                 errorMsg = throwable.getMessage();
             }
             LOG.error("Error unsubscribing: " + errorMsg, throwable);

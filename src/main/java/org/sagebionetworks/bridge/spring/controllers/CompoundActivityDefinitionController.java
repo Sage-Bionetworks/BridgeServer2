@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -15,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -38,18 +40,18 @@ public class CompoundActivityDefinitionController extends BaseController {
     @PostMapping("/v3/compoundactivitydefinitions")
     @ResponseStatus(HttpStatus.CREATED)
     public String createCompoundActivityDefinition() throws JsonProcessingException, IOException {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
 
         CompoundActivityDefinition requestDef = parseJson(CompoundActivityDefinition.class);
         CompoundActivityDefinition createdDef = compoundActivityDefService.createCompoundActivityDefinition(
                 session.getStudyIdentifier(), requestDef);
-        return CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef);
+        return PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef);
     }
 
     /** Deletes a compound activity definition. */
     @DeleteMapping("/v3/compoundactivitydefinitions/{taskId}")
     public StatusMessage deleteCompoundActivityDefinition(@PathVariable String taskId) {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
 
         compoundActivityDefService.deleteCompoundActivityDefinition(session.getStudyIdentifier(), taskId);
         return new StatusMessage("Compound activity definition has been deleted.");
@@ -58,32 +60,32 @@ public class CompoundActivityDefinitionController extends BaseController {
     /** List all compound activity definitions in a study. */
     @GetMapping("/v3/compoundactivitydefinitions")
     public String getAllCompoundActivityDefinitionsInStudy() throws JsonProcessingException, IOException {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
 
         List<CompoundActivityDefinition> defList = compoundActivityDefService.getAllCompoundActivityDefinitionsInStudy(
                 session.getStudyIdentifier());
         ResourceList<CompoundActivityDefinition> defResourceList = new ResourceList<>(defList);
-        return CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(defResourceList);
+        return PUBLIC_DEFINITION_WRITER.writeValueAsString(defResourceList);
     }
 
     /** Get a compound activity definition by ID. */
     @GetMapping("/v3/compoundactivitydefinitions/{taskId}")
     public String getCompoundActivityDefinition(@PathVariable String taskId) throws JsonProcessingException, IOException {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
 
         CompoundActivityDefinition def = compoundActivityDefService.getCompoundActivityDefinition(
                 session.getStudyIdentifier(), taskId);
-        return CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(def);
+        return PUBLIC_DEFINITION_WRITER.writeValueAsString(def);
     }
 
     /** Update a compound activity definition. */
     @PostMapping("/v3/compoundactivitydefinitions/{taskId}")
     public String updateCompoundActivityDefinition(@PathVariable String taskId) throws JsonProcessingException, IOException {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
 
         CompoundActivityDefinition requestDef = parseJson(CompoundActivityDefinition.class);
         CompoundActivityDefinition updatedDef = compoundActivityDefService.updateCompoundActivityDefinition(
                 session.getStudyIdentifier(), taskId, requestDef);
-        return CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(updatedDef);
+        return PUBLIC_DEFINITION_WRITER.writeValueAsString(updatedDef);
     }
 }

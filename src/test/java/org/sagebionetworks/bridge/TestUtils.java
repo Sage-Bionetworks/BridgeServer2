@@ -4,6 +4,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -105,7 +107,7 @@ public class TestUtils {
     public static void assertCreate(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
-        assertEquals(status.code(), HttpStatus.CREATED);        
+        assertEquals(status.code(), CREATED);        
     }
     
     /**
@@ -114,7 +116,7 @@ public class TestUtils {
     public static void assertAccept(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
-        assertEquals(status.code(), HttpStatus.ACCEPTED);        
+        assertEquals(status.code(), ACCEPTED);        
     }
     
     public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
