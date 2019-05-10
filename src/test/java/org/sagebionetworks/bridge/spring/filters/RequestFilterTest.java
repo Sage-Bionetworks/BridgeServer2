@@ -4,10 +4,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.Vector;
 
 import javax.servlet.FilterChain;

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title th:text="${studyName} + ' Email Verification'"></title>
+    <meta name="studyName" th:content="${studyName}">
+    <meta name="supportEmail" th:content="${supportEmail}">
+    <link href="//assets.sagebridge.org/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
+    <link href="//assets.sagebridge.org/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="logo_box">
+    <img id="logo" style="visibility:hidden">
+</div>
+<div class="message" id="m1">Verifying...</div>
+<div class="message" id="m2"></div>
+
+<script src="//assets.sagebridge.org/jquery-2.1.3.min.js"></script>
+<script>
+var studyName = document.head.querySelector("meta[name='studyName']").getAttribute('content');
+var supportEmail = document.head.querySelector("meta[name='supportEmail']").getAttribute('content');
+
+var params = {};
+location.search.substr(1).split("&").forEach(function(item) {
+    var k = item.split("=")[0], v = decodeURIComponent(item.split("=")[1]); 
+    params[k] = v;
+});
+
+function success() {
+    $("#m1").text("Your email address has now been verified.");
+    $("#m2").html("You can now leave this web page and go back to the "+studyName+" application.");
+}
+function failure() {
+    $("#m1").text("Your email address could not be verified.");
+    $("#m2").html("Please refresh the page; if the problem persists, contact <a href='mailto:"+supportEmail+"'>"+supportEmail+"</a> to receive further assistance.");
+}
+try {
+    if (!params.study) {
+        throw new Error("No study");
+    }
+    var p = $.ajax({
+        type: "POST",
+        url: "/v3/auth/verifyEmail",
+        data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
+        dataType: "json"
+    });
+    // The response in the success case is 412, accept terms of study
+    p.done(success).fail(function(response) {
+        if (response.status === 412) {
+            success();
+        } else {
+            try {
+                var message = response.responseJSON.message;
+                if (message === "Account not found.") {
+                    $("#m1").text("It looks like your email address has already been verified.");
+                    $("#m2").html("You can try using the "+studyName+" application at this point.");
+                } else {
+                    failure();
+                }
+            } catch(e) {
+                failure();
+            }
+        }
+    });
+} catch(e) { // happens if the query string is wrong.
+    console.log(e);
+    failure();
+}
+
+</script>
+</body>
+</html>
