@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -37,6 +37,13 @@ public class ExternalIdControllerV4 extends BaseController {
         this.externalIdService = externalIdService;
     }
     
+    private static Boolean getBooleanOrDefault(String value, Boolean defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        return "true".equals(value);
+    }
+    
     @GetMapping("/v4/externalids")
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIdentifiers(
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize,
@@ -44,7 +51,7 @@ public class ExternalIdControllerV4 extends BaseController {
         getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         Integer pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        Boolean assignmentFilterBool = Boolean.valueOf(assignmentFilter);
+        Boolean assignmentFilterBool = getBooleanOrDefault(assignmentFilter, null);
         
         return externalIdService.getExternalIds(offsetKey, pageSizeInt, idFilter, assignmentFilterBool);
     }
@@ -71,10 +78,10 @@ public class ExternalIdControllerV4 extends BaseController {
         return new StatusMessage("External identifier deleted.");
     }
     
-    @PostMapping("/v3/externalids/{externalId}/password")
+    @PostMapping(path = {"/v3/externalids/{externalId}/password", "/v3/externalIds/{externalId}/password"})
     public GeneratedPassword generatePassword(@PathVariable String externalId,
             @RequestParam(required = false, defaultValue = "true") String createAccount) throws Exception {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         
         Boolean createAccountBool = Boolean.valueOf(createAccount);
         

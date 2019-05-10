@@ -118,14 +118,14 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void getExternalIdentifiersAllDefaults() throws Exception {
-        when(mockService.getExternalIds(null, API_DEFAULT_PAGE_SIZE, null, false)).thenReturn(list);
+        when(mockService.getExternalIds(null, API_DEFAULT_PAGE_SIZE, null, null)).thenReturn(list);
         
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = controller.getExternalIdentifiers(null, null,
                 null, null);
 
         assertEquals(results.getItems().size(), 2);
 
-        verify(mockService).getExternalIds(null, API_DEFAULT_PAGE_SIZE, null, false);
+        verify(mockService).getExternalIds(null, API_DEFAULT_PAGE_SIZE, null, null);
     }
 
     @Test
