@@ -120,6 +120,15 @@ public class TestUtils {
         assertEquals(status.code(), HttpStatus.CREATED);        
     }
     
+    /**
+     * Create calls in our API are POSTs that return 202 (Accepted).
+     */
+    public static void assertAccept(Class<?> controller, String methodName) throws Exception {
+        assertMethodAnn(controller, methodName, PostMapping.class);
+        ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
+        assertEquals(status.code(), HttpStatus.ACCEPTED);        
+    }
+    
     public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
         ServletInputStream stream = new CustomServletInputStream(json);
         when(mockRequest.getInputStream()).thenReturn(stream);

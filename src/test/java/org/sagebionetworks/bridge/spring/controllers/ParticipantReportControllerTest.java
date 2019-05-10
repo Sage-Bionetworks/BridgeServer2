@@ -3,6 +3,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.PARTICIPANT;
 import static org.testng.Assert.assertEquals;
@@ -148,6 +152,25 @@ public class ParticipantReportControllerTest extends Mockito {
         doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
         
         doReturn(mockRequest).when(controller).request();
+    }
+    
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(ParticipantReportController.class);
+        assertGet(ParticipantReportController.class, "getParticipantReportForSelf");
+        assertGet(ParticipantReportController.class, "getParticipantReportForSelfV4");
+        assertCreate(ParticipantReportController.class, "saveParticipantReportForSelf");
+        assertGet(ParticipantReportController.class, "listParticipantReportIndices");
+        assertGet(ParticipantReportController.class, "getParticipantReportIndex");
+        assertGet(ParticipantReportController.class, "getParticipantReport");
+        assertGet(ParticipantReportController.class, "getParticipantReportForWorker");
+        assertGet(ParticipantReportController.class, "getParticipantReportV4");
+        assertGet(ParticipantReportController.class, "getParticipantReportForWorkerV4");
+        assertCreate(ParticipantReportController.class, "saveParticipantReport");
+        assertCreate(ParticipantReportController.class, "saveParticipantReportForWorker");
+        assertDelete(ParticipantReportController.class, "deleteParticipantReport");
+        assertDelete(ParticipantReportController.class, "deleteParticipantReportRecord");
+        assertDelete(ParticipantReportController.class, "deleteParticipantReportIndex");
     }
     
     @Test

@@ -51,8 +51,7 @@ public class StudyConsentController extends BaseController {
     public ResourceList<StudyConsent> getAllConsents() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        List<StudyConsent> consents = getAllConsentsV2(session.getStudyIdentifier().getIdentifier());
-        return new ResourceList<>(consents);
+        return getAllConsentsV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated

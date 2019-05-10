@@ -19,7 +19,13 @@ import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.assertAccept;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDatesWithTimeZoneEqual;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -260,6 +266,43 @@ public class ParticipantControllerTest extends Mockito {
     @AfterMethod
     public void after() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(ParticipantController.class);
+        assertCreate(ParticipantController.class, "createSmsRegistration");
+        assertGet(ParticipantController.class, "getSelfParticipant");
+        assertPost(ParticipantController.class, "updateSelfParticipant");
+        assertDelete(ParticipantController.class, "deleteTestParticipant");
+        assertGet(ParticipantController.class, "getActivityEventsForWorker");
+        assertGet(ParticipantController.class, "getActivityHistoryForWorkerV3");
+        assertGet(ParticipantController.class, "getActivityHistoryForWorkerV2");
+        assertPost(ParticipantController.class, "updateIdentifiers");
+        assertGet(ParticipantController.class, "getParticipants");
+        assertPost(ParticipantController.class, "searchForAccountSummaries");
+        assertGet(ParticipantController.class, "getParticipantsForWorker");
+        assertPost(ParticipantController.class, "searchForAccountSummariesForWorker");
+        assertCreate(ParticipantController.class, "createParticipant");
+        assertGet(ParticipantController.class, "getParticipant");
+        assertGet(ParticipantController.class, "getParticipantForWorker");
+        assertGet(ParticipantController.class, "getRequestInfo");
+        assertPost(ParticipantController.class, "updateParticipant");
+        assertPost(ParticipantController.class, "signOut");
+        assertPost(ParticipantController.class, "requestResetPassword");
+        assertGet(ParticipantController.class, "getActivityHistoryV2");
+        assertGet(ParticipantController.class, "getActivityHistoryV3");
+        assertDelete(ParticipantController.class, "deleteActivities");
+        assertPost(ParticipantController.class, "resendEmailVerification");
+        assertPost(ParticipantController.class, "resendPhoneVerification");
+        assertPost(ParticipantController.class, "resendConsentAgreement");
+        assertPost(ParticipantController.class, "withdrawFromStudy");
+        assertPost(ParticipantController.class, "withdrawConsent");
+        assertGet(ParticipantController.class, "getUploads");
+        assertGet(ParticipantController.class, "getNotificationRegistrations");
+        assertAccept(ParticipantController.class, "sendNotification");
+        assertGet(ParticipantController.class, "getActivityEvents");
+        assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
     }
 
     @Test
