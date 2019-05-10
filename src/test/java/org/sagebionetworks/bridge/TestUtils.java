@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -12,6 +13,9 @@ import java.lang.reflect.Method;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
@@ -44,6 +48,12 @@ public class TestUtils {
         public void setReadListener(ReadListener listener) {
             throw new RuntimeException("Not implemented");
         }
+    }
+    
+    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
+        String json = new ObjectMapper().writeValueAsString(object);
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
     }
     
     public static ServletInputStream toInputStream(String content) {
