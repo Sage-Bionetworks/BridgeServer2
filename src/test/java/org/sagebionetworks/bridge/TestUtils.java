@@ -16,7 +16,11 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,6 +28,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public class TestUtils {
 
@@ -50,14 +57,14 @@ public class TestUtils {
         }
     }
     
+    public static ServletInputStream toInputStream(String content) {
+        return new CustomServletInputStream(content);
+    }
+    
     public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
         String json = new ObjectMapper().writeValueAsString(object);
         ServletInputStream stream = new CustomServletInputStream(json);
         when(mockRequest.getInputStream()).thenReturn(stream);
-    }
-    
-    public static ServletInputStream toInputStream(String content) {
-        return new CustomServletInputStream(content);
     }
     
     public static String createJson(String json, Object... args) {
@@ -112,6 +119,25 @@ public class TestUtils {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
         assertEquals(status.code(), HttpStatus.CREATED);        
+    }
+    
+    public static String randomName(Class<?> clazz) {
+        return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+    }
+    
+    public static final StudyParticipant getStudyParticipant(Class<?> clazz) {
+        String randomName = TestUtils.randomName(clazz);
+        return new StudyParticipant.Builder()
+                .withFirstName("FirstName")
+                .withLastName("LastName")
+                .withExternalId("externalId")
+                .withEmail("bridge-testing+"+randomName+"@sagebase.org")
+                .withPassword("password")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
+                .withLanguages(ImmutableList.of("fr")).build();
     }
     
     private static boolean includesPath(String[] paths, String path) {

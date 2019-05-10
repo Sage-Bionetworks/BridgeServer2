@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.services.CacheAdminService;
 
 @CrossOrigin
-@RestController("cacheAdminController")
+@RestController
 @RequestMapping("/v3/cache")
 public class CacheAdminController extends BaseController {
     
