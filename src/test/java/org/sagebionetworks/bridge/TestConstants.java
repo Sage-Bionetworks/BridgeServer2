@@ -7,11 +7,14 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
+import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -54,4 +57,21 @@ public class TestConstants {
             .build();
     public static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid()), REQUIRED_UNSIGNED).build();
+
+    public static final AndroidAppLink ANDROID_APP_LINK = new AndroidAppLink("namespace", "package_name",
+            Lists.newArrayList("sha256_cert_fingerprints"));
+    public static final AndroidAppLink ANDROID_APP_LINK_2 = new AndroidAppLink("namespace2", "package_name2",
+            Lists.newArrayList("sha256_cert_fingerprints2"));
+    public static final AndroidAppLink ANDROID_APP_LINK_3 = new AndroidAppLink("namespace3", "package_name3",
+            Lists.newArrayList("sha256_cert_fingerprints3"));
+    public static final AndroidAppLink ANDROID_APP_LINK_4 = new AndroidAppLink("namespace4", "package_name4",
+            Lists.newArrayList("sha256_cert_fingerprints4"));
+    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("studyId",
+            Lists.newArrayList("/appId/", "/appId/*"));
+    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("studyId2",
+            Lists.newArrayList("/appId2/", "/appId2/*"));
+    public static final AppleAppLink APPLE_APP_LINK_3 = new AppleAppLink("studyId3",
+            Lists.newArrayList("/appId3/", "/appId3/*"));
+    public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
+            Lists.newArrayList("/appId4/", "/appId4/*"));
 }

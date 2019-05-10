@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.io.ByteArrayInputStream;
@@ -77,8 +78,13 @@ public class TestUtils {
         assertNotNull(ann);
     }
     
-    public static void assertGet(Class<?> controller, String methodName) throws Exception {
-        assertMethodAnn(controller, methodName, GetMapping.class);
+    public static void assertGet(Class<?> controller, String methodName, String... paths) throws Exception {
+        GetMapping ann = assertMethodAnn(controller, methodName, GetMapping.class);
+        if (paths != null && paths.length > 0) {
+            for (String path : paths) {
+                assertTrue(includesPath(ann.path(), path), "Path not found in paths declared for annotation");
+            }
+        }
     }
     
     public static void assertPost(Class<?> controller, String methodName) throws Exception {
@@ -96,5 +102,14 @@ public class TestUtils {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
         assertEquals(status.code(), HttpStatus.CREATED);        
+    }
+    
+    private static boolean includesPath(String[] paths, String path) {
+        for (String onePath : paths) {
+            if (onePath.equals(path)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
