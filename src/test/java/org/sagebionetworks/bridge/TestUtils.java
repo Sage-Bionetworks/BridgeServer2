@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -11,7 +12,9 @@ import java.lang.reflect.Method;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
 
+import org.mockito.Mockito;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -19,6 +22,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class TestUtils {
 
@@ -97,4 +102,16 @@ public class TestUtils {
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
         assertEquals(status.code(), HttpStatus.CREATED);        
     }
+    
+    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }
+
+    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
+        // Use BridgeObjectMapper or you will get an error when serializing objects with a filter 
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }    
 }
