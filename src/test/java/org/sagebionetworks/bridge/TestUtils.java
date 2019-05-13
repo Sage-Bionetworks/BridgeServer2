@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -61,6 +62,11 @@ public class TestUtils {
         return new CustomServletInputStream(content);
     }
     
+    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }
+    
     public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
         String json = new ObjectMapper().writeValueAsString(object);
         ServletInputStream stream = new CustomServletInputStream(json);
@@ -92,7 +98,9 @@ public class TestUtils {
     
     public static void assertCrossOrigin(Class<?> controller) {
         Annotation ann = AnnotationUtils.findAnnotation(controller, CrossOrigin.class);
-        assertNotNull(ann);
+        assertNotNull(ann, "Missing the @CrossOrigin annotation");
+        ann = AnnotationUtils.findAnnotation(controller, RestController.class);
+        assertNotNull(ann, "Missing the @RestController annotation");
     }
     
     public static void assertGet(Class<?> controller, String methodName, String... paths) throws Exception {
@@ -119,6 +127,15 @@ public class TestUtils {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
         assertEquals(status.code(), HttpStatus.CREATED);        
+    }
+    
+    /**
+     * Create calls in our API are POSTs that return 202 (Accepted).
+     */
+    public static void assertAccept(Class<?> controller, String methodName) throws Exception {
+        assertMethodAnn(controller, methodName, PostMapping.class);
+        ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
+        assertEquals(status.code(), HttpStatus.ACCEPTED);        
     }
     
     public static String randomName(Class<?> clazz) {
