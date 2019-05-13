@@ -96,8 +96,7 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping("/v3/participants/self")
-    public String getSelfParticipant(@RequestParam(required = false, defaultValue = "true") boolean consents)
-            throws Exception {
+    public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -262,8 +261,8 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping("/v3/participants/{userId}")
-    public String getParticipant(@PathVariable String userId,
-            @RequestParam(required = false, defaultValue = "true") boolean consents) throws Exception {
+    public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
+            throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -277,7 +276,7 @@ public class ParticipantController extends BaseController {
     
     @GetMapping("/v3/studies/{studyId}/participants/{userId}")
     public String getParticipantForWorker(@PathVariable String studyId, @PathVariable String userId,
-            @RequestParam(required = false, defaultValue = "true") boolean consents) throws Exception {
+            @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
 
