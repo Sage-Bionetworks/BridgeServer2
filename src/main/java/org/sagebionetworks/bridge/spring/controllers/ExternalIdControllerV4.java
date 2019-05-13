@@ -80,7 +80,7 @@ public class ExternalIdControllerV4 extends BaseController {
     
     @PostMapping(path = {"/v3/externalids/{externalId}/password", "/v3/externalIds/{externalId}/password"})
     public GeneratedPassword generatePassword(@PathVariable String externalId,
-            @RequestParam(required = false, defaultValue = "true") String createAccount) throws Exception {
+            @RequestParam(defaultValue = "true") String createAccount) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
         Boolean createAccountBool = Boolean.valueOf(createAccount);
