@@ -8,6 +8,7 @@ import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.io.ByteArrayInputStream;
@@ -20,8 +21,12 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +36,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public class TestUtils {
 
@@ -89,8 +96,13 @@ public class TestUtils {
         assertNotNull(ann);
     }
     
-    public static void assertGet(Class<?> controller, String methodName) throws Exception {
-        assertMethodAnn(controller, methodName, GetMapping.class);
+    public static void assertGet(Class<?> controller, String methodName, String... paths) throws Exception {
+        GetMapping ann = assertMethodAnn(controller, methodName, GetMapping.class);
+        if (paths != null && paths.length > 0) {
+            for (String path : paths) {
+                assertTrue(includesPath(ann.path(), path), "Path not found in paths declared for annotation");
+            }
+        }
     }
     
     public static void assertPost(Class<?> controller, String methodName) throws Exception {
@@ -148,5 +160,33 @@ public class TestUtils {
             accountEdits.accept(mockAccount);
             return null;
         }).when(mockAccountDao).editAccount(any(), any(), any());
+    }
+    
+    public static String randomName(Class<?> clazz) {
+        return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+    }
+    
+    public static final StudyParticipant getStudyParticipant(Class<?> clazz) {
+        String randomName = TestUtils.randomName(clazz);
+        return new StudyParticipant.Builder()
+                .withFirstName("FirstName")
+                .withLastName("LastName")
+                .withExternalId("externalId")
+                .withEmail("bridge-testing+"+randomName+"@sagebase.org")
+                .withPassword("password")
+                .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+                .withNotifyByEmail(true)
+                .withDataGroups(Sets.newHashSet("group1"))
+                .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
+                .withLanguages(ImmutableList.of("fr")).build();
+    }
+    
+    private static boolean includesPath(String[] paths, String path) {
+        for (String onePath : paths) {
+            if (onePath.equals(path)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
