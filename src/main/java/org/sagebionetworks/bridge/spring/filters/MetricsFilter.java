@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -54,5 +55,15 @@ public class MetricsFilter implements Filter {
     private String header(HttpServletRequest request, String name, String defaultVal) {
         final String value = request.getHeader(name);
         return (value != null) ? value : defaultVal;
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) {
+        // no-op
+    }
+
+    @Override
+    public void destroy() {
+        // no-op
     }
 }

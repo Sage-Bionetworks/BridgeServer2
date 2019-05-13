@@ -75,7 +75,7 @@ public class ActivityEventControllerTest extends Mockito {
     }
     
     @Test
-    public void annotatedCorrectly() throws Exception {
+    public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ActivityEventController.class);
         assertCreate(ActivityEventController.class, "createCustomActivityEvent");
         assertGet(ActivityEventController.class, "getSelfActivityEvents");        

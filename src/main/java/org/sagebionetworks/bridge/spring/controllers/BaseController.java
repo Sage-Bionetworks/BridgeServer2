@@ -3,7 +3,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
+import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
@@ -36,7 +40,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.WebUtils;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
@@ -237,12 +240,7 @@ public abstract class BaseController {
             // Not sure why this is 
             Cookie sessionCookie = WebUtils.getCookie(request(), SESSION_TOKEN_HEADER);
             if (sessionCookie != null && StringUtils.isNotBlank(sessionCookie.getValue())) {
-                Cookie cookie = new Cookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionCookie.getValue());
-                cookie.setMaxAge(BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-                cookie.setPath("/");
-                cookie.setDomain(bridgeConfig.get("domain"));
-                cookie.setHttpOnly(false);
-                cookie.setSecure(false);
+                Cookie cookie = makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response().addCookie(cookie);
                 return sessionCookie.getValue();
             }
@@ -308,7 +306,7 @@ public abstract class BaseController {
         }
 
         // if no Accept-Language header detected, we shall add an extra warning header
-        addWarningMessage(BridgeConstants.WARN_NO_ACCEPT_LANGUAGE);
+        addWarningMessage(WARN_NO_ACCEPT_LANGUAGE);
         return ImmutableList.of();
     }
     
@@ -319,7 +317,7 @@ public abstract class BaseController {
         // if the user agent cannot be parsed (probably due to missing user agent string or unrecognizable user agent),
         // should set an extra header to http response as warning - we should have an user agent info for filtering to work
         if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
-            addWarningMessage(BridgeConstants.WARN_NO_USER_AGENT);
+            addWarningMessage(WARN_NO_USER_AGENT);
         }
         LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);    
         return info;
@@ -412,12 +410,7 @@ public abstract class BaseController {
         // only set cookie in local environment
         if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
             String sessionToken = session.getSessionToken();
-            Cookie cookie = new Cookie(BridgeConstants.SESSION_TOKEN_HEADER, sessionToken);
-            cookie.setMaxAge(BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-            cookie.setPath("/");
-            cookie.setDomain(bridgeConfig.get("domain"));
-            cookie.setHttpOnly(false);
-            cookie.setSecure(false);
+            Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
             response().addCookie(cookie);
         }
     }
@@ -447,11 +440,11 @@ public abstract class BaseController {
      * @param msg
      */
     void addWarningMessage(String msg) {
-        if (response().getHeaderNames().contains(BridgeConstants.BRIDGE_API_STATUS_HEADER)) {
-            String previousWarning = response().getHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER);
-            response().setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);
+        if (response().getHeaderNames().contains(BRIDGE_API_STATUS_HEADER)) {
+            String previousWarning = response().getHeader(BRIDGE_API_STATUS_HEADER);
+            response().setHeader(BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);
         } else {
-            response().setHeader(BridgeConstants.BRIDGE_API_STATUS_HEADER, msg);
+            response().setHeader(BRIDGE_API_STATUS_HEADER, msg);
         }
     }
     
