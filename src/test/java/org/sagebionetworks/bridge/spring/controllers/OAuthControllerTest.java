@@ -100,7 +100,7 @@ public class OAuthControllerTest extends Mockito {
     }
     
     @Test
-    public void verifyMocks() throws Exception {
+    public void verifyAnnotations() throws Exception {
         assertCrossOrigin(OAuthController.class);
         assertPost(OAuthController.class, "requestAccessToken");
         assertGet(OAuthController.class, "getHealthCodesGrantingAccess");
