@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.PARTICIPANT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
@@ -388,7 +389,8 @@ public class ParticipantReportControllerTest extends Mockito {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':['A','B','C']}");
         mockRequestBody(mockRequest, json);
         try {
-            controller.saveParticipantReportForWorker(REPORT_ID);    
+            controller.saveParticipantReportForWorker(REPORT_ID);
+            fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals(e.getMessage(), "A health code is required to save report data.");
             verifyNoMoreInteractions(mockReportService);
