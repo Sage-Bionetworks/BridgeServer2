@@ -19,7 +19,6 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -45,7 +44,6 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
-import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -79,6 +77,8 @@ public class TestUtils {
     }
     
     public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
+        // BridgeObjectMapper is required to avoid errors from missing filters on objects with 
+        // the @JsonFilter annotation.
         String json = BridgeObjectMapper.get().writeValueAsString(object);
         ServletInputStream stream = new CustomServletInputStream(json);
         when(mockRequest.getInputStream()).thenReturn(stream);
