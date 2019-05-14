@@ -35,8 +35,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -155,18 +155,6 @@ public class TestUtils {
         }).when(mockAccountDao).editAccount(any(), any(), any());
     }
     
-    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
-        ServletInputStream stream = new CustomServletInputStream(json);
-        when(mockRequest.getInputStream()).thenReturn(stream);
-    }
-    
-    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
-        // Use BridgeObjectMapper or you will get an error when serializing objects with a filter 
-        String json = BridgeObjectMapper.get().writeValueAsString(object);
-        ServletInputStream stream = new CustomServletInputStream(json);
-        when(mockRequest.getInputStream()).thenReturn(stream);
-    }
-    
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
         // I don't know of a one line test for this... maybe just comparing ISO string formats of the date.
         assertTrue(date1.isEqual(date2));
@@ -174,6 +162,18 @@ public class TestUtils {
         assertEquals(date1.getZone().getOffset(date1), date2.getZone().getOffset(date2));
     }
     
+    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }
+
+    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
+        // Use BridgeObjectMapper or you will get an error when serializing objects with a filter 
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }    
+
     public static String randomName(Class<?> clazz) {
         return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
     }
