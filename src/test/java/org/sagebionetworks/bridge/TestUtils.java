@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -24,9 +28,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.mockito.Mockito;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -122,7 +124,7 @@ public class TestUtils {
     public static void assertCreate(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
-        assertEquals(status.code(), HttpStatus.CREATED);        
+        assertEquals(status.code(), CREATED);        
     }
     
     /**
@@ -131,19 +133,7 @@ public class TestUtils {
     public static void assertAccept(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
         ResponseStatus status = assertMethodAnn(controller, methodName, ResponseStatus.class);
-        assertEquals(status.code(), HttpStatus.ACCEPTED);        
-    }
-    
-    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
-        ServletInputStream stream = new CustomServletInputStream(json);
-        when(mockRequest.getInputStream()).thenReturn(stream);
-    }
-    
-    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
-        // Use BridgeObjectMapper or you will get an error when serializing objects with a filter 
-        String json = BridgeObjectMapper.get().writeValueAsString(object);
-        ServletInputStream stream = new CustomServletInputStream(json);
-        when(mockRequest.getInputStream()).thenReturn(stream);
+        assertEquals(status.code(), ACCEPTED);        
     }
     
     /**
@@ -156,13 +146,25 @@ public class TestUtils {
      */
     @SuppressWarnings("unchecked")
     public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
-        Mockito.mockingDetails(mockAccountDao).isMock();
-        Mockito.mockingDetails(mockAccount).isMock();
+        mockingDetails(mockAccountDao).isMock();
+        mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgumentAt(2, Consumer.class);
+            Consumer<Account> accountEdits = invocation.getArgumentAt(2, Consumer.class);
             accountEdits.accept(mockAccount);
             return null;
-        }).when(mockAccountDao).editAccount(Mockito.any(), Mockito.any(), Mockito.any());
+        }).when(mockAccountDao).editAccount(any(), any(), any());
+    }
+    
+    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }
+    
+    public static void mockRequestBody(HttpServletRequest mockRequest, Object object) throws Exception {
+        // Use BridgeObjectMapper or you will get an error when serializing objects with a filter 
+        String json = BridgeObjectMapper.get().writeValueAsString(object);
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
     }
     
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
