@@ -1,9 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -31,12 +34,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -70,6 +75,12 @@ public class HealthDataControllerTest extends Mockito {
         STUDY = Study.create();
         STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
     }
+    
+    private static final HealthDataRecord.ExporterStatus TEST_STATUS = HealthDataRecord.ExporterStatus.SUCCEEDED;
+    private static final String TEST_STATUS_JSON = "{\n" +
+            "   \"recordIds\":[\"record-to-update\"],\n" +
+            "   \"synapseExporterStatus\":\"SUCCEEDED\"\n" +
+            "}";
 
     @InjectMocks
     @Spy
@@ -139,6 +150,7 @@ public class HealthDataControllerTest extends Mockito {
         assertGet(HealthDataController.class, "getRecordsByCreatedOn");
         assertCreate(HealthDataController.class, "submitHealthData");
         assertCreate(HealthDataController.class, "submitHealthDataForParticipant");
+        assertPost(HealthDataController.class, "updateRecordsStatus");
     }
     
     @Test
@@ -276,5 +288,31 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate metrics
         verify(mockMetrics).setRecordId(TEST_RECORD_ID);
+    }
+    
+    @Test
+    public void updateRecordsStatus() throws Exception {
+        // mock request JSON
+        mockRequestBody(mockRequest, TEST_STATUS_JSON);
+
+        when(mockHealthDataService.updateRecordsWithExporterStatus(any())).thenReturn(ImmutableList.of(TEST_RECORD_ID));
+
+        // create a mock request entity
+        RecordExportStatusRequest mockRequest = new RecordExportStatusRequest();
+        mockRequest.setRecordIds(ImmutableList.of(TEST_RECORD_ID));
+        mockRequest.setSynapseExporterStatus(TEST_STATUS);
+
+        // execute and validate
+        StatusMessage result = controller.updateRecordsStatus();
+        assertEquals(result.getMessage(),
+                "Update exporter status to: " + ImmutableList.of(TEST_RECORD_ID) + " complete.");
+
+        // first verify if it calls the service
+        verify(mockHealthDataService).updateRecordsWithExporterStatus(any());
+        // then verify if it parse json correctly as a request entity
+        verify(mockHealthDataService).updateRecordsWithExporterStatus(requestArgumentCaptor.capture());
+        RecordExportStatusRequest capturedRequest = requestArgumentCaptor.getValue();
+        assertEquals(TEST_RECORD_ID, capturedRequest.getRecordIds().get(0));
+        assertEquals(TEST_STATUS, capturedRequest.getSynapseExporterStatus());
     }
 }

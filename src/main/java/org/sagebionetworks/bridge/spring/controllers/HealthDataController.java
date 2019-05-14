@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,10 +24,12 @@ import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
+import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -126,8 +129,8 @@ public class HealthDataController extends BaseController {
         return HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(savedRecord);
     }
 
-    // Not mapped in the BridgePF routes file.
-    /* public StatusMessage updateRecordsStatus() {
+    @PostMapping({"/v3/recordexportstatuses", "/v3/recordExportStatuses"})
+    public StatusMessage updateRecordsStatus() {
         getAuthenticatedSession(WORKER);
 
         RecordExportStatusRequest recordExportStatusRequest = parseJson(RecordExportStatusRequest.class);
@@ -135,5 +138,5 @@ public class HealthDataController extends BaseController {
         List<String> updatedRecordIds = healthDataService.updateRecordsWithExporterStatus(recordExportStatusRequest);
 
         return new StatusMessage("Update exporter status to: " + updatedRecordIds + " complete.");
-    }*/
+    }
 }
