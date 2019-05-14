@@ -73,9 +73,9 @@ public class SchedulePlanControllerTest extends Mockito {
     HttpServletResponse mockResponse;
     
     @Captor
-    private ArgumentCaptor<SchedulePlan> schedulePlanCaptor;
+    ArgumentCaptor<SchedulePlan> schedulePlanCaptor;
     
-    private Study study;
+    Study study;
     
     @BeforeMethod
     public void before() {

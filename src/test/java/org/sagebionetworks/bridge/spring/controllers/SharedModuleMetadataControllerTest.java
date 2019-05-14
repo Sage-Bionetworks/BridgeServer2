@@ -2,6 +2,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.SharedModuleMetadataController.DELETED_MSG;
 import static org.testng.Assert.assertEquals;
@@ -75,6 +80,19 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(SharedModuleMetadataController.class);
+        assertCreate(SharedModuleMetadataController.class, "createMetadata");
+        assertDelete(SharedModuleMetadataController.class, "deleteMetadataByIdAllVersions");
+        assertDelete(SharedModuleMetadataController.class, "deleteMetadataByIdAndVersion");
+        assertGet(SharedModuleMetadataController.class, "getMetadataByIdAndVersion");
+        assertGet(SharedModuleMetadataController.class, "getMetadataByIdLatestVersion");
+        assertGet(SharedModuleMetadataController.class, "queryAllMetadata");
+        assertGet(SharedModuleMetadataController.class, "queryMetadataById");
+        assertPost(SharedModuleMetadataController.class, "updateMetadata");
+    }
+    
     @Test
     public void create() throws Exception {
         // mock service
