@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import javax.servlet.ReadListener;
@@ -19,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -34,10 +36,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
+import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 public class TestUtils {
 
@@ -198,5 +207,63 @@ public class TestUtils {
             }
         }
         return false;
+    }
+    
+    public static DynamoStudy getValidStudy(Class<?> clazz) {
+        String id = TestUtils.randomName(clazz);
+        
+        Map<String,String> pushNotificationARNs = Maps.newHashMap();
+        pushNotificationARNs.put(OperatingSystem.IOS, "arn:ios:"+id);
+        pushNotificationARNs.put(OperatingSystem.ANDROID, "arn:android:"+id);
+        
+        // This study will save without further modification.
+        DynamoStudy study = new DynamoStudy();
+        study.setName("Test Study ["+clazz.getSimpleName()+"]");
+        study.setShortName("ShortName");
+        study.setAutoVerificationEmailSuppressed(true);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        study.setStudyIdExcludedInExport(true);
+        study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
+        study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));
+        study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${url}", MimeType.TEXT));
+        study.setAccountExistsTemplate(new EmailTemplate("accountExists subject", "body with ${resetPasswordUrl}", MimeType.TEXT));
+        study.setSignedConsentTemplate(new EmailTemplate("signedConsent subject", "body", MimeType.TEXT));
+        study.setAppInstallLinkTemplate(new EmailTemplate("app install subject", "body ${appInstallUrl}", MimeType.TEXT));
+        study.setResetPasswordSmsTemplate(new SmsTemplate("resetPasswordSmsTemplate ${resetPasswordUrl}"));
+        study.setPhoneSignInSmsTemplate(new SmsTemplate("phoneSignInSmsTemplate ${token}"));
+        study.setAppInstallLinkSmsTemplate(new SmsTemplate("appInstallLinkSmsTemplate ${appInstallUrl}"));
+        study.setVerifyPhoneSmsTemplate(new SmsTemplate("verifyPhoneSmsTemplate ${token}"));
+        study.setAccountExistsSmsTemplate(new SmsTemplate("accountExistsSmsTemplate ${token}"));
+        study.setSignedConsentSmsTemplate(new SmsTemplate("signedConsent ${consentUrl}"));
+        study.setIdentifier(id);
+        study.setMinAgeOfConsent(18);
+        study.setSponsorName("The Council on Test Studies");
+        study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        study.setConsentNotificationEmailVerified(true);
+        study.setSynapseDataAccessTeamId(1234L);
+        study.setSynapseProjectId("test-synapse-project-id");
+        study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
+        study.setUsesCustomExportSchedule(true);
+        study.setSupportEmail("bridge-testing+support@sagebase.org");
+        study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
+        study.setActivityEventKeys(Sets.newHashSet("event1", "event2"));
+        study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
+        study.setStrictUploadValidationEnabled(true);
+        study.setHealthCodeExportEnabled(true);
+        study.setEmailVerificationEnabled(true);
+        study.setExternalIdValidationEnabled(true);
+        study.setReauthenticationEnabled(true);
+        study.setEmailSignInEnabled(true);
+        study.setPhoneSignInEnabled(true);
+        study.setVerifyChannelOnSignInEnabled(true);
+        study.setExternalIdRequiredOnSignup(true);
+        study.setActive(true);
+        study.setDisableExport(false);
+        study.setAccountLimit(0);
+        study.setPushNotificationARNs(pushNotificationARNs);
+        study.setAutoVerificationPhoneSuppressed(true);
+        return study;
     }
 }

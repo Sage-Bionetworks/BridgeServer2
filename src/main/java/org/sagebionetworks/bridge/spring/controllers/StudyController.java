@@ -1,0 +1,295 @@
+package org.sagebionetworks.bridge.spring.controllers;
+
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
+
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.CmsPublicKey;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
+import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.EmailVerificationService;
+import org.sagebionetworks.bridge.services.EmailVerificationStatus;
+import org.sagebionetworks.bridge.services.StudyEmailType;
+import org.sagebionetworks.bridge.services.UploadCertificateService;
+import org.sagebionetworks.bridge.services.UploadService;
+
+@CrossOrigin
+@RestController
+public class StudyController extends BaseController {
+
+    static final StatusMessage CONSENT_EMAIL_VERIFIED_MSG = new StatusMessage("Consent notification email address verified.");
+
+    static final StatusMessage RESEND_EMAIL_MSG = new StatusMessage("Resending verification email for consent notification email.");
+
+    static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
+
+    private final Comparator<Study> STUDY_COMPARATOR = new Comparator<Study>() {
+        public int compare(Study study1, Study study2) {
+            return study1.getName().compareToIgnoreCase(study2.getName());
+        }
+    };
+
+    private final Set<String> studyWhitelist = Collections
+            .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
+
+    private UploadCertificateService uploadCertificateService;
+
+    private EmailVerificationService emailVerificationService;
+
+    private UploadService uploadService;
+
+    @Autowired
+    final void setUploadCertificateService(UploadCertificateService uploadCertificateService) {
+        this.uploadCertificateService = uploadCertificateService;
+    }
+
+    @Autowired
+    final void setEmailVerificationService(EmailVerificationService emailVerificationService) {
+        this.emailVerificationService = emailVerificationService;
+    }
+
+    @Autowired
+    final void setUploadService(UploadService uploadService) {
+        this.uploadService = uploadService;
+    }
+
+    @GetMapping("/v3/studies/self")
+    public Study getCurrentStudy() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        
+        return studyService.getStudy(session.getStudyIdentifier());
+    }
+    
+    @PostMapping("/v3/studies/self")
+    public VersionHolder updateStudyForDeveloper() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyIdentifier studyId = session.getStudyIdentifier();
+
+        Study studyUpdate = parseJson(Study.class);
+        studyUpdate.setIdentifier(studyId.getIdentifier());
+        studyUpdate = studyService.updateStudy(studyUpdate, false);
+        return new VersionHolder(studyUpdate.getVersion());
+    }
+
+    @PostMapping("/v3/studies/{identifier}")
+    public VersionHolder updateStudy(@PathVariable String identifier) throws Exception {
+        getAuthenticatedSession(ADMIN);
+
+        Study studyUpdate = parseJson(Study.class);
+        studyUpdate.setIdentifier(identifier);
+        studyUpdate = studyService.updateStudy(studyUpdate, true);
+        return new VersionHolder(studyUpdate.getVersion());
+    }
+
+    @GetMapping("/v3/studies/{identifier}")
+    public Study getStudy(@PathVariable String identifier) throws Exception {
+        getAuthenticatedSession(ADMIN, WORKER);
+
+        // since only admin and worker can call this method, we need to return all studies including deactivated ones
+        return studyService.getStudy(identifier, true);
+    }
+
+    // You can get a truncated view of studies with either format=summary or summary=true;
+    // the latter allows us to make this a boolean flag in the Java client libraries.
+    
+    @GetMapping("/v3/studies")
+    public String getAllStudies(@RequestParam(required = false) String format,
+            @RequestParam(required = false) String summary) throws Exception {
+        List<Study> studies = studyService.getStudies();
+        if ("summary".equals(format) || "true".equals(summary)) {
+            // then only return active study as summary
+            List<Study> activeStudiesSummary = studies.stream()
+                    .filter(s -> s.isActive()).collect(Collectors.toList());
+            Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
+            ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
+                    .withRequestParam("summary", true);
+            return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
+        }
+        getAuthenticatedSession(ADMIN);
+
+        // otherwise, return all studies including deactivated ones
+        return BridgeObjectMapper.get().writeValueAsString(
+                new ResourceList<>(studies).withRequestParam("summary", false));
+    }
+
+    @PostMapping("/v3/studies")
+    @ResponseStatus(HttpStatus.CREATED)
+    public VersionHolder createStudy() throws Exception {
+        getAuthenticatedSession(ADMIN);
+
+        Study study = parseJson(Study.class);
+        study = studyService.createStudy(study);
+        return new VersionHolder(study.getVersion());
+    }
+
+    @PostMapping("/v3/studies/init")
+    @ResponseStatus(HttpStatus.CREATED)
+    public VersionHolder createStudyAndUsers() throws Exception {
+        getAuthenticatedSession(ADMIN);
+
+        StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
+        Study study = studyService.createStudyAndUsers(studyAndUsers);
+
+        return new VersionHolder(study.getVersion());
+    }
+
+    @PostMapping("/v3/studies/self/synapseProject")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SynapseProjectIdTeamIdHolder createSynapse() throws Exception {
+        // first get current study
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        // then create project and team and grant admin permission to current user and exporter
+        List<String> userIds = Arrays.asList(parseJson(String[].class));
+        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), study);
+
+        return new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId());
+    }
+
+    // since only admin can delete study, no need to check if return results should contain deactivated ones
+    @DeleteMapping("/v3/studies/{identifier}")
+    public StatusMessage deleteStudy(@PathVariable String identifier,
+            @RequestParam(defaultValue = "false") boolean physical) throws Exception {
+        getAuthenticatedSession(ADMIN);
+        if (studyWhitelist.contains(identifier)) {
+            throw new UnauthorizedException(identifier + " is protected by whitelist.");
+        }
+        studyService.deleteStudy(identifier, Boolean.valueOf(physical));
+
+        return DELETED_MSG;
+    }
+
+    @GetMapping("/v3/studies/self/publicKey")
+    public CmsPublicKey getStudyPublicKeyAsPem() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+
+        String pem = uploadCertificateService.getPublicKeyAsPem(session.getStudyIdentifier());
+
+        return new CmsPublicKey(pem);
+    }
+
+    @GetMapping("/v3/studies/self/emailStatus")
+    public EmailVerificationStatusHolder getEmailStatus() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
+        return new EmailVerificationStatusHolder(status);
+    }
+
+    /** Resends the verification email for the current study's email. */
+    @PostMapping("/v3/studies/self/emails/resendVerify")
+    public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        StudyEmailType parsedType = parseEmailType(type);
+        studyService.sendVerifyEmail(session.getStudyIdentifier(), parsedType);
+        return RESEND_EMAIL_MSG;
+    }
+
+    /**
+     * Verifies the emails for the study. Since this comes in from an email with a token, you don't need to be
+     * authenticated. The token itself knows what study this is for.
+     */
+    @PostMapping("/v3/studies/{identifier}/emails/verify")
+    public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
+            @RequestParam(required = false) String type) {
+        StudyEmailType parsedType = parseEmailType(type);
+        studyService.verifyEmail(new StudyIdentifierImpl(identifier), token, parsedType);
+        return CONSENT_EMAIL_VERIFIED_MSG;
+    }
+
+    // Helper method to parse and validate the email type for study email verification workflow. We do verification
+    // here so that the service can just deal with a clean enum.
+    private static StudyEmailType parseEmailType(String typeStr) {
+        if (StringUtils.isBlank(typeStr)) {
+            throw new BadRequestException("Email type must be specified");
+        }
+
+        try {
+            return StudyEmailType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Unrecognized type \"" + typeStr + "\"");
+        }
+    }
+
+    @PostMapping("/v3/studies/self/verifyEmail")
+    public EmailVerificationStatusHolder verifySenderEmail() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+
+        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
+        return new EmailVerificationStatusHolder(status);
+    }
+
+    @GetMapping("/v3/studies/self/uploads")
+    public ForwardCursorPagedResourceList<UploadView> getUploads(@RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime, @RequestParam(required = false) Integer pageSize,
+            @RequestParam(required = false) String offsetKey) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+
+        DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
+        DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
+
+        return uploadService.getStudyUploads(session.getStudyIdentifier(), startTimeObj, endTimeObj, pageSize,
+                offsetKey);
+    }
+
+    /**
+     * Another version of getUploads for workers to specify any study ID to get uploads
+     */
+    @GetMapping("/v3/studies/{identifier}/uploads")
+    public ForwardCursorPagedResourceList<UploadView> getUploadsForStudy(@PathVariable String identifier,
+            @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey)
+            throws EntityNotFoundException {
+        getAuthenticatedSession(WORKER);
+
+        DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
+        DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
+
+        StudyIdentifier studyId = new StudyIdentifierImpl(identifier);
+
+        return uploadService.getStudyUploads(studyId, startTimeObj, endTimeObj, pageSize, offsetKey);
+    }
+}
