@@ -19,7 +19,7 @@ public class SharedModuleController extends BaseController {
 
     /** Shared Module Service, configured by Spring. */
     @Autowired
-    void setModuleService(SharedModuleService moduleService) {
+    final void setModuleService(SharedModuleService moduleService) {
         this.moduleService = moduleService;
     }
 
