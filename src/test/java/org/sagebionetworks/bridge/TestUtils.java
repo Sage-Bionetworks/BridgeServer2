@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.Period;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,11 +37,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleType;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 public class TestUtils {
 
@@ -196,6 +205,27 @@ public class TestUtils {
                 .withLanguages(ImmutableList.of("fr")).build();
     }
     
+    public static SchedulePlan getSimpleSchedulePlan(StudyIdentifier studyId) {
+        Schedule schedule = new Schedule();
+        schedule.setScheduleType(ScheduleType.RECURRING);
+        schedule.setCronTrigger("0 0 8 ? * TUE *");
+        schedule.addActivity(new Activity.Builder().withGuid(BridgeUtils.generateGuid()).withLabel("Do task CCC")
+                .withTask("CCC").build());
+        schedule.setExpires(Period.parse("PT1H"));
+        schedule.setLabel("Test label for the user");
+        
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        
+        DynamoSchedulePlan plan = new DynamoSchedulePlan();
+        plan.setLabel("Simple Test Plan");
+        plan.setGuid("GGG");
+        plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStrategy(strategy);
+        return plan;
+    }
+
     private static boolean includesPath(String[] paths, String path) {
         for (String onePath : paths) {
             if (onePath.equals(path)) {
