@@ -84,6 +84,11 @@ public class TestUtils {
         when(mockRequest.getInputStream()).thenReturn(stream);
     }
     
+    public static void mockRequestBody(HttpServletRequest mockRequest, String json) throws Exception {
+        ServletInputStream stream = new CustomServletInputStream(json);
+        when(mockRequest.getInputStream()).thenReturn(stream);
+    }
+    
     public static String createJson(String json, Object... args) {
         return String.format(json.replaceAll("'", "\""), args);
     }
