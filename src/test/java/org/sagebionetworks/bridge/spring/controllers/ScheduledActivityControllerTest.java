@@ -21,6 +21,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -67,6 +68,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -215,6 +217,10 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         verify(mockAccount).setTimeZone(MSK);
         verify(sessionUpdateService).updateTimeZone(session, MSK);
+        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        assertEquals(contextCaptor.getValue().getInitialTimeZone(), MSK);
+        assertEquals(contextCaptor.getValue().getStartsOn().getZone(), MSK);
+        assertEquals(contextCaptor.getValue().getEndsOn().getZone(), MSK);
     }
     
     @SuppressWarnings("deprecation")
@@ -246,6 +252,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
+        mockEditAccount(mockAccountDao, mockAccount);
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         List<ScheduledActivity> list = ImmutableList.of();
         when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
@@ -273,8 +280,14 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(requestInfo.getStudyIdentifier(), TEST_STUDY);
-        
+        assertNotNull(requestInfo.getActivitiesAccessedOn());
+        assertEquals(requestInfo.getUserAgent(), USER_AGENT);
+        assertEquals(requestInfo.getClientInfo(), CLIENT_INFO);
         verify(sessionUpdateService).updateTimeZone(session, MSK);
+        // Verify that the account mock was updated with the anticipated time zone (however 
+        // it's a mock as is sessionUpdateService, so this doesn't change RequestInfo, as it's
+        // based on changes to the session.
+        verify(mockAccount).setTimeZone(MSK);
     }
 
     @SuppressWarnings("deprecation")
@@ -487,6 +500,8 @@ public class ScheduledActivityControllerTest extends Mockito {
         DateTimeZone zone = DateTimeZone.forOffsetHours(4);
         DateTime startsOn = DateTime.now(zone).minusMinutes(1);
         DateTime endsOn = DateTime.now(zone).plusDays(7);
+
+        mockEditAccount(mockAccountDao, mockAccount);
         
         String result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
         
@@ -497,6 +512,8 @@ public class ScheduledActivityControllerTest extends Mockito {
         verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
         verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockScheduledActivityService).getScheduledActivitiesV4(eq(STUDY), contextCaptor.capture());
+        verify(controller).persistTimeZone(session, zone);
+        verify(mockAccount).setTimeZone(zone);
         
         assertEquals(startsOn.getZone(), timeZoneCaptor.getValue());
         
@@ -510,7 +527,6 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
         assertNull(requestInfo.getSignedInOn());
         assertEquals(requestInfo.getStudyIdentifier(), TEST_STUDY);
-        verify(controller).persistTimeZone(session, zone);
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), startsOn.getZone());

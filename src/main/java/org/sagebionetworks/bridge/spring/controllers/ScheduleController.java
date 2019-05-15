@@ -34,7 +34,7 @@ public class ScheduleController extends BaseController {
     private SchedulePlanService schedulePlanService;
     
     @Autowired
-    public void setSchedulePlanService(SchedulePlanService schedulePlanService) {
+    final void setSchedulePlanService(SchedulePlanService schedulePlanService) {
         this.schedulePlanService = schedulePlanService;
     }
     
