@@ -21,7 +21,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -68,7 +67,6 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -280,9 +278,10 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(requestInfo.getStudyIdentifier(), TEST_STUDY);
-        assertNotNull(requestInfo.getActivitiesAccessedOn());
         assertEquals(requestInfo.getUserAgent(), USER_AGENT);
         assertEquals(requestInfo.getClientInfo(), CLIENT_INFO);
+        assertNotNull(requestInfo.getActivitiesAccessedOn());
+        assertEquals(requestInfo.getActivitiesAccessedOn().getZone(), MSK);
         verify(sessionUpdateService).updateTimeZone(session, MSK);
         // Verify that the account mock was updated with the anticipated time zone (however 
         // it's a mock as is sessionUpdateService, so this doesn't change RequestInfo, as it's

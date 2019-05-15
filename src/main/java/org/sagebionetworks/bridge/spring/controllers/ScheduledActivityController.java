@@ -55,7 +55,7 @@ public class ScheduledActivityController extends BaseController {
     private ScheduledActivityService scheduledActivityService;
 
     @Autowired
-    void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
+    final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
     
@@ -232,7 +232,7 @@ public class ScheduledActivityController extends BaseController {
         if (initialTimeZone == null) {
             initialTimeZone = persistTimeZone(session, requestTimeZone);
         }
-        
+
         builder.withStartsOn(startsOn);
         builder.withEndsOn(endsOn);
         builder.withInitialTimeZone(initialTimeZone);
@@ -248,8 +248,9 @@ public class ScheduledActivityController extends BaseController {
         
         ScheduleContext context = builder.build();
         
-        RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withActivitiesAccessedOn(DateUtils.getCurrentDateTime().withZone(requestTimeZone)).build();
+        RequestInfo requestInfo = getRequestInfoBuilder(session).withTimeZone(requestTimeZone)
+                .withActivitiesAccessedOn(DateUtils.getCurrentDateTime()).build();
+        
         cacheProvider.updateRequestInfo(requestInfo);
         
         return context;
