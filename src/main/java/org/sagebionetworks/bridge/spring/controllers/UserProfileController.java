@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -43,7 +43,7 @@ public class UserProfileController extends BaseController {
     private static final String USERNAME_FIELD = "username";
     private static final String TYPE_FIELD = "type";
     private static final String TYPE_VALUE = "UserProfile";
-    private static final Set<String> DATA_GROUPS_SET = Sets.newHashSet("dataGroups");
+    private static final Set<String> DATA_GROUPS_SET = ImmutableSet.of("dataGroups");
 
     private ParticipantService participantService;
     
