@@ -88,9 +88,6 @@ public class TestConstants {
     
     public static final Withdrawal WITHDRAWAL = new Withdrawal("reasons");
     
-    public static final Activity ACTIVITY_1 = new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")
-            .withPublishedSurvey("identifier1", "AAA").build();
-
     public static final AndroidAppLink ANDROID_APP_LINK = new AndroidAppLink("namespace", "package_name",
             Lists.newArrayList("sha256_cert_fingerprints"));
     public static final AndroidAppLink ANDROID_APP_LINK_2 = new AndroidAppLink("namespace2", "package_name2",
@@ -107,4 +104,13 @@ public class TestConstants {
             Lists.newArrayList("/appId3/", "/appId3/*"));
     public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
             Lists.newArrayList("/appId4/", "/appId4/*"));
+    
+    public static final Activity ACTIVITY_1 = new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")
+            .withPublishedSurvey("identifier1", "AAA").build();
+    
+    public static final Activity ACTIVITY_2 = new Activity.Builder().withGuid("activity2guid").withLabel("Activity2")
+                .withPublishedSurvey("identifier2", "BBB").build();
+    
+    public static final Activity ACTIVITY_3 = new Activity.Builder().withLabel("Activity3").withGuid("AAA")
+            .withTask("tapTest").build();
 }

@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge;
 
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
@@ -15,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -22,12 +21,16 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.mockito.Mockito;
+import com.google.common.collect.Maps;
+
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
@@ -40,24 +43,25 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.Schedule;
+import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
+import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class TestUtils {
@@ -157,25 +161,6 @@ public class TestUtils {
         assertEquals(status.code(), ACCEPTED);        
     }
     
-    /**
-     * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and 
-     * that your mock account was correctly edited.
-     * @param mockAccountDao
-     *      A mocked version of the AccountDao interface
-     * @param mockAccount
-     *      A mocked version of the Account interface
-     */
-    @SuppressWarnings("unchecked")
-    public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
-        mockingDetails(mockAccountDao).isMock();
-        mockingDetails(mockAccount).isMock();
-        doAnswer(invocation -> {
-            Consumer<Account> accountEdits = invocation.getArgumentAt(2, Consumer.class);
-            accountEdits.accept(mockAccount);
-            return null;
-        }).when(mockAccountDao).editAccount(any(), any(), any());
-    }
-    
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
         // I don't know of a one line test for this... maybe just comparing ISO string formats of the date.
         assertTrue(date1.isEqual(date2));
@@ -214,6 +199,71 @@ public class TestUtils {
                 .withLanguages(ImmutableList.of("fr")).build();
     }
     
+    public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {
+        List<SchedulePlan> plans = Lists.newArrayListWithCapacity(3);
+        
+        SchedulePlan plan = new DynamoSchedulePlan();
+        plan.setGuid("DDD");
+        plan.setStrategy(getStrategy("P3D", TestConstants.ACTIVITY_1));
+        plan.setStudyKey(studyId.getIdentifier());
+        plans.add(plan);
+        
+        plan = new DynamoSchedulePlan();
+        plan.setGuid("BBB");
+        plan.setStrategy(getStrategy("P1D", TestConstants.ACTIVITY_2));
+        plan.setStudyKey(studyId.getIdentifier());
+        plans.add(plan);
+        
+        plan = new DynamoSchedulePlan();
+        plan.setGuid("CCC");
+        plan.setStrategy(getStrategy("P2D", TestConstants.ACTIVITY_3));
+        plan.setStudyKey(studyId.getIdentifier());
+        plans.add(plan);
+
+        return plans;
+    }
+    
+    public static ScheduleStrategy getStrategy(String interval, Activity activity) {
+        Schedule schedule = new Schedule();
+        schedule.setLabel("Schedule " + activity.getLabel());
+        schedule.setInterval(interval);
+        schedule.setDelay("P1D");
+        schedule.addTimes("13:00");
+        schedule.setExpires("PT10H");
+        schedule.addActivity(activity);
+        SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
+        strategy.setSchedule(schedule);
+        return strategy;
+    }
+
+    /**
+     * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and 
+     * that your mock account was correctly edited.
+     * @param mockAccountDao
+     *      A mocked version of the AccountDao interface
+     * @param mockAccount
+     *      A mocked version of the Account interface
+     */
+    @SuppressWarnings("unchecked")
+    public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
+        Mockito.mockingDetails(mockAccountDao).isMock();
+        Mockito.mockingDetails(mockAccount).isMock();
+        doAnswer(invocation -> {
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgumentAt(2, Consumer.class);
+            accountEdits.accept(mockAccount);
+            return null;
+        }).when(mockAccountDao).editAccount(Mockito.any(), Mockito.any(), Mockito.any());
+    }
+    
+    public static JsonNode getClientData() {
+        try {
+            String json = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testString','intValue':4}");
+            return BridgeObjectMapper.get().readTree(json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static SchedulePlan getSimpleSchedulePlan(StudyIdentifier studyId) {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
