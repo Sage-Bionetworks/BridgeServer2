@@ -8,7 +8,6 @@ import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ExportService;
