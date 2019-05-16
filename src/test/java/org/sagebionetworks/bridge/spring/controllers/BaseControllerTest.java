@@ -815,7 +815,7 @@ public class BaseControllerTest extends Mockito {
     public void canGetLanguagesWhenInHeader() throws Exception {
         Account account = Account.create();
         doAnswer(invocation -> {
-            Consumer<Account> consumer = invocation.getArgumentAt(2, Consumer.class);
+            Consumer<Account> consumer = invocation.getArgument(2);
             consumer.accept(account);
             return null;
         }).when(mockAccountDao).editAccount(any(), any(), any());
