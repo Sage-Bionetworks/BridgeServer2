@@ -410,16 +410,17 @@ public class SurveyControllerTest extends Mockito {
         verifyNoMoreInteractions(mockSurveyService);
     }
 
+    @Test
     public void physicalDeleteAllowedForAdmin() throws Exception {
         setupContext(TEST_STUDY, UNCONSENTED, ADMIN);
-        when(controller.getAuthenticatedSession(ADMIN)).thenReturn(session);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(TEST_STUDY, KEYS, true, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_STUDY, KEYS, false, false)).thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), true);
         assertEquals(result, SurveyController.DELETED_MSG);
         
-        verify(mockSurveyService).getSurvey(TEST_STUDY, KEYS, true, true);
+        verify(mockSurveyService).getSurvey(TEST_STUDY, KEYS, false, false);
         verify(mockSurveyService).deleteSurveyPermanently(TEST_STUDY, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
@@ -571,6 +572,11 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void updateSurveyInvalidatesCache() throws Exception {
         assertCacheIsCleared((guid, dateString) -> controller.updateSurvey(guid, dateString));
+    }
+    
+    @Test
+    public void publishSurveyInvalidatesCache() throws Exception {
+        assertCacheIsCleared((guid, dateString) -> controller.publishSurvey(guid, dateString, false));
     }
     
     @FunctionalInterface
