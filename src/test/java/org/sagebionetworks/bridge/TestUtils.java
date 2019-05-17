@@ -152,7 +152,6 @@ public class TestUtils {
     
     public static void assertPost(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
-        
     }
 
     public static void assertDelete(Class<?> controller, String methodName) throws Exception {
