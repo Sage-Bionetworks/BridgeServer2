@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -132,7 +133,7 @@ public class StudyController extends BaseController {
     // You can get a truncated view of studies with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     
-    @GetMapping("/v3/studies")
+    @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllStudies(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary) throws Exception {
         List<Study> studies = studyService.getStudies();

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,7 +38,7 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** Creates a compound activity definition. */
-    @PostMapping("/v3/compoundactivitydefinitions")
+    @PostMapping(path="/v3/compoundactivitydefinitions", produces={APPLICATION_JSON_UTF8_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public String createCompoundActivityDefinition() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -58,7 +59,7 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** List all compound activity definitions in a study. */
-    @GetMapping("/v3/compoundactivitydefinitions")
+    @GetMapping(path="/v3/compoundactivitydefinitions", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllCompoundActivityDefinitionsInStudy() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
@@ -69,7 +70,7 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** Get a compound activity definition by ID. */
-    @GetMapping("/v3/compoundactivitydefinitions/{taskId}")
+    @GetMapping(path="/v3/compoundactivitydefinitions/{taskId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getCompoundActivityDefinition(@PathVariable String taskId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
@@ -79,7 +80,7 @@ public class CompoundActivityDefinitionController extends BaseController {
     }
 
     /** Update a compound activity definition. */
-    @PostMapping("/v3/compoundactivitydefinitions/{taskId}")
+    @PostMapping(path="/v3/compoundactivitydefinitions/{taskId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String updateCompoundActivityDefinition(@PathVariable String taskId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 

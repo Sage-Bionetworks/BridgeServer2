@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,7 +52,7 @@ public class AppConfigController extends BaseController {
         this.viewCache = viewCache;
     }
 
-    @GetMapping("/v3/studies/{studyId}/appconfig")
+    @GetMapping(path="/v3/studies/{studyId}/appconfig", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getStudyAppConfig(@PathVariable String studyId) {
         Study study = studyService.getStudy(studyId);
         

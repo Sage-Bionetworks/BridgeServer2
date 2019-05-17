@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -46,7 +48,7 @@ public class ScheduleController extends BaseController {
     }
     
     @Deprecated
-    @GetMapping("/v3/schedules")
+    @GetMapping(path="/v3/schedules", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSchedulesV3() throws Exception {
         List<Schedule> schedules = getSchedulesInternal();
         

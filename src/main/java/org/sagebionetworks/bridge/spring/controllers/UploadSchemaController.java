@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.upload.UploadSchema.PUBLIC_SCHEMA_WRITER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,7 +50,7 @@ public class UploadSchemaController extends BaseController {
      *
      * @return Play result, with the created schema
      */
-    @PostMapping("/v4/uploadschemas")
+    @PostMapping(path="/v4/uploadschemas", produces={APPLICATION_JSON_UTF8_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public String createSchemaRevisionV4() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -67,7 +68,7 @@ public class UploadSchemaController extends BaseController {
      *
      * @return Play result, with the created or updated schema in JSON format
      */
-    @PostMapping("/v3/uploadschemas")
+    @PostMapping(path="/v3/uploadschemas", produces={APPLICATION_JSON_UTF8_VALUE})
     public String createOrUpdateUploadSchema() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -112,7 +113,7 @@ public class UploadSchemaController extends BaseController {
      *         schema ID to fetch
      * @return Play result with the fetched schema in JSON format
      */
-    @GetMapping("/v3/uploadschemas/{schemaId}/recent")
+    @GetMapping(path="/v3/uploadschemas/{schemaId}/recent", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUploadSchema(@PathVariable String schemaId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -130,7 +131,7 @@ public class UploadSchemaController extends BaseController {
      *         "true" if logically deleted items should be included in results, they are excluded otherwise
      * @return Play result with an array of all revisions of the fetched schema in JSON format
      */
-    @GetMapping("/v3/uploadschemas/{schemaId}")
+    @GetMapping(path="/v3/uploadschemas/{schemaId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUploadSchemaAllRevisions(@PathVariable String schemaId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -152,7 +153,7 @@ public class UploadSchemaController extends BaseController {
      *         revision number of the schema to fetch, must be positive
      * @return Play result with the fetched schema in JSON format
      */
-    @GetMapping("/v3/uploadschemas/{schemaId}/revisions/{revision}")
+    @GetMapping(path="/v3/uploadschemas/{schemaId}/revisions/{revision}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUploadSchemaByIdAndRev(@PathVariable String schemaId, @PathVariable int revision)
             throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
@@ -186,7 +187,7 @@ public class UploadSchemaController extends BaseController {
      * 
      * @return Play result with list of schemas for this study
      */
-    @GetMapping("/v3/uploadschemas")
+    @GetMapping(path="/v3/uploadschemas", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUploadSchemasForStudy(@RequestParam(defaultValue = "false") boolean includeDeleted)
             throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
@@ -207,7 +208,7 @@ public class UploadSchemaController extends BaseController {
      *         schema revision to update
      * @return Play result, with the updated schema
      */
-    @PostMapping("/v4/uploadschemas/{schemaId}/revisions/{revision}")
+    @PostMapping(path="/v4/uploadschemas/{schemaId}/revisions/{revision}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String updateSchemaRevisionV4(@PathVariable String schemaId, @PathVariable int revision)
             throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
