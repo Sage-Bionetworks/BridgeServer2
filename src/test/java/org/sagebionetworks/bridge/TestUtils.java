@@ -249,7 +249,7 @@ public class TestUtils {
         Mockito.mockingDetails(mockAccountDao).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgumentAt(2, Consumer.class);
+            Consumer<Account> accountEdits = invocation.getArgument(2);
             accountEdits.accept(mockAccount);
             return null;
         }).when(mockAccountDao).editAccount(Mockito.any(), Mockito.any(), Mockito.any());
