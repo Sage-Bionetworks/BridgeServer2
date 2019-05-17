@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>BridgeServerLogic</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.4</version>
             <exclusions>
                 <!--
                     BridgeServerLogic depends on flying-saucer-pdf which depends on itext. For some reason, itext
