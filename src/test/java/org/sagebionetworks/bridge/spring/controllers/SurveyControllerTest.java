@@ -115,15 +115,15 @@ public class SurveyControllerTest extends Mockito {
         when(mockCacheProvider.getObject(any(), eq(String.class))).thenAnswer(new Answer<String>() {
             @Override
             public String answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
+                CacheKey key = invocation.getArgument(0);
                 return cacheMap.get(key);
             }
         });
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
-                String value = invocation.getArgumentAt(1, String.class);
+                CacheKey key = invocation.getArgument(0);
+                String value = invocation.getArgument(1);
                 cacheMap.put(key, value);
                 return null;
             }
@@ -131,7 +131,7 @@ public class SurveyControllerTest extends Mockito {
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                CacheKey key = invocation.getArgumentAt(0, CacheKey.class);
+                CacheKey key = invocation.getArgument(0);
                 cacheMap.remove(key);
                 return null;
             }
