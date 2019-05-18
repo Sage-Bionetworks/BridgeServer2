@@ -35,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -112,12 +113,26 @@ public class TestUtils {
             if (method.getName().equals(methodName)) {
                 A ann = AnnotationUtils.findAnnotation(method, annClazz);
                 assertNotNull(ann);
+                // If this is a rest controller and the method returns a String, then it 
+                // should be annotated with a produces property that sets the mime type to 
+                // JSON. Otherwise it won't return JSON unless the client sends the correct
+                // Accept header, and we don't want content negotiation.
+                RestController restAnn = controller.getDeclaredAnnotation(RestController.class);
+                if (restAnn != null && method.getReturnType() == String.class) {
+                    if (annClazz == GetMapping.class) {
+                        GetMapping gm = (GetMapping)ann;
+                        assertEquals(gm.produces()[0], MediaType.APPLICATION_JSON_UTF8_VALUE);
+                    } else if (annClazz == PostMapping.class) {
+                        PostMapping pm = (PostMapping)ann;
+                        assertEquals(pm.produces()[0], MediaType.APPLICATION_JSON_UTF8_VALUE);
+                    }
+                }
                 return ann;
             }
         }
         fail("Did not find method: " + methodName);
         return null;
-    }    
+    }
     
     public static void assertCrossOrigin(Class<?> controller) {
         Annotation ann = AnnotationUtils.findAnnotation(controller, CrossOrigin.class);

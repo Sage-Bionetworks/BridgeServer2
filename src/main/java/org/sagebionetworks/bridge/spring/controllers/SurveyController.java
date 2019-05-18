@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
 
@@ -100,14 +101,14 @@ public class SurveyController extends BaseController {
         return new ResourceList<>(surveyList);
     }
 
-    @GetMapping("/api/v2/surveys/{surveyGuid}/revisions/published")
+    @GetMapping(path="/api/v2/surveys/{surveyGuid}/revisions/published", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurveyMostRecentlyPublishedVersionForUser(@PathVariable String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session);
     }
 
-    @GetMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}")
+    @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/{createdOn}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) throws Exception {
         UserSession session = getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         if (session.isInRole(WORKER)) {
@@ -140,14 +141,14 @@ public class SurveyController extends BaseController {
         return surveyService.getSurvey(null, keys, true, true);
     }
 
-    @GetMapping("/api/v2/surveys/{surveyGuid}/revisions/{createdOn}")
+    @GetMapping(path="/api/v2/surveys/{surveyGuid}/revisions/{createdOn}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurveyForUser(@PathVariable String surveyGuid, @PathVariable String createdOn) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         return getCachedSurveyInternal(surveyGuid, createdOn, session);
     }
 
-    @GetMapping("/v3/surveys/{surveyGuid}/revisions/recent")
+    @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/recent", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurveyMostRecentVersion(@PathVariable String surveyGuid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
@@ -159,7 +160,7 @@ public class SurveyController extends BaseController {
         });
     }
 
-    @GetMapping("/v3/surveys/{surveyGuid}/revisions/published")
+    @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/published", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurveyMostRecentlyPublishedVersion(@PathVariable String surveyGuid) throws Exception {
         UserSession session = getSessionEitherConsentedOrInRole(DEVELOPER);
 

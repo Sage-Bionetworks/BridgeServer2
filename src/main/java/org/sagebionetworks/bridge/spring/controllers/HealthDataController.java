@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.io.IOException;
 import java.util.List;
@@ -59,7 +60,7 @@ public class HealthDataController extends BaseController {
     }
 
     /** Gets a list of records for the given healthCode between the specified createdOn times (inclusive). */
-    @GetMapping("/v3/healthdata")
+    @GetMapping(path="/v3/healthdata", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getRecordsByCreatedOn(@RequestParam(required = false) String createdOnStart,
             @RequestParam(required = false) String createdOnEnd) throws IOException {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -80,7 +81,7 @@ public class HealthDataController extends BaseController {
      * upload API. This is most beneficial for small data sets, like simple surveys. This API returns the health data
      * record produced from this submission, which includes the record ID.
      */
-    @PostMapping("/v3/healthdata")
+    @PostMapping(path="/v3/healthdata", produces={APPLICATION_JSON_UTF8_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public String submitHealthData() throws IOException, UploadValidationException {
         // Submit health data.
@@ -105,7 +106,7 @@ public class HealthDataController extends BaseController {
     }
 
     /** Allows a developer to submit health data on behalf of the participant. This is generally used for backfills. */
-    @PostMapping("/v3/participants/{userId}/healthdata")
+    @PostMapping(path="/v3/participants/{userId}/healthdata", produces={APPLICATION_JSON_UTF8_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     public String submitHealthDataForParticipant(@PathVariable String userId) throws IOException, UploadValidationException {
         UserSession session = getAuthenticatedSession(DEVELOPER);

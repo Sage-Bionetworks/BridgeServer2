@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -43,7 +45,8 @@ public class ConsentController extends BaseController {
     }
 
     @Deprecated
-    @GetMapping({"/v3/consents/signature", "/api/v2/consent", "/api/v1/consent"})
+    @GetMapping(path = { "/v3/consents/signature", "/api/v2/consent", "/api/v1/consent" }, produces = {
+            APPLICATION_JSON_UTF8_VALUE })
     public String getConsentSignature() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         return getConsentSignatureV2(session.getStudyIdentifier().getIdentifier());
@@ -104,7 +107,7 @@ public class ConsentController extends BaseController {
 
     // V2: consent to a specific subpopulation
     
-    @GetMapping("/v3/subpopulations/{guid}/consents/signature")
+    @GetMapping(path="/v3/subpopulations/{guid}/consents/signature", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getConsentSignatureV2(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());

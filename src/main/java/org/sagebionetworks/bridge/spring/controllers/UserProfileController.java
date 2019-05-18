@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -59,7 +61,7 @@ public class UserProfileController extends BaseController {
     }
 
     @Deprecated
-    @GetMapping({"/v3/users/self", "/api/v1/profile"})
+    @GetMapping(path={"/v3/users/self", "/api/v1/profile"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUserProfile() throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());

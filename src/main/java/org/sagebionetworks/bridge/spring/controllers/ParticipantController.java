@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class ParticipantController extends BaseController {
         return new StatusMessage("SMS notification registration created");
     }
 
-    @GetMapping("/v3/participants/self")
+    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -163,7 +164,8 @@ public class ParticipantController extends BaseController {
         return new ResourceList<>(participantService.getActivityEvents(study, userId));
     }
     
-    @GetMapping("/v3/studies/{studyId}/participants/{userId}/activities/{activityType}/{referentGuid}")
+    @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/activities/{activityType}/{referentGuid}", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
     public String getActivityHistoryForWorkerV3(@PathVariable String studyId, @PathVariable String userId,
             @PathVariable String activityType, @PathVariable String referentGuid,
             @RequestParam(required = false) String scheduledOnStart,
@@ -260,7 +262,7 @@ public class ParticipantController extends BaseController {
         return participantService.createParticipant(study, participant, true);
     }
 
-    @GetMapping("/v3/participants/{userId}")
+    @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
@@ -274,7 +276,7 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping("/v3/studies/{studyId}/participants/{userId}")
+    @GetMapping(path="/v3/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipantForWorker(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
@@ -350,7 +352,7 @@ public class ParticipantController extends BaseController {
             scheduledOnEnd, offsetBy, offsetKey, pageSize);
     }
 
-    @GetMapping("/v3/participants/{userId}/activities/{activityType}/{referentGuid}")
+    @GetMapping(path="/v3/participants/{userId}/activities/{activityType}/{referentGuid}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getActivityHistoryV3(@PathVariable String userId, @PathVariable String activityType,
             @PathVariable String referentGuid, @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
