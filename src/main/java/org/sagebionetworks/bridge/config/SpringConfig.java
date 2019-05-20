@@ -33,6 +33,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -262,6 +263,11 @@ public class SpringConfig {
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
         return new AWSSecurityTokenServiceClient(s3UploadCredentials);
+    }
+
+    @Bean(name = "md5DigestUtils")
+    public DigestUtils md5DigestUtils() {
+        return new DigestUtils(DigestUtils.getMd5Digest());
     }
 
     @Bean(name = "s3CmsHelper")
