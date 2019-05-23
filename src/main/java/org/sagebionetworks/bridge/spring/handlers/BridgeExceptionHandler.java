@@ -54,7 +54,7 @@ public class BridgeExceptionHandler {
         LOG.error(msg, throwable);
     }
 
-    private ResponseEntity<String> getResult(Throwable throwable) throws JsonProcessingException {
+    ResponseEntity<String> getResult(Throwable throwable) throws JsonProcessingException {
         // Consent exceptions return a session payload (you are signed in),
         // but a 412 error status code.
         if (throwable instanceof ConsentRequiredException) {
