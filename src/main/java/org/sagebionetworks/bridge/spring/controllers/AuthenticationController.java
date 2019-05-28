@@ -237,9 +237,8 @@ public class AuthenticationController extends BaseController {
         return new StatusMessage("Email address verified.");
     }
 
-    @PostMapping({"/v3/auth/resendEmailVerification resendEmailVerification", 
-        "/api/v1/auth/resendEmailVerification resendEmailVerification"})
-    public StatusMessage resendEmailVerification() throws Exception {
+    @PostMapping({"/v3/auth/resendEmailVerification", "/api/v1/auth/resendEmailVerification"})
+    public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
         getStudyOrThrowException(accountId.getUnguardedAccountId().getStudyId());
         
