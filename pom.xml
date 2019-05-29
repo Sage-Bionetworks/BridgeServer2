@@ -146,7 +146,13 @@
             <artifactId>javassist</artifactId>
             <version>3.18.2-GA</version>
             <scope>test</scope>
-        </dependency>        
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.1.7.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
