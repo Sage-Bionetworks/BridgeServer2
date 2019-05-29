@@ -150,6 +150,11 @@ public class TestUtils {
         }
     }
     
+    public static void assertContentType(Class<?> controller, String methodName, String contentType) throws Exception {
+        GetMapping ann = assertMethodAnn(controller, methodName, GetMapping.class);
+        assertEquals(contentType, ann.produces()[0]);
+    }
+    
     public static void assertPost(Class<?> controller, String methodName) throws Exception {
         assertMethodAnn(controller, methodName, PostMapping.class);
     }

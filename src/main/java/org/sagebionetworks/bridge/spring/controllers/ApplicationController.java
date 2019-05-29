@@ -38,6 +38,8 @@ import org.sagebionetworks.bridge.services.UrlShortenerService;
 @CrossOrigin
 @Controller("applicationController")
 public class ApplicationController extends BaseController {
+    static final String ROBOTS_TXT_CONTENT = "# robotstxt.org\n\nUser-agent: *\n";
+
     @SuppressWarnings("serial")
     private static final class AndroidAppLinkList extends ArrayList<AndroidAppSiteAssociation> {};
 
@@ -62,7 +64,7 @@ public class ApplicationController extends BaseController {
     
     @GetMapping(path="/robots.txt", produces = "text/plain")
     public ResponseEntity<String> getRobots(Model model) {
-        return ResponseEntity.ok("# robotstxt.org\n\nUser-agent: *\n");
+        return ResponseEntity.ok(ROBOTS_TXT_CONTENT);
     }
     
     @GetMapping({"/", "/index.html"})

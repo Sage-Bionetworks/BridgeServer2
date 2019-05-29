@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestUtils.assertContentType;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.PASSWORD_DESCRIPTION;
+import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.ROBOTS_TXT_CONTENT;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.STUDY_ID;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.STUDY_NAME;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.SUPPORT_EMAIL;
@@ -82,7 +84,16 @@ public class ApplicationControllerTest extends Mockito {
     }
     
     @Test
+    public void robotsFile() {
+        ResponseEntity<String> response = controller.getRobots(model);
+        assertEquals(response.getStatusCodeValue(), 200);
+        assertEquals(response.getBody(), ROBOTS_TXT_CONTENT);
+    }
+    
+    @Test
     public void verifyAnnotations() throws Exception {
+        assertGet(ApplicationController.class, "getRobots", "/robots.txt");
+        assertContentType(ApplicationController.class, "getRobots", "text/plain");
         assertGet(ApplicationController.class, "loadApp", "/", "/index.html");
         assertGet(ApplicationController.class, "verifyStudyEmail", "/vse", "/mobile/verifyStudyEmail.html");
         assertGet(ApplicationController.class, "verifyEmail", "/ve", "/mobile/verifyEmail.html");
