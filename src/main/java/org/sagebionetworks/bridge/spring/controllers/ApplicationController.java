@@ -60,6 +60,11 @@ public class ApplicationController extends BaseController {
         this.urlShortenerService = urlShortenerService;
     }
     
+    @GetMapping(path="/robots.txt", produces = "text/plain")
+    public ResponseEntity<String> getRobots(Model model) {
+        return ResponseEntity.ok("# robotstxt.org\n\nUser-agent: *\n");
+    }
+    
     @GetMapping({"/", "/index.html"})
     public String loadApp(Model model) throws Exception {
         return "index";
