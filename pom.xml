@@ -202,10 +202,12 @@
                         <!-- config is inherently not testable -->
                         <exclude>org/sagebionetworks/bridge/config/*</exclude>
 
+                        <!-- no point in testing exceptions, since they are entirely boilerplate code -->
+                        <exclude>org/sagebionetworks/bridge/exceptions/*</exclude>
+
                         <!-- Test controllers don't need tests -->
                         <exclude>org/sagebionetworks/bridge/spring/controllers/EchoController*</exclude>
-                        <exclude>org/sagebionetworks/bridge/spring/controllers/ErrorController*</exclude>
-                        
+
                         <!-- Tests don't need coverage tests -->
                         <exclude>**/*Test</exclude>
                     </excludes>
