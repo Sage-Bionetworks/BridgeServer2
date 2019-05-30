@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertEquals;
 
 import org.mockito.Mockito;
@@ -33,6 +35,13 @@ public class SharedModuleControllerTest extends Mockito {
         UserSession mockSession = new UserSession();
         mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
+    }
+
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(SharedModuleController.class);
+        assertPost(SharedModuleController.class, "importModuleByIdAndVersion");
+        assertPost(SharedModuleController.class, "importModuleByIdLatestPublishedVersion");
     }
 
     @Test

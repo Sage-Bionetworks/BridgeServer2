@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -24,7 +26,9 @@ public class SharedModuleController extends BaseController {
     }
 
     /** Imports a specific module version into the current study. */
-    public SharedModuleImportStatus importModuleByIdAndVersion(String moduleId, int moduleVersion) {
+    @PostMapping("/v3/sharedmodules/{moduleId}/versions/{moduleVersion}/import")
+    public SharedModuleImportStatus importModuleByIdAndVersion(@PathVariable String moduleId,
+            @PathVariable int moduleVersion) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -32,7 +36,8 @@ public class SharedModuleController extends BaseController {
     }
 
     /** Imports the latest published version of a module into the current study. */
-    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String moduleId) {
+    @PostMapping("/v3/sharedmodules/{moduleId}/import")
+    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(@PathVariable String moduleId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
