@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>BridgeServerLogic</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.11</version>
             <exclusions>
                 <!--
                     BridgeServerLogic depends on flying-saucer-pdf which depends on itext. For some reason, itext
@@ -146,7 +146,13 @@
             <artifactId>javassist</artifactId>
             <version>3.18.2-GA</version>
             <scope>test</scope>
-        </dependency>        
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.1.7.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -196,10 +202,12 @@
                         <!-- config is inherently not testable -->
                         <exclude>org/sagebionetworks/bridge/config/*</exclude>
 
+                        <!-- no point in testing exceptions, since they are entirely boilerplate code -->
+                        <exclude>org/sagebionetworks/bridge/exceptions/*</exclude>
+
                         <!-- Test controllers don't need tests -->
                         <exclude>org/sagebionetworks/bridge/spring/controllers/EchoController*</exclude>
-                        <exclude>org/sagebionetworks/bridge/spring/controllers/ErrorController*</exclude>
-                        
+
                         <!-- Tests don't need coverage tests -->
                         <exclude>**/*Test</exclude>
                     </excludes>
