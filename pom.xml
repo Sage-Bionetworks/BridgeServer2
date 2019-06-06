@@ -55,7 +55,7 @@
             <artifactId>bridge-base</artifactId>
             <version>2.7.18</version>
         </dependency>
-        <!--
+        <!-- keeping this here until we resolve what to do about the exclusions
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>BridgeServerLogic</artifactId>
