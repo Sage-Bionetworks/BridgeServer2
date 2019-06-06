@@ -10,11 +10,14 @@
 
     <properties>
         <apache.http.version>4.5.6</apache.http.version>
-        <jackson.version>2.9.8</jackson.version>
+        <aws.version>1.11.198</aws.version>
+        <hibernate.version>5.2.9.Final</hibernate.version>
+        <jackson.version>2.9.9</jackson.version>
         <java.version>1.8</java.version>
         <logback.version>1.2.3</logback.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
+        <spring.version>4.3.18.RELEASE</spring.version>
 
         <!-- Elastic Beanstalk instances are currently on 8.5.32. -->
         <tomcat.version>8.5.32</tomcat.version>
@@ -52,16 +55,17 @@
             <artifactId>bridge-base</artifactId>
             <version>2.7.18</version>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>BridgeServerLogic</artifactId>
             <version>1.0.11</version>
             <exclusions>
-                <!--
+                <comment>
                     BridgeServerLogic depends on flying-saucer-pdf which depends on itext. For some reason, itext
                     declares dependencies on two different bcprov-jdk14 packages, which don't interfere with each
                     other, but interfere with bcprov-jdk15on (which we get from bridge-base). We need to exclude both.
-                 -->
+                 </comment>
                 <exclusion>
                     <groupId>bouncycastle</groupId>
                     <artifactId>bcmail-jdk14</artifactId>
@@ -84,6 +88,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -113,6 +118,127 @@
             <artifactId>newrelic-agent</artifactId>
             <version>4.8.0</version>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-dynamodb</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ses</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sqs</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sts</artifactId>
+            <version>${aws.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>8.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.12</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+        <dependency>
+            <!-- Needed to resolve dependency conflicts for Hibernate -->
+            <groupId>dom4j</groupId>
+            <artifactId>dom4j</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.8.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.quartz-scheduler</groupId>
+            <artifactId>quartz</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sagebionetworks</groupId>
+            <artifactId>synapseJavaClient</artifactId>
+            <version>206.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-pdf</artifactId>
+            <version>9.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>2.7.2</version>
         </dependency>
 
         <dependency>
@@ -153,6 +279,43 @@
             <version>5.1.7.RELEASE</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>nl.jqno.equalsverifier</groupId>
+            <artifactId>equalsverifier</artifactId>
+            <version>1.7.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.sagebionetworks</groupId>
+            <artifactId>BridgeTestUtils</artifactId>
+            <version>1.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.41</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.6.1</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-c3p0</artifactId>
+            <version>${hibernate.version}</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -160,6 +323,11 @@
             <id>org-sagebridge-repo-maven-releases</id>
             <name>org-sagebridge-repo-maven-releases</name>
             <url>https://repo-maven.sagebridge.org/</url>
+        </repository>
+        <repository>
+            <id>sagebionetworks-libs-releases-local</id>
+            <name>sagebionetworks-libs-releases-local</name>
+            <url>http://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local</url>
         </repository>
     </repositories>
 
@@ -178,6 +346,7 @@
                     </webResources>
                 </configuration>
             </plugin>
+<!--
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
@@ -193,6 +362,7 @@
                     </execution>
                 </executions>
             </plugin>
+-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
