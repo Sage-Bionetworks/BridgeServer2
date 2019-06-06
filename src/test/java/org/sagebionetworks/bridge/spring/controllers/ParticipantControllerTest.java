@@ -621,10 +621,9 @@ public class ParticipantControllerTest extends Mockito {
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class)).withId(USER_ID)
-                .withLanguages(LANGUAGES).withRoles(ImmutableSet.of(DEVELOPER)) // <-- should not be
-                                                                                                    // passed along
+                .withLanguages(LANGUAGES).withRoles(ImmutableSet.of(DEVELOPER)) // <-- should not be passed along
                 .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
-                .withHealthCode("healthCode").build();
+                .withHealthCode(HEALTH_CODE).build();
         session.setParticipant(participant);
 
         doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);

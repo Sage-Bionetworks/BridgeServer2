@@ -344,7 +344,7 @@ public class BaseControllerTest extends Mockito {
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         when(mockRequest.getHeader(ACCEPT_LANGUAGE))
-                .thenReturn("de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
+                .thenReturn("fr-fr;q=0.4,fr;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         controller.getLanguages(session);
         
@@ -821,7 +821,7 @@ public class BaseControllerTest extends Mockito {
         }).when(mockAccountDao).editAccount(any(), any(), any());
         
         // Set up mocks.
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,de");
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,fr");
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withLanguages(ImmutableList.of()).build());
         session.setSessionToken(SESSION_TOKEN);

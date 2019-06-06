@@ -4,11 +4,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 /** Interceptor for HTTPS forwarding. */
 @Component
-public class HttpsForwardingInterceptor implements HandlerInterceptor {
+public class HttpsForwardingInterceptor extends HandlerInterceptorAdapter {
     // Package-scoped for unit tests.
     static final String HEADER_LOCATION = "Location";
     static final String HEADER_X_FORWARDED_PROTO = "X-Forwarded-Proto";
