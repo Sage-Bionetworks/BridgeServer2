@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static java.nio.charset.Charset.defaultCharset;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -51,7 +53,7 @@ public enum PasswordAlgorithm {
             Mac hmacSha256 = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKey = new SecretKeySpec(salt, "HmacSHA256");
             hmacSha256.init(secretKey);
-            return Base64.encodeBase64String(hmacSha256.doFinal(plaintext.getBytes()));
+            return Base64.encodeBase64String(hmacSha256.doFinal(plaintext.getBytes(defaultCharset())));
         }
     },
 

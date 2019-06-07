@@ -50,7 +50,10 @@ public class BulkDownloadUtil {
         // this script in Vagrant.
         File tmpDir = new File("tmp");
         if (!tmpDir.exists()) {
-            tmpDir.mkdir();
+            boolean succeeded = tmpDir.mkdir();
+            if (!succeeded) {
+                throw new RuntimeException("Could not create tmp directory");
+            }
         }
 
         System.out.println(String.format("Downloading %s files for S3 keys (%s)", s3KeyArr.length,

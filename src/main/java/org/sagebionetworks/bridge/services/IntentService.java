@@ -20,6 +20,9 @@ import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.validators.IntentToParticipateValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -180,6 +183,7 @@ public class IntentService {
         return consentsUpdated;
     }
     
+    @SuppressFBWarnings("NP_NONNULL_PARAM_VIOLATION")
     protected String getInstallLink(String osName, Map<String,String> installLinks) {
         String installLink = installLinks.get(osName);
         // OS name wasn't submitted or it's wrong, use the universal link
@@ -188,6 +192,7 @@ public class IntentService {
         }
         // Don't have a link named "Universal" so just find ANYTHING
         if (installLink == null && !installLinks.isEmpty()) {
+            // second argument to getFirst is @Nullable 
             installLink = Iterables.getFirst(installLinks.values(), null);
         }
         return installLink;

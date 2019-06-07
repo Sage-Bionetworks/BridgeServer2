@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeUtils.SEMICOLON_SPACE_JOINER;
 
 import java.util.List;
@@ -141,8 +142,8 @@ public class NotificationsService {
                 // Can only create SMS registration for the user's own phone number, and only if it's verified.
                 StudyParticipant participant = participantService.getParticipant(study, context.getUserId(),
                         false);
-                if (participant.getPhoneVerified() != Boolean.TRUE ||
-                        !participant.getPhone().getNumber().equals(registration.getEndpoint())) {
+                if (!TRUE.equals(participant.getPhoneVerified()) ||
+                    !participant.getPhone().getNumber().equals(registration.getEndpoint())) {
                     throw new BadRequestException("Can only register notifications for your own verified phone number");
                 }
             }

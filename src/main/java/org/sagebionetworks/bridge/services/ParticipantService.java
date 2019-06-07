@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
@@ -193,7 +194,7 @@ public class ParticipantService {
 
         // Account must have a verified phone number.
         Account account = getAccountThrowingException(AccountId.forId(study.getIdentifier(), userId));
-        if (account.getPhoneVerified() != Boolean.TRUE) {
+        if (!TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no verified phone number");
         }
@@ -218,7 +219,7 @@ public class ParticipantService {
 
         // Participant must be consented.
         StudyParticipant participant = getParticipant(study, account, true);
-        if (participant.isConsented() != Boolean.TRUE) {
+        if (!TRUE.equals(participant.isConsented())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user is not consented");
         }
@@ -489,8 +490,13 @@ public class ParticipantService {
                 externalIdService, substudyService, study, false);
         Validate.entityThrowingException(validator, participant);
         
-        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
+        // FindBugs: Null passed for non-null parameter of BridgeUtils.collectExternalIds(Account).
+        // In actuality this will not happen (an exception will be thrown first).
+        if (account == null) {
+            return;
+        }
         Set<String> allExternalIds = BridgeUtils.collectExternalIds(account);
+        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         
         // Legacy behavior: a user can add an external ID to their account on an update, we refer to 
         // this as a "simple add." A researcher can assign an external ID to any user if it has not yet 
@@ -767,7 +773,7 @@ public class ParticipantService {
             throw new BadRequestException("Message is required");
         }
         Account account = getAccountThrowingException(study, userId);
-        if (account.getPhone() == null || account.getPhoneVerified() != Boolean.TRUE) {
+        if (account.getPhone() == null || !TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Account does not have a verified phone number");
         }
         Map<String,String> variables = BridgeUtils.studyTemplateVariables(study);

@@ -278,7 +278,7 @@ public class NotificationTopicService {
                 isSubscribed = Boolean.FALSE;
             } else if (wantsSubscription && !isCurrentlySubscribed) {
                 isSubscribed = doSubscribe(registration, oneTopic);
-            } else if (!wantsSubscription && isCurrentlySubscribed) {
+            } else /* logically, this is: if (!wantsSubscription && isCurrentlySubscribed) */ {
                 isSubscribed = doUnsubscribe(registration, oneTopic);
             }
             SubscriptionStatus status = new SubscriptionStatus(oneTopic.getGuid(), oneTopic.getName(), isSubscribed);

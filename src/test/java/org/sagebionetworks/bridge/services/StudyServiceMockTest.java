@@ -876,15 +876,9 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deactivateStudyNotFound() {
-        Study study = getTestStudy();
-        study.setActive(false);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(null);
-
+        // Basically, this test doesn't do much because getStudy() will throw ENFE, not return null
+        when(mockStudyDao.getStudy(study.getIdentifier())).thenThrow(new EntityNotFoundException(Study.class));
         service.deleteStudy(study.getIdentifier(), false);
-
-        verify(mockStudyDao, never()).deactivateStudy(anyString());
-        verify(mockStudyDao, never()).deleteStudy(any());
-
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

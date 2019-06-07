@@ -568,6 +568,8 @@ public class AccountWorkflowService {
             cacheKey = CacheKey.emailSignInRequest(signIn); 
         } else if (channelType == PHONE) {
             cacheKey = CacheKey.phoneSignInRequest(signIn);
+        } else {
+            throw new RuntimeException("Invalid channelType: " + channelType);
         }
 
         String token = cacheProvider.getObject(cacheKey, String.class);
