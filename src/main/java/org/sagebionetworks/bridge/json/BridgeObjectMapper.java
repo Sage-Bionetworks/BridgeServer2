@@ -80,7 +80,7 @@ public class BridgeObjectMapper extends ObjectMapper {
     /**
      * Extend this mapper to use the TypeBeanSerializer. 
      */
-    private class TypeModule extends SimpleModule {
+    private static class TypeModule extends SimpleModule {
         public void setupModule(SetupContext context) {
             super.setupModule(context);
             BeanSerializerModifier bsm = new BeanSerializerModifier() {
@@ -104,7 +104,7 @@ public class BridgeObjectMapper extends ObjectMapper {
      * for this annotation.
      *
      */
-    public class TypeBeanSerializer extends BeanSerializer {
+    public static class TypeBeanSerializer extends BeanSerializer {
         public TypeBeanSerializer(BeanSerializerBase src) {
             super(src);
         }

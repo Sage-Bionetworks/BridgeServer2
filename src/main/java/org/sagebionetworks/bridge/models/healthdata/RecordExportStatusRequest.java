@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.healthdata;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -10,8 +9,8 @@ import java.util.List;
  */
 public class RecordExportStatusRequest implements BridgeEntity {
 
-    private @Nonnull List<String> recordIds;
-    private @Nonnull HealthDataRecord.ExporterStatus synapseExporterStatus;
+    private List<String> recordIds;
+    private HealthDataRecord.ExporterStatus synapseExporterStatus;
 
     public List<String> getRecordIds() { return this.recordIds; }
 

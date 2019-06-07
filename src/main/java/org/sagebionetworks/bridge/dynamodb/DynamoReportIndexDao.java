@@ -99,10 +99,6 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     public void updateIndex(ReportIndex index) {
         checkNotNull(index);
         
-        DynamoReportIndex hashKey = new DynamoReportIndex();
-        hashKey.setKey(index.getKey());
-        hashKey.setIdentifier(index.getIdentifier());
-        
         Map<String,ExpectedAttributeValue> map = new ImmutableMap.Builder<String,ExpectedAttributeValue>()
                 .put("key", new ExpectedAttributeValue(new AttributeValue(index.getKey())))
                 .put("identifier", new ExpectedAttributeValue(new AttributeValue(index.getIdentifier()))).build();

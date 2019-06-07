@@ -153,7 +153,7 @@ public class ScheduledActivityService {
             DateTime scheduledOnEnd) {
 
         if (activityType == null) {
-            throw new BadRequestException("Invalid activity type: " + activityType);
+            throw new BadRequestException("Invalid activity type: null");
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);

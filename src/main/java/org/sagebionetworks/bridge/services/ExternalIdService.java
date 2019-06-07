@@ -20,6 +20,9 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -74,6 +77,7 @@ public class ExternalIdService {
         return externalIdDao.getExternalIds(studyId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
+    @SuppressFBWarnings("NP_NONNULL_PARAM_VIOLATION")
     public void createExternalId(ExternalIdentifier externalId, boolean isV3) {
         checkNotNull(externalId);
         
@@ -84,6 +88,7 @@ public class ExternalIdService {
         // is going to generate a validation error
         Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
         if (externalId.getSubstudyId() == null && callerSubstudyIds.size() == 1) {
+            // Second argument to getFirst is @Nullable
             externalId.setSubstudyId( Iterables.getFirst(callerSubstudyIds, null) );
         }
         

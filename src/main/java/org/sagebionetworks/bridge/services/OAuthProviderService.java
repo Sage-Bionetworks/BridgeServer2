@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.Charset.defaultCharset;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -169,7 +170,7 @@ class OAuthProviderService {
     
     protected HttpPost createOAuthProviderPost(OAuthProvider provider) {
         String authHeader = provider.getClientId() + ":" + provider.getSecret();
-        String encodedAuthHeader = "Basic " + Base64.encodeBase64String(authHeader.getBytes());
+        String encodedAuthHeader = "Basic " + Base64.encodeBase64String(authHeader.getBytes(defaultCharset()));
 
         HttpPost client = new HttpPost(provider.getEndpoint());
         client.addHeader(AUTHORIZATION_PROP_NAME, encodedAuthHeader);

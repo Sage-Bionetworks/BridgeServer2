@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
@@ -103,8 +104,8 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         // Avoid updating on every sign in by examining object state first.
-        boolean shouldUpdateEmailVerified = (channelType == EMAIL && account.getEmailVerified() != Boolean.TRUE);
-        boolean shouldUpdatePhoneVerified = (channelType == PHONE && account.getPhoneVerified() != Boolean.TRUE);
+        boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
+        boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
         boolean shouldUpdateStatus = (account.getStatus() == AccountStatus.UNVERIFIED);
         
         if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
