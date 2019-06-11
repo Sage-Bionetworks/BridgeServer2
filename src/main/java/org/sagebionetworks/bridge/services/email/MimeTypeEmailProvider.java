@@ -7,8 +7,6 @@ import javax.mail.MessagingException;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.collect.Iterables;
 
 public abstract class MimeTypeEmailProvider {
@@ -23,10 +21,8 @@ public abstract class MimeTypeEmailProvider {
      * Get the sender email address without any further formatting. For example, if the provider formats the sender
      * email as <code>"Study Name" &lt;email@email.com&gtl</code>, This method returns only <code>email@email.com</code>.
      */
-    @SuppressFBWarnings("NP_NONNULL_PARAM_VIOLATION")
     public String getPlainSenderEmail() {
         Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(getStudy().getSupportEmail());
-        // Second argument to getFirst is @Nullable
         return Iterables.getFirst(senderEmails, null);
     }
     
