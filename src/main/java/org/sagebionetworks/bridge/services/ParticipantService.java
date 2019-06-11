@@ -476,25 +476,14 @@ public class ParticipantService {
     public void updateParticipant(Study study, StudyParticipant participant) {
         checkNotNull(study);
         checkNotNull(participant);
-        
-        Account account = null;
-        if (participant.getId() != null) {
-            // Do not filter substudies because you are going to persist this account.
-            // Only call this if participant has an ID. If it doesn't, it will fail
-            // validation anyway and account will never be referenced.
-            account = getAccountThrowingExceptionIfSubstudyMatches(
-                    AccountId.forId(study.getIdentifier(), participant.getId()));
-        }
-        
+
         StudyParticipantValidator validator = new StudyParticipantValidator(
                 externalIdService, substudyService, study, false);
         Validate.entityThrowingException(validator, participant);
         
-        // FindBugs: Null passed for non-null parameter of BridgeUtils.collectExternalIds(Account).
-        // In actuality this will not happen (an exception will be thrown first).
-        if (account == null) {
-            return;
-        }
+        Account account = getAccountThrowingExceptionIfSubstudyMatches(
+        AccountId.forId(study.getIdentifier(), participant.getId()));
+        
         Set<String> allExternalIds = BridgeUtils.collectExternalIds(account);
         Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         
