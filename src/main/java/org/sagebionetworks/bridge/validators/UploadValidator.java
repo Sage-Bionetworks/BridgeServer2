@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static java.nio.charset.Charset.defaultCharset;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.apache.commons.codec.binary.Base64;
@@ -40,11 +41,12 @@ public class UploadValidator implements Validator {
         final String base64md5 = uploadRequest.getContentMd5();
         if (base64md5 == null || base64md5.isEmpty()) {
             errors.rejectValue("contentMd5", "MD5 must not be empty.");
-        }
-        try {
-            Base64.decodeBase64(base64md5.getBytes());
-        } catch (Exception e) {
-            errors.rejectValue("contentMd5", "MD5 is not base64 encoded.");
+        } else {
+            try {
+                Base64.decodeBase64(base64md5.getBytes(defaultCharset()));
+            } catch (Exception e) {
+                errors.rejectValue("contentMd5", "MD5 is not base64 encoded.");
+            }
         }
     }
 

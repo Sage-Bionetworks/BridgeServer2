@@ -125,7 +125,7 @@ public class Validate {
     private static String errorToString(String name, ObjectError error) {
         if (error.getArguments() != null) {
             String base = (error.getCode() != null) ? error.getCode() : error.getDefaultMessage();
-            String message = String.format(base, error.getArguments());
+            String message = (base == null) ? "" : String.format(base, error.getArguments());
             return message;
         } else if (error.getCode() != null){
             return name + " " + error.getCode();

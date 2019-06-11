@@ -28,7 +28,7 @@ public class DateRangeResourceList<T> extends ResourceList<T> {
         // This is necessary solely to keep current integration tests passing. 
         // The total property is going away on everything except PagedResourceList.
         Integer total = super.getTotal();
-        return (total == null) ? 0 : total;
+        return (total == null) ? Integer.valueOf(0) : total;
     }
     public DateRangeResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);

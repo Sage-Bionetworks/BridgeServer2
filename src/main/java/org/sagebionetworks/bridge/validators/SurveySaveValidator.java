@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
@@ -221,9 +222,9 @@ public class SurveySaveValidator implements Validator {
                             + "' that is not a valid data group: " + COMMA_SPACE_JOINER.join(dataGroups));            
                 }
                 if (afterRuleControlsDisplay(fieldPath, rule)) {
-                    if (rule.getDisplayIf() == Boolean.TRUE) {
+                    if (TRUE.equals(rule.getDisplayIf())) {
                         errors.rejectValue(fieldPath + ".displayIf", "specifies display after screen has been shown");    
-                    } else if (rule.getDisplayUnless() == Boolean.TRUE) {
+                    } else if (TRUE.equals(rule.getDisplayUnless())) {
                         errors.rejectValue(fieldPath + ".displayUnless", "specifies display after screen has been shown");
                     }
                 }
@@ -250,8 +251,8 @@ public class SurveySaveValidator implements Validator {
     }
 
     private boolean afterRuleControlsDisplay(String propertyPath, SurveyRule rule) {
-        return propertyPath.startsWith("afterRules") && 
-            (rule.getDisplayIf() == Boolean.TRUE || rule.getDisplayUnless() == Boolean.TRUE);
+        return propertyPath.startsWith("afterRules")
+                && (TRUE.equals(rule.getDisplayIf()) || TRUE.equals(rule.getDisplayUnless()));
     }
     
     private boolean valueMissingForOperator(SurveyRule rule) {

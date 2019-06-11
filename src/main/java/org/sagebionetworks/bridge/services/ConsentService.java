@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.FALSE;
 import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
 import static org.sagebionetworks.bridge.BridgeConstants.EXPIRATION_PERIOD_KEY;
 import static org.sagebionetworks.bridge.BridgeConstants.SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS;
@@ -358,7 +359,7 @@ public class ConsentService {
             // Withdraw email provider currently doesn't support non-email accounts. Skip.
             return;
         }
-        if (study.isConsentNotificationEmailVerified() == Boolean.FALSE) {
+        if (FALSE.equals(study.isConsentNotificationEmailVerified())) {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }

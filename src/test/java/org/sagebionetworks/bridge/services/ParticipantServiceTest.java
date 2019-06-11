@@ -2617,7 +2617,7 @@ public class ParticipantServiceTest {
         participantService.signUserOut(STUDY, EMAIL, true);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = InvalidEntityException.class)
     public void updateParticipantFiltersSubstudies() {
         mockAccountRetrievalWithSubstudyD();
         BridgeUtils.setRequestContext(new RequestContext.Builder()

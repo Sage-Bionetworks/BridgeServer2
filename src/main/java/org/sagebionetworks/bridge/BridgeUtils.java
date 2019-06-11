@@ -406,9 +406,9 @@ public class BridgeUtils {
     public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
         ImmutableMap.Builder<S, T> builder = new ImmutableMap.Builder<>();
         if (map != null) {
-            for (S key : map.keySet()) {
-                if (map.get(key) != null) {
-                    builder.put(key, map.get(key));
+            for (Map.Entry<S, T> entry : map.entrySet()) {
+                if (entry.getValue() != null) {
+                    builder.put(entry.getKey(), entry.getValue());
                 }
             }
         }

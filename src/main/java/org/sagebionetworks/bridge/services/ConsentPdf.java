@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.Charset.defaultCharset;
 
 import java.util.Map;
 
@@ -155,7 +156,7 @@ public final class ConsentPdf {
         if (StringUtils.isBlank(base64Str)) {
             return false;
         } else {
-            return Base64.isBase64(base64Str.getBytes());
+            return Base64.isBase64(base64Str.getBytes(defaultCharset()));
         }
     }
 

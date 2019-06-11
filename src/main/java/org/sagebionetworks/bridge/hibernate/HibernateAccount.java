@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -417,7 +419,7 @@ public class HibernateAccount implements Account {
 
     /** Has this user consented to receive email from the study administrators? */
     public Boolean getNotifyByEmail() {
-        return (notifyByEmail == null) ? true : notifyByEmail;
+        return (notifyByEmail == null) ? TRUE : notifyByEmail;
     }
 
     /** @see #getNotifyByEmail */

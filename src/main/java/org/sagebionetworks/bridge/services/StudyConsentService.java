@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.Charset.defaultCharset;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -134,7 +135,7 @@ public class StudyConsentService {
         logger.info("Accessing bucket: " + consentsBucket + " with storagePath: " + storagePath);
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            s3Helper.writeBytesToS3(consentsBucket, storagePath, sanitizedContent.getBytes());
+            s3Helper.writeBytesToS3(consentsBucket, storagePath, sanitizedContent.getBytes(defaultCharset()));
             logger.info("Finished writing consent to bucket " + consentsBucket + " storagePath " + storagePath +
                     " (" + sanitizedContent.length() + " chars) in " + stopwatch.elapsed(TimeUnit.MILLISECONDS) +
                     " ms");

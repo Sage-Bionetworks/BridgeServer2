@@ -10,8 +10,8 @@ import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
  * @see https://developer.android.com/training/app-links/verify-site-associations.html
  */
 public final class AndroidAppSiteAssociation {
-    public static final String RELATION = "delegate_permission/common.handle_all_urls";
-    private static final String[] RELATION_LIST = new String[] {RELATION};
+    
+    static final String RELATION = "delegate_permission/common.handle_all_urls";
     
     private final AndroidAppLink target;
     
@@ -19,7 +19,7 @@ public final class AndroidAppSiteAssociation {
         this.target = target;
     }
     public String[] getRelation() {
-        return RELATION_LIST; // this never appears to change.
+        return new String[] {RELATION};
     }
     public AndroidAppLink getTarget() {
         return target;

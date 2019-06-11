@@ -703,12 +703,8 @@ public class StudyService {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
 
-        // Verify the study exists before you do this
         // only admin can call this method, should contain deactivated ones.
         Study existing = getStudy(identifier, true);
-        if (existing == null) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found");
-        }
         
         if (!physical) {
             // deactivate
