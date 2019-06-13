@@ -74,7 +74,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AuthenticationControllerTest extends Mockito {
-    private static final String DOMAIN = "ws-test.sagebridge.org";
+    private static final String DOMAIN = "localhost";
     private static final DateTime NOW = DateTime.now();
     private static final String REAUTH_TOKEN = "reauthToken";
     private static final String TEST_INTERNAL_SESSION_ID = "internal-session-id";

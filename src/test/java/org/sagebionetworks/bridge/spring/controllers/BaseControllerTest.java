@@ -541,7 +541,6 @@ public class BaseControllerTest extends Mockito {
         session.setSessionToken(SESSION_TOKEN);
         session.setStudyIdentifier(TEST_STUDY);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
-        when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
         
         controller.setCookieAndRecordMetrics(session);
         
@@ -554,7 +553,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(cookie.getPath(), "/");
         assertFalse(cookie.isHttpOnly());
         assertFalse(cookie.getSecure());
-        assertEquals(cookie.getDomain(), "domain-value");
+        assertEquals(cookie.getDomain(), "localhost");
         
         verify(controller).writeSessionInfoToMetrics(session);
         verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
@@ -1106,7 +1105,6 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getCookies()).thenReturn(new Cookie[] { providedCookie });
         
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
-        when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
         
         String token = controller.getSessionToken();
         assertEquals(token, SESSION_TOKEN);
@@ -1120,7 +1118,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(cookie.getPath(), "/");
         assertFalse(cookie.isHttpOnly());
         assertFalse(cookie.getSecure());
-        assertEquals(cookie.getDomain(), "domain-value");        
+        assertEquals(cookie.getDomain(), "localhost");        
     }
 
     @Test

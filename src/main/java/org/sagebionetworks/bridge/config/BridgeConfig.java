@@ -10,16 +10,14 @@ import java.util.List;
 
 public class BridgeConfig implements Config {
 
-    private static final String CONFIG_FILE = "bridge-server.conf";
-    private static final String TEMPLATE_CONFIG = CONFIG_FILE;
-    private static final String LOCAL_CONFIG = System.getProperty("user.home") + "/" + ".bridge" + "/" + CONFIG_FILE;
+    private static final String CONFIG_FILE = "BridgeServer2.conf";
+    private static final String DEFAULT_CONFIG_FILE = CONFIG_FILE;
+    private static final String USER_CONFIG_FILE = System.getProperty("user.home") + "/" + CONFIG_FILE;
 
     private static final String CONSENTS_BUCKET = "consents.bucket";
 
     // Property for a token that is checked before user is unsubscribed from further emails
     private static final String EMAIL_UNSUBSCRIBE_TOKEN = "email.unsubscribe.token";
-
-    private static final String HEALTHCODE_KEY = "bridge.healthcode.key";
 
     private static final String HOST_POSTFIX = "host.postfix";
 
@@ -31,12 +29,18 @@ public class BridgeConfig implements Config {
     private final Config config;
 
     BridgeConfig() {
-        final Path localConfig = Paths.get(LOCAL_CONFIG);
+        String defaultConfig = getClass().getClassLoader().getResource(DEFAULT_CONFIG_FILE).getPath();
+        Path defaultConfigPath = Paths.get(defaultConfig);
+        Path localConfigPath = Paths.get(USER_CONFIG_FILE);
+
         try {
-            config = Files.exists(localConfig) ? new PropertiesConfig(TEMPLATE_CONFIG, localConfig)
-                    : new PropertiesConfig(TEMPLATE_CONFIG);
-        } catch (IOException e) {
-            throw new RuntimeException("Error loading config from local file: " + localConfig, e);
+            if (Files.exists(localConfigPath)) {
+                config = new PropertiesConfig(defaultConfigPath, localConfigPath);
+            } else {
+                config = new PropertiesConfig(defaultConfigPath);
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -91,10 +95,6 @@ public class BridgeConfig implements Config {
 
     public List<String> getPropertyAsList(String name) {
         return config.getList(name);
-    }
-
-    public String getHealthCodeKey() {
-        return config.get(HEALTHCODE_KEY);
     }
 
     public String getConsentsBucket() {
