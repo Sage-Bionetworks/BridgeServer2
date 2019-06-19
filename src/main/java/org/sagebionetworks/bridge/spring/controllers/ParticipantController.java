@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -268,6 +269,11 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
+        // Do not allow lookup by health code if health code access is disabled.
+        if (!study.isHealthCodeExportEnabled() && userId.toLowerCase().startsWith("healthcode:")) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        
         StudyParticipant participant = participantService.getParticipant(study, userId, consents);
 
         ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
