@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.ENCRYPTED_HEALTH_CODE;
@@ -403,6 +405,42 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(retrievedParticipant.getFirstName(), "Test");
         assertNull(retrievedParticipant.getHealthCode());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantWhereHealthCodeIsPrevented() throws Exception {
+        study.setHealthCodeExportEnabled(false);
+        
+        controller.getParticipant("healthCode:"+USER_ID, true);
+    }
+    
+    @Test
+    public void getParticipantWithHealthCodeIfAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withRoles(ImmutableSet.of(RESEARCHER, ADMIN)).build();
+        session.setParticipant(participant);
+        
+        study.setHealthCodeExportEnabled(false);
+        
+        controller.getParticipant("healthCode:"+USER_ID, true);
+    }
+    
+    @Test
+    public void getParticipantForWorkerWithHealthCodeNotPrevented() throws Exception {
+        // The caller is a worker
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        
+        // Health codes are disabled
+        study.setHealthCodeExportEnabled(false);
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(study, "healthCode:" + USER_ID, true)).thenReturn(studyParticipant);
+        
+        // You can still retrieve the user with a health code
+        String result = controller.getParticipantForWorker(TEST_STUDY_IDENTIFIER, "healthCode:"+USER_ID, true);
+        assertNotNull(result);
     }
 
     @Test
