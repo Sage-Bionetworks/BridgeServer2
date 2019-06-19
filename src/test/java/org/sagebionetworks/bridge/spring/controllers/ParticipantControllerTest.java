@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -407,7 +408,18 @@ public class ParticipantControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticipantWhereHealthCodeIsPrevented() throws Exception { 
+    public void getParticipantWhereHealthCodeIsPrevented() throws Exception {
+        study.setHealthCodeExportEnabled(false);
+        
+        controller.getParticipant("healthCode:"+USER_ID, true);
+    }
+    
+    @Test
+    public void getParticipantWithHealthCodeIfAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withRoles(ImmutableSet.of(RESEARCHER, ADMIN)).build();
+        session.setParticipant(participant);
+        
         study.setHealthCodeExportEnabled(false);
         
         controller.getParticipant("healthCode:"+USER_ID, true);

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -269,8 +270,10 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
-        // Do not allow lookup by health code if health code access is disabled.
-        if (!study.isHealthCodeExportEnabled() && userId.toLowerCase().startsWith("healthcode:")) {
+        // Do not allow lookup by health code if health code access is disabled. Allow it however
+        // if the user is an administrator.
+        if (!session.isInRole(ADMIN) && !study.isHealthCodeExportEnabled()
+                && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
