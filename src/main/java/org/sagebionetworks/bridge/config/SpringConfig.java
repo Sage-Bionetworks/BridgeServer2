@@ -91,6 +91,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.TemplatePersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -614,6 +615,13 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
             SubstudyPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "templateHibernateHelper")
+    @Autowired
+    public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
+            TemplatePersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
