@@ -350,11 +350,11 @@ public class ParticipantService {
         return accountDao.getPagedAccountSummaries(study, search);
     }
 
-    public void signUserOut(Study study, String email, boolean deleteReauthToken) {
+    public void signUserOut(Study study, String userId, boolean deleteReauthToken) {
         checkNotNull(study);
-        checkArgument(isNotBlank(email));
+        checkArgument(isNotBlank(userId));
 
-        AccountId accountId = AccountId.forEmail(study.getIdentifier(), email);
+        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {

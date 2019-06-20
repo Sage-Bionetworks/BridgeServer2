@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -1000,14 +1001,14 @@ public class ParticipantServiceTest {
     @Test
     public void signOutUser() {
         // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), EMAIL);
+        AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
         // Setup
         when(accountDao.getAccount(accountId)).thenReturn(account);
         account.setId(ID);
 
         // Execute
-        participantService.signUserOut(STUDY, EMAIL, false);
+        participantService.signUserOut(STUDY, ID, false);
 
         // Verify
         verify(accountDao).getAccount(accountId);
@@ -1018,22 +1019,22 @@ public class ParticipantServiceTest {
     @Test
     public void signOutUserDeleteReauthToken() {
         // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), EMAIL);
+        AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
         // Setup
         when(accountDao.getAccount(accountId)).thenReturn(account);
         account.setId(ID);
 
         // Execute
-        participantService.signUserOut(STUDY, EMAIL, true);
+        participantService.signUserOut(STUDY, ID, true);
 
         // Verify
         verify(accountDao).getAccount(accountId);
         verify(accountDao).deleteReauthToken(accountIdCaptor.capture());
         verify(cacheProvider).removeSessionByUserId(ID);
 
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
-        assertEquals(accountIdCaptor.getValue().getEmail(), EMAIL);
+        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
 
     @Test
@@ -2609,12 +2610,12 @@ public class ParticipantServiceTest {
                 .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         
         // Need to look this up by email, not account ID
-        AccountId accountId = AccountId.forEmail(STUDY.getIdentifier(), EMAIL);
+        AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
         when(accountDao.getAccount(accountId)).thenReturn(account);
         account.setId("userId");
 
-        participantService.signUserOut(STUDY, EMAIL, true);
+        participantService.signUserOut(STUDY, ID, true);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)

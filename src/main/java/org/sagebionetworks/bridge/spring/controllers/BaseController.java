@@ -452,7 +452,7 @@ public abstract class BaseController {
         Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
         cookie.setMaxAge(expireInSeconds);
         cookie.setPath("/");
-        cookie.setDomain(bridgeConfig.get("domain"));
+        cookie.setDomain("localhost");
         cookie.setHttpOnly(false);
         cookie.setSecure(false);
         return cookie;
