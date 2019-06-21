@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
@@ -71,11 +70,15 @@ public class CacheProviderMockTest {
 
     @Mock
     private JedisOps jedisOps;
-    
+
+    @Mock
+    private JedisOps oldJedisOps;
+
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         final CacheProvider simpleCacheProvider = new CacheProvider();
-        simpleCacheProvider.setJedisOps(getJedisOps());
+        simpleCacheProvider.setNewJedisOps(getJedisOps());
+        simpleCacheProvider.setOldJedisOps(oldJedisOps);
 
         final Study study = TestUtils.getValidStudy(CacheProviderMockTest.class);
         study.setIdentifier("test");
@@ -113,7 +116,7 @@ public class CacheProviderMockTest {
         when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
         when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(json);
         
-        cacheProvider.setJedisOps(jedisOps);
+        cacheProvider.setNewJedisOps(jedisOps);
         
         UserSession session = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
 
@@ -149,13 +152,18 @@ public class CacheProviderMockTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+
         mockTransaction(transaction);
-        
         when(jedisOps.getTransaction()).thenReturn(transaction);
         when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
+
+        JedisTransaction oldTransaction = mock(JedisTransaction.class);
+        mockTransaction(oldTransaction);
+        when(oldJedisOps.getTransaction()).thenReturn(oldTransaction);
         
         cacheProvider = new CacheProvider();
-        cacheProvider.setJedisOps(jedisOps);
+        cacheProvider.setNewJedisOps(jedisOps);
+        cacheProvider.setOldJedisOps(oldJedisOps);
     }
 
     private UserSession createUserSession() {

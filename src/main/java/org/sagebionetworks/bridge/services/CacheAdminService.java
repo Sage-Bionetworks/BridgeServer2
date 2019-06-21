@@ -5,9 +5,10 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import redis.clients.jedis.Jedis;
@@ -19,8 +20,8 @@ import com.google.common.collect.Sets;
 public class CacheAdminService {
     
     private JedisPool jedisPool;
-    
-    @Autowired
+
+    @Resource(name = "newJedisPool")
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }
