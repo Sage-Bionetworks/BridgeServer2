@@ -90,6 +90,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TemplatePersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -607,6 +608,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAccountSubstudy.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
+        metadataSources.addAnnotatedClass(HibernateTemplate.class);
 
         return metadataSources.buildMetadata().buildSessionFactory();
     }

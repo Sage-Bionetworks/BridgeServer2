@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.models.TemplateType.APP_INSTALL_LINK_EMAIL;
+import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -31,7 +31,7 @@ public class HibernateTemplateTest extends Mockito {
         HibernateTemplate template = new HibernateTemplate();
         template.setStudyId(TEST_STUDY_IDENTIFIER);
         template.setGuid("oneGuid");
-        template.setTemplateType(APP_INSTALL_LINK_EMAIL);
+        template.setTemplateType(EMAIL_APP_INSTALL_LINK);
         template.setName("oneName");
         template.setDescription("oneDescription");
         template.setCriteria(criteria);
@@ -39,12 +39,12 @@ public class HibernateTemplateTest extends Mockito {
         template.setModifiedOn(MODIFIED_ON);
         template.setPublishedCreatedOn(PUBLISHED_CREATED_ON);
         template.setDeleted(true);
-        template.setVersion(3L);
+        template.setVersion(3);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(template);
         assertNull(node.get("studyId"));
         assertEquals(node.get("guid").textValue(), "oneGuid");
-        assertEquals(node.get("templateType").textValue(), APP_INSTALL_LINK_EMAIL.name().toLowerCase());
+        assertEquals(node.get("templateType").textValue(), EMAIL_APP_INSTALL_LINK.name().toLowerCase());
         assertEquals(node.get("name").textValue(), "oneName");
         assertEquals(node.get("description").textValue(), "oneDescription");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
@@ -60,7 +60,7 @@ public class HibernateTemplateTest extends Mockito {
         
         Template deser = BridgeObjectMapper.get().readValue(node.toString(), Template.class);
         assertEquals(deser.getGuid(), "oneGuid");
-        assertEquals(deser.getTemplateType(), APP_INSTALL_LINK_EMAIL);
+        assertEquals(deser.getTemplateType(), EMAIL_APP_INSTALL_LINK);
         assertEquals(deser.getName(), "oneName");
         assertEquals(deser.getDescription(), "oneDescription");
         assertEquals(deser.getCriteria(), criteria);
@@ -68,7 +68,7 @@ public class HibernateTemplateTest extends Mockito {
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getPublishedCreatedOn(), PUBLISHED_CREATED_ON);
         assertTrue(deser.isDeleted());
-        assertEquals(deser.getVersion(), new Long(3));
+        assertEquals(deser.getVersion(), 3);
     }
 
 }

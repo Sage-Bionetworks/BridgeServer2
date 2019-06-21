@@ -45,6 +45,6 @@ public interface Template extends BridgeEntity {
     boolean isDeleted();
     void setDeleted(boolean deleted);
 
-    Long getVersion();
-    void setVersion(Long version);
+    int getVersion();
+    void setVersion(int version);
 }

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -110,6 +111,7 @@ public final class DynamoStudy implements Study {
     private boolean disableExport;
     private List<AppleAppLink> appleAppLinks;
     private List<AndroidAppLink> androidAppLinks;
+    private Map<TemplateType, String> defaultTemplates;
 
     public DynamoStudy() {
         automaticCustomEvents = new HashMap<>();
@@ -124,6 +126,7 @@ public final class DynamoStudy implements Study {
         oauthProviders = new HashMap<>();
         appleAppLinks = new ArrayList<>();
         androidAppLinks = new ArrayList<>();
+        defaultTemplates = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -769,6 +772,17 @@ public final class DynamoStudy implements Study {
         this.autoVerificationPhoneSuppressed = autoVerificationPhoneSuppressed;
     }
     
+    @DynamoDBTypeConvertedJson
+    @Override
+    public Map<TemplateType,String> getDefaultTemplates() {
+        return defaultTemplates;
+    }
+    
+    @Override
+    public void setDefaultTemplates(Map<TemplateType,String> defaultTemplates) {
+        this.defaultTemplates = defaultTemplates;
+    }
+    
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
@@ -784,7 +798,7 @@ public final class DynamoStudy implements Study {
                 appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
                 phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
                 autoVerificationPhoneSuppressed, signedConsentTemplate, signedConsentSmsTemplate,
-                verifyChannelOnSignInEnabled);
+                verifyChannelOnSignInEnabled, defaultTemplates);
     }
 
     @Override
@@ -849,7 +863,8 @@ public final class DynamoStudy implements Study {
                 && Objects.equals(autoVerificationPhoneSuppressed, other.autoVerificationPhoneSuppressed)
                 && Objects.equals(signedConsentTemplate, other.signedConsentTemplate)
                 && Objects.equals(signedConsentSmsTemplate, other.signedConsentSmsTemplate)
-                && Objects.equals(verifyChannelOnSignInEnabled,  other.verifyChannelOnSignInEnabled);
+                && Objects.equals(verifyChannelOnSignInEnabled,  other.verifyChannelOnSignInEnabled)
+                && Objects.equals(defaultTemplates, other.defaultTemplates);
     }
 
     @Override
@@ -869,7 +884,8 @@ public final class DynamoStudy implements Study {
                         + "oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, reauthenticationEnabled=%s, "
                         + "resetPasswordSmsTemplate=%s, phoneSignInSmsTemplate=%s, appInstallLinkSmsTemplate=%s, "
                         + "verifyPhoneSmsTemplate=%s, accountExistsSmsTemplate=%s, autoVerificationPhoneSuppressed=%s, "
-                        + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s, verifyChannelOnSignInEnabled=%s",
+                        + "signedConsentTemplate=%s, signedConsentSmsTemplate=%s, verifyChannelOnSignInEnabled=%s, "
+                        + "defaultTemplates=%s]",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
                 autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled,
                 studyIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
@@ -882,6 +898,6 @@ public final class DynamoStudy implements Study {
                 appleAppLinks, androidAppLinks, reauthenticationEnabled, resetPasswordSmsTemplate,
                 phoneSignInSmsTemplate, appInstallLinkSmsTemplate, verifyPhoneSmsTemplate, accountExistsSmsTemplate,
                 autoVerificationPhoneSuppressed, signedConsentTemplate, signedConsentSmsTemplate,
-                verifyChannelOnSignInEnabled);
+                verifyChannelOnSignInEnabled, defaultTemplates);
     }
 }

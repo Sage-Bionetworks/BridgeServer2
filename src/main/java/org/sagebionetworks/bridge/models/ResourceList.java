@@ -40,6 +40,7 @@ public class ResourceList<T> {
     public static final String START_TIME = "startTime";
     public static final String TOTAL = "total";
     public static final String TYPE = "type";
+    public static final String TEMPLATE_TYPE = "templateType";
     public static final String REQUEST_PARAMS = "RequestParams";
     
     protected static final String ITEMS = "items";

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -173,7 +174,7 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
-
+        
         JsonNode automaticCustomEventsNode = node.get("automaticCustomEvents");
         assertEquals(automaticCustomEventsNode.size(), 1);
         assertEquals(automaticCustomEventsNode.get("3-days-after-enrollment").textValue(), "P3D");
@@ -208,6 +209,9 @@ public class DynamoStudyTest {
         assertEquals(providerNode.get("endpoint").textValue(), "endpoint");
         assertEquals(providerNode.get("callbackUrl").textValue(), OAuthProviderTest.CALLBACK_URL);
         assertEquals(providerNode.get("type").textValue(), "OAuthProvider");
+        
+        JsonNode defaultTemplates = node.get("defaultTemplates");
+        assertEquals(defaultTemplates.get(EMAIL_ACCOUNT_EXISTS.name()).textValue(), "ABC-DEF");
         
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(node.toString(), Study.class);

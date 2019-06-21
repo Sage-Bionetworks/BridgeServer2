@@ -2,8 +2,12 @@ package org.sagebionetworks.bridge.hibernate;
 
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.Version;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,7 +31,7 @@ public final class HibernateTemplate implements Template {
     private DateTime modifiedOn;
     private DateTime publishedCreatedOn;
     private boolean deleted;
-    private Long version;
+    private int version;
     
     @JsonIgnore
     @Override
@@ -48,6 +52,7 @@ public final class HibernateTemplate implements Template {
         this.guid = guid;
     }
     @Override
+    @Enumerated(EnumType.STRING)
     public TemplateType getTemplateType() {
         return type;
     }
@@ -71,6 +76,7 @@ public final class HibernateTemplate implements Template {
     public void setDescription(String description) {
         this.description = description;
     }
+    @Transient
     @Override
     public Criteria getCriteria() {
         return criteria;
@@ -114,12 +120,13 @@ public final class HibernateTemplate implements Template {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
+    @Version
     @Override
-    public Long getVersion() {
+    public int getVersion() {
         return version;
     }
     @Override
-    public void setVersion(Long version) {
+    public void setVersion(int version) {
         this.version = version;
     }
 }

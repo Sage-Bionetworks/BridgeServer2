@@ -7,6 +7,7 @@ import java.util.Set;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
@@ -464,4 +465,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** Should a new phone number be verified? */
     void setAutoVerificationPhoneSuppressed(boolean autoVerificationPhoneSuppressed);
     
+    /** Get the default templates specified by type of template. */
+    Map<TemplateType,String> getDefaultTemplates();
+    
+    /** @see #getDefaultTemplates */
+    void setDefaultTemplates(Map<TemplateType,String> defaultTemplates);
 }
