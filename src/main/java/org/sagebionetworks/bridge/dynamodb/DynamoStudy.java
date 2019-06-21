@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -111,7 +110,7 @@ public final class DynamoStudy implements Study {
     private boolean disableExport;
     private List<AppleAppLink> appleAppLinks;
     private List<AndroidAppLink> androidAppLinks;
-    private Map<TemplateType, String> defaultTemplates;
+    private Map<String, String> defaultTemplates;
 
     public DynamoStudy() {
         automaticCustomEvents = new HashMap<>();
@@ -774,12 +773,12 @@ public final class DynamoStudy implements Study {
     
     @DynamoDBTypeConvertedJson
     @Override
-    public Map<TemplateType,String> getDefaultTemplates() {
+    public Map<String,String> getDefaultTemplates() {
         return defaultTemplates;
     }
     
     @Override
-    public void setDefaultTemplates(Map<TemplateType,String> defaultTemplates) {
+    public void setDefaultTemplates(Map<String,String> defaultTemplates) {
         this.defaultTemplates = defaultTemplates;
     }
     

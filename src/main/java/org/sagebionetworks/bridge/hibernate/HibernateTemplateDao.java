@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TEMPLATE_TYPE;
@@ -28,7 +29,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 @Component
 public class HibernateTemplateDao implements TemplateDao {
     private static final String SELECT_TEMPLATE = "SELECT template ";
-    private static final String SELECT_COUNT = "SELECT count(*) ";
+    private static final String SELECT_COUNT = "SELECT count(guid) ";
     
     private static final String GET_ALL = "FROM HibernateTemplate as template " + 
             "WHERE templateType = :templateType AND studyId = :studyId ORDER BY createdOn DESC";
@@ -63,7 +64,8 @@ public class HibernateTemplateDao implements TemplateDao {
                 .withRequestParam(TEMPLATE_TYPE, type)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(OFFSET_BY, offset)
-                .withRequestParam(TOTAL, total);
+                .withRequestParam(TOTAL, total)
+                .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
     @Override

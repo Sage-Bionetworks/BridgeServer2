@@ -84,7 +84,7 @@ public class TemplateService {
         }
         // If not, fall back to the default specified for this study:
         Study study = studyService.getStudy(context.getStudyIdentifier());
-        String defaultGuid = study.getDefaultTemplates().get(type);
+        String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             return getTemplate(context.getStudyIdentifier(), defaultGuid);
         }

@@ -2,6 +2,10 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.TEMPLATE_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
 import static org.sagebionetworks.bridge.models.TemplateType.SMS_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
@@ -55,18 +59,23 @@ public class HibernateTemplateDaoTest extends Mockito {
                 .thenReturn(ImmutableList.of(new HibernateTemplate(), new HibernateTemplate()));
         
         PagedResourceList<? extends Template> paged = dao.getTemplates(TEST_STUDY, SMS_ACCOUNT_EXISTS, 5, 50, true);
-        assertEquals(paged.getRequestParams().get(TOTAL), 150);
+        Map<String,Object> params = paged.getRequestParams();
+        assertEquals(params.get(TEMPLATE_TYPE), SMS_ACCOUNT_EXISTS);
+        assertEquals(params.get(TOTAL), 150);
+        assertEquals(params.get(PAGE_SIZE), 50);
+        assertEquals(params.get(INCLUDE_DELETED), true);
+        assertEquals(params.get(OFFSET_BY), 5);
         assertEquals(paged.getItems().size(), 2);
         
         verify(mockHelper).queryCount(queryCaptor.capture(), paramsCaptor.capture());
         verify(mockHelper).queryGet(queryCaptor.capture(), any(), eq(5), eq(50), eq(HibernateTemplate.class));
         
-        Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("studyId"), TEST_STUDY_IDENTIFIER);
-        assertEquals(params.get("templateType"), SMS_ACCOUNT_EXISTS);
+        Map<String,Object> queryParams = paramsCaptor.getValue();
+        assertEquals(queryParams.get("studyId"), TEST_STUDY_IDENTIFIER);
+        assertEquals(queryParams.get("templateType"), SMS_ACCOUNT_EXISTS);
         String countQuery = queryCaptor.getAllValues().get(0);
         String getQuery = queryCaptor.getAllValues().get(1);
-        assertEquals(countQuery, "SELECT count(*) FROM HibernateTemplate as template WHERE templateType = " + 
+        assertEquals(countQuery, "SELECT count(guid) FROM HibernateTemplate as template WHERE templateType = " + 
                 ":templateType AND studyId = :studyId ORDER BY createdOn DESC");
         assertEquals(getQuery, "SELECT template FROM HibernateTemplate as template WHERE templateType = " + 
                 ":templateType AND studyId = :studyId ORDER BY createdOn DESC");
@@ -79,7 +88,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         verify(mockHelper).queryCount(queryCaptor.capture(), paramsCaptor.capture());
         
         String query = queryCaptor.getValue();
-        assertEquals(query, "SELECT count(*) FROM HibernateTemplate as template WHERE templateType = " + 
+        assertEquals(query, "SELECT count(guid) FROM HibernateTemplate as template WHERE templateType = " + 
                 ":templateType AND studyId = :studyId AND deleted = 0 ORDER BY createdOn DESC");
     }
     

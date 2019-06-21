@@ -544,7 +544,7 @@ public class TestUtils {
         study.setAccountLimit(0);
         study.setPushNotificationARNs(pushNotificationARNs);
         study.setAutoVerificationPhoneSuppressed(true);
-        study.setDefaultTemplates(ImmutableMap.of(EMAIL_ACCOUNT_EXISTS, "ABC-DEF"));
+        study.setDefaultTemplates(ImmutableMap.of(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), "ABC-DEF"));
         return study;
     }
 

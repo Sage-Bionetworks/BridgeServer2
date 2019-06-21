@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -211,7 +210,7 @@ public class DynamoStudyTest {
         assertEquals(providerNode.get("type").textValue(), "OAuthProvider");
         
         JsonNode defaultTemplates = node.get("defaultTemplates");
-        assertEquals(defaultTemplates.get(EMAIL_ACCOUNT_EXISTS.name()).textValue(), "ABC-DEF");
+        assertEquals(defaultTemplates.get("email_account_exists").textValue(), "ABC-DEF");
         
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(node.toString(), Study.class);

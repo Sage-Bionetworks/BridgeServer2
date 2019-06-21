@@ -120,7 +120,7 @@ public class TemplateServiceTest extends Mockito {
         doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
 
         Study study = Study.create();
-        study.setDefaultTemplates(ImmutableMap.of(EMAIL_RESET_PASSWORD, GUID));
+        study.setDefaultTemplates(ImmutableMap.of(EMAIL_RESET_PASSWORD.name().toLowerCase(), GUID));
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         
         Template t1 = Template.create();
