@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import javax.annotation.Resource;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -156,7 +158,7 @@ public class AccountWorkflowService {
     }
 
     /** JedisOps, used for basic Redis operations, like expire() and incr(). */
-    @Autowired
+    @Resource(name = "newJedisOps")
     public final void setJedisOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
     }
