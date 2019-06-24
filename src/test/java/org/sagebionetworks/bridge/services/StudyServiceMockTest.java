@@ -42,6 +42,7 @@ import org.sagebionetworks.client.exceptions.SynapseClientException;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.client.exceptions.SynapseServerException;
+import org.sagebionetworks.client.exceptions.UnknownSynapseServerException;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
@@ -1450,7 +1451,7 @@ public class StudyServiceMockTest extends Mockito {
 
         // stub
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        doThrow(new SynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
+        doThrow(new UnknownSynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
@@ -1503,15 +1504,15 @@ public class StudyServiceMockTest extends Mockito {
 
         // 1. Exporter (admin)
         ResourceAccess capturedExporterRa = principalIdToAcl.get(Long.valueOf(EXPORTER_SYNAPSE_USER_ID));
-        assertEquals(capturedExporterRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(capturedExporterRa.getAccessType(), ModelConstants.ENTITY_ADMIN_ACCESS_PERMISSIONS);
 
         // 2. Bridge Admin
         ResourceAccess bridgeAdminAcl = principalIdToAcl.get(BRIDGE_ADMIN_TEAM_ID);
-        assertEquals(bridgeAdminAcl.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(bridgeAdminAcl.getAccessType(), ModelConstants.ENTITY_ADMIN_ACCESS_PERMISSIONS);
 
         // 3. Specified admin user
         ResourceAccess capturedUserRa = principalIdToAcl.get(TEST_USER_ID);
-        assertEquals(capturedUserRa.getAccessType(), ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        assertEquals(capturedUserRa.getAccessType(), ModelConstants.ENTITY_ADMIN_ACCESS_PERMISSIONS);
 
         // 4. Bridge Staff
         ResourceAccess bridgeStaffAcl = principalIdToAcl.get(BRIDGE_STAFF_TEAM_ID);
