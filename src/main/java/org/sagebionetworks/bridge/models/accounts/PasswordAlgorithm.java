@@ -57,6 +57,57 @@ public enum PasswordAlgorithm {
         }
     },
 
+    /**
+     * This is a hack over the insecure Stormpath hashes, where we hash the Stormpath hash with PBKDF2 to make a
+     * double-hashed password.
+     */
+    STORMPATH_PBKDF2_DOUBLE_HASH {
+        /** {@inheritDoc */
+        @Override
+        public boolean checkHash(String hash, String plaintext) throws InvalidKeySpecException,
+                InvalidKeyException, NoSuchAlgorithmException {
+            // Password is in the form "[iterations]$[base64-encoded salt]$[base64-encoded hashed password]"
+            String[] hashParts = hash.split("\\$");
+            int iterations = Integer.parseInt(hashParts[0]);
+            String base64Salt = hashParts[1];
+            byte[] salt = Base64.decodeBase64(base64Salt);
+            String base64HashedPassword = hashParts[2];
+
+            // Generate the base64 hash from the plaintext.
+            String base64HashedPlaintext = hashPasswordWithSalt(plaintext, salt, iterations);
+            return base64HashedPlaintext.equals(base64HashedPassword);
+        }
+
+        /** {@inheritDoc */
+        @Override
+        public String generateHash(String plaintext)
+                throws InvalidKeySpecException, InvalidKeyException, NoSuchAlgorithmException {
+            byte[] salt = BridgeUtils.generateSalt();
+            int iterations = PBKDF2_DEFAULT_ITERATIONS;
+            String base64HashedPassword = hashPasswordWithSalt(plaintext, salt, iterations);
+
+            // Output format will be "[iterations]$[base64-encoded salt]$[base64-encoded hashed password]"
+            return iterations + "$" + Base64.encodeBase64String(salt) + "$" + base64HashedPassword;
+        }
+
+        // Helper method to double-hash passwords, first using the Stormpath HMAC, then using PBKDF2.
+        private String hashPasswordWithSalt(String plaintext, byte[] salt, int iterations)
+                throws InvalidKeySpecException, InvalidKeyException, NoSuchAlgorithmException  {
+            // First, hash the password with the Stormpath algorithm.
+            Mac hmacSha256 = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(salt, "HmacSHA256");
+            hmacSha256.init(secretKey);
+            String stormpathHashedPassword = Base64.encodeBase64String(hmacSha256.doFinal(plaintext.getBytes(
+                    defaultCharset())));
+
+            // Then, hash the password with PBKDF2.
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            KeySpec keySpec = new PBEKeySpec(stormpathHashedPassword.toCharArray(), salt, iterations, 256);
+            byte[] doubleHashedPassword = keyFactory.generateSecret(keySpec).getEncoded();
+            return Base64.encodeBase64String(doubleHashedPassword);
+        }
+    },
+
     /** bcrypt hashing algorithm, which also encodes the salt and the cost in the result. */
     BCRYPT {
         private static final int DEFAULT_COST = 12;
@@ -76,8 +127,6 @@ public enum PasswordAlgorithm {
 
     /** PBKDF2 hashing algorithm using HMAC SHA 256. Encodes salt and number of iterations in the result. */
     PBKDF2_HMAC_SHA_256 {
-        private static final int DEFAULT_NUM_ITERATIONS = 250000;
-
         /** {@inheritDoc */
         @Override
         public boolean checkHash(String hash, String plaintext) throws InvalidKeySpecException,
@@ -98,7 +147,7 @@ public enum PasswordAlgorithm {
         @Override
         public String generateHash(String plaintext) throws InvalidKeySpecException, NoSuchAlgorithmException {
             byte[] salt = BridgeUtils.generateSalt();
-            int iterations = DEFAULT_NUM_ITERATIONS;
+            int iterations = PBKDF2_DEFAULT_ITERATIONS;
             String base64HashedPassword = hashPasswordWithSalt(plaintext, salt, iterations);
 
             // Output format will be "[iterations]$[base64-encoded salt]$[base64-encoded hashed password]"
@@ -117,6 +166,7 @@ public enum PasswordAlgorithm {
     };
 
     public static final PasswordAlgorithm DEFAULT_PASSWORD_ALGORITHM = PBKDF2_HMAC_SHA_256;
+    private static final int PBKDF2_DEFAULT_ITERATIONS = 250000;
 
     /** Given a hash with metadata (such as salt, cost, iterations), check whether the given plaintext matches. */
     public abstract boolean checkHash(String hash, String plaintext) throws InvalidKeySpecException,

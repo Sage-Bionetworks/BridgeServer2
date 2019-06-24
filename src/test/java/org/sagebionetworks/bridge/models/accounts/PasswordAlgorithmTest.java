@@ -16,6 +16,11 @@ public class PasswordAlgorithmTest {
     }
 
     @Test
+    public void stormpathDoubleHash() throws Exception {
+        test(PasswordAlgorithm.STORMPATH_PBKDF2_DOUBLE_HASH);
+    }
+
+    @Test
     public void bcrypt() throws Exception {
         test(PasswordAlgorithm.BCRYPT);
     }
