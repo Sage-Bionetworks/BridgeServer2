@@ -38,7 +38,7 @@ public class TemplateController extends BaseController {
     
     @GetMapping("/v3/templates")
     public PagedResourceList<? extends Template> getTemplates(@RequestParam(name = "type") String templateType, 
-            @RequestParam(required = false) String offset, @RequestParam(required = false) String pageSize, 
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize, 
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
@@ -52,7 +52,7 @@ public class TemplateController extends BaseController {
             throw new BadRequestException("Invalid template type: " + templateType);
         }
         
-        Integer offsetInt = BridgeUtils.getIntOrDefault(offset, 0);
+        Integer offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         Boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         
