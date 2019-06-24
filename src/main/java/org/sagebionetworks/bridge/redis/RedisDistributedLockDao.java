@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.lock.LockNotAvailableException;
 import org.springframework.stereotype.Component;
 
+// TODO This is used only for the old backfill stuff and can probably be deleted.
 @Component
 public class RedisDistributedLockDao implements DistributedLockDao {
 
@@ -19,7 +20,7 @@ public class RedisDistributedLockDao implements DistributedLockDao {
     
     private RedisLock redisLock;
     
-    @Resource(name = "jedisOps")
+    @Resource(name = "newJedisOps")
     final void setJedisOps(JedisOps jedisOps) {
         redisLock = new RedisLock(jedisOps);
     }
