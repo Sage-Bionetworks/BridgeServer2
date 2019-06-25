@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_RESET_PASSWORD;
 import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_SIGN_IN;
 import static org.testng.Assert.assertEquals;
@@ -14,6 +15,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,12 +38,14 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Template;
+import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public class TemplateServiceTest extends Mockito {
@@ -70,14 +74,17 @@ public class TemplateServiceTest extends Mockito {
     @Captor
     ArgumentCaptor<Template> templateCaptor;
     
+    Study study;
+    
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
         when(service.generateGuid()).thenReturn(GUID);
         when(service.getTimestamp()).thenReturn(TIMESTAMP);
         
-        Study study = Study.create();
+        study = Study.create();
         study.setDataGroups(USER_DATA_GROUPS);
+        study.setDefaultTemplates(new HashMap<>());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         
         when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(USER_SUBSTUDY_IDS);
@@ -372,6 +379,7 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setGuid(GUID);
+        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
 
         service.deleteTemplate(TEST_STUDY, GUID);
@@ -399,10 +407,53 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setGuid(GUID);
+        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
 
         service.deleteTemplatePermanently(TEST_STUDY, GUID);
 
         verify(mockTemplateDao).deleteTemplatePermanently(TEST_STUDY, GUID);
+    }
+    
+    @Test(expectedExceptions = ConstraintViolationException.class)
+    public void cannotUpdateToDeleteDefaultTemplate() {
+        study.getDefaultTemplates().put(EMAIL_RESET_PASSWORD.name().toLowerCase(), GUID);
+        
+        Template existing = Template.create();
+        existing.setTemplateType(EMAIL_RESET_PASSWORD);
+        existing.setCreatedOn(TIMESTAMP);
+        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        
+        Template template = Template.create();
+        template.setGuid(GUID);
+        template.setTemplateType(EMAIL_RESET_PASSWORD);
+        template.setName("Test");
+        
+        service.updateTemplate(TEST_STUDY, template);
+    }
+    
+    @Test(expectedExceptions = ConstraintViolationException.class)
+    public void cannotLogicallyDeleteDefaultTemplate() {
+        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID);
+        Template existing = Template.create();
+        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setGuid(GUID);
+        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+
+        service.deleteTemplate(TEST_STUDY, GUID);
+    }
+    
+    @Test(expectedExceptions = ConstraintViolationException.class)
+    public void cannotPhysicallyDeleteDefaultTemplate() {
+        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID);
+        Template existing = Template.create();
+        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setGuid(GUID);
+        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+
+        service.deleteTemplatePermanently(TEST_STUDY, GUID);
     }
 }

@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -164,6 +166,7 @@ public class TemplateService {
         if (existing.isDeleted() && template.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
+        checkNotDeletingDefault(template, studyId);
         
         template.setStudyId(studyId.getIdentifier());
         template.setModifiedOn(getTimestamp());
@@ -189,6 +192,8 @@ public class TemplateService {
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
+        checkNotDeletingDefault(existing, studyId);
+        
         existing.setDeleted(true);
         existing.setModifiedOn(getTimestamp());
         
@@ -196,7 +201,24 @@ public class TemplateService {
     }
     
     public void deleteTemplatePermanently(StudyIdentifier studyId, String guid) {
+        // Deletes fail quietly, we don't throw 404s if they're unnecessary 
+        Optional<Template> optional = templateDao.getTemplate(studyId, guid);
+        if (!optional.isPresent()) {
+            return;
+        }
+        // You cannot delete the default template (logical or physical).
+        Template existing = optional.get();
+        checkNotDeletingDefault(existing, studyId);
         templateDao.deleteTemplatePermanently(studyId, guid);
+    }
+
+    private void checkNotDeletingDefault(Template template, StudyIdentifier studyId) {
+        Study study = studyService.getStudy(studyId);
+        String defaultGuid = study.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
+        if (template.getGuid().equals(defaultGuid)) {
+            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
+                .withEntityKey("guid", template.getGuid()).build();
+        }
     }
     
     private String getKey(Template template) {
