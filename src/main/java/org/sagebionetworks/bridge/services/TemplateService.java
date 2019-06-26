@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.util.List;
@@ -13,6 +12,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class TemplateService {
+    private static final Logger LOG = LoggerFactory.getLogger(TemplateService.class);
 
     private TemplateDao templateDao;
     
@@ -84,12 +86,31 @@ public class TemplateService {
         if (templates.size() == 1) {
             return templates.get(0);
         }
-        // If not, fall back to the default specified for this study:
+        // If not, fall back to the default specified for this study, if it exists. 
         Study study = studyService.getStudy(context.getStudyIdentifier());
         String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
-            return getTemplate(context.getStudyIdentifier(), defaultGuid);
+            // Specified default may not exist, log as integrity violation, but continue
+            Optional<Template> optional = templateDao.getTemplate(context.getStudyIdentifier(), defaultGuid);
+            if (optional.isPresent()) {
+                return optional.get();
+            }
+            LOG.warn("Default template " + defaultGuid + " no longer exists for template type" + type.name());
         }
+        // NOTE: We will eventually validate that the study object has a default template specified
+        // for every type of template, making the following scenarios effectively impossible.
+        
+        // Return a matching template
+        if (templates.size() > 1) {
+            LOG.warn("Template matching ambiguous without a default, returning first matched template");
+            return templates.get(0);
+        }
+        // Return any template
+        if (results.getItems().size() > 0) {
+            LOG.warn("Template matching failed with no default, returning first template found without matching");
+            return results.getItems().get(0);
+        }
+        // There is nothing to return
         throw new EntityNotFoundException(Template.class);
     }
     
@@ -106,8 +127,8 @@ public class TemplateService {
         }
         if (offset < 0) {
             throw new BadRequestException("Invalid negative offset value");
-        } else if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException("pageSize must be in range " + API_MINIMUM_PAGE_SIZE + "-" + API_MAXIMUM_PAGE_SIZE);
+        } else if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException("pageSize must be in range 1-" + API_MAXIMUM_PAGE_SIZE);
         }
         
         PagedResourceList<? extends Template> templates = templateDao.getTemplates(studyId, type, offset, pageSize, includeDeleted);
@@ -166,8 +187,6 @@ public class TemplateService {
         if (existing.isDeleted() && template.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
-        checkNotDeletingDefault(template, studyId);
-        
         template.setStudyId(studyId.getIdentifier());
         template.setModifiedOn(getTimestamp());
         // no reason for these to be updated after creation
@@ -179,6 +198,11 @@ public class TemplateService {
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
+
+        if (template.isDeleted() && isDefaultTemplate(template, studyId)) {
+            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
+                .withEntityKey("guid", template.getGuid()).build();
+        }
         
         persistCriteria(template);
         templateDao.updateTemplate(template);
@@ -192,7 +216,10 @@ public class TemplateService {
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
-        checkNotDeletingDefault(existing, studyId);
+        if (isDefaultTemplate(existing, studyId)) {
+            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
+                .withEntityKey("guid", guid).build();
+        }
         
         existing.setDeleted(true);
         existing.setModifiedOn(getTimestamp());
@@ -201,24 +228,23 @@ public class TemplateService {
     }
     
     public void deleteTemplatePermanently(StudyIdentifier studyId, String guid) {
-        // Deletes fail quietly, we don't throw 404s if they're unnecessary 
-        Optional<Template> optional = templateDao.getTemplate(studyId, guid);
-        if (!optional.isPresent()) {
-            return;
-        }
+        // Throws exception if template doesn't exist
+        Template template = getTemplate(studyId, guid);
+        
         // You cannot delete the default template (logical or physical).
-        Template existing = optional.get();
-        checkNotDeletingDefault(existing, studyId);
+        if (isDefaultTemplate(template, studyId)) {
+            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
+                .withEntityKey("guid", guid).build();
+        }
         templateDao.deleteTemplatePermanently(studyId, guid);
+        criteriaDao.deleteCriteria(getKey(template));
     }
 
-    private void checkNotDeletingDefault(Template template, StudyIdentifier studyId) {
+    private boolean isDefaultTemplate(Template template, StudyIdentifier studyId) {
         Study study = studyService.getStudy(studyId);
         String defaultGuid = study.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
-        if (template.getGuid().equals(defaultGuid)) {
-            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
-                .withEntityKey("guid", template.getGuid()).build();
-        }
+        
+        return (template.getGuid().equals(defaultGuid));
     }
     
     private String getKey(Template template) {

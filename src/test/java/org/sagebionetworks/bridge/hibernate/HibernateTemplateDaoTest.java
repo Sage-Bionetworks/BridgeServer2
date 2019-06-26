@@ -107,6 +107,16 @@ public class HibernateTemplateDaoTest extends Mockito {
         Optional<Template> template = dao.getTemplate(TEST_STUDY, GUID);
         assertFalse(template.isPresent());
     }
+    
+    @Test
+    public void getTemplateWrongStudy() {
+        HibernateTemplate template = new HibernateTemplate();
+        template.setStudyId("not the study we're looking for");
+        when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
+        
+        Optional<Template> result = dao.getTemplate(TEST_STUDY, GUID);
+        assertFalse(result.isPresent());
+    }
 
     @Test
     public void createTemplate() {
@@ -135,6 +145,14 @@ public class HibernateTemplateDaoTest extends Mockito {
         dao.deleteTemplatePermanently(TEST_STUDY, GUID);
         
         verify(mockHelper).deleteById(HibernateTemplate.class, GUID);
+    }
+    
+    @Test
+    public void deleteTemplatePermanentlyMissing() {
+        // should silently do nothing
+        dao.deleteTemplatePermanently(TEST_STUDY, GUID);
+        
+        verify(mockHelper, never()).deleteById(HibernateTemplate.class, GUID);
     }
     
 }

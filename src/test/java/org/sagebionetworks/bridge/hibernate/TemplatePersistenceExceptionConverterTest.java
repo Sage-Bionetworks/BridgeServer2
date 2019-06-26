@@ -7,8 +7,6 @@ import static org.testng.Assert.assertSame;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
-import org.hibernate.exception.ConstraintViolationException;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,9 +16,6 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 public class TemplatePersistenceExceptionConverterTest {
     
     private TemplatePersistenceExceptionConverter converter;
-    
-    @Mock
-    private ConstraintViolationException cve;
     
     @BeforeMethod
     public void before() {

@@ -40,17 +40,18 @@ import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public class TemplateServiceTest extends Mockito {
     
-    private static final String GUID = "oneGuid";
+    private static final String GUID1 = "guidOne";
+    private static final String GUID2 = "guidTwo";
     
     @Mock
     TemplateDao mockTemplateDao;
@@ -79,7 +80,7 @@ public class TemplateServiceTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
-        when(service.generateGuid()).thenReturn(GUID);
+        when(service.generateGuid()).thenReturn(GUID1);
         when(service.getTimestamp()).thenReturn(TIMESTAMP);
         
         study = Study.create();
@@ -90,87 +91,129 @@ public class TemplateServiceTest extends Mockito {
         when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(USER_SUBSTUDY_IDS);
     }
     
-    private Criteria makeCriteria(String lang) {
+    private Criteria makeCriteria(String guid, String lang) {
         Criteria criteria = Criteria.create();
+        criteria.setKey("template:"+guid);
         criteria.setLanguage(lang);
         criteria.setAllOfGroups(ImmutableSet.of());
         criteria.setNoneOfGroups(ImmutableSet.of());
         criteria.setAllOfSubstudyIds(ImmutableSet.of());
         criteria.setNoneOfSubstudyIds(ImmutableSet.of());
+        when(mockCriteriaDao.getCriteria("template:"+guid)).thenReturn(criteria);
         return criteria;
     }
-
+    
+    private Template makeTemplate(String guid, String lang) {
+        Template template = Template.create();
+        template.setGuid(guid);
+        template.setCriteria(makeCriteria(guid, lang));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, guid)).thenReturn(Optional.of(template));
+        return template;
+    }
+    
+    private CriteriaContext makeContext(String lang) {
+        return new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).withLanguages(ImmutableList.of(lang))
+                .build();
+    }
+    
+    private void mockGetTemplates(List<? extends Template> list) {
+        PagedResourceList<? extends Template> page = new PagedResourceList<>(list, list.size());
+        doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
+    }
+    
+    private void mockTemplateDefault(String guid) {
+        Study study = Study.create();
+        if (guid == null) {
+            study.setDefaultTemplates(ImmutableMap.of());
+        } else {
+            study.setDefaultTemplates(ImmutableMap.of(EMAIL_RESET_PASSWORD.name().toLowerCase(), guid));    
+        }
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+    }
+    
+    // This is the happy case... one template matches the provided criteria and is returned
     @Test
     public void getTemplateForUserMatchesOne() {
-        when(mockCriteriaDao.getCriteria("template:guidOne")).thenReturn(makeCriteria("en"));
-        when(mockCriteriaDao.getCriteria("template:guidTwo")).thenReturn(makeCriteria("fr"));
+        Template t1 = makeTemplate(GUID1, "en");
+        Template t2 = makeTemplate(GUID2, "fr");
+        mockGetTemplates(ImmutableList.of(t1, t2));
         
-        Template t1 = Template.create();
-        t1.setGuid("guidOne");
-        
-        Template t2 = Template.create();
-        t2.setGuid("guidTwo");
-        
-        PagedResourceList<? extends Template> page = new PagedResourceList<>(ImmutableList.of(t1, t2), 2);
-        doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
-
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
-                .withLanguages(ImmutableList.of("de", "fr")).build();
-        
-        Template template = service.getTemplateForUser(context, EMAIL_RESET_PASSWORD);
-        assertSame(template, t2);
+        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertEquals(template, t2);
     }
     
+    // More than one template matches, so the study default is used instead
     @Test
-    public void getTemplateForUserFallsbackToDefault() {
-        PagedResourceList<? extends Template> page = new PagedResourceList<>(ImmutableList.of(), 2);
-        doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
-
-        Study study = Study.create();
-        study.setDefaultTemplates(ImmutableMap.of(EMAIL_RESET_PASSWORD.name().toLowerCase(), GUID));
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+    public void getTemplateForUserMatchesManyUsesDefault() {
+        Template t1 = makeTemplate(GUID1, "fr");
+        Template t2 = makeTemplate(GUID2, "fr");
+        mockGetTemplates(ImmutableList.of(t1, t2));
         
-        Template t1 = Template.create();
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(t1));
+        mockTemplateDefault(GUID2);
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
-        
-        Template template = service.getTemplateForUser(context, EMAIL_RESET_PASSWORD);
-        assertSame(template, t1);        
+        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertEquals(template, t2);
     }
     
+    // More than one template matches, but the default is broken so the first matcher is returned
+    @Test
+    public void getTemplateForUserMatchesManyDefaultBroken() {
+        Template t1 = makeTemplate(GUID1, "fr");
+        Template t2 = makeTemplate(GUID2, "fr");
+        mockGetTemplates(ImmutableList.of(t1, t2));
+        
+        mockTemplateDefault("guid-matches-nothing");
+        
+        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertEquals(template, t1);
+    }
+    
+    // Same as prior test but the first matcher is returned because there is no default for some reason
+    @Test
+    public void getTemplateForUserMatchesManyReturnsFirstOne() { 
+        Template t1 = makeTemplate(GUID1, "fr");
+        Template t2 = makeTemplate(GUID2, "fr");
+        mockGetTemplates(ImmutableList.of(t1, t2));
+        
+        // no default in the study map at all
+        mockTemplateDefault(null);
+        
+        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertEquals(template, t1);
+    }
+    
+    // No default, nothing matches, fall back to returning the first of ANY templates that were returned
+    @Test
+    public void getTemplateForUserMatchesNoneReturnsFirstOne() {
+        Template t1 = makeTemplate(GUID1, "en");
+        Template t2 = makeTemplate(GUID2, "en");
+        mockGetTemplates(ImmutableList.of(t1, t2));
+        
+        // no default in the study map at all
+        mockTemplateDefault(null);
+        
+        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertEquals(template, t1);
+    }
+    
+    // No templates returned, none matching, default exists but irrelevant, only then do we throw an exception
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getTemplateForUserNotFound() {
-        PagedResourceList<? extends Template> page = new PagedResourceList<>(ImmutableList.of(), 2);
-        doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
-
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY).build();
+    public void getTemplateForUserMatchesNoneNoTemplateToReturn() {
+        mockGetTemplates(ImmutableList.of());
         
-        service.getTemplateForUser(context, EMAIL_RESET_PASSWORD);
+        mockTemplateDefault(GUID1); // doesn't matter
+        
+        service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
     }
     
+    // No templates returned, none matching, no default, throw an exception
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getTemplateForUserTooManyFound() {
-        when(mockCriteriaDao.getCriteria("template:guidOne")).thenReturn(makeCriteria("fr"));
-        when(mockCriteriaDao.getCriteria("template:guidTwo")).thenReturn(makeCriteria("fr"));
-        
-        Template t1 = Template.create();
-        t1.setGuid("guidOne");
-        
-        Template t2 = Template.create();
-        t2.setGuid("guidTwo");
-        
-        PagedResourceList<? extends Template> page = new PagedResourceList<>(ImmutableList.of(t1, t2), 2);
-        doReturn(page).when(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, null, null, false);
+    public void getTemplateForUserMatchesNoneNoDefaultNoTemplateToReturn() {
+        mockGetTemplates(ImmutableList.of());
 
-        // This is going to match two templates, because both declare French as the language
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
-                .withLanguages(ImmutableList.of("de", "fr")).build();
-        
-        service.getTemplateForUser(context, EMAIL_RESET_PASSWORD);
+        service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
     }
-    
+
     @Test
     public void getTemplatesForType() {
         Template t1 = Template.create();
@@ -245,7 +288,7 @@ public class TemplateServiceTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getTemplatesPageSizeBelowMin() {
-        service.getTemplatesForType(TEST_STUDY, EMAIL_RESET_PASSWORD, null, 3, true);
+        service.getTemplatesForType(TEST_STUDY, EMAIL_RESET_PASSWORD, null, 0, true);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -255,12 +298,19 @@ public class TemplateServiceTest extends Mockito {
 
     @Test
     public void getTemplate() {
+        Criteria criteria = Criteria.create();
+        criteria.setKey("template:"+GUID1); // this is persisted as part of criteria, not set on load
+        when(mockCriteriaDao.getCriteria("template:"+GUID1)).thenReturn(criteria);
+
         Template template = Template.create();
+        template.setGuid(GUID1);
         template.setStudyId(TEST_STUDY.getIdentifier());
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(template));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(template));
         
-        Template result = service.getTemplate(TEST_STUDY, GUID);
+        Template result = service.getTemplate(TEST_STUDY, GUID1);
         assertSame(result, template);
+        assertSame(result.getCriteria(), template.getCriteria());
+        assertEquals(result.getCriteria().getKey(), "template:"+GUID1);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -270,13 +320,16 @@ public class TemplateServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getTemplateNotFound() {
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.empty());
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.empty());
         
-        service.getTemplate(TEST_STUDY, GUID);
+        service.getTemplate(TEST_STUDY, GUID1);
     }
     
     @Test
     public void createTemplate() {
+        doAnswer(answer -> {
+            return answer.getArgument(0);
+        }).when(mockCriteriaDao).createOrUpdateCriteria(any());
         doAnswer(answer -> {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
@@ -294,15 +347,16 @@ public class TemplateServiceTest extends Mockito {
         template.setCriteria(criteria);
         
         GuidVersionHolder holder = service.createTemplate(TEST_STUDY, template);
-        assertEquals(holder.getGuid(), GUID);
+        assertEquals(holder.getGuid(), GUID1);
         assertEquals(holder.getVersion(), new Long(10));
         
         assertEquals(template.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertFalse(template.isDeleted());
         assertEquals(template.getVersion(), 10);
-        assertEquals(template.getGuid(), GUID);
+        assertEquals(template.getGuid(), GUID1);
         assertEquals(template.getCreatedOn(), TIMESTAMP);
         assertEquals(template.getModifiedOn(), TIMESTAMP);
+        assertEquals(template.getCriteria().getKey(), "template:"+GUID1);
         
         verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
         verify(mockTemplateDao).createTemplate(template);
@@ -319,8 +373,57 @@ public class TemplateServiceTest extends Mockito {
         verify(mockCriteriaDao).createOrUpdateCriteria(any(Criteria.class));
     }
     
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void createTemplateInvalid() {
+        service.createTemplate(TEST_STUDY, Template.create());
+    }
+    
     @Test
     public void updateTemplate() {
+        doAnswer(answer -> {
+            Template captured = answer.getArgument(0);
+            captured.setVersion(10);
+            captured.setModifiedOn(TIMESTAMP);
+            return null;
+        }).when(mockTemplateDao).updateTemplate(any());
+        
+        Template existing = Template.create();
+        existing.setTemplateType(EMAIL_RESET_PASSWORD);
+        existing.setCreatedOn(TIMESTAMP);
+        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
+        
+        Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
+        
+        Template template = Template.create();
+        template.setStudyId("some-other-study-id");
+        template.setGuid(GUID1);
+        template.setName("Test");
+        // Change these... they will be changed back
+        template.setCreatedOn(DateTime.now().plusHours(1));
+        template.setModifiedOn(DateTime.now().plusHours(1));
+        template.setTemplateType(EMAIL_SIGN_IN);
+        template.setCriteria(criteria);
+        
+        GuidVersionHolder result = service.updateTemplate(TEST_STUDY, template);
+        assertEquals(result.getGuid(), GUID1);
+        assertEquals(result.getVersion(), new Long(10));
+        
+        assertEquals(template.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(template.getGuid(), GUID1);
+        assertEquals(template.getVersion(), 10);
+        // cannot be changed by an update.
+        assertEquals(template.getTemplateType(), EMAIL_RESET_PASSWORD);
+        assertEquals(template.getCreatedOn(), TIMESTAMP);
+        assertEquals(template.getModifiedOn(), TIMESTAMP);
+        assertEquals(template.getCriteria().getKey(), "template:"+GUID1);
+        
+        verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
+        verify(mockTemplateDao).updateTemplate(template);
+    }
+    
+    @Test
+    public void updateTemplateSucceedsWithDefaultIfNotDeleting() {
         doAnswer(answer -> {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
@@ -329,34 +432,22 @@ public class TemplateServiceTest extends Mockito {
         
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
+        existing.setGuid(GUID1);
         existing.setCreatedOn(TIMESTAMP);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
-        
-        Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
-        template.setStudyId("some-other-study-id");
-        template.setGuid(GUID);
-        template.setName("Test");
-        // Change these... they will be changed back
-        template.setCreatedOn(DateTime.now().plusHours(1));
-        template.setTemplateType(EMAIL_SIGN_IN);
-        template.setCriteria(criteria);
+        template.setCriteria(makeCriteria(GUID1, null));
+        template.setGuid(GUID1);
+        template.setName("Test Change");
         
-        GuidVersionHolder result = service.updateTemplate(TEST_STUDY, template);
-        assertEquals(result.getGuid(), GUID);
-        assertEquals(result.getVersion(), new Long(10));
+        mockTemplateDefault(GUID1);
         
-        assertEquals(template.getStudyId(), TEST_STUDY_IDENTIFIER);
-        assertEquals(template.getGuid(), GUID);
-        assertEquals(template.getVersion(), 10);
-        // cannot be changed by an update.
-        assertEquals(template.getTemplateType(), EMAIL_RESET_PASSWORD);
-        assertEquals(template.getCreatedOn(), TIMESTAMP);
+        service.updateTemplate(TEST_STUDY, template);
         
-        verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
-        verify(mockTemplateDao).updateTemplate(template);
+        verify(mockCriteriaDao).createOrUpdateCriteria(template.getCriteria());
+        verify(mockTemplateDao).updateTemplate(template);        
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -364,12 +455,21 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setDeleted(true);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
         template.setStudyId(TEST_STUDY_IDENTIFIER);
-        template.setGuid(GUID);
+        template.setGuid(GUID1);
         template.setDeleted(true);
+        
+        service.updateTemplate(TEST_STUDY, template);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void updateTemplateInvalid() {
+        Template template = Template.create();
+        template.setGuid(GUID1);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(template));
         
         service.updateTemplate(TEST_STUDY, template);
     }
@@ -378,11 +478,11 @@ public class TemplateServiceTest extends Mockito {
     public void deleteTemplate() {
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID);
+        existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
 
-        service.deleteTemplate(TEST_STUDY, GUID);
+        service.deleteTemplate(TEST_STUDY, GUID1);
         
         verify(mockTemplateDao).updateTemplate(templateCaptor.capture());
         
@@ -392,68 +492,84 @@ public class TemplateServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void deleteTemplateNotFound() { 
+    public void deleteTemplateLogicallyDeleted() { 
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID);
+        existing.setGuid(GUID1);
         existing.setDeleted(true);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
 
-        service.deleteTemplate(TEST_STUDY, GUID);
+        service.deleteTemplate(TEST_STUDY, GUID1);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void deleteTemplateMissing() { 
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.empty());
+
+        service.deleteTemplate(TEST_STUDY, GUID1);
     }
     
     @Test
     public void deleteTemplatePermanently() {
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID);
+        existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
 
-        service.deleteTemplatePermanently(TEST_STUDY, GUID);
+        service.deleteTemplatePermanently(TEST_STUDY, GUID1);
 
-        verify(mockTemplateDao).deleteTemplatePermanently(TEST_STUDY, GUID);
+        verify(mockTemplateDao).deleteTemplatePermanently(TEST_STUDY, GUID1);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void deleteTemplatePermanentlyMissing() {
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.empty());
+
+        service.deleteTemplatePermanently(TEST_STUDY, GUID1);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void cannotUpdateToDeleteDefaultTemplate() {
-        study.getDefaultTemplates().put(EMAIL_RESET_PASSWORD.name().toLowerCase(), GUID);
+        study.getDefaultTemplates().put(EMAIL_RESET_PASSWORD.name().toLowerCase(), GUID1);
         
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setCreatedOn(TIMESTAMP);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        existing.setDeleted(false);
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
-        template.setGuid(GUID);
+        template.setGuid(GUID1);
         template.setTemplateType(EMAIL_RESET_PASSWORD);
         template.setName("Test");
+        template.setDeleted(true);
         
         service.updateTemplate(TEST_STUDY, template);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void cannotLogicallyDeleteDefaultTemplate() {
-        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID);
+        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID);
+        existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
 
-        service.deleteTemplate(TEST_STUDY, GUID);
+        service.deleteTemplate(TEST_STUDY, GUID1);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void cannotPhysicallyDeleteDefaultTemplate() {
-        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID);
+        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
         Template existing = Template.create();
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID);
+        existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID)).thenReturn(Optional.of(existing));
+        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
 
-        service.deleteTemplatePermanently(TEST_STUDY, GUID);
+        service.deleteTemplatePermanently(TEST_STUDY, GUID1);
     }
 }

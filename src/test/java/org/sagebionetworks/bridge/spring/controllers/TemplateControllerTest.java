@@ -158,7 +158,7 @@ public class TemplateControllerTest extends Mockito {
     }
 
     @Test
-    public void deleteAppConfig() throws Exception {
+    public void deleteTemplate() throws Exception {
         StatusMessage message = controller.deleteTemplate(GUID, "false");
         assertEquals(message.getMessage(), "Template deleted.");
         

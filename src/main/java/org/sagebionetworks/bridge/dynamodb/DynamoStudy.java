@@ -771,7 +771,6 @@ public final class DynamoStudy implements Study {
         this.autoVerificationPhoneSuppressed = autoVerificationPhoneSuppressed;
     }
     
-    @DynamoDBTypeConvertedJson
     @Override
     public Map<String,String> getDefaultTemplates() {
         return defaultTemplates;
