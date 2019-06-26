@@ -158,7 +158,7 @@ public class AccountWorkflowService {
     }
 
     /** JedisOps, used for basic Redis operations, like expire() and incr(). */
-    @Resource(name = "newJedisOps")
+    @Resource(name = "jedisOps")
     public final void setJedisOps(JedisOps jedisOps) {
         this.jedisOps = jedisOps;
     }

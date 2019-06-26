@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -54,9 +57,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class CacheProviderMockTest {
-
     private static final CacheKey CACHE_KEY = CacheKey.study("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
+    private static final String REQUEST_INFO_KEY = "userId:request-info";
+    private static final String STUDY_ID = "studyId";
+    private static final String STUDY_ID_KEY = "studyId:study";
     private static final String USER_ID = "userId";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
@@ -64,21 +69,20 @@ public class CacheProviderMockTest {
     private static final CacheKey USER_ID_TO_SESSION = CacheKey.userIdToSession(USER_ID);
 
     private CacheProvider cacheProvider;
-    
+
     @Mock
     private JedisTransaction transaction;
 
     @Mock
     private JedisOps jedisOps;
 
-    @Mock
-    private JedisOps oldJedisOps;
+    @Captor
+    private ArgumentCaptor<String> stringCaptor;
 
     @Test
     public void addAndRemoveViewFromCacheProvider() throws Exception {
         final CacheProvider simpleCacheProvider = new CacheProvider();
-        simpleCacheProvider.setNewJedisOps(getJedisOps());
-        simpleCacheProvider.setOldJedisOps(oldJedisOps);
+        simpleCacheProvider.setJedisOps(getJedisOps());
 
         final Study study = TestUtils.getValidStudy(CacheProviderMockTest.class);
         study.setIdentifier("test");
@@ -116,7 +120,7 @@ public class CacheProviderMockTest {
         when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
         when(jedisOps.get(USER_ID_TO_SESSION.toString())).thenReturn(json);
         
-        cacheProvider.setNewJedisOps(jedisOps);
+        cacheProvider.setJedisOps(jedisOps);
         
         UserSession session = cacheProvider.getUserSession(DECRYPTED_SESSION_TOKEN);
 
@@ -157,13 +161,8 @@ public class CacheProviderMockTest {
         when(jedisOps.getTransaction()).thenReturn(transaction);
         when(jedisOps.get(TOKEN_TO_USER_ID.toString())).thenReturn(USER_ID);
 
-        JedisTransaction oldTransaction = mock(JedisTransaction.class);
-        mockTransaction(oldTransaction);
-        when(oldJedisOps.getTransaction()).thenReturn(oldTransaction);
-        
         cacheProvider = new CacheProvider();
-        cacheProvider.setNewJedisOps(jedisOps);
-        cacheProvider.setOldJedisOps(oldJedisOps);
+        cacheProvider.setJedisOps(jedisOps);
     }
 
     private UserSession createUserSession() {
@@ -174,6 +173,52 @@ public class CacheProviderMockTest {
         UserSession session = new UserSession(participant);
         session.setSessionToken(DECRYPTED_SESSION_TOKEN);
         return session;
+    }
+
+    @Test
+    public void updateRequestInfo_EmptyCache() {
+        when(jedisOps.set(eq(REQUEST_INFO_KEY), any())).thenReturn("OK");
+
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
+        cacheProvider.updateRequestInfo(info);
+
+        verify(jedisOps).get(REQUEST_INFO_KEY);
+        verify(jedisOps).set(eq(REQUEST_INFO_KEY), any());
+    }
+
+    @Test
+    public void updateRequestInfo_NormalCase() throws Exception {
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
+
+        RequestInfo old = new RequestInfo.Builder().withUserId("oldUserId").build();
+        when(jedisOps.get(any())).thenReturn(BridgeObjectMapper.get().writeValueAsString(old));
+
+        when(jedisOps.set(eq(REQUEST_INFO_KEY), any())).thenReturn("OK");
+
+        cacheProvider.updateRequestInfo(info);
+
+        verify(jedisOps).get(REQUEST_INFO_KEY);
+        verify(jedisOps).set(eq(REQUEST_INFO_KEY), stringCaptor.capture());
+
+        RequestInfo setInfo = BridgeObjectMapper.get().readValue(stringCaptor.getValue(), RequestInfo.class);
+        assertEquals(USER_ID, setInfo.getUserId());
+    }
+
+    @Test
+    public void removeRequestInfo() {
+        cacheProvider.removeRequestInfo(USER_ID);
+        verify(jedisOps).del(REQUEST_INFO_KEY);
+    }
+
+    @Test
+    public void getRequestInfoNewCache() throws Exception {
+        RequestInfo info = new RequestInfo.Builder().withUserId(USER_ID).build();
+        when(jedisOps.get(REQUEST_INFO_KEY)).thenReturn(BridgeObjectMapper.get().writeValueAsString(info));
+
+        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
+        assertEquals(info, returned);
+
+        verify(jedisOps).get(REQUEST_INFO_KEY);
     }
 
     @Test
@@ -527,5 +572,39 @@ public class CacheProviderMockTest {
         verify(transaction, never()).setex(eq(TOKEN_TO_USER_ID.toString()), anyInt(), anyString());
         verify(transaction, never()).setex(eq(USER_ID_TO_SESSION.toString()), anyInt(), eq(DECRYPTED_SESSION_TOKEN));
         verify(transaction, never()).exec();
+    }
+
+    @Test
+    public void setStudy() throws Exception {
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        String ser = BridgeObjectMapper.get().writeValueAsString(study);
+
+        when(jedisOps.setex(any(), anyInt(), any())).thenReturn("OK");
+
+        cacheProvider.setStudy(study);
+
+        verify(jedisOps).setex(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+    }
+
+    @Test
+    public void getStudy() throws Exception {
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        String ser = BridgeObjectMapper.get().writeValueAsString(study);
+
+        when(jedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
+
+        Study returned = cacheProvider.getStudy(STUDY_ID);
+        assertEquals(study, returned);
+
+        verify(jedisOps).get(STUDY_ID_KEY);
+        verify(jedisOps).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+    }
+
+    @Test
+    public void removeStudy() {
+        cacheProvider.removeStudy(STUDY_ID);
+        verify(jedisOps).del(STUDY_ID_KEY);
     }
 }
