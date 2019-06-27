@@ -221,15 +221,6 @@ public interface Account extends BridgeEntity {
     PasswordAlgorithm getPasswordAlgorithm();
     void setPasswordAlgorithm(PasswordAlgorithm passwordAlgorithm);
     
-    PasswordAlgorithm getReauthTokenAlgorithm();
-    void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm);
-    
-    String getReauthTokenHash();
-    void setReauthTokenHash(String reauthTokenHash);
-    
-    DateTime getReauthTokenModifiedOn();
-    void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn);
-    
     void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies);
     Set<AccountSubstudy> getAccountSubstudies();
 }

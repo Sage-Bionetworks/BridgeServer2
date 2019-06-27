@@ -63,10 +63,7 @@ public class HibernateAccount implements Account {
     private PasswordAlgorithm passwordAlgorithm;
     private String passwordHash;
     private DateTime passwordModifiedOn;
-    private PasswordAlgorithm reauthTokenAlgorithm;
-    private String reauthTokenHash;
     private String reauthToken;
-    private DateTime reauthTokenModifiedOn;
     private Set<Roles> roles;
     private AccountStatus status;
     private int version;
@@ -292,46 +289,6 @@ public class HibernateAccount implements Account {
     /** @see #getPasswordModifiedOn */
     public void setPasswordModifiedOn(DateTime passwordModifiedOn) {
         this.passwordModifiedOn = passwordModifiedOn;
-    }
-
-    /**
-     * The algorithm used to hash the reauthentication token. The hashing algorithms are 
-     * the same as those used for passwords.
-     *
-     * @see PasswordAlgorithm
-     */
-    @Enumerated(EnumType.STRING)
-    public PasswordAlgorithm getReauthTokenAlgorithm() {
-        return reauthTokenAlgorithm;
-    }
-
-    /** @see #getReauthTokenAlgorithm */
-    public void setReauthTokenAlgorithm(PasswordAlgorithm reauthTokenAlgorithm) {
-        this.reauthTokenAlgorithm = reauthTokenAlgorithm;
-    }
-
-    /**
-     * The full reauthentication token hash, as used by {@link PasswordAlgorithm} to
-     * decode it.
-     */
-    public String getReauthTokenHash() {
-        return reauthTokenHash;
-    }
-
-    /** @see #getReauthTokenHash */
-    public void setReauthTokenHash(String reauthTokenHash) {
-        this.reauthTokenHash = reauthTokenHash;
-    }
-
-    /** Epoch milliseconds when the user last changed their reauthentication token. */
-    @Convert(converter = DateTimeToLongAttributeConverter.class)
-    public DateTime getReauthTokenModifiedOn() {
-        return reauthTokenModifiedOn;
-    }
-
-    /** @see #getReauthTokenModifiedOn */
-    public void setReauthTokenModifiedOn(DateTime reauthTokenModifiedOn) {
-        this.reauthTokenModifiedOn = reauthTokenModifiedOn;
     }
 
     /**

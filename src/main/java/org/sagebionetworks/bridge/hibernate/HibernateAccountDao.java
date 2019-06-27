@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -181,24 +180,8 @@ public class HibernateAccountDao implements AccountDao {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
         Account account = fetchHibernateAccount(signIn);
-        if (account.getReauthTokenHash() != null) {
-            // Rotate the token to the secrets table before verifying. This migrates the tables if
-            // a reauthentication call occurs before we run a migration on this record.
-            AccountSecret secret = AccountSecret.create();
-            secret.setAccountId(account.getId());
-            secret.setAlgorithm(account.getReauthTokenAlgorithm());
-            secret.setHash(account.getReauthTokenHash());
-            secret.setType(AccountSecretType.REAUTH);
-            secret.setCreatedOn(account.getReauthTokenModifiedOn());
-            hibernateHelper.create(secret, null);
-            
-            account.setReauthTokenHash(null);
-            account.setReauthTokenAlgorithm(null);
-            account.setReauthTokenModifiedOn(null);
-            hibernateHelper.update(account, null);
-            account = fetchHibernateAccount(signIn);
-        }
-        verifyReauthToken(account, signIn.getReauthToken());
+        accountSecretDao.verifySecret(REAUTH, account.getId(), signIn.getReauthToken(), ROTATIONS)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
         return authenticateInternal(study, account, signIn);
     }
     
@@ -231,12 +214,6 @@ public class HibernateAccountDao implements AccountDao {
     public void deleteReauthToken(AccountId accountId) {
         Account hibernateAccount = getHibernateAccount(accountId);
         if (hibernateAccount != null) {
-            if (hibernateAccount.getReauthTokenHash() != null) {
-                hibernateAccount.setReauthTokenHash(null);
-                hibernateAccount.setReauthTokenAlgorithm(null);
-                hibernateAccount.setReauthTokenModifiedOn(null);
-                hibernateHelper.update(hibernateAccount, null);
-            }
             accountSecretDao.removeSecrets(AccountSecretType.REAUTH, hibernateAccount.getId());
         }
     }
@@ -271,9 +248,6 @@ public class HibernateAccountDao implements AccountDao {
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
-        account.setReauthTokenAlgorithm(persistedAccount.getReauthTokenAlgorithm());
-        account.setReauthTokenHash(persistedAccount.getReauthTokenHash());
-        account.setReauthTokenModifiedOn(persistedAccount.getReauthTokenModifiedOn());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
@@ -334,11 +308,6 @@ public class HibernateAccountDao implements AccountDao {
             throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
         }        
     }
-
-    private void verifyReauthToken(Account account, String plaintext) {
-        accountSecretDao.verifySecret(REAUTH, account.getId(), plaintext, ROTATIONS)
-            .orElseThrow(() -> new EntityNotFoundException(Account.class));
-    }    
     
     private String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
         try {
