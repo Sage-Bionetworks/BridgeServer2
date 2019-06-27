@@ -234,7 +234,6 @@ public class TemplateServiceTest extends Mockito {
         
         for (Template template : results.getItems()) {
             assertNotNull(template.getCriteria());
-            assertNotNull(template.getCriteria().getKey());
         }
         verify(mockTemplateDao).getTemplates(TEST_STUDY, EMAIL_RESET_PASSWORD, 5, 50, true);
         verify(mockCriteriaDao).getCriteria("template:guidOne");
@@ -257,7 +256,6 @@ public class TemplateServiceTest extends Mockito {
         
         for (Template template : results.getItems()) {
             assertNotNull(template.getCriteria());
-            assertNotNull(template.getCriteria().getKey());
         }
     }
     
@@ -383,7 +381,6 @@ public class TemplateServiceTest extends Mockito {
         doAnswer(answer -> {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
-            captured.setModifiedOn(TIMESTAMP);
             return null;
         }).when(mockTemplateDao).updateTemplate(any());
         
@@ -519,6 +516,7 @@ public class TemplateServiceTest extends Mockito {
 
         service.deleteTemplatePermanently(TEST_STUDY, GUID1);
 
+        verify(mockCriteriaDao).deleteCriteria("template:"+GUID1);
         verify(mockTemplateDao).deleteTemplatePermanently(TEST_STUDY, GUID1);
     }
     

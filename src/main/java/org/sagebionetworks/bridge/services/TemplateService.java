@@ -78,13 +78,13 @@ public class TemplateService {
             loadCriteria(template);
         }
 
-        List<Template> templates = results.getItems().stream().filter(template -> {
+        List<Template> templateMatches = results.getItems().stream().filter(template -> {
             return CriteriaUtils.matchCriteria(context, template.getCriteria());
         }).collect(toImmutableList());
         
         // The ideal case: one and only one template matches the user's context
-        if (templates.size() == 1) {
-            return templates.get(0);
+        if (templateMatches.size() == 1) {
+            return templateMatches.get(0);
         }
         // If not, fall back to the default specified for this study, if it exists. 
         Study study = studyService.getStudy(context.getStudyIdentifier());
@@ -101,9 +101,9 @@ public class TemplateService {
         // for every type of template, making the following scenarios effectively impossible.
         
         // Return a matching template
-        if (templates.size() > 1) {
+        if (templateMatches.size() > 1) {
             LOG.warn("Template matching ambiguous without a default, returning first matched template");
-            return templates.get(0);
+            return templateMatches.get(0);
         }
         // Return any template
         if (results.getItems().size() > 0) {
@@ -265,7 +265,6 @@ public class TemplateService {
         if (criteria == null) {
             criteria = Criteria.create();
         }
-        criteria.setKey(getKey(template));
         template.setCriteria(criteria);
     }
     
