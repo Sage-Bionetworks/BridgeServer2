@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.Template;
 import org.sagebionetworks.bridge.models.TemplateType;
 
 @Entity
-@Table(name = "Template")
+@Table(name = "Templates")
 public final class HibernateTemplate implements Template {
 
     private String guid;
