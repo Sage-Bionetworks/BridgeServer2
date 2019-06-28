@@ -26,6 +26,7 @@ public class ResourceList<T> {
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
     public static final String ID_FILTER = "idFilter";
+    public static final String INCLUDE_DELETED = "includeDeleted";
     public static final String LANGUAGE = "language";
     public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
     public static final String NONE_OF_GROUPS = "noneOfGroups";
@@ -40,6 +41,7 @@ public class ResourceList<T> {
     public static final String START_TIME = "startTime";
     public static final String TOTAL = "total";
     public static final String TYPE = "type";
+    public static final String TEMPLATE_TYPE = "templateType";
     public static final String REQUEST_PARAMS = "RequestParams";
     
     protected static final String ITEMS = "items";
