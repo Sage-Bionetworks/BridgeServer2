@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset alxdark:1
+--changeset bridge:1
 
 CREATE TABLE IF NOT EXISTS `AccountAttributes` (
   `accountId` varchar(255) NOT NULL,
