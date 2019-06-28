@@ -173,7 +173,7 @@ public class DynamoStudyTest {
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
         assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
-
+        
         JsonNode automaticCustomEventsNode = node.get("automaticCustomEvents");
         assertEquals(automaticCustomEventsNode.size(), 1);
         assertEquals(automaticCustomEventsNode.get("3-days-after-enrollment").textValue(), "P3D");
@@ -208,6 +208,9 @@ public class DynamoStudyTest {
         assertEquals(providerNode.get("endpoint").textValue(), "endpoint");
         assertEquals(providerNode.get("callbackUrl").textValue(), OAuthProviderTest.CALLBACK_URL);
         assertEquals(providerNode.get("type").textValue(), "OAuthProvider");
+        
+        JsonNode defaultTemplates = node.get("defaultTemplates");
+        assertEquals(defaultTemplates.get("email_account_exists").textValue(), "ABC-DEF");
         
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(node.toString(), Study.class);

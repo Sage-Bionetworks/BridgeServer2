@@ -464,4 +464,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** Should a new phone number be verified? */
     void setAutoVerificationPhoneSuppressed(boolean autoVerificationPhoneSuppressed);
     
+    /** Get the default templates specified by type of template. */
+    Map<String,String> getDefaultTemplates();
+    
+    /** @see #getDefaultTemplates */
+    void setDefaultTemplates(Map<String,String> defaultTemplates);
 }
