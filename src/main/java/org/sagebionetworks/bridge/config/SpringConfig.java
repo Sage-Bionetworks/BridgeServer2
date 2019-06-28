@@ -666,27 +666,18 @@ public class SpringConfig {
     
     // From BridgeProductionSpringConfig in BridgePF
 
-    @Bean(name = "oldJedisOps")
-    public JedisOps oldJedisOps() throws URISyntaxException {
-        return new JedisOps(oldJedisPool());
+    @Bean(name = "jedisOps")
+    public JedisOps jedisOps() throws URISyntaxException {
+        return new JedisOps(jedisPool());
     }
 
-    @Bean(name = "oldJedisPool")
-    public JedisPool oldJedisPool() throws URISyntaxException {
+    @Bean(name = "jedisPool")
+    public JedisPool jedisPool() throws URISyntaxException {
         return createJedisPool("elasticache.url");
     }
 
-    @Bean(name = "newJedisOps")
-    public JedisOps newJedisOps() throws URISyntaxException {
-        return new JedisOps(newJedisPool());
-    }
-
-    @Bean(name = "newJedisPool")
-    public JedisPool newJedisPool() throws URISyntaxException {
-        return createJedisPool("elasticache.new.url");
-    }
-
-    private JedisPool createJedisPool(String redisServerProperty) throws URISyntaxException {
+    private JedisPool createJedisPool(@SuppressWarnings("SameParameterValue") String redisServerProperty)
+            throws URISyntaxException {
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(bridgeConfig().getPropertyAsInt("redis.max.total"));
         poolConfig.setMinIdle(bridgeConfig().getPropertyAsInt("redis.min.idle"));

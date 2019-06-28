@@ -21,7 +21,7 @@ public class CacheAdminService {
     
     private JedisPool jedisPool;
 
-    @Resource(name = "newJedisPool")
+    @Resource(name = "jedisPool")
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
     }

@@ -565,7 +565,7 @@ public class StudyService {
     }
     
     private void addAdminToACL(AccessControlList acl, String principalId) {
-        addToACL(acl, principalId, ModelConstants.ENITY_ADMIN_ACCESS_PERMISSIONS);
+        addToACL(acl, principalId, ModelConstants.ENTITY_ADMIN_ACCESS_PERMISSIONS);
     }
 
     private void addToACL(AccessControlList acl, String principalId, Set<ACCESS_TYPE> accessTypes) {
