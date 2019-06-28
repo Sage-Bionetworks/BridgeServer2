@@ -67,6 +67,11 @@
             <artifactId>spring-boot-starter-logging</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>5.1.8.RELEASE</version>
+        </dependency>
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
             <version>${aws.version}</version>
@@ -161,6 +166,11 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${hibernate.version}</version>
+        </dependency>
+        <dependency>
+	       <groupId>org.liquibase</groupId>
+           <artifactId>liquibase-core</artifactId>
+           <version>3.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
