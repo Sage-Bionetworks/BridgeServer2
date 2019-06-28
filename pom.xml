@@ -15,6 +15,8 @@
         <jackson.version>2.9.9</jackson.version>
         <java.version>1.8</java.version>
         <logback.version>1.2.3</logback.version>
+        <!-- NOTE: this is not the version of Spring Boot, declared below -->
+        <spring.version>5.1.8.RELEASE</spring.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         
@@ -69,7 +71,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
-            <version>5.1.8.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -225,7 +227,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>5.1.7.RELEASE</version>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
