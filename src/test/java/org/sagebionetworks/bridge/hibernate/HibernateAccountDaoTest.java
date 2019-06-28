@@ -78,8 +78,6 @@ public class HibernateAccountDaoTest {
     private static final String FIRST_NAME = "Eggplant";
     private static final String LAST_NAME = "McTester";
     private static final String REAUTH_TOKEN = "reauth-token";
-    // The default hashing algorithm uses a randomized salt... use a static value to simplify testing
-    private static final String REAUTH_TOKEN_HASH = "250000$Ph4WKc/3LXK+dY/dcu5ZzQ==$5MjK39+bMrwsFVUc2kK/sYkWctvm1ne270bVZiajs3Q=";
     private static final String EXTERNAL_ID = "an-external-id";
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER,
             ACCOUNT_ID);
@@ -583,53 +581,7 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void reauthenticateSuccessWithMigration() throws Exception {
-        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
-                + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "acct.email=:email GROUP BY acct.id";
-        // mock hibernate
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        setReauthInAccount(hibernateAccount);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        AccountSecret secret = AccountSecret.create();
-        when(mockAccountSecretDao.verifySecret(AccountSecretType.REAUTH, hibernateAccount.getId(), REAUTH_TOKEN,
-                HibernateAccountDao.ROTATIONS)).thenReturn(Optional.of(secret));
-
-        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
-        Account account = dao.reauthenticate(study, REAUTH_SIGNIN);
-        assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
-        assertEquals(account.getEmail(), EMAIL);
-        assertNull(account.getReauthTokenHash());
-        assertNull(account.getReauthTokenAlgorithm());
-        assertNull(account.getReauthTokenModifiedOn());
-        assertEquals(account.getVersion(), 2);
-
-        InOrder inOrder = Mockito.inOrder(mockHibernateHelper, mockAccountSecretDao);
-
-        // verify query
-        inOrder.verify(mockHibernateHelper).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
-
-        // We update the account twice in this scenario
-        ArgumentCaptor<AccountSecret> secretCaptor = ArgumentCaptor.forClass(AccountSecret.class);
-        inOrder.verify(mockHibernateHelper).create(secretCaptor.capture(), eq(null));
-        inOrder.verify(mockHibernateHelper).update(hibernateAccount, null);
-
-        AccountSecret savedSecret = secretCaptor.getValue();
-        assertEquals(savedSecret.getAccountId(), ACCOUNT_ID);
-        assertEquals(savedSecret.getAlgorithm(), PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        assertEquals(savedSecret.getHash(), REAUTH_TOKEN_HASH);
-        assertEquals(savedSecret.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(savedSecret.getType(), AccountSecretType.REAUTH);
-
-        // verify token verification
-        inOrder.verify(mockAccountSecretDao).verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, REAUTH_TOKEN, 3);
-    }
-
-    @Test
-    public void reauthenticateSuccessNoMigration() throws Exception {
+    public void reauthenticateSuccess() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
                 + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
                 + "acct.email=:email GROUP BY acct.id";
@@ -657,10 +609,6 @@ public class HibernateAccountDaoTest {
         // We update the account twice in this scenario
         verify(mockHibernateHelper, never()).create(any(), any());
         verify(mockHibernateHelper, never()).update(any(), any());
-        // These fields have remained null.
-        assertNull(hibernateAccount.getReauthTokenHash());
-        assertNull(hibernateAccount.getReauthTokenAlgorithm());
-        assertNull(hibernateAccount.getReauthTokenModifiedOn());
 
         // verify token verification
         verify(mockAccountSecretDao).verifySecret(AccountSecretType.REAUTH, ACCOUNT_ID, REAUTH_TOKEN, 3);
@@ -727,7 +675,7 @@ public class HibernateAccountDaoTest {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(makeValidHibernateAccount(false)));
 
-        // It also has no record in the secrets table...
+        // It has no record in the secrets table...
 
         // execute
         dao.reauthenticate(study, REAUTH_SIGNIN);
@@ -744,19 +692,6 @@ public class HibernateAccountDaoTest {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
                 .withPassword("bad password").build();
         dao.authenticate(study, signIn);
-    }
-
-    // branch coverage
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void reauthenticateAccountHasReauthTokenAlgorithmNoHash() throws Exception {
-        // mock hibernate
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        hibernateAccount.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        // execute
-        dao.authenticate(study, REAUTH_SIGNIN);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -785,21 +720,11 @@ public class HibernateAccountDaoTest {
     @Test
     public void deleteReauthToken() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        setReauthInAccount(hibernateAccount);
 
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        ArgumentCaptor<HibernateAccount> accountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-
         dao.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-
-        verify(mockHibernateHelper).update(accountCaptor.capture(), eq(null));
-        HibernateAccount captured = accountCaptor.getValue();
-
-        assertNull(captured.getReauthTokenAlgorithm());
-        assertNull(captured.getReauthTokenHash());
-        assertNull(captured.getReauthTokenModifiedOn());
 
         verify(mockAccountSecretDao).removeSecrets(AccountSecretType.REAUTH, ACCOUNT_ID);
     }
@@ -903,9 +828,8 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void updateDoesNotChangePasswordOrReauthToken() throws Exception {
+    public void updateDoesNotChangePassword() throws Exception {
         HibernateAccount persistedAccount = makeValidHibernateAccount(true);
-        setReauthInAccount(persistedAccount); // verify these fields are just left alone until migrated
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(persistedAccount);
 
         Account account = Account.create();
@@ -913,9 +837,6 @@ public class HibernateAccountDaoTest {
         account.setPasswordAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
         account.setPasswordHash("bad password hash");
         account.setPasswordModifiedOn(MOCK_DATETIME);
-        account.setReauthTokenAlgorithm(PasswordAlgorithm.STORMPATH_HMAC_SHA_256);
-        account.setReauthTokenHash("bad reauth token hash");
-        account.setReauthTokenModifiedOn(MOCK_DATETIME);
 
         dao.updateAccount(account, null);
 
@@ -929,9 +850,6 @@ public class HibernateAccountDaoTest {
         assertEquals(captured.getPasswordAlgorithm(), persistedAccount.getPasswordAlgorithm());
         assertEquals(captured.getPasswordHash(), persistedAccount.getPasswordHash());
         assertEquals(captured.getPasswordModifiedOn(), persistedAccount.getPasswordModifiedOn());
-        assertEquals(captured.getReauthTokenAlgorithm(), persistedAccount.getReauthTokenAlgorithm());
-        assertEquals(captured.getReauthTokenHash(), persistedAccount.getReauthTokenHash());
-        assertEquals(captured.getReauthTokenModifiedOn(), persistedAccount.getReauthTokenModifiedOn());
     }
 
     @Test
@@ -1885,11 +1803,5 @@ public class HibernateAccountDaoTest {
             hibernateAccount.setPasswordHash(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM.generateHash(DUMMY_PASSWORD));
         }
         return hibernateAccount;
-    }
-
-    private void setReauthInAccount(Account account) throws Exception {
-        account.setReauthTokenAlgorithm(PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM);
-        account.setReauthTokenHash(REAUTH_TOKEN_HASH);
-        account.setReauthTokenModifiedOn(DateTime.now());
     }
 }
