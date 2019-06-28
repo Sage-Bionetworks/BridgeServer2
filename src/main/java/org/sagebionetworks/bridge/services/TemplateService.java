@@ -175,7 +175,7 @@ public class TemplateService {
         
         templateDao.createTemplate(template);
 
-        return new GuidVersionHolder(template.getGuid(), new Long(template.getVersion()));
+        return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
     public GuidVersionHolder updateTemplate(StudyIdentifier studyId, Template template) {
@@ -207,7 +207,7 @@ public class TemplateService {
         persistCriteria(template);
         templateDao.updateTemplate(template);
         
-        return new GuidVersionHolder(template.getGuid(), new Long(template.getVersion()));
+        return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
     public void deleteTemplate(StudyIdentifier studyId, String guid) {
