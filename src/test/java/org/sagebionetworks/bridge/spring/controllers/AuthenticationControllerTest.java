@@ -93,6 +93,8 @@ public class AuthenticationControllerTest extends Mockito {
             .withPhone(TestConstants.PHONE).build();
     private static final SignIn PHONE_SIGN_IN = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
+            .withEmail(TEST_EMAIL).withReauthToken(REAUTH_TOKEN).build();
 
     @InjectMocks
     @Spy
@@ -1086,7 +1088,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
 
     @Test
-    public void unconsentedSignInSetsCookie() throws Exception {
+    public void unconsentedSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_PASSWORD_SIGN_IN_REQUEST);
         when(mockAuthService.signIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
@@ -1099,7 +1101,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
 
     @Test
-    public void unconsentedEmailSignInSetsCookie() throws Exception {
+    public void unconsentedEmailSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
         when(mockAuthService.emailSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
@@ -1112,7 +1114,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test
-    public void unconsentedPhoneSignInSetsCookie() throws Exception {
+    public void unconsentedPhoneSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN_REQUEST);
         when(mockAuthService.phoneSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
@@ -1120,6 +1122,20 @@ public class AuthenticationControllerTest extends Mockito {
             controller.phoneSignIn();
             fail("Should have thrown exeption");
         } catch(ConsentRequiredException e) {
+        }
+        verifyCommonLoggingForSignIns();
+    }
+
+    @Test
+    public void unconsentedReauthSetsMetrics() throws Exception {
+        mockRequestBody(mockRequest, REAUTH_REQUEST);
+        when(mockAuthService.reauthenticate(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
+
+        try {
+            controller.reauthenticate();
+            fail("Should have thrown exeption");
+        } catch(ConsentRequiredException e) {
+            // expected exception
         }
         verifyCommonLoggingForSignIns();
     }

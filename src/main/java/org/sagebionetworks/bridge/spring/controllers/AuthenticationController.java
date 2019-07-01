@@ -161,8 +161,14 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(study);
         
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        UserSession session = authenticationService.reauthenticate(study, context, signInRequest);
-        
+        UserSession session;
+        try {
+            session = authenticationService.reauthenticate(study, context, signInRequest);
+        } catch (ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
+        }
+
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
