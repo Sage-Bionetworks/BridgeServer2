@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Resource;
 import javax.servlet.Filter;
+import javax.sql.DataSource;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
@@ -31,13 +32,18 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.mchange.v2.c3p0.DriverManagerDataSource;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.boot.spi.SessionFactoryBuilderFactory;
+import org.hibernate.hql.internal.ast.util.SessionFactoryHelper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -549,6 +555,17 @@ public class SpringConfig {
     public FileHelper fileHelper() {
         return new FileHelper();
     }
+    
+    private String databaseURL() {
+        BridgeConfig config = bridgeConfig();
+        
+        String url = config.get("hibernate.connection.url");
+        // Append SSL props to URL
+        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
+        url += "?serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        
+        return url;
+    }
 
     @Bean
     public SessionFactory hibernateSessionFactory() {
@@ -589,15 +606,7 @@ public class SpringConfig {
         BridgeConfig config = bridgeConfig();
         props.put("hibernate.connection.password", config.get("hibernate.connection.password"));
         props.put("hibernate.connection.username", config.get("hibernate.connection.username"));
-
-        
-        String url = config.get("hibernate.connection.url");
-        
-        // Append SSL props to URL
-        boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
-        url += "?serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
-        
-        props.put("hibernate.connection.url", url);
+        props.put("hibernate.connection.url", databaseURL());
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
 
@@ -609,10 +618,22 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
         metadataSources.addAnnotatedClass(HibernateTemplate.class);
-
+        
         return metadataSources.buildMetadata().buildSessionFactory();
     }
-
+    
+    @Bean
+    @LiquibaseDataSource
+    public DataSource dataSource() {
+        BridgeConfig config = bridgeConfig();
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        dataSource.setJdbcUrl(databaseURL());
+        dataSource.setUser(config.get("hibernate.connection.username"));
+        dataSource.setPassword(config.get("hibernate.connection.password"));
+        return dataSource;
+    }
+    
     @Bean(name = "substudyHibernateHelper")
     @Autowired
     public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
