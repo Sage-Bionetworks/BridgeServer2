@@ -37,11 +37,8 @@ import com.mchange.v2.c3p0.DriverManagerDataSource;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.boot.spi.SessionFactoryBuilderFactory;
-import org.hibernate.hql.internal.ast.util.SessionFactoryHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -99,6 +96,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TemplatePersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.TemplateRevisionPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -645,6 +643,13 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
             TemplatePersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "templateRevisionHibernateHelper")
+    @Autowired
+    public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
+            TemplateRevisionPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

@@ -157,3 +157,16 @@ CREATE TABLE IF NOT EXISTS `Templates` (
   PRIMARY KEY (`guid`),
   KEY `type_set_idx` (`studyId`,`templateType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--changeset bridge:2
+
+CREATE TABLE IF NOT EXISTS `TemplateRevisions` (
+  `templateGuid` VARCHAR(60) NOT NULL,
+  `createdOn` BIGINT UNSIGNED NOT NULL,
+  `createdBy` VARCHAR(255) NOT NULL,
+  `storagePath` VARCHAR(255) NOT NULL,
+  `subject` VARCHAR(255) NULL,
+  `mimeType` ENUM('HTML', 'TEXT', 'PDF') NOT NULL,
+  PRIMARY KEY (`templateGuid`, `createdOn`),
+  CONSTRAINT `Templates-Guid-Constraint` FOREIGN KEY (`templateGuid`) REFERENCES `Templates` (`guid`) ON DELETE CASCADE
+) CHARACTER SET utf8 COLLATE utf8_unicode_ci;

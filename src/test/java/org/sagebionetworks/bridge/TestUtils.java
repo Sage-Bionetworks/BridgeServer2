@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -317,6 +317,7 @@ public class TestUtils {
             if (e.getErrors().get(fieldName).contains(fieldNameAsLabel+error)) {
                 return;
             }
+            System.out.println(e.getErrors());
             fail("Did not find error message in errors object");
         }
     }

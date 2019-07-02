@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 /**
  * DAO implementation for templates. All the business constraints are enforced in TemplateService because they are not 

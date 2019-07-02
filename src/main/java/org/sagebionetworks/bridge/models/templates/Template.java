@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.templates;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -6,6 +6,8 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.Criteria;
 
 @BridgeTypeName("Template")
 @JsonDeserialize(as=HibernateTemplate.class)
