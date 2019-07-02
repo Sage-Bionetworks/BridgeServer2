@@ -809,7 +809,6 @@ public class BaseControllerTest extends Mockito {
         verifyZeroInteractions(mockSessionUpdateService);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void canGetLanguagesWhenInHeader() throws Exception {
         Account account = Account.create();
@@ -1002,7 +1001,7 @@ public class BaseControllerTest extends Mockito {
         Set<Roles> roles = ImmutableSet.of(Roles.DEVELOPER);
         
         StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
-                .withRoles(roles).build();
+                .withRoles(roles).withId(USER_ID).build();
         session.setParticipant(participant);
         session.setAuthenticated(true);
         session.setStudyIdentifier(TestConstants.TEST_STUDY);
@@ -1017,6 +1016,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getCallerStudyId(), TEST_STUDY.getIdentifier());
         assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
         assertEquals(context.getCallerRoles(), roles);
+        assertEquals(context.getCallerUserId(), USER_ID);
     }
 
     @Test

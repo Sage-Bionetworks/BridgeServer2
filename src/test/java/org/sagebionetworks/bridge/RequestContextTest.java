@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -25,14 +26,16 @@ public class RequestContextTest {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerStudyId(null)
-                .withCallerSubstudies(null).withCallerRoles(null).build();
+                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null).build();
         
         assertNotNull(nullContext.getId());
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerStudyId());
         assertNull(nullContext.getCallerStudyIdentifier());
+        assertNull(nullContext.getCallerUserId());
         assertNotNull(nullContext.getMetrics());
+        
         
         ObjectNode node = nullContext.getMetrics().getJson();
         assertTrue(node.has("request_id"));
@@ -50,6 +53,7 @@ public class RequestContextTest {
         assertTrue(RequestContext.NULL_INSTANCE.getCallerRoles().isEmpty());
         assertNull(RequestContext.NULL_INSTANCE.getCallerStudyId());
         assertNull(RequestContext.NULL_INSTANCE.getCallerStudyIdentifier());
+        assertNull(RequestContext.NULL_INSTANCE.getCallerUserId());
         assertNull(RequestContext.NULL_INSTANCE.getMetrics());
     }
 
@@ -60,13 +64,14 @@ public class RequestContextTest {
         
         RequestContext context = new RequestContext.Builder().withRequestId("requestId")
                 .withCallerStudyId(TestConstants.TEST_STUDY).withCallerSubstudies(SUBSTUDIES)
-                .withMetrics(metrics).withCallerRoles(ROLES).build();
+                .withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID).build();
 
         assertEquals(context.getId(), "requestId");
         assertEquals(context.getCallerStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
         assertEquals(context.getCallerStudyIdentifier(), TestConstants.TEST_STUDY);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
+        assertEquals(context.getCallerUserId(), USER_ID);
         assertEquals(context.getMetrics(), metrics);
     }
 }

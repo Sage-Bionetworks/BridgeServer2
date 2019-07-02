@@ -4,9 +4,12 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 
 import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 
 @SuppressWarnings("serial")
 @Embeddable
@@ -16,6 +19,7 @@ public final class TemplateRevisionId implements Serializable {
     private String templateGuid;
 
     @Column(name = "createdOn")
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
 
     public TemplateRevisionId() {

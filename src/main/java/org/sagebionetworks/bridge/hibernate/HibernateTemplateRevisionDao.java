@@ -25,7 +25,7 @@ public class HibernateTemplateRevisionDao implements TemplateRevisionDao {
     static final String TEMPLATE_GUID_PARAM_NAME = "templateGuid";
     static final String SELECT_TEMPLATE = "SELECT revision ";
     static final String SELECT_COUNT = "SELECT count(*) ";
-    static final String GET_ALL = "FROM HibernateTemplateRevision as revision " + 
+    static final String GET_ALL = "FROM HibernateTemplateRevision AS revision " + 
             "WHERE templateGuid = :templateGuid ORDER BY createdOn DESC";
 
     private HibernateHelper hibernateHelper;

@@ -186,6 +186,7 @@ public abstract class BaseController {
         builder.withCallerStudyId(session.getStudyIdentifier());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
+        builder.withCallerUserId(session.getParticipant().getId());
         BridgeUtils.setRequestContext(builder.build());
         
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts

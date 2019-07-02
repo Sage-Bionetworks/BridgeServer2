@@ -57,7 +57,6 @@ public class TemplateRevisionService {
         this.publicationsBucket = bridgeConfig.getHostnameWithPostfix("docs");
     }
     
-    
     public PagedResourceList<? extends TemplateRevision> getTemplateRevisions(StudyIdentifier studyId,
             String templateGuid, Integer offset, Integer pageSize) {
         checkNotNull(studyId);
@@ -148,7 +147,7 @@ public class TemplateRevisionService {
     }
     
     protected String getUserId() {
-        return BridgeUtils.getRequestContext().getId();
+        return BridgeUtils.getRequestContext().getCallerUserId();
     }
     
     protected DateTime getDateTime() {

@@ -19,17 +19,19 @@ import org.sagebionetworks.bridge.models.templates.TemplateRevisionId;
 
 @Entity
 @IdClass(TemplateRevisionId.class)
-@Table(name = "TemplatesRevisions")
+@Table(name = "TemplateRevisions")
 public class HibernateTemplateRevision implements TemplateRevision {
 
     @Id
     private String templateGuid;
-    @Id
     @Convert(converter = DateTimeToLongAttributeConverter.class)
+    @Id
     private DateTime createdOn;
     private String createdBy;
     private String storagePath;
+    @Transient
     private String documentContent;
+    @Enumerated(EnumType.STRING)
     private MimeType mimeType;
     private String subject;
     
@@ -42,7 +44,6 @@ public class HibernateTemplateRevision implements TemplateRevision {
     public void setTemplateGuid(String templateGuid) {
         this.templateGuid = templateGuid;
     }
-    @Convert(converter = DateTimeToLongAttributeConverter.class)
     @Override
     public DateTime getCreatedOn() {
         return createdOn;
@@ -68,7 +69,6 @@ public class HibernateTemplateRevision implements TemplateRevision {
     public void setStoragePath(String storagePath) {
         this.storagePath = storagePath;
     }
-    @Enumerated(EnumType.STRING)
     @Override
     public MimeType getMimeType() {
         return mimeType;
@@ -85,7 +85,6 @@ public class HibernateTemplateRevision implements TemplateRevision {
     public void setSubject(String subject) {
         this.subject = subject;
     }
-    @Transient
     @Override
     public String getDocumentContent() {
         return documentContent;
