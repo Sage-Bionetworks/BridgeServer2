@@ -64,6 +64,22 @@ public class DynamoStudyTest {
     }
 
     @Test
+    public void fitBitScopesIsNeverNull() {
+        // Starts as empty.
+        Study study = Study.create();
+        assertTrue(study.getFitBitScopes().isEmpty());
+
+        // Set value works.
+        List<String> scopeList = ImmutableList.of("DailyActivitySummary", "HeartRate", "Sleep");
+        study.setFitBitScopes(scopeList);
+        assertEquals(study.getFitBitScopes(), scopeList);
+
+        // Set to null makes it empty again.
+        study.setFitBitScopes(null);
+        assertTrue(study.getFitBitScopes().isEmpty());
+    }
+
+    @Test
     public void uploadMetadataFieldDefListIsNeverNull() {
         // make field for test
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -187,6 +203,10 @@ public class DynamoStudyTest {
         assertEquals(androidLink.get("namespace").textValue(), "namespace");
         assertEquals(androidLink.get("package_name").textValue(), "package_name");
         assertEquals(androidLink.get("sha256_cert_fingerprints").get(0).textValue(), "sha256_cert_fingerprints");
+
+        JsonNode fitBitScopesNode = node.get("fitBitScopes");
+        assertEquals(fitBitScopesNode.size(), 1);
+        assertEquals(fitBitScopesNode.get(0).textValue(), "HeartRate");
 
         // validate minAppVersion
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
