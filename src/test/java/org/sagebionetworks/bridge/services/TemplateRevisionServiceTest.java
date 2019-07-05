@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -10,11 +9,9 @@ import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
@@ -29,7 +26,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.dao.TemplateRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -39,14 +35,12 @@ import org.sagebionetworks.bridge.models.CreatedOnHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.s3.S3Helper;
 
 public class TemplateRevisionServiceTest extends Mockito {
     
     private static final String SUBJECT = "Test SMS subject line";
     private static final String DOCUMENT_CONTENT = "Test SMS message";
     private static final String TEMPLATE_GUID = "oneTemplateGuid";
-    private static final String PUB_BUCKET = "oneS3Bucket";
     private static final DateTime CREATED_ON = TestConstants.TIMESTAMP;
     private static final String STORAGE_PATH = TEMPLATE_GUID + "." + CREATED_ON.getMillis();
     
@@ -56,18 +50,9 @@ public class TemplateRevisionServiceTest extends Mockito {
     @Mock
     TemplateRevisionDao mockTemplateRevisionDao;
     
-    @Mock
-    S3Helper mockS3Helper;
-    
-    @Mock
-    BridgeConfig bridgeConfig;
-    
     @InjectMocks
     @Spy
     TemplateRevisionService service;
-    
-    @Captor
-    ArgumentCaptor<ObjectMetadata> metadataCaptor;
 
     @Captor
     ArgumentCaptor<Template> templateCaptor;
@@ -78,9 +63,6 @@ public class TemplateRevisionServiceTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
-        
-        when(bridgeConfig.getHostnameWithPostfix("docs")).thenReturn(PUB_BUCKET);
-        service.setBridgeConfig(bridgeConfig);
         
         when(service.getDateTime()).thenReturn(TIMESTAMP);
         when(service.getUserId()).thenReturn(USER_ID);
@@ -148,9 +130,6 @@ public class TemplateRevisionServiceTest extends Mockito {
         CreatedOnHolder holder = service.createTemplateRevision(TEST_STUDY, TEMPLATE_GUID, revision);
         assertEquals(holder.getCreatedOn(), CREATED_ON);
         
-        verify(mockS3Helper).writeBytesToS3(eq(PUB_BUCKET), eq(STORAGE_PATH), eq(DOCUMENT_CONTENT.getBytes()), metadataCaptor.capture());
-        assertEquals(metadataCaptor.getValue().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
-        
         verify(mockTemplateRevisionDao).createTemplateRevision(revisionCaptor.capture());
         TemplateRevision captured = revisionCaptor.getValue();
         
@@ -181,13 +160,9 @@ public class TemplateRevisionServiceTest extends Mockito {
         mockGetTemplate();
         TemplateRevision revision = mockGetTemplateRevision();
         
-        when(mockS3Helper.readS3FileAsString(PUB_BUCKET, STORAGE_PATH)).thenReturn(DOCUMENT_CONTENT);
-        
         TemplateRevision returned = service.getTemplateRevision(TEST_STUDY, TEMPLATE_GUID, CREATED_ON);
         assertSame(returned, revision);
-        assertEquals(returned.getDocumentContent(), DOCUMENT_CONTENT);
         
-        verify(mockS3Helper).readS3FileAsString(PUB_BUCKET, STORAGE_PATH);
         verify(mockTemplateDao).getTemplate(TEST_STUDY, TEMPLATE_GUID);
         verify(mockTemplateRevisionDao).getTemplateRevision(TEMPLATE_GUID, CREATED_ON);
     }
@@ -200,16 +175,6 @@ public class TemplateRevisionServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "TemplateRevision not found.")
     public void getTemplateRevisionTemplateRevisionNotFound() throws Exception { 
         mockGetTemplate();
-        service.getTemplateRevision(TEST_STUDY, TEMPLATE_GUID, CREATED_ON);
-    }
-    
-    @Test(expectedExceptions = IOException.class)
-    public void getTemplateRevisionDocumentContentNotFound() throws Exception {
-        mockGetTemplate();
-        mockGetTemplateRevision();
-        
-        when(mockS3Helper.readS3FileAsString(PUB_BUCKET, STORAGE_PATH)).thenThrow(new IOException("Womp womp"));
-
         service.getTemplateRevision(TEST_STUDY, TEMPLATE_GUID, CREATED_ON);
     }
     
