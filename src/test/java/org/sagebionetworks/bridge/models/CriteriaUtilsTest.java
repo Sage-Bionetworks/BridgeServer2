@@ -15,6 +15,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableSet;
@@ -304,6 +305,21 @@ public class CriteriaUtilsTest {
         assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("includes these excluded substudies: "));
         assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyB"));
         assertTrue(errors.getFieldErrors("allOfSubstudyIds").get(0).getCode().contains("substudyC"));
+    }
+    
+    @Test
+    public void validateLanguage() {
+        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);
+        criteria.setLanguage("ena");
+        
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").get(0).getCode().contains("is not a valid language code"));
+        
+        errors = Validate.getErrorsFor(criteria);
+        criteria.setLanguage("en");
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").isEmpty());
     }
     
     @Test

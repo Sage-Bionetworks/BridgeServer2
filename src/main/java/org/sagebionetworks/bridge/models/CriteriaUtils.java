@@ -6,8 +6,11 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
+import org.apache.commons.lang3.LocaleUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -86,6 +89,13 @@ public class CriteriaUtils {
                 pushSubpathError(errors, "maxAppVersions", errorKey, "cannot be negative");
             }
         }
+        if (StringUtils.isNotBlank(criteria.getLanguage())) {
+            Locale locale = new Locale.Builder().setLanguageTag(criteria.getLanguage()).build();
+            if (!LocaleUtils.isAvailableLocale(locale)) {
+                errors.rejectValue("language", "is not a valid language code");
+            }
+        }
+        
         validateSetItemsExist(errors, "allOfGroups", dataGroups, criteria.getAllOfGroups());
         validateSetItemsExist(errors, "noneOfGroups", dataGroups, criteria.getNoneOfGroups());
         validateSetItemsDoNotOverlap(errors, "data groups", "allOfGroups", criteria.getAllOfGroups(),

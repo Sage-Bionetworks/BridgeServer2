@@ -318,28 +318,26 @@ public class TemplateService {
         String templateGuid = generateGuid();
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
-        
-        revision.setCreatedBy(getUserId());
-        revision.setCreatedOn(timestamp);
-        revision.setTemplateGuid(templateGuid);
-        revision.setCreatedBy(getUserId());
-        revision.setStoragePath(storagePath);
-        
-        templateRevisionDao.createTemplateRevision(revision);
-        
+
         template.setStudyId(studyId.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);
         template.setCreatedOn(timestamp);
         template.setModifiedOn(timestamp);
-        template.setPublishedCreatedOn(revision.getCreatedOn());
+        template.setPublishedCreatedOn(timestamp);
         
         Criteria criteria = persistCriteria(template);
         template.setCriteria(criteria);
         
-        templateDao.createTemplate(template);
+        revision.setCreatedBy(getUserId());
+        revision.setCreatedOn(timestamp);
+        revision.setTemplateGuid(templateGuid);
+        revision.setCreatedBy(getUserId());
+        revision.setStoragePath(storagePath);
 
+        templateDao.createTemplate(template, null);
+        templateRevisionDao.createTemplateRevision(revision);
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     

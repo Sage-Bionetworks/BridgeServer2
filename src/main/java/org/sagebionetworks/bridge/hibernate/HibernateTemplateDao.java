@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.annotation.Resource;
 
@@ -80,10 +81,10 @@ public class HibernateTemplateDao implements TemplateDao {
     }
 
     @Override
-    public void createTemplate(Template template) {
+    public void createTemplate(Template template, Consumer<Template> consumer) {
         checkNotNull(template);
         
-        hibernateHelper.create(template, null); 
+        hibernateHelper.create(template, consumer); 
     }
 
     @Override

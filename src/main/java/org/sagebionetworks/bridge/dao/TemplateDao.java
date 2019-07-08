@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -14,7 +15,7 @@ public interface TemplateDao {
 
     Optional<Template> getTemplate(StudyIdentifier studyId, String guid);
     
-    void createTemplate(Template template);
+    void createTemplate(Template template, Consumer<Template> consumer);
     
     void updateTemplate(Template template);
     
