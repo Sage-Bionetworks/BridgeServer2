@@ -12,6 +12,8 @@ import javax.annotation.PostConstruct;
 
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -67,9 +69,9 @@ public class DefaultStudyBootstrapper {
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
             study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
             study.setSupportEmail("support@sagebridge.org");
-            study.setDataGroups(TEST_DATA_GROUPS);
-            study.setTaskIdentifiers(TEST_TASK_IDENTIFIERS);
-            study.setUserProfileAttributes(ImmutableSet.of("can_be_recontacted"));
+            study.setDataGroups(Sets.newHashSet(TEST_DATA_GROUPS));
+            study.setTaskIdentifiers(Sets.newHashSet(TEST_TASK_IDENTIFIERS));
+            study.setUserProfileAttributes(Sets.newHashSet("can_be_recontacted"));
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
