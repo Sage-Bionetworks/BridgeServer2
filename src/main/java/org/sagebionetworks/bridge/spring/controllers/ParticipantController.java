@@ -65,6 +65,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AccountExternalIdMigrationService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 @CrossOrigin
@@ -77,6 +78,8 @@ public class ParticipantController extends BaseController {
     
     private UserAdminService userAdminService;
     
+    private AccountExternalIdMigrationService migrationService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -85,6 +88,18 @@ public class ParticipantController extends BaseController {
     @Autowired
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
+    }
+    
+    @Autowired
+    final void setAccountExternalIdMigrationService(AccountExternalIdMigrationService migrationService) {
+        this.migrationService = migrationService;
+    }
+    
+    @PostMapping("/v3/participants/{userId}/externalId/migrate")
+    public StatusMessage migrateExternalId(@PathVariable String userId, @RequestParam(name = "substudyId", required = false) String substudyId) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        String result = migrationService.migrate(session.getStudyIdentifier(), userId, substudyId);
+        return new StatusMessage("Users's external ID has been associated to substudy: " + result);
     }
 
     /** Researcher API to allow backfill of SMS notification registrations. */
