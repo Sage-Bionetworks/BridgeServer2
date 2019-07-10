@@ -41,11 +41,9 @@ public class DefaultStudyBootstrapper {
     private final DynamoInitializer dynamoInitializer;
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
 
-
     @Autowired
-    public DefaultStudyBootstrapper(StudyService studyService,
-                                    AnnotationBasedTableCreator annotationBasedTableCreator,
-                                    DynamoInitializer dynamoInitializer) {
+    public DefaultStudyBootstrapper(StudyService studyService, AnnotationBasedTableCreator annotationBasedTableCreator,
+        DynamoInitializer dynamoInitializer) {
         this.studyService = studyService;
         this.dynamoInitializer = dynamoInitializer;
         this.annotationBasedTableCreator = annotationBasedTableCreator;
