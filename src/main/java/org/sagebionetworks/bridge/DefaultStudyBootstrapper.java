@@ -5,6 +5,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 import java.util.Set;
@@ -14,18 +17,30 @@ import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UserAdminService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 @Component("defaultStudyBootstrapper")
-public class DefaultStudyBootstrapper {
+public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
 
+    private static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_STUDY_ID_STRING);
+    private static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_STUDY_ID_STRING);
+    private static final PasswordPolicy MIN_PASSWORD_POLICY = new PasswordPolicy(2, false, false, false, false);
+    
     /**
      * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
      */
@@ -37,25 +52,27 @@ public class DefaultStudyBootstrapper {
      */
     public static final Set<String> TEST_TASK_IDENTIFIERS = ImmutableSet.of("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
 
+    private final UserAdminService userAdminService;
     private final StudyService studyService;
     private final DynamoInitializer dynamoInitializer;
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
 
-
     @Autowired
-    public DefaultStudyBootstrapper(StudyService studyService,
-                                    AnnotationBasedTableCreator annotationBasedTableCreator,
-                                    DynamoInitializer dynamoInitializer) {
+    public DefaultStudyBootstrapper(UserAdminService userAdminService, StudyService studyService,
+            AnnotationBasedTableCreator annotationBasedTableCreator, DynamoInitializer dynamoInitializer) {
+        this.userAdminService = userAdminService;
         this.studyService = studyService;
         this.dynamoInitializer = dynamoInitializer;
         this.annotationBasedTableCreator = annotationBasedTableCreator;
     }
 
-    @PostConstruct
-    public void initializeDatabase() {
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
         List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
         dynamoInitializer.init(tables);
 
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
             studyService.getStudy(API_STUDY_ID);
@@ -75,7 +92,22 @@ public class DefaultStudyBootstrapper {
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
-            studyService.createStudy(study);
+            study.setPasswordPolicy(MIN_PASSWORD_POLICY);
+            study = studyService.createStudy(study);
+            
+            BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
+                    .withCallerRoles(ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER)).build());
+            StudyParticipant admin = new StudyParticipant.Builder()
+                    .withEmail(config.get("admin.email").trim())
+                    .withPassword(config.get("admin.password").trim())
+                    .withRoles(ImmutableSet.of(ADMIN, RESEARCHER)).build();
+            userAdminService.createUser(study, admin, API_SUBPOP, false, false);
+
+            StudyParticipant dev = new StudyParticipant.Builder()
+                    .withEmail(config.get("api.developer.email").trim())
+                    .withPassword(config.get("api.developer.password").trim())
+                    .withRoles(ImmutableSet.of(DEVELOPER)).build();
+            userAdminService.createUser(study, dev, API_SUBPOP, false, false);
         }
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
@@ -90,10 +122,16 @@ public class DefaultStudyBootstrapper {
             study.setSupportEmail("bridgeit@sagebridge.org");
             study.setTechnicalEmail("bridgeit@sagebridge.org");
             study.setConsentNotificationEmail("bridgeit@sagebridge.org");
-            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
+            study.setPasswordPolicy(MIN_PASSWORD_POLICY);
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
             studyService.createStudy(study);
+            
+            StudyParticipant dev = new StudyParticipant.Builder()
+                    .withEmail(config.get("shared.developer.email").trim())
+                    .withPassword(config.get("shared.developer.password").trim())
+                    .withRoles(ImmutableSet.of(DEVELOPER)).build();
+            userAdminService.createUser(study, dev, SHARED_SUBPOP, false, false);
         }
     }
 }

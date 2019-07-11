@@ -23,29 +23,31 @@ import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class DefaultStudyBootstrapperTest {
 
     private StudyService studyService;
+    
+    private UserAdminService userAdminService;
 
     private DefaultStudyBootstrapper defaultStudyBootstrapper;
 
     @BeforeMethod
     public void before() {
         studyService = mock(StudyService.class);
+        userAdminService = mock(UserAdminService.class);
 
         when(studyService.getStudy(any(StudyIdentifier.class))).thenThrow(EntityNotFoundException.class);
-        defaultStudyBootstrapper = new DefaultStudyBootstrapper(studyService,
-                mock(AnnotationBasedTableCreator.class),
-                mock(DynamoInitializer.class)
-        );
+        defaultStudyBootstrapper = new DefaultStudyBootstrapper(userAdminService, studyService,
+                mock(AnnotationBasedTableCreator.class), mock(DynamoInitializer.class)        );
     }
 
     @Test
     public void createsDefaultStudyWhenMissing() {
-        defaultStudyBootstrapper.initializeDatabase();
+        defaultStudyBootstrapper.onApplicationEvent(null);
 
         ArgumentCaptor<Study> argument = ArgumentCaptor.forClass(Study.class);
         verify(studyService, times(2)).createStudy(argument.capture());
