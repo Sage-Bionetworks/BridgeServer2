@@ -11,7 +11,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 import java.util.Set;
-import javax.annotation.PostConstruct;
 
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableSet;
@@ -37,9 +36,8 @@ import org.springframework.stereotype.Component;
 @Component("defaultStudyBootstrapper")
 public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
 
-    private static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_STUDY_ID_STRING);
-    private static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_STUDY_ID_STRING);
-    private static final PasswordPolicy MIN_PASSWORD_POLICY = new PasswordPolicy(2, false, false, false, false);
+    static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_STUDY_ID_STRING);
+    static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_STUDY_ID_STRING);
     
     /**
      * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
@@ -92,20 +90,19 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
-            study.setPasswordPolicy(MIN_PASSWORD_POLICY);
             study = studyService.createStudy(study);
             
             BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
                     .withCallerRoles(ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER)).build());
             StudyParticipant admin = new StudyParticipant.Builder()
-                    .withEmail(config.get("admin.email").trim())
-                    .withPassword(config.get("admin.password").trim())
+                    .withEmail(config.get("admin.email"))
+                    .withPassword(config.get("admin.password"))
                     .withRoles(ImmutableSet.of(ADMIN, RESEARCHER)).build();
             userAdminService.createUser(study, admin, API_SUBPOP, false, false);
 
             StudyParticipant dev = new StudyParticipant.Builder()
-                    .withEmail(config.get("api.developer.email").trim())
-                    .withPassword(config.get("api.developer.password").trim())
+                    .withEmail(config.get("api.developer.email"))
+                    .withPassword(config.get("api.developer.password"))
                     .withRoles(ImmutableSet.of(DEVELOPER)).build();
             userAdminService.createUser(study, dev, API_SUBPOP, false, false);
         }
@@ -122,14 +119,13 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setSupportEmail("bridgeit@sagebridge.org");
             study.setTechnicalEmail("bridgeit@sagebridge.org");
             study.setConsentNotificationEmail("bridgeit@sagebridge.org");
-            study.setPasswordPolicy(MIN_PASSWORD_POLICY);
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
-            studyService.createStudy(study);
+            study = studyService.createStudy(study);
             
             StudyParticipant dev = new StudyParticipant.Builder()
-                    .withEmail(config.get("shared.developer.email").trim())
-                    .withPassword(config.get("shared.developer.password").trim())
+                    .withEmail(config.get("shared.developer.email"))
+                    .withPassword(config.get("shared.developer.password"))
                     .withRoles(ImmutableSet.of(DEVELOPER)).build();
             userAdminService.createUser(study, dev, SHARED_SUBPOP, false, false);
         }

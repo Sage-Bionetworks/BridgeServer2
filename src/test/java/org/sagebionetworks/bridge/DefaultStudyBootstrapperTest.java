@@ -1,58 +1,83 @@
 package org.sagebionetworks.bridge;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.API_SUBPOP;
+import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.SHARED_SUBPOP;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-public class DefaultStudyBootstrapperTest {
+public class DefaultStudyBootstrapperTest extends Mockito {
 
-    private StudyService studyService;
+    @Mock
+    StudyService mockStudyService;
     
-    private UserAdminService userAdminService;
+    @Mock
+    UserAdminService mockUserAdminService;
+    
+    @Mock
+    AnnotationBasedTableCreator mockTableCreator; 
+    
+    @Mock
+    DynamoInitializer mockDynamoInitializer; 
 
-    private DefaultStudyBootstrapper defaultStudyBootstrapper;
+    @InjectMocks
+    DefaultStudyBootstrapper defaultStudyBootstrapper;
+    
+    @Captor
+    ArgumentCaptor<Study> studyCaptor;
 
+    @Captor
+    ArgumentCaptor<SubpopulationGuid> subpopCaptor;
+    
+    @Captor
+    ArgumentCaptor<StudyParticipant> participantCaptor;
+    
     @BeforeMethod
     public void before() {
-        studyService = mock(StudyService.class);
-        userAdminService = mock(UserAdminService.class);
-
-        when(studyService.getStudy(any(StudyIdentifier.class))).thenThrow(EntityNotFoundException.class);
-        defaultStudyBootstrapper = new DefaultStudyBootstrapper(userAdminService, studyService,
-                mock(AnnotationBasedTableCreator.class), mock(DynamoInitializer.class)        );
+        MockitoAnnotations.initMocks(this);
+        when(mockStudyService.getStudy(any(StudyIdentifier.class))).thenThrow(EntityNotFoundException.class);
+        when(mockStudyService.createStudy(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
     public void createsDefaultStudyWhenMissing() {
         defaultStudyBootstrapper.onApplicationEvent(null);
 
-        ArgumentCaptor<Study> argument = ArgumentCaptor.forClass(Study.class);
-        verify(studyService, times(2)).createStudy(argument.capture());
+        verify(mockStudyService, times(2)).createStudy(studyCaptor.capture());
 
-        List<Study> createdStudyList = argument.getAllValues();
+        List<Study> createdStudyList = studyCaptor.getAllValues();
 
         // Validate api study.
         Study study = createdStudyList.get(0);
@@ -83,5 +108,28 @@ public class DefaultStudyBootstrapperTest {
             assertEquals(e.getErrors().get("resetPasswordTemplate").size(), 1);
         }
         
+        BridgeConfig config = BridgeConfigFactory.getConfig();
+        
+        verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
+                subpopCaptor.capture(), eq(false), eq(false));
+        
+        assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(0));
+        assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(1));
+        assertEquals(SHARED_SUBPOP, subpopCaptor.getAllValues().get(2));
+        
+        StudyParticipant admin = participantCaptor.getAllValues().get(0);
+        assertEquals(admin.getRoles(), ImmutableSet.of(ADMIN, RESEARCHER));
+        assertEquals(admin.getEmail(), config.get("admin.email"));
+        assertEquals(admin.getPassword(), config.get("admin.password"));
+        
+        StudyParticipant apiDev = participantCaptor.getAllValues().get(1);
+        assertEquals(apiDev.getRoles(), ImmutableSet.of(DEVELOPER));
+        assertEquals(apiDev.getEmail(), config.get("api.developer.email"));
+        assertEquals(apiDev.getPassword(), config.get("api.developer.password"));
+        
+        StudyParticipant sharedDev = participantCaptor.getAllValues().get(2);
+        assertEquals(sharedDev.getRoles(), ImmutableSet.of(DEVELOPER));
+        assertEquals(sharedDev.getEmail(), config.get("shared.developer.email"));
+        assertEquals(sharedDev.getPassword(), config.get("shared.developer.password"));
     }
 }
