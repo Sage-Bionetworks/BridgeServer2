@@ -304,6 +304,7 @@ public class ParticipantService {
         builder.withDataGroups(account.getDataGroups());
         builder.withLanguages(account.getLanguages());
         builder.withTimeZone(account.getTimeZone());
+        builder.withExternalId(account.getExternalId());
         builder.withFirstName(account.getFirstName());
         builder.withLastName(account.getLastName());
         builder.withEmail(account.getEmail());

@@ -144,7 +144,7 @@ public class ApplicationControllerTest extends Mockito {
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
         
-        String templateName = controller.startSessionWithQueryParam(model, "test-study", "email", "token");
+        String templateName = controller.startSessionWithQueryParam(model, "test-study");
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
@@ -156,7 +156,7 @@ public class ApplicationControllerTest extends Mockito {
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
         
-        String templateName = controller.startSessionWithPath(model, "test-study", "email", "token");
+        String templateName = controller.startSessionWithPath(model, "test-study");
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
