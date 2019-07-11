@@ -533,7 +533,6 @@ public class TestUtils {
         study.setStrictUploadValidationEnabled(true);
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(true);
-        study.setExternalIdValidationEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setEmailSignInEnabled(true);
         study.setPhoneSignInEnabled(true);

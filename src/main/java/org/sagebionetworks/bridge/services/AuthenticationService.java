@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -240,13 +239,6 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(participant);
         
-        // External ID accounts are created enabled, so we do not allow public API callers to enter random 
-        // strings, they must be known and assignable. This logic is not applied to accounts created through 
-        // the administrative APIs.
-        if (BridgeUtils.isExternalIdAccount(participant) && !study.isExternalIdValidationEnabled()) {
-            throw new UnauthorizedException("External ID management is not enabled for this study");
-        }
-
         try {
             // This call is exposed without authentication, so the request context has no roles, and no roles 
             // can be assigned to this user.
@@ -321,9 +313,6 @@ public class AuthenticationService {
     public GeneratedPassword generatePassword(Study study, String externalId, boolean createAccount) {
         checkNotNull(study);
         
-        if (!study.isExternalIdValidationEnabled()) {
-            throw new BadRequestException("External ID management disabled for this study");
-        }
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
