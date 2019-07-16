@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Optional;
 import java.util.Set;
@@ -102,10 +103,9 @@ public class StudyParticipantValidator implements Validator {
             }
         }
         
-        // External ID can be updated during creation or on update. We validate it if IDs are 
-        // managed. If it's already assigned to another user, the database constraints will 
-        // prevent this record's persistence.
-        if (StringUtils.isNotBlank(participant.getExternalId())) {
+        // External ID can be updated during creation or on update. If it's already assigned to another user, 
+        // the database constraints will prevent this record's persistence.
+        if (isNotBlank(participant.getExternalId())) {
             Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
                     participant.getExternalId());
             if (!optionalId.isPresent()) {

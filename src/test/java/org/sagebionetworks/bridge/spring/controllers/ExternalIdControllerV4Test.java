@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -31,6 +32,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -147,6 +149,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void deleteExternalIdentifier() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
 
         StatusMessage result = controller.deleteExternalIdentifier("externalId");

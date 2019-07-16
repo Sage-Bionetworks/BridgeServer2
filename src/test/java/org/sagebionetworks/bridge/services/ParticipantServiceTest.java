@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -85,6 +86,7 @@ import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -2831,6 +2833,19 @@ public class ParticipantServiceTest {
         } catch(ConcurrentModificationException e) {
             verify(externalIdService).unassignExternalId(account, EXTERNAL_ID); 
         }
+    }
+    
+    @Test
+    public void getActivityHistory() {
+        mockHealthCodeAndAccountRetrieval();
+        DateTime scheduledOnStart = DateTime.now().minusDays(3);
+        DateTime scheduledOnEnd = scheduledOnStart.plusDays(6);
+        
+        participantService.getActivityHistory(STUDY, ID, SURVEY, "referentGuid", scheduledOnStart, scheduledOnEnd,
+                "offsetKey", 112);
+        
+        verify(scheduledActivityService).getActivityHistory(HEALTH_CODE, ActivityType.SURVEY, "referentGuid",
+                scheduledOnStart, scheduledOnEnd, "offsetKey", 112);
     }
     
     // getPagedAccountSummaries() filters substudies in the query itself, as this is the only 

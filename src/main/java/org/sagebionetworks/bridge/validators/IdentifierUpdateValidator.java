@@ -65,12 +65,13 @@ public class IdentifierUpdateValidator implements Validator {
             updateFields++;
             if (isBlank(update.getExternalIdUpdate())) {
                 errors.rejectValue("externalIdUpdate", "cannot be blank");
-            }
-            // the same validation we perform when adding a participant where external ID is required on sign up.
-            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
-                    update.getExternalIdUpdate());
-            if (!optionalId.isPresent()) {
-                errors.rejectValue("externalIdUpdate", "is not a valid external ID");
+            } else {
+                // the same validation we perform when adding a participant where external ID is required on sign up.
+                Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+                        update.getExternalIdUpdate());
+                if (!optionalId.isPresent()) {
+                    errors.rejectValue("externalIdUpdate", "is not a valid external ID");
+                }
             }
         }
         if (updateFields < 1) {
