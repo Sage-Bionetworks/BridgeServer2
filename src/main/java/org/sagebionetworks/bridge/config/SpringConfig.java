@@ -650,7 +650,7 @@ public class SpringConfig {
     
     @Bean(name = "templateRevisionHibernateHelper")
     @Autowired
-    public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
+    public HibernateHelper templateRevisionHibernateHelper(SessionFactory sessionFactory,
             TemplateRevisionPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }

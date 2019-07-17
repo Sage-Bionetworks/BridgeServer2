@@ -23,6 +23,4 @@ public class CreatedOnHolderTest {
         CreatedOnHolder deser = BridgeObjectMapper.get().readValue(node.toString(), CreatedOnHolder.class);
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
     }
-    
-    
 }

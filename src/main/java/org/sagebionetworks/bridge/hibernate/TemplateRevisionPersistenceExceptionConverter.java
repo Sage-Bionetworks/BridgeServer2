@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.hibernate;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
+import org.springframework.stereotype.Component;
+
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
+@Component
 public class TemplateRevisionPersistenceExceptionConverter implements PersistenceExceptionConverter {
 
     @Override
