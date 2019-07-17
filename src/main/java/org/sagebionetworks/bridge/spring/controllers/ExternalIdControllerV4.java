@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
@@ -69,10 +70,10 @@ public class ExternalIdControllerV4 extends BaseController {
     
     @DeleteMapping("/v4/externalids/{externalId}")
     public StatusMessage deleteExternalIdentifier(@PathVariable String externalId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);        
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);
         externalIdService.deleteExternalIdPermanently(study, externalIdentifier);
         
         return new StatusMessage("External identifier deleted.");

@@ -112,6 +112,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AccountExternalIdMigrationService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
@@ -181,7 +182,10 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     UserAdminService mockUserAdminService;
-
+    
+    @Mock
+    AccountExternalIdMigrationService mockMigrationService;
+    
     @Mock
     HttpServletRequest mockRequest;
 
@@ -1367,7 +1371,35 @@ public class ParticipantControllerTest extends Mockito {
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search, payload);
     }
+    
+    @Test
+    public void migrateExternal() {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).withSubstudyIds(CALLER_SUBS)
+                .withId(USER_ID).build();
+        session.setParticipant(participant);
+        
+        when(mockMigrationService.migrate(TEST_STUDY, USER_ID, "substudyFoo")).thenReturn("substudyFoo");
+        
+        StatusMessage message = controller.migrateExternalId(USER_ID, "substudyFoo");
+        assertEquals(message.getMessage(), "Users's external ID has been associated to substudy: substudyFoo");
+        
+        verify(mockMigrationService).migrate(TEST_STUDY, USER_ID, "substudyFoo");
+    }
 
+    @Test
+    public void migrateExternalIdWithNoSubstudyId() {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).withSubstudyIds(CALLER_SUBS)
+                .withId(USER_ID).build();
+        session.setParticipant(participant);
+
+        when(mockMigrationService.migrate(TEST_STUDY, USER_ID, null)).thenReturn("defaultSubstudy");
+        
+        StatusMessage message = controller.migrateExternalId(USER_ID, null);
+        assertEquals(message.getMessage(), "Users's external ID has been associated to substudy: defaultSubstudy");
+        
+        verify(mockMigrationService).migrate(TEST_STUDY, USER_ID, null);
+    }
+    
     private AccountSummarySearch setAccountSummarySearch() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(100)
                 .withEmailFilter("email").withPhoneFilter("phone").withAllOfGroups(ImmutableSet.of("group1"))

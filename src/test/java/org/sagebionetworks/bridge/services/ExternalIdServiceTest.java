@@ -190,13 +190,6 @@ public class ExternalIdServiceTest {
         verify(externalIdDao).deleteExternalId(extId);
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
-    public void deleteExternalIdPermanentlyThrowsIfValidationEnabled() {
-        study.setExternalIdValidationEnabled(true);
-        
-        externalIdService.deleteExternalIdPermanently(study, extId);
-    }
-    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyMissingThrows() {
         when(externalIdDao.getExternalId(TestConstants.TEST_STUDY, extId.getIdentifier())).thenReturn(Optional.empty());

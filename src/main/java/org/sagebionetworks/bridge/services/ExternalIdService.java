@@ -104,10 +104,6 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(externalId);
         
-        if (study.isExternalIdValidationEnabled()) {
-            throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
-        }
-        
         ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         if (BridgeUtils.filterForSubstudy(existing) == null) {

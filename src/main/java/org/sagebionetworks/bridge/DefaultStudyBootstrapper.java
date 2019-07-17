@@ -116,9 +116,9 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setShortName("SharedLib");
             study.setSponsorName("Sage Bionetworks");
             study.setIdentifier(SHARED_STUDY_ID_STRING);
-            study.setSupportEmail("bridgeit@sagebridge.org");
-            study.setTechnicalEmail("bridgeit@sagebridge.org");
-            study.setConsentNotificationEmail("bridgeit@sagebridge.org");
+            study.setSupportEmail(config.get("admin.email"));
+            study.setTechnicalEmail(config.get("admin.email"));
+            study.setConsentNotificationEmail(config.get("admin.email"));
             study.setEmailVerificationEnabled(true);
             study.setVerifyChannelOnSignInEnabled(true);
             study = studyService.createStudy(study);

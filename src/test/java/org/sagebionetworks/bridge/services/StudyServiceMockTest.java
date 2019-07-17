@@ -1045,7 +1045,6 @@ public class StudyServiceMockTest extends Mockito {
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
@@ -1306,7 +1305,6 @@ public class StudyServiceMockTest extends Mockito {
         // mock
         Study study = getTestStudy();
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
@@ -1329,7 +1327,6 @@ public class StudyServiceMockTest extends Mockito {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
@@ -1353,7 +1350,6 @@ public class StudyServiceMockTest extends Mockito {
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
@@ -1395,7 +1391,6 @@ public class StudyServiceMockTest extends Mockito {
         study.setExternalIdRequiredOnSignup(false);
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setName(null); // This is not a good name...
 
         service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
@@ -1408,7 +1403,6 @@ public class StudyServiceMockTest extends Mockito {
         study.setExternalIdRequiredOnSignup(false);
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setName("# # "); // This is not a good name...
 
         service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
@@ -1420,7 +1414,6 @@ public class StudyServiceMockTest extends Mockito {
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
         study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
@@ -2053,7 +2046,6 @@ public class StudyServiceMockTest extends Mockito {
         study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setStudyIdExcludedInExport(true);
         study.setEmailVerificationEnabled(true);
-        study.setExternalIdValidationEnabled(false);
         study.setExternalIdRequiredOnSignup(false);
         study.setEmailSignInEnabled(false);
         study.setPhoneSignInEnabled(false);
@@ -2062,7 +2054,6 @@ public class StudyServiceMockTest extends Mockito {
         study.setVerifyChannelOnSignInEnabled(false);
 
         Study existing = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        existing.setExternalIdValidationEnabled(false);
         existing.setExternalIdRequiredOnSignup(false);
         existing.setEmailSignInEnabled(false);
         existing.setPhoneSignInEnabled(false);
@@ -2087,7 +2078,6 @@ public class StudyServiceMockTest extends Mockito {
         assertFalse(study.isEmailVerificationEnabled());
         assertFalse(study.isVerifyChannelOnSignInEnabled());
         assertTrue(study.isAutoVerificationPhoneSuppressed());
-        assertTrue(study.isExternalIdValidationEnabled());
         assertTrue(study.isExternalIdRequiredOnSignup());
         assertTrue(study.isEmailSignInEnabled());
         assertTrue(study.isPhoneSignInEnabled());
@@ -2099,7 +2089,6 @@ public class StudyServiceMockTest extends Mockito {
         assertTrue(study.isStudyIdExcludedInExport());
         assertTrue(study.isEmailVerificationEnabled());
         assertTrue(study.isVerifyChannelOnSignInEnabled());
-        assertFalse(study.isExternalIdValidationEnabled());
         assertFalse(study.isExternalIdRequiredOnSignup());
         assertFalse(study.isEmailSignInEnabled());
         assertFalse(study.isPhoneSignInEnabled());
@@ -2111,7 +2100,6 @@ public class StudyServiceMockTest extends Mockito {
         study.setStudyIdExcludedInExport(false);
         study.setEmailVerificationEnabled(false);
         study.setVerifyChannelOnSignInEnabled(false);
-        study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         study.setEmailSignInEnabled(true);
         study.setPhoneSignInEnabled(true);
