@@ -307,6 +307,21 @@ public class CriteriaUtilsTest {
     }
     
     @Test
+    public void validateLanguage() {
+        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);
+        criteria.setLanguage("ena");
+        
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").get(0).getCode().contains("is not a valid language code"));
+        
+        errors = Validate.getErrorsFor(criteria);
+        criteria.setLanguage("en");
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").isEmpty());
+    }
+    
+    @Test
     public void matchesLanguage() {
         // If a language is declared, the user has to match it.
         Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);

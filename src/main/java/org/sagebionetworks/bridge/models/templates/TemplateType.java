@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models;
+package org.sagebionetworks.bridge.models.templates;
 
 public enum TemplateType {
     EMAIL_ACCOUNT_EXISTS,
