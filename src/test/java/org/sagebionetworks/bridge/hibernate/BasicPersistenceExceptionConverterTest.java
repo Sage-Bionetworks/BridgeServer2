@@ -13,14 +13,14 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
-public class TemplatePersistenceExceptionConverterTest {
+public class BasicPersistenceExceptionConverterTest {
     
-    private TemplatePersistenceExceptionConverter converter;
+    private BasicPersistenceExceptionConverter converter;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        this.converter = new TemplatePersistenceExceptionConverter();
+        this.converter = new BasicPersistenceExceptionConverter();
     }
     
     @Test

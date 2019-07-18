@@ -333,7 +333,6 @@ public class TemplateService {
         revision.setCreatedBy(getUserId());
         revision.setCreatedOn(timestamp);
         revision.setTemplateGuid(templateGuid);
-        revision.setCreatedBy(getUserId());
         revision.setStoragePath(storagePath);
 
         templateDao.createTemplate(template, null);

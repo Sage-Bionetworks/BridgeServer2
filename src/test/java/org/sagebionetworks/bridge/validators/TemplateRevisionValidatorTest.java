@@ -57,6 +57,18 @@ public class TemplateRevisionValidatorTest {
     }
     
     @Test
+    public void validateSubjectLength() {
+        String tooLong = "too long";
+        for (int i=0; i < 35; i++) {
+            tooLong += "too long";
+        }
+        TemplateRevision revision = createValidTemplate();
+        revision.setSubject(tooLong);
+        
+        assertValidatorMessage(INSTANCE, revision, "subject", "must be 250 characters of less");
+    }
+    
+    @Test
     public void validateMimeType() {
         TemplateRevision revision = createValidTemplate();
         revision.setMimeType(null);

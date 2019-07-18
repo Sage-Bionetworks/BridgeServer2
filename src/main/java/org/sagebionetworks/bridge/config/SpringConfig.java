@@ -86,7 +86,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUtils;
 import org.sagebionetworks.bridge.file.FileHelper;
 import org.sagebionetworks.bridge.heartbeat.HeartbeatLogger;
 import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
-import org.sagebionetworks.bridge.hibernate.AccountSecretsExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
@@ -96,8 +95,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
-import org.sagebionetworks.bridge.hibernate.TemplatePersistenceExceptionConverter;
-import org.sagebionetworks.bridge.hibernate.TemplateRevisionPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -644,14 +642,14 @@ public class SpringConfig {
     @Bean(name = "templateHibernateHelper")
     @Autowired
     public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
-            TemplatePersistenceExceptionConverter converter) {
+            BasicPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
     @Bean(name = "templateRevisionHibernateHelper")
     @Autowired
     public HibernateHelper templateRevisionHibernateHelper(SessionFactory sessionFactory,
-            TemplateRevisionPersistenceExceptionConverter converter) {
+            BasicPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
@@ -665,7 +663,7 @@ public class SpringConfig {
     @Bean(name = "secretsHibernateHelper")
     @Autowired
     public HibernateHelper secretsHibernateHelper(SessionFactory sessionFactory, 
-            AccountSecretsExceptionConverter converter) {
+            BasicPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
