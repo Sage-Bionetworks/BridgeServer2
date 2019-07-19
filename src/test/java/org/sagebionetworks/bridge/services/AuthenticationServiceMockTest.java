@@ -49,7 +49,6 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -690,7 +689,6 @@ public class AuthenticationServiceMockTest {
     @Test
     public void signUpExistingExternalId() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
         
         doThrow(new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", EXTERNAL_ID)).when(participantService)
@@ -709,7 +707,6 @@ public class AuthenticationServiceMockTest {
     @Test
     public void signUpExistingUnknownEntity() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
         
         doThrow(new EntityAlreadyExistsException(AppConfig.class, "identifier", EXTERNAL_ID)).when(participantService)
@@ -886,28 +883,19 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expectedExceptions = BadRequestException.class)
-    public void generatePasswordExternalIdManagementDisabled() {
-        study.setExternalIdValidationEnabled(false);
-        service.generatePassword(study, EXTERNAL_ID, true);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class)
     public void generatePasswordExternalIdNotSubmitted() {
-        study.setExternalIdValidationEnabled(true);
         service.generatePassword(study, null, true);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdRecordMissing() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
-        study.setExternalIdValidationEnabled(true);
         service.generatePassword(study, EXTERNAL_ID, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordNoAccountDoNotCreateAccount() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
@@ -917,7 +905,6 @@ public class AuthenticationServiceMockTest {
     @Test
     public void generatePasswordAndAccountOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        study.setExternalIdValidationEnabled(true);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
@@ -938,7 +925,6 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordAndAccountWhenExternalIdTaken() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
@@ -962,7 +948,6 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordAndAccountWhenExternalIdMissing() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
             .thenReturn(Optional.empty());
         
@@ -980,7 +965,6 @@ public class AuthenticationServiceMockTest {
     @Test
     public void generatePasswordOK() {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        study.setExternalIdValidationEnabled(true);
         when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
@@ -1010,7 +994,6 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordExternalIdMismatchesCallerSubstudies() {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB")).build());
-        study.setExternalIdValidationEnabled(true);
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
@@ -1026,7 +1009,6 @@ public class AuthenticationServiceMockTest {
     public void generatePasswordAccountMismatchesCallerSubstudies() {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
-        study.setExternalIdValidationEnabled(true);
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
@@ -1039,19 +1021,8 @@ public class AuthenticationServiceMockTest {
         service.generatePassword(study, EXTERNAL_ID, false);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void creatingExternalIdOnlyAccountFailsIfIdsNotManaged() {
-        study.setExternalIdValidationEnabled(false);
-        
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withEmail(null).withPhone(null).withExternalId("id").build();
-        service.signUp(study, participant);
-    }
-    
     @Test
     public void creatingExternalIdOnlyAccountSucceedsIfIdsManaged() {
-        study.setExternalIdValidationEnabled(true);
-        
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withEmail(null).withPhone(null).withExternalId("id").build();
         service.signUp(study, participant);

@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TEMPLATE_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
-import static org.sagebionetworks.bridge.models.TemplateType.SMS_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -27,7 +27,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Template;
+import org.sagebionetworks.bridge.models.templates.Template;
 
 public class HibernateTemplateDaoTest extends Mockito {
     private static String GUID = "oneGuid";
@@ -122,7 +122,7 @@ public class HibernateTemplateDaoTest extends Mockito {
     public void createTemplate() {
         Template template = Template.create();
                 
-        dao.createTemplate(template);
+        dao.createTemplate(template, null);
         
         verify(mockHelper).create(template, null);
     }

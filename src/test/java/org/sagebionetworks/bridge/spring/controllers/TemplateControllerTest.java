@@ -4,8 +4,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -31,9 +35,9 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.Template;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.services.TemplateService;
 
 public class TemplateControllerTest extends Mockito {
@@ -71,6 +75,16 @@ public class TemplateControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(TemplateController.class);
+        assertGet(TemplateController.class, "getTemplates");
+        assertPost(TemplateController.class, "createTemplate");
+        assertGet(TemplateController.class, "getTemplate");
+        assertPost(TemplateController.class, "updateTemplate");
+        assertDelete(TemplateController.class, "deleteTemplate");
+    }
+    
     @Test
     public void getTemplates() {
         List<? extends Template> items = ImmutableList.of(Template.create(), Template.create());

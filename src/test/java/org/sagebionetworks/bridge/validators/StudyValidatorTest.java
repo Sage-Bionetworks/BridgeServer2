@@ -487,25 +487,11 @@ public class StudyValidatorTest {
     }
 
     @Test
-    public void publicStudyWithoutExternalIdValidationIsValid() {
-        study.setExternalIdValidationEnabled(false);
-        Validate.entityThrowingException(INSTANCE, study);
-    }
-    
-    @Test
     public void publicStudyWithoutExternalIdOnSignUpIsValid() {
         study.setExternalIdRequiredOnSignup(false);
         Validate.entityThrowingException(INSTANCE, study);
     }
 
-    @Test
-    public void nonPublicStudiesMustEnableExternalIdValdation() {
-        study.setEmailVerificationEnabled(false);
-        study.setExternalIdValidationEnabled(false);
-        assertValidatorMessage(INSTANCE, study, "externalIdValidationEnabled",
-                "cannot be disabled if email verification has been disabled");
-    }
-    
     @Test
     public void nonPublicStudiesMustRequireExternalIdOnSignUp() {
         study.setEmailVerificationEnabled(false);

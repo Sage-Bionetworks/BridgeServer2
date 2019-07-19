@@ -5,10 +5,21 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_RESET_PASSWORD;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_SIGN_IN;
+import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_SIGNED_CONSENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIFY_PHONE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -31,12 +42,15 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
+import org.sagebionetworks.bridge.dao.TemplateRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -45,8 +59,10 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Template;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public class TemplateServiceTest extends Mockito {
     
@@ -55,6 +71,9 @@ public class TemplateServiceTest extends Mockito {
     
     @Mock
     TemplateDao mockTemplateDao;
+    
+    @Mock
+    TemplateRevisionDao mockTemplateRevisionDao;
     
     @Mock
     CriteriaDao mockCriteriaDao;
@@ -75,20 +94,46 @@ public class TemplateServiceTest extends Mockito {
     @Captor
     ArgumentCaptor<Template> templateCaptor;
     
+    @Captor
+    ArgumentCaptor<TemplateRevision> revisionCaptor;
+    
     Study study;
     
     @BeforeMethod
-    public void beforeMethod() {
+    public void beforeMethod() throws Exception {
         MockitoAnnotations.initMocks(this);
+        service.setDefaultEmailVerificationTemplate(res(EMAIL_VERIFY_EMAIL));
+        service.setDefaultEmailVerificationTemplateSubject(res(EMAIL_VERIFY_EMAIL));
+        service.setDefaultPasswordTemplate(res(EMAIL_RESET_PASSWORD));
+        service.setDefaultPasswordTemplateSubject(res(EMAIL_RESET_PASSWORD));
+        service.setDefaultEmailSignInTemplate(res(EMAIL_SIGN_IN));
+        service.setDefaultEmailSignInTemplateSubject(res(EMAIL_SIGN_IN));
+        service.setDefaultAccountExistsTemplate(res(EMAIL_ACCOUNT_EXISTS));
+        service.setDefaultAccountExistsTemplateSubject(res(EMAIL_ACCOUNT_EXISTS));
+        service.setSignedConsentTemplate(res(EMAIL_SIGNED_CONSENT));
+        service.setSignedConsentTemplateSubject(res(EMAIL_SIGNED_CONSENT));
+        service.setAppInstallLinkTemplate(res(EMAIL_APP_INSTALL_LINK));
+        service.setAppInstallLinkTemplateSubject(res(EMAIL_APP_INSTALL_LINK));
+        service.setResetPasswordSmsTemplate(SMS_RESET_PASSWORD.name());
+        service.setPhoneSignInSmsTemplate(SMS_PHONE_SIGN_IN.name());
+        service.setAppInstallLinkSmsTemplate(SMS_APP_INSTALL_LINK.name());
+        service.setVerifyPhoneSmsTemplate(SMS_VERIFY_PHONE.name());
+        service.setAccountExistsSmsTemplate(SMS_ACCOUNT_EXISTS.name());
+        service.setSignedConsentSmsTemplate(SMS_SIGNED_CONSENT.name());
+        service.makeDefaultTemplateMap();
         when(service.generateGuid()).thenReturn(GUID1);
         when(service.getTimestamp()).thenReturn(TIMESTAMP);
+        when(service.getUserId()).thenReturn(USER_ID);
         
         study = Study.create();
         study.setDataGroups(USER_DATA_GROUPS);
         study.setDefaultTemplates(new HashMap<>());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        
         when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(USER_SUBSTUDY_IDS);
+    }
+    
+    private Resource res(TemplateType type) {
+        return new ByteArrayResource(type.name().getBytes());
     }
     
     private Criteria makeCriteria(String guid, String lang) {
@@ -332,7 +377,7 @@ public class TemplateServiceTest extends Mockito {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
             return null;
-        }).when(mockTemplateDao).createTemplate(any());
+        }).when(mockTemplateDao).createTemplate(any(), any());
         
         Criteria criteria = Criteria.create();
         criteria.setAllOfGroups(ImmutableSet.of("group1", "group2"));
@@ -355,9 +400,21 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(template.getCreatedOn(), TIMESTAMP);
         assertEquals(template.getModifiedOn(), TIMESTAMP);
         assertEquals(template.getCriteria().getKey(), "template:"+GUID1);
+        assertEquals(template.getPublishedCreatedOn(), TIMESTAMP);
         
+        verify(mockTemplateRevisionDao).createTemplateRevision(revisionCaptor.capture());
         verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
-        verify(mockTemplateDao).createTemplate(template);
+        verify(mockTemplateDao).createTemplate(eq(template), any());
+        
+        TemplateRevision revision = revisionCaptor.getValue();
+        assertEquals(revision.getCreatedBy(), USER_ID);
+        assertEquals(revision.getCreatedOn(), TIMESTAMP);
+        assertEquals(revision.getTemplateGuid(), GUID1);
+        assertEquals(revision.getStoragePath(), GUID1 + "." + TIMESTAMP.getMillis());
+        
+        assertEquals(revision.getSubject(), EMAIL_RESET_PASSWORD.name());
+        assertEquals(revision.getDocumentContent(), EMAIL_RESET_PASSWORD.name());
+        assertEquals(revision.getMimeType(), HTML);
     }
         
     @Test
@@ -374,6 +431,21 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createTemplateInvalid() {
         service.createTemplate(TEST_STUDY, Template.create());
+    }
+    
+    @Test
+    public void migrateTemplate() {
+        Template template = Template.create();
+        template.setName("Name");
+        template.setTemplateType(SMS_PHONE_SIGN_IN);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent("Yo, sign in by phone");
+        
+        service.migrateTemplate(TEST_STUDY, template, revision);
+        
+        verify(mockTemplateRevisionDao).createTemplateRevision(revision);
+        verify(mockTemplateDao).createTemplate(eq(template), any());
     }
     
     @Test

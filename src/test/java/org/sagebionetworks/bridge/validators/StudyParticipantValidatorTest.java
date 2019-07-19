@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
@@ -56,19 +58,17 @@ public class StudyParticipantValidatorTest {
         substudy = Substudy.create();
         
         study = Study.create();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setHealthCodeExportEnabled(true);
         study.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         study.setDataGroups(STUDY_DATA_GROUPS);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.getUserProfileAttributes().add("phone");
-        study.setExternalIdValidationEnabled(false);
     }
     
     @Test
     public void validatesNew() throws Exception {
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-        study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         
         Map<String,String> attrs = Maps.newHashMap();
@@ -162,6 +162,10 @@ public class StudyParticipantValidatorTest {
     @Test
     public void externalIdOnlyOK() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
+
+        when(externalIdService.getExternalId(TEST_STUDY, "external-id"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY, "external-id")));
+        
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         Validate.entityThrowingException(validator, participant);
     }
@@ -261,7 +265,6 @@ public class StudyParticipantValidatorTest {
     @Test
     public void createWithExternalIdManagedOk() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("foo");
 
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
@@ -270,23 +273,13 @@ public class StudyParticipantValidatorTest {
     @Test
     public void createWithExternalIdManagedInvalid() {
         when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("wrong-external-id");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         assertValidatorMessage(validator, participant, "externalId", "is not a valid external ID");
     }
     @Test
-    public void createWithExternalIdUnmanagedOk() {
-        study.setExternalIdValidationEnabled(false);
-        StudyParticipant participant = withExternalId("foo");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
     public void createWithoutExternalIdManagedOk() {
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withEmail("email@email.com");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
@@ -294,7 +287,6 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void createWithoutExternalIdManagedInvalid() {
-        study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         StudyParticipant participant = withEmail("email@email.com");
         
@@ -303,7 +295,6 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void createWithoutExternalIdManagedButHasRolesOK() {
-        study.setExternalIdValidationEnabled(true);
         study.setExternalIdRequiredOnSignup(true);
         
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
@@ -313,17 +304,8 @@ public class StudyParticipantValidatorTest {
         Validate.entityThrowingException(validator, participant);
     }
     @Test
-    public void createWithoutExternalIdUnmanagedOk() {
-        study.setExternalIdValidationEnabled(false);
-        StudyParticipant participant = withEmail("email@email.com");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
     public void updateWithExternalIdManagedOk() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalIdAndId("foo");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
@@ -332,31 +314,13 @@ public class StudyParticipantValidatorTest {
     @Test
     public void updateWithExternalIdManagedInvalid() {
         when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
-        study.setExternalIdValidationEnabled(true);
         StudyParticipant participant = withExternalId("does-not-exist");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
         assertValidatorMessage(validator, participant, "externalId", "is not a valid external ID");
     }
     @Test
-    public void updateWithExternalIdUnmanagedOk() {
-        study.setExternalIdValidationEnabled(false);
-        StudyParticipant participant = withExternalIdAndId("foo");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
     public void updateWithoutExternalIdManagedOk() {
-        study.setExternalIdValidationEnabled(true);
-        StudyParticipant participant = withEmailAndId("email@email.com");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void updateWithoutExternalIdUnmanagedOk() {
-        study.setExternalIdValidationEnabled(false);
         StudyParticipant participant = withEmailAndId("email@email.com");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);

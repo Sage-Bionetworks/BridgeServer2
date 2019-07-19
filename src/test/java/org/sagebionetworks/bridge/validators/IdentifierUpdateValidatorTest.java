@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.Optional;
@@ -116,9 +117,12 @@ public class IdentifierUpdateValidatorTest {
     }
     
     @Test
-    public void validExternalIdUpate() {
+    public void validExternalIdUpdate() {
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
+        
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY, "newExternalId")));
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "newExternalId");
         Validate.entityThrowingException(validator, update);
@@ -154,7 +158,6 @@ public class IdentifierUpdateValidatorTest {
     @Test
     public void externalIdValidWithManagement() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
-        study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();
@@ -166,7 +169,6 @@ public class IdentifierUpdateValidatorTest {
     @Test
     public void externalIdInvalidWithManagement() {
         when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
-        study.setExternalIdValidationEnabled(true);
         
         SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
                 .withEmail(TestConstants.EMAIL).withReauthToken("asdf").build();

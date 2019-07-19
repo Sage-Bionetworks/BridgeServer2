@@ -73,14 +73,14 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping({"/mobile/verifyStudyEmail.html", "/vse"})
-    public String verifyStudyEmail(Model model, @RequestParam(name="study", defaultValue="api") String studyId) {
+    public String verifyStudyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         return "verifyStudyEmail";
     }
     
     @GetMapping({"/mobile/verifyEmail.html", "/ve"})
-    public String verifyEmail(Model model, @RequestParam(name="study", defaultValue="api") String studyId) {
+    public String verifyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         model.addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
@@ -89,7 +89,7 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping({"/mobile/resetPassword.html", "/rp"})
-    public String resetPassword(Model model, @RequestParam(name="study", defaultValue="api") String studyId) {
+    public String resetPassword(Model model, @RequestParam(name="study", required=false) String studyId) {
         Study study = studyService.getStudy(studyId);
         String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
@@ -99,18 +99,19 @@ public class ApplicationController extends BaseController {
         return "resetPassword";
     }
     
+    /* Full URL to phone will include email and token, but these are not required for the error page. */
     @GetMapping({"/mobile/{studyId}/startSession.html", "/s/{studyId}"})
-    public String startSessionWithPath(Model model, @PathVariable String studyId, @RequestParam String email,
-            @RequestParam String token) {
+    public String startSessionWithPath(Model model, @PathVariable String studyId) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         model.addAttribute(STUDY_ID, study.getIdentifier());
         return "startSession";
     }
     
+    /* Full URL to phone will include email and token, but these are not required for the error page. */
     @GetMapping("/mobile/startSession.html")
-    public String startSessionWithQueryParam(Model model, @RequestParam("study") String studyId,
-            @RequestParam String email, @RequestParam String token) {
+    public String startSessionWithQueryParam(Model model,
+            @RequestParam(name = "study", required = false) String studyId) {
         Study study = studyService.getStudy(studyId);
         model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         model.addAttribute(STUDY_ID, study.getIdentifier());

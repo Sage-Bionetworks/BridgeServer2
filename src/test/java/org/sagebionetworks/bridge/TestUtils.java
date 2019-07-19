@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -534,7 +534,6 @@ public class TestUtils {
         study.setStrictUploadValidationEnabled(true);
         study.setHealthCodeExportEnabled(true);
         study.setEmailVerificationEnabled(true);
-        study.setExternalIdValidationEnabled(true);
         study.setReauthenticationEnabled(true);
         study.setEmailSignInEnabled(true);
         study.setPhoneSignInEnabled(true);

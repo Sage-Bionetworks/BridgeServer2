@@ -603,18 +603,6 @@ public final class DynamoStudy implements Study {
     
     /** {@inheritDoc} */
     @Override
-    public boolean isExternalIdValidationEnabled() {
-        return externalIdValidationEnabled;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setExternalIdValidationEnabled(boolean externalIdValidationEnabled) {
-        this.externalIdValidationEnabled = externalIdValidationEnabled;
-    }
-    
-    /** {@inheritDoc} */
-    @Override
     public Map<String,Integer> getMinSupportedAppVersions() {
         return minSupportedAppVersions;
     }

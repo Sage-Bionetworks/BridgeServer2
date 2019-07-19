@@ -396,17 +396,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isEmailVerificationEnabled(); */
     void setEmailVerificationEnabled(boolean enabled);
     
-    /**
-     * True if this study will enforce constraints on the external identifier. The ID will have 
-     * to be an ID entered into Bridge, it will be assigned to one and only one user, and a user's 
-     * ID cannot be changed after it is set. Otherwise, the external ID is just a string field 
-     * that can be freely updated.
-     */
-    boolean isExternalIdValidationEnabled();
-    
-    /** @see #isExternalIdValidationEnabled(); */
-    void setExternalIdValidationEnabled(boolean externalIdValidationEnabled);
-    
     /** 
      * True if the external ID must be provided when the user signs up. If validation is also 
      * enabled, this study is configured to use lab codes if desired (username and password auto-

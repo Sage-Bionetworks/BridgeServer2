@@ -176,7 +176,6 @@ public class DynamoStudyTest {
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
-        assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
         assertTrue(node.get("emailSignInEnabled").asBoolean());
         assertTrue(node.get("reauthenticationEnabled").booleanValue());
