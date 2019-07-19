@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.nio.charset.Charset.defaultCharset;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 
@@ -98,7 +100,7 @@ public class HibernateTemplateRevisionDao implements TemplateRevisionDao {
             String storagePath = getStoragePath(revision.getTemplateGuid(), revision.getCreatedOn());
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
-            s3Helper.writeBytesToS3(publicationsBucket, storagePath, revision.getDocumentContent().getBytes(), metadata);
+            s3Helper.writeBytesToS3(publicationsBucket, storagePath, revision.getDocumentContent().getBytes(defaultCharset()), metadata);
         } catch(IOException ioe) {
             throw new BridgeServiceException("Error persisting template revision document", ioe);
         }
