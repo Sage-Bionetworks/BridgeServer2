@@ -911,6 +911,7 @@ public class ParticipantService {
                     .withCallerStudyId(currentContext.getCallerStudyIdentifier())
                     .withRequestId(currentContext.getId())
                     .withCallerSubstudies(newSubstudies)
+                    .withCallerUserId(currentContext.getCallerUserId())
                     .build();
             BridgeUtils.setRequestContext(newContext);
         }

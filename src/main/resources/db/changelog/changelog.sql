@@ -2,6 +2,40 @@
 
 --changeset bridge:1
 
+CREATE TABLE IF NOT EXISTS `Accounts` (
+  `id` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `createdOn` bigint(20) NOT NULL,
+  `healthCode` varchar(255) DEFAULT NULL,
+  `healthId` varchar(255) DEFAULT NULL,
+  `modifiedOn` bigint(20) NOT NULL,
+  `firstName` varchar(255) DEFAULT NULL,
+  `lastName` varchar(255) DEFAULT NULL,
+  `passwordAlgorithm` enum('STORMPATH_HMAC_SHA_256','BCRYPT','PBKDF2_HMAC_SHA_256') DEFAULT NULL,
+  `passwordHash` varchar(255) DEFAULT NULL,
+  `passwordModifiedOn` bigint(20) NOT NULL,
+  `status` enum('DISABLED','ENABLED','UNVERIFIED') NOT NULL DEFAULT 'UNVERIFIED',
+  `version` int(10) unsigned NOT NULL DEFAULT '0',
+  `clientData` mediumtext COLLATE utf8_unicode_ci,
+  `phone` varchar(20) DEFAULT NULL,
+  `phoneVerified` tinyint(1) DEFAULT NULL,
+  `emailVerified` tinyint(1) DEFAULT NULL,
+  `phoneRegion` varchar(2) DEFAULT NULL,
+  `externalId` varchar(255) DEFAULT NULL,
+  `timeZone` varchar(6) DEFAULT NULL,
+  `sharingScope` enum('NO_SHARING','SPONSORS_AND_PARTNERS','ALL_QUALIFIED_RESEARCHERS') DEFAULT NULL,
+  `notifyByEmail` tinyint(1) DEFAULT '1',
+  `migrationVersion` int(10) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `Accounts-StudyId-Email-Index` (`studyId`,`email`),
+  UNIQUE KEY `Accounts-StudyId-Phone-Index` (`studyId`,`phone`),
+  UNIQUE KEY `Accounts-StudyId-ExternalId-Index` (`studyId`,`externalId`),
+  UNIQUE KEY `Accounts-StudyId-HealthCode-Index` (`studyId`,`healthCode`),
+  KEY `Accounts-StudyId-Index` (`studyId`),
+  KEY `Accounts-HealthCode-Index` (`healthCode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `AccountAttributes` (
   `accountId` varchar(255) NOT NULL,
   `attributeKey` varchar(255) NOT NULL,
@@ -62,38 +96,15 @@ CREATE TABLE IF NOT EXISTS `AccountSecrets` (
   CONSTRAINT `fk_account_secrets` FOREIGN KEY (`accountId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `Accounts` (
-  `id` varchar(255) NOT NULL,
-  `studyId` varchar(255) NOT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `createdOn` bigint(20) NOT NULL,
-  `healthCode` varchar(255) DEFAULT NULL,
-  `healthId` varchar(255) DEFAULT NULL,
-  `modifiedOn` bigint(20) NOT NULL,
-  `firstName` varchar(255) DEFAULT NULL,
-  `lastName` varchar(255) DEFAULT NULL,
-  `passwordAlgorithm` enum('STORMPATH_HMAC_SHA_256','BCRYPT','PBKDF2_HMAC_SHA_256') DEFAULT NULL,
-  `passwordHash` varchar(255) DEFAULT NULL,
-  `passwordModifiedOn` bigint(20) NOT NULL,
-  `status` enum('DISABLED','ENABLED','UNVERIFIED') NOT NULL DEFAULT 'UNVERIFIED',
+CREATE TABLE IF NOT EXISTS `Substudies` (
+  `id` varchar(60) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
   `version` int(10) unsigned NOT NULL DEFAULT '0',
-  `clientData` mediumtext COLLATE utf8_unicode_ci,
-  `phone` varchar(20) DEFAULT NULL,
-  `phoneVerified` tinyint(1) DEFAULT NULL,
-  `emailVerified` tinyint(1) DEFAULT NULL,
-  `phoneRegion` varchar(2) DEFAULT NULL,
-  `externalId` varchar(255) DEFAULT NULL,
-  `timeZone` varchar(6) DEFAULT NULL,
-  `sharingScope` enum('NO_SHARING','SPONSORS_AND_PARTNERS','ALL_QUALIFIED_RESEARCHERS') DEFAULT NULL,
-  `notifyByEmail` tinyint(1) DEFAULT '1',
-  `migrationVersion` int(10) unsigned NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `Accounts-StudyId-Email-Index` (`studyId`,`email`),
-  UNIQUE KEY `Accounts-StudyId-Phone-Index` (`studyId`,`phone`),
-  UNIQUE KEY `Accounts-StudyId-ExternalId-Index` (`studyId`,`externalId`),
-  UNIQUE KEY `Accounts-StudyId-HealthCode-Index` (`studyId`,`healthCode`),
-  KEY `Accounts-StudyId-Index` (`studyId`),
-  KEY `Accounts-HealthCode-Index` (`healthCode`)
+  `deleted` tinyint(1) DEFAULT '0',
+  `createdOn` bigint(20) NOT NULL,
+  `modifiedOn` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`,`studyId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `AccountsSubstudies` (
@@ -132,17 +143,6 @@ CREATE TABLE IF NOT EXISTS `SharedModuleTags` (
   CONSTRAINT `MetadataKey` FOREIGN KEY (`id`, `version`) REFERENCES `SharedModuleMetadata` (`id`, `version`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `Substudies` (
-  `id` varchar(60) NOT NULL,
-  `studyId` varchar(60) NOT NULL,
-  `name` varchar(255) DEFAULT NULL,
-  `version` int(10) unsigned NOT NULL DEFAULT '0',
-  `deleted` tinyint(1) DEFAULT '0',
-  `createdOn` bigint(20) NOT NULL,
-  `modifiedOn` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`,`studyId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS `Templates` (
   `guid` varchar(60) NOT NULL,
   `studyId` varchar(255) NOT NULL,
@@ -157,3 +157,16 @@ CREATE TABLE IF NOT EXISTS `Templates` (
   PRIMARY KEY (`guid`),
   KEY `type_set_idx` (`studyId`,`templateType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--changeset bridge:2
+
+CREATE TABLE IF NOT EXISTS `TemplateRevisions` (
+  `templateGuid` VARCHAR(60) NOT NULL,
+  `createdOn` BIGINT UNSIGNED NOT NULL,
+  `createdBy` VARCHAR(255) NOT NULL,
+  `storagePath` VARCHAR(255) NOT NULL,
+  `subject` VARCHAR(255) NULL,
+  `mimeType` ENUM('HTML', 'TEXT', 'PDF') NOT NULL,
+  PRIMARY KEY (`templateGuid`, `createdOn`),
+  CONSTRAINT `Templates-Guid-Constraint` FOREIGN KEY (`templateGuid`) REFERENCES `Templates` (`guid`) ON DELETE CASCADE
+) CHARACTER SET utf8 COLLATE utf8_unicode_ci;

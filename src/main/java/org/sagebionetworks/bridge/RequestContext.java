@@ -11,20 +11,22 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 public class RequestContext {
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, ImmutableSet.of(),
-            ImmutableSet.of());
+            ImmutableSet.of(), null);
 
     private final String requestId;
     private final StudyIdentifier callerStudyId;
     private final Set<String> callerSubstudies;
     private final Set<Roles> callerRoles;
+    private final String callerUserId;
     private final Metrics metrics;
     
-    private RequestContext(Metrics metrics, String requestId, String callerStudyId, Set<String> callerSubstudies, Set<Roles> callerRoles) {
+    private RequestContext(Metrics metrics, String requestId, String callerStudyId, Set<String> callerSubstudies, Set<Roles> callerRoles, String callerUserId) {
         this.requestId = requestId;
         this.callerStudyId = (callerStudyId == null) ? null : new StudyIdentifierImpl(callerStudyId);
         this.callerSubstudies = callerSubstudies;
         this.callerRoles = callerRoles;
         this.metrics = metrics;
+        this.callerUserId = callerUserId;
     }
     
     public Metrics getMetrics() {
@@ -45,6 +47,9 @@ public class RequestContext {
     public Set<Roles> getCallerRoles() {
         return callerRoles;
     }
+    public String getCallerUserId() { 
+        return callerUserId;
+    }
     
     public static class Builder {
         private Metrics metrics;
@@ -52,6 +57,7 @@ public class RequestContext {
         private Set<String> callerSubstudies;
         private Set<Roles> callerRoles;
         private String requestId;
+        private String callerUserId;
 
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
@@ -73,6 +79,10 @@ public class RequestContext {
             this.requestId = requestId;
             return this;
         }
+        public Builder withCallerUserId(String callerUserId) {
+            this.callerUserId = callerUserId;
+            return this;
+        }
         
         public RequestContext build() {
             if (requestId == null) {
@@ -87,13 +97,13 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
-            return new RequestContext(metrics, requestId, callerStudyId, callerSubstudies, callerRoles);
+            return new RequestContext(metrics, requestId, callerStudyId, callerSubstudies, callerRoles, callerUserId);
         }
     }
 
     @Override
     public String toString() {
-        return "RequestContext [callerStudyId=" + callerStudyId + ", callerSubstudies=" + 
-                callerSubstudies + ", callerRoles=" + callerRoles + ", requestId=" + requestId + "]";
+        return "RequestContext [callerStudyId=" + callerStudyId + ", callerSubstudies=" + callerSubstudies
+                + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId + ", requestId=" + requestId + "]";
     }
 }

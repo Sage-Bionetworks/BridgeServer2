@@ -598,7 +598,6 @@ public class StudyService {
             }
             study.setHealthCodeExportEnabled(originalStudy.isHealthCodeExportEnabled());
             study.setEmailVerificationEnabled(originalStudy.isEmailVerificationEnabled());
-            study.setExternalIdValidationEnabled(originalStudy.isExternalIdValidationEnabled());
             study.setExternalIdRequiredOnSignup(originalStudy.isExternalIdRequiredOnSignup());
             study.setEmailSignInEnabled(originalStudy.isEmailSignInEnabled());
             study.setPhoneSignInEnabled(originalStudy.isPhoneSignInEnabled());

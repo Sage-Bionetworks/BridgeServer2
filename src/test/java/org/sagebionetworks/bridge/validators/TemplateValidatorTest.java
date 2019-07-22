@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_VERIFY_EMAIL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
 
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.Template;
+import org.sagebionetworks.bridge.models.templates.Template;
 
 public class TemplateValidatorTest extends Mockito {
 

@@ -20,9 +20,9 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.services.TemplateService;
 
 @CrossOrigin
