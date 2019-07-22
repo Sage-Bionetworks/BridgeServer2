@@ -628,6 +628,21 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper, never()).update(any(), eq(null));
     }
 
+    // branch coverage
+    @Test
+    public void reauthenticationFlagNull() {
+        study.setReauthenticationEnabled(null);
+
+        try {
+            dao.reauthenticate(study, REAUTH_SIGNIN);
+            fail("Should have thrown exception");
+        } catch (UnauthorizedException e) {
+            // expected exception
+        }
+        verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), any(), eq(HibernateAccount.class));
+        verify(mockHibernateHelper, never()).update(any(), eq(null));
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void reauthenticateAccountNotFound() throws Exception {
         // mock hibernate

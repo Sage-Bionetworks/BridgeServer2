@@ -114,9 +114,9 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      * True if we create and return a reauthentication token in the session that can be used to reauthenticate 
      * without a password. False otherwise.
      */
-    boolean isReauthenticationEnabled();
+    Boolean isReauthenticationEnabled();
     
-    void setReauthenticationEnabled(boolean reauthenticationEnabled);
+    void setReauthenticationEnabled(Boolean reauthenticationEnabled);
     
     /**
      * User must confirm that they are at least this many years old in order to

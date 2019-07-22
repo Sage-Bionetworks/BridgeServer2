@@ -1774,6 +1774,7 @@ public class StudyServiceMockTest extends Mockito {
         study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
         study.setConsentNotificationEmailVerified(true);
+        study.setReauthenticationEnabled(null);
         study.setStudyIdExcludedInExport(false);
         study.setTaskIdentifiers(null);
         study.setUploadValidationStrictness(null);
@@ -1791,6 +1792,7 @@ public class StudyServiceMockTest extends Mockito {
         assertFalse(study.isConsentNotificationEmailVerified());
         assertNotNull(study.getVersion(), "Version has been set");
         assertTrue(study.isActive());
+        assertTrue(study.isReauthenticationEnabled());
         assertFalse(study.isStrictUploadValidationEnabled());
         assertTrue(study.isStudyIdExcludedInExport());
         assertEquals(study.getUploadValidationStrictness(), REPORT);

@@ -100,7 +100,7 @@ public final class DynamoStudy implements Study {
     private boolean emailSignInEnabled;
     private boolean phoneSignInEnabled;
     private boolean externalIdRequiredOnSignup;
-    private boolean reauthenticationEnabled;
+    private Boolean reauthenticationEnabled;
     private boolean autoVerificationPhoneSuppressed;
     private boolean verifyChannelOnSignInEnabled;
     private Map<String, Integer> minSupportedAppVersions;
@@ -242,13 +242,13 @@ public final class DynamoStudy implements Study {
 
     /** {@inheritDoc} */
     @Override
-    public boolean isReauthenticationEnabled() {
+    public Boolean isReauthenticationEnabled() {
         return reauthenticationEnabled;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setReauthenticationEnabled(boolean reauthenticationEnabled) {
+    public void setReauthenticationEnabled(Boolean reauthenticationEnabled) {
         this.reauthenticationEnabled = reauthenticationEnabled;
     }
     

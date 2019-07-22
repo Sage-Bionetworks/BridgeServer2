@@ -1220,7 +1220,32 @@ public class AuthenticationServiceMockTest {
         verify(service, never()).generateReauthToken();
         verify(accountSecretDao, never()).createSecret(any(), any(), any());
     }
-    
+
+    // branch coverage
+    @Test
+    public void getSessionFromAccountReauthenticationFlagNull() {
+        // Create inputs.
+        Study study = Study.create();
+        study.setReauthenticationEnabled(null);
+
+        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+
+        Account account = Account.create();
+
+        // Mock pre-reqs.
+        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
+        when(config.getEnvironment()).thenReturn(Environment.LOCAL);
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+
+        // Execute and validate.
+        UserSession session = service.getSessionFromAccount(study, context, account);
+        assertNull(session.getReauthToken());
+
+        verify(service, never()).generateReauthToken();
+        verify(accountSecretDao, never()).createSecret(any(), any(), any());
+    }
+
     @Test
     public void getSession() {
         service.getSession(TOKEN);

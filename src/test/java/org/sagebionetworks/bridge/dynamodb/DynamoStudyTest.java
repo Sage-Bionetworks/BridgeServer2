@@ -84,12 +84,37 @@ public class DynamoStudyTest {
     }
 
     @Test
+    public void reauthenticationEnabled() {
+        // Starts as null.
+        Study study = Study.create();
+        assertNull(study.isReauthenticationEnabled());
+
+        // Set to true.
+        study.setReauthenticationEnabled(true);
+        assertTrue(study.isReauthenticationEnabled());
+
+        // Set to false.
+        study.setReauthenticationEnabled(false);
+        assertFalse(study.isReauthenticationEnabled());
+
+        // Set back to null.
+        study.setReauthenticationEnabled(null);
+        assertNull(study.isReauthenticationEnabled());
+    }
+
+    @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
         EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS)
             .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())
             .withPrefabValues(JsonFactory.class, new JsonFactory(), new JsonFactory()).verify();
+    }
+
+    @Test
+    public void testToString() {
+        // Basic test that toString doesn't crash.
+        assertNotNull(Study.create().toString());
     }
 
     @Test
