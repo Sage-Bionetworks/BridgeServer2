@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -282,6 +283,7 @@ public class UploadHandlersEndToEndTest {
 
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
         transcribeConsentHandler.setAccountDao(mockAccountDao);
+        transcribeConsentHandler.setActivityEventService(mock(ActivityEventService.class));
 
         // Set up UploadRawZipHandler.
         UploadRawZipHandler uploadRawZipHandler = new UploadRawZipHandler();
