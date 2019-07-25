@@ -442,7 +442,13 @@ public class CacheProviderMockTest {
         verify(transaction).del(CACHE_KEY.toString());
         verify(transaction).exec();
     }
-    
+
+    @Test
+    public void setExpiration() {
+        cacheProvider.setExpiration(CACHE_KEY, 100);
+        verify(jedisOps).expire(CACHE_KEY.toString(), 100);
+    }
+
     @Test
     public void setObject() throws Exception {
         OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");

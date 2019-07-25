@@ -256,7 +256,18 @@ public class CacheProvider {
         }
         return null;
     }
-    
+
+    /** Sets the expiration on the given cache object. */
+    public void setExpiration(CacheKey cacheKey, int expireInSeconds) {
+        checkNotNull(cacheKey);
+        try {
+            jedisOps.expire(cacheKey.toString(), expireInSeconds);
+        } catch (Throwable e) {
+            promptToStartRedisIfLocal(e);
+            throw new BridgeServiceException(e);
+        }
+    }
+
     /**
      * Set an object in the cache with no expiration.
      */

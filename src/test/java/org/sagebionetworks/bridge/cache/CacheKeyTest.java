@@ -40,7 +40,13 @@ public class CacheKeyTest {
     public void appConfigList() {
         assertEquals(CacheKey.appConfigList(TestConstants.TEST_STUDY).toString(), "api:AppConfigList");
     }
-    
+
+    @Test
+    public void channelSignInToSessionToken() {
+        assertEquals(CacheKey.channelSignInToSessionToken("ABC").toString(),
+                "ABC:channel-signin-to-session-token");
+    }
+
     @Test
     public void channelThrottling() {
         assertEquals(CacheKey.channelThrottling("email", "userId").toString(), "userId:email:channel-throttling");
