@@ -66,16 +66,6 @@ public interface HealthDataRecord extends BridgeEntity {
     /** @see #getData */
     void setData(JsonNode data);
 
-    /**
-     * How many calendar days the participant has been in the study. For example, if the participant started on
-     * 2019-07-24, then 2019-07-24 is day 1, 2019-07-25 is day 2, etc. Calendar days are calculated using the same
-     * timezone as the Bridge Exporter (ie, America/Los_Angeles).
-     */
-    Integer getDayInStudy();
-
-    /** @see #getDayInStudy */
-    void setDayInStudy(Integer dayInStudy);
-
     /** Health code of the user contributing the health data. */
     String getHealthCode();
 
