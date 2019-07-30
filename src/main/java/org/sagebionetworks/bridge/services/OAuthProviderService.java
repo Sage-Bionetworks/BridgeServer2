@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
@@ -113,7 +115,16 @@ class OAuthProviderService {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             CloseableHttpResponse response = httpclient.execute(client);
             int statusCode = response.getStatusLine().getStatusCode();
-            JsonNode body = BridgeObjectMapper.get().readTree(response.getEntity().getContent());
+
+            JsonNode body;
+            try {
+                body = BridgeObjectMapper.get().readTree(response.getEntity().getContent());
+            } catch (JsonParseException ex) {
+                // Log the error and the status code. Set body to a null node, so we don't break any callers.
+                LOG.error("OAuth call failed with invalid JSON, status code " + statusCode);
+                body = NullNode.getInstance();
+            }
+
             return new Response(statusCode, body);
         } catch (IOException e) {
             LOG.error(SERVICE_ERROR_MSG, e);
