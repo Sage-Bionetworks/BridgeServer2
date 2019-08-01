@@ -22,13 +22,11 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -588,38 +586,6 @@ public class AccountWorkflowService {
         return account.getId();
     }
 
-    /**
-     * Attempts to validate a sign in request using a token that was stored and then sent 
-     * via SMS or an email message. 
-     * 
-     * @return AccountId the accountId of the account if the sign in is successful.
-     * @throws AuthenticationFailedException
-     *             if the token is missing or invalid (not a successful sign in attempt).
-     */
-    public AccountId channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
-            Validator validator) {
-        Validate.entityThrowingException(validator, signIn);
-       
-        CacheKey cacheKey = null;
-        if (channelType == EMAIL) {
-            cacheKey = CacheKey.emailSignInRequest(signIn);
-        } else if (channelType == PHONE) {
-            cacheKey = CacheKey.phoneSignInRequest(signIn);
-        } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
-        }
-
-        String storedToken = cacheProvider.getObject(cacheKey, String.class);
-        String unformattedSubmittedToken = signIn.getToken().replaceAll("[-\\s]", "");
-        if (storedToken == null || !storedToken.equals(unformattedSubmittedToken)) {
-            throw new AuthenticationFailedException();
-        }
-        // Consume the key regardless of what happens
-        cacheProvider.removeObject(cacheKey);
-        
-        return signIn.getAccountId();
-    }
-    
     private void saveVerification(String sptoken, VerificationData data) {
         checkArgument(isNotBlank(sptoken));
         checkNotNull(data);

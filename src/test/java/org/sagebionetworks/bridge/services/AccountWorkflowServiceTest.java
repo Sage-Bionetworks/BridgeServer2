@@ -36,13 +36,11 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -60,7 +58,6 @@ import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
-import org.sagebionetworks.bridge.validators.SignInValidator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterables;
@@ -85,11 +82,7 @@ public class AccountWorkflowServiceTest {
             .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
     private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withEmail(EMAIL).withStudy(STUDY_ID)
             .withToken(TOKEN).build();
-    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
-    
-    private static final CacheKey PHONE_CACHE_KEY = CacheKey.phoneSignInRequest(SIGN_IN_REQUEST_WITH_PHONE);
-    
+
     private static final CacheKey PHONE_TOKEN_CACHE_KEY = CacheKey.verificationToken(PHONE_TOKEN);
     private static final CacheKey TOKEN_CACHE_KEY = CacheKey.verificationToken(TOKEN);
     private static final CacheKey SPTOKEN_CACHE_KEY = CacheKey.verificationToken(SPTOKEN);
@@ -1227,109 +1220,5 @@ public class AccountWorkflowServiceTest {
         assertEquals(userId, USER_ID);
 
         verify(mockSmsService, times(3)).sendSmsMessage(any(), any());
-    }
-
-    @Test
-    public void emailChannelSignIn() {
-        when(mockCacheProvider.getObject(EMAIL_SIGNIN_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        
-        AccountId returnedAccount = service.channelSignIn(ChannelType.EMAIL, CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-        
-        verify(mockCacheProvider).getObject(EMAIL_SIGNIN_CACHE_KEY, String.class);
-        verify(mockCacheProvider).removeObject(EMAIL_SIGNIN_CACHE_KEY);
-        assertEquals(returnedAccount, SIGN_IN_WITH_EMAIL.getAccountId());
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void channelSignInUnsupportedType() {
-        // use null for this test so we don't have to create a dummy type
-        service.channelSignIn(null, CONTEXT, SIGN_IN_WITH_EMAIL, SignInValidator.EMAIL_SIGNIN);
-    }
-    
-    @Test
-    public void phoneChannelSignIn() {
-        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        
-        AccountId returnedAccount = service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
-        
-        verify(mockCacheProvider).getObject(PHONE_CACHE_KEY, String.class);
-        verify(mockCacheProvider).removeObject(PHONE_CACHE_KEY);
-        assertEquals(returnedAccount, SIGN_IN_WITH_PHONE.getAccountId());
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test
-    public void phoneChannelSignInWithFormattingDashWorks() {
-        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID)
-                .withPhone(TestConstants.PHONE).withToken("ABC-DEF").build();
-        
-        AccountId returnedAccount = service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn, SignInValidator.PHONE_SIGNIN);
-        
-        verify(mockCacheProvider).getObject(PHONE_CACHE_KEY, String.class);
-        verify(mockCacheProvider).removeObject(PHONE_CACHE_KEY);
-        assertEquals(returnedAccount, SIGN_IN_WITH_PHONE.getAccountId());
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test
-    public void phoneChannelSignInWithFormattingSpaceWorks() {
-        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID)
-                .withPhone(TestConstants.PHONE).withToken("ABC DEF").build();
-        
-        AccountId returnedAccount = service.channelSignIn(ChannelType.PHONE, CONTEXT, signIn, SignInValidator.PHONE_SIGNIN);
-        
-        verify(mockCacheProvider).getObject(PHONE_CACHE_KEY, String.class);
-        verify(mockCacheProvider).removeObject(PHONE_CACHE_KEY);
-        assertEquals(returnedAccount, SIGN_IN_WITH_PHONE.getAccountId());
-        verifyNoMoreInteractions(mockCacheProvider);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void channelSignInValidates() {
-        // study is missing here.
-        service.channelSignIn(ChannelType.PHONE, CONTEXT, new SignIn.Builder().withPhone(TestConstants.PHONE).build(),
-                SignInValidator.PHONE_SIGNIN);
-    }
-    
-    @Test(expectedExceptions = AuthenticationFailedException.class)
-    public void channelSignInMissingTokenThrowsException() {
-        // This should work, except that the token will not be returned from the cache
-        service.channelSignIn(ChannelType.PHONE, CONTEXT, SIGN_IN_WITH_PHONE, SignInValidator.PHONE_SIGNIN);
-    }
-    
-    @Test(expectedExceptions = AuthenticationFailedException.class)
-    public void channelSignInWrongTokenThrowsException() {
-        when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        
-        SignIn wrongTokenSignIn = new SignIn.Builder().withStudy(STUDY_ID)
-                .withPhone(TestConstants.PHONE).withToken("wrong-token").build();
-
-        // This should work, except that the tokens do not match
-        service.channelSignIn(ChannelType.PHONE, CONTEXT, wrongTokenSignIn, SignInValidator.PHONE_SIGNIN);
-    }
-    
-    @Test(expectedExceptions = AuthenticationFailedException.class)
-    public void channelSignInWrongEmailThrowsException() {
-     // */when(mockCacheProvider.getObject(EMAIL_SIGNIN_CACHE_KEY, String.class)).thenReturn(TOKEN);
-
-        SignIn wrongEmailSignIn = new SignIn.Builder().withStudy(STUDY_ID)
-                .withEmail("wrong-email@email.com").withToken(TOKEN).build();
-
-        service.channelSignIn(ChannelType.EMAIL, CONTEXT, wrongEmailSignIn, SignInValidator.EMAIL_SIGNIN);
-    }
-
-    @Test(expectedExceptions = AuthenticationFailedException.class)
-    public void channelSignInWrongPhoneThrowsException() {
-     // */when(mockCacheProvider.getObject(PHONE_CACHE_KEY, String.class)).thenReturn(TOKEN);
-
-        SignIn wrongPhoneSignIn = new SignIn.Builder().withStudy(STUDY_ID)
-                .withPhone(new Phone("4082588569", "US")).withToken(TOKEN).build();
-
-        service.channelSignIn(ChannelType.PHONE, CONTEXT, wrongPhoneSignIn, SignInValidator.PHONE_SIGNIN);
     }
 }

@@ -170,3 +170,13 @@ CREATE TABLE IF NOT EXISTS `TemplateRevisions` (
   PRIMARY KEY (`templateGuid`, `createdOn`),
   CONSTRAINT `Templates-Guid-Constraint` FOREIGN KEY (`templateGuid`) REFERENCES `Templates` (`guid`) ON DELETE CASCADE
 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+--changeset bridge:3
+
+ALTER TABLE `Accounts`
+CHANGE COLUMN `passwordAlgorithm` `passwordAlgorithm` ENUM('STORMPATH_HMAC_SHA_256', 'BCRYPT', 'PBKDF2_HMAC_SHA_256',
+  'STORMPATH_PBKDF2_DOUBLE_HASH') DEFAULT NULL;
+
+ALTER TABLE `AccountSecrets`
+CHANGE COLUMN `algorithm` `algorithm` ENUM('STORMPATH_HMAC_SHA_256', 'BCRYPT', 'PBKDF2_HMAC_SHA_256',
+  'STORMPATH_PBKDF2_DOUBLE_HASH') NOT NULL;
