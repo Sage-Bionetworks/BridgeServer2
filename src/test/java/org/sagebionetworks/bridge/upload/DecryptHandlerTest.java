@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
@@ -50,9 +52,12 @@ public class DecryptHandlerTest {
                 "decrypted test data".getBytes(Charsets.UTF_8)));
 
         // set up test handler
-        DecryptHandler handler = new DecryptHandler();
+        DecryptHandler handler = spy(new DecryptHandler());
         handler.setFileHelper(fileHelper);
         handler.setUploadArchiveService(mockSvc);
+
+        // Don't actually buffer the input stream, as this breaks the test.
+        doAnswer(invocation -> invocation.getArgument(0)).when(handler).getBufferedInputStream(any());
 
         // execute and validate
         handler.handle(ctx);
