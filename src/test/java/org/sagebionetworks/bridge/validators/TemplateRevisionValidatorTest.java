@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.services.SmsService.SMS_CHARACTER_LIMIT;
 
@@ -14,7 +15,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.services.SmsService;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public class TemplateRevisionValidatorTest {
 
@@ -31,6 +32,15 @@ public class TemplateRevisionValidatorTest {
         Validate.entityThrowingException(INSTANCE, revision);
     }
 
+    @Test
+    public void emailSignedConsentDoesNotValidateVars() {
+        TemplateRevision revision = createValidTemplate();
+        revision.setDocumentContent("no variables");
+        
+        TemplateRevisionValidator validator = new TemplateRevisionValidator(EMAIL_SIGNED_CONSENT);
+        Validate.entityThrowingException(validator, revision);
+    }
+    
     @Test
     public void validateTemplateGuid() {
         TemplateRevision revision = createValidTemplate();

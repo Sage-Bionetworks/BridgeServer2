@@ -11,8 +11,6 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-import org.sagebionetworks.bridge.services.SmsService;
-import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 public class TemplateRevisionValidator implements Validator {
     private final TemplateType type;
@@ -76,7 +74,7 @@ public class TemplateRevisionValidator implements Validator {
             errors.rejectValue("documentContent", "cannot be blank");
         } else if (revision.getDocumentContent().length() > SMS_CHARACTER_LIMIT) {
             errors.rejectValue("documentContent", "cannot be more than " + SMS_CHARACTER_LIMIT + " characters");
-        } else {
+        } else if (!templateVariables.isEmpty()){
             validateVarExists(errors, revision, templateVariables);
         }
     }
