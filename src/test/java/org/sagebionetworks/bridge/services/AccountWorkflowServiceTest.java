@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,6 +17,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +43,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -52,7 +55,6 @@ import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.InMemoryJedisOps;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -62,6 +64,7 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterables;
 
+@SuppressWarnings("unchecked")
 public class AccountWorkflowServiceTest {
     private static final String SUPPORT_EMAIL = "support@support.com";
     private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
@@ -91,6 +94,13 @@ public class AccountWorkflowServiceTest {
     private static final CacheKey PHONE_SIGNIN_CACHE_KEY = CacheKey.phoneSignInRequest(SIGN_IN_WITH_PHONE);
     private static final CacheKey PASSWORD_RESET_FOR_EMAIL = CacheKey.passwordResetForEmail(SPTOKEN, STUDY_ID);
     private static final CacheKey PASSWORD_RESET_FOR_PHONE = CacheKey.passwordResetForPhone(SPTOKEN, STUDY_ID);
+
+    private static final CacheKey EMAIL_SIGNIN_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
+            ThrottleRequestType.EMAIL_SIGNIN, USER_ID);
+    private static final CacheKey VERIFY_EMAIL_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
+            ThrottleRequestType.VERIFY_EMAIL, USER_ID);
+    private static final CacheKey VERIFY_PHONE_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
+            ThrottleRequestType.VERIFY_PHONE, USER_ID);
 
     @Mock
     private BridgeConfig mockBridgeConfig;
@@ -129,7 +139,9 @@ public class AccountWorkflowServiceTest {
     
     @Spy
     private AccountWorkflowService service;
-    
+
+    private Map<String, Object> mockCacheProviderMap;
+
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
@@ -163,11 +175,31 @@ public class AccountWorkflowServiceTest {
         when(mockBridgeConfig.getInt(AccountWorkflowService.CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS)).thenReturn(
                 300);
 
+        // Mock cache provider to do a basic in-memory map for simple gets and sets.
+        mockCacheProviderMap = new HashMap<>();
+
+        when(mockCacheProvider.getObject(any(CacheKey.class), any(Class.class))).thenAnswer(invocation -> {
+            CacheKey cacheKey = invocation.getArgument(0);
+            return mockCacheProviderMap.get(cacheKey.toString());
+        });
+
+        doAnswer(invocation -> {
+            CacheKey cacheKey = invocation.getArgument(0);
+            Object object = invocation.getArgument(1);
+            mockCacheProviderMap.put(cacheKey.toString(), object);
+            return null;
+        }).when(mockCacheProvider).setObject(any(), any(), anyInt());
+
+        doAnswer(invocation -> {
+            CacheKey cacheKey = invocation.getArgument(0);
+            mockCacheProviderMap.remove(cacheKey.toString());
+            return null;
+        }).when(mockCacheProvider).removeObject(any());
+
         // Set up service
         service.setAccountDao(mockAccountDao);
         service.setBridgeConfig(mockBridgeConfig);
         service.setCacheProvider(mockCacheProvider);
-        service.setJedisOps(new InMemoryJedisOps());
         service.setSendMailService(mockSendMailService);
         service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
@@ -208,6 +240,11 @@ public class AccountWorkflowServiceTest {
         assertTrue(bodyString.contains("/mobile/verifyEmail.html?study=api&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("/ve?study=api&sptoken="+SPTOKEN));
         assertEquals(email.getType(), EmailType.VERIFY_EMAIL);
+
+        // Verify throttling cache calls.
+        verify(mockCacheProvider).getObject(VERIFY_EMAIL_THROTTLE_CACHE_KEY, Integer.class);
+        verify(mockCacheProvider).setObject(eq(VERIFY_EMAIL_THROTTLE_CACHE_KEY), any(), anyInt());
+
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -251,6 +288,11 @@ public class AccountWorkflowServiceTest {
         
         String message = provider.getSmsRequest().getMessage();
         assertTrue(message.contains("012-345"));
+
+        // Verify throttling cache calls.
+        verify(mockCacheProvider).getObject(VERIFY_PHONE_THROTTLE_CACHE_KEY, Integer.class);
+        verify(mockCacheProvider).setObject(eq(VERIFY_PHONE_THROTTLE_CACHE_KEY), any(), anyInt());
+
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -560,10 +602,13 @@ public class AccountWorkflowServiceTest {
         study.setEmailVerificationEnabled(true);
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN, SPTOKEN, TOKEN, SPTOKEN, TOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+
+        // Note that password reset token (sptoken) is never cached, so we generate it 3 times. The email sign-in token
+        // (token), is cached, so we only generate it the first time around.
+        when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN, SPTOKEN, SPTOKEN);
 
         // Throttle limit is 2, but it doesn't apply to notifyAccount(). Call this 3 times, and expect 3 emails with
         // email sign-in URL.
@@ -1050,6 +1095,11 @@ public class AccountWorkflowServiceTest {
         assertEquals(Iterables.getFirst(provider.getRecipientEmails(), null), EMAIL);
         assertEquals(provider.getMimeTypeEmail().getMessageParts().get(0).getContent(), "Body " + provider.getTokenMap().get("token"));
         assertEquals(provider.getType(), EmailType.EMAIL_SIGN_IN);
+
+        // Verify throttling cache calls.
+        verify(mockCacheProvider).getObject(EMAIL_SIGNIN_THROTTLE_CACHE_KEY, Integer.class);
+        verify(mockCacheProvider).setObject(eq(EMAIL_SIGNIN_THROTTLE_CACHE_KEY), any(), anyInt());
+
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -1130,7 +1180,7 @@ public class AccountWorkflowServiceTest {
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
         
-        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(mockCacheProvider, never()).setObject(eq(EMAIL_SIGNIN_CACHE_KEY), any(), anyInt());
         verify(mockSendMailService).sendEmail(emailProviderCaptor.capture());
         
         BasicEmailProvider provider = emailProviderCaptor.getValue();

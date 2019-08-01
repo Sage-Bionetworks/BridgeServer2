@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.cache;
 import java.util.List;
 import java.util.Objects;
 
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -48,8 +49,8 @@ public final class CacheKey {
         return new CacheKey(signInToken, "channel-signin-to-session-token");
     }
 
-    public static final CacheKey channelThrottling(String throttleType, String userId) {
-        return new CacheKey(userId, throttleType, "channel-throttling");
+    public static CacheKey channelThrottling(ThrottleRequestType throttleType, String userId) {
+        return new CacheKey(userId, throttleType.name().toLowerCase(), "channel-throttling");
     }
     public static final CacheKey emailSignInRequest(SignIn signIn) {
         return new CacheKey(signIn.getEmail(), signIn.getStudyId(), "signInRequest");

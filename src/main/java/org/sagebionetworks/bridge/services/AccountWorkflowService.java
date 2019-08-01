@@ -13,8 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import javax.annotation.Resource;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -27,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -37,7 +36,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -49,16 +47,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 @Component
 public class AccountWorkflowService {
-    private static final Logger LOG = LoggerFactory.getLogger(AccountWorkflowService.class);
-
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
@@ -103,15 +97,6 @@ public class AccountWorkflowService {
     static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
-    // Enumeration of request types that we want to throttle on. Used to differentiate between request types and
-    // generate cache keys.
-    private enum ThrottleRequestType {
-        EMAIL_SIGNIN,
-        PHONE_SIGNIN,
-        VERIFY_EMAIL,
-        VERIFY_PHONE
-    }
-
     private static class VerificationData {
         private final String studyId;
         private final String userId;
@@ -143,7 +128,6 @@ public class AccountWorkflowService {
     private int channelThrottleTimeoutSeconds;
 
     // Dependent services
-    private JedisOps jedisOps;
     private SmsService smsService;
     private StudyService studyService;
     private SendMailService sendMailService;
@@ -155,12 +139,6 @@ public class AccountWorkflowService {
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.channelThrottleMaxRequests = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS);
         this.channelThrottleTimeoutSeconds = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS);
-    }
-
-    /** JedisOps, used for basic Redis operations, like expire() and incr(). */
-    @Resource(name = "jedisOps")
-    public final void setJedisOps(JedisOps jedisOps) {
-        this.jedisOps = jedisOps;
     }
 
     /** SMS Service, used to send account workflow text messages. */
@@ -674,24 +652,19 @@ public class AccountWorkflowService {
         }
 
         // Generate key, which is in the form of channel-throttling:[type]:[userId].
-        String cacheKey = "channel-throttling:" + type.toString().toLowerCase() + ":" + userId;
+        CacheKey cacheKey = CacheKey.channelThrottling(type, userId);
 
-        String numRequestsStr = jedisOps.get(cacheKey);
-        int numRequests = 0;
-        if (numRequestsStr != null) {
-            try {
-                numRequests = Integer.parseInt(numRequestsStr);
-            } catch (NumberFormatException ex) {
-                // Warn and fall back to 0.
-                LOG.warn("Found non-integer for cacheKey " + cacheKey + ": " + numRequestsStr);
-            }
+        Integer numRequests = cacheProvider.getObject(cacheKey, Integer.class);
+        if (numRequests == null) {
+            // Fall back to 0.
+            numRequests = 0;
         }
 
         if (numRequests < channelThrottleMaxRequests) {
             // We've seen less than the maximum number of requests. We can let this request through without throttling.
             // But we should increment the request count in Redis. Reset the expiration so that participants can't
             // exceed the throttle limit by making a bunch of requests at the end of the throttle window.
-            jedisOps.setex(cacheKey, channelThrottleTimeoutSeconds, String.valueOf(numRequests + 1));
+            cacheProvider.setObject(cacheKey, numRequests + 1, channelThrottleTimeoutSeconds);
             return false;
         } else {
             // We've seen at least as many requests as our limit (or more), so this next request will push us over the
