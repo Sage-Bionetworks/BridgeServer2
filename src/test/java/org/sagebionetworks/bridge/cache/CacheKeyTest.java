@@ -7,6 +7,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -49,7 +50,8 @@ public class CacheKeyTest {
 
     @Test
     public void channelThrottling() {
-        assertEquals(CacheKey.channelThrottling("email", "userId").toString(), "userId:email:channel-throttling");
+        assertEquals(CacheKey.channelThrottling(ThrottleRequestType.EMAIL_SIGNIN, "userId").toString(),
+                "userId:email_signin:channel-throttling");
     }
     
     @Test
