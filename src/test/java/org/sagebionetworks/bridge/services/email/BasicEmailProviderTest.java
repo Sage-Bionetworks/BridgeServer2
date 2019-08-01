@@ -1,20 +1,23 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static javax.mail.Part.ATTACHMENT;
+import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.studies.MimeType.PDF;
+import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.services.email.EmailType.EMAIL_SIGN_IN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 import java.io.InputStream;
 import java.util.Map;
 
-import javax.mail.Part;
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.Sets;
 
@@ -31,24 +34,26 @@ public class BasicEmailProviderTest {
         study.setTechnicalEmail("tech@email.com");
         study.setConsentNotificationEmail("consent@email.com,consent2@email.com");
 
-        EmailTemplate template = new EmailTemplate("Subject ${url}", 
-            "${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
-            "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}", MimeType.HTML); 
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("Subject ${url}");
+        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
+            "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}");
+        revision.setMimeType(HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withStudy(study)
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
-            .withEmailTemplate(template)
+            .withTemplateRevision(revision)
             .withExpirationPeriod("expirationPeriod", 60*60)
             .withToken("url", "some-url")
-            .withType(EmailType.EMAIL_SIGN_IN)
+            .withType(EMAIL_SIGN_IN)
             .build();
 
         // Check provider attributes
         assertEquals(provider.getFormattedSenderEmail(), "Name <support@email.com>");
-        assertEquals(provider.getType(), EmailType.EMAIL_SIGN_IN);
+        assertEquals(provider.getType(), EMAIL_SIGN_IN);
 
         // Check email
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -56,7 +61,7 @@ public class BasicEmailProviderTest {
         assertEquals(email.getSenderAddress(), "\"Name\" <support@email.com>");
         assertEquals(Sets.newHashSet(email.getRecipientAddresses()),
                 Sets.newHashSet("recipient@recipient.com", "recipient2@recipient.com"));
-        assertEquals(email.getType(), EmailType.EMAIL_SIGN_IN);
+        assertEquals(email.getType(), EMAIL_SIGN_IN);
 
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
@@ -71,10 +76,13 @@ public class BasicEmailProviderTest {
         study.setName("Study Name");
         study.setSupportEmail("email@email.com");
 
-        EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML);
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("Subject ${url}");
+        revision.setDocumentContent("Body ${url}");
+        revision.setMimeType(HTML);
 
         // Create
-        BasicEmailProvider provider = new BasicEmailProvider.Builder().withEmailTemplate(template)
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
                 .withOverrideSenderEmail("example@example.com").withStudy(study).build();
 
         // Check provider attributes
@@ -83,9 +91,12 @@ public class BasicEmailProviderTest {
     
     @Test
     public void nullTokenMapEntryDoesntBreakMap() throws Exception {
-        EmailTemplate template = new EmailTemplate("asdf", "asdf", MimeType.TEXT);
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("asdf");
+        revision.setDocumentContent("asdf");
+        revision.setMimeType(TEXT);
         
-        BasicEmailProvider provider = new BasicEmailProvider.Builder().withEmailTemplate(template)
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com").withStudy(Study.create()).build();
         
@@ -95,13 +106,16 @@ public class BasicEmailProviderTest {
     
     @Test
     public void canAddBinaryAttachment() throws Exception {
-        EmailTemplate template = new EmailTemplate("Subject ${url}", "Body ${url}", MimeType.HTML);
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("Subject ${url}");
+        revision.setDocumentContent("Body ${url}");
+        revision.setMimeType(HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withBinaryAttachment("content.pdf", MimeType.PDF, "some data".getBytes())
+                .withBinaryAttachment("content.pdf", PDF, "some data".getBytes())
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
-                .withEmailTemplate(template)
+                .withTemplateRevision(revision)
                 .withStudy(Study.create()).build();
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
@@ -111,7 +125,7 @@ public class BasicEmailProviderTest {
         String bodyContent = IOUtils.toString((InputStream)attachment.getContent()); 
         assertEquals(attachment.getFileName(), "content.pdf");
         assertEquals(bodyContent, "some data");
-        assertEquals(attachment.getDisposition(), Part.ATTACHMENT);
+        assertEquals(attachment.getDisposition(), ATTACHMENT);
         // the mime type isn't changed because headers are not updated until you call
         // MimeMessage.saveChanges(), and these objects do not include the final 
         // Java Mail MimeMessage object.

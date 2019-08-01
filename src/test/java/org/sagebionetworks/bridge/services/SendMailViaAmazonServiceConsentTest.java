@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.amazonaws.regions.Region;
@@ -109,7 +110,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getSignedConsentTemplate()))
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
         service.sendEmail(provider);
@@ -150,7 +151,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getSignedConsentTemplate()))
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
         
@@ -197,7 +198,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getSignedConsentTemplate()))
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
 
@@ -225,7 +226,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getSignedConsentTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getSignedConsentTemplate()))
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
 

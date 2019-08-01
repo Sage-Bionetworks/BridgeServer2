@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -223,7 +224,7 @@ public class AccountWorkflowService {
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getVerifyEmailTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getVerifyEmailTemplate()))
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
                 .withToken(OLD_URL_KEY, oldUrl)
@@ -252,10 +253,11 @@ public class AccountWorkflowService {
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
+        TemplateRevision revision = TemplateRevision.create(study.getVerifyPhoneSmsTemplate());
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
                 .withToken("token", formattedSpToken)
-                .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
+                .withTemplateRevision(revision)
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
@@ -368,7 +370,7 @@ public class AccountWorkflowService {
         
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
             .withStudy(study)
-            .withEmailTemplate(template)
+            .withTemplateRevision(TemplateRevision.create(template))
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
             .withToken(OLD_URL_KEY, url)
@@ -406,9 +408,10 @@ public class AccountWorkflowService {
         cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
-
+        TemplateRevision revision = TemplateRevision.create(template);
+        
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
-        builder.withSmsTemplate(template);
+        builder.withTemplateRevision(revision);
         builder.withTransactionType();
         builder.withStudy(study);
         builder.withPhone(phone);
@@ -477,10 +480,10 @@ public class AccountWorkflowService {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
-            
+            TemplateRevision revision = TemplateRevision.create(study.getPhoneSignInSmsTemplate());
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
                     .withStudy(study)
-                    .withSmsTemplate(study.getPhoneSignInSmsTemplate())
+                    .withTemplateRevision(revision)
                     .withTransactionType()
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
@@ -509,7 +512,7 @@ public class AccountWorkflowService {
             // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
             // into that template.
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withEmailTemplate(study.getEmailSignInTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getEmailSignInTemplate()))
                 .withStudy(study)
                 .withRecipientEmail(signIn.getEmail())
                 .withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()))

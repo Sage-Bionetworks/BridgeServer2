@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -57,7 +58,7 @@ public class SendMailViaAmazonServiceTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withRecipientEmail(RECIPIENT_EMAIL)
-                .withEmailTemplate(new EmailTemplate("subject", "body", MimeType.HTML))
+                .withTemplateRevision(TemplateRevision.create(new EmailTemplate("subject", "body", MimeType.HTML)))
                 .build();
         try {
             service.sendEmail(provider);
@@ -75,7 +76,7 @@ public class SendMailViaAmazonServiceTest {
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withRecipientEmail(RECIPIENT_EMAIL)
-                .withEmailTemplate(new EmailTemplate("subject", "body", MimeType.HTML))
+                .withTemplateRevision(TemplateRevision.create(new EmailTemplate("subject", "body", MimeType.HTML)))
                 .build();
         service.sendEmail(provider);
     }

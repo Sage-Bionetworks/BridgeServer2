@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -769,7 +770,7 @@ public class ParticipantService {
         
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
                 .withPhone(account.getPhone())
-                .withSmsTemplate(template)
+                .withTemplateRevision(TemplateRevision.create(template))
                 .withPromotionType()
                 .withStudy(study);
         for (Map.Entry<String, String> entry : variables.entrySet()) {

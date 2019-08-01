@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -130,9 +132,10 @@ public class IntentService {
                     // The URL being sent does not expire. We send with a transaction delivery type because
                     // this is a critical step in onboarding through this workflow and message needs to be 
                     // sent immediately after consenting.
+                    TemplateRevision revision = TemplateRevision.create(study.getAppInstallLinkSmsTemplate());
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
                             .withStudy(study)
-                            .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
+                            .withTemplateRevision(revision)
                             .withTransactionType()
                             .withPhone(intent.getPhone())
                             .withToken(APP_INSTALL_URL_KEY, url).build();
@@ -140,9 +143,11 @@ public class IntentService {
                     // SMS Service.
                     smsService.sendSmsMessage(null, provider);
                 } else {
+                    TemplateRevision revision = TemplateRevision.create(study.getAppInstallLinkTemplate());
+                    
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
                             .withStudy(study)
-                            .withEmailTemplate(study.getAppInstallLinkTemplate())
+                            .withTemplateRevision(revision)
                             .withRecipientEmail(intent.getEmail())
                             .withType(EmailType.APP_INSTALL)
                             .withToken(APP_INSTALL_URL_KEY, url)

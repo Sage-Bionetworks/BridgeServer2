@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +75,7 @@ import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -883,10 +885,12 @@ public class StudyService {
         String studyId = BridgeUtils.encodeURIComponent(study.getIdentifier());
         String shortUrl = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
         
-        EmailTemplate template = new EmailTemplate(studyEmailVerificationTemplateSubject,
-                studyEmailVerificationTemplate, MimeType.HTML);
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject(studyEmailVerificationTemplateSubject);
+        revision.setDocumentContent(studyEmailVerificationTemplate);
+        revision.setMimeType(HTML);
 
-        BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withEmailTemplate(template)
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withTemplateRevision(revision)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email)
                 .withToken(STUDY_EMAIL_VERIFICATION_URL, shortUrl)
                 .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS)

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
@@ -21,6 +22,7 @@ import com.amazonaws.services.sns.model.OptInPhoneNumberRequest;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -41,8 +43,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -60,6 +62,10 @@ public class SmsServiceTest {
     private static final String STUDY_SHORT_NAME = "My Study";
     private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(-7);
     private static final String USER_ID = "test-user";
+    private static final TemplateRevision REVISION = TemplateRevision.create();
+    static {
+        REVISION.setDocumentContent(MESSAGE_BODY);
+    }
 
     private static final StudyParticipant PARTICIPANT_WITH_TIME_ZONE = new StudyParticipant.Builder()
             .withId(USER_ID).withHealthCode(HEALTH_CODE).withTimeZone(TIME_ZONE).build();
@@ -124,7 +130,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
 
@@ -155,7 +161,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
 
@@ -181,7 +187,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
         svc.sendSmsMessage(null, provider);
@@ -202,7 +208,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
         svc.sendSmsMessage(null, provider);
@@ -223,7 +229,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
         svc.sendSmsMessage(HEALTH_CODE, provider);
@@ -245,7 +251,7 @@ public class SmsServiceTest {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(MESSAGE_BODY))
+                .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
         svc.sendSmsMessage(HEALTH_CODE, provider);
@@ -277,13 +283,12 @@ public class SmsServiceTest {
 
     @Test(expectedExceptions = BridgeServiceException.class)
     public void sendSMSMessageTooLongInvalid() {
-        String message = "This is my SMS message.";
-        for (int i=0; i < 5; i++) {
-            message += message;
-        }
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent(randomAlphabetic(601));
+        
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
-                .withSmsTemplate(new SmsTemplate(message))
+                .withTemplateRevision(revision)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
 
