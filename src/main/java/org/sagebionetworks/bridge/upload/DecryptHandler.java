@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,7 +50,7 @@ public class DecryptHandler implements UploadValidationHandler {
         try (InputStream inputFileStream = getBufferedInputStream(fileHelper.getInputStream(context.getDataFile()));
              InputStream decryptedInputFileStream = uploadArchiveService.decrypt(context.getStudy().getIdentifier(),
                      inputFileStream);
-             OutputStream outputFileStream = fileHelper.getOutputStream(outputFile)) {
+             OutputStream outputFileStream = new BufferedOutputStream(fileHelper.getOutputStream(outputFile))) {
             ByteStreams.copy(decryptedInputFileStream, outputFileStream);
         } catch (IOException ex) {
             throw new UploadValidationException("Error decrypting file: " + ex.getMessage(), ex);
@@ -62,6 +63,8 @@ public class DecryptHandler implements UploadValidationHandler {
     // This helper method wraps a stream inside a buffered stream. It exists because our unit tests use
     // InMemoryFileHelper, which uses a ByteArrayInputStream, which ignores closing. But in Prod, we need to wrap it in
     // a BufferedInputStream because the files can get big, and a closed BufferedInputStream breaks unit tests.
+    //
+    // Note that OutputStream has no such limitation, since InMemoryFileHelper intercepts the output.
     InputStream getBufferedInputStream(InputStream inputStream) {
         return new BufferedInputStream(inputStream);
     }
