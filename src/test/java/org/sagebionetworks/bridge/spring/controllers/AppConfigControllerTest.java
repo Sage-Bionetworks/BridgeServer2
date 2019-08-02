@@ -12,8 +12,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
-import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -35,11 +33,14 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -53,7 +54,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 public class AppConfigControllerTest extends Mockito {
     
-    private static final String TEST_LANG = "en-US,en;q=0.9";
     private static final String GUID = "guid";
     private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TestConstants.TEST_STUDY);
     
@@ -133,8 +133,9 @@ public class AppConfigControllerTest extends Mockito {
     
     @Test
     public void getStudyAppConfig() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(TEST_LANG);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerLanguages(ImmutableList.of("en"))
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
@@ -151,6 +152,7 @@ public class AppConfigControllerTest extends Mockito {
         assertEquals(capturedContext.getClientInfo().getAppVersion(), new Integer(26));
         assertEquals(capturedContext.getLanguages(), ImmutableList.of("en"));
         assertEquals(capturedContext.getClientInfo().getOsName(), "iPhone OS");
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
@@ -248,8 +250,9 @@ public class AppConfigControllerTest extends Mockito {
 
     @Test
     public void getStudyAppConfigAddsToCache() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(TEST_LANG);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerLanguages(ImmutableList.of("en"))
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);

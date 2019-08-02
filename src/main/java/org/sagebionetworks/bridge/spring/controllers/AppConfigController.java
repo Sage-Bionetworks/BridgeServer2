@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -55,9 +56,11 @@ public class AppConfigController extends BaseController {
     public String getStudyAppConfig(@PathVariable String studyId) {
         Study study = studyService.getStudy(studyId);
         
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        
         CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(getLanguagesFromAcceptLanguageHeader())
-                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withLanguages(reqContext.getCallerLanguages())
+                .withClientInfo(reqContext.getCallerClientInfo())
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .build();
         

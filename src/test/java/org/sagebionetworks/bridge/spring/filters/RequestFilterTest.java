@@ -1,15 +1,26 @@
 package org.sagebionetworks.bridge.spring.filters;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
+import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
+import static org.sagebionetworks.bridge.TestConstants.UA;
+import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
+import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.common.collect.ImmutableList;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -23,6 +34,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.models.ClientInfo;
 
 public class RequestFilterTest extends Mockito {
 
@@ -108,5 +120,194 @@ public class RequestFilterTest extends Mockito {
         assertEquals("AAABAAA", context.getId());
         
         assertNull(contextCaptor.getAllValues().get(1));
+    }
+    
+    @Test
+    public void getLanguagesFromAcceptLanguageHeader() {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE))
+            .thenReturn("de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6,fr;q=0.1");
+
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(langs, ImmutableList.of("en", "de", "fr"));
+    }
+    
+    @Test
+    public void getLanguagesFromAcceptLanguageHeaderMissing() {
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertTrue(langs.isEmpty());
+    }
+
+    @Test
+    public void getClientInfoFromUserAgentHeader() {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
+
+        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+        
+        assertEquals(info, ClientInfo.fromUserAgentCache(UA));
+    }
+
+    @Test
+    public void getClientInfoFromUserAgentHeaderMissing() {
+        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+        
+        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
+    }
+    
+    @Test
+    public void addWarningMessage() {
+        Collection<String> headerNames = new HashSet<>();
+        when(mockResponse.getHeaderNames()).thenReturn(headerNames);
+        
+        RequestFilter.addWarningMessage(mockResponse, "first message");
+        
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, "first message");
+        
+        // Mock what will change once the header is added, then add a second message
+        headerNames.add(BRIDGE_API_STATUS_HEADER);
+        when(mockResponse.getHeader(BRIDGE_API_STATUS_HEADER)).thenReturn("first message");
+        
+        RequestFilter.addWarningMessage(mockResponse, "second message");
+        
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, "first message; second message");
+    }
+    
+    // Tests from original Play tests.
+    
+    @Test
+    public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(
+                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
+        
+        ClientInfo info = RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
+        assertNull(info.getAppName());
+        assertNull(info.getAppVersion());
+        assertNull(info.getOsName());
+        assertNull(info.getOsVersion());
+        assertNull(info.getSdkName());
+        assertNull(info.getSdkVersion());
+    }
+
+    @Test
+    public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
+        
+        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+        
+        verify(mockResponse, never()).setHeader(any(), any());
+    }
+
+    @Test
+    public void setWarningHeaderWhenNoUserAgent() throws Exception {
+        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+    }
+
+    @Test
+    public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn("");
+
+        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+    }
+
+    @Test
+    public void setWarningHeaderWhenNullUserAgent() throws Exception {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(null);
+
+        RequestFilter.getClientInfoFromUserAgentHeader(mockRequest, mockResponse);
+
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
+    }
+
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsNull() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+    }        
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsEmpty() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("");
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsSimple() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en-US");
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of("en"), langs);
+    }
+    
+    @Test
+    public void canRetrieveLanguagesWhenHeaderIsCompoundWithoutWeights() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("FR,en-US");
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of("fr", "en"), langs);
+    }
+    
+    // We don't want to throw a BadRequestException due to a malformed header. Just return no languages.
+    @Test
+    public void badAcceptLanguageHeaderSilentlyIgnored() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("chrome://global/locale/intl.properties");
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertTrue(langs.isEmpty());
+    }
+    
+
+    @Test
+    public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
+        // with no accept language header at all, things don't break;
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+
+        // verify if it set warning header
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenEmptyAcceptLanguage() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("");
+
+        // with no accept language header at all, things don't break;
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+
+        // verify if it set warning header
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+
+    @Test
+    public void setWarnHeaderWhenNullAcceptLanguage() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);
+
+        // with no accept language header at all, things don't break;
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+
+        // verify if it set warning header
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+
+    @Test
+    public void setWarnHeaderWhenInvalidAcceptLanguage() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("ThisIsAnVvalidAcceptLanguage");
+
+        // with no accept language header at all, things don't break;
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(ImmutableList.of(), langs);
+
+        // verify if it set warning header
+        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
     }
 }

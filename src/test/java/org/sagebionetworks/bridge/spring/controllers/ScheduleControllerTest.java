@@ -23,9 +23,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.springframework.validation.Errors;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -93,10 +96,15 @@ public class ScheduleControllerTest extends Mockito {
         session.setStudyIdentifier(studyId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(clientInfo).when(controller).getClientInfoFromUserAgentHeader();
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test

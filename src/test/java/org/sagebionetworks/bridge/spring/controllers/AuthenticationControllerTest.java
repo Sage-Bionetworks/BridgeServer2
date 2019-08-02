@@ -38,6 +38,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -52,6 +54,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -714,10 +717,15 @@ public class AuthenticationControllerTest extends Mockito {
                 "{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4"))
+                .build());
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.emailSignIn();
+        
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test(expectedExceptions = UnsupportedVersionException.class)

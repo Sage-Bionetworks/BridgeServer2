@@ -2,25 +2,15 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
-import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
-import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
-import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Locale.LanguageRange;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.servlet.http.Cookie;
@@ -29,12 +19,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -67,8 +54,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
-
-    private final static Logger LOG = LoggerFactory.getLogger(BaseController.class);
     
     protected final static ObjectMapper MAPPER = BridgeObjectMapper.get();
 
@@ -181,8 +166,7 @@ public abstract class BaseController {
         
         // Update request context with security-related information about the user. This will be
         // immediately removed from the thread local if an exception is thrown.
-        String requestId = request().getHeader(X_REQUEST_ID_HEADER);
-        RequestContext.Builder builder = new RequestContext.Builder().withRequestId(requestId);
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
         builder.withCallerStudyId(session.getStudyIdentifier());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
@@ -250,7 +234,7 @@ public abstract class BaseController {
     }
     
     void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
-        ClientInfo clientInfo = getClientInfoFromUserAgentHeader();
+        ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
         String osName = clientInfo.getOsName();
         Integer minVersionForOs = study.getMinSupportedAppVersions().get(osName);
         
@@ -271,7 +255,7 @@ public abstract class BaseController {
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
-        List<String> languages = getLanguagesFromAcceptLanguageHeader();
+        List<String> languages = BridgeUtils.getRequestContext().getCallerLanguages();
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
@@ -283,52 +267,13 @@ public abstract class BaseController {
         }
         return languages;
     }
-    
-    /**
-     * Returns languages in the order of their quality rating in the original LanguageRange objects 
-     * that are created from the Accept-Language header (first item in ordered set is the most-preferred 
-     * language option).
-     * @return
-     */
-    List<String> getLanguagesFromAcceptLanguageHeader() {
-        String acceptLanguageHeader = request().getHeader(ACCEPT_LANGUAGE);
-        if (isNotBlank(acceptLanguageHeader)) {
-            try {
-                List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
-                LinkedHashSet<String> languageSet = ranges.stream().map(range -> {
-                    return Locale.forLanguageTag(range.getRange()).getLanguage();
-                }).collect(Collectors.toCollection(LinkedHashSet::new));
-                return ImmutableList.copyOf(languageSet);
-            } catch(IllegalArgumentException e) {
-                // Accept-Language header was not properly formatted, do not throw an exception over 
-                // a malformed header, just return that no languages were found.
-                LOG.debug("Malformed Accept-Language header sent: " + acceptLanguageHeader);
-            }
-        }
-
-        // if no Accept-Language header detected, we shall add an extra warning header
-        addWarningMessage(WARN_NO_ACCEPT_LANGUAGE);
-        return ImmutableList.of();
-    }
-    
-    ClientInfo getClientInfoFromUserAgentHeader() {
-        String userAgentHeader = request().getHeader(USER_AGENT);
-        ClientInfo info = ClientInfo.fromUserAgentCache(userAgentHeader);
-
-        // if the user agent cannot be parsed (probably due to missing user agent string or unrecognizable user agent),
-        // should set an extra header to http response as warning - we should have an user agent info for filtering to work
-        if (info.equals(ClientInfo.UNKNOWN_CLIENT)) {
-            addWarningMessage(WARN_NO_USER_AGENT);
-        }
-        LOG.debug("User-Agent: '"+userAgentHeader+"' converted to " + info);    
-        return info;
-    }
 
     CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
+        RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
             .withStudyIdentifier(studyId)
-            .withLanguages(getLanguagesFromAcceptLanguageHeader())
-            .withClientInfo(getClientInfoFromUserAgentHeader())
+            .withLanguages(reqContext.getCallerLanguages())
+            .withClientInfo(reqContext.getCallerClientInfo())
             .withIpAddress(getRemoteAddress())
             .build();
     }
@@ -336,9 +281,10 @@ public abstract class BaseController {
     CriteriaContext getCriteriaContext(UserSession session) {
         checkNotNull(session);
         
+        RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
             .withLanguages(session.getParticipant().getLanguages())
-            .withClientInfo(getClientInfoFromUserAgentHeader())
+            .withClientInfo(reqContext.getCallerClientInfo())
             .withHealthCode(session.getHealthCode())
             .withIpAddress(session.getIpAddress())
             .withUserId(session.getId())
@@ -419,6 +365,8 @@ public abstract class BaseController {
     protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {
         checkNotNull(session);
         
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        
         RequestInfo.Builder builder = new RequestInfo.Builder();
         // If any timestamps exist, retrieve and preserve them in the returned requestInfo
         RequestInfo requestInfo = cacheProvider.getRequestInfo(session.getId());
@@ -426,7 +374,7 @@ public abstract class BaseController {
             builder.copyOf(requestInfo);
         }
         builder.withUserId(session.getId());
-        builder.withClientInfo(getClientInfoFromUserAgentHeader());
+        builder.withClientInfo(reqContext.getCallerClientInfo());
         builder.withUserAgent(request().getHeader(USER_AGENT));
         builder.withLanguages(session.getParticipant().getLanguages());
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
@@ -434,19 +382,6 @@ public abstract class BaseController {
         builder.withTimeZone(session.getParticipant().getTimeZone());
         builder.withStudyIdentifier(session.getStudyIdentifier());
         return builder;
-    }
-
-    /**
-     * Helper method to add warning message as an HTTP header.
-     * @param msg
-     */
-    void addWarningMessage(String msg) {
-        if (response().getHeaderNames().contains(BRIDGE_API_STATUS_HEADER)) {
-            String previousWarning = response().getHeader(BRIDGE_API_STATUS_HEADER);
-            response().setHeader(BRIDGE_API_STATUS_HEADER, previousWarning + "; " + msg);
-        } else {
-            response().setHeader(BRIDGE_API_STATUS_HEADER, msg);
-        }
     }
     
     protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
