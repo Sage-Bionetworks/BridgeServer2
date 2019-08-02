@@ -79,6 +79,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setName("Test Study");
             study.setShortName("TestStudy");
             study.setIdentifier(API_STUDY_ID_STRING);
+            study.setReauthenticationEnabled(false);
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
             study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
@@ -113,6 +114,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Shared Module Library");
+            study.setReauthenticationEnabled(false);
             study.setShortName("SharedLib");
             study.setSponsorName("Sage Bionetworks");
             study.setIdentifier(SHARED_STUDY_ID_STRING);
