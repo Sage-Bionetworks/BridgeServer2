@@ -164,9 +164,12 @@ public abstract class BaseController {
             throw new NotAuthenticatedException();
         }
         
-        // Update request context with security-related information about the user. This will be
-        // immediately removed from the thread local if an exception is thrown.
+        // This request has required the presence of a session, so we add additional information about the user to 
+        // the existing request context (which starts with only the information present in HTTP headers). This will 
+        // be immediately removed from the thread local if an exception is thrown.
         RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        // If the user has already persisted languages, we'll use that instead of the Accept-Language header
+        builder.withCallerLanguages(getLanguages(session));
         builder.withCallerStudyId(session.getStudyIdentifier());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
@@ -255,13 +258,22 @@ public abstract class BaseController {
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
-        List<String> languages = BridgeUtils.getRequestContext().getCallerLanguages();
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
 
-            CriteriaContext newContext = new CriteriaContext.Builder().withContext(getCriteriaContext(session))
-                    .withLanguages(languages).build();
+            CriteriaContext newContext = new CriteriaContext.Builder()
+                .withLanguages(languages)
+                .withClientInfo(reqContext.getCallerClientInfo())
+                .withHealthCode(session.getHealthCode())
+                .withIpAddress(session.getIpAddress())
+                .withUserId(session.getId())
+                .withUserDataGroups(session.getParticipant().getDataGroups())
+                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+                .withStudyIdentifier(session.getStudyIdentifier())
+                .build();
 
             sessionUpdateService.updateLanguage(session, newContext);
         }
@@ -283,7 +295,7 @@ public abstract class BaseController {
         
         RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
-            .withLanguages(session.getParticipant().getLanguages())
+            .withLanguages(getLanguages(session))
             .withClientInfo(reqContext.getCallerClientInfo())
             .withHealthCode(session.getHealthCode())
             .withIpAddress(session.getIpAddress())
@@ -376,7 +388,7 @@ public abstract class BaseController {
         builder.withUserId(session.getId());
         builder.withClientInfo(reqContext.getCallerClientInfo());
         builder.withUserAgent(request().getHeader(USER_AGENT));
-        builder.withLanguages(session.getParticipant().getLanguages());
+        builder.withLanguages(getLanguages(session));
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
         builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
