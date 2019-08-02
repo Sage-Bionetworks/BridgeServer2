@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -39,7 +40,7 @@ import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 public class TemplateRevisionServiceTest extends Mockito {
     
     private static final String SUBJECT = "Test SMS subject line";
-    private static final String DOCUMENT_CONTENT = "Test SMS message";
+    private static final String DOCUMENT_CONTENT = "Test SMS message ${token}";
     private static final String TEMPLATE_GUID = "oneTemplateGuid";
     private static final DateTime CREATED_ON = TestConstants.TIMESTAMP;
     private static final String STORAGE_PATH = TEMPLATE_GUID + "." + CREATED_ON.getMillis();
@@ -203,6 +204,8 @@ public class TemplateRevisionServiceTest extends Mockito {
     
     private void mockGetTemplate() {
         Template template = Template.create();
+        template.setGuid(TEMPLATE_GUID);
+        template.setTemplateType(SMS_PHONE_SIGN_IN);
         when(mockTemplateDao.getTemplate(TEST_STUDY, TEMPLATE_GUID)).thenReturn(Optional.of(template));
     }
 

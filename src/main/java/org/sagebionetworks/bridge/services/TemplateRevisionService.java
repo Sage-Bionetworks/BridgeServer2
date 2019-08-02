@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.validators.TemplateRevisionValidator.INSTANCE;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.validators.TemplateRevisionValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -72,7 +72,7 @@ public class TemplateRevisionService {
         String storagePath = templateGuid + "." + createdOn.getMillis();
 
         // verify the template GUID is in the user's study.
-        templateDao.getTemplate(studyId, templateGuid)
+        Template template = templateDao.getTemplate(studyId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         revision.setCreatedOn(createdOn);
@@ -80,7 +80,8 @@ public class TemplateRevisionService {
         revision.setCreatedBy(getUserId());
         revision.setStoragePath(storagePath);
         
-        Validate.entityThrowingException(INSTANCE, revision);
+        TemplateRevisionValidator validator = new TemplateRevisionValidator(template.getTemplateType());
+        Validate.entityThrowingException(validator, revision);
         
         templateRevisionDao.createTemplateRevision(revision);
         

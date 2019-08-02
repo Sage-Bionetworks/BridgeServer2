@@ -62,7 +62,7 @@ public class SmsService {
     // mPower 2.0 study burst notifications can be fairly long. The longest one has 230 chars of fixed content, an app
     // url that's 53 characters long, and some freeform text that can be potentially 255 characters long, for a total
     // of 538 characters. Round to a nice round 600 characters (about 4.5 SMS messages, if broken up).
-    private static final int SMS_CHARACTER_LIMIT = 600;
+    public static final int SMS_CHARACTER_LIMIT = 600;
 
     private HealthDataService healthDataService;
     private SmsMessageDao messageDao;
