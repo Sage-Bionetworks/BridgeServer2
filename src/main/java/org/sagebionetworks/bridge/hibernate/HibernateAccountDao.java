@@ -176,7 +176,7 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Account reauthenticate(Study study, SignIn signIn) {
-        if (!study.isReauthenticationEnabled()) {
+        if (!Boolean.TRUE.equals(study.isReauthenticationEnabled())) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
         Account account = fetchHibernateAccount(signIn);

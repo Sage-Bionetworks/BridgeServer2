@@ -111,6 +111,9 @@ public class StudyValidator implements Validator {
         if (isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
         }
+        if (study.isReauthenticationEnabled() == null) {
+            errors.rejectValue("reauthenticationEnabled", "is required");
+        }
         if (study.getShortName() != null && study.getShortName().length() > 10) {
             errors.rejectValue("shortName", "must be 10 characters or less");
         }

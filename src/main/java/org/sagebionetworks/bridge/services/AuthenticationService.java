@@ -473,7 +473,7 @@ public class AuthenticationService {
         CriteriaContext newContext = updateContextFromSession(context, session);
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
-        if (!study.isReauthenticationEnabled()) {
+        if (!Boolean.TRUE.equals(study.isReauthenticationEnabled())) {
             account.setReauthToken(null);
         } else {
             String reauthToken = generateReauthToken();

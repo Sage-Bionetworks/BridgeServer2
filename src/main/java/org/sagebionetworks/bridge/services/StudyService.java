@@ -455,6 +455,12 @@ public class StudyService {
         setDefaultsIfAbsent(study);
         sanitizeHTML(study);
 
+        // If reauth isn't set on study creation, set it to true. We only do this at study creation and not on update,
+        // because we don't want to suddenly be creating reauth tokens for old studies that don't use reauth.
+        if (study.isReauthenticationEnabled() == null) {
+            study.setReauthenticationEnabled(true);
+        }
+
         // If validation strictness isn't set on study creation, set it to a reasonable default.
         if (study.getUploadValidationStrictness() == null) {
             study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);

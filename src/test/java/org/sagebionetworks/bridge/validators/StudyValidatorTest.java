@@ -71,7 +71,13 @@ public class StudyValidatorTest {
         study.setPasswordPolicy(new PasswordPolicy(1, false, false, false, false));
         assertValidatorMessage(INSTANCE, study, "passwordPolicy.minLength", "must be 2-999 characters");
     }
-    
+
+    @Test
+    public void reauthEnabledNull() {
+        study.setReauthenticationEnabled(null);
+        assertValidatorMessage(INSTANCE, study, "reauthenticationEnabled", "is required");
+    }
+
     @Test
     public void shortNameTooLong() {
         study.setShortName("ThisNameIsOverTenCharactersLong");
