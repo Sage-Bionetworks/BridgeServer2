@@ -9,12 +9,9 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.EMAIL_SIGNIN
 import static org.sagebionetworks.bridge.validators.SignInValidator.PHONE_SIGNIN_REQUEST;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
-import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
@@ -23,13 +20,12 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -40,8 +36,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisOps;
-import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -103,15 +97,6 @@ public class AccountWorkflowService {
     static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
-    // Enumeration of request types that we want to throttle on. Used to differentiate between request types and
-    // generate cache keys.
-    private enum ThrottleRequestType {
-        EMAIL_SIGNIN,
-        PHONE_SIGNIN,
-        VERIFY_EMAIL,
-        VERIFY_PHONE
-    }
-
     private static class VerificationData {
         private final String studyId;
         private final String userId;
@@ -143,7 +128,6 @@ public class AccountWorkflowService {
     private int channelThrottleTimeoutSeconds;
 
     // Dependent services
-    private JedisOps jedisOps;
     private SmsService smsService;
     private StudyService studyService;
     private SendMailService sendMailService;
@@ -155,12 +139,6 @@ public class AccountWorkflowService {
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.channelThrottleMaxRequests = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS);
         this.channelThrottleTimeoutSeconds = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS);
-    }
-
-    /** JedisOps, used for basic Redis operations, like expire() and incr(). */
-    @Resource(name = "jedisOps")
-    public final void setJedisOps(JedisOps jedisOps) {
-        this.jedisOps = jedisOps;
     }
 
     /** SMS Service, used to send account workflow text messages. */
@@ -586,38 +564,6 @@ public class AccountWorkflowService {
         return account.getId();
     }
 
-    /**
-     * Attempts to validate a sign in request using a token that was stored and then sent 
-     * via SMS or an email message. 
-     * 
-     * @return AccountId the accountId of the account if the sign in is successful.
-     * @throws AuthenticationFailedException
-     *             if the token is missing or invalid (not a successful sign in attempt).
-     */
-    public AccountId channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
-            Validator validator) {
-        Validate.entityThrowingException(validator, signIn);
-       
-        CacheKey cacheKey = null;
-        if (channelType == EMAIL) {
-            cacheKey = CacheKey.emailSignInRequest(signIn);
-        } else if (channelType == PHONE) {
-            cacheKey = CacheKey.phoneSignInRequest(signIn);
-        } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
-        }
-
-        String storedToken = cacheProvider.getObject(cacheKey, String.class);
-        String unformattedSubmittedToken = signIn.getToken().replaceAll("[-\\s]", "");
-        if (storedToken == null || !storedToken.equals(unformattedSubmittedToken)) {
-            throw new AuthenticationFailedException();
-        }
-        // Consume the key regardless of what happens
-        cacheProvider.removeObject(cacheKey);
-        
-        return signIn.getAccountId();
-    }
-    
     private void saveVerification(String sptoken, VerificationData data) {
         checkArgument(isNotBlank(sptoken));
         checkNotNull(data);
@@ -706,18 +652,26 @@ public class AccountWorkflowService {
         }
 
         // Generate key, which is in the form of channel-throttling:[type]:[userId].
-        String cacheKey = "channel-throttling:" + type.toString().toLowerCase() + ":" + userId;
+        CacheKey cacheKey = CacheKey.channelThrottling(type, userId);
 
-        // We use Jedis to atomically increment the key value, and then set an expiration on it. The return value of
-        // exec() is the list of Jedis results in order. For the incr(), the result is the value after incrementing.
-        // This is the number of times we've requested in the last time period. If this exceeds the max requests, we're
-        // throttled.
-        int numRequests;
-        try (JedisTransaction transaction = jedisOps.getTransaction(cacheKey)) {
-            List<Object> resultList = transaction.incr(cacheKey).expire(cacheKey, channelThrottleTimeoutSeconds)
-                    .exec();
-            numRequests = ((Long) resultList.get(0)).intValue();
+        Integer numRequests = cacheProvider.getObject(cacheKey, Integer.class);
+        if (numRequests == null) {
+            // Fall back to 0.
+            numRequests = 0;
         }
-        return numRequests > channelThrottleMaxRequests;
+
+        if (numRequests < channelThrottleMaxRequests) {
+            // We've seen less than the maximum number of requests. We can let this request through without throttling.
+            // But we should increment the request count in Redis. Reset the expiration so that participants can't
+            // exceed the throttle limit by making a bunch of requests at the end of the throttle window.
+            cacheProvider.setObject(cacheKey, numRequests + 1, channelThrottleTimeoutSeconds);
+            return false;
+        } else {
+            // We've seen at least as many requests as our limit (or more), so this next request will push us over the
+            // limit. Throttle this.
+            // Don't update Redis, since we throttle email/SMS sent, not requests. This allows the expiration to expire
+            // naturally.
+            return true;
+        }
     }
 }
