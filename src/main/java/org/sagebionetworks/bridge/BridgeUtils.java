@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -11,6 +12,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,6 +43,8 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
+
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -590,4 +594,18 @@ public class BridgeUtils {
         
         return value; 
     }
+    
+    public static String templateTypeToLabel(TemplateType type) {
+        List<String> words = Arrays.asList(type.name().toLowerCase().split("_"));
+        List<String> capitalized = words.stream().map(StringUtils::capitalize).collect(toList());
+        if (capitalized.get(0).equals("Sms")) {
+            capitalized.remove(0);
+            capitalized.add("Default (SMS)");
+        }
+        if (capitalized.get(0).equals("Email")) {
+            capitalized.remove(0);
+            capitalized.add("Default (Email)");
+        }
+        return Joiner.on(" ").join(capitalized);
+    }    
 }
