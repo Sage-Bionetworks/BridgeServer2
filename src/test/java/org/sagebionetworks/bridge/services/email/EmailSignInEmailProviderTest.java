@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class EmailSignInEmailProviderTest {
 
@@ -33,7 +34,7 @@ public class EmailSignInEmailProviderTest {
         // in the template.
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getEmailSignInTemplate())
+                .withTemplateRevision(TemplateRevision.create(study.getEmailSignInTemplate()))
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withToken("email", BridgeUtils.encodeURIComponent(RECIPIENT_EMAIL))
                 .withToken("token", "ABC").build();

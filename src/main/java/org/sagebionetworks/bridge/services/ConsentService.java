@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -223,9 +224,11 @@ public class ConsentService {
             }
             addStudyConsentRecipients(study, recipientEmails);
             if (!recipientEmails.isEmpty()) {
+                TemplateRevision revision = TemplateRevision.create(study.getSignedConsentTemplate());                
+                
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withStudy(study)
-                        .withEmailTemplate(study.getSignedConsentTemplate())
+                        .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
                 for (String recipientEmail : recipientEmails) {
@@ -393,9 +396,11 @@ public class ConsentService {
                 xmlTemplateWithSignatureBlock);
         
         if (verifiedEmail) {
+            TemplateRevision revision = TemplateRevision.create(study.getSignedConsentTemplate());
+            
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                     .withStudy(study)
-                    .withEmailTemplate(study.getSignedConsentTemplate())
+                    .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
                     .withType(EmailType.RESEND_CONSENT).build();
@@ -422,12 +427,13 @@ public class ConsentService {
         } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
+        TemplateRevision revision = TemplateRevision.create(study.getSignedConsentSmsTemplate());
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withTransactionType()
-                .withSmsTemplate(study.getSignedConsentSmsTemplate())
+                .withTemplateRevision(revision)
                 .withToken(BridgeConstants.CONSENT_URL, shortUrl)
                 .build();
         smsService.sendSmsMessage(participant.getId(), provider);

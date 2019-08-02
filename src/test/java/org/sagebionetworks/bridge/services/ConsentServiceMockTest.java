@@ -863,7 +863,8 @@ public class ConsentServiceMockTest {
         assertEquals(provider.getStudy(), study);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
-        assertEquals(provider.getTemplate(), study.getSignedConsentSmsTemplate());
+        assertEquals(provider.getTemplateRevision().getDocumentContent(),
+                study.getSignedConsentSmsTemplate().getMessage());
     }
 
     @Test
@@ -932,7 +933,8 @@ public class ConsentServiceMockTest {
         assertEquals(provider.getStudy(), study);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
-        assertEquals(provider.getTemplate(), study.getSignedConsentSmsTemplate());
+        assertEquals(provider.getTemplateRevision().getDocumentContent(),
+                study.getSignedConsentSmsTemplate().getMessage());
     }
 
     @Test

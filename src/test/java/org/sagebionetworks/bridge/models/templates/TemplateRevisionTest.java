@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.templates;
 
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -10,6 +11,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
+import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class TemplateRevisionTest {
@@ -42,5 +45,23 @@ public class TemplateRevisionTest {
         assertEquals(deser.getSubject(), "A subject");
         assertEquals(deser.getDocumentContent(), "The content we retrieved from S3");
     }
+    
+    @Test
+    public void testCreationWithSmsMessage() {
+        SmsTemplate template = new SmsTemplate("body");
+        
+        TemplateRevision revision = TemplateRevision.create(template);
+        assertEquals(revision.getDocumentContent(), "body");
+        assertEquals(TEXT, revision.getMimeType());
+    }
 
+    @Test
+    public void testCreationWithEmailMessage() {
+        EmailTemplate template = new EmailTemplate("subject", "body", HTML);
+        
+        TemplateRevision revision = TemplateRevision.create(template);
+        assertEquals(revision.getSubject(), "subject");
+        assertEquals(revision.getDocumentContent(), "body");
+        assertEquals(HTML, revision.getMimeType());
+    }
 }
