@@ -42,10 +42,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -188,9 +190,15 @@ public class ScheduledActivityControllerTest extends Mockito {
         when(mockBridgeConfig.getEnvironment()).thenReturn(UAT);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(CLIENT_INFO).when(controller).getClientInfoFromUserAgentHeader();
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build());
+    }
+    
+    @AfterMethod
+    public void afterMethod( ) {
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test

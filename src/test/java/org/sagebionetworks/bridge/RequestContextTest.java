@@ -1,6 +1,13 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -10,6 +17,7 @@ import java.util.Set;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -17,8 +25,9 @@ import com.google.common.collect.ImmutableSet;
 
 public class RequestContextTest {
 
+    private static final String REQUEST_ID = "requestId";
     private static final Set<String> SUBSTUDIES = ImmutableSet.of("testA", "testB");
-    private static final Set<Roles> ROLES = ImmutableSet.of(Roles.DEVELOPER, Roles.WORKER);
+    private static final Set<Roles> ROLES = ImmutableSet.of(DEVELOPER, WORKER);
 
     @Test
     public void builderIsNullSafe() { 
@@ -26,7 +35,8 @@ public class RequestContextTest {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerStudyId(null)
-                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null).build();
+                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null)
+                .withCallerLanguages(null).withCallerClientInfo(null).build();
         
         assertNotNull(nullContext.getId());
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
@@ -35,7 +45,8 @@ public class RequestContextTest {
         assertNull(nullContext.getCallerStudyIdentifier());
         assertNull(nullContext.getCallerUserId());
         assertNotNull(nullContext.getMetrics());
-        
+        assertTrue(nullContext.getCallerLanguages().isEmpty());
+        assertEquals(nullContext.getCallerClientInfo(), UNKNOWN_CLIENT);
         
         ObjectNode node = nullContext.getMetrics().getJson();
         assertTrue(node.has("request_id"));
@@ -48,30 +59,60 @@ public class RequestContextTest {
         // This is truly devoid of all values and represents no value (in production it's used to 
         // clear the ThreadLocal variable in a way that prevents making logs of null-pointer checks
         // in the code).
-        assertNull(RequestContext.NULL_INSTANCE.getId());
-        assertTrue(RequestContext.NULL_INSTANCE.getCallerSubstudies().isEmpty());
-        assertTrue(RequestContext.NULL_INSTANCE.getCallerRoles().isEmpty());
-        assertNull(RequestContext.NULL_INSTANCE.getCallerStudyId());
-        assertNull(RequestContext.NULL_INSTANCE.getCallerStudyIdentifier());
-        assertNull(RequestContext.NULL_INSTANCE.getCallerUserId());
-        assertNull(RequestContext.NULL_INSTANCE.getMetrics());
+        assertNull(NULL_INSTANCE.getId());
+        assertTrue(NULL_INSTANCE.getCallerSubstudies().isEmpty());
+        assertTrue(NULL_INSTANCE.getCallerRoles().isEmpty());
+        assertNull(NULL_INSTANCE.getCallerStudyId());
+        assertNull(NULL_INSTANCE.getCallerStudyIdentifier());
+        assertNull(NULL_INSTANCE.getCallerUserId());
+        assertNull(NULL_INSTANCE.getMetrics());
+        assertTrue(NULL_INSTANCE.getCallerLanguages().isEmpty());
+        assertEquals(NULL_INSTANCE.getCallerClientInfo(), UNKNOWN_CLIENT);
     }
 
     @Test
     public void test() {
         // An existing metrics object
-        Metrics metrics = new Metrics("requestId");
+        Metrics metrics = new Metrics(REQUEST_ID);
         
-        RequestContext context = new RequestContext.Builder().withRequestId("requestId")
-                .withCallerStudyId(TestConstants.TEST_STUDY).withCallerSubstudies(SUBSTUDIES)
-                .withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID).build();
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudyId(TEST_STUDY)
+                .withCallerSubstudies(SUBSTUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
+                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
 
-        assertEquals(context.getId(), "requestId");
-        assertEquals(context.getCallerStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
-        assertEquals(context.getCallerStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(context.getId(), REQUEST_ID);
+        assertEquals(context.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
+        assertEquals(context.getCallerLanguages(), LANGUAGES);
+        assertEquals(context.getCallerClientInfo(), clientInfo);
         assertEquals(context.getMetrics(), metrics);
+    }
+    
+    @Test
+    public void toBuilder() { 
+        // An existing metrics object
+        Metrics metrics = new Metrics(REQUEST_ID);
+        
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
+        
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudyId(TEST_STUDY)
+                .withCallerSubstudies(SUBSTUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
+                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();        
+        
+        RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
+        
+        assertEquals(copy.getId(), "did-change-this");
+        assertEquals(copy.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(copy.getCallerStudyIdentifier(), TEST_STUDY);
+        assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
+        assertEquals(copy.getCallerRoles(), ROLES);
+        assertEquals(copy.getCallerUserId(), USER_ID);
+        assertEquals(copy.getCallerLanguages(), LANGUAGES);
+        assertEquals(copy.getCallerClientInfo(), clientInfo);
+        assertEquals(copy.getMetrics(), metrics);
     }
 }

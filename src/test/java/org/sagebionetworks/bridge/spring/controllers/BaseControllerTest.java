@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADE
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
-import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
@@ -30,9 +29,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -144,11 +141,16 @@ public class BaseControllerTest extends Mockito {
 
         session = new UserSession();
         study = Study.create();
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
+                .withCallerLanguages(ImmutableList.of("en", "fr")).build());
     }
     
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
@@ -371,40 +373,11 @@ public class BaseControllerTest extends Mockito {
     }
 
     @Test
-    public void getLanguagesFromAcceptLanguageHeader() {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE))
-            .thenReturn("de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6,fr;q=0.1");
-
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(langs, ImmutableList.of("en", "de", "fr"));
-    }
-    
-    @Test
-    public void getLanguagesFromAcceptLanguageHeaderMissing() {
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertTrue(langs.isEmpty());
-    }
-
-    @Test
-    public void getClientInfoFromUserAgentHeader() {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
-
-        ClientInfo info = controller.getClientInfoFromUserAgentHeader();
-        
-        assertEquals(info, ClientInfo.fromUserAgentCache(UA));
-    }
-
-    @Test
-    public void getClientInfoFromUserAgentHeaderMissing() {
-        ClientInfo info = controller.getClientInfoFromUserAgentHeader();
-        
-        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
-    }
-    
-    @Test
     public void getCriteriaContextWithStudyId() {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en");
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
+                .withCallerLanguages(ImmutableList.of("en"))
+                .build());
         when(mockRequest.getHeader(BridgeConstants.X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
         
         CriteriaContext context = controller.getCriteriaContext(TEST_STUDY);
@@ -599,74 +572,6 @@ public class BaseControllerTest extends Mockito {
         assertEquals(info.getStudyIdentifier(), TEST_STUDY);
     }
 
-    @Test
-    public void addWarningMessage() {
-        Collection<String> headerNames = new HashSet<>();
-        when(mockResponse.getHeaderNames()).thenReturn(headerNames);
-        
-        controller.addWarningMessage("first message");
-        
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, "first message");
-        
-        // Mock what will change once the header is added, then add a second message
-        headerNames.add(BRIDGE_API_STATUS_HEADER);
-        when(mockResponse.getHeader(BRIDGE_API_STATUS_HEADER)).thenReturn("first message");
-        
-        controller.addWarningMessage("second message");
-        
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, "first message; second message");
-    }
-    
-    // Tests from original Play tests.
-    
-    @Test
-    public void doesNotThrowErrorWhenUserAgentStringInvalid() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(
-                "Amazon Route 53 Health Check Service; ref:c97cd53f-2272-49d6-a8cd-3cd658d9d020; report http://amzn.to/1vsZADi");
-        
-        ClientInfo info = controller.getClientInfoFromUserAgentHeader();
-        assertEquals(info, ClientInfo.UNKNOWN_CLIENT);
-        assertNull(info.getAppName());
-        assertNull(info.getAppVersion());
-        assertNull(info.getOsName());
-        assertNull(info.getOsVersion());
-        assertNull(info.getSdkName());
-        assertNull(info.getSdkVersion());
-    }
-
-    @Test
-    public void doesNotSetWarningHeaderWhenHasUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
-        
-        controller.getClientInfoFromUserAgentHeader();
-        
-        verify(mockResponse, never()).setHeader(any(), any());
-    }
-
-    @Test
-    public void setWarningHeaderWhenNoUserAgent() throws Exception {
-        controller.getClientInfoFromUserAgentHeader();
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
-
-    @Test
-    public void setWarningHeaderWhenEmptyUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("");
-
-        controller.getClientInfoFromUserAgentHeader();
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
-
-    @Test
-    public void setWarningHeaderWhenNullUserAgent() throws Exception {
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(null);
-
-        controller.getClientInfoFromUserAgentHeader();
-
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_USER_AGENT);
-    }
 
     @Test(expectedExceptions = UnsupportedVersionException.class)
     public void testInvalidSupportedVersionThrowsException() throws Exception {
@@ -755,47 +660,6 @@ public class BaseControllerTest extends Mockito {
     }
     
     @Test
-    public void canRetrieveLanguagesWhenHeaderIsNull() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);
-        
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-    }        
-    
-    @Test
-    public void canRetrieveLanguagesWhenHeaderIsEmpty() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("");
-        
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-    }
-    
-    @Test
-    public void canRetrieveLanguagesWhenHeaderIsSimple() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en-US");
-        
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of("en"), langs);
-    }
-    
-    @Test
-    public void canRetrieveLanguagesWhenHeaderIsCompoundWithoutWeights() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("FR,en-US");
-        
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of("fr", "en"), langs);
-    }
-    
-    // We don't want to throw a BadRequestException due to a malformed header. Just return no languages.
-    @Test
-    public void badAcceptLanguageHeaderSilentlyIgnored() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("chrome://global/locale/intl.properties");
-        
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertTrue(langs.isEmpty());
-    }
-    
-    @Test
     public void canGetLanguagesWhenInSession() {
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withLanguages(LANGUAGES).build());
@@ -841,11 +705,14 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void canGetLanguagesWhenNotInSessionOrHeader() throws Exception {
+        BridgeUtils.setRequestContext(null);
+
         // Set up mocks.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withLanguages(Lists.newArrayList()).build();
         session.setParticipant(participant);
+        session.setStudyIdentifier(TEST_STUDY);
 
         // Execute test.
         List<String> languages = controller.getLanguages(session);
@@ -864,54 +731,6 @@ public class BaseControllerTest extends Mockito {
         // verify if it does not set warning header
         verify(mockResponse, times(0)).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
     }
-
-    @Test
-    public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
-        // with no accept language header at all, things don't break;
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-
-        // verify if it set warning header
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
-    }
-
-    @Test
-    public void setWarnHeaderWhenEmptyAcceptLanguage() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("");
-
-        // with no accept language header at all, things don't break;
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-
-        // verify if it set warning header
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
-    }
-
-
-    @Test
-    public void setWarnHeaderWhenNullAcceptLanguage() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);
-
-        // with no accept language header at all, things don't break;
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-
-        // verify if it set warning header
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
-    }
-
-    @Test
-    public void setWarnHeaderWhenInvalidAcceptLanguage() throws Exception {
-        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("ThisIsAnVvalidAcceptLanguage");
-
-        // with no accept language header at all, things don't break;
-        List<String> langs = controller.getLanguagesFromAcceptLanguageHeader();
-        assertEquals(ImmutableList.of(), langs);
-
-        // verify if it set warning header
-        verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
-    }
-
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void ipLockingForPrivilegedAccounts() throws Exception {
         // Setup test
@@ -989,14 +808,12 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void getSessionPopulatesTheRequestContext() {
-        RequestContext context = new RequestContext.Builder().build();
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
         assertNotNull(context.getId());
         assertNull(context.getCallerStudyId());
         assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
         assertEquals(ImmutableSet.of(), context.getCallerRoles());
         BridgeUtils.setRequestContext(context);
-
-        when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
         
         Set<Roles> roles = ImmutableSet.of(Roles.DEVELOPER);
         

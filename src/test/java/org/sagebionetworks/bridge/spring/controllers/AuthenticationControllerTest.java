@@ -38,6 +38,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -52,6 +54,7 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -74,6 +77,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AuthenticationControllerTest extends Mockito {
+    private static final String USER_AGENT_STRING = "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4";
     private static final String DOMAIN = "localhost";
     private static final DateTime NOW = DateTime.now();
     private static final String REAUTH_TOKEN = "reauthToken";
@@ -172,11 +176,16 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(metrics).when(controller).getMetrics();
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+        
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(USER_AGENT_STRING);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(clientInfo).build());
     }
     
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+        BridgeUtils.setRequestContext(null);
     }
 
     @Test
@@ -448,8 +457,6 @@ public class AuthenticationControllerTest extends Mockito {
 
         // Setup and execute. This will throw.
         mockRequestBody(mockRequest, node);
-        when(mockRequest.getHeader(HttpHeaders.USER_AGENT))
-                .thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
         controller.signUp();
     }
     
@@ -637,9 +644,6 @@ public class AuthenticationControllerTest extends Mockito {
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn(
-                "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
-
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.signInV3();
@@ -714,7 +718,7 @@ public class AuthenticationControllerTest extends Mockito {
                 "{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
+        
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.emailSignIn();
@@ -727,7 +731,7 @@ public class AuthenticationControllerTest extends Mockito {
                 "','email':'email@email.com','password':'bar'}");
         
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn(USER_AGENT_STRING);
         study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.phoneSignIn();
@@ -1144,21 +1148,18 @@ public class AuthenticationControllerTest extends Mockito {
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
             "','sptoken':'aSpToken','password':'aPassword'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
     }
     
     private void mockSignInWithEmailPayload() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withEmail(TEST_EMAIL).build();
         
         mockRequestBody(mockRequest, signIn);
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
     }
 
     private void mockSignInWithPhonePayload() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING).withPhone(TestConstants.PHONE).build();
         
         mockRequestBody(mockRequest, signIn);
-        when(mockRequest.getHeader(USER_AGENT)).thenReturn("App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4");
     }
     
     private static void assertSessionInJson(JsonNode resultNode) throws Exception {
