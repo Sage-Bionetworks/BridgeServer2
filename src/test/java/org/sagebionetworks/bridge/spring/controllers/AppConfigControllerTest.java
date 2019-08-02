@@ -30,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -118,6 +119,11 @@ public class AppConfigControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER))
                 .withHealthCode(HEALTH_CODE)
                 .build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test

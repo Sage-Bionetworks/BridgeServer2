@@ -271,7 +271,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test
