@@ -409,11 +409,6 @@ public class TemplateService {
         // Throws exception if template doesn't exist
         Template template = getTemplate(studyId, guid);
         
-        // You cannot delete the default template (logical or physical).
-        if (isDefaultTemplate(template, studyId)) {
-            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
-                .withEntityKey("guid", guid).build();
-        }
         templateDao.deleteTemplatePermanently(studyId, guid);
         criteriaDao.deleteCriteria(getKey(template));
     }

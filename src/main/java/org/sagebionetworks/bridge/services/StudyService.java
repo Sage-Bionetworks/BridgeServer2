@@ -66,6 +66,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -75,7 +76,9 @@ import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -122,6 +125,7 @@ public class StudyService {
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
+    private TemplateService templateService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -293,11 +297,14 @@ public class StudyService {
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
-    
     @Autowired
     @Qualifier("bridgePFSynapseClient")
-    public final void setSynapseClient(SynapseClient synapseClient) {
+    final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
+    }
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
     }
     
     private EmailTemplate getEmailVerificationTemplate() {
@@ -724,6 +731,7 @@ public class StudyService {
             studyDao.deleteStudy(existing);
 
             // delete study data
+            deleteAllTemplates(existing.getStudyIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
                     existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
@@ -731,6 +739,18 @@ public class StudyService {
         }
 
         cacheProvider.removeStudy(identifier);
+    }
+    
+    private void deleteAllTemplates(StudyIdentifier studyId) {
+        for (TemplateType type : TemplateType.values()) {
+            PagedResourceList<? extends Template> page;
+            do {
+                page = templateService.getTemplatesForType(studyId, type, 0, 50, true);
+                for (Template template : page.getItems()) {
+                    templateService.deleteTemplatePermanently(studyId, template.getGuid());    
+                }
+            } while(!page.getItems().isEmpty());
+        }
     }
     
     /**

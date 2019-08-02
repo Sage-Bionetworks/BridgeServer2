@@ -15,7 +15,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public class TemplateRevisionValidatorTest {
 

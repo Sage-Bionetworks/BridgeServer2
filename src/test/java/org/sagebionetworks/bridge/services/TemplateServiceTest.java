@@ -647,18 +647,6 @@ public class TemplateServiceTest extends Mockito {
         service.deleteTemplate(TEST_STUDY, GUID1);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class)
-    public void cannotPhysicallyDeleteDefaultTemplate() {
-        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
-        Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID1);
-        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
-
-        service.deleteTemplatePermanently(TEST_STUDY, GUID1);
-    }
-    
     @Test
     public void getRevisionForUser() throws Exception {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
