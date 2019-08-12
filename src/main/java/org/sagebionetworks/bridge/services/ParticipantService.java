@@ -5,8 +5,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -493,16 +496,16 @@ public class ParticipantService {
         // aborts this entire call).
         
         boolean isSimpleAdd = allExternalIds.isEmpty() && participant.getExternalId() != null;
-        boolean isResearcherAdd = callerRoles.contains(Roles.RESEARCHER)
+        boolean isResearcherAdd = callerRoles.contains(RESEARCHER)
                 && !allExternalIds.contains(participant.getExternalId())
                 && participant.getExternalId() != null;
         boolean assigningExternalId = isSimpleAdd || isResearcherAdd;
-        
+
         updateAccountAndRoles(study, account, participant, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
-            if (callerRoles.contains(Roles.ADMIN) || callerRoles.contains(Roles.WORKER)) {
+            if (callerRoles.contains(ADMIN) || callerRoles.contains(WORKER)) {
                 account.setStatus(participant.getStatus());
             }
         }
@@ -517,6 +520,7 @@ public class ParticipantService {
         // the account if the external ID save fails. If the account save fails, catch the exception and 
         // rollback the external ID save. 
         ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
+
         try {
             accountDao.updateAccount(account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
@@ -868,6 +872,7 @@ public class ParticipantService {
         }
         // Whether already assigned or not, we will adjust the account, in case we are repairing
         // an existing broken data association
+
         identifier.setHealthCode(account.getHealthCode());
         if (identifier.getSubstudyId() != null) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),

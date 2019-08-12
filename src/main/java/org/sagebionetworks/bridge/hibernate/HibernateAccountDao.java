@@ -58,7 +58,7 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
     
     static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) "+
+            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status) "+
             "FROM HibernateAccount AS acct";
             
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
@@ -362,7 +362,7 @@ public class HibernateAccountDao implements AccountDao {
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
             } else {
-                builder.append("AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId)", "externalId", unguarded.getExternalId());
+                builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {

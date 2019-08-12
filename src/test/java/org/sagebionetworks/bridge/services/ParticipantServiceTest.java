@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static java.lang.Boolean.TRUE;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -115,7 +117,7 @@ public class ParticipantServiceTest {
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Study STUDY = Study.create();
     static {
-        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        STUDY.setIdentifier(TEST_STUDY_IDENTIFIER);
         STUDY.setHealthCodeExportEnabled(true);
         STUDY.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         STUDY.setDataGroups(STUDY_DATA_GROUPS);
@@ -244,7 +246,8 @@ public class ParticipantServiceTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        extId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
+        extId = ExternalIdentifier.create(TEST_STUDY, EXTERNAL_ID);
+        extId.setSubstudyId(SUBSTUDY_ID);
         STUDY.setExternalIdRequiredOnSignup(false);
         STUDY.setEmailVerificationEnabled(false);
         STUDY.setAccountLimit(0);
@@ -320,7 +323,6 @@ public class ParticipantServiceTest {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
     }
     
     private void mockAccountNoEmail() {
@@ -332,9 +334,9 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipant() {
         STUDY.setEmailVerificationEnabled(true);
-        mockHealthCodeAndAccountRetrieval();
+        when(participantService.generateGUID()).thenReturn(ID);
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, participant, true);
@@ -405,7 +407,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantWithExternalIdValidation() {
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID))
             .thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -573,7 +575,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantExternalIdNoPasswordIsUnverified() {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant idParticipant = withParticipant().withPhone(null).withEmail(null).withPassword(null)
                 .withExternalId(EXTERNAL_ID).build();
@@ -587,7 +589,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantExternalIdAndPasswordIsEnabled() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withExternalId(EXTERNAL_ID)
                 .withPassword(PASSWORD).build();
@@ -825,7 +827,7 @@ public class ParticipantServiceTest {
         subpop.setGuid(SubpopulationGuid.create("foo1"));
         List<Subpopulation> subpops = ImmutableList.of(subpop);
         when(subpopService.getSubpopulations(TestConstants.TEST_STUDY, false)).thenReturn(subpops);
-        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), subpopGuid)).thenReturn(subpop);
+        when(subpopService.getSubpopulation(TEST_STUDY, subpopGuid)).thenReturn(subpop);
         
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, true);
         
@@ -872,11 +874,17 @@ public class ParticipantServiceTest {
     
     @Test
     public void getStudyParticipant() {
+        when(participantService.getAccount()).thenReturn(account);
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
         account.setHealthCode(HEALTH_CODE);
         account.setStudyId(STUDY.getIdentifier());
         account.setId(ID);
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
         account.setCreatedOn(createdOn);
         account.setFirstName(FIRST_NAME);
         account.setLastName(LAST_NAME);
@@ -893,15 +901,14 @@ public class ParticipantServiceTest {
         account.setDataGroups(TestUtils.newLinkedHashSet("group1","group2"));
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
-        AccountSubstudy acctSubstudy1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", ID);
+        AccountSubstudy acctSubstudy1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", ID);
         acctSubstudy1.setExternalId("externalIdA");
-        AccountSubstudy acctSubstudy2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", ID);
+        AccountSubstudy acctSubstudy2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", ID);
         acctSubstudy2.setExternalId("externalIdB");
-        AccountSubstudy acctSubstudy3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", ID);
+        AccountSubstudy acctSubstudy3 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", ID);
         // no third external ID, this one is just not in the external IDs map
         account.setAccountSubstudies(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
         
-        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, EXTERNAL_ID);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -915,9 +922,9 @@ public class ParticipantServiceTest {
         subpop2.setPublishedConsentCreatedOn(CONSENT_PUBLICATION_DATE);
         
         subpopulations.add(subpop2);
-        when(subpopService.getSubpopulations(STUDY.getStudyIdentifier(), false)).thenReturn(subpopulations);
+        when(subpopService.getSubpopulations(TEST_STUDY, false)).thenReturn(subpopulations);
 
-        when(subpopService.getSubpopulation(STUDY.getStudyIdentifier(), SUBPOP_GUID_1)).thenReturn(subpop1);
+        when(subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID_1)).thenReturn(subpop1);
 
         // Mock CacheProvider to return request info.
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
@@ -936,7 +943,8 @@ public class ParticipantServiceTest {
         assertEquals(participant.getLastName(), LAST_NAME);
         assertTrue(participant.isNotifyByEmail());
         assertEquals(participant.getDataGroups(), Sets.newHashSet("group1","group2"));
-        assertEquals(participant.getExternalId(), EXTERNAL_ID);
+        assertTrue(collectExternalIds(account).contains("externalIdA"));
+        assertTrue(collectExternalIds(account).contains("externalIdB"));
         assertEquals(participant.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(participant.getHealthCode(), HEALTH_CODE);
         assertEquals(participant.getEmail(), EMAIL);
@@ -1369,7 +1377,7 @@ public class ParticipantServiceTest {
         
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_STUDY, false);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
 
@@ -1383,7 +1391,7 @@ public class ParticipantServiceTest {
 
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_STUDY, false);
 
         // Execute and validate
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
@@ -1397,7 +1405,7 @@ public class ParticipantServiceTest {
 
         doReturn(STUDY.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
-        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(STUDY.getStudyIdentifier(), false);
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_STUDY, false);
 
         when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
@@ -1654,7 +1662,7 @@ public class ParticipantServiceTest {
         Set<String> returnedErrors = participantService.sendNotification(STUDY, ID, message);
         assertEquals(returnedErrors, erroredNotifications);
         
-        verify(notificationsService).sendNotificationToUser(STUDY.getStudyIdentifier(), HEALTH_CODE, message);
+        verify(notificationsService).sendNotificationToUser(TEST_STUDY, HEALTH_CODE, message);
     }
 
     // Creating an account and supplying an externalId
@@ -1662,7 +1670,7 @@ public class ParticipantServiceTest {
     public void callsExternalIdService() {
         STUDY.setExternalIdRequiredOnSignup(true);
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         
@@ -1714,8 +1722,7 @@ public class ParticipantServiceTest {
         
         // account in question is in substudyA
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.ofNullable(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(STUDY.getIdentifier(), "substudyB", ID)));
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
@@ -1744,9 +1751,9 @@ public class ParticipantServiceTest {
         
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
-        ExternalIdentifier newExtId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
+        ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_STUDY, "newExternalId");
         newExtId.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId")).thenReturn(Optional.of(newExtId));
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(newExtId));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId");
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
@@ -1920,14 +1927,11 @@ public class ParticipantServiceTest {
 
     @Test
     public void updateIdentifiersDoNotOverwriteExistingIdentifiers() {
-        mockHealthCodeAndAccountRetrieval();
-        account.setEmailVerified(Boolean.TRUE);
-        account.setPhone(TestConstants.PHONE);
-        account.setPhoneVerified(Boolean.TRUE);
+        mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, EXTERNAL_ID);
+        account.setEmailVerified(TRUE);
+        account.setPhoneVerified(TRUE);
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.ofNullable(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Now that an external ID addition will simply add another external ID, the 
         // test has been changed to submit an existing external ID.
@@ -1938,9 +1942,9 @@ public class ParticipantServiceTest {
         
         // None of these have changed.
         assertEquals(account.getEmail(), EMAIL);
-        assertEquals(account.getEmailVerified(), Boolean.TRUE);
-        assertEquals(account.getPhone(), TestConstants.PHONE);
-        assertEquals(account.getPhoneVerified(), Boolean.TRUE);
+        assertEquals(account.getEmailVerified(), TRUE);
+        assertEquals(account.getPhone(), PHONE);
+        assertEquals(account.getPhoneVerified(), TRUE);
         verify(accountDao, never()).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());
@@ -1990,7 +1994,7 @@ public class ParticipantServiceTest {
     public void createManagedExternalIdOK() {
         mockHealthCodeAndAccountRetrieval();
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
@@ -2001,7 +2005,7 @@ public class ParticipantServiceTest {
     @Test
     public void badManagedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.empty());
         
         try {
             StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2018,9 +2022,8 @@ public class ParticipantServiceTest {
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
         
-        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        identifier.setHealthCode("AAA");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(identifier));
+        extId.setHealthCode("AAA");
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         try {
             StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2045,8 +2048,7 @@ public class ParticipantServiceTest {
     @Test
     public void addingManagedExternalIdOnUpdateOK() {
         mockHealthCodeAndAccountRetrieval();
-        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(identifier));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         
@@ -2075,18 +2077,23 @@ public class ParticipantServiceTest {
 
     @Test
     public void changingManagedExternalIdWorks() {
-        ExternalIdentifier newExternalId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
-        newExternalId.setHealthCode(HEALTH_CODE);
-        mockHealthCodeAndAccountRetrieval();
-        ExternalIdentifier identifier = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId"))
-                .thenReturn(Optional.of(identifier));
+        ExternalIdentifier newExternalId = ExternalIdentifier.create(TEST_STUDY, "newExternalId");
+        newExternalId.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(newExternalId));
+        
+        ExternalIdentifier identifier = ExternalIdentifier.create(TEST_STUDY, "oldExternalId");
+        identifier.setSubstudyId(SUBSTUDY_ID);
+        identifier.setHealthCode(HEALTH_CODE);
+        when(externalIdService.getExternalId(TEST_STUDY, "oldExternalId")).thenReturn(Optional.of(identifier));
+        mockHealthCodeAndAccountRetrieval(EMAIL, null, "oldExternalId");
         
         // This record has a different external ID than the mocked account
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
         participantService.updateParticipant(STUDY, participant);
         
-        assertEquals(Iterables.getFirst(account.getAccountSubstudies(),  null).getExternalId(), "newExternalId");
+        assertTrue(collectExternalIds(account).contains("newExternalId"));
+        assertTrue(collectExternalIds(account).contains("oldExternalId"));
+        assertEquals(account.getAccountSubstudies().size(), 2);
         verify(externalIdService).commitAssignExternalId(newExternalId);
     }
 
@@ -2104,8 +2111,7 @@ public class ParticipantServiceTest {
     @Test
     public void sameManagedExternalIdOnUpdateIgnored() {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
@@ -2119,8 +2125,7 @@ public class ParticipantServiceTest {
     @Test
     public void sameUnmanagedExternalIdOnUpdateIgnored() {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.ofNullable(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
@@ -2144,7 +2149,7 @@ public class ParticipantServiceTest {
                 new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExtId")).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, "newExtId")).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId("newExtId").build();
         participantService.updateParticipant(STUDY, participant);
@@ -2211,7 +2216,7 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantExternalIdAddedUpdatesExternalId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2265,7 +2270,7 @@ public class ParticipantServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
@@ -2293,8 +2298,8 @@ public class ParticipantServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         mockAccountRetrievalWithSubstudyD();
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId")));
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY, "newExternalId")));
         
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
         
@@ -2321,7 +2326,7 @@ public class ParticipantServiceTest {
     public void updateParticipantAsResearcherNoExternalIdsOneAddedUpdates() {
         mockHealthCodeAndAccountRetrieval();
         
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
@@ -2335,8 +2340,9 @@ public class ParticipantServiceTest {
     public void updateParticipantAsResearcherExternalIdsExistNoneMatchOneAddedUpdates() {
         mockAccountRetrievalWithSubstudyD();
         
-        ExternalIdentifier nextExtId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId"))
+        ExternalIdentifier nextExtId = ExternalIdentifier.create(TEST_STUDY, "newExternalId");
+        nextExtId.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId"))
             .thenReturn(Optional.of(nextExtId));
 
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
@@ -2344,20 +2350,22 @@ public class ParticipantServiceTest {
         participantService.updateParticipant(STUDY, participant);
         
         verify(accountDao).updateAccount(eq(account), any());
-        assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), "newExternalId");
+        assertTrue(collectExternalIds(account).contains(EXTERNAL_ID));
+        assertTrue(collectExternalIds(account).contains("newExternalId"));
         verify(externalIdService).commitAssignExternalId(nextExtId);
     }
     @Test
     public void updateParticipantAsResearcherExternalIdsExistAndMatchOneAddedDoesNothing() {
         mockAccountRetrievalWithSubstudyD();
 
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
 
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(externalIdService, never()).commitAssignExternalId(any());
         verify(accountDao).updateAccount(account, null);
-        assertTrue(account.getAccountSubstudies().isEmpty());
+        assertEquals(account.getAccountSubstudies().size(), 1);
+        assertTrue(collectExternalIds(account).contains(EXTERNAL_ID));
     }
     
     @Test
@@ -2419,8 +2427,7 @@ public class ParticipantServiceTest {
     public void normalUserCanAddExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID))
-            .thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
@@ -2434,8 +2441,7 @@ public class ParticipantServiceTest {
     public void normalUserCannotChangeExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId"))
-                .thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
         
@@ -2448,25 +2454,25 @@ public class ParticipantServiceTest {
     
     @Test
     public void researcherCanChangeManagedExternalIdOnUpdate() {
-        mockHealthCodeAndAccountRetrieval();
+        mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
         
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
-        ExternalIdentifier newExtId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), "newExternalId");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), "newExternalId"))
-                .thenReturn(Optional.of(newExtId));
+        ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_STUDY, "newExternalId");
+        newExtId.setSubstudyId(SUBSTUDY_ID);
+        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(newExtId));
 
         participantService.updateParticipant(STUDY, participant);
 
         verify(accountDao).updateAccount(accountCaptor.capture(), any());
-        assertEquals(Iterables.getFirst(accountCaptor.getValue().getAccountSubstudies(), null).getExternalId(),
-                "newExternalId");
+        
+        assertTrue(collectExternalIds(account).contains("newExternalId"));
         verify(externalIdService).commitAssignExternalId(newExtId);
     }
     
     @Test
     public void assignExternalId() {
         mockHealthCodeAndAccountRetrieval();
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         participantService.assignExternalId(ACCOUNT_ID, extId);
         
@@ -2742,7 +2748,7 @@ public class ParticipantServiceTest {
     
     @Test
     public void rollbackCreateParticipantWhenAccountCreationFails() {
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
         doThrow(new ConcurrentModificationException("")).when(accountDao).createAccount(eq(STUDY), eq(account), any());
         
@@ -2757,8 +2763,9 @@ public class ParticipantServiceTest {
     
     @Test
     public void rollbackUpdateParticipantWhenAccountUpdateFails() {
+        account.setId(ID);
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
         
         try {
@@ -2775,9 +2782,8 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         account.setAccountSubstudies(Sets.newHashSet());
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        ExternalIdentifier extId = ExternalIdentifier.create(STUDY.getStudyIdentifier(), EXTERNAL_ID);
         extId.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(STUDY.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Now... accountDao throws an exception
         doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
@@ -2888,10 +2894,10 @@ public class ParticipantServiceTest {
         StudyParticipant.Builder builder = withParticipant().withSubstudyIds(participantSubstudies);
         
         for (String substudyId : callerSubstudies) {
-            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(TEST_STUDY, substudyId, false)).thenReturn(Substudy.create());    
         }
         for (String substudyId : participantSubstudies) {
-            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(TEST_STUDY, substudyId, false)).thenReturn(Substudy.create());    
         }
         return builder;
     }
