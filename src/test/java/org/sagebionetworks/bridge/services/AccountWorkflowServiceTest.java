@@ -97,6 +97,8 @@ public class AccountWorkflowServiceTest {
 
     private static final CacheKey EMAIL_SIGNIN_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
             ThrottleRequestType.EMAIL_SIGNIN, USER_ID);
+    private static final CacheKey PHONE_SIGNIN_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
+            ThrottleRequestType.PHONE_SIGNIN, USER_ID);
     private static final CacheKey VERIFY_EMAIL_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
             ThrottleRequestType.VERIFY_EMAIL, USER_ID);
     private static final CacheKey VERIFY_PHONE_THROTTLE_CACHE_KEY = CacheKey.channelThrottling(
@@ -1236,6 +1238,11 @@ public class AccountWorkflowServiceTest {
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertEquals(message, "Enter 123-456 to sign in to AppName");
+
+        // Verify throttling cache calls.
+        verify(mockCacheProvider).getObject(PHONE_SIGNIN_THROTTLE_CACHE_KEY, Integer.class);
+        verify(mockCacheProvider).setObject(eq(PHONE_SIGNIN_THROTTLE_CACHE_KEY), any(), anyInt());
+
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
@@ -1259,7 +1266,7 @@ public class AccountWorkflowServiceTest {
         when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
 
-        // This is currently disabled. Request 3 times, get 3 texts. (Each call should still return the user ID.)
+        // Throttle limit is 2. Request 3 times. Get 2 texts. (Each call should still return userId.)
         String userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         assertEquals(userId, USER_ID);
 
@@ -1269,6 +1276,6 @@ public class AccountWorkflowServiceTest {
         userId = service.requestPhoneSignIn(SIGN_IN_REQUEST_WITH_PHONE);
         assertEquals(userId, USER_ID);
 
-        verify(mockSmsService, times(3)).sendSmsMessage(any(), any());
+        verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
     }
 }
