@@ -882,6 +882,7 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(study.getStudyIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
     }
 
     private Template createTemplate(String guid) {

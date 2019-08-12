@@ -412,6 +412,10 @@ public class TemplateService {
         templateDao.deleteTemplatePermanently(studyId, guid);
         criteriaDao.deleteCriteria(getKey(template));
     }
+    
+    public void deleteTemplatesForStudy(StudyIdentifier studyId) {
+        templateDao.deleteTemplatesForStudy(studyId);
+    }
 
     private boolean isDefaultTemplate(Template template, StudyIdentifier studyId) {
         Study study = studyService.getStudy(studyId);

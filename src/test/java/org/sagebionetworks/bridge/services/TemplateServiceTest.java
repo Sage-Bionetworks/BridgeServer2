@@ -713,4 +713,11 @@ public class TemplateServiceTest extends Mockito {
         
         service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
     }
+    
+    @Test
+    public void deleteTemplatesForStudy() {
+        service.deleteTemplatesForStudy(TEST_STUDY);
+        
+        verify(mockTemplateDao).deleteTemplatesForStudy(TEST_STUDY);
+    }
 }
