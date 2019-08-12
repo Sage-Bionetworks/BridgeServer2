@@ -474,8 +474,8 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), hibernateAccount.getExternalId(),
-                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
-                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
+                hibernateAccount.getEmail(), hibernateAccount.getPhone(), assoc.getExternalIdsVisibleToCaller(),
+                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), studyId,
+                assoc.getSubstudyIdsVisibleToCaller());
     }
 }

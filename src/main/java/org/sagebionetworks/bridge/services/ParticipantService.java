@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 
@@ -248,10 +249,10 @@ public class ParticipantService {
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
-        addAccount(builder, assoc, account);
-        addConsentStatus(builder, account, context);
+        copyAccountToParticipant(builder, assoc, account);
+        copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
-            addHistory(builder, account, context.getStudyIdentifier());
+            copyHistoryToParticipant(builder, account, context.getStudyIdentifier());
         }
         return builder.build();
     }
@@ -275,11 +276,11 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
-        addAccount(builder, assoc, account);
+        SubstudyAssociations assoc = substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
-            addHistory(builder, account, study.getStudyIdentifier());
+            copyHistoryToParticipant(builder, account, study.getStudyIdentifier());
         }
         // Without requestInfo, we cannot reliably determine if the user is consented
         RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
@@ -292,16 +293,15 @@ public class ParticipantService {
                 .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
                 .withClientInfo(requestInfo.getClientInfo())
                 .withLanguages(requestInfo.getLanguages()).build();
-            addConsentStatus(builder, account, context);
+            copyConsentStatusToParticipant(builder, account, context);
         }
         return builder.build();
     }
     
-    private StudyParticipant.Builder addAccount(StudyParticipant.Builder builder, SubstudyAssociations assoc,
+    private StudyParticipant.Builder copyAccountToParticipant(StudyParticipant.Builder builder, SubstudyAssociations assoc,
             Account account) {
         builder.withSharingScope(account.getSharingScope());
         builder.withNotifyByEmail(account.getNotifyByEmail());
-        builder.withExternalId(account.getExternalId());
         builder.withDataGroups(account.getDataGroups());
         builder.withLanguages(account.getLanguages());
         builder.withTimeZone(account.getTimeZone());
@@ -323,7 +323,7 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder addHistory(StudyParticipant.Builder builder, Account account, StudyIdentifier studyId) {
+    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, StudyIdentifier studyId) {
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         // The history includes all subpopulations whether they match the user or not.
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(studyId, false);
@@ -336,7 +336,7 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder addConsentStatus(StudyParticipant.Builder builder, Account account, CriteriaContext context) {
+    private StudyParticipant.Builder copyConsentStatusToParticipant(StudyParticipant.Builder builder, Account account, CriteriaContext context) {
         Map<SubpopulationGuid, ConsentStatus> consentStatuses = consentService.getConsentStatuses(context, account);
         boolean isConsented = ConsentStatus.isUserConsented(consentStatuses);
         builder.withConsented(isConsented);
@@ -390,7 +390,6 @@ public class ParticipantService {
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
         account.setHealthCode(generateGUID());
-        account.setExternalId(participant.getExternalId());
         account.setStatus(AccountStatus.UNVERIFIED);
 
         // Hash password if it has been supplied.
@@ -499,11 +498,6 @@ public class ParticipantService {
                 && participant.getExternalId() != null;
         boolean assigningExternalId = isSimpleAdd || isResearcherAdd;
         
-        // The last change made to the external ID collection is always reflected in the 
-        // singular external ID field to ensure backwards compatibility during migration.
-        if  (assigningExternalId) {
-            account.setExternalId(participant.getExternalId());
-        }
         updateAccountAndRoles(study, account, participant, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
@@ -826,13 +820,12 @@ public class ParticipantService {
         }
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
         if (update.getExternalIdUpdate() != null && !externalIds.contains(update.getExternalIdUpdate())) {
-            account.setExternalId(update.getExternalIdUpdate());
             accountUpdated = true;
             assignExternalId = true;
         }
         if (accountUpdated) {
             if (assignExternalId) {
-                ExternalIdentifier externalId = beginAssignExternalId(account, account.getExternalId());
+                ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
                 try {
                     accountDao.updateAccount(account, (oneAccount) -> externalIdService.commitAssignExternalId(externalId));
                     updateRequestContext(externalId);
@@ -876,12 +869,6 @@ public class ParticipantService {
         // Whether already assigned or not, we will adjust the account, in case we are repairing
         // an existing broken data association
         identifier.setHealthCode(account.getHealthCode());
-        // For backwards compatibility while transitioning to multiple external IDs, assign the singular 
-        // external ID field. But don't do this if we're adding a second external ID (we should be 
-        // entirely migrated to multiple external ID usage before we need to assign multiple IDs).
-        if (account.getExternalId() == null) {
-            account.setExternalId(identifier.getIdentifier());    
-        }
         if (identifier.getSubstudyId() != null) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
                     identifier.getSubstudyId(), account.getId());

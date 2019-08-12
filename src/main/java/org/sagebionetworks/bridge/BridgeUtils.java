@@ -122,9 +122,6 @@ public class BridgeUtils {
                 builder.add(accountSubstudy.getExternalId());
             }
         }
-        if (account.getExternalId() != null) {
-            builder.add(account.getExternalId());
-        }
         return builder.build();
     }
     

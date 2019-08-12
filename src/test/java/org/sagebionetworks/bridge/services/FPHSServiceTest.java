@@ -28,6 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -80,11 +81,11 @@ public class FPHSServiceTest {
         TestUtils.mockEditAccount(mockAccountDao, mockAccount);
         Set<String> dataGroups = Sets.newHashSet();
         when(mockAccount.getDataGroups()).thenReturn(dataGroups);
+        when(mockAccount.getId()).thenReturn("userId");
         
         service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
         verify(mockDao).registerExternalId(externalId);
-        verify(mockAccount).setExternalId(externalId.getIdentifier());
-        assertEquals(dataGroups, Sets.newHashSet("football_player"));
+        assertEquals(dataGroups, ImmutableSet.of("football_player"));
     }
     
     @Test

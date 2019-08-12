@@ -397,12 +397,10 @@ public class DynamoExternalIdDaoMockTest {
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.setExternalId(ID);
         account.getAccountSubstudies().add(acctSubstudy);
 
         dao.unassignExternalId(account, ID);
 
-        assertNull(account.getExternalId());
         assertTrue(account.getAccountSubstudies().isEmpty());
     }
 
@@ -416,13 +414,11 @@ public class DynamoExternalIdDaoMockTest {
 
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setExternalId(ID);
         account.getAccountSubstudies().add(as);
 
         dao.unassignExternalId(account, ID);
 
         verify(mapper, never()).save(any());
-        assertEquals(account.getExternalId(), ID);
         assertFalse(account.getAccountSubstudies().isEmpty());
     }
 
@@ -437,7 +433,6 @@ public class DynamoExternalIdDaoMockTest {
 
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setExternalId(ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(as);
@@ -445,7 +440,6 @@ public class DynamoExternalIdDaoMockTest {
         dao.unassignExternalId(account, ID);
 
         verify(mapper, never()).save(any());
-        assertNull(account.getExternalId());
         assertTrue(account.getAccountSubstudies().isEmpty());
     }
     
@@ -461,12 +455,9 @@ public class DynamoExternalIdDaoMockTest {
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.setExternalId(ID);
         account.setAccountSubstudies(null); // this would throw an error if executed
 
         dao.unassignExternalId(account, ID);
-
-        assertNull(account.getExternalId());
     }
 
     @Test
@@ -532,6 +523,7 @@ public class DynamoExternalIdDaoMockTest {
         finishMocking(extIdLists);
     }
     
+    @SuppressWarnings("unchecked")
     private void finishMocking(List<List<DynamoExternalIdentifier>> extIdLists) {
         // Now mock each result
         List<QueryResultPage<DynamoExternalIdentifier>> pages = Lists.newArrayList();

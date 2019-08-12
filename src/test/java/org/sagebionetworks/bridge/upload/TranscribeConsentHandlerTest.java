@@ -44,9 +44,8 @@ public class TranscribeConsentHandlerTest {
     public void test() {
         AccountSubstudy as1 = AccountSubstudy.create("studyId", "subA", "id");
         AccountSubstudy as2 = AccountSubstudy.create("studyId", "subB", "id");
-        as2.setExternalId("extB");
+        as2.setExternalId(TEST_EXTERNAL_ID);
         
-        when(mockAccount.getExternalId()).thenReturn(TEST_EXTERNAL_ID);
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
         when(mockAccount.getAccountSubstudies()).thenReturn(ImmutableSet.of(as1, as2));
@@ -62,7 +61,7 @@ public class TranscribeConsentHandlerTest {
         
         Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
         assertEquals(substudyMemberships.get("subA"), "<none>");
-        assertEquals(substudyMemberships.get("subB"), "extB");
+        assertEquals(substudyMemberships.get("subB"), TEST_EXTERNAL_ID);
     }
 
     @Test

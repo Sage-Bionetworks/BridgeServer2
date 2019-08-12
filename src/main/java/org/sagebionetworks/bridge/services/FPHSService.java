@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -53,8 +54,9 @@ public class FPHSService {
         fphsDao.registerExternalId(externalId);
 
         accountDao.editAccount(studyId, healthCode, account -> {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(studyId.getIdentifier(), "harvard", account.getId());
             account.getDataGroups().add("football_player");
-            account.setExternalId(externalId.getIdentifier());
+            account.getAccountSubstudies().add(acctSubstudy);
         });
     }
     
