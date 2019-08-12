@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -67,6 +68,7 @@ public class UploadHandlersEndToEndTest {
     private static final byte[] METADATA_JSON_CONTENT = "{\"my-meta-key\":\"my-meta-value\"}".getBytes();
     private static final String PHONE_INFO = "Unit Test Hardware";
     private static final String UPLOAD_ID = "upload-id";
+    private static final DateTime STUDY_START_TIME = DateTime.parse("2015-03-28T15:44:26.804-0700");
 
     private static final String CREATED_ON_STRING = "2015-04-02T03:26:59.456-07:00";
     private static final long CREATED_ON_MILLIS = DateUtils.convertToMillisFromEpoch(CREATED_ON_STRING);
@@ -280,8 +282,12 @@ public class UploadHandlersEndToEndTest {
         AccountDao mockAccountDao = mock(AccountDao.class);
         when(mockAccountDao.getAccount(any())).thenReturn(account);
 
+        ParticipantService mockParticipantService = mock(ParticipantService.class);
+        when(mockParticipantService.getStudyStartTime(any())).thenReturn(STUDY_START_TIME);
+
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
         transcribeConsentHandler.setAccountDao(mockAccountDao);
+        transcribeConsentHandler.setParticipantService(mockParticipantService);
 
         // Set up UploadRawZipHandler.
         UploadRawZipHandler uploadRawZipHandler = new UploadRawZipHandler();

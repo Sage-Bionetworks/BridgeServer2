@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -349,6 +350,29 @@ public class ParticipantService {
         Validate.entityThrowingException(new AccountSummarySearchValidator(study.getDataGroups()), search);
         
         return accountDao.getPagedAccountSummaries(study, search);
+    }
+
+    /**
+     * Gets the timestamp representing when the participant started the study. Canonically, we define this as
+     * activities_retrieved event time, then fall back to enrollment (for studies that don't use scheduling), then fall
+     * back to account creation time (for studies that use neither scheduling nor consent).
+     */
+    public DateTime getStudyStartTime(AccountId accountId) {
+        Account account = getAccountThrowingException(accountId);
+
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getHealthCode());
+        DateTime activitiesRetrievedDateTime = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name()
+                .toLowerCase());
+        if (activitiesRetrievedDateTime != null) {
+            return activitiesRetrievedDateTime;
+        }
+
+        DateTime enrollmentDateTime = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
+        if (enrollmentDateTime != null) {
+            return enrollmentDateTime;
+        }
+
+        return account.getCreatedOn();
     }
 
     public void signUserOut(Study study, String userId, boolean deleteReauthToken) {
