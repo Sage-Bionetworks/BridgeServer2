@@ -122,6 +122,7 @@ public class StudyService {
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
+    private TemplateService templateService;
 
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -293,11 +294,14 @@ public class StudyService {
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
-    
     @Autowired
     @Qualifier("bridgePFSynapseClient")
-    public final void setSynapseClient(SynapseClient synapseClient) {
+    final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
+    }
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
     }
     
     private EmailTemplate getEmailVerificationTemplate() {
@@ -724,6 +728,7 @@ public class StudyService {
             studyDao.deleteStudy(existing);
 
             // delete study data
+            templateService.deleteTemplatesForStudy(existing.getStudyIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
                     existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
