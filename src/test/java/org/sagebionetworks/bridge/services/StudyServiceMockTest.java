@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.WARNING;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
@@ -71,6 +73,8 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.EmailTemplate;
@@ -81,6 +85,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
@@ -142,6 +147,8 @@ public class StudyServiceMockTest extends Mockito {
     AccessControlList mockAccessControlList;
     @Mock
     SynapseClient mockSynapseClient;
+    @Mock
+    TemplateService mockTemplateService;
     
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -184,7 +191,10 @@ public class StudyServiceMockTest extends Mockito {
         
         study = getTestStudy();
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
-
+        
+        GuidVersionHolder keys = new GuidVersionHolder("guid", 1L);
+        when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
+        
         when(mockStudyDao.createStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except set version to 1.
             Study study = invocation.getArgument(0);
@@ -853,6 +863,15 @@ public class StudyServiceMockTest extends Mockito {
     
     @Test
     public void physicallyDeleteStudy() {
+        PagedResourceList<? extends Template> page1 = new PagedResourceList<>(
+                ImmutableList.of(createTemplate("guid1"), createTemplate("guid2"), createTemplate("guid3")), 3);
+        PagedResourceList<? extends Template> page2 = new PagedResourceList<>(ImmutableList.of(), 3);
+
+        doReturn(page1, page2).when(mockTemplateService).getTemplatesForType(
+                TEST_STUDY_IDENTIFIER, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
+        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(TEST_STUDY_IDENTIFIER), 
+                not(eq(EMAIL_ACCOUNT_EXISTS)), eq(0), eq(50), eq(true));
+        
         // execute
         service.deleteStudy(TEST_STUDY_ID, true);
 
@@ -863,8 +882,15 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(study.getStudyIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
     }
-    
+
+    private Template createTemplate(String guid) {
+        Template template = Template.create();
+        template.setGuid(guid);
+        return template;
+    }
+
     @Test(expectedExceptions = BadRequestException.class)
     public void deactivateStudyAlreadyDeactivatedBefore() {
         Study study = getTestStudy();
@@ -1761,6 +1787,8 @@ public class StudyServiceMockTest extends Mockito {
      */
     @Test
     public void crudStudy() {
+        when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         // developer
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         

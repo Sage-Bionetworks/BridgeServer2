@@ -85,6 +85,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -107,8 +108,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest {
+    private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
     private static final ClientInfo CLIENT_INFO = new ClientInfo.Builder().withAppName("unit test")
             .withAppVersion(4).build();
+    private static final DateTime CREATED_ON_DATETIME = DateTime.parse("2019-07-30T12:09:28.184-0700");
+    private static final DateTime ENROLLMENT_DATETIME = DateTime.parse("2019-07-31T21:42:44.019-0700");
     private static final RequestInfo REQUEST_INFO = new RequestInfo.Builder().withClientInfo(CLIENT_INFO)
             .withLanguages(TestConstants.LANGUAGES).withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
@@ -1005,7 +1009,43 @@ public class ParticipantServiceTest {
         assertEquals(participant.getSubstudyIds(), ImmutableSet.of("substudyA", "substudyC"));
         assertEquals(participant.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA"));
     }
-    
+
+    @Test
+    public void getStudyStartTime_FromActivitiesRetrieved() {
+        // Set up mocks.
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of(
+                ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
+
+        // Execute and validate.
+        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        assertEquals(result, ACTIVITIES_RETRIEVED_DATETIME);
+    }
+
+    @Test
+    public void getStudyStartTime_FromEnrollment() {
+        // Set up mocks.
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of(
+                ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
+
+        // Execute and validate.
+        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        assertEquals(result, ENROLLMENT_DATETIME);
+    }
+
+    @Test
+    public void getStudyStartTime_FromAccountCreatedOn() {
+        // Set up mocks.
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        account.setCreatedOn(CREATED_ON_DATETIME);
+        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of());
+
+        // Execute and validate.
+        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        assertEquals(result, CREATED_ON_DATETIME);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void signOutUserWhoDoesNotExist() {
         participantService.signUserOut(STUDY, ID, true);

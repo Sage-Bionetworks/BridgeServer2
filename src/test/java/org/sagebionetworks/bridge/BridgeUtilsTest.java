@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -793,6 +795,15 @@ public class BridgeUtilsTest {
     public void emptyStringToSynapseFriendlyName() {
         BridgeUtils.toSynapseFriendlyName("  #");
     }
+    
+    @Test
+    public void templateTypeToLabel() {
+        String label = BridgeUtils.templateTypeToLabel(SMS_APP_INSTALL_LINK);
+        assertEquals(label, "App Install Link Default (SMS)");
+
+        label = BridgeUtils.templateTypeToLabel(EMAIL_SIGNED_CONSENT);
+        assertEquals(label, "Signed Consent Default (Email)");
+    }    
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {

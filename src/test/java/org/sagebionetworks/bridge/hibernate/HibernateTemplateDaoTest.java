@@ -155,4 +155,13 @@ public class HibernateTemplateDaoTest extends Mockito {
         verify(mockHelper, never()).deleteById(HibernateTemplate.class, GUID);
     }
     
+    @Test
+    public void deleteTemplatesForStudy() { 
+        dao.deleteTemplatesForStudy(TEST_STUDY);
+        
+        verify(mockHelper).query(eq("DELETE FROM HibernateTemplate WHERE studyId = :studyId"),
+                paramsCaptor.capture());
+        
+        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_IDENTIFIER);
+    }
 }

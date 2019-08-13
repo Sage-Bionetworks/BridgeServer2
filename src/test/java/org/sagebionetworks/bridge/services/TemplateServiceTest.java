@@ -1,13 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
@@ -23,6 +26,7 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIF
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -44,9 +48,12 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
@@ -55,10 +62,12 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -97,6 +106,9 @@ public class TemplateServiceTest extends Mockito {
     @Captor
     ArgumentCaptor<TemplateRevision> revisionCaptor;
     
+    @Captor
+    ArgumentCaptor<CriteriaContext> contextCaptor;
+    
     Study study;
     
     @BeforeMethod
@@ -130,6 +142,11 @@ public class TemplateServiceTest extends Mockito {
         study.setDefaultTemplates(new HashMap<>());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(USER_SUBSTUDY_IDS);
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
     
     private Resource res(TemplateType type) {
@@ -167,7 +184,6 @@ public class TemplateServiceTest extends Mockito {
     }
     
     private void mockTemplateDefault(String guid) {
-        Study study = Study.create();
         if (guid == null) {
             study.setDefaultTemplates(ImmutableMap.of());
         } else {
@@ -183,7 +199,7 @@ public class TemplateServiceTest extends Mockito {
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
         
-        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD);
         assertEquals(template, t2);
     }
     
@@ -196,7 +212,7 @@ public class TemplateServiceTest extends Mockito {
         
         mockTemplateDefault(GUID2);
         
-        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD);
         assertEquals(template, t2);
     }
     
@@ -209,7 +225,7 @@ public class TemplateServiceTest extends Mockito {
         
         mockTemplateDefault("guid-matches-nothing");
         
-        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD);
         assertEquals(template, t1);
     }
     
@@ -223,7 +239,7 @@ public class TemplateServiceTest extends Mockito {
         // no default in the study map at all
         mockTemplateDefault(null);
         
-        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD);
         assertEquals(template, t1);
     }
     
@@ -237,26 +253,26 @@ public class TemplateServiceTest extends Mockito {
         // no default in the study map at all
         mockTemplateDefault(null);
         
-        Template template = service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD);
         assertEquals(template, t1);
     }
     
-    // No templates returned, none matching, default exists but irrelevant, only then do we throw an exception
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    // No templates returned, none matching, default exists but irrelevant, only then do we return null
+    @Test
     public void getTemplateForUserMatchesNoneNoTemplateToReturn() {
         mockGetTemplates(ImmutableList.of());
         
         mockTemplateDefault(GUID1); // doesn't matter
         
-        service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertNull(service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD));
     }
     
-    // No templates returned, none matching, no default, throw an exception
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    // No templates returned, none matching, no default, return null
+    @Test
     public void getTemplateForUserMatchesNoneNoDefaultNoTemplateToReturn() {
         mockGetTemplates(ImmutableList.of());
 
-        service.getTemplateForUser(makeContext("fr"), EMAIL_RESET_PASSWORD);
+        assertNull(service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD));
     }
 
     @Test
@@ -631,15 +647,77 @@ public class TemplateServiceTest extends Mockito {
         service.deleteTemplate(TEST_STUDY, GUID1);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class)
-    public void cannotPhysicallyDeleteDefaultTemplate() {
-        study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
-        Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
-        existing.setGuid(GUID1);
-        existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
-        when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
-
-        service.deleteTemplatePermanently(TEST_STUDY, GUID1);
+    @Test
+    public void getRevisionForUser() throws Exception {
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
+        
+        DateTime createdOn = DateTime.now();
+        Template t1 = makeTemplate(GUID1, "de");
+        t1.setPublishedCreatedOn(createdOn);
+        
+        // This one should match based on languages ("en")
+        Template t2 = makeTemplate(GUID2, "en");
+        t2.setPublishedCreatedOn(createdOn.plusHours(1));
+        mockGetTemplates(ImmutableList.of(t1, t2));
+        
+        TemplateRevision r2 = TemplateRevision.create();
+        when(mockTemplateRevisionDao.getTemplateRevision(GUID2, createdOn.plusHours(1))).thenReturn(Optional.of(r2));
+        
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        
+        TemplateRevision retrieved = service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+        assertSame(retrieved, r2);
+        
+        verify(service).getTemplateForUser(eq(study), contextCaptor.capture(), eq(EMAIL_RESET_PASSWORD));
+        
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(context.getLanguages(), LANGUAGES);
+        assertEquals(context.getClientInfo(), clientInfo);
+    }
+    
+    @Test
+    public void getRevisionForUserBeforeTemplateMigrated() throws Exception {
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
+        mockGetTemplates(ImmutableList.of());
+        
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setResetPasswordTemplate(new EmailTemplate("subject", "body", TEXT));
+        
+        TemplateRevision retrieved = service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+        assertSame(retrieved.getSubject(), "subject");
+        assertSame(retrieved.getDocumentContent(), "body");
+        assertSame(retrieved.getMimeType(), TEXT);
+        
+        verify(service).getTemplateForUser(eq(study), any(), eq(EMAIL_RESET_PASSWORD));
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "TemplateRevision not found.")
+    public void getRevisionForUserWhenTemplateExistsButRevisionMissing() throws Exception {
+        ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
+        
+        DateTime createdOn = DateTime.now();
+        Template t1 = makeTemplate(GUID1, "en");
+        t1.setPublishedCreatedOn(createdOn);
+        mockGetTemplates(ImmutableList.of(t1));
+        
+        when(mockTemplateRevisionDao.getTemplateRevision(GUID1, createdOn)).thenReturn(Optional.empty());
+        
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        
+        service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+    }
+    
+    @Test
+    public void deleteTemplatesForStudy() {
+        service.deleteTemplatesForStudy(TEST_STUDY);
+        
+        verify(mockTemplateDao).deleteTemplatesForStudy(TEST_STUDY);
     }
 }
