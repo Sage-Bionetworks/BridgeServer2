@@ -339,9 +339,9 @@ public class ParticipantServiceTest {
     public void createParticipant() {
         STUDY.setEmailVerificationEnabled(true);
         when(participantService.generateGUID()).thenReturn(ID);
-        
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, participant, true);
         assertEquals(idHolder.getIdentifier(), ID);
@@ -413,7 +413,8 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID))
             .thenReturn(Optional.of(extId));
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
@@ -425,6 +426,8 @@ public class ParticipantServiceTest {
 
     @Test
     public void createParticipantWithInvalidParticipant() {
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        
         // It doesn't get more invalid than this...
         StudyParticipant participant = new StudyParticipant.Builder().build();
         
@@ -434,7 +437,7 @@ public class ParticipantServiceTest {
         } catch(InvalidEntityException e) {
         }
         verifyNoMoreInteractions(accountDao);
-        verifyNoMoreInteractions(externalIdService);
+        verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
     @Test
@@ -580,7 +583,8 @@ public class ParticipantServiceTest {
     public void createParticipantExternalIdNoPasswordIsUnverified() {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant idParticipant = withParticipant().withPhone(null).withEmail(null).withPassword(null)
                 .withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, idParticipant, false);
@@ -594,7 +598,8 @@ public class ParticipantServiceTest {
     public void createParticipantExternalIdAndPasswordIsEnabled() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withExternalId(EXTERNAL_ID)
                 .withPassword(PASSWORD).build();
         participantService.createParticipant(STUDY, participant, false);
@@ -1711,6 +1716,7 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdRequiredOnSignup(true);
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         
@@ -2033,9 +2039,9 @@ public class ParticipantServiceTest {
     @Test
     public void createManagedExternalIdOK() {
         mockHealthCodeAndAccountRetrieval();
-        
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
@@ -2061,7 +2067,8 @@ public class ParticipantServiceTest {
     @Test
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         extId.setHealthCode("AAA");
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
@@ -2219,7 +2226,8 @@ public class ParticipantServiceTest {
     @Test
     public void createParticipantValidatesUnmanagedExternalId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withExternalId("  ").build();
         
         try {
@@ -2258,7 +2266,8 @@ public class ParticipantServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
-        
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
@@ -2790,6 +2799,7 @@ public class ParticipantServiceTest {
     public void rollbackCreateParticipantWhenAccountCreationFails() {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
+        when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         doThrow(new ConcurrentModificationException("")).when(accountDao).createAccount(eq(STUDY), eq(account), any());
         
         try {

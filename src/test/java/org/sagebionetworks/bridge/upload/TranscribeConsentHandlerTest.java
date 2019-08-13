@@ -84,9 +84,9 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void test() {
         AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subA",
-                "id");
+                "id1");
         AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subB",
-                "id");
+                "id2");
         as2.setExternalId("extB");
         
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
@@ -98,7 +98,9 @@ public class TranscribeConsentHandlerTest {
 
         assertSame(outputRecord, inputRecord);
         assertEquals(outputRecord.getUserSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
-        assertEquals(outputRecord.getUserExternalId(), TEST_EXTERNAL_ID);
+        // For backwards compatibility we take one external ID from the AccountSubstudy records and 
+        // put it in this field. In 99.9% of our cases right now, it's the same as what was in externalId.
+        assertEquals(outputRecord.getUserExternalId(), "extB");
         assertEquals(outputRecord.getUserDataGroups(), Sets.newHashSet("test-group1","test-group2"));
         
         Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();

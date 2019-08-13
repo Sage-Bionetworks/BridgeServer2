@@ -1082,7 +1082,7 @@ public class HibernateAccountDaoTest {
     public void getByExternalId() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
                 + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "
-                + "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
+                + "AND acctSubstudy.externalId=:externalId GROUP BY acct.id";
 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
@@ -1126,7 +1126,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPaged() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "
-                + "acct.firstName, acct.lastName, acct.email, acct.phone, acct.externalId, "
+                + "acct.firstName, acct.lastName, acct.email, acct.phone, "
                 + "acct.id, acct.status) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
                 + "WHERE acct.studyId = :studyId GROUP BY acct.id";
@@ -1218,7 +1218,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) FROM "
+                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status) FROM "
                 + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
                 + "acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND acct.email LIKE "
                 + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
@@ -1333,7 +1333,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPagedWithOptionalEmptySetParams() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) FROM "
+                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status) FROM "
                 + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
                 + "acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND acct.email LIKE "
                 + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
