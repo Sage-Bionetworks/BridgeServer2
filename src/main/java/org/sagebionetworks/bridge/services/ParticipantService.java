@@ -604,15 +604,12 @@ public class ParticipantService {
             // remove external ID if it exists and unassign the external ID
             for (AccountSubstudy acctSubstudy : accountSubstudies) {
                 if (!participant.getSubstudyIds().contains(acctSubstudy.getSubstudyId())) {
-                    if (externalId != null && externalId.getSubstudyId().equals(acctSubstudy.getSubstudyId())) {
-                        continue;
-                    }
                     externalIdService.unassignExternalId(account, acctSubstudy.getExternalId());
                     account.getAccountSubstudies().remove(acctSubstudy);
                     clearCache = true;
                 }
             }
-            // add
+            // add external ID if it doesn't exist
             Set<String> existingSubstudyIds = account.getAccountSubstudies().stream()
                     .map(AccountSubstudy::getSubstudyId).collect(toSet());
             for (String substudyId : participant.getSubstudyIds()) {

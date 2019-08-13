@@ -55,6 +55,7 @@ public class FPHSService {
 
         accountDao.editAccount(studyId, healthCode, account -> {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(studyId.getIdentifier(), "harvard", account.getId());
+            acctSubstudy.setExternalId(externalId.getIdentifier());
             account.getDataGroups().add("football_player");
             account.getAccountSubstudies().add(acctSubstudy);
         });

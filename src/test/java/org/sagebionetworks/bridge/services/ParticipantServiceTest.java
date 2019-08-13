@@ -441,6 +441,57 @@ public class ParticipantServiceTest {
     }
     
     @Test
+    public void createParticipantWithExternalIdAndSubstudyCallerValidates() { 
+        // This is a substudy caller, so the substudy relationship needs to be enforced
+        // when creating a participant. In this case, the relationship is implied by the 
+        // external ID but not provided in the externalIds set. It works anyway.
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+
+        ExternalIdentifier extId = ExternalIdentifier.create(TEST_STUDY, EXTERNAL_ID);
+        extId.setSubstudyId("substudy1");
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        when(substudyService.getSubstudy(TEST_STUDY, "substudy1", false)).thenReturn(Substudy.create());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        
+        participantService.createParticipant(STUDY, participant, false);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*substudy2.*is not a substudy of the caller")
+    public void createParticipantWithExternalIdAndSubstudyCallerThatDontMatch() throws Exception { 
+        // This is a substudy caller assigning an external ID, but the external ID is not in one of the 
+        // caller's substudies.
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+
+        ExternalIdentifier extId = ExternalIdentifier.create(TEST_STUDY, EXTERNAL_ID);
+        extId.setSubstudyId("substudy2");
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        //when(substudyService.getSubstudy(TEST_STUDY, "substudy1", false)).thenReturn(Substudy.create());
+        when(substudyService.getSubstudy(TEST_STUDY, "substudy2", false)).thenReturn(Substudy.create());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        
+        participantService.createParticipant(STUDY, participant, false);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*externalId is not a valid external ID.*")
+    public void createParticipantWithMissingExternalIdAndSubstudyCaller() { 
+        // This is a substudy caller supplying an external ID that doesn't exist.
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.empty());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
+        
+        participantService.createParticipant(STUDY, participant, false);
+    }
+    
+    @Test
     public void createParticipantEmailDisabledNoVerificationWanted() {
         STUDY.setEmailVerificationEnabled(false);
         mockHealthCodeAndAccountRetrieval();
