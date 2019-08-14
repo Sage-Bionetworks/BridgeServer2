@@ -253,7 +253,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.emailSignIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedEmailSignInStillLogsStudyId() throws Exception {
         // Set up test.
@@ -303,7 +302,6 @@ public class AuthenticationControllerTest extends Mockito {
         }
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void failedReauthStillLogsStudyId() throws Exception {
         // Set up test.
@@ -1014,7 +1012,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.phoneSignIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedPhoneSignInStillLogsStudyId() throws Exception {
         // Set up test.
@@ -1043,7 +1040,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signInV3();
     }
 
-    @SuppressWarnings({ "deprecation", "unchecked" })
     @Test
     public void failedSignInV3StillLogsStudyId() throws Exception {
         // Set up test.
@@ -1071,7 +1067,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedSignInV4StillLogsStudyId() throws Exception {
         // Set up test.

@@ -309,7 +309,7 @@ public class TemplateService {
         return template;
     }
 
-    public GuidVersionHolder createTemplate(StudyIdentifier studyId, Template template) {
+    public GuidVersionHolder createTemplate(Study study, Template template) {
         TemplateRevision revision = TemplateRevision.create();
         if (template.getTemplateType() != null) {
             Triple<String,String,MimeType> triple = defaultTemplatesMap.get(template.getTemplateType());
@@ -317,15 +317,14 @@ public class TemplateService {
             revision.setDocumentContent(triple.getMiddle());
             revision.setMimeType(triple.getRight());
         }
-        return migrateTemplate(studyId, template, revision);
+        return migrateTemplate(study, template, revision);
     }
     
-    public GuidVersionHolder migrateTemplate(StudyIdentifier studyId, Template template, TemplateRevision revision) {
-        checkNotNull(studyId);
+    public GuidVersionHolder migrateTemplate(Study study, Template template, TemplateRevision revision) {
+        checkNotNull(study);
         checkNotNull(template);
         checkNotNull(revision);
         
-        Study study = studyService.getStudy(studyId);
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
@@ -335,7 +334,7 @@ public class TemplateService {
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
 
-        template.setStudyId(studyId.getIdentifier());
+        template.setStudyId(study.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);

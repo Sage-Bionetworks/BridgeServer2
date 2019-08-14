@@ -10,6 +10,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIFY_PHONE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -51,10 +60,10 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.Verification;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -123,6 +132,9 @@ public class AccountWorkflowServiceTest {
     private CacheProvider mockCacheProvider;
     
     @Mock
+    private TemplateService mockTemplateService;
+    
+    @Mock
     private Account mockAccount;
     
     @Captor
@@ -148,29 +160,22 @@ public class AccountWorkflowServiceTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        EmailTemplate verifyEmailTemplate = new EmailTemplate("VE ${studyName}", "Body ${url} ${emailVerificationUrl}", MimeType.TEXT);
-        EmailTemplate resetPasswordTemplate = new EmailTemplate("RP ${studyName}", "Body ${url} ${resetPasswordUrl}", MimeType.TEXT);
-        EmailTemplate accountExistsTemplate = new EmailTemplate("AE ${studyName}",
-                "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}", MimeType.TEXT); 
-        EmailTemplate emailSignInTemplate = new EmailTemplate("subject","Body ${token}", MimeType.TEXT);
-        SmsTemplate phoneSignInSmsTemplate = new SmsTemplate("Enter ${token} to sign in to ${studyShortName}");
-        SmsTemplate resetPasswordSmsTemplate = new SmsTemplate("Reset ${studyShortName} password: ${resetPasswordUrl}"); 
-        SmsTemplate accountExistsSmsTemplate = new SmsTemplate("Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}");
-        SmsTemplate verifyPhoneSmsTemplate = new SmsTemplate("Verify phone with ${token}");
+        mockRevision(EMAIL_VERIFY_EMAIL, "VE ${studyName}", "Body ${url} ${emailVerificationUrl}", TEXT);
+        mockRevision(EMAIL_RESET_PASSWORD, "RP ${studyName}", "Body ${url} ${resetPasswordUrl}", TEXT);
+        mockRevision(EMAIL_ACCOUNT_EXISTS, "AE ${studyName}", "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}",
+                TEXT);
+        mockRevision(EMAIL_SIGN_IN, "subject", "Body ${token}", TEXT);
+        mockRevision(SMS_PHONE_SIGN_IN, null, "Enter ${token} to sign in to ${studyShortName}", TEXT);
+        mockRevision(SMS_RESET_PASSWORD, null, "Reset ${studyShortName} password: ${resetPasswordUrl}", TEXT);
+        mockRevision(SMS_ACCOUNT_EXISTS, null,
+                "Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}", TEXT);
+        mockRevision(SMS_VERIFY_PHONE, null, "Verify phone with ${token}", TEXT);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setName("This study name");
         study.setShortName("ShortName");
         study.setSupportEmail(SUPPORT_EMAIL);
-        study.setVerifyEmailTemplate(verifyEmailTemplate);
-        study.setResetPasswordTemplate(resetPasswordTemplate);
-        study.setAccountExistsTemplate(accountExistsTemplate);
-        study.setEmailSignInTemplate(emailSignInTemplate);
-        study.setPhoneSignInSmsTemplate(phoneSignInSmsTemplate);
-        study.setResetPasswordSmsTemplate(resetPasswordSmsTemplate);
-        study.setAccountExistsSmsTemplate(accountExistsSmsTemplate);
-        study.setVerifyPhoneSmsTemplate(verifyPhoneSmsTemplate);
 
         // Mock bridge config
         when(mockBridgeConfig.getInt(AccountWorkflowService.CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS)).thenReturn(2);
@@ -205,10 +210,19 @@ public class AccountWorkflowServiceTest {
         service.setSendMailService(mockSendMailService);
         service.setSmsService(mockSmsService);
         service.setStudyService(mockStudyService);
+        service.setTemplateService(mockTemplateService);
 
         // Add params to mock account.
         when(mockAccount.getId()).thenReturn(USER_ID);
         // */when(mockAccount.getHealthCode()).thenReturn(HEALTH_CODE);
+    }
+    
+    private void mockRevision(TemplateType templateType, String subject, String body, MimeType type) {
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject(subject);
+        revision.setDocumentContent(body);
+        revision.setMimeType(type);
+        when(mockTemplateService.getRevisionForUser(any(), eq(templateType))).thenReturn(revision);
     }
     
     @Test

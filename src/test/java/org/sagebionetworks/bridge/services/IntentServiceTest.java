@@ -8,6 +8,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -17,6 +22,7 @@ import javax.mail.internet.MimeBodyPart;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -33,14 +39,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
@@ -55,6 +59,7 @@ public class IntentServiceTest {
 
     private static final long TIMESTAMP = 1000L; 
     
+    @InjectMocks
     IntentService service;
 
     @Mock
@@ -82,7 +87,10 @@ public class IntentServiceTest {
     Study mockStudy;
     
     @Mock
-    AccountDao accountDao;
+    AccountDao mockAccountDao;
+    
+    @Mock
+    TemplateService mockTemplateService;
     
     @Captor
     ArgumentCaptor<SubpopulationGuid> subpopGuidCaptor;
@@ -99,16 +107,6 @@ public class IntentServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        service = new IntentService();
-        service.setSmsService(mockSmsService);
-        service.setSendMailService(mockSendMailService);
-        service.setStudyService(mockStudyService);
-        service.setSubpopulationService(mockSubpopService);
-        service.setConsentService(mockConsentService);
-        service.setCacheProvider(mockCacheProvider);
-        service.setAccountDao(accountDao);
-        service.setParticipantService(mockParticipantService);
     }
     
     @Test
@@ -118,10 +116,14 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudy.getAppInstallLinkSmsTemplate()).thenReturn(new SmsTemplate("this-is-a-link"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent("this-is-a-link");
+        revision.setMimeType(TEXT);
+        when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
@@ -154,8 +156,12 @@ public class IntentServiceTest {
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudy.getAppInstallLinkSmsTemplate()).thenReturn(new SmsTemplate("this-is-a-link"));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent("this-is-a-link");
+        revision.setMimeType(TEXT);
+        when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
@@ -188,9 +194,14 @@ public class IntentServiceTest {
         
         when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudy.getAppInstallLinkTemplate()).thenReturn(new EmailTemplate("subject", "body ${appInstallUrl}", MimeType.HTML));
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("subject");
+        revision.setDocumentContent("body ${appInstallUrl}");
+        revision.setMimeType(HTML);
+        when(mockTemplateService.getRevisionForUser(mockStudy, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
+
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), 
                 TestConstants.TEST_STUDY, "email@email.com");
         
@@ -259,7 +270,7 @@ public class IntentServiceTest {
         AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, intent.getPhone()); 
         
         Account account = Account.create();
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
         
         service.submitIntentToParticipate(intent);
         

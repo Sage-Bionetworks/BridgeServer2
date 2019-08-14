@@ -54,6 +54,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
@@ -138,6 +139,7 @@ public class TemplateServiceTest extends Mockito {
         when(service.getUserId()).thenReturn(USER_ID);
         
         study = Study.create();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setDataGroups(USER_DATA_GROUPS);
         study.setDefaultTemplates(new HashMap<>());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
@@ -405,7 +407,7 @@ public class TemplateServiceTest extends Mockito {
         template.setVersion(3);
         template.setCriteria(criteria);
         
-        GuidVersionHolder holder = service.createTemplate(TEST_STUDY, template);
+        GuidVersionHolder holder = service.createTemplate(study, template);
         assertEquals(holder.getGuid(), GUID1);
         assertEquals(holder.getVersion(), new Long(10));
         
@@ -439,14 +441,14 @@ public class TemplateServiceTest extends Mockito {
         template.setName("Test");
         template.setTemplateType(EMAIL_RESET_PASSWORD);
         
-        service.createTemplate(TEST_STUDY, template);
+        service.createTemplate(study, template);
         
         verify(mockCriteriaDao).createOrUpdateCriteria(any(Criteria.class));
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createTemplateInvalid() {
-        service.createTemplate(TEST_STUDY, Template.create());
+        service.createTemplate(study, Template.create());
     }
     
     @Test
@@ -458,7 +460,7 @@ public class TemplateServiceTest extends Mockito {
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("Yo, sign in by phone");
         
-        service.migrateTemplate(TEST_STUDY, template, revision);
+        service.migrateTemplate(study, template, revision);
         
         verify(mockTemplateRevisionDao).createTemplateRevision(revision);
         verify(mockTemplateDao).createTemplate(eq(template), any());
