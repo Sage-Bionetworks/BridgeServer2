@@ -4,12 +4,13 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.HasCriteria;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @BridgeTypeName("NotificationTopic")
 @JsonDeserialize(as=DynamoNotificationTopic.class)
-public interface NotificationTopic extends BridgeEntity {
+public interface NotificationTopic extends BridgeEntity, HasCriteria {
 
     static NotificationTopic create() {
         return new DynamoNotificationTopic();

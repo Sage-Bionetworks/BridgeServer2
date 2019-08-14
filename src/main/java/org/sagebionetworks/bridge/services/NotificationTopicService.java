@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.CriteriaUtils.filterByCriteria;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,6 @@ import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.dao.TopicSubscriptionDao;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
@@ -188,8 +188,7 @@ public class NotificationTopicService {
         }
 
         // Determine topics to subscribe to based on criteria.
-        Set<String> desiredTopicGuidSet = criteriaTopicList.stream()
-                .filter(topic -> CriteriaUtils.matchCriteria(context, topic.getCriteria()))
+        Set<String> desiredTopicGuidSet = filterByCriteria(context, criteriaTopicList).stream()
                 .map(NotificationTopic::getGuid).collect(Collectors.toSet());
 
         // Subscribe user to topics.

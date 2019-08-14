@@ -3,11 +3,12 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.HasCriteria;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class ScheduleCriteria {
+public final class ScheduleCriteria implements HasCriteria {
     private final Schedule schedule;
     private final Criteria criteria;
     

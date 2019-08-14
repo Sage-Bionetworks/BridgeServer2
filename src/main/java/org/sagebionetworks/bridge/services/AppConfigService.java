@@ -26,7 +26,6 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
@@ -112,10 +111,8 @@ public class AppConfigService {
 
         List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
 
-        List<AppConfig> matches = appConfigs.stream().filter(oneAppConfig -> {
-            return CriteriaUtils.matchCriteria(context, oneAppConfig.getCriteria());
-        }).sorted(Comparator.comparingLong(AppConfig::getCreatedOn))
-          .collect(BridgeCollectors.toImmutableList());
+        List<AppConfig> matches = CriteriaUtils.filterByCriteria(context, appConfigs);
+        matches.sort(Comparator.comparingLong(AppConfig::getCreatedOn));
 
         // Should have matched one and only one app config.
         if (matches.isEmpty()) {

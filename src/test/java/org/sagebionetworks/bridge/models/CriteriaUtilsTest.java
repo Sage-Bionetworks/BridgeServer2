@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -15,8 +17,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -379,6 +383,77 @@ public class CriteriaUtilsTest {
         
         assertTrue(CriteriaUtils.matchCriteria(context, newCriteria));
     }
+    
+    @Test
+    public void selectByCriteriaRespectsLanguageOrder() {
+        // If a language is declared, the user has to match it.
+        AppConfig enAppConfig = AppConfig.create();
+        Criteria enCriteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, null);
+        enCriteria.setLanguage("en");
+        enAppConfig.setCriteria(enCriteria);
+        
+        AppConfig frAppConfig = AppConfig.create();
+        Criteria frCriteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, null);
+        frCriteria.setLanguage("fr");
+        frAppConfig.setCriteria(frCriteria);
+        
+        List<AppConfig> collection = ImmutableList.of(enAppConfig, frAppConfig);
+        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("de", "fr", "en")).build();
+        
+        // Although English is first, we correctly understand that the French app config is the 
+        // one the user prefers (given the order of the languages in the context).
+        AppConfig selected = CriteriaUtils.selectByCriteria(context, collection);
+        assertSame(selected, frAppConfig);
+    }
+    
+    @Test
+    public void selectByCriteria() {
+        AppConfig firstAppConfig = AppConfig.create();
+        firstAppConfig.setCriteria(getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 5));
+        
+        AppConfig secondAppConfig = AppConfig.create();
+        secondAppConfig.setCriteria(getCriteria(EMPTY_SET, EMPTY_SET, IOS, 6, null));
+        
+        List<AppConfig> collection = ImmutableList.of(firstAppConfig, secondAppConfig);
+        
+        CriteriaContext context = getContext(ClientInfo.parseUserAgentString("AppName/8 (Device Name; iPhone OS) BridgeJavaSDK/3"));
+        
+        AppConfig selected = CriteriaUtils.selectByCriteria(context, collection);
+        assertSame(selected, secondAppConfig);
+    }
+    
+    @Test
+    public void filterByCriteriaSortsByLanguageOrder() {
+        // If a language is declared, the user has to match it.
+        AppConfig enAppConfig = AppConfig.create();
+        Criteria enCriteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, null);
+        enCriteria.setLanguage("en");
+        enAppConfig.setCriteria(enCriteria);
+        
+        AppConfig frAppConfig = AppConfig.create();
+        Criteria frCriteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, null);
+        frCriteria.setLanguage("fr");
+        frAppConfig.setCriteria(frCriteria);
+
+        AppConfig zhAppConfig = AppConfig.create();
+        Criteria zhCriteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, null);
+        zhCriteria.setLanguage("zh");
+        zhAppConfig.setCriteria(zhCriteria);
+        
+        List<AppConfig> collection = ImmutableList.of(zhAppConfig, enAppConfig, frAppConfig);
+        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("de", "fr", "en")).build();
+        
+        // Although English is first, we correctly understand that the French app config is the 
+        // one the user prefers (given the order of the languages in the context).
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection);
+        assertEquals(selected.size(), 2);
+        assertSame(selected.get(0), frAppConfig);
+        assertSame(selected.get(1), enAppConfig);
+    }    
 
     private Criteria getCriteria(Set<String> required, Set<String> prohibited, String os, Integer min, Integer max) {
         Criteria criteria = Criteria.create();
