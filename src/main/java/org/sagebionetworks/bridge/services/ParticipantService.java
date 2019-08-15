@@ -404,7 +404,7 @@ public class ParticipantService {
             throwExceptionIfLimitMetOrExceeded(study);
         }
         
-        // Ensure the validator sees the substudy of an external ID assignment it it's being made. 
+        // Ensure the validator sees the substudy of an external ID assignment as it's being made. 
         // Otherwise, researchers need to add the substudy ID along with the external ID when 
         // creating a user, which is unexpected and annoying.
         Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(
