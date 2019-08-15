@@ -1,8 +1,13 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.BridgeUtils.mapSubstudyMemberships;
 
+import java.util.Set;
+
 import javax.annotation.Nonnull;
+
+import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
 import org.joda.time.Days;
@@ -41,9 +46,13 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         AccountId accountId = AccountId.forHealthCode(context.getStudy().getIdentifier(), context.getHealthCode());
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
+            
+            Set<String> externalIds = collectExternalIds(account);
+            String externalId = Iterables.getFirst(externalIds, null);
+            
             // write user info to health data record
             record.setUserSharingScope(account.getSharingScope());
-            record.setUserExternalId(account.getExternalId());
+            record.setUserExternalId(externalId);
             record.setUserDataGroups(account.getDataGroups());
             record.setUserSubstudyMemberships( mapSubstudyMemberships(account) );
 

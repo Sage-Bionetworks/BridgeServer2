@@ -71,7 +71,6 @@ public class HibernateAccount implements Account {
     private DateTimeZone timeZone;
     private SharingScope sharingScope;
     private Boolean notifyByEmail;
-    private String externalId;
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
@@ -88,14 +87,13 @@ public class HibernateAccount implements Account {
      * specifying a constructor.
      */
     public HibernateAccount(DateTime createdOn, String studyId, String firstName, String lastName,
-            String email, Phone phone, String externalId, String id, AccountStatus status) {
+            String email, Phone phone, String id, AccountStatus status) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
-        this.externalId = externalId;
         this.id = id;
         this.status = status;
     }
@@ -384,18 +382,6 @@ public class HibernateAccount implements Account {
         this.notifyByEmail = notifyByEmail;
     }
 
-    /** The external identifier assigned to this account by study administrators. This should 
-     * be a unique string within the scope of the study. Whether it is required or not will depend 
-     * on the design and configuration of the study (may therefore be null). */
-    public String getExternalId() {
-        return externalId;
-    }
-
-    /** @see #getExternalId */
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
-    
     /** Data groups assigned to this account. */
     @CollectionTable(name = "AccountDataGroups", joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "id"))
     @Column(name = "dataGroup")

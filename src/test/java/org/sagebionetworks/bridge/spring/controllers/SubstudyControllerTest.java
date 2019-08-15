@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -73,7 +74,7 @@ public class SubstudyControllerTest extends Mockito {
         controller.setSubstudyService(service);
 
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
