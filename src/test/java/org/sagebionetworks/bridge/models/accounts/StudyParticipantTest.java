@@ -425,4 +425,11 @@ public class StudyParticipantTest {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalIds(ImmutableMap.of()).build();
         assertNull(participant.getExternalId());
     }
+    
+    @Test
+    public void externalIdRetrievedFromMap() { 
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalIds(ImmutableMap.of("oneSubstudy", "oneExternalId")).build();
+        assertEquals(participant.getExternalId(), "oneExternalId");
+    }
 }
