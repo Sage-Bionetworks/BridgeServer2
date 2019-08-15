@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -21,20 +23,24 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
 
     @Override
     public String convertToDatabaseColumn(List<String> list) {
-        try {
-            return BridgeObjectMapper.get().writeValueAsString(list);
-        } catch (JsonProcessingException e) {
-            LOG.debug("Error serializing String list", e);
+        if (list != null) {
+            try {
+                return BridgeObjectMapper.get().writeValueAsString(list);
+            } catch (JsonProcessingException e) {
+                LOG.debug("Error serializing String list", e);
+            }
         }
         return null;        
     }
 
     @Override
     public List<String> convertToEntityAttribute(String value) {
-        try {
-            return BridgeObjectMapper.get().readValue(value, STRING_LIST_TYPE_REF);
-        } catch (IOException e) {
-            LOG.debug("Error deserializing String set", e);
+        if (isNotBlank(value)) {
+            try {
+                return BridgeObjectMapper.get().readValue(value, STRING_LIST_TYPE_REF);
+            } catch (IOException e) {
+                LOG.debug("Error deserializing String set", e);
+            }
         }
         return null;
     }

@@ -7,6 +7,7 @@ import javax.persistence.Converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,20 +20,24 @@ public class ClientInfoConverter implements AttributeConverter<ClientInfo, Strin
 
     @Override
     public String convertToDatabaseColumn(ClientInfo clientInfo) {
-        try {
-            return BridgeObjectMapper.get().writeValueAsString(clientInfo);
-        } catch (JsonProcessingException e) {
-            LOG.debug("Error serializing clientInfo", e);
+        if (clientInfo != null) {
+            try {
+                return BridgeObjectMapper.get().writeValueAsString(clientInfo);
+            } catch (JsonProcessingException e) {
+                LOG.debug("Error serializing clientInfo", e);
+            }
         }
         return null;
     }
 
     @Override
     public ClientInfo convertToEntityAttribute(String value) {
-        try {
-            return BridgeObjectMapper.get().readValue(value, ClientInfo.class);
-        } catch (IOException e) {
-            LOG.debug("Error deserializing clientInfo", e);
+        if (StringUtils.isNotBlank(value)) {
+            try {
+                return BridgeObjectMapper.get().readValue(value, ClientInfo.class);
+            } catch (IOException e) {
+                LOG.debug("Error deserializing clientInfo", e);
+            }
         }
         return null;
     }

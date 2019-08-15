@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import java.io.IOException;
 import java.util.Set;
 
@@ -21,20 +23,24 @@ public class StringSetConverter implements AttributeConverter<Set<String>, Strin
 
     @Override
     public String convertToDatabaseColumn(Set<String> set) {
-        try {
-            return BridgeObjectMapper.get().writeValueAsString(set);
-        } catch (JsonProcessingException e) {
-            LOG.debug("Error serializing String set", e);
+        if (set != null) {
+            try {
+                return BridgeObjectMapper.get().writeValueAsString(set);
+            } catch (JsonProcessingException e) {
+                LOG.debug("Error serializing String set", e);
+            }
         }
-        return null;        
+        return null;
     }
 
     @Override
     public Set<String> convertToEntityAttribute(String value) {
-        try {
-            return BridgeObjectMapper.get().readValue(value, STRING_SET_TYPE_REF);
-        } catch (IOException e) {
-            LOG.debug("Error deserializing String set", e);
+        if (isNotBlank(value)) {
+            try {
+                return BridgeObjectMapper.get().readValue(value, STRING_SET_TYPE_REF);
+            } catch (IOException e) {
+                LOG.debug("Error deserializing String set", e);
+            }
         }
         return null;
     }
