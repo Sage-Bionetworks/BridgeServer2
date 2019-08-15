@@ -20,13 +20,12 @@ public class HibernateRequestInfoDao implements RequestInfoDao {
     
     @Override
     public void updateRequestInfo(RequestInfo requestInfo) {
-        
         RequestInfo existingRequestInfo = getRequestInfo(requestInfo.getUserId());
         if (existingRequestInfo != null) {
             RequestInfo.Builder builder = new RequestInfo.Builder();    
             builder.copyOf(existingRequestInfo);
             builder.copyOf(requestInfo);
-            hibernateHelper.update(requestInfo, null);
+            hibernateHelper.update(builder.build(), null);
         } else {
             hibernateHelper.create(requestInfo, null);
         }        
@@ -34,6 +33,8 @@ public class HibernateRequestInfoDao implements RequestInfoDao {
 
     @Override
     public RequestInfo getRequestInfo(String userId) {
+        checkNotNull(userId);
+        
         return hibernateHelper.getById(RequestInfo.class, userId);
     }
     
@@ -41,6 +42,10 @@ public class HibernateRequestInfoDao implements RequestInfoDao {
     public void removeRequestInfo(String userId) {
         checkNotNull(userId);
         
-        hibernateHelper.deleteById(RequestInfo.class, userId);
+        // You do get an error if you try and delete a request info object that doesn't exist.
+        RequestInfo existingRequestInfo = getRequestInfo(userId);
+        if (existingRequestInfo != null) {
+            hibernateHelper.deleteById(RequestInfo.class, userId);    
+        }
     }    
 }

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +26,14 @@ public class RequestInfoService {
     }
     
     public void updateRequestInfo(RequestInfo requestInfo) {
+        checkNotNull(requestInfo);
+        
         requestInfoDao.updateRequestInfo(requestInfo);
     }
     
     public RequestInfo getRequestInfo(String userId) {
+        isNotBlank(userId);
+        
         RequestInfo requestInfo = requestInfoDao.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = cacheProvider.getRequestInfo(userId);
@@ -38,8 +45,9 @@ public class RequestInfoService {
     }
     
     public void removeRequestInfo(String userId) {
+        isNotBlank(userId);
+        
         requestInfoDao.removeRequestInfo(userId);
         cacheProvider.removeRequestInfo(userId);
     }
-
 }
