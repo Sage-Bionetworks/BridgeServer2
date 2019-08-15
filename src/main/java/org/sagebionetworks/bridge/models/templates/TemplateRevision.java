@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.templates;
 
-import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import org.joda.time.DateTime;
@@ -9,9 +7,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 
 @BridgeTypeName("TemplateRevision")
 @JsonDeserialize(as=HibernateTemplateRevision.class)
@@ -19,25 +15,6 @@ public interface TemplateRevision extends BridgeEntity {
     
     public static TemplateRevision create() { 
         return new HibernateTemplateRevision();
-    }
-    
-    // This is a temporary bridging method while migrating. Eventually we will directly
-    // retrieve a template revision object for templates.
-    public static TemplateRevision create(EmailTemplate template) {
-        TemplateRevision revision = new HibernateTemplateRevision();
-        revision.setSubject(template.getSubject());
-        revision.setDocumentContent(template.getBody());
-        revision.setMimeType(template.getMimeType());
-        return revision;
-    }
-    
-    // This is a temporary bridging method while migrating. Eventually we will directly
-    // retrieve a template revision object for templates.
-    public static TemplateRevision create(SmsTemplate template) {
-        TemplateRevision revision = new HibernateTemplateRevision();
-        revision.setDocumentContent(template.getMessage());
-        revision.setMimeType(TEXT);
-        return revision;
     }
     
     /**

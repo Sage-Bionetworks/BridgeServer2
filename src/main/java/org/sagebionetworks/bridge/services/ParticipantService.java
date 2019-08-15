@@ -70,6 +70,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -811,9 +812,13 @@ public class ParticipantService {
         }
         Map<String,String> variables = BridgeUtils.studyTemplateVariables(study);
         
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent(template.getMessage());
+        revision.setMimeType(MimeType.TEXT);
+        
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
                 .withPhone(account.getPhone())
-                .withTemplateRevision(TemplateRevision.create(template))
+                .withTemplateRevision(revision)
                 .withPromotionType()
                 .withStudy(study);
         for (Map.Entry<String, String> entry : variables.entrySet()) {
