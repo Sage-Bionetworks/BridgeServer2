@@ -420,7 +420,6 @@ public class ConsentServiceMockTest {
         assertFalse(account.getEmailVerified());
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
-        assertEquals(account.getExternalId(), "externalId");
         // This association is not removed
         assertEquals(account.getAccountSubstudies().size(), 1);
         AccountSubstudy acctSubstudy = account.getAccountSubstudies().iterator().next();
@@ -1050,10 +1049,8 @@ public class ConsentServiceMockTest {
         account.setFirstName("Allen");
         account.setLastName("Wrench");
         account.setEmail(EMAIL);
-        account.setExternalId("externalId");
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
-        account.setExternalId("externalId");
         AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
         as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);

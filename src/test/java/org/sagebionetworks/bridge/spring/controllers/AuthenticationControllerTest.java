@@ -1040,6 +1040,7 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signInV3();
     }
 
+    @SuppressWarnings({ "deprecation" })
     @Test
     public void failedSignInV3StillLogsStudyId() throws Exception {
         // Set up test.
