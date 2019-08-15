@@ -74,6 +74,7 @@ import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 
 public class AuthenticationControllerTest extends Mockito {
     private static final String USER_AGENT_STRING = "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4";
@@ -114,6 +115,9 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     CacheProvider mockCacheProvider;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -495,7 +499,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         controller.response();
 
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals("spId", requestInfo.getUserId());
         assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
@@ -1203,7 +1207,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     private void verifyCommonLoggingForSignIns() throws Exception {
         verifyMetrics();
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockResponse, never()).addCookie(any());        
         RequestInfo info = requestInfoCaptor.getValue();
         assertEquals(NOW.getMillis(), info.getSignedInOn().getMillis());

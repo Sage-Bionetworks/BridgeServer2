@@ -90,6 +90,9 @@ public class UserAdminServiceMockTest {
     @Mock
     private ExternalIdService externalIdService;
     
+    @Mock
+    private RequestInfoService requestInfoService;
+    
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
@@ -329,7 +332,7 @@ public class UserAdminServiceMockTest {
         
         // Verify a lot of stuff is deleted or removed
         verify(cacheProvider).removeSessionByUserId("userId");
-        verify(cacheProvider).removeRequestInfo("userId");
+        verify(requestInfoService).removeRequestInfo("userId");
         verify(healthDataService).deleteRecordsForHealthCode("healthCode");
         verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
@@ -351,7 +354,7 @@ public class UserAdminServiceMockTest {
         
         // (it very quietly does nothing)
         verify(cacheProvider, never()).removeSessionByUserId(any());
-        verify(cacheProvider, never()).removeRequestInfo(any());
+        verify(requestInfoService, never()).removeRequestInfo(any());
         verify(healthDataService, never()).deleteRecordsForHealthCode(any());
         verify(notificationsService, never()).deleteAllRegistrations(any(), any());
         verify(uploadService, never()).deleteUploadsForHealthCode(any());

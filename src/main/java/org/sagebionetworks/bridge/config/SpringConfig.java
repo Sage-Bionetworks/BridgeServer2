@@ -97,6 +97,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -616,6 +617,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
         metadataSources.addAnnotatedClass(HibernateTemplate.class);
         metadataSources.addAnnotatedClass(HibernateTemplateRevision.class);
+        metadataSources.addAnnotatedClass(RequestInfo.class);
         
         return metadataSources.buildMetadata().buildSessionFactory();
     }
@@ -663,6 +665,13 @@ public class SpringConfig {
     @Bean(name = "secretsHibernateHelper")
     @Autowired
     public HibernateHelper secretsHibernateHelper(SessionFactory sessionFactory, 
+            BasicPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "requestInfoHibernateHelper")
+    @Autowired
+    public HibernateHelper requestInfoHibernateHelper(SessionFactory sessionFactory,
             BasicPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }

@@ -4,102 +4,148 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.hibernate.ClientInfoConverter;
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.DateTimeZoneAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.StringListConverter;
+import org.sagebionetworks.bridge.hibernate.StringSetConverter;
+import org.sagebionetworks.bridge.hibernate.StudyIdentifierConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Information about the criteria and access times of requests from a specific user. Useful for 
  * support and troubleshooting, and potentially useful to show the filtering that is occurring on 
  * the server to researchers in the researcher UI.
  */
+@Entity
+@Table(name = "RequestInfos")
+@JsonDeserialize(builder = RequestInfo.Builder.class)
 public final class RequestInfo {
 
-    private final String userId;
-    private final ClientInfo clientInfo;
-    private final String userAgent;
-    private final List<String> languages;
-    private final Set<String> userDataGroups;
-    private final Set<String> userSubstudyIds;
-    private final DateTime activitiesAccessedOn;
-    private final DateTime signedInOn;
-    private final DateTime uploadedOn;
-    private final DateTimeZone timeZone;
-    private final StudyIdentifier studyIdentifier;
+    private String userId;
+    private ClientInfo clientInfo;
+    private String userAgent;
+    private List<String> languages;
+    private Set<String> userDataGroups;
+    private Set<String> userSubstudyIds;
+    private DateTime activitiesAccessedOn;
+    private DateTime signedInOn;
+    private DateTime uploadedOn;
+    private DateTimeZone timeZone;
+    private StudyIdentifier studyIdentifier;
 
-    @JsonCreator
-    private RequestInfo(@JsonProperty("userId") String userId, @JsonProperty("clientInfo") ClientInfo clientInfo,
-            @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") List<String> languages,
-            @JsonProperty("userDataGroups") Set<String> userDataGroups,
-            @JsonProperty("userSubstudyIds") Set<String> userSubstudyIds,
-            @JsonProperty("activitiesAccessedOn") DateTime activitiesAccessedOn,
-            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn,
-            @JsonProperty("timeZone") DateTimeZone timeZone,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
-        this.userId = userId;
-        this.clientInfo = clientInfo;
-        this.userAgent = userAgent;
-        this.languages = languages;
-        this.userDataGroups = userDataGroups;
-        this.userSubstudyIds = userSubstudyIds;
-        this.activitiesAccessedOn = activitiesAccessedOn;
-        this.signedInOn = signedInOn;
-        this.uploadedOn = uploadedOn;
-        this.timeZone = timeZone;
-        this.studyIdentifier = studyIdentifier;
-    }
-
+    @Id
     public String getUserId() {
         return userId;
     }
+    
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
+    @Convert(converter = ClientInfoConverter.class)
     public ClientInfo getClientInfo() {
         return clientInfo;
+    }
+    
+    public void setClientInfo(ClientInfo clientInfo) {
+        this.clientInfo = clientInfo;
     }
     
     public String getUserAgent() {
         return userAgent;
     }
+    
+    public void setUserAgent(String userAgent) {
+        this.userAgent = userAgent;
+    }
 
+    @Convert(converter = StringListConverter.class)
     public List<String> getLanguages() {
         return languages;
     }
+    
+    public void setLanguages(List<String> languages) {
+        this.languages = languages;
+    }
 
+    @Convert(converter = StringSetConverter.class)
     public Set<String> getUserDataGroups() {
         return userDataGroups;
     }
+    
+    public void setUserDataGroups(Set<String> userDataGroups) {
+        this.userDataGroups = userDataGroups;
+    }
 
+    @Convert(converter = StringSetConverter.class)
     public Set<String> getUserSubstudyIds() {
         return userSubstudyIds;
     }
     
+    public void setUserSubstudyIds(Set<String> userSubstudyIds) {
+        this.userSubstudyIds = userSubstudyIds;
+    }
+    
     @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     public DateTime getActivitiesAccessedOn() {
         return (activitiesAccessedOn == null) ? null : activitiesAccessedOn.withZone(timeZone);
     }
+    
+    public void setActivitiesAccessedOn(DateTime activitiesAccessedOn) {
+        this.activitiesAccessedOn = activitiesAccessedOn;
+    }
 
     @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     public DateTime getSignedInOn() {
         return (signedInOn == null) ? null : signedInOn.withZone(timeZone);
     }
     
+    public void setSignedInOn(DateTime signedInOn) {
+        this.signedInOn = signedInOn;
+    }
+    
     @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     public DateTime getUploadedOn() {
         return (uploadedOn == null) ? null : uploadedOn.withZone(timeZone);
     }
     
+    public void setUploadedOn(DateTime uploadedOn) {
+        this.uploadedOn = uploadedOn;
+    }
+    
+    @Convert(converter = DateTimeZoneAttributeConverter.class)
     public DateTimeZone getTimeZone() {
         return timeZone;
     }
     
+    public void setTimeZone(DateTimeZone timeZone) {
+        this.timeZone = timeZone;
+    }
+    
+    @Convert(converter = StudyIdentifierConverter.class)
     public StudyIdentifier getStudyIdentifier() {
         return studyIdentifier;
+    }
+    
+    public void setStudyIdentifier(StudyIdentifier studyIdentifier) {
+        this.studyIdentifier = studyIdentifier;
     }
 
     @Override
@@ -234,8 +280,19 @@ public final class RequestInfo {
         }
         
         public RequestInfo build() {
-            return new RequestInfo(userId, clientInfo, userAgent, languages, userDataGroups, userSubstudyIds,
-                    activitiesAccessedOn, signedInOn, uploadedOn, timeZone, studyIdentifier);
+            RequestInfo info = new RequestInfo();
+            info.setUserId(userId);
+            info.setClientInfo(clientInfo);
+            info.setUserAgent(userAgent);
+            info.setLanguages(languages);
+            info.setUserDataGroups(userDataGroups);
+            info.setUserSubstudyIds(userSubstudyIds);
+            info.setActivitiesAccessedOn(activitiesAccessedOn);
+            info.setSignedInOn(signedInOn);
+            info.setUploadedOn(uploadedOn);
+            info.setTimeZone(timeZone);
+            info.setStudyIdentifier(studyIdentifier);
+            return info;
         }
     }
     

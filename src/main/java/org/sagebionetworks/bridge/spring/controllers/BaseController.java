@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -68,6 +69,8 @@ public abstract class BaseController {
     AuthenticationService authenticationService;
     
     SessionUpdateService sessionUpdateService;
+    
+    RequestInfoService requestInfoService;
     
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -97,6 +100,11 @@ public abstract class BaseController {
     @Autowired
     final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
         this.sessionUpdateService = sessionUpdateService;
+    }
+    
+    @Autowired
+    final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
     }
     
     protected HttpServletRequest request() {
@@ -365,7 +373,9 @@ public abstract class BaseController {
         writeSessionInfoToMetrics(session);  
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-        cacheProvider.updateRequestInfo(requestInfo);
+        
+        requestInfoService.updateRequestInfo(requestInfo);
+        
         // only set cookie in local environment
         if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
             String sessionToken = session.getSessionToken();
@@ -381,7 +391,7 @@ public abstract class BaseController {
         
         RequestInfo.Builder builder = new RequestInfo.Builder();
         // If any timestamps exist, retrieve and preserve them in the returned requestInfo
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(session.getId());
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(session.getId());
         if (requestInfo != null) {
             builder.copyOf(requestInfo);
         }

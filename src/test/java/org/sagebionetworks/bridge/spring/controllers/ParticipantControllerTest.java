@@ -117,6 +117,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -185,6 +186,9 @@ public class ParticipantControllerTest extends Mockito {
     
     @Mock
     AccountExternalIdMigrationService mockMigrationService;
+    
+    @Mock
+    RequestInfoService requestInfoService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -535,7 +539,7 @@ public class ParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfo("userId");
 
         // serialization was tested separately... just validate the object is there
@@ -556,7 +560,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
     }
 

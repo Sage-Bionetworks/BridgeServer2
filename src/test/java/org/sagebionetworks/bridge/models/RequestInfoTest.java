@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -9,7 +11,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -54,13 +55,13 @@ public class RequestInfoTest {
             node.get("userDataGroups").get(0).textValue(),
             node.get("userDataGroups").get(1).textValue()
         );
-        assertEquals(groups, TestConstants.USER_DATA_GROUPS);
+        assertEquals(groups, USER_DATA_GROUPS);
         
         Set<String> substudyIds = Sets.newHashSet(
             node.get("userSubstudyIds").get(0).textValue(),
             node.get("userSubstudyIds").get(1).textValue()
         );
-        assertEquals(substudyIds, TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(substudyIds, USER_SUBSTUDY_IDS);
         assertEquals(node.get("signedInOn").textValue(), SIGNED_IN_ON.withZone(MST).toString());
         assertEquals(node.get("timeZone").textValue(), "+03:00");
         assertEquals(node.get("type").textValue(), "RequestInfo");
@@ -102,8 +103,8 @@ public class RequestInfoTest {
         assertEquals(copy.getStudyIdentifier(), STUDY_ID);
         assertEquals(copy.getClientInfo(), CLIENT_INFO);
         assertEquals(copy.getUserAgent(), USER_AGENT_STRING);
-        assertEquals(copy.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(copy.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(copy.getUserDataGroups(), USER_DATA_GROUPS);
+        assertEquals(copy.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(copy.getLanguages(), LANGUAGES);
         assertEquals(copy.getUserId(), USER_ID);
         assertEquals(copy.getTimeZone(), MST);
@@ -117,8 +118,8 @@ public class RequestInfoTest {
                 .withStudyIdentifier(STUDY_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserAgent(USER_AGENT_STRING)
-                .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+                .withUserDataGroups(USER_DATA_GROUPS)
+                .withUserSubstudyIds(USER_SUBSTUDY_IDS)
                 .withLanguages(LANGUAGES)
                 .withUserId(USER_ID)
                 .withTimeZone(MST)

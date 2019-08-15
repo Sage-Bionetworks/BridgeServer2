@@ -69,6 +69,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -119,6 +120,9 @@ public class ScheduledActivityControllerTest extends Mockito {
     
     @Mock
     AccountDao mockAccountDao;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
     
     @Mock
     Study mockStudy;
@@ -279,7 +283,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(critContext.getStudyIdentifier().getIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals(requestInfo.getUserId(), "id");
         assertEquals(requestInfo.getLanguages(), LANGUAGES);
@@ -517,7 +521,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(node.get("endTime").textValue(), endsOn.toString());
         
         verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockScheduledActivityService).getScheduledActivitiesV4(eq(STUDY), contextCaptor.capture());
         verify(controller).persistTimeZone(session, zone);
         verify(mockAccount).setTimeZone(zone);
