@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 public class HibernateRequestInfoDao implements RequestInfoDao {
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "requestInfoHibernateHelper")
+    @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

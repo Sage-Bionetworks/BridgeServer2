@@ -634,6 +634,15 @@ public class SpringConfig {
         return dataSource;
     }
     
+    // For cases where we have no special exception handling, the basicHibernateHelper
+    // is sufficient.
+    @Bean(name = "basicHibernateHelper")
+    @Autowired
+    public HibernateHelper basicHibernateHelper(SessionFactory sessionFactory,
+            BasicPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
     @Bean(name = "substudyHibernateHelper")
     @Autowired
     public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
@@ -641,38 +650,10 @@ public class SpringConfig {
         return new HibernateHelper(sessionFactory, converter);
     }
     
-    @Bean(name = "templateHibernateHelper")
-    @Autowired
-    public HibernateHelper templateHibernateHelper(SessionFactory sessionFactory,
-            BasicPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
-    @Bean(name = "templateRevisionHibernateHelper")
-    @Autowired
-    public HibernateHelper templateRevisionHibernateHelper(SessionFactory sessionFactory,
-            BasicPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
     @Bean(name = "accountHibernateHelper")
     @Autowired
     public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
-    @Bean(name = "secretsHibernateHelper")
-    @Autowired
-    public HibernateHelper secretsHibernateHelper(SessionFactory sessionFactory, 
-            BasicPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
-    @Bean(name = "requestInfoHibernateHelper")
-    @Autowired
-    public HibernateHelper requestInfoHibernateHelper(SessionFactory sessionFactory,
-            BasicPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
