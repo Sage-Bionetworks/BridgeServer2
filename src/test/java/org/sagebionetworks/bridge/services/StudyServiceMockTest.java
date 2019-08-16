@@ -148,8 +148,6 @@ public class StudyServiceMockTest extends Mockito {
     SynapseClient mockSynapseClient;
     @Mock
     TemplateService mockTemplateService;
-    @Mock
-    TemplateMigrationService mockTemplateMigrationService;
     
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -658,8 +656,6 @@ public class StudyServiceMockTest extends Mockito {
         updatedStudy.setIdentifier(TEST_STUDY_ID);
         
         service.updateStudy(updatedStudy, true);
-        
-        verify(mockTemplateMigrationService).migrateTemplates(updatedStudy);
     }
     
     @Test

@@ -122,7 +122,6 @@ public class StudyService {
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
     private TemplateService templateService;
-    private TemplateMigrationService templateMigrationService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per study
     private String studyEmailVerificationTemplate;
@@ -211,10 +210,6 @@ public class StudyService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
-    }
-    @Autowired
-    final void setTemplateMigrationService(TemplateMigrationService templateMigrationService) {
-        this.templateMigrationService = templateMigrationService;
     }
     
     public Study getStudy(String identifier, boolean includeDeleted) {
@@ -516,7 +511,6 @@ public class StudyService {
             throw new BadRequestException("Study cannot be deleted through an update.");
         }
 
-        templateMigrationService.migrateTemplates(study);
         // With the introduction of the session verification email, studies won't have all the templates
         // that are normally required. So set it if someone tries to update a study, to a default value.
         if (study.getPasswordPolicy() == null) {
