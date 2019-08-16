@@ -1,47 +1,21 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
-import java.io.IOException;
 import java.util.Set;
 
-import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-
 @Converter
-public class StringSetConverter implements AttributeConverter<Set<String>, String> {
-    private static final Logger LOG = LoggerFactory.getLogger(StringSetConverter.class);
-    private static final TypeReference<Set<String>> STRING_SET_TYPE_REF = new TypeReference<Set<String>>() {};
+public class StringSetConverter extends BaseJsonAttributeConverter<Set<String>> {
+    private static final TypeReference<Set<String>> TYPE_REFERENCE = new TypeReference<Set<String>>() {};
 
     @Override
     public String convertToDatabaseColumn(Set<String> set) {
-        if (set != null) {
-            try {
-                return BridgeObjectMapper.get().writeValueAsString(set);
-            } catch (JsonProcessingException e) {
-                LOG.debug("Error serializing String set", e);
-            }
-        }
-        return null;
+        return serialize(set);
     }
-
     @Override
     public Set<String> convertToEntityAttribute(String value) {
-        if (isNotBlank(value)) {
-            try {
-                return BridgeObjectMapper.get().readValue(value, STRING_SET_TYPE_REF);
-            } catch (IOException e) {
-                LOG.debug("Error deserializing String set", e);
-            }
-        }
-        return null;
+        return deserialize(value, TYPE_REFERENCE);
     }
 }

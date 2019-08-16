@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import javax.persistence.PersistenceException;
+
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
@@ -45,8 +47,8 @@ public class ClientInfoConverterTest extends Mockito {
         assertNull(deser);
     }
 
-    @Test
-    public void convertToEntityAttributeJsonErrorReturnsNull() throws Exception {
+    @Test(expectedExceptions = PersistenceException.class)
+    public void convertToEntityAttributeJsonErrorThrows() throws Exception {
         ClientInfo deser = CONVERTER.convertToEntityAttribute("not json");
         assertNull(deser);
     }

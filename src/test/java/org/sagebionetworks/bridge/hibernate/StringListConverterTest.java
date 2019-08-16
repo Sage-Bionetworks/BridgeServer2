@@ -6,6 +6,8 @@ import static org.testng.Assert.assertNull;
 
 import java.util.List;
 
+import javax.persistence.PersistenceException;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.mockito.Mockito;
@@ -45,8 +47,8 @@ public class StringListConverterTest extends Mockito {
         assertNull(deser);
     }
 
-    @Test
-    public void convertToEntityAttributeBadJsonReturnsNull() {
+    @Test(expectedExceptions = PersistenceException.class)
+    public void convertToEntityAttributeBadJsonThrows() {
         List<String> deser = CONVERTER.convertToEntityAttribute("not json");
         assertNull(deser);
     }

@@ -6,6 +6,8 @@ import static org.testng.Assert.assertNull;
 
 import java.util.Set;
 
+import javax.persistence.PersistenceException;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.testng.annotations.Test;
@@ -44,8 +46,8 @@ public class StringSetConverterTest {
         assertNull(deser);
     }
 
-    @Test
-    public void convertToEntityAttributeBadJsonReturnsNull() {
+    @Test(expectedExceptions = PersistenceException.class)
+    public void convertToEntityAttributeBadJsonThrows() {
         Set<String> deser = CONVERTER.convertToEntityAttribute("not json");
         assertNull(deser);
     }
