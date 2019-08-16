@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -52,12 +53,15 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -126,6 +130,8 @@ public class ConsentServiceMockTest {
     private Subpopulation subpopulation;
     @Mock
     private StudyConsentView studyConsentView;
+    @Mock
+    private TemplateService templateService;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
@@ -152,8 +158,15 @@ public class ConsentServiceMockTest {
         consentService.setUrlShortenerService(urlShortenerService);
         consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
+        consentService.setTemplateService(templateService);
 
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject("signedConsent subject");
+        revision.setDocumentContent("signedConsent body");
+        revision.setMimeType(MimeType.HTML);
+        when(templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT)).thenReturn(revision);
 
         account = Account.create();
         account.setId(ID);
@@ -407,7 +420,6 @@ public class ConsentServiceMockTest {
         assertFalse(account.getEmailVerified());
         assertNull(account.getPhone());
         assertFalse(account.getPhoneVerified());
-        assertEquals(account.getExternalId(), "externalId");
         // This association is not removed
         assertEquals(account.getAccountSubstudies().size(), 1);
         AccountSubstudy acctSubstudy = account.getAccountSubstudies().iterator().next();
@@ -847,6 +859,10 @@ public class ConsentServiceMockTest {
     @Test
     public void consentToResearchWithPhoneOK() throws Exception {
         doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent("some test content");
+        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
 
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, true);
@@ -863,8 +879,7 @@ public class ConsentServiceMockTest {
         assertEquals(provider.getStudy(), study);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
-        assertEquals(provider.getTemplateRevision().getDocumentContent(),
-                study.getSignedConsentSmsTemplate().getMessage());
+        assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());
     }
 
     @Test
@@ -919,6 +934,10 @@ public class ConsentServiceMockTest {
         doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setDocumentContent("some test content");
+        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
+        
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
 
         verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
@@ -933,8 +952,7 @@ public class ConsentServiceMockTest {
         assertEquals(provider.getStudy(), study);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
-        assertEquals(provider.getTemplateRevision().getDocumentContent(),
-                study.getSignedConsentSmsTemplate().getMessage());
+        assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());
     }
 
     @Test
@@ -1031,10 +1049,8 @@ public class ConsentServiceMockTest {
         account.setFirstName("Allen");
         account.setLastName("Wrench");
         account.setEmail(EMAIL);
-        account.setExternalId("externalId");
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
-        account.setExternalId("externalId");
         AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
         as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);

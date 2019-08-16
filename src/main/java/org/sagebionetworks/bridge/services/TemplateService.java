@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services;
+    package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.joda.time.DateTimeZone.UTC;
@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.dao.TemplateRevisionDao;
@@ -209,7 +210,21 @@ public class TemplateService {
         defaultTemplatesMap.put(SMS_VERIFY_PHONE, Triple.of(null, defaultVerifyPhoneSmsTemplate, TEXT));
     }
     
-    public Template getTemplateForUser(CriteriaContext context, TemplateType type) {
+    public TemplateRevision getRevisionForUser(Study study, TemplateType type) {
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withClientInfo(reqContext.getCallerClientInfo())
+            .withLanguages(reqContext.getCallerLanguages())
+            .withStudyIdentifier(study.getStudyIdentifier())
+            .build();
+
+        Template template = getTemplateForUser(study, context, type)
+                .orElseThrow(() -> new EntityNotFoundException(Template.class));
+        return templateRevisionDao.getTemplateRevision(template.getGuid(), template.getPublishedCreatedOn())
+                .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
+    }
+    
+    Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
         checkNotNull(context);
         checkNotNull(type);
 
@@ -225,34 +240,30 @@ public class TemplateService {
         
         // The ideal case: one and only one template matches the user's context
         if (templateMatches.size() == 1) {
-            return templateMatches.get(0);
+            return Optional.of(templateMatches.get(0));
         }
         // If not, fall back to the default specified for this study, if it exists. 
-        Study study = studyService.getStudy(context.getStudyIdentifier());
         String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             // Specified default may not exist, log as integrity violation, but continue
             Optional<Template> optional = templateDao.getTemplate(context.getStudyIdentifier(), defaultGuid);
             if (optional.isPresent()) {
-                return optional.get();
+                return optional;
             }
             LOG.warn("Default template " + defaultGuid + " no longer exists for template type" + type.name());
         }
-        // NOTE: We will eventually validate that the study object has a default template specified
-        // for every type of template, making the following scenarios effectively impossible.
-        
         // Return a matching template
         if (templateMatches.size() > 1) {
             LOG.warn("Template matching ambiguous without a default, returning first matched template");
-            return templateMatches.get(0);
+            return Optional.of(templateMatches.get(0));
         }
         // Return any template
         if (results.getItems().size() > 0) {
             LOG.warn("Template matching failed with no default, returning first template found without matching");
-            return results.getItems().get(0);
+            return Optional.of(results.getItems().get(0));
         }
         // There is nothing to return
-        throw new EntityNotFoundException(Template.class);
+        return Optional.empty();
     }
     
     public PagedResourceList<? extends Template> getTemplatesForType(StudyIdentifier studyId, TemplateType type,
@@ -293,7 +304,7 @@ public class TemplateService {
         return template;
     }
 
-    public GuidVersionHolder createTemplate(StudyIdentifier studyId, Template template) {
+    public GuidVersionHolder createTemplate(Study study, Template template) {
         TemplateRevision revision = TemplateRevision.create();
         if (template.getTemplateType() != null) {
             Triple<String,String,MimeType> triple = defaultTemplatesMap.get(template.getTemplateType());
@@ -301,15 +312,7 @@ public class TemplateService {
             revision.setDocumentContent(triple.getMiddle());
             revision.setMimeType(triple.getRight());
         }
-        return migrateTemplate(studyId, template, revision);
-    }
-    
-    public GuidVersionHolder migrateTemplate(StudyIdentifier studyId, Template template, TemplateRevision revision) {
-        checkNotNull(studyId);
-        checkNotNull(template);
-        checkNotNull(revision);
         
-        Study study = studyService.getStudy(studyId);
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
@@ -319,7 +322,7 @@ public class TemplateService {
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
 
-        template.setStudyId(studyId.getIdentifier());
+        template.setStudyId(study.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);
@@ -393,13 +396,12 @@ public class TemplateService {
         // Throws exception if template doesn't exist
         Template template = getTemplate(studyId, guid);
         
-        // You cannot delete the default template (logical or physical).
-        if (isDefaultTemplate(template, studyId)) {
-            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
-                .withEntityKey("guid", guid).build();
-        }
         templateDao.deleteTemplatePermanently(studyId, guid);
         criteriaDao.deleteCriteria(getKey(template));
+    }
+    
+    public void deleteTemplatesForStudy(StudyIdentifier studyId) {
+        templateDao.deleteTemplatesForStudy(studyId);
     }
 
     private boolean isDefaultTemplate(Template template, StudyIdentifier studyId) {

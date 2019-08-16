@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
 import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.BridgeConstants.EXPIRATION_PERIOD_KEY;
 import static org.sagebionetworks.bridge.BridgeConstants.SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS;
 
@@ -80,6 +82,7 @@ public class ConsentService {
     private String xmlTemplateWithSignatureBlock;
     private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
+    private TemplateService templateService;
     
     @Value("classpath:conf/study-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -123,6 +126,10 @@ public class ConsentService {
     @Autowired
     final void setUrlShortenerService(UrlShortenerService urlShortenerService) {
         this.urlShortenerService = urlShortenerService;
+    }
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
     }
     
     /**
@@ -224,7 +231,7 @@ public class ConsentService {
             }
             addStudyConsentRecipients(study, recipientEmails);
             if (!recipientEmails.isEmpty()) {
-                TemplateRevision revision = TemplateRevision.create(study.getSignedConsentTemplate());                
+                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withStudy(study)
@@ -396,7 +403,7 @@ public class ConsentService {
                 xmlTemplateWithSignatureBlock);
         
         if (verifiedEmail) {
-            TemplateRevision revision = TemplateRevision.create(study.getSignedConsentTemplate());
+            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                     .withStudy(study)
@@ -427,7 +434,8 @@ public class ConsentService {
         } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
-        TemplateRevision revision = TemplateRevision.create(study.getSignedConsentSmsTemplate());
+        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_SIGNED_CONSENT);
+
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
                 .withPhone(participant.getPhone())

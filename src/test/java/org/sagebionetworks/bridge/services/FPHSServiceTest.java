@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -27,12 +28,17 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
+import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class FPHSServiceTest {
 
+    private static final String EXTERNAL_ID = "BBB";
+    
     private FPHSService service;
     @Mock
     private FPHSExternalIdentifierDao mockDao;
@@ -46,7 +52,7 @@ public class FPHSServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        externalId = ExternalIdentifier.create(TEST_STUDY, "gar");
+        externalId = ExternalIdentifier.create(TEST_STUDY, EXTERNAL_ID);
         service = new FPHSService();
         service.setFPHSExternalIdentifierDao(mockDao);
         service.setAccountDao(mockAccountDao);
@@ -72,19 +78,27 @@ public class FPHSServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
-        service.registerExternalIdentifier(TEST_STUDY, "BBB", ExternalIdentifier.create(TEST_STUDY, null));
+        service.registerExternalIdentifier(TEST_STUDY, EXTERNAL_ID, ExternalIdentifier.create(TEST_STUDY, null));
     }
     
     @Test
     public void registerExternalIdentifier() throws Exception {
         TestUtils.mockEditAccount(mockAccountDao, mockAccount);
         Set<String> dataGroups = Sets.newHashSet();
+        Set<AccountSubstudy> accountSubstudies = Sets.newHashSet();
         when(mockAccount.getDataGroups()).thenReturn(dataGroups);
+        when(mockAccount.getAccountSubstudies()).thenReturn(accountSubstudies);
+        when(mockAccount.getId()).thenReturn("userId");
         
-        service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
+        service.registerExternalIdentifier(TEST_STUDY, EXTERNAL_ID, externalId);
         verify(mockDao).registerExternalId(externalId);
-        verify(mockAccount).setExternalId(externalId.getIdentifier());
-        assertEquals(dataGroups, Sets.newHashSet("football_player"));
+        assertEquals(dataGroups, ImmutableSet.of("football_player"));
+        assertEquals(accountSubstudies.size(), 1);
+        
+        AccountSubstudy acctSubstudy = Iterables.getFirst(accountSubstudies, null);
+        assertEquals(acctSubstudy.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(acctSubstudy.getSubstudyId(), "harvard");
+        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
     }
     
     @Test
@@ -92,7 +106,7 @@ public class FPHSServiceTest {
         // Mock this, throw exception afterward
         doThrow(new EntityNotFoundException(ExternalIdentifier.class, "Not found")).when(mockDao).registerExternalId(externalId);
         try {
-            service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
+            service.registerExternalIdentifier(TEST_STUDY, EXTERNAL_ID, externalId);
             fail("Exception should have been thrown");
         } catch(EntityNotFoundException e) {
             verify(mockDao).verifyExternalId(externalId);
@@ -106,7 +120,7 @@ public class FPHSServiceTest {
     public void failureToSetExternalIdRollsBackRegistration() throws Exception {
         doThrow(new RuntimeException()).when(mockDao).verifyExternalId(any());
         try {
-            service.registerExternalIdentifier(TEST_STUDY, "BBB", externalId);
+            service.registerExternalIdentifier(TEST_STUDY, EXTERNAL_ID, externalId);
             fail("Exception should have been thrown");
         } catch(RuntimeException e) {
             verify(mockDao).verifyExternalId(externalId);
@@ -130,7 +144,7 @@ public class FPHSServiceTest {
     @Test
     public void addExternalIdentifiers() throws Exception {
         List<FPHSExternalIdentifier> identifiers = Lists.newArrayList(FPHSExternalIdentifier.create("AAA"),
-                FPHSExternalIdentifier.create("BBB"), FPHSExternalIdentifier.create("CCC"));
+                FPHSExternalIdentifier.create(EXTERNAL_ID), FPHSExternalIdentifier.create("CCC"));
         
         service.addExternalIdentifiers(identifiers);
         verify(mockDao).addExternalIds(identifiers);

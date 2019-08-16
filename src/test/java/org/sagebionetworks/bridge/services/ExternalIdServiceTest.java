@@ -88,6 +88,12 @@ public class ExternalIdServiceTest {
     }
 
     @Test
+    public void getExternalIdNullExtIdReturnsEmptyOptional() {
+        Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(TestConstants.TEST_STUDY, null);
+        assertFalse(optionalId.isPresent());
+    }
+    
+    @Test
     public void getExternalIds() {
         externalIdService.getExternalIds("offsetKey", 10, "idFilter", true);
         

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
@@ -66,16 +65,16 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -122,78 +121,12 @@ public class StudyService {
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
-
-    private String defaultEmailVerificationTemplate;
-    private String defaultEmailVerificationTemplateSubject;
-    private String defaultResetPasswordTemplate;
-    private String defaultResetPasswordTemplateSubject;
-    private String defaultEmailSignInTemplate;
-    private String defaultEmailSignInTemplateSubject;
-    private String defaultAccountExistsTemplate;
-    private String defaultAccountExistsTemplateSubject;
-    private String defaultSignedConsentTemplate;
-    private String defaultSignedConsentTemplateSubject;
-    private String defaultAppInstallLinkTemplate;
-    private String defaultAppInstallLinkTemplateSubject;
-    private String defaultResetPasswordSmsTemplate;
-    private String defaultPhoneSignInSmsTemplate;
-    private String defaultAppInstallLinkSmsTemplate;
-    private String defaultVerifyPhoneSmsTemplate;
-    private String defaultAccountExistsSmsTemplate;
-    private String defaultSignedConsentSmsTemplate;
+    private TemplateService templateService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per study
     private String studyEmailVerificationTemplate;
     private String studyEmailVerificationTemplateSubject;
     
-    @Value("classpath:conf/study-defaults/email-verification.txt")
-    final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/email-verification-subject.txt")
-    final void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/reset-password.txt")
-    final void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultResetPasswordTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/reset-password-subject.txt")
-    final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/email-sign-in.txt")
-    final void setDefaultEmailSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultEmailSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/email-sign-in-subject.txt")
-    final void setDefaultEmailSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultEmailSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/account-exists.txt")
-    final void setDefaultAccountExistsTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultAccountExistsTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/account-exists-subject.txt")
-    final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/signed-consent.txt")
-    final void setSignedConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultSignedConsentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/signed-consent-subject.txt")
-    final void setSignedConsentTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultSignedConsentTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/app-install-link.txt")
-    final void setAppInstallLinkTemplate(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultAppInstallLinkTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
-    @Value("classpath:conf/study-defaults/app-install-link-subject.txt")
-    final void setAppInstallLinkTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
-        this.defaultAppInstallLinkTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
-    }
     @Value("classpath:conf/templates/study-email-verification.txt")
     final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
             throws IOException {
@@ -204,30 +137,6 @@ public class StudyService {
             org.springframework.core.io.Resource resource) throws IOException {
         this.studyEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
                 StandardCharsets.UTF_8);
-    }
-    @Value("${sms.reset.password}")
-    final void setResetPasswordSmsTemplate(String template) {
-        this.defaultResetPasswordSmsTemplate = template;
-    }
-    @Value("${sms.phone.signin}")
-    final void setPhoneSignInSmsTemplate(String template) {
-        this.defaultPhoneSignInSmsTemplate = template;
-    }
-    @Value("${sms.app.install.link}")
-    final void setAppInstallLinkSmsTemplate(String template) {
-        this.defaultAppInstallLinkSmsTemplate = template;
-    }
-    @Value("${sms.verify.phone}")
-    final void setVerifyPhoneSmsTemplate(String template) {
-        this.defaultVerifyPhoneSmsTemplate = template;
-    }
-    @Value("${sms.account.exists}")
-    final void setAccountExistsSmsTemplate(String template) {
-        this.defaultAccountExistsSmsTemplate = template;
-    }
-    @Value("${sms.signed.consent}")
-    final void setSignedConsentSmsTemplate(String template) {
-        this.defaultSignedConsentSmsTemplate = template;
     }
     
     /** Bridge config. */
@@ -293,41 +202,16 @@ public class StudyService {
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
-    
     @Autowired
     @Qualifier("bridgePFSynapseClient")
-    public final void setSynapseClient(SynapseClient synapseClient) {
+    final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }
-    
-    private EmailTemplate getEmailVerificationTemplate() {
-        return getTemplate(defaultEmailVerificationTemplateSubject, defaultEmailVerificationTemplate);
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
     }
     
-    private EmailTemplate getResetPasswordTemplate() {
-        return getTemplate(defaultResetPasswordTemplateSubject, defaultResetPasswordTemplate);
-    }
-    
-    private EmailTemplate getEmailSignInTemplate() {
-        return getTemplate(defaultEmailSignInTemplateSubject, defaultEmailSignInTemplate);
-    }
-    
-    private EmailTemplate getAccountExistsTemplate() {
-        return getTemplate(defaultAccountExistsTemplateSubject, defaultAccountExistsTemplate);
-    }
-    
-    private EmailTemplate getSignedConsentTemplate() {
-        return getTemplate(defaultSignedConsentTemplateSubject, defaultSignedConsentTemplate);
-    }
-    
-    private EmailTemplate getAppInstallLinkTemplate() {
-        return getTemplate(defaultAppInstallLinkTemplateSubject, defaultAppInstallLinkTemplate);
-    }
-    
-    private EmailTemplate getTemplate(String subject, String body) {
-        return new EmailTemplate(subject, body, MimeType.HTML);
-    }
-
     public Study getStudy(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
@@ -343,7 +227,9 @@ public class StudyService {
                 throw new EntityNotFoundException(Study.class, "Study not found.");
             }
             // Because these templates do not exist in all studies, add the defaults where they are null
-            setDefaultsIfAbsent(study);
+            if (study.getPasswordPolicy() == null) {
+                study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+            }
         }
         return study;
     }
@@ -452,8 +338,9 @@ public class StudyService {
         study.setVerifyChannelOnSignInEnabled(true);
         study.setEmailVerificationEnabled(true);
         study.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
-        setDefaultsIfAbsent(study);
-        sanitizeHTML(study);
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
 
         // If reauth isn't set on study creation, set it to true. We only do this at study creation and not on update,
         // because we don't want to suddenly be creating reauth tokens for old studies that don't use reauth.
@@ -473,6 +360,17 @@ public class StudyService {
         }
         
         subpopService.createDefaultSubpopulation(study);
+        
+        Map<String,String> map = new HashMap<>();
+        for (TemplateType type: TemplateType.values()) {
+            String typeName = type.name().toLowerCase();
+            Template template = Template.create();
+            template.setName(BridgeUtils.templateTypeToLabel(type));
+            template.setTemplateType(type);
+            GuidVersionHolder keys = templateService.createTemplate(study, template);
+            map.put(typeName, keys.getGuid());               
+        }   
+        study.setDefaultTemplates(map);
 
         // do not create certs for whitelisted studies (legacy studies)
         if (!studyWhitelist.contains(study.getIdentifier())) {
@@ -480,14 +378,13 @@ public class StudyService {
         }
 
         study = studyDao.createStudy(study);
+        cacheProvider.setStudy(study);
         
         emailVerificationService.verifyEmailAddress(study.getSupportEmail());
 
         if (study.getConsentNotificationEmail() != null) {
             sendVerifyEmail(study, StudyEmailType.CONSENT_NOTIFICATION);    
         }
-        cacheProvider.setStudy(study);
-
         return study;
     }
 
@@ -616,8 +513,9 @@ public class StudyService {
 
         // With the introduction of the session verification email, studies won't have all the templates
         // that are normally required. So set it if someone tries to update a study, to a default value.
-        setDefaultsIfAbsent(study);
-        sanitizeHTML(study);
+        if (study.getPasswordPolicy() == null) {
+            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        }
 
         Validate.entityThrowingException(validator, study);
 
@@ -724,6 +622,7 @@ public class StudyService {
             studyDao.deleteStudy(existing);
 
             // delete study data
+            templateService.deleteTemplatesForStudy(existing.getStudyIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
                     existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
@@ -757,104 +656,6 @@ public class StudyService {
         }
     }
     
-    /**
-     * When the password policy or templates are not included, they are set to some sensible defaults.  
-     * values. 
-     */
-    private void setDefaultsIfAbsent(Study study) {
-        if (study.getPasswordPolicy() == null) {
-            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        }
-        if (study.getVerifyEmailTemplate() == null) {
-            study.setVerifyEmailTemplate( getEmailVerificationTemplate() );
-        }
-        if (study.getResetPasswordTemplate() == null) {
-            study.setResetPasswordTemplate( getResetPasswordTemplate() );
-        }
-        if (study.getEmailSignInTemplate() == null) {
-            study.setEmailSignInTemplate( getEmailSignInTemplate() );
-        }
-        if (study.getAccountExistsTemplate() == null) {
-            study.setAccountExistsTemplate( getAccountExistsTemplate() );
-        }
-        if (study.getEmailSignInTemplate() == null) {
-            study.setEmailSignInTemplate( getEmailSignInTemplate() );
-        }
-        if (study.getSignedConsentTemplate() == null) {
-            study.setSignedConsentTemplate( getSignedConsentTemplate() );
-        }
-        if (study.getAppInstallLinkTemplate() == null) {
-            study.setAppInstallLinkTemplate( getAppInstallLinkTemplate() );
-        }
-        if (study.getResetPasswordSmsTemplate() == null) {
-            study.setResetPasswordSmsTemplate(new SmsTemplate(defaultResetPasswordSmsTemplate));
-        }
-        if (study.getPhoneSignInSmsTemplate() == null) {
-            study.setPhoneSignInSmsTemplate(new SmsTemplate(defaultPhoneSignInSmsTemplate));
-        }
-        if (study.getAppInstallLinkSmsTemplate() == null) {
-            study.setAppInstallLinkSmsTemplate(new SmsTemplate(defaultAppInstallLinkSmsTemplate));
-        }
-        if (study.getVerifyPhoneSmsTemplate() == null) {
-            study.setVerifyPhoneSmsTemplate(new SmsTemplate(defaultVerifyPhoneSmsTemplate));
-        }
-        if (study.getAccountExistsSmsTemplate() == null) {
-            study.setAccountExistsSmsTemplate(new SmsTemplate(defaultAccountExistsSmsTemplate));
-        }
-        if (study.getSignedConsentSmsTemplate() == null) {
-            study.setSignedConsentSmsTemplate(new SmsTemplate(defaultSignedConsentSmsTemplate));
-        }
-    }
-
-    /**
-     * Email templates can contain HTML. Ensure the subject text has no markup and the markup in the body 
-     * is safe for display in web-based email clients and a researcher UI. We clean this up before 
-     * validation in case only unacceptable content was in the template. 
-     */
-    protected void sanitizeHTML(Study study) {
-        EmailTemplate template = study.getVerifyEmailTemplate();
-        study.setVerifyEmailTemplate(sanitizeEmailTemplate(template));
-        
-        template = study.getResetPasswordTemplate();
-        study.setResetPasswordTemplate(sanitizeEmailTemplate(template));
-        
-        template = study.getEmailSignInTemplate();
-        study.setEmailSignInTemplate(sanitizeEmailTemplate(template));
-
-        template = study.getAccountExistsTemplate();
-        study.setAccountExistsTemplate(sanitizeEmailTemplate(template));
-        
-        template = study.getSignedConsentTemplate();
-        study.setSignedConsentTemplate(sanitizeEmailTemplate(template));
-        
-        template = study.getAppInstallLinkTemplate();
-        study.setAppInstallLinkTemplate(sanitizeEmailTemplate(template));
-    }
-    
-    protected EmailTemplate sanitizeEmailTemplate(EmailTemplate template) {
-        // Skip sanitization if there's no template. This can happen now as we'd rather see an error if the caller
-        // doesn't include a template when updating.
-        if (template == null) {
-            return null;
-        }
-        String subject = template.getSubject();
-        if (StringUtils.isNotBlank(subject)) {
-            subject = Jsoup.clean(subject, Whitelist.none());
-        }
-        String body = template.getBody();
-        if (StringUtils.isNotBlank(body)) {
-            if (template.getMimeType() == MimeType.TEXT) {
-                body = Jsoup.clean(body, Whitelist.none());
-            } else {
-                // Providing the baseUrl allows relative URLs to be preserved, which we're interested in 
-                // so users can link template variables, e.g. <a href="${url}">${url}</a>
-                String baseUrl = BridgeConfigFactory.getConfig().get("webservices.url");
-                body = Jsoup.clean(body, baseUrl, BridgeConstants.CKEDITOR_WHITELIST);
-            }
-        }
-        return new EmailTemplate(subject, body, template.getMimeType());
-    }
-
     /** Sends the email verification email for the given study's email. */
     public void sendVerifyEmail(StudyIdentifier studyId, StudyEmailType type) {
         Study study = getStudy(studyId);

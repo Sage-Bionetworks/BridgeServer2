@@ -29,11 +29,9 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -169,30 +167,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEqualsAndNotNull(study.getVerifyEmailTemplate(),
-                JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getResetPasswordTemplate(),
-                JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getEmailSignInTemplate(),
-                JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getAccountExistsTemplate(),
-                JsonUtils.asEntity(node, "accountExistsTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getSignedConsentTemplate(),
-                JsonUtils.asEntity(node, "signedConsentTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getAppInstallLinkTemplate(),
-                JsonUtils.asEntity(node, "appInstallLinkTemplate", EmailTemplate.class));
-        assertEquals(JsonUtils.asEntity(node, "resetPasswordSmsTemplate", SmsTemplate.class),
-                study.getResetPasswordSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "phoneSignInSmsTemplate", SmsTemplate.class),
-                study.getPhoneSignInSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "appInstallLinkSmsTemplate", SmsTemplate.class),
-                study.getAppInstallLinkSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "verifyPhoneSmsTemplate", SmsTemplate.class),
-                study.getVerifyPhoneSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "accountExistsSmsTemplate", SmsTemplate.class),
-                study.getAccountExistsSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "signedConsentSmsTemplate", SmsTemplate.class),
-                study.getSignedConsentSmsTemplate());
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));

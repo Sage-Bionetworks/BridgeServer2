@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.WARNING;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
@@ -26,6 +28,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -71,16 +74,17 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
@@ -142,6 +146,8 @@ public class StudyServiceMockTest extends Mockito {
     AccessControlList mockAccessControlList;
     @Mock
     SynapseClient mockSynapseClient;
+    @Mock
+    TemplateService mockTemplateService;
     
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -149,6 +155,8 @@ public class StudyServiceMockTest extends Mockito {
     ArgumentCaptor<Team> teamCaptor;
     @Captor
     ArgumentCaptor<Study> studyCaptor;
+    @Captor
+    ArgumentCaptor<Template> templateCaptor;
 
     @Spy
     @InjectMocks
@@ -176,15 +184,16 @@ public class StudyServiceMockTest extends Mockito {
                 "Verify your study email"));
         service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
-        service.setSignedConsentTemplateSubject(mockTemplateAsSpringResource("subject"));
-        service.setSignedConsentTemplate(mockTemplateAsSpringResource("Test this"));
         service.setValidator(new StudyValidator());
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
         study = getTestStudy();
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
-
+        
+        GuidVersionHolder keys = new GuidVersionHolder("guid", 1L);
+        when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
+        
         when(mockStudyDao.createStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except set version to 1.
             Study study = invocation.getArgument(0);
@@ -200,14 +209,6 @@ public class StudyServiceMockTest extends Mockito {
             return study;
         });
         
-        // Also set the service default message strings from this study, for tests where we clear these
-        service.setResetPasswordSmsTemplate(study.getResetPasswordSmsTemplate().getMessage());
-        service.setPhoneSignInSmsTemplate(study.getPhoneSignInSmsTemplate().getMessage());
-        service.setAppInstallLinkSmsTemplate(study.getAppInstallLinkSmsTemplate().getMessage());
-        service.setVerifyPhoneSmsTemplate(study.getVerifyPhoneSmsTemplate().getMessage());
-        service.setAccountExistsSmsTemplate(study.getAccountExistsSmsTemplate().getMessage());
-        service.setSignedConsentSmsTemplate(study.getSignedConsentSmsTemplate().getMessage());
-
         // Spy StudyService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
         // tests easier.
         doReturn(VERIFICATION_TOKEN).when(service).createTimeLimitedToken();
@@ -608,240 +609,6 @@ public class StudyServiceMockTest extends Mockito {
     }
     
     @Test
-    public void loadingStudyWithoutEmailSignInTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setEmailSignInTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getEmailSignInTemplate());
-    }
-
-    @Test
-    public void loadingStudyWithoutAccountExistsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setEmailSignInTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getEmailSignInTemplate());
-        assertNotNull(retStudy.getAccountExistsTemplate());
-    }
-
-    @Test
-    public void loadingStudyWithoutSignedConsentTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getSignedConsentTemplate());
-    }
-
-    @Test
-    public void loadingStudyWithoutAppInstalLinkTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAppInstallLinkTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getAppInstallLinkTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutSignedConsentTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getSignedConsentTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutSignedConsentTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getSignedConsentTemplate());
-    }
-
-    @Test
-    public void loadingStudyWithoutResetPasswordSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setResetPasswordSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getResetPasswordSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setPhoneSignInSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAppInstallLinkSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setVerifyPhoneSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutAccountExistsSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAccountExistsSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getAccountExistsSmsTemplate());
-    }
-    
-    @Test
-    public void loadingStudyWithoutSignedConsentSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentSmsTemplate(null);
-        when(mockStudyDao.getStudy("foo")).thenReturn(study);
-        
-        Study retStudy = service.getStudy("foo");
-        assertNotNull(retStudy.getSignedConsentSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutResetPasswordSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setResetPasswordSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getResetPasswordSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setPhoneSignInSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAppInstallLinkSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setVerifyPhoneSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutAccountExistsSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAccountExistsSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getAccountExistsSmsTemplate());
-    }
-    
-    @Test
-    public void updateStudyWithoutSignedConsentSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentSmsTemplate(null);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
-        
-        Study retStudy = service.updateStudy(study, false);
-        assertNotNull(retStudy.getSignedConsentSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutResetPasswordSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setResetPasswordSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getResetPasswordSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutPhoneSignInSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setPhoneSignInSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getPhoneSignInSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutAppInstallLinkSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAppInstallLinkSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getAppInstallLinkSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutVerifyPhoneSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setVerifyPhoneSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getVerifyPhoneSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutAccountExistsSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setAccountExistsSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getAccountExistsSmsTemplate());
-    }
-    
-    @Test
-    public void createStudyWithoutSignedConsentSmsTemplateAddsADefault() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setSignedConsentSmsTemplate(null);
-        
-        Study retStudy = service.createStudy(study);
-        assertNotNull(retStudy.getSignedConsentSmsTemplate());
-    }
-    
-    @Test
     public void createStudyWithoutConsentNotificationEmailDoesNotSendNotification() {
         Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setConsentNotificationEmail(null);
@@ -852,7 +619,56 @@ public class StudyServiceMockTest extends Mockito {
     }
     
     @Test
+    public void createStudyCreatesDefaultTemplates() {
+        // Mock this to verify that defaults are set in study
+        GuidVersionHolder keys = new GuidVersionHolder("oneGuid", 1L);
+        when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
+        
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setDefaultTemplates(ImmutableMap.of());
+        
+        service.createStudy(study);
+        
+        int templateTypeNum = TemplateType.values().length;
+        
+        assertEquals(study.getDefaultTemplates().size(), templateTypeNum);
+        
+        verify(mockTemplateService, times(templateTypeNum)).createTemplate(eq(study), templateCaptor.capture());
+        for (int i=0; i < templateTypeNum; i++) {
+            TemplateType type = TemplateType.values()[i];
+            Template template = templateCaptor.getAllValues().get(i);
+            
+            assertEquals(template.getTemplateType(), type);
+            assertEquals(template.getName(), BridgeUtils.templateTypeToLabel(type));
+            
+            assertEquals(study.getDefaultTemplates().get(type.name().toLowerCase()), "oneGuid");
+        }
+    }
+    
+    @Test
+    public void updateStudyCallsTemplateMigrationService() {
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(TEST_STUDY_ID);
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
+    @Test
     public void physicallyDeleteStudy() {
+        PagedResourceList<? extends Template> page1 = new PagedResourceList<>(
+                ImmutableList.of(createTemplate("guid1"), createTemplate("guid2"), createTemplate("guid3")), 3);
+        PagedResourceList<? extends Template> page2 = new PagedResourceList<>(ImmutableList.of(), 3);
+
+        doReturn(page1, page2).when(mockTemplateService).getTemplatesForType(
+                TEST_STUDY_IDENTIFIER, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
+        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(TEST_STUDY_IDENTIFIER), 
+                not(eq(EMAIL_ACCOUNT_EXISTS)), eq(0), eq(50), eq(true));
+        
         // execute
         service.deleteStudy(TEST_STUDY_ID, true);
 
@@ -863,8 +679,15 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(study.getStudyIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
     }
-    
+
+    private Template createTemplate(String guid) {
+        Template template = Template.create();
+        template.setGuid(guid);
+        return template;
+    }
+
     @Test(expectedExceptions = BadRequestException.class)
     public void deactivateStudyAlreadyDeactivatedBefore() {
         Study study = getTestStudy();
@@ -1617,65 +1440,6 @@ public class StudyServiceMockTest extends Mockito {
     }
     
     @Test
-    public void textTemplateIsSanitized() {
-        EmailTemplate source = new EmailTemplate("<p>Test</p>","<p>This should have no markup</p>", MimeType.TEXT);
-        EmailTemplate result = service.sanitizeEmailTemplate(source);
-        
-        assertEquals(result.getSubject(), "Test");
-        assertEquals(result.getBody(), "This should have no markup");
-        assertEquals(result.getMimeType(), MimeType.TEXT);
-    }
-    
-    @Test
-    public void htmlTemplateIsSanitized() {
-        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML); 
-        EmailTemplate result = service.sanitizeEmailTemplate(source);
-        
-        assertHtmlTemplateSanitized(result);
-    }
-    
-    @Test
-    public void htmlTemplatePreservesLinksWithTemplateVariables() {
-        EmailTemplate source = new EmailTemplate("", "<p><a href=\"http://www.google.com/\"></a><a href=\"/foo.html\">Foo</a><a href=\"${url}\">${url}</a></p>", MimeType.HTML); 
-        
-        EmailTemplate result = service.sanitizeEmailTemplate(source);
-        
-        // The absolute, relative, and template URLs are all preserved correctly. 
-        assertEquals(result.getBody(),
-                "<p><a href=\"http://www.google.com/\"></a><a href=\"/foo.html\">Foo</a><a href=\"${url}\">${url}</a></p>");
-    }
-    
-    @Test
-    public void emptyTemplateIsSanitized() {
-        EmailTemplate source = new EmailTemplate("", "", MimeType.HTML); 
-        EmailTemplate result = service.sanitizeEmailTemplate(source);
-        
-        assertEquals(result.getSubject(), "");
-        assertEquals(result.getBody(), "");
-        assertEquals(result.getMimeType(), MimeType.HTML);
-    }
-    
-    @Test
-    public void testAllSixTemplatesAreSanitized() {
-        EmailTemplate source = new EmailTemplate("<p>${studyName} test</p>", "<p>This should remove: <iframe src=''></iframe></p>", MimeType.HTML);
-        Study study = new DynamoStudy();
-        study.setEmailSignInTemplate(source);
-        study.setResetPasswordTemplate(source);
-        study.setVerifyEmailTemplate(source);
-        study.setAccountExistsTemplate(source);
-        study.setSignedConsentTemplate(source);
-        study.setAppInstallLinkTemplate(source);
-        
-        service.sanitizeHTML(study);
-        assertHtmlTemplateSanitized( study.getEmailSignInTemplate() );
-        assertHtmlTemplateSanitized( study.getResetPasswordTemplate() );
-        assertHtmlTemplateSanitized( study.getVerifyEmailTemplate() );
-        assertHtmlTemplateSanitized( study.getAccountExistsTemplate() );
-        assertHtmlTemplateSanitized( study.getSignedConsentTemplate() );
-        assertHtmlTemplateSanitized( study.getAppInstallLinkTemplate() );
-    }
-    
-    @Test
     public void updateStudyCorrectlyDetectsEmailChangesInvolvingNulls() {
         // consent email still correctly detected
         String originalEmail = TestUtils.getValidStudy(StudyServiceMockTest.class).getConsentNotificationEmail();
@@ -1712,12 +1476,6 @@ public class StudyServiceMockTest extends Mockito {
         } else {
             assertTrue(update.isConsentNotificationEmailVerified());
         }
-    }
-
-    private void assertHtmlTemplateSanitized(EmailTemplate result) {
-        assertEquals(result.getSubject(), "${studyName} test");
-        assertEquals(result.getBody(), "<p>This should remove: </p>");
-        assertEquals(result.getMimeType(), MimeType.HTML);
     }
 
     private static Resource mockTemplateAsSpringResource(String content) throws Exception {
@@ -1761,6 +1519,8 @@ public class StudyServiceMockTest extends Mockito {
      */
     @Test
     public void crudStudy() {
+        when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         // developer
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
@@ -1803,15 +1563,6 @@ public class StudyServiceMockTest extends Mockito {
         assertTrue(newStudy.isStudyIdExcludedInExport());
         assertEquals(UploadValidationStrictness.REPORT, newStudy.getUploadValidationStrictness());
 
-        // Verify that the missing templates where created
-        assertNotNull(newStudy.getEmailSignInTemplate());
-        assertNotNull(newStudy.getAccountExistsTemplate());
-        assertNotNull(newStudy.getResetPasswordSmsTemplate());
-        assertNotNull(newStudy.getPhoneSignInSmsTemplate());
-        assertNotNull(newStudy.getAppInstallLinkSmsTemplate());
-        assertNotNull(newStudy.getVerifyPhoneSmsTemplate());
-        assertNotNull(newStudy.getAccountExistsSmsTemplate());
-        
         assertEquals(newStudy.getIdentifier(), study.getIdentifier());
         assertEquals(newStudy.getName(), "Test Study [StudyServiceMockTest]");
         assertEquals(newStudy.getMinAgeOfConsent(), 18);
@@ -1819,10 +1570,6 @@ public class StudyServiceMockTest extends Mockito {
         assertTrue(newStudy.getTaskIdentifiers().isEmpty());
         assertTrue(newStudy.getActivityEventKeys().isEmpty());
 
-        // these should have been changed
-        assertEquals(newStudy.getEmailSignInTemplate().getSubject(), "${studyName} link");
-        assertEquals(newStudy.getEmailSignInTemplate().getBody(), "Follow link ${url}");
-        
         verify(mockCacheProvider).setStudy(newStudy);
 
         // make some (non-admin) updates, these should change
@@ -1858,51 +1605,23 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void canUpdatePasswordPolicyAndTemplates() throws Exception {
         // service need the defaults injected for this test...
-        service.setDefaultEmailVerificationTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
-        service.setDefaultPasswordTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultPasswordTemplateSubject(TEMPLATE_RESOURCE);
-        
         study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setPasswordPolicy(null);
-        study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(null);
 
         study = service.createStudy(study);
 
         // First, verify that defaults are set...
         PasswordPolicy policy = study.getPasswordPolicy();
         assertNotNull(policy);
-        assertEquals(8, policy.getMinLength());
+        assertEquals(policy.getMinLength(), 8);
         assertTrue(policy.isNumericRequired());
         assertTrue(policy.isSymbolRequired());
         assertTrue(policy.isUpperCaseRequired());
 
-        EmailTemplate veTemplate = study.getVerifyEmailTemplate();
-        assertNotNull(veTemplate);
-        assertNotNull(veTemplate.getSubject());
-        assertNotNull(veTemplate.getBody());
-        
-        EmailTemplate rpTemplate = study.getResetPasswordTemplate();
-        assertNotNull(rpTemplate);
-        assertNotNull(rpTemplate.getSubject());
-        assertNotNull(rpTemplate.getBody());
-        
-        SmsTemplate smsTemplate = new SmsTemplate("Test Template ${token} ${appInstallUrl} ${resetPasswordUrl}"); 
-        study.setResetPasswordSmsTemplate(smsTemplate);
-        study.setPhoneSignInSmsTemplate(smsTemplate);
-        study.setAppInstallLinkSmsTemplate(smsTemplate);
-        study.setVerifyPhoneSmsTemplate(smsTemplate);
-        study.setAccountExistsSmsTemplate(smsTemplate);
-        
-        // Now change them and verify they are changed.
-        study.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
-        study.setVerifyEmailTemplate(new EmailTemplate("subject *", "body ${url} *", MimeType.TEXT));
-        study.setResetPasswordTemplate(new EmailTemplate("subject **", "body ${url} **", MimeType.TEXT));
-        
         // You have to mock this for the update
         Study existingStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
         when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(existingStudy);
+        study.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
         
         study = service.updateStudy(study, true);
         
@@ -1915,94 +1634,22 @@ public class StudyServiceMockTest extends Mockito {
         assertFalse(policy.isSymbolRequired());
         assertFalse(policy.isLowerCaseRequired());
         assertTrue(policy.isUpperCaseRequired());
-        
-        veTemplate = study.getVerifyEmailTemplate();
-        assertEquals(veTemplate.getSubject(), "subject *");
-        assertEquals(veTemplate.getBody(), "body ${url} *");
-        assertEquals(veTemplate.getMimeType(), MimeType.TEXT);
-        
-        rpTemplate = study.getResetPasswordTemplate();
-        assertEquals(rpTemplate.getSubject(), "subject **");
-        assertEquals(rpTemplate.getBody(), "body ${url} **");
-        assertEquals(rpTemplate.getMimeType(), MimeType.TEXT);
-        
-        assertEquals(study.getResetPasswordSmsTemplate().getMessage(), smsTemplate.getMessage());
-        assertEquals(study.getPhoneSignInSmsTemplate().getMessage(), smsTemplate.getMessage());
-        assertEquals(study.getAppInstallLinkSmsTemplate().getMessage(), smsTemplate.getMessage());
-        assertEquals(study.getVerifyPhoneSmsTemplate().getMessage(), smsTemplate.getMessage());
-        assertEquals(study.getAccountExistsSmsTemplate().getMessage(), smsTemplate.getMessage());
     }
 
     @Test
     public void defaultsAreUsedWhenNotProvided() throws Exception {
-        service.setDefaultEmailVerificationTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultPasswordTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultPasswordTemplateSubject(TEMPLATE_RESOURCE);
-        service.setDefaultEmailSignInTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultEmailSignInTemplateSubject(TEMPLATE_RESOURCE);
-        service.setDefaultAccountExistsTemplate(TEMPLATE_RESOURCE);
-        service.setDefaultAccountExistsTemplateSubject(TEMPLATE_RESOURCE);
-        service.setSignedConsentTemplate(TEMPLATE_RESOURCE);
-        service.setSignedConsentTemplateSubject(TEMPLATE_RESOURCE);
-        service.setAppInstallLinkTemplate(TEMPLATE_RESOURCE);
-        service.setAppInstallLinkTemplateSubject(TEMPLATE_RESOURCE);
         service.setStudyEmailVerificationTemplate(TEMPLATE_RESOURCE);
         service.setStudyEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
-        service.setResetPasswordSmsTemplate("${url}");
-        service.setPhoneSignInSmsTemplate("${token}");
-        service.setAppInstallLinkSmsTemplate("${url}");
-        service.setVerifyPhoneSmsTemplate("${token}");
-        service.setAccountExistsSmsTemplate("${token}");
-        service.setSignedConsentSmsTemplate("${consentUrl}");
         
         study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setPasswordPolicy(null);
-        study.setEmailSignInTemplate(null);
-        study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(null);
-        study.setEmailSignInTemplate(null);
-        study.setAccountExistsTemplate(null);
-        study.setSignedConsentTemplate(null);
-        study.setAppInstallLinkTemplate(null);
-        study.setResetPasswordSmsTemplate(null);
-        study.setPhoneSignInSmsTemplate(null);
-        study.setAppInstallLinkSmsTemplate(null);
-        study.setVerifyPhoneSmsTemplate(null);
-        study.setAccountExistsSmsTemplate(null);
-        study.setSignedConsentSmsTemplate(null);
         study = service.createStudy(study);
         
         assertEquals(DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
         assertNotNull(study.getPasswordPolicy());
-        assertNotNull(study.getEmailSignInTemplate());
-        assertNotNull(study.getVerifyEmailTemplate());
-        assertNotNull(study.getResetPasswordTemplate());
-        assertNotNull(study.getEmailSignInTemplate());
-        assertNotNull(study.getAccountExistsTemplate());
-        assertNotNull(study.getSignedConsentTemplate());
-        assertNotNull(study.getAppInstallLinkTemplate());
-        assertNotNull(study.getResetPasswordSmsTemplate());
-        assertNotNull(study.getPhoneSignInSmsTemplate());
-        assertNotNull(study.getAppInstallLinkSmsTemplate());
-        assertNotNull(study.getVerifyPhoneSmsTemplate());
-        assertNotNull(study.getAccountExistsSmsTemplate());
-        assertNotNull(study.getSignedConsentSmsTemplate());
         
         // Remove them and update... we are set back to defaults
         study.setPasswordPolicy(null);
-        study.setEmailSignInTemplate(null);
-        study.setVerifyEmailTemplate(null);
-        study.setResetPasswordTemplate(null);
-        study.setEmailSignInTemplate(null);
-        study.setAccountExistsTemplate(null);
-        study.setSignedConsentTemplate(null);
-        study.setAppInstallLinkTemplate(null);
-        study.setResetPasswordSmsTemplate(null);
-        study.setPhoneSignInSmsTemplate(null);
-        study.setAppInstallLinkSmsTemplate(null);
-        study.setVerifyPhoneSmsTemplate(null);
-        study.setAccountExistsSmsTemplate(null);
-        study.setSignedConsentSmsTemplate(null);
         
         // You have to mock this for the update
         Study existingStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
@@ -2010,37 +1657,6 @@ public class StudyServiceMockTest extends Mockito {
         
         study = service.updateStudy(study, false);
         assertNotNull(study.getPasswordPolicy());
-        assertNotNull(study.getEmailSignInTemplate());
-        assertNotNull(study.getVerifyEmailTemplate());
-        assertNotNull(study.getResetPasswordTemplate());
-        assertNotNull(study.getEmailSignInTemplate());
-        assertNotNull(study.getAccountExistsTemplate());
-        assertNotNull(study.getSignedConsentTemplate());
-        assertNotNull(study.getAppInstallLinkTemplate());
-        assertNotNull(study.getResetPasswordSmsTemplate());
-        assertNotNull(study.getPhoneSignInSmsTemplate());
-        assertNotNull(study.getAppInstallLinkSmsTemplate());
-        assertNotNull(study.getVerifyPhoneSmsTemplate());
-        assertNotNull(study.getAccountExistsSmsTemplate());
-        assertNotNull(study.getSignedConsentSmsTemplate());
-    }
-
-    @Test
-    public void problematicHtmlIsRemovedFromTemplates() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setVerifyEmailTemplate(new EmailTemplate("<b>This is not allowed [ve]</b>", "<p>Test [ve] ${url}</p><script></script>", MimeType.HTML));
-        study.setResetPasswordTemplate(new EmailTemplate("<b>This is not allowed [rp]</b>", "<p>Test [rp] ${url}</p>", MimeType.TEXT));
-        study = service.createStudy(study);
-        
-        EmailTemplate template = study.getVerifyEmailTemplate();
-        assertEquals("This is not allowed [ve]", template.getSubject());
-        assertEquals("<p>Test [ve] ${url}</p>", template.getBody());
-        assertEquals(MimeType.HTML, template.getMimeType());
-        
-        template = study.getResetPasswordTemplate();
-        assertEquals("This is not allowed [rp]", template.getSubject());
-        assertEquals("Test [rp] ${url}", template.getBody());
-        assertEquals(MimeType.TEXT, template.getMimeType());
     }
 
     @Test
@@ -2109,48 +1725,9 @@ public class StudyServiceMockTest extends Mockito {
         study.setAccountLimit(10);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void updateWithInvalidTemplateIsInvalid() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study = service.createStudy(study);
-        
-        Study existing = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(existing);        
-        
-        study.setVerifyEmailTemplate(new EmailTemplate(null, null, MimeType.HTML));
-        service.updateStudy(study, false);
-    }
-
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cantDeleteApiStudy() {
         service.deleteStudy("api", true);
     }
-
-    @Test
-    public void ckeditorHTMLIsPreserved() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        
-        String body = "<s>This is a test</s><p style=\"color:red\">of new attributes ${url}.</p><hr>";
-        
-        EmailTemplate template = new EmailTemplate("Subject", body, MimeType.HTML);
-        
-        study.setVerifyEmailTemplate(template);
-        study.setResetPasswordTemplate(template);
-        
-        study = service.createStudy(study);
-        
-        // The templates are pretty-print formatted, so remove that. Otherwise, everything should be
-        // preserved.
-        
-        template = study.getVerifyEmailTemplate();
-        assertEquals(body, template.getBody().replaceAll("[\n\t\r]", ""));
-        
-        template = study.getResetPasswordTemplate();
-        assertEquals(body, template.getBody().replaceAll("[\n\t\r]", ""));
-    }
-    
-    // Additional tests based on code coverage.
-    
-    
 
 }

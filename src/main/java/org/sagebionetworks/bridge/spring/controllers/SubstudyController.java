@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class SubstudyController extends BaseController {
 
     @GetMapping("/v3/substudies")
     public ResourceList<Substudy> getSubstudies(@RequestParam(defaultValue = "false") boolean includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
         List<Substudy> substudies = service.getSubstudies(session.getStudyIdentifier(), includeDeleted);
 

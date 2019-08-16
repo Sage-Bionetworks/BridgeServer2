@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.common.net.HttpHeaders;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -254,7 +253,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.emailSignIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedEmailSignInStillLogsStudyId() throws Exception {
         // Set up test.
@@ -304,7 +302,6 @@ public class AuthenticationControllerTest extends Mockito {
         }
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void failedReauthStillLogsStudyId() throws Exception {
         // Set up test.
@@ -1015,7 +1012,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.phoneSignIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedPhoneSignInStillLogsStudyId() throws Exception {
         // Set up test.
@@ -1044,7 +1040,7 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signInV3();
     }
 
-    @SuppressWarnings({ "deprecation", "unchecked" })
+    @SuppressWarnings({ "deprecation" })
     @Test
     public void failedSignInV3StillLogsStudyId() throws Exception {
         // Set up test.
@@ -1072,7 +1068,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signIn();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void failedSignInV4StillLogsStudyId() throws Exception {
         // Set up test.

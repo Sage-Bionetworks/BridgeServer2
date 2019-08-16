@@ -21,4 +21,5 @@ public interface TemplateDao {
     
     void deleteTemplatePermanently(StudyIdentifier studyId, String guid);
     
+    void deleteTemplatesForStudy(StudyIdentifier studyId);
 }
