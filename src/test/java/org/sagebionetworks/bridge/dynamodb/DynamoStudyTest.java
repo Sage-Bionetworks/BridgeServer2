@@ -138,7 +138,7 @@ public class DynamoStudyTest {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
-                OAuthProviderTest.CALLBACK_URL);
+                OAuthProviderTest.CALLBACK_URL, null);
         study.getOAuthProviders().put("myProvider", oauthProvider);
 
         study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
