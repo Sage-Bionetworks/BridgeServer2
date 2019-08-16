@@ -9,6 +9,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Iterables;
 
 public final class AccountSummary {
     private final String firstName;
@@ -59,6 +60,17 @@ public final class AccountSummary {
     
     public Map<String, String> getExternalIds() {
         return externalIds;
+    }
+    
+    @Deprecated
+    public String getExternalId() {
+        // For backwards compatibility since we are no longer loading this in HibernateAccountDao,
+        // do return a value (99.9% of the time, the only value). Some external consumers of the 
+        // API might attempt to look up this value on the AccountSummary object.
+        if (externalIds != null) {
+            return Iterables.getFirst(externalIds.values(), null);    
+        }
+        return null;
     }
     
     public String getId() {
