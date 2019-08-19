@@ -121,7 +121,7 @@ public class SmsService {
         PublishResult result = snsClient.publish(provider.getSmsRequest());
         messageId = result.getMessageId();
 
-        LOG.debug("Sent SMS message, study=" + study.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
+        LOG.info("Sent SMS message, study=" + study.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
                 BridgeUtils.getRequestContext().getId());
 
         // Log SMS message.

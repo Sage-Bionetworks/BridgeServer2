@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,8 @@ public class IntentService {
     private AccountDao accountDao;
     
     private ParticipantService participantService;
+    
+    private TemplateService templateService;
 
     /** SMS Service, used to send app install links via text message. */
     @Autowired
@@ -93,6 +97,11 @@ public class IntentService {
         this.participantService = participantService;
     }
     
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
+    }
+    
     public void submitIntentToParticipate(IntentToParticipate intent) {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
@@ -132,7 +141,7 @@ public class IntentService {
                     // The URL being sent does not expire. We send with a transaction delivery type because
                     // this is a critical step in onboarding through this workflow and message needs to be 
                     // sent immediately after consenting.
-                    TemplateRevision revision = TemplateRevision.create(study.getAppInstallLinkSmsTemplate());
+                    TemplateRevision revision = templateService.getRevisionForUser(study, SMS_APP_INSTALL_LINK);
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
                             .withStudy(study)
                             .withTemplateRevision(revision)
@@ -143,8 +152,7 @@ public class IntentService {
                     // SMS Service.
                     smsService.sendSmsMessage(null, provider);
                 } else {
-                    TemplateRevision revision = TemplateRevision.create(study.getAppInstallLinkTemplate());
-                    
+                    TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_APP_INSTALL_LINK);
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
                             .withStudy(study)
                             .withTemplateRevision(revision)

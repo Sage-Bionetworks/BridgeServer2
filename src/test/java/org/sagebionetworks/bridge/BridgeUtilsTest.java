@@ -220,10 +220,9 @@ public class BridgeUtilsTest {
         as2.setExternalId("subBextId");
         AccountSubstudy as3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "userId");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
-        account.setExternalId("subDextId");
         
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
-        assertEquals(externalIds, ImmutableSet.of("subAextId","subBextId","subDextId"));
+        assertEquals(externalIds, ImmutableSet.of("subAextId","subBextId"));
     }
     
     @Test

@@ -1,15 +1,10 @@
 package org.sagebionetworks.bridge.models;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 @JsonDeserialize(as = DynamoCriteria.class)
 public interface Criteria extends BridgeEntity {

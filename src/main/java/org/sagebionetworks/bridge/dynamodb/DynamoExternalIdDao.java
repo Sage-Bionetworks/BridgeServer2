@@ -213,8 +213,6 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             identifier.setHealthCode(null);
             mapper.save(identifier);
         }
-        // For backwards compatibility while migrating to externalIds
-        account.setExternalId(null);
         if (identifier.getSubstudyId() != null) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
                     identifier.getSubstudyId(), account.getId());

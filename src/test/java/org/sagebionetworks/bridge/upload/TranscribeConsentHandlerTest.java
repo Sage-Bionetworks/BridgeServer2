@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -33,12 +34,10 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 public class TranscribeConsentHandlerTest {
     private static final long MOCK_NOW_MILLIS = DateTime.parse("2019-07-25T15:22:42.531-0700").getMillis();
     private static final DateTime STUDY_START_TIME = DateTime.parse("2019-07-21T22:28:31.648-0700");
-    private static final String TEST_HEALTHCODE = "test-healthcode";
-    private static final String TEST_EXTERNAL_ID = "test-external-id";
     private static final Set<String> TEST_USER_GROUPS = ImmutableSet.of("test-group1","test-group2");
 
     private static final AccountId ACCOUNT_ID = AccountId.forHealthCode(TestConstants.TEST_STUDY_IDENTIFIER,
-            TEST_HEALTHCODE);
+            HEALTH_CODE);
 
     @Mock
     private AccountDao mockAccountDao;
@@ -77,19 +76,18 @@ public class TranscribeConsentHandlerTest {
         inputRecord = HealthDataRecord.create();
         context = new UploadValidationContext();
         context.setStudy(TestConstants.TEST_STUDY);
-        context.setHealthCode(TEST_HEALTHCODE);
+        context.setHealthCode(HEALTH_CODE);
         context.setHealthDataRecord(inputRecord);
     }
 
     @Test
     public void test() {
         AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subA",
-                "id");
+                "id1");
         AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subB",
-                "id");
+                "id2");
         as2.setExternalId("extB");
         
-        when(mockAccount.getExternalId()).thenReturn(TEST_EXTERNAL_ID);
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
         when(mockAccount.getAccountSubstudies()).thenReturn(ImmutableSet.of(as1, as2));
@@ -99,7 +97,9 @@ public class TranscribeConsentHandlerTest {
 
         assertSame(outputRecord, inputRecord);
         assertEquals(outputRecord.getUserSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
-        assertEquals(outputRecord.getUserExternalId(), TEST_EXTERNAL_ID);
+        // For backwards compatibility we take one external ID from the AccountSubstudy records and 
+        // put it in this field. In 99.9% of our cases right now, it's the same as what was in externalId.
+        assertEquals(outputRecord.getUserExternalId(), "extB");
         assertEquals(outputRecord.getUserDataGroups(), Sets.newHashSet("test-group1","test-group2"));
         
         Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
