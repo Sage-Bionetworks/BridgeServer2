@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Comparator.comparingLong;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -111,8 +111,8 @@ public class AppConfigService {
 
         List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
 
-        List<AppConfig> matches = CriteriaUtils.filterByCriteria(context, appConfigs);
-        matches.sort(Comparator.comparingLong(AppConfig::getCreatedOn));
+        List<AppConfig> matches = CriteriaUtils.filterByCriteria(context, appConfigs,
+                comparingLong(AppConfig::getCreatedOn));
 
         // Should have matched one and only one app config.
         if (matches.isEmpty()) {

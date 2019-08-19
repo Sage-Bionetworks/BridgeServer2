@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -26,31 +27,26 @@ import com.google.common.collect.Sets;
  */
 public class CriteriaUtils {
     
-    public static <T extends HasCriteria> T selectByCriteria(
-            CriteriaContext context, Collection<T> coll) {
-        checkNotNull(context);
-        checkNotNull(coll);
-        
-        List<T> found = filterByCriteria(context, coll);
-        return (found.isEmpty()) ? null : found.get(0);
-    }
-    
     public static <T extends HasCriteria> List<T> filterByCriteria(
-            CriteriaContext context, Collection<T> coll) {
+            CriteriaContext context, Collection<T> coll, Comparator<T> secondComparator) {
         checkNotNull(context);
         checkNotNull(coll);
         
-        final List<T> matches = coll.stream()
-                .filter((el) -> matchCriteria(context, el.getCriteria()))
-                .collect(toList());
+        // Sort by language
         final List<String> langs = context.getLanguages();
-
-        matches.sort((sel1, sel2) -> {
+        Comparator<T> comparator = (sel1, sel2) -> {
             int posLang1 = langs.indexOf(sel1.getCriteria().getLanguage());
             int posLang2 = langs.indexOf(sel2.getCriteria().getLanguage());
             return posLang1 - posLang2;
-        });
-        return matches;
+        };
+        // In the app config case, sort by createdOn timestamp as well
+        if (secondComparator != null) {
+            comparator = comparator.thenComparing(secondComparator);
+        }
+        return coll.stream()
+                .filter((el) -> matchCriteria(context, el.getCriteria()))
+                .sorted(comparator)
+                .collect(toList());
     }
     
     /**

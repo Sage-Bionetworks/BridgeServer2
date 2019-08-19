@@ -234,7 +234,7 @@ public class TemplateService {
             loadCriteria(template);
         }
 
-        List<Template> templateMatches = CriteriaUtils.filterByCriteria(context, results.getItems());
+        List<Template> templateMatches = CriteriaUtils.filterByCriteria(context, results.getItems(), null);
         
         // The ideal case: one and only one template matches the user's context
         if (templateMatches.size() == 1) {

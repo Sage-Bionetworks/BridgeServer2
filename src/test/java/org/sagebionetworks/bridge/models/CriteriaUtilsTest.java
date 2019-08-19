@@ -387,69 +387,6 @@ public class CriteriaUtilsTest {
     }
     
     @Test
-    public void selectByCriteriaRespectsLanguageOrder() {
-        // If a language is declared, the user has to match it.
-        AppConfig enAppConfig = AppConfig.create();
-        Criteria enCriteria = getCriteria().lang("en").build();
-        enAppConfig.setCriteria(enCriteria);
-        
-        AppConfig frAppConfig = AppConfig.create();
-        Criteria frCriteria = getCriteria().lang("fr").build();
-        frAppConfig.setCriteria(frCriteria);
-        
-        List<AppConfig> collection = ImmutableList.of(enAppConfig, frAppConfig);
-        
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
-                .withLanguages(ImmutableList.of("de", "fr", "en")).build();
-        
-        // Although English is first, we correctly understand that the French app config is the 
-        // one the user prefers (given the order of the languages in the context).
-        AppConfig selected = CriteriaUtils.selectByCriteria(context, collection);
-        assertSame(selected, frAppConfig);
-    }
-    
-    @Test
-    public void selectByCriteria() {
-        AppConfig firstAppConfig = AppConfig.create();
-        firstAppConfig.setCriteria(getCriteria().maxAppVersion(IOS, 5).build());
-        
-        AppConfig secondAppConfig = AppConfig.create();
-        secondAppConfig.setCriteria(getCriteria().minAppVersion(IOS, 6).build());
-        
-        List<AppConfig> collection = ImmutableList.of(firstAppConfig, secondAppConfig);
-        
-        CriteriaContext context = getContext()
-                .withClientInfo(ClientInfo.parseUserAgentString("AppName/8 (Device Name; iPhone OS) BridgeJavaSDK/3"))
-                .build();
-        
-        AppConfig selected = CriteriaUtils.selectByCriteria(context, collection);
-        assertSame(selected, secondAppConfig);
-    }
-
-    @Test
-    public void selectByCriteriaSortsByLanguageOrder() {
-        AppConfig enAppConfig = AppConfig.create();
-        Criteria enCriteria = getCriteria().lang("en").build();
-        enAppConfig.setCriteria(enCriteria);
-        
-        AppConfig frAppConfig = AppConfig.create();
-        Criteria frCriteria = getCriteria().lang("fr").build();
-        frAppConfig.setCriteria(frCriteria);
-
-        AppConfig zhAppConfig = AppConfig.create();
-        Criteria zhCriteria = getCriteria().lang("zh").build();
-        zhAppConfig.setCriteria(zhCriteria);
-        
-        List<AppConfig> collection = ImmutableList.of(zhAppConfig, enAppConfig, frAppConfig);
-        
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
-                .withLanguages(ImmutableList.of("de", "fr", "en")).build();
-
-        AppConfig selected = CriteriaUtils.selectByCriteria(context, collection);
-        assertEquals(selected.getCriteria().getLanguage(), "fr");
-    }
-    
-    @Test
     public void filterByCriteriaSortsByLanguageOrder() {
         // If a language is declared, the user has to match it.
         AppConfig enAppConfig = AppConfig.create();
@@ -472,7 +409,7 @@ public class CriteriaUtilsTest {
         
         // Although English is first, we correctly understand that the French app config is the 
         // one the user prefers (given the order of the languages in the context).
-        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection);
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, null);
         assertEquals(selected.size(), 2);
         assertSame(selected.get(0), frAppConfig);
         assertSame(selected.get(1), enAppConfig);
@@ -480,12 +417,40 @@ public class CriteriaUtilsTest {
         // Let's do it again with a different language preference... the results should change
         context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
                 .withLanguages(ImmutableList.of("en", "fr", "zh")).build();
-        selected = CriteriaUtils.filterByCriteria(context, collection);
+        selected = CriteriaUtils.filterByCriteria(context, collection, null);
         assertEquals(selected.size(), 3);
         assertSame(selected.get(0), enAppConfig);
         assertSame(selected.get(1), frAppConfig);
         assertSame(selected.get(2), zhAppConfig);
-    }    
+    }
+    
+    @Test
+    public void filterByCriteriaDoesNotChangeSortOrderWithoutLanguages() { 
+        AppConfig appConfig1 = AppConfig.create();
+        Criteria criteria1 = getCriteria().allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig1.setCriteria(criteria1);
+        
+        AppConfig appConfig2 = AppConfig.create();
+        Criteria criteria2 = getCriteria().allOfGroups(ImmutableSet.of("group2")).build();
+        appConfig2.setCriteria(criteria2);
+
+        AppConfig appConfig3 = AppConfig.create();
+        Criteria criteria3 = getCriteria().allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig3.setCriteria(criteria3);
+        
+        List<AppConfig> collection = ImmutableList.of(appConfig1, appConfig2, appConfig3);
+
+        // User has languages, but criteria don't match against them. The results returned do not 
+        // change their sort order.
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("en", "fr")).withUserDataGroups(USER_DATA_GROUPS).build();
+        
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, null);
+        assertEquals(selected.size(), 3);
+        assertSame(selected.get(0), appConfig1);
+        assertSame(selected.get(1), appConfig2);
+        assertSame(selected.get(2), appConfig3);
+    }
 
     private CriteriaContext.Builder getContext() {
         return new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY);
