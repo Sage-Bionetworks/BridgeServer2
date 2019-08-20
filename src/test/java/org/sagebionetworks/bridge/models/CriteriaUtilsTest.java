@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
+import static java.util.Comparator.comparingLong;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.sagebionetworks.bridge.models.CriteriaUtils.matchCriteria;
@@ -18,6 +20,7 @@ import java.util.Set;
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -449,6 +452,35 @@ public class CriteriaUtilsTest {
         assertEquals(selected.size(), 3);
         assertSame(selected.get(0), appConfig1);
         assertSame(selected.get(1), appConfig2);
+        assertSame(selected.get(2), appConfig3);
+    }
+    
+    @Test
+    public void filterByCriteriaSortedWithAdditionalComparator() {
+        AppConfig appConfig1 = AppConfig.create();
+        Criteria criteria1 = getCriteria().lang("de").allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig1.setCriteria(criteria1);
+        appConfig1.setCreatedOn(TIMESTAMP.minusHours(1).getMillis());
+        
+        AppConfig appConfig2 = AppConfig.create();
+        Criteria criteria2 = getCriteria().lang("de").allOfGroups(ImmutableSet.of("group2")).build();
+        appConfig2.setCriteria(criteria2);
+        appConfig2.setCreatedOn(TIMESTAMP.minusHours(2).getMillis());
+
+        AppConfig appConfig3 = AppConfig.create();
+        Criteria criteria3 = getCriteria().lang("en").allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig3.setCriteria(criteria3);
+        appConfig3.setCreatedOn(TIMESTAMP.minusHours(3).getMillis());
+        
+        List<AppConfig> collection = ImmutableList.of(appConfig1, appConfig2, appConfig3);
+        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("de", "en")).withUserDataGroups(USER_DATA_GROUPS).build();
+        
+        // All of these match, but they are returned in 
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, comparingLong(AppConfig::getCreatedOn));
+        assertSame(selected.get(0), appConfig2);
+        assertSame(selected.get(1), appConfig1);
         assertSame(selected.get(2), appConfig3);
     }
 
