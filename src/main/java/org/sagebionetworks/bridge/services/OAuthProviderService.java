@@ -284,8 +284,27 @@ class OAuthProviderService {
 
     // Helper method which takes the JSON body of an Introspect request and parses out the set of scopes.
     protected List<String> jsonToScopeList(JsonNode node) {
-        // RFC7662 defines scope as a space-delimited string. However, FitBit uses a non-standard format that looks
-        // like "{SLEEP=READ, HEARTRATE=READ, ACTIVITY=READ}".
+        // The Introspect API is defined by RFC7662 https://tools.ietf.org/html/rfc7662
+        // We only use the scopes from this API.
+        //
+        // Note that scopes are associated on a per-token basis, and they are locked in when the participant first
+        // provides the OAuth authorization. (This happens outside of Bridge Server, generally in the app.) The
+        // Introspect API is scoped to a specific token. The response will contain a list of scopes associated with
+        // that token. There may be other possible scopes in the FitBit API, but if they are not associated with the
+        // token, they will not appear here.
+        //
+        // Also note that while RFC7662 defines scope as a space-delimited string, FitBit uses a non-standard format.
+        // An example FitBit Introspect response looks like
+        // {
+        //     "active": true,
+        //     "scope": "{ACTIVITY=READ, HEARTRATE=READ, SLEEP=READ}",
+        //     "client_id": "22CQ7B",
+        //     "user_id": "6CGW8Z",
+        //     "token_type": "access_token",
+        //     "exp": 1565861634000,
+        //     "iat": 1565832834000
+        // }
+
         String scopeString = node.get(SCOPE_PROP_NAME).textValue();
         String[] scopePairArray = SCOPE_PAIR_SPLIT_PATTERN.split(scopeString);
 
