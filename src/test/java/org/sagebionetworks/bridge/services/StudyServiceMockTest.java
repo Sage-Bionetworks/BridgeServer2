@@ -598,6 +598,32 @@ public class StudyServiceMockTest extends Mockito {
         service.updateStudy(updatedStudy, true);
     }
     
+    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    public void cannotRemoveDefaultStudyTemplates() {
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(study.getIdentifier());
+        updatedStudy.getDefaultTemplates().remove(EMAIL_ACCOUNT_EXISTS.name().toLowerCase());
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
+    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    public void cannotNullDefaultStudyTemplates() {
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(study.getIdentifier());
+        updatedStudy.setDefaultTemplates(null);
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyWithNullArgumentThrows() {
         service.getStudy((String)null);

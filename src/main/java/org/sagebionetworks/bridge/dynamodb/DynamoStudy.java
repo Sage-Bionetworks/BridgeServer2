@@ -628,7 +628,7 @@ public final class DynamoStudy implements Study {
     
     @Override
     public void setDefaultTemplates(Map<String,String> defaultTemplates) {
-        this.defaultTemplates = defaultTemplates;
+        this.defaultTemplates = (defaultTemplates == null) ? new HashMap<>() : defaultTemplates;
     }
     
     @Override

@@ -654,6 +654,11 @@ public class StudyService {
                     .withMessage("Activity event keys cannot be deleted.").build();
 
         }
+        if (study.getDefaultTemplates().keySet().size() != TemplateType.values().length) {
+            throw new ConstraintViolationException.Builder()
+                .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                .withMessage("Default templates cannot be deleted.").build();
+        }
     }
     
     /** Sends the email verification email for the given study's email. */
