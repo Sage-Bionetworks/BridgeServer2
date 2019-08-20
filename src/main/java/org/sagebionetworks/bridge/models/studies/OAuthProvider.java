@@ -12,14 +12,17 @@ public final class OAuthProvider implements BridgeEntity {
     private final String secret;
     private final String endpoint;
     private final String callbackUrl;
-    
+    private final String introspectEndpoint;
+
     @JsonCreator
     public OAuthProvider(@JsonProperty("clientId") String clientId, @JsonProperty("secret") String secret,
-            @JsonProperty("endpoint") String endpoint, @JsonProperty("callbackUrl") String callbackUrl) {
+            @JsonProperty("endpoint") String endpoint, @JsonProperty("callbackUrl") String callbackUrl,
+            @JsonProperty("introspectEndpoint") String introspectEndpoint) {
         this.clientId = clientId;
         this.secret = secret;
         this.endpoint = endpoint;
         this.callbackUrl = callbackUrl;
+        this.introspectEndpoint = introspectEndpoint;
     }
     public String getClientId() {
         return clientId;
@@ -33,9 +36,15 @@ public final class OAuthProvider implements BridgeEntity {
     public String getCallbackUrl() {
         return callbackUrl;
     }
+
+    /** OAuth introspect URL, as defined by RFC7662. Optional but recommended. */
+    public String getIntrospectEndpoint() {
+        return introspectEndpoint;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(clientId, endpoint, secret, callbackUrl);
+        return Objects.hash(clientId, endpoint, secret, callbackUrl, introspectEndpoint);
     }
     @Override
     public boolean equals(Object obj) {
@@ -47,11 +56,12 @@ public final class OAuthProvider implements BridgeEntity {
         return Objects.equals(clientId, other.clientId) 
                && Objects.equals(endpoint, other.endpoint) 
                && Objects.equals(secret, other.secret)
-               && Objects.equals(callbackUrl, other.callbackUrl);
+               && Objects.equals(callbackUrl, other.callbackUrl)
+               && Objects.equals(introspectEndpoint, other.introspectEndpoint);
     }
     @Override
     public String toString() {
         return "OAuthProvider [clientId=" + clientId + ", endpoint=" + endpoint + ", callbackUrl=" + callbackUrl
-                + ", secret=REDACTED]";
+                + ", introspectEndpoint=" + introspectEndpoint + ", secret=REDACTED]";
     }
 }

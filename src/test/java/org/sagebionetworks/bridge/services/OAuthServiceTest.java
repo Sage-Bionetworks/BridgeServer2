@@ -10,7 +10,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
@@ -35,7 +38,6 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import com.google.common.collect.Lists;
 
 public class OAuthServiceTest {
-
     private static final DateTime NOW = DateTime.now(DateTimeZone.UTC);
     private static final DateTime EXPIRES_ON = NOW.plusHours(3);
     private static final String HEALTH_CODE = "healthCode";
@@ -45,9 +47,13 @@ public class OAuthServiceTest {
     private static final String SECRET = "secret";
     private static final String ENDPOINT = "endpoint";
     private static final String CALLBACK_URL = "callbackUrl";
+    private static final String INTROSPECT_URL = "http://example.com/introspect";
     private static final String ACCESS_TOKEN = "accessToken";
     private static final String REFRESH_TOKEN = "refreshToken";
-    private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL);
+    private static final List<String> SCOPE_LIST = ImmutableList.of("foo", "bar", "baz");
+    private static final Set<String> SCOPE_SET = ImmutableSet.copyOf(SCOPE_LIST);
+    private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
+            INTROSPECT_URL);
     private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(VENDOR_ID, AUTH_TOKEN_STRING);
     private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(VENDOR_ID, null);
     
@@ -88,6 +94,7 @@ public class OAuthServiceTest {
         grant.setAccessToken(ACCESS_TOKEN);
         grant.setVendorId(VENDOR_ID);
         grant.setRefreshToken(REFRESH_TOKEN);
+        grant.setScopes(SCOPE_LIST);
         return grant;
     }
     
@@ -125,12 +132,14 @@ public class OAuthServiceTest {
         assertEquals(authToken.getVendorId(), VENDOR_ID);
         assertEquals(authToken.getAccessToken(), ACCESS_TOKEN);
         assertEquals(authToken.getExpiresOn(), EXPIRES_ON);
+        assertEquals(authToken.getScopes(), SCOPE_SET);
     }
     private void assertGrant(OAuthAccessGrant grant) {
         assertEquals(grant.getHealthCode(), HEALTH_CODE);
         assertEquals(grant.getVendorId(), VENDOR_ID);
         assertEquals(grant.getAccessToken(), ACCESS_TOKEN);
         assertEquals(grant.getRefreshToken(), REFRESH_TOKEN);
+        assertEquals(grant.getScopes(), SCOPE_SET);
         assertEquals(grant.getCreatedOn(), NOW.getMillis());
         assertEquals(grant.getExpiresOn(), EXPIRES_ON.getMillis());
     }

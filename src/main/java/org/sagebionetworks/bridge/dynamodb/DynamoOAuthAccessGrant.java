@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -13,6 +16,7 @@ public class DynamoOAuthAccessGrant implements OAuthAccessGrant {
     private String vendorId;
     private String accessToken;
     private String refreshToken;
+    private List<String> scopes = new ArrayList<>();
     private long createdOn;
     private long expiresOn;
     private String providerUserId;
@@ -65,6 +69,18 @@ public class DynamoOAuthAccessGrant implements OAuthAccessGrant {
     @Override
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<String> getScopes() {
+        return scopes;
+    }
+
+    /** @see #getScopes */
+    @Override
+    public void setScopes(List<String> scopes) {
+        this.scopes = scopes != null ? scopes : new ArrayList<>();
     }
 
     @Override

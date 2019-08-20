@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.oauth;
 
+import java.util.List;
+
 import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
@@ -37,7 +39,16 @@ public interface OAuthAccessGrant extends BridgeEntity {
      */
     public String getRefreshToken();
     public void setRefreshToken(String refreshToken);
-    
+
+    /**
+     * List of scopes attached to the OAuth access grant. Never null, but may be empty. This is a list and not a set
+     * because DynamoDB supports empty lists but not sets.
+     */
+    List<String> getScopes();
+
+    /** @see #getScopes */
+    void setScopes(List<String> scopes);
+
     /**
      * The timestamp (millis since epoch) when the Bridge access grant was created.
      */

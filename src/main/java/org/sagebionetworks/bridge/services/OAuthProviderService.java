@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
@@ -52,29 +54,27 @@ import com.google.common.collect.Sets;
 @Component
 class OAuthProviderService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthProviderService.class);
-    
-    @FunctionalInterface
-    static interface GrantProvider {
-        public OAuthAccessGrant grant();
-    }
-    
+
     private static final String ACCESS_TOKEN_PROP_NAME = "access_token";
     private static final String AUTHORIZATION_CODE_VALUE = "authorization_code";
-    private static final String AUTHORIZATION_PROP_NAME = "Authorization";
+    static final String AUTHORIZATION_PROP_NAME = "Authorization";
     private static final String CLIENT_ID_PROP_NAME = "clientId";
     private static final String CODE_PROP_NAME = "code";
-    private static final String CONTENT_TYPE_PROP_NAME = "Content-Type";
+    static final String CONTENT_TYPE_PROP_NAME = "Content-Type";
     private static final String ERROR_TYPE_PROP_NAME = "errorType";
     private static final String ERRORS_PROP_NAME = "errors";
     private static final String EXPIRES_IN_PROP_NAME = "expires_in";
-    private static final String FORM_ENCODING_VALUE = "application/x-www-form-urlencoded";
+    static final String FORM_ENCODING_VALUE = "application/x-www-form-urlencoded";
     private static final String GRANT_TYPE_PROP_NAME = "grant_type";
     private static final String LOG_ERROR_MSG = "Error retrieving access token, statusCode=%s, body=%s";
     private static final String MESSAGE_PROP_NAME = "message";
     private static final String REDIRECT_URI_PROP_NAME = "redirect_uri";
     private static final String REFRESH_TOKEN_PROP_NAME = "refresh_token";
     private static final String REFRESH_TOKEN_VALUE = "refresh_token";
+    private static final Pattern SCOPE_PAIR_SPLIT_PATTERN = Pattern.compile("\\s*[{},]\\s*");
+    private static final String SCOPE_PROP_NAME = "scope";
     private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
+    static final String TOKEN_PROP_NAME = "token";
     private static final String PROVIDER_USER_ID = "user_id";
     private static final Set<String> INVALID_OR_EXPIRED_ERRORS = Sets.newHashSet("invalid_token", "expired_token", "invalid_grant");
     private static final Set<String> INVALID_CLIENT_ERRORS = Sets.newHashSet("invalid_client");
@@ -111,6 +111,10 @@ class OAuthProviderService {
         return executeInternal(client);
     }
 
+    protected OAuthProviderService.Response executeIntrospectRequest(HttpPost client) {
+        return executeInternal(client);
+    }
+
     private OAuthProviderService.Response executeInternal(HttpPost client) {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             CloseableHttpResponse response = httpclient.execute(client);
@@ -143,9 +147,9 @@ class OAuthProviderService {
         if (StringUtils.isBlank(authToken.getAuthToken())) {
             throw new EntityNotFoundException(OAuthAccessGrant.class);
         }
-        HttpPost client = createOAuthProviderPost(provider);
+        HttpPost client = createOAuthProviderPost(provider, provider.getEndpoint());
 
-        List<NameValuePair> pairs = new ArrayList<NameValuePair>();
+        List<NameValuePair> pairs = new ArrayList<>();
         pairs.add(new BasicNameValuePair(CLIENT_ID_PROP_NAME, provider.getClientId()));
         pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, AUTHORIZATION_CODE_VALUE));
         pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, provider.getCallbackUrl()));
@@ -153,8 +157,11 @@ class OAuthProviderService {
         client.setEntity(formEntity(pairs));
 
         Response response = executeGrantRequest(client);
-        
-        return handleResponse(response, authToken.getVendorId());
+
+        OAuthAccessGrant grant = handleResponse(response, this::jsonToGrant);
+        grant.setVendorId(authToken.getVendorId());
+        addScopesToAccessGrant(provider, grant);
+        return grant;
     }
     
     /**
@@ -167,29 +174,63 @@ class OAuthProviderService {
         if (refreshToken == null) {
             throw new EntityNotFoundException(OAuthAccessGrant.class);
         }
-        HttpPost client = createOAuthProviderPost(provider);
+        HttpPost client = createOAuthProviderPost(provider, provider.getEndpoint());
 
-        List<NameValuePair> pairs = new ArrayList<NameValuePair>();
+        List<NameValuePair> pairs = new ArrayList<>();
         pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, REFRESH_TOKEN_VALUE));
         pairs.add(new BasicNameValuePair(REFRESH_TOKEN_PROP_NAME, refreshToken));
         client.setEntity(formEntity(pairs));
 
         Response response = executeRefreshRequest(client);
-        
-        return handleResponse(response, vendorId);
+
+        OAuthAccessGrant grant = handleResponse(response, this::jsonToGrant);
+        grant.setVendorId(vendorId);
+        addScopesToAccessGrant(provider, grant);
+        return grant;
     }
-    
-    protected HttpPost createOAuthProviderPost(OAuthProvider provider) {
+
+    // Helper method, which calls the OAuth Introspect API and adds scopes to the grant. Package-scoped for unit tests.
+    void addScopesToAccessGrant(OAuthProvider provider, OAuthAccessGrant grant) {
+        checkNotNull(provider);
+        checkNotNull(grant);
+        if (provider.getIntrospectEndpoint() == null) {
+            // This OAuth provider does not have an introspect URL. Skip.
+            return;
+        }
+        if (grant.getAccessToken() == null) {
+            // We have the access grant, but it's invalid.
+            throw new InvalidEntityException(grant, "OAuth access grant has no access token");
+        }
+
+        // Create args.
+        try {
+            HttpPost client = createOAuthProviderPost(provider, provider.getIntrospectEndpoint());
+            List<NameValuePair> pairs = new ArrayList<>();
+            pairs.add(new BasicNameValuePair(TOKEN_PROP_NAME, grant.getAccessToken()));
+            client.setEntity(formEntity(pairs));
+
+            // Call Introspect and parse response.
+            Response response = executeIntrospectRequest(client);
+            List<String> scopeList = handleResponse(response, this::jsonToScopeList);
+            grant.setScopes(scopeList);
+        } catch (RuntimeException ex) {
+            // It's better to log an error and return a grant with no scopes than to bubble up the error and lose the
+            // OAuth grant altogether.
+            LOG.error("Could not get scopes for OAuth grant: " + ex.getMessage(), ex);
+        }
+    }
+
+    protected HttpPost createOAuthProviderPost(OAuthProvider provider, String url) {
         String authHeader = provider.getClientId() + ":" + provider.getSecret();
         String encodedAuthHeader = "Basic " + Base64.encodeBase64String(authHeader.getBytes(defaultCharset()));
 
-        HttpPost client = new HttpPost(provider.getEndpoint());
+        HttpPost client = new HttpPost(url);
         client.addHeader(AUTHORIZATION_PROP_NAME, encodedAuthHeader);
         client.addHeader(CONTENT_TYPE_PROP_NAME, FORM_ENCODING_VALUE);
         return client;
     }
 
-    protected OAuthAccessGrant handleResponse(Response response, String vendorId) {
+    protected <T> T handleResponse(Response response, Function<JsonNode, T> converter) {
         int statusCode = response.getStatusCode();
         
         // Note: this is an interpretation of the errors. It may not be what we finally want, but it was based
@@ -219,9 +260,7 @@ class OAuthProviderService {
             LOG.error(String.format(LOG_ERROR_MSG, response.getStatusCode(), response.getBody()));
             throw new BridgeServiceException(SERVICE_ERROR_MSG, response.getStatusCode());
         }
-        OAuthAccessGrant grant = jsonToGrant(response.getBody());
-        grant.setVendorId(vendorId);
-        return grant;
+        return converter.apply(response.getBody());
     }
 
     protected OAuthAccessGrant jsonToGrant(JsonNode node) {
@@ -242,7 +281,50 @@ class OAuthProviderService {
         grant.setProviderUserId(providerUserId);
         return grant;
     }
-    
+
+    // Helper method which takes the JSON body of an Introspect request and parses out the set of scopes.
+    protected List<String> jsonToScopeList(JsonNode node) {
+        // The Introspect API is defined by RFC7662 https://tools.ietf.org/html/rfc7662
+        // We only use the scopes from this API.
+        //
+        // Note that scopes are associated on a per-token basis, and they are locked in when the participant first
+        // provides the OAuth authorization. (This happens outside of Bridge Server, generally in the app.) The
+        // Introspect API is scoped to a specific token. The response will contain a list of scopes associated with
+        // that token. There may be other possible scopes in the FitBit API, but if they are not associated with the
+        // token, they will not appear here.
+        //
+        // Also note that while RFC7662 defines scope as a space-delimited string, FitBit uses a non-standard format.
+        // An example FitBit Introspect response looks like
+        // {
+        //     "active": true,
+        //     "scope": "{ACTIVITY=READ, HEARTRATE=READ, SLEEP=READ}",
+        //     "client_id": "22CQ7B",
+        //     "user_id": "6CGW8Z",
+        //     "token_type": "access_token",
+        //     "exp": 1565861634000,
+        //     "iat": 1565832834000
+        // }
+
+        String scopeString = node.get(SCOPE_PROP_NAME).textValue();
+        String[] scopePairArray = SCOPE_PAIR_SPLIT_PATTERN.split(scopeString);
+
+        // scopePairArray now looks like "SLEEP=READ", "HEARTRATE=READ", "ACTIVITY=READ". We only care about the scope
+        // name, ie everything before the =. After the equal is always READ or READWRITE (usually READ), and we only
+        // care about reading, so we can ignore it.
+        List<String> scopeList = new ArrayList<>();
+        for (String scopePair : scopePairArray) {
+            // Note that because of the way we split strings, we may have some empty strings. Skip those.
+            if (scopePair.isEmpty()) {
+                continue;
+            }
+
+            int equalIdx = scopePair.indexOf('=');
+            scopeList.add(scopePair.substring(0, equalIdx));
+        }
+
+        return scopeList;
+    }
+
     protected String jsonToErrorMessage(JsonNode node) {
         List<String> messages = extractFromJSON(node, AbstractMap.SimpleEntry::getValue);
         return BridgeUtils.SPACE_JOINER.join(messages);
