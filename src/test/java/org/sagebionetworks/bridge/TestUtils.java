@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -16,6 +15,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +76,7 @@ import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -529,7 +530,12 @@ public class TestUtils {
         study.setAccountLimit(0);
         study.setPushNotificationARNs(pushNotificationARNs);
         study.setAutoVerificationPhoneSuppressed(true);
-        study.setDefaultTemplates(ImmutableMap.of(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), "ABC-DEF"));
+        Map<String,String> defaultTemplates = new HashMap<>();
+        for (TemplateType type : TemplateType.values()) {
+            String typeName = type.name().toLowerCase();
+            defaultTemplates.put(typeName, "ABC-DEF");
+        }
+        study.setDefaultTemplates(defaultTemplates);
         return study;
     }
 
