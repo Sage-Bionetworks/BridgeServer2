@@ -40,6 +40,7 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.auth.NewUser;
+import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,7 @@ public class StudyService {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_STUDY_WHITELIST = "study.whitelist";
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
+    static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
     private static final String VERIFY_STUDY_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
@@ -118,6 +120,7 @@ public class StudyService {
     private NotificationTopicService topicService;
     private EmailVerificationService emailVerificationService;
     private SynapseClient synapseClient;
+    private String synapseTrackingViewId;
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
@@ -147,6 +150,7 @@ public class StudyService {
         this.bridgeStaffTeamId = bridgeConfig.get(CONFIG_KEY_TEAM_BRIDGE_STAFF);
         this.studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
                 bridgeConfig.getPropertyAsList(CONFIG_STUDY_WHITELIST)));
+        this.synapseTrackingViewId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
     }
 
     /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
@@ -430,10 +434,12 @@ public class StudyService {
         project.setName(synapseName + " Project "+nameScopingToken);
 
         Team newTeam = synapseClient.createTeam(team);
+        String newTeamId = newTeam.getId();
         Project newProject = synapseClient.createEntity(project);
-        
+        String newProjectId = newProject.getId();
+
         // Add the exporter, bridge admin team, and individuals as admins
-        AccessControlList projectACL = synapseClient.getACL(newProject.getId());
+        AccessControlList projectACL = synapseClient.getACL(newProjectId);
         addAdminToACL(projectACL, EXPORTER_SYNAPSE_USER_ID); // add exporter as admin
         addAdminToACL(projectACL, bridgeAdminTeamId);
         for (String synapseUserId : synapseUserIds) {
@@ -441,21 +447,20 @@ public class StudyService {
         }
         // Add the data access team and bridge staff team as a read/download team
         addToACL(projectACL, bridgeStaffTeamId, READ_DOWNLOAD_ACCESS);
-        addToACL(projectACL, newTeam.getId(), READ_DOWNLOAD_ACCESS);
+        addToACL(projectACL, newTeamId, READ_DOWNLOAD_ACCESS);
         synapseClient.updateACL(projectACL);
+
+        addProjectToTrackingView(newProjectId);
 
         // send invitation to target user for joining new team and grant admin permission to that user.
         // Users added afterwards will have read/download rights through the access team.
         for (String synapseUserId : synapseUserIds) {
             MembershipInvitation teamMemberInvitation = new MembershipInvitation();
             teamMemberInvitation.setInviteeId(synapseUserId);
-            teamMemberInvitation.setTeamId(newTeam.getId());
+            teamMemberInvitation.setTeamId(newTeamId);
             synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
-            synapseClient.setTeamMemberPermissions(newTeam.getId(), synapseUserId, true);
+            synapseClient.setTeamMemberPermissions(newTeamId, synapseUserId, true);
         }
-
-        String newTeamId = newTeam.getId();
-        String newProjectId = newProject.getId();
 
         // finally, update study
         study.setSynapseProjectId(newProjectId);
@@ -464,7 +469,24 @@ public class StudyService {
 
         return study;
     }
-    
+
+    // Package-scoped for unit tests.
+    void addProjectToTrackingView(String projectId) {
+        // Add the project to the tracking view, if it exists.
+        if (StringUtils.isNotBlank(synapseTrackingViewId)) {
+            try {
+                EntityView view = synapseClient.getEntity(synapseTrackingViewId, EntityView.class);
+
+                // For whatever reason, view.getScopes() doesn't include the "syn" prefix.
+                view.getScopeIds().add(projectId.substring(3));
+                synapseClient.putEntity(view);
+            } catch (SynapseException ex) {
+                LOG.error("Error adding new project " + projectId + " to tracking view " + synapseTrackingViewId +
+                        ": " + ex.getMessage(), ex);
+            }
+        }
+    }
+
     protected String getNameScopingToken() {
         return SecureTokenGenerator.NAME_SCOPE_INSTANCE.nextToken();
     }
@@ -653,6 +675,11 @@ public class StudyService {
                     .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
                     .withMessage("Activity event keys cannot be deleted.").build();
 
+        }
+        if (study.getDefaultTemplates().keySet().size() != TemplateType.values().length) {
+            throw new ConstraintViolationException.Builder()
+                .withEntityKey(IDENTIFIER_PROPERTY, study.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                .withMessage("Default templates cannot be deleted.").build();
         }
     }
     

@@ -50,6 +50,7 @@ import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
+import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 
 import org.springframework.core.io.ByteArrayResource;
@@ -118,6 +119,7 @@ public class StudyServiceMockTest extends Mockito {
     private static final List<String> TEST_ADMIN_IDS = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
     private static final String SUPPORT_EMAIL = "bridgeit@sagebase.org";
+    private static final String SYNAPSE_TRACKING_VIEW_ID = "synTrackingViewId";
     private static final String VERIFICATION_TOKEN = "dummy-token";
     private static final CacheKey VER_CACHE_KEY = CacheKey.verificationToken("dummy-token");
     private static final ByteArrayResource TEMPLATE_RESOURCE = new ByteArrayResource("<p>${url}</p>".getBytes());
@@ -177,6 +179,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockBridgeConfig.get(StudyService.CONFIG_KEY_TEAM_BRIDGE_STAFF))
                 .thenReturn(String.valueOf(BRIDGE_STAFF_TEAM_ID));
         when(mockBridgeConfig.getPropertyAsList(StudyService.CONFIG_STUDY_WHITELIST)).thenReturn(ImmutableList.of("api"));
+        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(SYNAPSE_TRACKING_VIEW_ID);
         service.setBridgeConfig(mockBridgeConfig); // this has to be set again after being mocked
 
         // Mock templates
@@ -598,6 +601,32 @@ public class StudyServiceMockTest extends Mockito {
         service.updateStudy(updatedStudy, true);
     }
     
+    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    public void cannotRemoveDefaultStudyTemplates() {
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(study.getIdentifier());
+        updatedStudy.getDefaultTemplates().remove(EMAIL_ACCOUNT_EXISTS.name().toLowerCase());
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
+    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    public void cannotNullDefaultStudyTemplates() {
+        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_ID);
+        when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
+        
+        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        updatedStudy.setIdentifier(study.getIdentifier());
+        updatedStudy.setDefaultTemplates(null);
+        
+        service.updateStudy(updatedStudy, true);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyWithNullArgumentThrows() {
         service.getStudy((String)null);
@@ -900,6 +929,10 @@ public class StudyServiceMockTest extends Mockito {
         when(mockSynapseClient.getACL(TEST_PROJECT_ID)).thenReturn(mockAccessControlList);
         when(mockSynapseClient.createTeam(teamCaptor.capture())).thenReturn(team);
 
+        EntityView view = new EntityView();
+        view.setScopeIds(new ArrayList<>());
+        when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
+
         // stub
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
         doNothing().when(mockSynapseClient).newAccountEmailValidation(any(), any());
@@ -947,7 +980,11 @@ public class StudyServiceMockTest extends Mockito {
         when(mockSynapseClient.createTeam(any())).thenReturn(team);
         when(mockSynapseClient.createEntity(any())).thenReturn(project);
         when(mockSynapseClient.getACL(any())).thenReturn(acl);
-        
+
+        EntityView view = new EntityView();
+        view.setScopeIds(new ArrayList<>());
+        when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
+
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
 
         service.createStudyAndUsers(mockStudyAndUsers);
@@ -1297,6 +1334,10 @@ public class StudyServiceMockTest extends Mockito {
         when(mockSynapseClient.createEntity(any())).thenReturn(project);
         when(mockSynapseClient.getACL(any())).thenReturn(mockAcl);
 
+        EntityView view = new EntityView();
+        view.setScopeIds(new ArrayList<>());
+        when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
+
         // execute
         Study retStudy = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), study);
 
@@ -1336,6 +1377,11 @@ public class StudyServiceMockTest extends Mockito {
         // 5. Created data access team.
         ResourceAccess capturedTeamRa = principalIdToAcl.get(Long.valueOf(TEST_TEAM_ID));
         assertEquals(capturedTeamRa.getAccessType(), StudyService.READ_DOWNLOAD_ACCESS);
+
+        // Add project to tracking view. We truncate the "syn" from the project ID.
+        verify(mockSynapseClient).putEntity(view);
+        assertEquals(view.getScopeIds().size(), 1);
+        assertEquals(view.getScopeIds().get(0), "apseProjectId");
 
         // invite user to team
         verify(mockSynapseClient).createMembershipInvitation(eq(teamMemberInvitation), any(), any());
@@ -1380,6 +1426,45 @@ public class StudyServiceMockTest extends Mockito {
 
         // execute
         service.createSynapseProjectTeam(ImmutableList.of(), study);
+    }
+
+    @Test
+    public void addProjectToTrackingView_ViewIdNotSpecified() throws Exception {
+        // Set up.
+        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(null);
+        service.setBridgeConfig(mockBridgeConfig);
+
+        // Execute and verify.
+        service.addProjectToTrackingView(TEST_PROJECT_ID);
+        verify(mockSynapseClient, never()).getEntity(any(), any());
+        verify(mockSynapseClient, never()).putEntity(any());
+    }
+
+    @Test
+    public void addProjectToTrackingView_GetThrows() throws Exception {
+        // Set up.
+        when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
+                .thenThrow(SynapseNotFoundException.class);
+
+        // Execute. The exception is swallowed, and the Put is never called.
+        service.addProjectToTrackingView(TEST_PROJECT_ID);
+        verify(mockSynapseClient).getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class);
+        verify(mockSynapseClient, never()).putEntity(any());
+    }
+
+    @Test
+    public void addProjectToTrackingView_PutThrows() throws Exception {
+        // Set up.
+        EntityView view = new EntityView();
+        view.setScopeIds(new ArrayList<>());
+        when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
+
+        when(mockSynapseClient.putEntity(view)).thenThrow(SynapseNotFoundException.class);
+
+        // Execute. The exception is swallowed.
+        service.addProjectToTrackingView(TEST_PROJECT_ID);
+        verify(mockSynapseClient).getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class);
+        verify(mockSynapseClient).putEntity(view);
     }
 
     @Test

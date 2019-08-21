@@ -362,32 +362,44 @@ public class StudyValidatorTest {
 
     @Test
     public void oauthProviderRequiresClientId() {
-        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", CALLBACK_URL);
+        OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", CALLBACK_URL,
+                null);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].clientId", "is required");
     }
 
     @Test
     public void oauthProviderRequiresSecret() {
-        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint", CALLBACK_URL);
+        OAuthProvider provider = new OAuthProvider("clientId", null, "endpoint", CALLBACK_URL,
+                null);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].secret", "is required");
     }
     
     @Test
     public void oauthProviderRequiresEndpoint() {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", null, CALLBACK_URL);
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", null, CALLBACK_URL,
+                null);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].endpoint", "is required");
     }
     
     @Test
     public void oauthProviderRequiresCallbackUrl() {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", null);
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                null, null);
         study.getOAuthProviders().put("vendor", provider);
         assertValidatorMessage(INSTANCE, study, "oauthProviders[vendor].callbackUrl", "is required");
     }
-    
+
+    @Test
+    public void oauthProviderWithOptionalIntrospectEndpoint() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                CALLBACK_URL, "http://example.com/introspect");
+        study.getOAuthProviders().put("vendor", provider);
+        Validate.entityThrowingException(INSTANCE, study);
+    }
+
     @Test
     public void oauthProviderRequired() {
         study.getOAuthProviders().put("vendor", null);
