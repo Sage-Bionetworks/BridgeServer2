@@ -32,8 +32,6 @@ public final class ConsentPdf {
 
     public static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     
-    private static final String SIGNATURE_BLOCK = "<table class=\"bsb\"><tr><td>${participant.name}<div class=\"label\">Name of Adult Participant</div></td><td><img alt=\"\" src=\"cid:consentSignature\"/><div class=\"label\">Signature of Adult Participant</div></td><td>${participant.signing.date}<div class=\"label\">Date</div></td></tr><tr><td>${participant.contactInfo}<div class=\"label\">${participant.contactLabel}</div></td><td>${participant.sharing}<div class=\"label\">Sharing Option</div></td></tr></table>";
-    
     private final Study study;
     private final StudyParticipant signer;
     private final ConsentSignature consentSignature;
@@ -122,13 +120,6 @@ public final class ConsentPdf {
         } else if (signer.getExternalId() != null) {
             contactInfo = signer.getExternalId();
             contactLabel = "ID";
-        }
-        
-        // Existing documents do not have a signature block. For backwards compatibility, include it.
-        // BUT we don't want to include it in newer consent documents where it was specifically deleted.
-        String finalConsentAgreement = studyConsentAgreement;
-        if (finalConsentAgreement.indexOf("${participant.signing.date}") == -1) {
-            finalConsentAgreement += SIGNATURE_BLOCK;
         }
         
         // This is now a fragment, assemble accordingly

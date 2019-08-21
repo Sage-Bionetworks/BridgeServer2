@@ -132,6 +132,7 @@ public class BridgeConstants {
             .preserveRelativeLinks(true)
             .addTags("hr", "s", "caption")
             .addAttributes(":all", "style", "scope", "class")
+            .addAttributes("img", "src", "onerror", "alt")
             .addAttributes("a", "target", "href")
             .addAttributes("table", "align", "border", "cellpadding", "cellspacing", "summary");
     
