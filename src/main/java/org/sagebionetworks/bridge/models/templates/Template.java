@@ -8,10 +8,11 @@ import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.HasCriteria;
 
 @BridgeTypeName("Template")
 @JsonDeserialize(as=HibernateTemplate.class)
-public interface Template extends BridgeEntity {
+public interface Template extends BridgeEntity, HasCriteria {
     
     public static Template create() {
         return new HibernateTemplate();

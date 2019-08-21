@@ -1,10 +1,13 @@
 package org.sagebionetworks.bridge.models;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -24,16 +27,39 @@ import com.google.common.collect.Sets;
  */
 public class CriteriaUtils {
     
+    public static <T extends HasCriteria> List<T> filterByCriteria(
+            CriteriaContext context, Collection<T> coll, Comparator<T> secondComparator) {
+        checkNotNull(context);
+        checkNotNull(coll);
+        
+        // Sort by language
+        final List<String> langs = context.getLanguages();
+        Comparator<T> comparator = (sel1, sel2) -> {
+            int posLang1 = langs.indexOf(sel1.getCriteria().getLanguage());
+            int posLang2 = langs.indexOf(sel2.getCriteria().getLanguage());
+            return posLang1 - posLang2;
+        };
+        // In the app config case, sort by createdOn timestamp as well
+        if (secondComparator != null) {
+            comparator = comparator.thenComparing(secondComparator);
+        }
+        return coll.stream()
+                .filter((el) -> matchCriteria(context, el.getCriteria()))
+                .sorted(comparator)
+                .collect(toList());
+    }
+    
     /**
      * Match the context of a request (the user's language and data groups, the application making the request) against
      * the criteria for including an object in the content that a user sees. Returns true if the object should be
      * included, and false otherwise.
      */
-    public static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
+    static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
         checkNotNull(context);
         checkNotNull(context.getLanguages());
         checkNotNull(context.getClientInfo());
         checkNotNull(context.getUserDataGroups());
+        checkNotNull(criteria);
         checkNotNull(criteria.getAllOfGroups());
         checkNotNull(criteria.getNoneOfGroups());
         checkNotNull(criteria.getAllOfSubstudyIds());

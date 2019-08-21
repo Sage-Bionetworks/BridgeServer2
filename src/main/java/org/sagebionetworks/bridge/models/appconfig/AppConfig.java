@@ -6,6 +6,7 @@ import java.util.Map;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.HasCriteria;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -14,7 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=DynamoAppConfig.class)
-public interface AppConfig extends BridgeEntity {
+public interface AppConfig extends BridgeEntity, HasCriteria {
     
     static AppConfig create() {
         return new DynamoAppConfig();

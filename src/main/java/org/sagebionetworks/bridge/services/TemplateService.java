@@ -18,7 +18,6 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_RESET_PASSWORD;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIFY_PHONE;
-import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -224,19 +223,18 @@ public class TemplateService {
                 .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
     }
     
+    @SuppressWarnings("unchecked")
     Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
         checkNotNull(context);
         checkNotNull(type);
 
-        ResourceList<? extends Template> results = templateDao.getTemplates(
+        ResourceList<Template> results = (ResourceList<Template>)templateDao.getTemplates(
                 context.getStudyIdentifier(), type, null, null, false);
         for (Template template : results.getItems()) {
             loadCriteria(template);
         }
 
-        List<Template> templateMatches = results.getItems().stream().filter(template -> {
-            return CriteriaUtils.matchCriteria(context, template.getCriteria());
-        }).collect(toImmutableList());
+        List<Template> templateMatches = CriteriaUtils.filterByCriteria(context, results.getItems(), null);
         
         // The ideal case: one and only one template matches the user's context
         if (templateMatches.size() == 1) {
