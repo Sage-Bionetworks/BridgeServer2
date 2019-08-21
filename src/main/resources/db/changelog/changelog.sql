@@ -180,3 +180,8 @@ CHANGE COLUMN `passwordAlgorithm` `passwordAlgorithm` ENUM('STORMPATH_HMAC_SHA_2
 ALTER TABLE `AccountSecrets`
 CHANGE COLUMN `algorithm` `algorithm` ENUM('STORMPATH_HMAC_SHA_256', 'BCRYPT', 'PBKDF2_HMAC_SHA_256',
   'STORMPATH_PBKDF2_DOUBLE_HASH') NOT NULL;
+
+--changeset bridge:4
+
+ALTER TABLE `Accounts`
+ADD COLUMN `stormpathPasswordHash` varchar(255) DEFAULT NULL;
