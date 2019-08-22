@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.Charset.defaultCharset;
+import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -24,12 +25,7 @@ import com.google.common.base.Stopwatch;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Document.OutputSettings.Syntax;
-import org.jsoup.nodes.Entities.EscapeMode;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -62,7 +58,22 @@ import com.lowagie.text.DocumentException;
 @Component
 public class StudyConsentService {
     private static final Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
-
+    
+    /**
+     * By including the signature block through the StudyConsentView, we are able to 
+     * centralize the definition of the block in one place, apply it to both old and new 
+     * consent documents. We will test and add it to any document that removes the 
+     * "bridge-sig-block" table. TODO: Not ideal. We want it to be possible to remove
+     * the signature block if people want to.
+     */
+    public static final String SIGNATURE_BLOCK = "<table class=\"bridge-sig-block\">"+
+            "<tbody><tr><td>${participant.name}<div class=\"label\">Name of Adult Participant</div></td>"+
+            "<td><img alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" />"+
+            "<div class=\"label\">Signature of Adult Participant</div></td>"+
+            "<td>${participant.signing.date}<div class=\"label\">Date</div></td></tr>"+
+            "<tr><td>${participant.contactInfo}<div class=\"label\">${participant.contactLabel}</div></td>"+
+            "<td>${participant.sharing}<div class=\"label\">Sharing Option</div></td></tr></tbody></table>";
+    
     static final String CONSENT_HTML_SUFFIX = "/consent.html";
     static final String CONSENT_PDF_SUFFIX = "/consent.pdf";
 
@@ -129,6 +140,8 @@ public class StudyConsentService {
         
         String sanitizedContent = sanitizeHTML(form.getDocumentContent());
         Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
+        
+        sanitizedContent = appendSignatureBlockIfNeeded(sanitizedContent);
 
         long createdOn = DateUtils.getCurrentMillisFromEpoch();
         String storagePath = subpopGuid.getGuid() + "." + createdOn;
@@ -271,23 +284,29 @@ public class StudyConsentService {
             logger.info("Finished reading consent from bucket " + consentsBucket + " storagePath " +
                     consent.getStoragePath() + " (" + content.length() + " chars) in " +
                     stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
-            return content;
+            // Add a signature block if this document does not contain one.
+            return appendSignatureBlockIfNeeded(content);
         } catch(IOException ioe) {
             logger.error("Failure loading storagePath: " + consent.getStoragePath());
             throw new BridgeServiceException(ioe);
         }
     }
     
-    private String sanitizeHTML(String documentContent) {
-        documentContent = Jsoup.clean(documentContent, BridgeConstants.CKEDITOR_WHITELIST);
-        Document document = Jsoup.parseBodyFragment(documentContent);
-        document.outputSettings().escapeMode(EscapeMode.xhtml)
-            .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
-        return document.body().html();
+    private String appendSignatureBlockIfNeeded(String content) {
+        if (content.indexOf("<table class=\"bridge-sig-block\">") == -1) {
+            content += SIGNATURE_BLOCK;
+        }
+        return content;
     }
     
     private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
         Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> XML_ESCAPER.translate(value));
+        // These are the variables in the signature footer. Blank out the variables.
+        map.put("participant.name", "");
+        map.put("participant.signing.date", "");
+        map.put("participant.contactInfo", "");
+        map.put("participant.sharing", "");
+        map.put("participant.contactLabel", "Email, Phone, or ID");
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 
         map.put("consent.body", resolvedHTML);
