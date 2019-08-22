@@ -213,8 +213,8 @@ public class StudyConsentServiceMockTest extends Mockito {
     public void publishConsent() throws Exception {
         // This is the document with the footer, where all the template variables have been removed
         String transformedDoc = "<doc><p>Document</p><table class=\"bridge-sig-block\"><tbody><tr>"+
-                "<td><div class=\"label\">Name of Adult Participant</div></td><td><img alt=\"\" "+
-                "onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" /><div "+
+                "<td><div class=\"label\">Name of Adult Participant</div></td><td><img brimg=\"\" "+
+                "alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" /><div "+
                 "class=\"label\">Signature of Adult Participant</div></td><td><div class=\"label\">"+
                 "Date</div></td></tr><tr><td><div class=\"label\">Email, Phone, or ID</div></td><td>"+
                 "<div class=\"label\">Sharing Option</div></td></tr></tbody></table></doc>";
@@ -375,5 +375,17 @@ public class StudyConsentServiceMockTest extends Mockito {
         StudyConsentForm form = new StudyConsentForm("</script><div ankle='foo'>This just isn't a SGML-based document no matter how you slice it.</p><h4><img>");
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
         assertEquals(view.getDocumentContent(), "<div>This just isn't a SGML-based document no matter how you slice it.<p></p><h4><img /></h4></div>"  + SIGNATURE_BLOCK);
+    }
+    
+    @Test
+    public void removedSignatureBlockIsRestored() { 
+        StudyConsent consent = StudyConsent.create();
+        when(mockDao.addConsent(SUBPOP_GUID, STORAGE_PATH, CREATED_ON)).thenReturn(consent);
+        
+        StudyConsentForm form = new StudyConsentForm(
+                "<p>Test</p>" + SIGNATURE_BLOCK.replace("${participant.name}", ""));
+        
+        StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
+        assertEquals(view.getDocumentContent(), form.getDocumentContent()  + SIGNATURE_BLOCK);
     }
 }

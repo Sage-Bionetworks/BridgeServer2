@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static java.nio.charset.Charset.defaultCharset;
 
 import java.util.Map;
@@ -106,15 +107,14 @@ public final class ConsentPdf {
         // User's name may contain HTML. Clean it up
         String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
         
-        // We have to be pretty lenient about this, because some of our tests cannot verify 
-        // a credential, and will allow a sign in by enabling the account. We have no way
-        // currently to verify an email address or phone number via the API.
+        // A prior format using '@@' as a delimiter is no longer used by any study in production.
+        
         String contactInfo = "";
         String contactLabel = "";
-        if (signer.getEmail() != null && Boolean.TRUE.equals(signer.getEmailVerified())) {
+        if (signer.getEmail() != null && TRUE.equals(signer.getEmailVerified())) {
             contactInfo = signer.getEmail();
             contactLabel = "Email Address";
-        } else if (signer.getPhone() != null && Boolean.TRUE.equals(signer.getPhoneVerified())) {
+        } else if (signer.getPhone() != null && TRUE.equals(signer.getPhoneVerified())) {
             contactInfo = signer.getPhone().getNationalFormat();
             contactLabel = "Phone Number";
         } else if (signer.getExternalId() != null) {

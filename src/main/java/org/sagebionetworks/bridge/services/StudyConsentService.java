@@ -22,6 +22,8 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
@@ -60,19 +62,29 @@ public class StudyConsentService {
     private static final Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
     
     /**
-     * By including the signature block through the StudyConsentView, we are able to 
-     * centralize the definition of the block in one place, apply it to both old and new 
-     * consent documents. We will test and add it to any document that removes the 
-     * "bridge-sig-block" table. TODO: Not ideal. We want it to be possible to remove
-     * the signature block if people want to.
+     * By including the signature block through the StudyConsentService, we are able to 
+     * centralize the definition of the block in one place, and apply it to both old and 
+     * new consent documents. We will test and add the block to any document that removes 
+     * the participant's signature or signing date. 
      */
     public static final String SIGNATURE_BLOCK = "<table class=\"bridge-sig-block\">"+
             "<tbody><tr><td>${participant.name}<div class=\"label\">Name of Adult Participant</div></td>"+
-            "<td><img alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" />"+
+            "<td><img brimg=\"\" alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" />"+
             "<div class=\"label\">Signature of Adult Participant</div></td>"+
             "<td>${participant.signing.date}<div class=\"label\">Date</div></td></tr>"+
             "<tr><td>${participant.contactInfo}<div class=\"label\">${participant.contactLabel}</div></td>"+
             "<td>${participant.sharing}<div class=\"label\">Sharing Option</div></td></tr></tbody></table>";
+    
+    /**
+     * For the published version of the consent document, every template variable in the footer needs
+     * to have a suitable value.
+     */
+    Map<String, String> SIGNATURE_BLOCK_VARS = new ImmutableMap.Builder<String, String>()
+            .put("participant.name", "")
+            .put("participant.signing.date", "")
+            .put("participant.contactInfo", "")
+            .put("participant.sharing", "")
+            .put("participant.contactLabel", "Email, Phone, or ID").build();
     
     static final String CONSENT_HTML_SUFFIX = "/consent.html";
     static final String CONSENT_PDF_SUFFIX = "/consent.pdf";
@@ -293,20 +305,18 @@ public class StudyConsentService {
     }
     
     private String appendSignatureBlockIfNeeded(String content) {
-        if (content.indexOf("<table class=\"bridge-sig-block\">") == -1) {
-            content += SIGNATURE_BLOCK;
+        // The user can change the signature block, they can remove parts of the signature block,
+        // but if the person's name is gone, we're assuming that they've removed too much, and we
+        // put it back. A signed consent must be signed and dated.
+        if (!content.contains("${participant.name}") || !content.contains("${participant.signing.date}")) {
+            content = content + SIGNATURE_BLOCK;
         }
         return content;
     }
     
     private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
         Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> XML_ESCAPER.translate(value));
-        // These are the variables in the signature footer. Blank out the variables.
-        map.put("participant.name", "");
-        map.put("participant.signing.date", "");
-        map.put("participant.contactInfo", "");
-        map.put("participant.sharing", "");
-        map.put("participant.contactLabel", "Email, Phone, or ID");
+        map.putAll(SIGNATURE_BLOCK_VARS);
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 
         map.put("consent.body", resolvedHTML);
