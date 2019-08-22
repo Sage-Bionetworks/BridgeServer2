@@ -42,7 +42,7 @@ public class HibernateTemplateDao implements TemplateDao {
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "templateHibernateHelper")
+    @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

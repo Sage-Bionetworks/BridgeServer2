@@ -84,6 +84,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -112,6 +113,9 @@ public class BaseControllerTest extends Mockito {
 
     @Mock
     private HttpServletResponse mockResponse;
+    
+    @Mock
+    private RequestInfoService requestInfoService;
 
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
@@ -529,7 +533,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(cookie.getDomain(), "localhost");
         
         verify(controller).writeSessionInfoToMetrics(session);
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());
     }
     
@@ -545,14 +549,14 @@ public class BaseControllerTest extends Mockito {
         verify(mockResponse, never()).addCookie(any());
         
         verify(controller).writeSessionInfoToMetrics(session);
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());        
     }
 
     @Test
     public void getRequestInfoBuilder() {
         RequestInfo existingInfo = new RequestInfo.Builder().withActivitiesAccessedOn(TIMESTAMP).build();
-        when(mockCacheProvider.getRequestInfo(USER_ID)).thenReturn(existingInfo);
+        when(requestInfoService.getRequestInfo(USER_ID)).thenReturn(existingInfo);
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
         session.setStudyIdentifier(TEST_STUDY);

@@ -103,6 +103,8 @@ public class ParticipantService {
     private ExternalIdService externalIdService;
     
     private CacheProvider cacheProvider;
+    
+    private RequestInfoService requestInfoService;
 
     private ScheduledActivityDao activityDao;
 
@@ -184,6 +186,11 @@ public class ParticipantService {
         this.substudyService = substudyService;
     }
     
+    @Autowired
+    final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
+    }
+    
     public void assignExternalId(AccountId accountId, ExternalIdentifier externalId) {
         Account account = getAccountThrowingException(accountId);
         ExternalIdentifier extIdObj = beginAssignExternalId(account, externalId.getIdentifier());
@@ -207,7 +214,7 @@ public class ParticipantService {
         }
 
         // We need the account's request info to build the criteria context.
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no request info");
@@ -288,7 +295,7 @@ public class ParticipantService {
             copyHistoryToParticipant(builder, account, study.getStudyIdentifier());
         }
         // Without requestInfo, we cannot reliably determine if the user is consented
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(account.getId());
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
             CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier())
@@ -962,7 +969,7 @@ public class ParticipantService {
      
     
     private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
-        RequestInfo info = cacheProvider.getRequestInfo(participant.getId());
+        RequestInfo info = requestInfoService.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
         return new CriteriaContext.Builder()

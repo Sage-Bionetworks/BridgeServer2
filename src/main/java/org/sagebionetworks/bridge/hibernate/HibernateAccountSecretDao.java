@@ -36,7 +36,7 @@ public class HibernateAccountSecretDao implements AccountSecretDao {
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "substudyHibernateHelper")
+    @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

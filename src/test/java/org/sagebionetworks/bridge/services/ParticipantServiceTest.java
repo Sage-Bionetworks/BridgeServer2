@@ -42,6 +42,7 @@ import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InOrder;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -177,6 +178,7 @@ public class ParticipantServiceTest {
             .withReauthToken("ASDF").build();
     
     @Spy
+    @InjectMocks
     private ParticipantService participantService;
     
     @Mock
@@ -202,6 +204,9 @@ public class ParticipantServiceTest {
     
     @Mock
     private SubstudyService substudyService;
+    
+    @Mock
+    private RequestInfoService requestInfoService;
     
     @Mock
     private Subpopulation subpopulation;
@@ -255,19 +260,6 @@ public class ParticipantServiceTest {
         STUDY.setExternalIdRequiredOnSignup(false);
         STUDY.setEmailVerificationEnabled(false);
         STUDY.setAccountLimit(0);
-        participantService.setAccountDao(accountDao);
-        participantService.setSmsService(smsService);
-        participantService.setSubpopulationService(subpopService);
-        participantService.setUserConsent(consentService);
-        participantService.setCacheProvider(cacheProvider);
-        participantService.setExternalIdService(externalIdService);
-        participantService.setScheduledActivityDao(activityDao);
-        participantService.setUploadService(uploadService);
-        participantService.setNotificationsService(notificationsService);
-        participantService.setScheduledActivityService(scheduledActivityService);
-        participantService.setAccountWorkflowService(accountWorkflowService);
-        participantService.setSubstudyService(substudyService);
-        participantService.setActivityEventService(activityEventService);
 
         account = Account.create();
         account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
@@ -683,7 +675,7 @@ public class ParticipantServiceTest {
         account.setPhoneVerified(true);
 
         // Mock request info to return null.
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(null);
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(null);
 
         // Execute.
         try {
@@ -702,7 +694,7 @@ public class ParticipantServiceTest {
         account.setPhoneVerified(true);
 
         // Mock request info.
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         // Mock subpop service.
         when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
@@ -736,7 +728,7 @@ public class ParticipantServiceTest {
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
 
         // Mock request info.
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         // Mock subpop service.
         when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
@@ -987,7 +979,7 @@ public class ParticipantServiceTest {
         when(subpopService.getSubpopulation(TEST_STUDY, SUBPOP_GUID_1)).thenReturn(subpop1);
 
         // Mock CacheProvider to return request info.
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         // Mock ConsentService to return consent statuses for criteria.
         ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID_1)
@@ -1503,7 +1495,7 @@ public class ParticipantServiceTest {
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_STUDY, false);
 
-        when(cacheProvider.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID)
                 .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();

@@ -99,7 +99,7 @@ public class HealthDataController extends BaseController {
         // Record upload time to user's request info. This allows us to track the last time the user submitted.
         RequestInfo requestInfo = getRequestInfoBuilder(session).withUploadedOn(DateUtils.getCurrentDateTime())
                 .build();
-        cacheProvider.updateRequestInfo(requestInfo);
+        requestInfoService.updateRequestInfo(requestInfo);
 
         // Return the record produced by this submission. Filter out Health Code, of course.
         return HealthDataRecord.PUBLIC_RECORD_WRITER.writeValueAsString(savedRecord);

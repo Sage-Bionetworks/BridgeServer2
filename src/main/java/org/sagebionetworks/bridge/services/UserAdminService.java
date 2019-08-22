@@ -43,6 +43,7 @@ public class UserAdminService {
     private CacheProvider cacheProvider;
     private ExternalIdService externalIdService;
     private UploadService uploadService;
+    private RequestInfoService requestInfoService;
 
     @Autowired
     final void setAuthenticationService(AuthenticationService authenticationService) {
@@ -90,6 +91,10 @@ public class UserAdminService {
     @Autowired
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
+    }
+    @Autowired
+    final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
     }
     
     /**
@@ -193,7 +198,7 @@ public class UserAdminService {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
             cacheProvider.removeSessionByUserId(account.getId());
-            cacheProvider.removeRequestInfo(account.getId());
+            requestInfoService.removeRequestInfo(account.getId());
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);

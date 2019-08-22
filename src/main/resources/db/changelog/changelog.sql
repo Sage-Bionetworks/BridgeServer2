@@ -185,3 +185,21 @@ CHANGE COLUMN `algorithm` `algorithm` ENUM('STORMPATH_HMAC_SHA_256', 'BCRYPT', '
 
 ALTER TABLE `Accounts`
 ADD COLUMN `stormpathPasswordHash` varchar(255) DEFAULT NULL;
+  
+-- changeset bridge:5
+
+CREATE TABLE IF NOT EXISTS `RequestInfos` (
+  `userId` varchar(255) NOT NULL,
+  `clientInfo` varchar(255),
+  `userAgent` varchar(255),
+  `languages` varchar(255),
+  `userDataGroups` varchar(255),
+  `userSubstudyIds` varchar(255),
+  `activitiesAccessedOn` varchar(255),
+  `signedInOn` varchar(255),
+  `uploadedOn` varchar(255),
+  `timeZone` varchar(255),
+  `studyIdentifier` varchar(255) NOT NULL,
+  PRIMARY KEY (`userId`),
+  CONSTRAINT `RequestInfo-UserId-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE
+) CHARACTER SET utf8 COLLATE utf8_unicode_ci;

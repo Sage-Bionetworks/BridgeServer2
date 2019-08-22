@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.HealthDataService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 public class UploadControllerTest extends Mockito {
@@ -67,6 +68,9 @@ public class UploadControllerTest extends Mockito {
     
     @Mock
     HealthCodeDao mockHealthCodeDao;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
     
     @Mock
     UserSession mockWorkerSession;
@@ -155,7 +159,7 @@ public class UploadControllerTest extends Mockito {
         
         controller.upload();
         
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo info = requestInfoCaptor.getValue();
         assertNotNull(info.getUploadedOn());
         assertEquals(info.getUserId(), "userId");

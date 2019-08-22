@@ -256,7 +256,7 @@ public class ScheduledActivityController extends BaseController {
         RequestInfo requestInfo = getRequestInfoBuilder(session).withTimeZone(requestTimeZone)
                 .withActivitiesAccessedOn(DateUtils.getCurrentDateTime()).build();
         
-        cacheProvider.updateRequestInfo(requestInfo);
+        requestInfoService.updateRequestInfo(requestInfo);
         
         return context;
     }

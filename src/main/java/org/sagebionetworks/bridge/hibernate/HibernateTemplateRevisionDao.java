@@ -48,7 +48,7 @@ public class HibernateTemplateRevisionDao implements TemplateRevisionDao {
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.publicationsBucket = bridgeConfig.getHostnameWithPostfix("docs");
     }
-    @Resource(name = "templateRevisionHibernateHelper")
+    @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

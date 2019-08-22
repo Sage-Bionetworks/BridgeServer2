@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AuthenticationService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -64,6 +65,9 @@ public class UserManagementControllerTest extends Mockito {
 
     @Mock
     CacheProvider mockCacheProvider;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
 
     @Mock
     BridgeConfig mockBridgeConfig;

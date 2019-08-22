@@ -92,7 +92,7 @@ public class UploadController extends BaseController {
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withUploadedOn(DateUtils.getCurrentDateTime()).build();
-        cacheProvider.updateRequestInfo(requestInfo);
+        requestInfoService.updateRequestInfo(requestInfo);
         
         return uploadSession;
     }

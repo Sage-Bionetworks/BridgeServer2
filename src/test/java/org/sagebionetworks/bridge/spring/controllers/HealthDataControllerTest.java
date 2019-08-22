@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class HealthDataControllerTest extends Mockito {
@@ -94,6 +95,9 @@ public class HealthDataControllerTest extends Mockito {
 
     @Mock
     StudyService mockStudyService;
+    
+    @Mock
+    RequestInfoService requestInfoService;
 
     @Mock
     Metrics mockMetrics;
@@ -232,7 +236,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate request info uploadedOn - Time zone doesn't matter because we flatten everything to UTC anyway.
         ArgumentCaptor<RequestInfo> requestInfoCaptor = ArgumentCaptor.forClass(RequestInfo.class);
-        verify(mockCacheProvider).updateRequestInfo(requestInfoCaptor.capture());
+        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
 
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals(requestInfo.getUploadedOn().getMillis(), MOCK_NOW_MILLIS);
