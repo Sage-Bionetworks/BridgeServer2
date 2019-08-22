@@ -68,11 +68,13 @@ public class RequestInfoServiceTest extends Mockito {
     public void getRequestInfoReturnsNothing() {
         RequestInfo retrieved = service.getRequestInfo(USER_ID);
         assertNull(retrieved);
+        verify(mockRequestInfoDao, never()).updateRequestInfo(any());
     }
     
     @Test
     public void removeRequestInfo() {
         service.removeRequestInfo(USER_ID);
         verify(mockRequestInfoDao).removeRequestInfo(USER_ID);
+        verify(mockCacheProvider).removeRequestInfo(USER_ID);
     }
 }

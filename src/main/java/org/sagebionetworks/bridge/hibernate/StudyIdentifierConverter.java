@@ -10,10 +10,10 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 public class StudyIdentifierConverter implements AttributeConverter<StudyIdentifier, String> {
     @Override
     public String convertToDatabaseColumn(StudyIdentifier studyId) {
-        return studyId.getIdentifier();
+        return (studyId == null) ? null : studyId.getIdentifier();
     }
     @Override
     public StudyIdentifier convertToEntityAttribute(String value) {
-        return new StudyIdentifierImpl(value);
+        return (value == null) ? null : new StudyIdentifierImpl(value);
     }
 }
