@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -16,6 +15,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,14 +76,12 @@ import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
@@ -504,18 +502,6 @@ public class TestUtils {
         study.setFitBitScopes(Lists.newArrayList("HeartRate"));
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setStudyIdExcludedInExport(true);
-        study.setVerifyEmailTemplate(new EmailTemplate("verifyEmail subject", "body with ${url}", MimeType.TEXT));
-        study.setResetPasswordTemplate(new EmailTemplate("resetPassword subject", "body with ${url}", MimeType.TEXT));
-        study.setEmailSignInTemplate(new EmailTemplate("${studyName} link", "Follow link ${url}", MimeType.TEXT));
-        study.setAccountExistsTemplate(new EmailTemplate("accountExists subject", "body with ${resetPasswordUrl}", MimeType.TEXT));
-        study.setSignedConsentTemplate(new EmailTemplate("signedConsent subject", "body", MimeType.TEXT));
-        study.setAppInstallLinkTemplate(new EmailTemplate("app install subject", "body ${appInstallUrl}", MimeType.TEXT));
-        study.setResetPasswordSmsTemplate(new SmsTemplate("resetPasswordSmsTemplate ${resetPasswordUrl}"));
-        study.setPhoneSignInSmsTemplate(new SmsTemplate("phoneSignInSmsTemplate ${token}"));
-        study.setAppInstallLinkSmsTemplate(new SmsTemplate("appInstallLinkSmsTemplate ${appInstallUrl}"));
-        study.setVerifyPhoneSmsTemplate(new SmsTemplate("verifyPhoneSmsTemplate ${token}"));
-        study.setAccountExistsSmsTemplate(new SmsTemplate("accountExistsSmsTemplate ${token}"));
-        study.setSignedConsentSmsTemplate(new SmsTemplate("signedConsent ${consentUrl}"));
         study.setIdentifier(id);
         study.setMinAgeOfConsent(18);
         study.setSponsorName("The Council on Test Studies");
@@ -544,7 +530,12 @@ public class TestUtils {
         study.setAccountLimit(0);
         study.setPushNotificationARNs(pushNotificationARNs);
         study.setAutoVerificationPhoneSuppressed(true);
-        study.setDefaultTemplates(ImmutableMap.of(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), "ABC-DEF"));
+        Map<String,String> defaultTemplates = new HashMap<>();
+        for (TemplateType type : TemplateType.values()) {
+            String typeName = type.name().toLowerCase();
+            defaultTemplates.put(typeName, "ABC-DEF");
+        }
+        study.setDefaultTemplates(defaultTemplates);
         return study;
     }
 

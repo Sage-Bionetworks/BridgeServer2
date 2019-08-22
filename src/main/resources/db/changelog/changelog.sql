@@ -180,8 +180,13 @@ CHANGE COLUMN `passwordAlgorithm` `passwordAlgorithm` ENUM('STORMPATH_HMAC_SHA_2
 ALTER TABLE `AccountSecrets`
 CHANGE COLUMN `algorithm` `algorithm` ENUM('STORMPATH_HMAC_SHA_256', 'BCRYPT', 'PBKDF2_HMAC_SHA_256',
   'STORMPATH_PBKDF2_DOUBLE_HASH') NOT NULL;
+
+--changeset bridge:4
+
+ALTER TABLE `Accounts`
+ADD COLUMN `stormpathPasswordHash` varchar(255) DEFAULT NULL;
   
--- changeset bridge:4
+-- changeset bridge:5
 
 CREATE TABLE IF NOT EXISTS `RequestInfos` (
   `userId` varchar(255) NOT NULL,
@@ -198,4 +203,3 @@ CREATE TABLE IF NOT EXISTS `RequestInfos` (
   PRIMARY KEY (`userId`),
   CONSTRAINT `RequestInfo-UserId-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE
 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-

@@ -134,7 +134,8 @@ public class OAuthControllerTest extends Mockito {
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, AUTH_TOKEN);
         mockRequestBody(mockRequest, authToken);
         
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
+                null);
         when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
@@ -153,7 +154,8 @@ public class OAuthControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         mockRequestBody(mockRequest, "{}");
         
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
+                null);
         when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
@@ -228,7 +230,8 @@ public class OAuthControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER)).build());
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
 
-        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID);
+        OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
+                null);
         
         when(mockOauthService.getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
         

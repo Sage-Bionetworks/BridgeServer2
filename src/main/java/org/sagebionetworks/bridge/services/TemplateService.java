@@ -18,7 +18,6 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_RESET_PASSWORD;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIFY_PHONE;
-import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -218,34 +217,28 @@ public class TemplateService {
             .withStudyIdentifier(study.getStudyIdentifier())
             .build();
 
-        Template template = getTemplateForUser(study, context, type);
-        if (template == null) {
-            LOG.info("No migrated template '"+type.name()+"' in study '"+study.getIdentifier()+"', using study template");
-            // During migration, if the template doesn't exist, then look in the study. This makes it 
-            // possible to reduce migration call to updates *only*.
-            return TemplateMigrationService.getRevisionFromStudy(study, type);
-        }
+        Template template = getTemplateForUser(study, context, type)
+                .orElseThrow(() -> new EntityNotFoundException(Template.class));
         return templateRevisionDao.getTemplateRevision(template.getGuid(), template.getPublishedCreatedOn())
                 .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
     }
     
-    Template getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
+    @SuppressWarnings("unchecked")
+    Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
         checkNotNull(context);
         checkNotNull(type);
 
-        ResourceList<? extends Template> results = templateDao.getTemplates(
+        ResourceList<Template> results = (ResourceList<Template>)templateDao.getTemplates(
                 context.getStudyIdentifier(), type, null, null, false);
         for (Template template : results.getItems()) {
             loadCriteria(template);
         }
 
-        List<Template> templateMatches = results.getItems().stream().filter(template -> {
-            return CriteriaUtils.matchCriteria(context, template.getCriteria());
-        }).collect(toImmutableList());
+        List<Template> templateMatches = CriteriaUtils.filterByCriteria(context, results.getItems(), null);
         
         // The ideal case: one and only one template matches the user's context
         if (templateMatches.size() == 1) {
-            return templateMatches.get(0);
+            return Optional.of(templateMatches.get(0));
         }
         // If not, fall back to the default specified for this study, if it exists. 
         String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
@@ -253,22 +246,22 @@ public class TemplateService {
             // Specified default may not exist, log as integrity violation, but continue
             Optional<Template> optional = templateDao.getTemplate(context.getStudyIdentifier(), defaultGuid);
             if (optional.isPresent()) {
-                return optional.get();
+                return optional;
             }
             LOG.warn("Default template " + defaultGuid + " no longer exists for template type" + type.name());
         }
         // Return a matching template
         if (templateMatches.size() > 1) {
             LOG.warn("Template matching ambiguous without a default, returning first matched template");
-            return templateMatches.get(0);
+            return Optional.of(templateMatches.get(0));
         }
         // Return any template
         if (results.getItems().size() > 0) {
             LOG.warn("Template matching failed with no default, returning first template found without matching");
-            return results.getItems().get(0);
+            return Optional.of(results.getItems().get(0));
         }
         // There is nothing to return
-        return null;
+        return Optional.empty();
     }
     
     public PagedResourceList<? extends Template> getTemplatesForType(StudyIdentifier studyId, TemplateType type,
@@ -309,7 +302,7 @@ public class TemplateService {
         return template;
     }
 
-    public GuidVersionHolder createTemplate(StudyIdentifier studyId, Template template) {
+    public GuidVersionHolder createTemplate(Study study, Template template) {
         TemplateRevision revision = TemplateRevision.create();
         if (template.getTemplateType() != null) {
             Triple<String,String,MimeType> triple = defaultTemplatesMap.get(template.getTemplateType());
@@ -317,15 +310,7 @@ public class TemplateService {
             revision.setDocumentContent(triple.getMiddle());
             revision.setMimeType(triple.getRight());
         }
-        return migrateTemplate(studyId, template, revision);
-    }
-    
-    public GuidVersionHolder migrateTemplate(StudyIdentifier studyId, Template template, TemplateRevision revision) {
-        checkNotNull(studyId);
-        checkNotNull(template);
-        checkNotNull(revision);
         
-        Study study = studyService.getStudy(studyId);
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
@@ -335,7 +320,7 @@ public class TemplateService {
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
 
-        template.setStudyId(studyId.getIdentifier());
+        template.setStudyId(study.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);

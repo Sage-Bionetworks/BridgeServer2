@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -207,10 +206,8 @@ public class SubpopulationService {
         checkNotNull(context);
         
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), false);
-
-        return subpops.stream().filter(subpop -> {
-            return CriteriaUtils.matchCriteria(context, subpop.getCriteria());
-        }).collect(toImmutableList());
+        
+        return CriteriaUtils.filterByCriteria(context, subpops, null);
     }
 
     /**

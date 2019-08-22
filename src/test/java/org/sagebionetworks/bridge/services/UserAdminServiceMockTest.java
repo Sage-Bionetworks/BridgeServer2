@@ -324,7 +324,6 @@ public class UserAdminServiceMockTest {
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn("externalId").when(account).getExternalId();
         doReturn(substudies).when(account).getAccountSubstudies();
         doReturn(account).when(accountDao).getAccount(accountId);
         
@@ -338,7 +337,6 @@ public class UserAdminServiceMockTest {
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");
-        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("externalId"));
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subAextId"));
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subBextId"));
         verify(accountDao).deleteAccount(accountId);

@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.io.UnsupportedEncodingException;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -120,16 +122,10 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
-        for (AccountSubstudy accountSubstudy: account.getAccountSubstudies()) {
-            if (accountSubstudy.getExternalId() != null) {
-                builder.add(accountSubstudy.getExternalId());
-            }
-        }
-        if (account.getExternalId() != null) {
-            builder.add(account.getExternalId());
-        }
-        return builder.build();
+        return account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getExternalId)
+                .filter(Objects::nonNull)
+                .collect(toImmutableSet());
     }
     
     /** Gets the request context for the current thread. See also RequestInterceptor. */

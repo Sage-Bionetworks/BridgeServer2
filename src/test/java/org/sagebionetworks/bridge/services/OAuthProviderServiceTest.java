@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.doReturn;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -26,6 +28,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
@@ -37,7 +40,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
 public class OAuthProviderServiceTest {
-
     private static final DateTime NOW = DateTime.now(DateTimeZone.UTC);
     private static final DateTime EXPIRES = NOW.plusSeconds(3600).minusMinutes(1);
     private static final String ACCESS_TOKEN = "accessToken";
@@ -46,6 +48,7 @@ public class OAuthProviderServiceTest {
     private static final String CLIENT_ID = "clientId";
     private static final String ENDPOINT = "endpoint";
     private static final String GRANT_FORM_DATA = "clientId=clientId&grant_type=authorization_code&redirect_uri=callbackUrl&code=authToken";
+    private static final String INTROSPECT_ENDPOINT = "http://example.com/introspect";
     private static final String REFRESH_FORM_DATA = "grant_type=refresh_token&refresh_token=refreshToken";
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String REFRESH_TOKEN2 = "refreshToken";
@@ -53,7 +56,22 @@ public class OAuthProviderServiceTest {
     private static final String USER_ID = "26FWFL";
     private static final String VENDOR_ID = "vendorId";
     private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(VENDOR_ID, AUTH_TOKEN_STRING);
-    private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL);
+    private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
+            null);
+    private static final OAuthProvider PROVIDER_WITH_INTROSPECT = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT,
+            CALLBACK_URL, INTROSPECT_ENDPOINT);
+
+    // This is an actual Introspect response from FitBit (with client and user IDs obfuscated).
+    private static final String INTROSPECT_RESPONSE_BODY = "{\n" +
+            "   \"active\": true,\n" +
+            "   \"scope\": \"{ACTIVITY=READ, HEARTRATE=READ, SLEEP=READ}\",\n" +
+            "   \"client_id\": \"22CQ7B\",\n" +
+            "   \"user_id\": \"6CGW8Z\",\n" +
+            "   \"token_type\": \"access_token\",\n" +
+            "   \"exp\": 1565861634000,\n" +
+            "   \"iat\": 1565832834000\n" +
+            "}";
+    private static final List<String> EXPECTED_SCOPE_LIST = ImmutableList.of("ACTIVITY", "HEARTRATE", "SLEEP");
 
     @Spy
     private OAuthProviderService service;
@@ -66,7 +84,10 @@ public class OAuthProviderServiceTest {
     
     @Captor
     private ArgumentCaptor<HttpPost> refreshPostCaptor;
-    
+
+    @Captor
+    private ArgumentCaptor<HttpPost> introspectPostCaptor;
+
     @BeforeMethod
     public void before() throws IOException {
         MockitoAnnotations.initMocks(this)
@@ -85,7 +106,13 @@ public class OAuthProviderServiceTest {
         JsonNode body = BridgeObjectMapper.get().readTree(json);
         doReturn(new Response(statusCode, body)).when(service).executeRefreshRequest(refreshPostCaptor.capture());
     }
-    
+
+    private void mockIntrospectCall(int statusCode, String responseBody) throws IOException {
+        JsonNode body = BridgeObjectMapper.get().readTree(responseBody);
+        doReturn(new Response(statusCode, body)).when(service).executeIntrospectRequest(introspectPostCaptor
+                .capture());
+    }
+
     private String successJson() {
         return "{'access_token': '"+ACCESS_TOKEN+"',"+
             "'expires_in': 3600,"+
@@ -120,12 +147,32 @@ public class OAuthProviderServiceTest {
         
         HttpPost thePost = grantPostCaptor.getValue();
         // Test the headers here... they don't need to be tested in every test, they're always the same.
+        assertEquals(thePost.getURI().toString(), ENDPOINT);
         assertEquals(thePost.getFirstHeader("Authorization").getValue(), authHeader);
         assertEquals(thePost.getFirstHeader("Content-Type").getValue(), "application/x-www-form-urlencoded");
         String bodyString = EntityUtils.toString(thePost.getEntity());
         assertEquals(bodyString, GRANT_FORM_DATA);
     }
-    
+
+    @Test
+    public void makeAccessGrantCallWithScopes() throws Exception {
+        mockAccessGrantCall(200, successJson());
+        mockIntrospectCall(200, INTROSPECT_RESPONSE_BODY);
+        OAuthAccessGrant grant = service.requestAccessGrant(PROVIDER_WITH_INTROSPECT, AUTH_TOKEN);
+        assertEquals(grant.getScopes(), EXPECTED_SCOPE_LIST);
+
+        String authHeader = "Basic " + Base64.encodeBase64String( (CLIENT_ID + ":" + SECRET).getBytes() );
+
+        HttpPost thePost = introspectPostCaptor.getValue();
+        // Test the headers here... they don't need to be tested in every test, they're always the same.
+        assertEquals(thePost.getURI().toString(), INTROSPECT_ENDPOINT);
+        assertEquals(thePost.getFirstHeader(OAuthProviderService.AUTHORIZATION_PROP_NAME).getValue(), authHeader);
+        assertEquals(thePost.getFirstHeader(OAuthProviderService.CONTENT_TYPE_PROP_NAME).getValue(),
+                OAuthProviderService.FORM_ENCODING_VALUE);
+        String bodyString = EntityUtils.toString(thePost.getEntity());
+        assertEquals(bodyString, OAuthProviderService.TOKEN_PROP_NAME + "=" + ACCESS_TOKEN);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallWithoutAuthTokenRefreshes() throws Exception {
         OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(VENDOR_ID, null);
@@ -222,12 +269,32 @@ public class OAuthProviderServiceTest {
         
         HttpPost thePost = refreshPostCaptor.getValue();
         // Test the headers here... they don't need to be tested in every test, they're always the same.
+        assertEquals(thePost.getURI().toString(), ENDPOINT);
         assertEquals(thePost.getFirstHeader("Authorization").getValue(), authHeader);
         assertEquals(thePost.getFirstHeader("Content-Type").getValue(), "application/x-www-form-urlencoded");
         String bodyString = EntityUtils.toString(thePost.getEntity());
         assertEquals(bodyString, REFRESH_FORM_DATA);
     }
-    
+
+    @Test
+    public void refreshAccessGrantCallWithScopes() throws Exception {
+        mockRefreshCall(200, successJson());
+        mockIntrospectCall(200, INTROSPECT_RESPONSE_BODY);
+        OAuthAccessGrant grant = service.refreshAccessGrant(PROVIDER_WITH_INTROSPECT, VENDOR_ID, REFRESH_TOKEN);
+        assertEquals(grant.getScopes(), EXPECTED_SCOPE_LIST);
+
+        String authHeader = "Basic " + Base64.encodeBase64String( (CLIENT_ID + ":" + SECRET).getBytes() );
+
+        HttpPost thePost = introspectPostCaptor.getValue();
+        // Test the headers here... they don't need to be tested in every test, they're always the same.
+        assertEquals(thePost.getURI().toString(), INTROSPECT_ENDPOINT);
+        assertEquals(thePost.getFirstHeader(OAuthProviderService.AUTHORIZATION_PROP_NAME).getValue(), authHeader);
+        assertEquals(thePost.getFirstHeader(OAuthProviderService.CONTENT_TYPE_PROP_NAME).getValue(),
+                OAuthProviderService.FORM_ENCODING_VALUE);
+        String bodyString = EntityUtils.toString(thePost.getEntity());
+        assertEquals(bodyString, OAuthProviderService.TOKEN_PROP_NAME + "=" + ACCESS_TOKEN);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void refreshAccessCallGrant400Error() throws Exception {
         mockRefreshCall(400, errorJson("invalid_token", "Authorization code expired: [code]."));
@@ -247,5 +314,22 @@ public class OAuthProviderServiceTest {
                 "This application does not have permission to [access-type] [resource-type] data."));
         service.refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
     }
-}
 
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void introspect_GrantWithoutToken() {
+        OAuthAccessGrant grant = OAuthAccessGrant.create();
+        service.addScopesToAccessGrant(PROVIDER_WITH_INTROSPECT, grant);
+    }
+
+    @Test
+    public void introspect_ErrorCallingIntrospect() throws Exception {
+        // Set up.
+        OAuthAccessGrant grant = OAuthAccessGrant.create();
+        grant.setAccessToken(ACCESS_TOKEN);
+        mockIntrospectCall(503, "\"Service Unavailable\"");
+
+        // Execute. Should succeed with no scopes.
+        service.addScopesToAccessGrant(PROVIDER_WITH_INTROSPECT, grant);
+        assertTrue(grant.getScopes().isEmpty());
+    }
+}

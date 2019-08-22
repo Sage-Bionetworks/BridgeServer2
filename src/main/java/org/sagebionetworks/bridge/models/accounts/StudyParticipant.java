@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 /**
@@ -138,6 +139,13 @@ public final class StudyParticipant implements BridgeEntity {
         return phoneVerified;
     }
     public String getExternalId() {
+        // For backwards compatibility since we are no longer loading this in HibernateAccountDao,
+        // do return a value (99.9% of the time, the only value). Some external consumers of the 
+        // API might attempt to look up this value on the AccountSummary object. However if this 
+        // object is constructed with an externalId value... use it.
+        if (externalId == null && externalIds != null) {
+            return Iterables.getFirst(externalIds.values(), null);    
+        }
         return externalId;
     }
     public String getPassword() {

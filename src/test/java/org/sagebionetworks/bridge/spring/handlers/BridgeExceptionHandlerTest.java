@@ -102,26 +102,27 @@ public class BridgeExceptionHandlerTest extends Mockito {
         assertTrue(node.get("authenticated").booleanValue());
         assertFalse(node.get("consented").booleanValue());
         assertFalse(node.get("signedMostRecentConsent").booleanValue());
-        assertEquals("all_qualified_researchers", node.get("sharingScope").textValue());
-        assertEquals("sessionToken", node.get("sessionToken").textValue());
-        assertEquals("develop", node.get("environment").textValue());
-        assertEquals("email@email.com", node.get("username").textValue());
-        assertEquals("email@email.com", node.get("email").textValue());
-        assertEquals("userId", node.get("id").textValue());
-        assertEquals("reauthToken", node.get("reauthToken").textValue());
+        assertEquals(node.get("sharingScope").textValue(), "all_qualified_researchers");
+        assertEquals(node.get("sessionToken").textValue(), "sessionToken");
+        assertEquals(node.get("environment").textValue(), "develop");
+        assertEquals(node.get("username").textValue(), "email@email.com");
+        assertEquals(node.get("email").textValue(), "email@email.com");
+        assertEquals(node.get("id").textValue(), "userId");
+        assertEquals(node.get("reauthToken").textValue(), "reauthToken");
         assertTrue(node.get("dataSharing").booleanValue());
         assertTrue(node.get("notifyByEmail").booleanValue());
-        assertEquals("substudyA", node.get("substudyIds").get(0).textValue());
-        assertEquals("UserSessionInfo", node.get("type").textValue());
+        assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
+        assertEquals(node.get("type").textValue(), "UserSessionInfo");
         ArrayNode array = (ArrayNode)node.get("roles");
-        assertEquals(0, array.size());
+        assertEquals(array.size(), 0);
         array = (ArrayNode)node.get("dataGroups");
-        assertEquals(1, array.size());
-        assertEquals("group1", array.get(0).textValue());
-        assertEquals(0, node.get("consentStatuses").size());
-        assertEquals("externalIdA", node.get("externalIds").get("substudyA").textValue());
+        assertEquals(array.size(), 1);
+        assertEquals(array.get(0).textValue(), "group1");
+        assertEquals(node.get("consentStatuses").size(), 0);
+        assertEquals(node.get("externalIds").get("substudyA").textValue(), "externalIdA");
+        assertEquals(node.get("externalId").textValue(), "externalIdA");
         // And no further properties
-        assertEquals(22, node.size());
+        assertEquals(node.size(), 23);
     }
     
     @Test
@@ -146,11 +147,11 @@ public class BridgeExceptionHandlerTest extends Mockito {
         JsonNode node = new ObjectMapper().readTree(response.getBody());
         
         assertEquals(3, node.size()); 
-        assertEquals("This is an error message.", node.get("message").textValue());
-        assertEquals("BadRequestException", node.get("type").textValue());
+        assertEquals(node.get("message").textValue(), "This is an error message.");
+        assertEquals(node.get("type").textValue(), "BadRequestException");
 
-        assertEquals(400, response.getStatusCodeValue());
-        assertEquals(400, node.get("statusCode").intValue());
+        assertEquals(response.getStatusCodeValue(), 400);
+        assertEquals(node.get("statusCode").intValue(), 400);
     }
 
     @Test
@@ -163,10 +164,10 @@ public class BridgeExceptionHandlerTest extends Mockito {
         // Execute and validate - Just test the status code and type. Everything else is tested elsewhere.
         ResponseEntity<String> response = handler.handleException(mockRequest, ex);
         JsonNode node = new ObjectMapper().readTree(response.getBody());
-        assertEquals("BridgeServiceException", node.get("type").textValue());
+        assertEquals(node.get("type").textValue(), "BridgeServiceException");
 
-        assertEquals(500, response.getStatusCodeValue());
-        assertEquals(500, node.get("statusCode").intValue());
+        assertEquals(response.getStatusCodeValue(), 500);
+        assertEquals(node.get("statusCode").intValue(), 500);
     }
     
     // If you do not wrap a RuntimeException in BridgeServiceException, it's still reported as a 500 response, 
@@ -179,9 +180,9 @@ public class BridgeExceptionHandlerTest extends Mockito {
         ResponseEntity<String> response = handler.handleException(mockRequest, ex);
         JsonNode node = new ObjectMapper().readTree(response.getBody());
         
-        assertEquals(500, node.get("statusCode").intValue());
-        assertEquals("org.hibernate.QueryParameterException: external system error", node.get("message").textValue());
-        assertEquals("BridgeServiceException", node.get("type").textValue());
+        assertEquals(node.get("statusCode").intValue(), 500);
+        assertEquals(node.get("message").textValue(), "org.hibernate.QueryParameterException: external system error");
+        assertEquals(node.get("type").textValue(), "BridgeServiceException");
     }
 
     @Test
@@ -197,14 +198,14 @@ public class BridgeExceptionHandlerTest extends Mockito {
             ResponseEntity<String> response = handler.handleException(mockRequest, e);
             JsonNode node = new ObjectMapper().readTree(response.getBody());
 
-            assertEquals(5, node.size());
-            assertEquals("identifier is required", node.get("errors").get("identifier").get(0).textValue());
-            assertEquals("InvalidEntityException", node.get("type").textValue());
+            assertEquals(node.size(), 5);
+            assertEquals(node.get("errors").get("identifier").get(0).textValue(), "identifier is required");
+            assertEquals(node.get("type").textValue(), "InvalidEntityException");
             assertNotNull(node.get("entity"));
             assertNotNull(node.get("errors"));
 
-            assertEquals(400, response.getStatusCodeValue());
-            assertEquals(400, node.get("statusCode").intValue());
+            assertEquals(response.getStatusCodeValue(), 400);
+            assertEquals(node.get("statusCode").intValue(), 400);
         }
     }
 }
