@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
+import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
 import static org.testng.Assert.assertTrue;
 
 import java.io.FileInputStream;
@@ -23,7 +24,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 public class ConsentPdfTest {
     private static final long TIMESTAMP = DateTime.parse("2017-10-04").getMillis();
-    private static final String DOCUMENT_FRAGMENT = "<p>This is a consent agreement body</p>" + StudyConsentService.SIGNATURE_BLOCK;
+    private static final String DOCUMENT_FRAGMENT = "<p>This is a consent agreement body</p>" + SIGNATURE_BLOCK;
     // This is an actual 2x2 image
     private static final String DUMMY_IMAGE_DATA =
             "Qk1GAAAAAAAAADYAAAAoAAAAAgAAAAIAAAABABgAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA////AAAAAAAAAAD///8AAA==";
@@ -75,25 +76,25 @@ public class ConsentPdfTest {
     }
     
     @Test
-    public void newDocWithoutSigImage() throws Exception {
+    public void docWithoutSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
         ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         String output = consentPdf.getFormattedConsentDocument(); 
-        validateNewDocBody(output);
+        validateDocBody(output);
     }
 
     @Test
-    public void newDocWithSigImage() throws Exception {
+    public void docWithSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithImage();
         
         ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
-        validateNewDocBody(output);
+        validateDocBody(output);
     }
     @Test
     public void legacyDocWithInvalidSig() throws Exception {
@@ -103,7 +104,7 @@ public class ConsentPdfTest {
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
-        validateNewDocBody(output);
+        validateDocBody(output);
     }
     
     @Test
@@ -121,14 +122,14 @@ public class ConsentPdfTest {
     }
 
     @Test
-    public void newDocWithInvalidSig() throws Exception {
+    public void docWithInvalidSig() throws Exception {
         ConsentSignature sig = makeInvalidSignature();
         
         ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
-        validateNewDocBody(output);
+        validateDocBody(output);
     }
     
     @Test
@@ -183,7 +184,7 @@ public class ConsentPdfTest {
                 .withImageData("\" /><a href=\"http://sagebase.org/\">arbitrary link</a><br name=\"foo").build();
     }
 
-    private static void validateNewDocBody(String bodyContent) throws Exception {
+    private static void validateDocBody(String bodyContent) throws Exception {
         System.out.println(bodyContent);
         String dateStr = ConsentPdf.FORMATTER.print(DateTime.now());
         assertTrue(bodyContent.contains(dateStr), "Signing date correct");

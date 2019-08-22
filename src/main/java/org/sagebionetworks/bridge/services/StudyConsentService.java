@@ -306,8 +306,8 @@ public class StudyConsentService {
     
     private String appendSignatureBlockIfNeeded(String content) {
         // The user can change the signature block, they can remove parts of the signature block,
-        // but if the person's name is gone, we're assuming that they've removed too much, and we
-        // put it back. A signed consent must be signed and dated.
+        // but if the person's name or the signing date are gone, we're assuming that they've 
+        // removed too much, and we re-append the signature block.
         if (!content.contains("${participant.name}") || !content.contains("${participant.signing.date}")) {
             content = content + SIGNATURE_BLOCK;
         }

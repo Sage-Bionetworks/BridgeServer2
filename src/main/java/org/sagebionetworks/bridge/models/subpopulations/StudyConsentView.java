@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  */
 @BridgeTypeName("StudyConsent")
 public class StudyConsentView {
-    
+
     private final StudyConsent consent;
     private final String documentContent;
     
@@ -43,4 +43,5 @@ public class StudyConsentView {
     public String getDocumentContent() {
         return documentContent;
     }
+
 }

@@ -616,10 +616,12 @@ public class BridgeUtils {
         if (StringUtils.isBlank(documentContent)) {
             return documentContent;
         }
+        // the prior version of this still pretty printed the output... this uglier use of JSoup's
+        // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
         Cleaner cleaner = new Cleaner(BridgeConstants.CKEDITOR_WHITELIST);
         Document clean = cleaner.clean(dirty);
-        // all variants of the sanitizer remove this, so put it back. It's used in the consent documents.
+        // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // brimg is not a valid attribute, it marks our one template image.
         for (Element el : clean.select("img[brimg]")) {
             el.attr("src", "cid:consentSignature");

@@ -813,7 +813,7 @@ public class BridgeUtilsTest {
         String result = BridgeUtils.sanitizeHTML(content);
         
         // 1. The signature is entirely preserved, including stuff like src="cid:consentSignature"
-        // 2. HTML is sanitized (some tags removed, others closed, etc.
+        // 2. HTML is sanitized (tags removed, others closed, etc.)
         assertEquals(result, SIGNATURE_BLOCK + "<p>Test<img onerror=\"\" /></p>");
     }
     
