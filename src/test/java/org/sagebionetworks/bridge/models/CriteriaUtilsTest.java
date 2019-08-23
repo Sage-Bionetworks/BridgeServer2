@@ -20,7 +20,6 @@ import java.util.Set;
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.validators.Validate;
 

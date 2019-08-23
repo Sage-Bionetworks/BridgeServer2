@@ -121,7 +121,7 @@ public class StudyConsentControllerTest extends Mockito {
         
         StudyConsentView result = controller.getActiveConsentV2(GUID);
         
-        assertEquals("<document/>", result.getDocumentContent());
+        assertEquals(result.getDocumentContent(), "<document/>");
     }
     
     @Test
@@ -133,7 +133,7 @@ public class StudyConsentControllerTest extends Mockito {
         
         StudyConsentView result = controller.getMostRecentConsentV2(GUID);
         
-        assertEquals("<document/>", result.getDocumentContent());
+        assertEquals(result.getDocumentContent(), "<document/>");
     }
 
     @Test
@@ -145,7 +145,7 @@ public class StudyConsentControllerTest extends Mockito {
         
         StudyConsentView result = controller.getConsentV2(GUID, DATETIME_STRING);
         
-        assertEquals("<document/>", result.getDocumentContent());
+        assertEquals(result.getDocumentContent(), "<document/>");
     }
     
     @Test
@@ -160,7 +160,7 @@ public class StudyConsentControllerTest extends Mockito {
         
         StudyConsentView result = controller.addConsentV2(GUID);
         
-        assertEquals("<document/>", result.getDocumentContent());
+        assertEquals(result.getDocumentContent(), "<document/>");
     }
 
     @Test

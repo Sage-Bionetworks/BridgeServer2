@@ -29,6 +29,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Document.OutputSettings.Syntax;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities.EscapeMode;
+import org.jsoup.safety.Cleaner;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -603,5 +610,24 @@ public class BridgeUtils {
             capitalized.add("Default (Email)");
         }
         return Joiner.on(" ").join(capitalized);
-    }    
+    } 
+    
+    public static String sanitizeHTML(String documentContent) {
+        if (StringUtils.isBlank(documentContent)) {
+            return documentContent;
+        }
+        // the prior version of this still pretty printed the output... this uglier use of JSoup's
+        // APIs does not pretty print the output.
+        Document dirty = Jsoup.parseBodyFragment(documentContent);
+        Cleaner cleaner = new Cleaner(BridgeConstants.CKEDITOR_WHITELIST);
+        Document clean = cleaner.clean(dirty);
+        // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
+        // brimg is not a valid attribute, it marks our one template image.
+        for (Element el : clean.select("img[brimg]")) {
+            el.attr("src", "cid:consentSignature");
+        }
+        clean.outputSettings().escapeMode(EscapeMode.xhtml)
+            .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
+        return clean.body().html();
+    }
 }
