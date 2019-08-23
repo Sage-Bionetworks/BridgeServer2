@@ -185,7 +185,6 @@ public class ConsentPdfTest {
     }
 
     private static void validateDocBody(String bodyContent) throws Exception {
-        System.out.println(bodyContent);
         String dateStr = ConsentPdf.FORMATTER.print(DateTime.now());
         assertTrue(bodyContent.contains(dateStr), "Signing date correct");
         assertTrue(bodyContent.contains("<title>Study Name Consent To Research</title>"), "Study name correct");

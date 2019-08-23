@@ -388,4 +388,16 @@ public class StudyConsentServiceMockTest extends Mockito {
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
         assertEquals(view.getDocumentContent(), form.getDocumentContent()  + SIGNATURE_BLOCK);
     }
+    
+    @Test
+    public void existingSignatureInformationIsNotDuplicated() {
+        StudyConsent consent = StudyConsent.create();
+        when(mockDao.addConsent(SUBPOP_GUID, STORAGE_PATH, CREATED_ON)).thenReturn(consent);
+        
+        StudyConsentForm form = new StudyConsentForm("<p>${participant.name} ${participant.signing.date}</p>");        
+        StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
+        
+        // The information in the document is enough that we do not insert SIGNATURE_BLOCK
+        assertEquals(view.getDocumentContent(), form.getDocumentContent());
+    }
 }
