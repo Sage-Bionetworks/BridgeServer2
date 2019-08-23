@@ -47,7 +47,6 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
@@ -327,25 +326,6 @@ public class ParticipantController extends BaseController {
         }
         return requestInfo;
     }
-
-    @PostMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo/{uploadedOn}")
-    public StatusMessage updateRequestInfoUploadedOn(@PathVariable String studyId, 
-    		@PathVariable String userId, @PathVariable String uploadedOn) throws Exception {
-    	getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(studyId);
-       
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
-        if (requestInfo == null) {
-            requestInfo = new RequestInfo.Builder().withUploadedOn(DateTime.parse(uploadedOn)).build();
-        } else if (!study.getStudyIdentifier().equals(requestInfo.getStudyIdentifier())) {
-            throw new EntityNotFoundException(StudyParticipant.class);
-        } else {
-        	requestInfo = new RequestInfo.Builder().copyOf(requestInfo).withUploadedOn(DateTime.parse(uploadedOn)).build();
-        }
-        cacheProvider.updateRequestInfo(requestInfo);   
-        System.out.println("POST: " + requestInfo.getUploadedOn());
-        return new StatusMessage("RequestInfo updated.");
-    }
     
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
@@ -533,14 +513,6 @@ public class ParticipantController extends BaseController {
         
         participantService.sendSmsMessage(study, userId, template);
         return new StatusMessage("Message sent.");
-    }
-
-    @PostMapping("/v3/studies/{studyId}/participants/{userId}/studyStartDate")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public DateTime getStudyStartDate(@PathVariable String studyId, @PathVariable String userId) {
-        getAuthenticatedSession(WORKER);
-        
-        return participantService.getStudyStartTime(AccountId.forId(studyId, userId));
     }
     
     private JsonNode getParticipantsInternal(Study study, String offsetByString, String pageSizeString,

@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -239,6 +240,12 @@ public class ParticipantService {
         AccountId accountId = BridgeUtils.parseAccountId(study.getIdentifier(), userId);
         Account account = getAccountThrowingException(accountId);
         return getParticipant(study, account, includeHistory);
+    }
+    
+    public StudyParticipant getParticipant(Study study, String healthCode) {
+        AccountId accountId = AccountId.forHealthCode(study.getIdentifier(), healthCode);
+        Account account = getAccountThrowingException(accountId);
+        return getParticipant(study, account, false);
     }
     
     public StudyParticipant getSelfParticipant(Study study, CriteriaContext context, boolean includeHistory) {
@@ -781,7 +788,8 @@ public class ParticipantService {
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
         Account account = getAccountThrowingException(study, userId);
 
-        return activityEventService.getActivityEventList(account.getHealthCode());
+//        return activityEventService.getActivityEventList(account.getHealthCode());
+        return activityEventService.getActivityEventList(account);
     }
     
     public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
