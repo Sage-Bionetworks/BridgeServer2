@@ -274,12 +274,10 @@ public class UserProfileControllerTest extends Mockito {
         
         assertEquals(result.get("externalId").textValue(), "ABC-123-XYZ");
         
-        verify(mockParticipantService).assignExternalId(accountIdCaptor.capture(), externalIdCaptor.capture());
+        verify(mockParticipantService).assignExternalId(accountIdCaptor.capture(), eq("ABC-123-XYZ"));
         
         assertEquals(accountIdCaptor.getValue().getHealthCode(), HEALTH_CODE);
         assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
-        assertEquals(externalIdCaptor.getValue().getIdentifier(), "ABC-123-XYZ");
-        assertEquals(externalIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
     }
 
     @Test

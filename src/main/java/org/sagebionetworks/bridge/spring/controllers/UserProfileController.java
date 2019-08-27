@@ -137,7 +137,7 @@ public class UserProfileController extends BaseController {
         ExternalIdentifier externalId = parseJson(ExternalIdentifier.class);
         externalId.setStudyId(accountId.getStudyId());
         
-        participantService.assignExternalId(accountId, externalId);
+        participantService.assignExternalId(accountId, externalId.getIdentifier());
         sessionUpdateService.updateExternalId(session, externalId);
         
         return UserSessionInfo.toJSON(session);

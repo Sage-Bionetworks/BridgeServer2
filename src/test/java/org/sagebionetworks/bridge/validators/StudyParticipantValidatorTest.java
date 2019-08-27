@@ -352,34 +352,6 @@ public class StudyParticipantValidatorTest {
         Validate.entityThrowingException(validator, participant);
     }
     @Test
-    public void substudyRequiredIfCallerHasSubstudies() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
-        try {
-            // Once a user has a substudy taint, it must be passed to any accounts that user creates (or a subset of it)
-            StudyParticipant participant = withEmail("email@email.com");
-            
-            validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-            assertValidatorMessage(validator, participant, "substudyIds", "must be assigned to this participant");
-        } finally {
-            BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
-        }
-    }
-    @Test
-    public void invalidSubstudyIfCallerHasSubstudies() { 
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyC")).build());
-        try {
-            // Nor can the user add a participant to substudies that they do not belong to
-            StudyParticipant participant = withSubstudies("substudyA", "substudyB");
-            
-            validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-            assertValidatorMessage(validator, participant, "substudyIds[substudyB]", "is not a substudy of the caller");
-        } finally {
-            BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
-        }
-    }
-    @Test
     public void subsetOfsubstudiesOK() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB", "substudyC")).build());

@@ -27,7 +27,6 @@ public class StudyParticipantValidator implements Validator {
     private final ExternalIdService externalIdService;
     private final SubstudyService substudyService;
     private final Study study;
-    private final Set<String> callerSubstudies;
     private final boolean isNew;
     
     public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
@@ -35,7 +34,6 @@ public class StudyParticipantValidator implements Validator {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;
         this.study = study;
-        this.callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
         this.isNew = isNew;
     }
     
@@ -82,20 +80,6 @@ public class StudyParticipantValidator implements Validator {
             }
         }
 
-        // If the caller is not in a substudy, any substudy tags are allowed. If there 
-        // are any substudies assigned to the caller, then the participant must be assigned 
-        // to one or more of those substudies, and only those substudies.
-        if (!callerSubstudies.isEmpty()) {
-            if (participant.getSubstudyIds().isEmpty()) {
-                errors.rejectValue("substudyIds", "must be assigned to this participant");
-            } else {
-                for (String substudyId : participant.getSubstudyIds()) {
-                    if (!callerSubstudies.contains(substudyId)) {
-                        errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy of the caller");
-                    }
-                }
-            }
-        }
         for (String substudyId : participant.getSubstudyIds()) {
             Substudy substudy = substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, false);
             if (substudy == null) {
