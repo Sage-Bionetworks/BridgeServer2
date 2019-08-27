@@ -120,6 +120,7 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.springframework.web.bind.annotation.PathVariable;
 
 public class ParticipantControllerTest extends Mockito {
 
@@ -288,6 +289,7 @@ public class ParticipantControllerTest extends Mockito {
         assertCreate(ParticipantController.class, "createParticipant");
         assertGet(ParticipantController.class, "getParticipant");
         assertGet(ParticipantController.class, "getParticipantForWorker");
+        assertGet(ParticipantController.class, "getRequestInfoForWorker");
         assertGet(ParticipantController.class, "getRequestInfo");
         assertPost(ParticipantController.class, "updateParticipant");
         assertPost(ParticipantController.class, "signOut");
@@ -451,6 +453,7 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockParticipantService).signUserOut(study, USER_ID, false);
     }
 
+    
     @Test
     public void updateParticipant() throws Exception {
         study.getUserProfileAttributes().add("can_be_recontacted");
@@ -525,7 +528,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(participant.getAttributes().get("phone"), "123456789");
         assertEquals(participant.getLanguages(), ImmutableList.of("en", "fr"));
     }
-
+    
     @Test
     public void getParticipantRequestInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
@@ -556,6 +559,35 @@ public class ParticipantControllerTest extends Mockito {
         controller.getRequestInfo("userId");
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantRequestInfoForWorkerOnly() throws Exception {
+        controller.getRequestInfoForWorker(study.getIdentifier(), USER_ID);
+    }
+    
+    @Test
+    public void getParticipantRequestInfoForWorker() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
+
+        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+
+        assertEquals(result, requestInfo);
+    }
+    
+    @Test
+    public void getParticipantRequestInfoForWorkerIsNullsafe() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        // There is no request info.
+        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+
+        assertNotNull(result); // values are all null, but object is returned
+    }
+    
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder(USER_ID);
 
