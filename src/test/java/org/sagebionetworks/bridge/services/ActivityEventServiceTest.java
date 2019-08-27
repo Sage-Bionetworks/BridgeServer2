@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -19,10 +18,13 @@ import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -33,22 +35,40 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
-
+    private static final String STUDY_ID = "test-study";
+    
+    @Spy
     private ActivityEventService activityEventService;
-
+    
+    @Mock
     private ActivityEventDao activityEventDao;
+    
+    @Mock
+    private AccountDao mockAccountDao;
+    
+    @Mock
+    private StudyService mockStudyService;
+    
+    @Mock
+    private ParticipantService mockParticipantService;
     
     @BeforeMethod
     public void before() {
-        activityEventDao = mock(ActivityEventDao.class);
-
+        MockitoAnnotations.initMocks(this);
         activityEventService = new ActivityEventService();
+        
         activityEventService.setActivityEventDao(activityEventDao);
+        activityEventService.setAccountDao(mockAccountDao);
+        activityEventService.setStudyService(mockStudyService);
+        activityEventService.setParticipantService(mockParticipantService);
     }
 
     @Test
@@ -113,19 +133,141 @@ public class ActivityEventServiceTest {
     }
     
     @Test
+    public void canPublishCreatedOn() {
+        DateTime now = DateTime.now();
+        
+        activityEventService.publishCreatedOnEvent("BBB", now);
+        
+        ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao).publishEvent(argument.capture());
+        
+        assertEquals(argument.getValue().getEventId(), "created_on");
+        assertEquals(argument.getValue().getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getValue().getHealthCode(), "BBB");
+    }
+    
+    @Test
     public void canGetActivityEventMap() {
+        DateTime activitiesRetrieved = DateTime.parse("2017-05-27T00:00:00.000Z");
+        DateTime enrollment = DateTime.parse("2017-05-28T00:00:00.000Z");
+        DateTime createdOn = DateTime.parse("2017-05-29T00:00:00.000Z");
+        
+        Map<String,DateTime> map = Maps.newHashMap();
+        map.put("activities_retrieved", activitiesRetrieved);
+        map.put("enrollment", enrollment);
+        map.put("created_on", createdOn);
+        when(activityEventDao.getActivityEventMap("BBB")).thenReturn(map);
+        
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(study);
+        
+        AccountId accountId = AccountId.forHealthCode(STUDY_ID, "BBB");
+        Account account = Account.create();
+        account.setStudyId(STUDY_ID);
+        account.setHealthCode("BBB");
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(enrollment).build();
+        when(mockParticipantService.getParticipant(study, account, false)).thenReturn(studyParticipant);
+        
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, "BBB");
+        assertEquals(results.get("activities_retrieved"), activitiesRetrieved);
+        assertEquals(results.get("enrollment"), enrollment);
+        assertEquals(results.get("created_on"), createdOn);
+        assertEquals(results.get("study_start_date"), activitiesRetrieved);
+        assertEquals(results.size(), 4);
+        
+        verify(activityEventDao).getActivityEventMap("BBB");
+    }
+    
+    @Test
+    public void canSetStudyStartDateWithEnrollment() {
         DateTime now = DateTime.now();
         
         Map<String,DateTime> map = Maps.newHashMap();
         map.put("enrollment", now);
         when(activityEventDao.getActivityEventMap("BBB")).thenReturn(map);
-
-        Map<String, DateTime> results = activityEventService.getActivityEventMap("BBB");
+        
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(study);
+        
+        AccountId accountId = AccountId.forHealthCode(STUDY_ID, "BBB");
+        Account account = Account.create();
+        account.setStudyId(STUDY_ID);
+        account.setHealthCode("BBB");
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(now).build();
+        when(mockParticipantService.getParticipant(study, account, false)).thenReturn(studyParticipant);
+        
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, "BBB");
         assertEquals(results.get("enrollment"), now);
-        assertEquals(results.size(), 1);
+        assertEquals(results.get("study_start_date"), now);
+        assertEquals(results.size(), 3);
         
         verify(activityEventDao).getActivityEventMap("BBB");
-        verifyNoMoreInteractions(activityEventDao);
+    }
+    
+    @Test
+    public void canSetStudyStartDateWithActivitiesRetrieved() {
+        DateTime now = DateTime.now();
+        DateTime activities_retrieved = DateTime.parse("2017-05-29T00:00:00.000Z");
+        
+        Map<String,DateTime> map = Maps.newHashMap();
+        map.put("enrollment", now);
+        map.put("activities_retrieved", activities_retrieved);
+        when(activityEventDao.getActivityEventMap("BBB")).thenReturn(map);
+        
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(study);
+        
+        AccountId accountId = AccountId.forHealthCode(STUDY_ID, "BBB");
+        Account account = Account.create();
+        account.setStudyId(STUDY_ID);
+        account.setHealthCode("BBB");
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(now).build();
+        when(mockParticipantService.getParticipant(study, account, false)).thenReturn(studyParticipant);
+        
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, "BBB");
+        assertEquals(results.get("enrollment"), now);
+        assertEquals(results.get("activities_retrieved"), activities_retrieved);
+        assertEquals(results.get("study_start_date"), activities_retrieved);
+        assertEquals(results.size(), 4);
+        
+        verify(activityEventDao).getActivityEventMap("BBB");
+    }
+    
+    @Test
+    public void canSetStudyStartDateWithCreatedOn() {
+        DateTime now = DateTime.now();
+        
+        Map<String,DateTime> map = Maps.newHashMap();
+        when(activityEventDao.getActivityEventMap("BBB")).thenReturn(map);
+        
+        Study study = Study.create();
+        study.setIdentifier(STUDY_ID);
+        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(study);
+        
+        AccountId accountId = AccountId.forHealthCode(STUDY_ID, "BBB");
+        Account account = Account.create();
+        account.setStudyId(STUDY_ID);
+        account.setHealthCode("BBB");
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(now).build();
+        when(mockParticipantService.getParticipant(study, account, false)).thenReturn(studyParticipant);
+        
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, "BBB");
+        assertEquals(results.get("created_on"), now);
+        assertEquals(results.get("study_start_date"), now);
+        assertEquals(results.size(), 2);
+        
+        verify(activityEventDao).getActivityEventMap("BBB");
     }
     
     @Test
@@ -135,7 +277,7 @@ public class ActivityEventServiceTest {
         verify(activityEventDao).deleteActivityEvents("BBB");
         verifyNoMoreInteractions(activityEventDao);
     }
-
+    
     @Test
     public void badPublicDoesntCallDao() {
         try {
@@ -148,7 +290,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badGetDoesntCallDao() {
         try {
-            activityEventService.getActivityEventMap(null);
+            activityEventService.getActivityEventMap(STUDY_ID, null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);

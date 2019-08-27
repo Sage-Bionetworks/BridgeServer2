@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +16,14 @@ import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
+    private AccountDao accountDao;
     private ParticipantService participantService;
     private StudyService studyService;
     
@@ -43,6 +46,11 @@ public class ActivityEventService {
         this.activityEventDao = activityEventDao;
     }
 
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -149,6 +157,16 @@ public class ActivityEventService {
         }
     }
     
+    public void publishCreatedOnEvent(String healthCode, DateTime createdOn) {
+        checkNotNull(healthCode);
+        
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(healthCode)
+                .withTimestamp(createdOn)
+                .withObjectType(ActivityEventObjectType.CREATED_ON).build();
+        activityEventDao.publishEvent(event);
+    }
+    
     /**
      * ActivityEvents can be published directly, although all supported events have a more 
      * specific service method that should be preferred. This method can be used for 
@@ -159,48 +177,44 @@ public class ActivityEventService {
         checkNotNull(event);
         activityEventDao.publishEvent(event);
     }
-
+    
     /**
-     * Gets the activity events times for a specific user in order to schedule against them.
-     */
-    public Map<String, DateTime> getActivityEventMap(String healthCode) {
+    * Gets the activity events times for a specific user in order to schedule against them.
+    */
+    public Map<String, DateTime> getActivityEventMap(String studyId, String healthCode) {
         checkNotNull(healthCode);
-        
-        return activityEventDao.getActivityEventMap(healthCode);
-    }
-
-    /**
-     * Gets the activity events times for a specific user in order to schedule against them.
-     */
-    public Map<String, DateTime> getActivityEventMap(Account account) {
-        checkNotNull(account.getHealthCode());
-        Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode);
         Builder<String, DateTime> builder = ImmutableMap.<String, DateTime>builder();
         
-        DateTime studyStartDateTime = activityMap.get(ActivityEventObjectType.STUDY_START_DATE.name().toLowerCase());
-        DateTime activitiesRetrievedDateTime = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
-        DateTime enrollmentDateTime = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
-        
-        if (activitiesRetrievedDateTime != null) {
-            studyStartDateTime = activitiesRetrievedDateTime;
-        } else if (enrollmentDateTime != null) {
-            studyStartDateTime = enrollmentDateTime;
-        } else if (studyStartDateTime == null) {
-            Study study = studyService.getStudy(account.getStudyId());
-            StudyParticipant studyParticipant = participantService.getParticipant(study, account.getHealthCode());
-            studyStartDateTime = studyParticipant.getCreatedOn();
-            builder.put(ActivityEventObjectType.STUDY_START_DATE.name().toLowerCase(), studyStartDateTime);
+        DateTime activitiesRetrieved = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
+        DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
+        DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
+        if (createdOn == null) {
+            Study study = studyService.getStudy(studyId);
+            AccountId accountId = AccountId.forHealthCode(studyId, healthCode);
+            Account account = BridgeUtils.filterForSubstudy(accountDao.getAccount(accountId));
+            if (account == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            StudyParticipant studyParticipant = participantService.getParticipant(study, account, false);
+            createdOn = studyParticipant.getCreatedOn();
+            publishCreatedOnEvent(healthCode, createdOn);
+            builder.put(ActivityEventObjectType.CREATED_ON.name().toLowerCase(), createdOn);
         }
-        
-        for (Map.Entry<String, DateTime> entry : activityMap.entrySet()) {
-            builder.put(entry.getKey(), entry.getValue());
+        DateTime studyStartDate = createdOn;
+        if (activitiesRetrieved != null) {
+            studyStartDate = activitiesRetrieved;
+        } else if (enrollment != null) {
+            studyStartDate = enrollment;
         }
+        builder.put(ActivityEventObjectType.STUDY_START_DATE.name().toLowerCase(), studyStartDate);
+        builder.putAll(activityMap);
         
         return builder.build();
     }
     
-    public List<ActivityEvent> getActivityEventList(Account account) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(account);
+    public List<ActivityEvent> getActivityEventList(String studyId, String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(studyId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
@@ -216,25 +230,6 @@ public class ActivityEventService {
         }
         return activityEventList;
     }
-
-    public List<ActivityEvent> getActivityEventList(String healthCode) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(healthCode);
-
-        List<ActivityEvent> activityEventList = Lists.newArrayList();
-        for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
-            DynamoActivityEvent event = new DynamoActivityEvent();
-            event.setEventId(entry.getKey());
-
-            DateTime timestamp = entry.getValue();
-            if (timestamp !=null) {
-                event.setTimestamp(timestamp.getMillis());
-            }
-
-            activityEventList.add(event);
-        }
-        return activityEventList;
-    }
-
     public void deleteActivityEvents(String healthCode) {
         checkNotNull(healthCode);
         activityEventDao.deleteActivityEvents(healthCode);
