@@ -242,12 +242,6 @@ public class ParticipantService {
         return getParticipant(study, account, includeHistory);
     }
     
-    public StudyParticipant getParticipant(Study study, String healthCode) {
-        AccountId accountId = AccountId.forHealthCode(study.getIdentifier(), healthCode);
-        Account account = getAccountThrowingException(accountId);
-        return getParticipant(study, account, false);
-    }
-    
     public StudyParticipant getSelfParticipant(Study study, CriteriaContext context, boolean includeHistory) {
         AccountId accountId = AccountId.forId(study.getIdentifier(),  context.getUserId());
         Account account = getAccountThrowingException(accountId); // already filters for substudy
@@ -787,9 +781,8 @@ public class ParticipantService {
     
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
         Account account = getAccountThrowingException(study, userId);
-
-//        return activityEventService.getActivityEventList(account.getHealthCode());
-        return activityEventService.getActivityEventList(account);
+        
+        return activityEventService.getActivityEventList(study.getIdentifier(), account.getHealthCode());
     }
     
     public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {

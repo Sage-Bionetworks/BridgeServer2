@@ -248,7 +248,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:6966c3d7-0949-43a8-804e-efc25d0f83e2:finished", new DateTime(1471742129501L, DateTimeZone.UTC))
             .put("activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished", new DateTime(1473284085378L, DateTimeZone.UTC))
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
-        doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
+        doReturn(events).when(activityEventService).getActivityEventMap("test-study", HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
         contextBuilder.withInitialTimeZone(zone);
         return contextBuilder.build();

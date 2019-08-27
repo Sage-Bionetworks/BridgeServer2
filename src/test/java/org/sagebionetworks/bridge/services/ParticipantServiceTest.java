@@ -2484,7 +2484,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityEvents(STUDY, ID);
         
-        verify(activityEventService).getActivityEventList(HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(STUDY.getIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -2714,7 +2714,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityEvents(STUDY, ID);
         
-        verify(activityEventService).getActivityEventList(HEALTH_CODE);      
+        verify(activityEventService).getActivityEventList(STUDY.getIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -2990,10 +2990,10 @@ public class ParticipantServiceTest {
                 .copyOf(PARTICIPANT).withSubstudyIds(participantSubstudies).build();
         
         for (String substudyId : callerSubstudies) {
-            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());
         }
         for (String substudyId : participantSubstudies) {
-            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());
         }
         return participant;
     }

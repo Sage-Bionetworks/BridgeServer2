@@ -50,8 +50,9 @@ public class ActivityEventController extends BaseController {
     @GetMapping(produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-
-        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getHealthCode());
+        
+        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getStudyIdentifier().getIdentifier(),
+                session.getHealthCode());
         
         // I do not like the fact we are serializing in the controller, but that's the only way to access
         // the ObjectWriter and that's currently how we suppress healthCode.

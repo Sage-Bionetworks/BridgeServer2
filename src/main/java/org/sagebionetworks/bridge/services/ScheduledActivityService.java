@@ -392,8 +392,8 @@ public class ScheduledActivityService {
     }
 
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
-        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
-
+        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getStudyIdentifier().getIdentifier(),
+                context.getCriteriaContext().getHealthCode());
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
             builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getInitialTimeZone()));
