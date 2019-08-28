@@ -72,7 +72,7 @@ public class RequestFilterTest extends Mockito {
         verify(mockFilterChain).doFilter(requestCaptor.capture(), eq(mockResponse));
         
         HttpServletRequest wrapper = requestCaptor.getValue();
-        assertEquals("ABCXZ", wrapper.getHeader(BridgeConstants.X_REQUEST_ID_HEADER));
+        assertEquals(wrapper.getHeader(BridgeConstants.X_REQUEST_ID_HEADER), "ABCXZ");
         
         boolean foundRequestId = false;
         Enumeration<String> enumeration = wrapper.getHeaderNames();
@@ -87,7 +87,7 @@ public class RequestFilterTest extends Mockito {
         verify(filter, times(2)).setRequestContext(contextCaptor.capture());
         
         RequestContext context = contextCaptor.getAllValues().get(0);
-        assertEquals("ABCXZ", context.getId());
+        assertEquals(context.getId(), "ABCXZ");
         
         assertNull(contextCaptor.getAllValues().get(1));
     }
@@ -102,7 +102,7 @@ public class RequestFilterTest extends Mockito {
         verify(mockFilterChain).doFilter(requestCaptor.capture(), eq(mockResponse));
         
         HttpServletRequest wrapper = requestCaptor.getValue();
-        assertEquals("AAABAAA", wrapper.getHeader(BridgeConstants.X_REQUEST_ID_HEADER));
+        assertEquals(wrapper.getHeader(BridgeConstants.X_REQUEST_ID_HEADER), "AAABAAA");
         
         boolean foundRequestId = false;
         Enumeration<String> enumeration = wrapper.getHeaderNames();
@@ -117,7 +117,7 @@ public class RequestFilterTest extends Mockito {
         verify(filter, times(2)).setRequestContext(contextCaptor.capture());
         
         RequestContext context = contextCaptor.getAllValues().get(0);
-        assertEquals("AAABAAA", context.getId());
+        assertEquals(context.getId(), "AAABAAA");
         
         assertNull(contextCaptor.getAllValues().get(1));
     }
@@ -227,7 +227,7 @@ public class RequestFilterTest extends Mockito {
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn(null);
         
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
     }        
     
     @Test
@@ -235,7 +235,7 @@ public class RequestFilterTest extends Mockito {
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("");
         
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
     }
     
     @Test
@@ -243,7 +243,7 @@ public class RequestFilterTest extends Mockito {
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en-US");
         
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of("en"), langs);
+        assertEquals(langs, ImmutableList.of("en"));
     }
     
     @Test
@@ -251,7 +251,18 @@ public class RequestFilterTest extends Mockito {
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("FR,en-US");
         
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of("fr", "en"), langs);
+        assertEquals(langs, ImmutableList.of("fr", "en"));
+    }
+    
+    /**
+     * Languages are reordered according to weight, and * is discarded properly.
+     */
+    @Test
+    public void canRetrieveLanguagesRespectingWeights() throws Exception {
+        when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en;q=0.8, de;q=0.7, *;q=0.5, fr-CH, fr;q=0.9");
+        
+        List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
+        assertEquals(langs, ImmutableList.of("fr", "en", "de"));
     }
     
     // We don't want to throw a BadRequestException due to a malformed header. Just return no languages.
@@ -268,7 +279,7 @@ public class RequestFilterTest extends Mockito {
     public void setWarnHeaderWhenNoAcceptLanguage() throws Exception {
         // with no accept language header at all, things don't break;
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
 
         // verify if it set warning header
         verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
@@ -280,7 +291,7 @@ public class RequestFilterTest extends Mockito {
 
         // with no accept language header at all, things don't break;
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
 
         // verify if it set warning header
         verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
@@ -293,7 +304,7 @@ public class RequestFilterTest extends Mockito {
 
         // with no accept language header at all, things don't break;
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
 
         // verify if it set warning header
         verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
@@ -305,7 +316,7 @@ public class RequestFilterTest extends Mockito {
 
         // with no accept language header at all, things don't break;
         List<String> langs = RequestFilter.getLanguagesFromAcceptLanguageHeader(mockRequest, mockResponse);
-        assertEquals(ImmutableList.of(), langs);
+        assertEquals(langs, ImmutableList.of());
 
         // verify if it set warning header
         verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
