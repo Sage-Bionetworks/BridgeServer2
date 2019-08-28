@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -190,6 +191,15 @@ public interface HealthDataRecord extends BridgeEntity {
     /** @see #getUserSubstudyMemberships() */
     void setUserSubstudyMemberships(Map<String,String> userSubstudyMemberships);
 
+    /**
+     * The languages assigned to the user submitting this health data, in their order of preference 
+     * (most desirable first).
+     */
+    List<String> getUserLanguages();
+
+    /** @see #getUserLanguages() */
+    void setUserLanguages(List<String> userLanguage);
+    
     /** Error messages related to upload validation. Only generated if UploadValidationStrictness is set to REPORT. */
     String getValidationErrors();
 

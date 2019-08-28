@@ -203,3 +203,8 @@ CREATE TABLE IF NOT EXISTS `RequestInfos` (
   PRIMARY KEY (`userId`),
   CONSTRAINT `RequestInfo-UserId-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE
 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+-- changeset bridge:6
+
+ALTER TABLE `AccountLanguages`
+ADD COLUMN `order_index` int(8) DEFAULT 0;

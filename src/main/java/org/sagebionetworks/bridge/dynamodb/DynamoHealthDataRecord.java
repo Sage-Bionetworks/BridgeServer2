@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.annotation.JsonFilter;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,6 +48,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private JsonNode userMetadata;
     private SharingScope userSharingScope;
     private String userExternalId;
+    private List<String> userLanguages;
     private Set<String> userDataGroups;
     private Map<String, String> userSubstudyMemberships;
     private String validationErrors;
@@ -298,6 +300,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
         this.userExternalId = userExternalId;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public List<String> getUserLanguages() {
+        return userLanguages;
+    }
+
+    /** @see #getUserLanguages */
+    @Override
+    public void setUserLanguages(List<String> userLanguages) {
+        this.userLanguages = (userLanguages != null && !userLanguages.isEmpty()) ? userLanguages : null;
+    }
+    
     /** {@inheritDoc} */
     @Override
     public Set<String> getUserDataGroups() {

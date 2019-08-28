@@ -55,6 +55,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             record.setUserExternalId(externalId);
             record.setUserDataGroups(account.getDataGroups());
             record.setUserSubstudyMemberships( mapSubstudyMemberships(account) );
+            record.setUserLanguages(account.getLanguages());
 
             // Calculate dayInStudy.
             // Snap to a calendar date in the local time zone. For example, a participant has an

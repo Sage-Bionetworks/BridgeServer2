@@ -9,11 +9,13 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.fasterxml.jackson.databind.node.IntNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -60,6 +62,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getUploadDate(), UPLOAD_DATE);
         assertEquals(record.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(record.getUserSharingScope(), SharingScope.NO_SHARING);
+        assertEquals(record.getUserLanguages(), TestConstants.LANGUAGES);
     }
 
     @Test
@@ -104,7 +107,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getValidationErrors(), "dummy validation errors");
         assertEquals(record.getVersion().longValue(), 42);
     }
-    
+
     @Test
     public void emptyDataGroupSetConvertedToNull() {
         HealthDataRecord record = makeValidRecord();
@@ -118,6 +121,13 @@ public class HealthDataRecordTest {
         record.setUserSubstudyMemberships(ImmutableMap.of());
         assertNull(record.getUserSubstudyMemberships());
     }
+    
+    @Test
+    public void emptyLanguagesListConvertedToNull() {
+        HealthDataRecord record = makeValidRecord();
+        record.setUserLanguages(ImmutableList.of());
+        assertNull(record.getUserLanguages());
+    }    
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void jsonNullData() throws Exception {
@@ -285,6 +295,7 @@ public class HealthDataRecordTest {
         record.setUploadDate(UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setUserSharingScope(SharingScope.NO_SHARING);
+        record.setUserLanguages(TestConstants.LANGUAGES);
         return record;
     }
 
@@ -315,6 +326,7 @@ public class HealthDataRecordTest {
                 "   \"userMetadata\":{\"userMetadata\":\"userMetaValue\"},\n" +
                 "   \"userSharingScope\":\"all_qualified_researchers\",\n" +
                 "   \"userExternalId\":\"ABC-123-XYZ\",\n" +
+                "   \"userLanguages\":[\"en\", \"fr\"],\n" +
                 "   \"validationErrors\":\"dummy validation errors\",\n" +
                 "   \"version\":42\n" +
                 "}";
@@ -340,6 +352,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getUserSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(record.getUserExternalId(), "ABC-123-XYZ");
         assertEquals(record.getValidationErrors(), "dummy validation errors");
+        assertEquals(record.getUserLanguages(), TestConstants.LANGUAGES);
         assertEquals(record.getVersion().longValue(), 42);
 
         assertEquals(record.getData().size(), 1);
@@ -356,7 +369,7 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(jsonMap.size(), 23);
+        assertEquals(jsonMap.size(), 24);
         assertEquals(jsonMap.get("appVersion"), APP_VERSION);
         assertEquals(jsonMap.get("createdOnTimeZone"), "-0800");
         assertEquals(jsonMap.get("dayInStudy"), 42);
@@ -373,6 +386,8 @@ public class HealthDataRecordTest {
         assertEquals(DateTime.parse((String) jsonMap.get("uploadedOn")).getMillis(), uploadedOn);
         assertEquals(jsonMap.get("userSharingScope"), "all_qualified_researchers");
         assertEquals(jsonMap.get("userExternalId"), "ABC-123-XYZ");
+        assertEquals(((List<String>)jsonMap.get("userLanguages")).get(0), "en");
+        assertEquals(((List<String>)jsonMap.get("userLanguages")).get(1), "fr");
         assertEquals(jsonMap.get("validationErrors"), "dummy validation errors");
         assertEquals(jsonMap.get("version"), 42);
         assertEquals(jsonMap.get("type"), "HealthData");
@@ -397,7 +412,7 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(publicJsonMap.size(), 22);
+        assertEquals(publicJsonMap.size(), 23);
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals(publicJsonMap.get("id"), "json record ID");
     }

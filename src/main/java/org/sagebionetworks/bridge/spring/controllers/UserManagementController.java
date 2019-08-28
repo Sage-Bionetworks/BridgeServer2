@@ -95,6 +95,7 @@ public class UserManagementController extends BaseController {
 
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        System.out.println("CONTROLLER: " + participant.getLanguages());
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         

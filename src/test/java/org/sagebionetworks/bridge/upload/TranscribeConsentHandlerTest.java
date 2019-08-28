@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -9,6 +10,7 @@ import static org.testng.Assert.assertSame;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -91,6 +93,7 @@ public class TranscribeConsentHandlerTest {
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
         when(mockAccount.getAccountSubstudies()).thenReturn(ImmutableSet.of(as1, as2));
+        when(mockAccount.getLanguages()).thenReturn(LANGUAGES);
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();
@@ -105,6 +108,8 @@ public class TranscribeConsentHandlerTest {
         Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
         assertEquals(substudyMemberships.get("subA"), "<none>");
         assertEquals(substudyMemberships.get("subB"), "extB");
+        
+        assertEquals(outputRecord.getUserLanguages(), LANGUAGES);
 
         assertEquals(outputRecord.getDayInStudy().intValue(), 5);
     }
@@ -122,15 +127,18 @@ public class TranscribeConsentHandlerTest {
         assertNull(outputRecord.getUserExternalId());
         assertNull(outputRecord.getUserDataGroups());
         assertNull(outputRecord.getUserSubstudyMemberships());
+        assertNull(outputRecord.getUserLanguages());
     }
 
     @Test
     public void emptyStringSetConvertedCorrectly() {
         when(mockAccount.getDataGroups()).thenReturn(ImmutableSet.of());
+        when(mockAccount.getLanguages()).thenReturn(ImmutableList.of());
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();
 
         assertNull(outputRecord.getUserDataGroups());
+        assertNull(outputRecord.getUserLanguages());
     }
 }
