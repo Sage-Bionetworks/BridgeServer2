@@ -25,6 +25,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyClass;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.Version;
@@ -402,6 +403,7 @@ public class HibernateAccount implements Account {
      * list of unique ISO 639-1 language codes. */
     @CollectionTable(name = "AccountLanguages", joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "id"))
     @Column(name = "language")
+    @OrderColumn(name="order_index", insertable=true, updatable=true)
     @ElementCollection(fetch = FetchType.EAGER)
     public List<String> getLanguages() {
         if (languages == null) {
