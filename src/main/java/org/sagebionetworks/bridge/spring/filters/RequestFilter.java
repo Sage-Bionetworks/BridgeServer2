@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -132,7 +133,7 @@ public class RequestFilter implements Filter {
                 List<LanguageRange> ranges = Locale.LanguageRange.parse(acceptLanguageHeader);
                 LinkedHashSet<String> languageSet = ranges.stream().map(range -> {
                     return Locale.forLanguageTag(range.getRange()).getLanguage();
-                }).collect(toCollection(LinkedHashSet::new));
+                }).filter(StringUtils::isNotBlank).collect(toCollection(LinkedHashSet::new));
                 return ImmutableList.copyOf(languageSet);
             } catch(IllegalArgumentException e) {
                 // Accept-Language header was not properly formatted, do not throw an exception over 
