@@ -588,6 +588,19 @@ public class ParticipantControllerTest extends Mockito {
         assertNotNull(result); // values are all null, but object is returned
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantRequestInfoForWorkerOnlyReturnsCurrentStudyInfo() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+
+        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+    }
+    
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder(USER_ID);
 
