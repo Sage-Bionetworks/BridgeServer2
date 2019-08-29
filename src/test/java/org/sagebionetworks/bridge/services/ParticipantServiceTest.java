@@ -654,6 +654,15 @@ public class ParticipantServiceTest {
         assertFalse(account.getPhoneVerified());
         assertFalse(account.getEmailVerified());
     }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp=".*must be assigned to one or more of these substudies: substudyId.*")
+    public void createParticipantMustIncludeCallerSubstudy() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID)).build());
+        
+        participantService.createParticipant(STUDY, PARTICIPANT, false);
+    }
 
     @Test
     public void createSmsNotificationRegistration_PhoneNotVerified() {
@@ -1198,6 +1207,16 @@ public class ParticipantServiceTest {
                 .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
         accountSubstudies.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+    }
+    
+    // The exception here results from the fact that the caller can't see the existance of the 
+    // participant, because the substudy IDs don't overlap
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateParticipantMustIncludeCallerSubstudy() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID)).build());
+
+        participantService.updateParticipant(STUDY, PARTICIPANT);
     }
     
     @Test

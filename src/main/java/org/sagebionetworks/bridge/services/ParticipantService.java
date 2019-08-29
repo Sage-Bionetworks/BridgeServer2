@@ -537,9 +537,7 @@ public class ParticipantService {
             accountDao.updateAccount(account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
         } catch (Exception e) {
-            if (externalId != null) {
-                externalIdService.unassignExternalId(account, externalId.getIdentifier());
-            }
+            externalIdService.unassignExternalId(account, externalId.getIdentifier());
             throw e;
         }
     }
