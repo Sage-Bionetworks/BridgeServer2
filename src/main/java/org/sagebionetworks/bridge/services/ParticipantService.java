@@ -190,32 +190,6 @@ public class ParticipantService {
         this.requestInfoService = requestInfoService;
     }
     
-    public ExternalIdentifier assignExternalId(AccountId accountId, String externalId) {
-        Account account = getAccountThrowingException(accountId);
-        ExternalIdentifier extIdObj = beginAssignExternalId(account, externalId);
-        if (extIdObj != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
-                    extIdObj.getSubstudyId(), account.getId());
-            // If a substudy relationship exists without the external ID, remove it because
-            // we're about to create it with an external ID
-            if (account.getAccountSubstudies().contains(acctSubstudy)) {
-                account.getAccountSubstudies().remove(acctSubstudy);
-            }
-            acctSubstudy.setExternalId(extIdObj.getIdentifier());
-            account.getAccountSubstudies().add(acctSubstudy);
-            try {
-                accountDao.updateAccount(account,
-                        (modifiedAccount) -> externalIdService.commitAssignExternalId(extIdObj));
-            } catch(Exception e) {
-                if (extIdObj != null) {
-                    externalIdService.unassignExternalId(account, extIdObj.getIdentifier());    
-                }
-                throw e;
-            }
-        }
-        return extIdObj;
-    }
-
     /**
      * This is a researcher API to backfill SMS notification registrations for a user. We generally prefer the app
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
@@ -856,6 +830,9 @@ public class ParticipantService {
         return activityEventService.getActivityEventList(account.getHealthCode());
     }
     
+    /**
+     * This method is only executed on the authenticated caller, not on behalf of any other person.
+     */
     public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
         checkNotNull(study);
         checkNotNull(context);
@@ -878,9 +855,7 @@ public class ParticipantService {
         }
         
         // reload account, or you will get an optimistic lock exception
-        AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
         boolean sendEmailVerification = false;
-        boolean assignExternalId = false;
         boolean accountUpdated = false;
         if (update.getPhoneUpdate() != null && account.getPhone() == null) {
             account.setPhone(update.getPhoneUpdate());
@@ -893,18 +868,26 @@ public class ParticipantService {
             sendEmailVerification = true;
             accountUpdated = true;
         }
-        Set<String> externalIds = BridgeUtils.collectExternalIds(account);
-        if (update.getExternalIdUpdate() != null && !externalIds.contains(update.getExternalIdUpdate())) {
-            assignExternalId = true;
-            accountUpdated = true;
-        }
-        if (accountUpdated) {
-            if (assignExternalId) {
-                ExternalIdentifier externalId = assignExternalId(accountId, update.getExternalIdUpdate());
-                updateRequestContext(externalId);
-            } else {
-                accountDao.updateAccount(account, null);
+        ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
+        if (externalId != null) {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+                    externalId.getSubstudyId(), account.getId());
+            // Highly unlikely this was an admin account, but just in case
+            if (account.getAccountSubstudies().contains(acctSubstudy)) {
+                account.getAccountSubstudies().remove(acctSubstudy);
             }
+            acctSubstudy.setExternalId(externalId.getIdentifier());
+            account.getAccountSubstudies().add(acctSubstudy);
+            try {
+                accountDao.updateAccount(account,
+                        (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+            } catch(Exception e) {
+                externalIdService.unassignExternalId(account, externalId.getIdentifier());    
+                throw e;
+            }
+            updateRequestContext(externalId);
+        } else if (accountUpdated) {
+            accountDao.updateAccount(account, null);
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 

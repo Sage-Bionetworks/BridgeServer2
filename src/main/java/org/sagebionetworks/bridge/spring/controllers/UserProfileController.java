@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -122,23 +121,6 @@ public class UserProfileController extends BaseController {
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
-        
-        return UserSessionInfo.toJSON(session);
-    }
-    
-    @Deprecated
-    @PostMapping({"/v3/users/self/externalId", "/api/v1/profile/external-id"})
-    public JsonNode createExternalIdentifier() throws Exception {
-        UserSession session = getAuthenticatedSession();
-        
-        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
-                session.getHealthCode());
-        
-        ExternalIdentifier externalId = parseJson(ExternalIdentifier.class);
-        externalId.setStudyId(accountId.getStudyId());
-        
-        participantService.assignExternalId(accountId, externalId.getIdentifier());
-        sessionUpdateService.updateExternalId(session, externalId);
         
         return UserSessionInfo.toJSON(session);
     }

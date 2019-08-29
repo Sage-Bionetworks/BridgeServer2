@@ -172,7 +172,6 @@ public class UserProfileControllerTest extends Mockito {
         assertCrossOrigin(UserProfileController.class);
         assertGet(UserProfileController.class, "getUserProfile");
         assertPost(UserProfileController.class, "updateUserProfile");
-        assertPost(UserProfileController.class, "createExternalIdentifier");
         assertGet(UserProfileController.class, "getDataGroups");
         assertPost(UserProfileController.class, "updateDataGroups");
     }
@@ -265,21 +264,6 @@ public class UserProfileControllerTest extends Mockito {
         assertEquals(persisted.getAttributes().get("foo"), "belgium");
     }
     
-    @Test
-    @SuppressWarnings("deprecation")
-    public void canSubmitExternalIdentifier() throws Exception {
-        mockRequestBody(mockRequest, "{\"identifier\":\"ABC-123-XYZ\"}");
-                
-        JsonNode result = controller.createExternalIdentifier();
-        
-        assertEquals(result.get("externalId").textValue(), "ABC-123-XYZ");
-        
-        verify(mockParticipantService).assignExternalId(accountIdCaptor.capture(), eq("ABC-123-XYZ"));
-        
-        assertEquals(accountIdCaptor.getValue().getHealthCode(), HEALTH_CODE);
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
-    }
-
     @Test
     @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
