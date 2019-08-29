@@ -122,10 +122,13 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
+        StudyParticipant existing = participantService.getParticipant(study, session.getId(), true);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
+                // Cannot change sharing if the user is not consented. This method should probably require consent
+                // but since historically it did not, we will not change it now.
+                .withSharingScope(session.doesConsent() ? participant.getSharingScope() : existing.getSharingScope())
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, updated);
         
