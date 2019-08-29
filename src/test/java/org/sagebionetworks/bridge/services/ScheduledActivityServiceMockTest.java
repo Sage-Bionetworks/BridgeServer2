@@ -135,9 +135,9 @@ public class ScheduledActivityServiceMockTest {
         
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
                 .thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
-
+        
         Map<String,DateTime> map = ImmutableMap.of();
-        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), anyString())).thenReturn(map);
+        when(activityEventService.getActivityEventMap(eq(TEST_STUDY.getIdentifier()), anyString())).thenReturn(map);
         
         when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
