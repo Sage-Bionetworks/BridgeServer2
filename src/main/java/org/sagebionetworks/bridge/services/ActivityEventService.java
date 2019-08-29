@@ -16,14 +16,10 @@ import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Tuple;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
@@ -37,18 +33,12 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
-    private AccountDao accountDao;
     private ParticipantService participantService;
     private StudyService studyService;
     
     @Autowired
     final void setActivityEventDao(ActivityEventDao activityEventDao) {
         this.activityEventDao = activityEventDao;
-    }
-
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
     }
     
     @Autowired
@@ -191,12 +181,7 @@ public class ActivityEventService {
         DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
         if (createdOn == null) {
             Study study = studyService.getStudy(studyId);
-            AccountId accountId = AccountId.forHealthCode(studyId, healthCode);
-            Account account = BridgeUtils.filterForSubstudy(accountDao.getAccount(accountId));
-            if (account == null) {
-                throw new EntityNotFoundException(Account.class);
-            }
-            StudyParticipant studyParticipant = participantService.getParticipant(study, account, false);
+            StudyParticipant studyParticipant = participantService.getParticipant(study, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
             publishCreatedOnEvent(healthCode, createdOn);
             builder.put(ActivityEventObjectType.CREATED_ON.name().toLowerCase(), createdOn);
