@@ -4,6 +4,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.HasCriteria;
 
 import java.util.Set;
 
@@ -13,7 +14,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonDeserialize(as=DynamoSubpopulation.class)
-public interface Subpopulation extends BridgeEntity {
+public interface Subpopulation extends BridgeEntity, HasCriteria {
     ObjectWriter SUBPOP_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
             SimpleBeanPropertyFilter.serializeAllExcept("studyIdentifier")));

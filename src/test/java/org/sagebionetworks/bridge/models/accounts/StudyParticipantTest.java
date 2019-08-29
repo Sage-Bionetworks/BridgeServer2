@@ -407,4 +407,29 @@ public class StudyParticipantTest {
         
         assertEquals(participant.getLanguages(), Lists.newArrayList("en","fr","de"));
     }
+    
+    @Test
+    public void setExternalIdReturned() {
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("oneExternalId").build();
+        assertEquals(participant.getExternalId(), "oneExternalId");
+    }
+    
+    @Test
+    public void nullExternalIdMapReturnsNullExternalIdField() { 
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalIds(null).build();
+        assertNull(participant.getExternalId());
+    }
+    
+    @Test
+    public void emptyExternalIdMapReturnsNullExternalIdField() {
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalIds(ImmutableMap.of()).build();
+        assertNull(participant.getExternalId());
+    }
+    
+    @Test
+    public void externalIdRetrievedFromMap() { 
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalIds(ImmutableMap.of("oneSubstudy", "oneExternalId")).build();
+        assertEquals(participant.getExternalId(), "oneExternalId");
+    }
 }

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.annotation.Resource;
 
@@ -18,9 +19,9 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 /**
  * DAO implementation for templates. All the business constraints are enforced in TemplateService because they are not 
@@ -37,9 +38,11 @@ public class HibernateTemplateDao implements TemplateDao {
     private static final String GET_ACTIVE = "FROM HibernateTemplate as template " + 
             "WHERE templateType = :templateType AND studyId = :studyId AND deleted = 0 ORDER BY createdOn DESC";
     
+    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE studyId = :studyId";
+    
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "templateHibernateHelper")
+    @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
@@ -80,10 +83,10 @@ public class HibernateTemplateDao implements TemplateDao {
     }
 
     @Override
-    public void createTemplate(Template template) {
+    public void createTemplate(Template template, Consumer<Template> consumer) {
         checkNotNull(template);
         
-        hibernateHelper.create(template, null); 
+        hibernateHelper.create(template, consumer); 
     }
 
     @Override
@@ -102,5 +105,9 @@ public class HibernateTemplateDao implements TemplateDao {
             hibernateHelper.deleteById(HibernateTemplate.class, guid);    
         }
     }
-
+    
+    @Override
+    public void deleteTemplatesForStudy(StudyIdentifier studyId) {
+        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("studyId", studyId.getIdentifier()));
+    }
 }

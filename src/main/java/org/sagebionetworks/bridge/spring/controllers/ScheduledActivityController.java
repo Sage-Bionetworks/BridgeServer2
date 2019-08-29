@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -223,6 +224,9 @@ public class ScheduledActivityController extends BaseController {
     
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,
             DateTime startsOn, DateTime endsOn, int minPerSchedule) {
+        
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
         
         // This time zone is the time zone of the user upon first contacting the server for activities, and
@@ -244,7 +248,7 @@ public class ScheduledActivityController extends BaseController {
         builder.withStudyIdentifier(session.getStudyIdentifier());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
         builder.withLanguages(getLanguages(session));
-        builder.withClientInfo(getClientInfoFromUserAgentHeader());
+        builder.withClientInfo(reqContext.getCallerClientInfo());
         builder.withMinimumPerSchedule(minPerSchedule);
         
         ScheduleContext context = builder.build();
@@ -252,7 +256,7 @@ public class ScheduledActivityController extends BaseController {
         RequestInfo requestInfo = getRequestInfoBuilder(session).withTimeZone(requestTimeZone)
                 .withActivitiesAccessedOn(DateUtils.getCurrentDateTime()).build();
         
-        cacheProvider.updateRequestInfo(requestInfo);
+        requestInfoService.updateRequestInfo(requestInfo);
         
         return context;
     }

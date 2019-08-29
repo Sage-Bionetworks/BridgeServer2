@@ -32,6 +32,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private Long createdOn;
     private String createdOnTimeZone;
     private JsonNode data;
+    private Integer dayInStudy;
     private String healthCode;
     private String id;
     private JsonNode metadata;
@@ -102,6 +103,18 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     @Override
     public void setData(JsonNode data) {
         this.data = data;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Integer getDayInStudy() {
+        return dayInStudy;
+    }
+
+    /** @see #getDayInStudy */
+    @Override
+    public void setDayInStudy(Integer dayInStudy) {
+        this.dayInStudy = dayInStudy;
     }
 
     /** {@inheritDoc} */

@@ -20,9 +20,10 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.services.TemplateService;
 
 @CrossOrigin
@@ -64,10 +65,11 @@ public class TemplateController extends BaseController {
     @ResponseStatus(CREATED)
     public GuidVersionHolder createTemplate() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
+        Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Template template = parseJson(Template.class);
         
-        return templateService.createTemplate(session.getStudyIdentifier(), template);
+        return templateService.createTemplate(study, template);
     }
     
     @GetMapping("/v3/templates/{guid}")

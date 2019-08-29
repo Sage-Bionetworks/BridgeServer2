@@ -4,14 +4,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.persistence.Convert;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.hibernate.ClientInfoConverter;
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.DateTimeZoneAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.StringListConverter;
+import org.sagebionetworks.bridge.hibernate.StringSetConverter;
+import org.sagebionetworks.bridge.hibernate.StudyIdentifierConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
@@ -19,42 +29,41 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * support and troubleshooting, and potentially useful to show the filtering that is occurring on 
  * the server to researchers in the researcher UI.
  */
+@Entity
+@Table(name = "RequestInfos")
+@JsonDeserialize(builder = RequestInfo.Builder.class)
 public final class RequestInfo {
+    
+    // By putting Hibernate annotations on the fields, we do not need to provide setter methods and
+    // can continue using our Builder pattern.
+    @Id
+    private String userId;
+    @Convert(converter = ClientInfoConverter.class)
+    private ClientInfo clientInfo;
+    private String userAgent;
+    @Convert(converter = StringListConverter.class)
+    private List<String> languages;
+    @Convert(converter = StringSetConverter.class)
+    private Set<String> userDataGroups;
+    @Convert(converter = StringSetConverter.class)
+    private Set<String> userSubstudyIds;
+    @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime activitiesAccessedOn;
+    @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime signedInOn;
+    @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime uploadedOn;
+    @Convert(converter = DateTimeZoneAttributeConverter.class)
+    private DateTimeZone timeZone;
+    @Convert(converter = StudyIdentifierConverter.class)
+    private StudyIdentifier studyIdentifier;
 
-    private final String userId;
-    private final ClientInfo clientInfo;
-    private final String userAgent;
-    private final List<String> languages;
-    private final Set<String> userDataGroups;
-    private final Set<String> userSubstudyIds;
-    private final DateTime activitiesAccessedOn;
-    private final DateTime signedInOn;
-    private final DateTime uploadedOn;
-    private final DateTimeZone timeZone;
-    private final StudyIdentifier studyIdentifier;
-
-    @JsonCreator
-    private RequestInfo(@JsonProperty("userId") String userId, @JsonProperty("clientInfo") ClientInfo clientInfo,
-            @JsonProperty("userAgent") String userAgent, @JsonProperty("languages") List<String> languages,
-            @JsonProperty("userDataGroups") Set<String> userDataGroups,
-            @JsonProperty("userSubstudyIds") Set<String> userSubstudyIds,
-            @JsonProperty("activitiesAccessedOn") DateTime activitiesAccessedOn,
-            @JsonProperty("signedInOn") DateTime signedInOn, @JsonProperty("uploadedOn") DateTime uploadedOn,
-            @JsonProperty("timeZone") DateTimeZone timeZone,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier) {
-        this.userId = userId;
-        this.clientInfo = clientInfo;
-        this.userAgent = userAgent;
-        this.languages = languages;
-        this.userDataGroups = userDataGroups;
-        this.userSubstudyIds = userSubstudyIds;
-        this.activitiesAccessedOn = activitiesAccessedOn;
-        this.signedInOn = signedInOn;
-        this.uploadedOn = uploadedOn;
-        this.timeZone = timeZone;
-        this.studyIdentifier = studyIdentifier;
-    }
-
+    // Hibernate needs a default constructor; the easiest thing to do is to remove the 
+    // existing constructor and allow the builder to set private fields directly.
+    
     public String getUserId() {
         return userId;
     }
@@ -79,17 +88,14 @@ public final class RequestInfo {
         return userSubstudyIds;
     }
     
-    @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getActivitiesAccessedOn() {
         return (activitiesAccessedOn == null) ? null : activitiesAccessedOn.withZone(timeZone);
     }
 
-    @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getSignedInOn() {
         return (signedInOn == null) ? null : signedInOn.withZone(timeZone);
     }
     
-    @JsonSerialize(using=DateTimeSerializer.class)
     public DateTime getUploadedOn() {
         return (uploadedOn == null) ? null : uploadedOn.withZone(timeZone);
     }
@@ -234,8 +240,19 @@ public final class RequestInfo {
         }
         
         public RequestInfo build() {
-            return new RequestInfo(userId, clientInfo, userAgent, languages, userDataGroups, userSubstudyIds,
-                    activitiesAccessedOn, signedInOn, uploadedOn, timeZone, studyIdentifier);
+            RequestInfo info = new RequestInfo();
+            info.userId = userId;
+            info.clientInfo = clientInfo;
+            info.userAgent = userAgent;
+            info.languages = languages;
+            info.userDataGroups = userDataGroups;
+            info.userSubstudyIds = userSubstudyIds;
+            info.activitiesAccessedOn = activitiesAccessedOn;
+            info.signedInOn = signedInOn;
+            info.uploadedOn = uploadedOn;
+            info.timeZone = timeZone;
+            info.studyIdentifier = studyIdentifier;
+            return info;
         }
     }
     

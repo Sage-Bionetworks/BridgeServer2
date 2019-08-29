@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.amazonaws.services.s3.model.CannedAccessControlList.PublicRead;
+import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -43,7 +44,6 @@ import org.sagebionetworks.bridge.validators.StudyConsentValidator;
 
 public class StudyConsentServiceMockTest extends Mockito {
     private static final String DOCUMENT = "<p>Document</p>";
-    private static final String TRANSFORMED_DOC = "<doc>" + DOCUMENT + "</doc>";
     private static final StudyConsentForm FORM = new StudyConsentForm(DOCUMENT);
     private static final long CREATED_ON = DateTime.now().getMillis();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("my-subpop");
@@ -103,9 +103,9 @@ public class StudyConsentServiceMockTest extends Mockito {
         StudyConsentView result = service.addConsent(SUBPOP_GUID, FORM);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getCreatedOn(), CREATED_ON);
-        assertEquals(result.getDocumentContent(), DOCUMENT);
+        assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         
-        verify(mockS3Helper).writeBytesToS3(CONSENT_BUCKET, STORAGE_PATH, DOCUMENT.getBytes());
+        verify(mockS3Helper).writeBytesToS3(CONSENT_BUCKET, STORAGE_PATH, (DOCUMENT + SIGNATURE_BLOCK).getBytes());
         verify(mockDao).addConsent(SUBPOP_GUID, STORAGE_PATH, CREATED_ON);
     }
 
@@ -144,7 +144,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenReturn(DOCUMENT);
         
         StudyConsentView result = service.getActiveConsent(subpop);
-        assertEquals(result.getDocumentContent(), DOCUMENT);
+        assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         assertEquals(result.getCreatedOn(), CREATED_ON);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getStudyConsent(), consent);
@@ -169,7 +169,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenReturn(DOCUMENT);
         
         StudyConsentView result = service.getMostRecentConsent(SUBPOP_GUID);
-        assertEquals(result.getDocumentContent(), DOCUMENT);
+        assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         assertEquals(result.getCreatedOn(), CREATED_ON);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getStudyConsent(), consent);
@@ -198,7 +198,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenReturn(DOCUMENT);
 
         StudyConsentView result = service.getConsent(SUBPOP_GUID, CREATED_ON);
-        assertEquals(result.getDocumentContent(), DOCUMENT);
+        assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         assertEquals(result.getCreatedOn(), CREATED_ON);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getStudyConsent(), consent);
@@ -211,6 +211,14 @@ public class StudyConsentServiceMockTest extends Mockito {
     
     @Test
     public void publishConsent() throws Exception {
+        // This is the document with the footer, where all the template variables have been removed
+        String transformedDoc = "<doc><p>Document</p><table class=\"bridge-sig-block\"><tbody><tr>"+
+                "<td><div class=\"label\">Name of Adult Participant</div></td><td><img brimg=\"\" "+
+                "alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" /><div "+
+                "class=\"label\">Signature of Adult Participant</div></td><td><div class=\"label\">"+
+                "Date</div></td></tr><tr><td><div class=\"label\">Email, Phone, or ID</div></td><td>"+
+                "<div class=\"label\">Sharing Option</div></td></tr></tbody></table></doc>";
+        
         StudyConsent consent = StudyConsent.create();
         consent.setCreatedOn(CREATED_ON);
         consent.setSubpopulationGuid(SUBPOP_GUID.getGuid());
@@ -225,7 +233,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         service.setConsentTemplate(new ByteArrayResource("<doc>${consent.body}</doc>".getBytes()));
         
         StudyConsentView result = service.publishConsent(study, subpop, CREATED_ON);
-        assertEquals(result.getDocumentContent(), DOCUMENT);
+        assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         assertEquals(result.getCreatedOn(), CREATED_ON);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getStudyConsent(), consent);
@@ -237,7 +245,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         PutObjectRequest request = requestCaptor.getAllValues().get(0);
         assertEquals(request.getBucketName(), PUBLICATION_BUCKET);
         assertEquals(request.getCannedAcl(), PublicRead);
-        assertEquals(IOUtils.toString(request.getInputStream()), TRANSFORMED_DOC);
+        assertEquals(IOUtils.toString(request.getInputStream()), transformedDoc);
         ObjectMetadata metadata = request.getMetadata();
         assertEquals(metadata.getContentType(), MimeType.HTML.toString());
         
@@ -332,7 +340,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         
         StudyConsentForm form = new StudyConsentForm("<cml><p>This is not valid XML.</cml>");
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
-        assertEquals("<p>This is not valid XML.</p>", view.getDocumentContent());
+        assertEquals(view.getDocumentContent(), "<p>This is not valid XML.</p>" + SIGNATURE_BLOCK);
     }
     
     @Test
@@ -344,7 +352,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         
         StudyConsentForm form = new StudyConsentForm(doc);
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
-        assertEquals("<p>This is all the content that should be kept.</p>\n<br />\n<p>And this makes it a fragment.</p>", view.getDocumentContent());
+        assertEquals(view.getDocumentContent(), "<p>This is all the content that should be kept.</p><br /><p>And this makes it a fragment.</p>" + SIGNATURE_BLOCK);
     }
     
     @Test
@@ -356,8 +364,7 @@ public class StudyConsentServiceMockTest extends Mockito {
         
         StudyConsentForm form = new StudyConsentForm(doc);
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
-        // Text is pretty printed so remove that before comparing 
-        assertEquals(doc, view.getDocumentContent().replaceAll("[\n\t\r]", ""));
+        assertEquals(view.getDocumentContent(), doc + SIGNATURE_BLOCK);
     }
     
     @Test
@@ -367,6 +374,30 @@ public class StudyConsentServiceMockTest extends Mockito {
         
         StudyConsentForm form = new StudyConsentForm("</script><div ankle='foo'>This just isn't a SGML-based document no matter how you slice it.</p><h4><img>");
         StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
-        assertEquals("<div>\n This just isn't a SGML-based document no matter how you slice it.\n <p></p>\n <h4><img /></h4>\n</div>", view.getDocumentContent());
+        assertEquals(view.getDocumentContent(), "<div>This just isn't a SGML-based document no matter how you slice it.<p></p><h4><img /></h4></div>"  + SIGNATURE_BLOCK);
+    }
+    
+    @Test
+    public void removedSignatureBlockIsRestored() { 
+        StudyConsent consent = StudyConsent.create();
+        when(mockDao.addConsent(SUBPOP_GUID, STORAGE_PATH, CREATED_ON)).thenReturn(consent);
+        
+        StudyConsentForm form = new StudyConsentForm(
+                "<p>Test</p>" + SIGNATURE_BLOCK.replace("${participant.name}", ""));
+        
+        StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
+        assertEquals(view.getDocumentContent(), form.getDocumentContent()  + SIGNATURE_BLOCK);
+    }
+    
+    @Test
+    public void existingSignatureInformationIsNotDuplicated() {
+        StudyConsent consent = StudyConsent.create();
+        when(mockDao.addConsent(SUBPOP_GUID, STORAGE_PATH, CREATED_ON)).thenReturn(consent);
+        
+        StudyConsentForm form = new StudyConsentForm("<p>${participant.name} ${participant.signing.date}</p>");        
+        StudyConsentView view = service.addConsent(SUBPOP_GUID, form);
+        
+        // The information in the document is enough that we do not insert SIGNATURE_BLOCK
+        assertEquals(view.getDocumentContent(), form.getDocumentContent());
     }
 }

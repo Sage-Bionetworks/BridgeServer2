@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static java.nio.charset.Charset.defaultCharset;
 
 import java.util.Map;
@@ -106,48 +107,32 @@ public final class ConsentPdf {
         // User's name may contain HTML. Clean it up
         String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
         
-        if (studyConsentAgreement.contains("<html")) {
-            // legacy format, proceed as we used to. Note that once phone number was added to the system, 
-            // we didn't check for a null email, so this has been added after manual repair of consents 
-            // exposed this bug.
-            String userEmail = signer.getEmail();
-            String html = studyConsentAgreement.replace("@@name@@", username);
-            html = html.replace("@@signing.date@@", signingDate);
-            if (signer.getEmail() != null && Boolean.TRUE.equals(signer.getEmailVerified())) {
-                html = html.replace("@@email@@", userEmail);
-            } else {
-                html = html.replace("@@email@@", "");
-            }
-            html = html.replace("@@sharing@@", sharingLabel);
-            return html;
-        } else {
-            // We have to be pretty lenient about this, because some of our tests cannot verify 
-            // a credential, and will allow a sign in by enabling the account. We have no way
-            // currently to verify an email address or phone number via the API.
-            String contactInfo = "";
-            String contactLabel = "";
-            if (signer.getEmail() != null && Boolean.TRUE.equals(signer.getEmailVerified())) {
-                contactInfo = signer.getEmail();
-                contactLabel = "Email Address";
-            } else if (signer.getPhone() != null && Boolean.TRUE.equals(signer.getPhoneVerified())) {
-                contactInfo = signer.getPhone().getNationalFormat();
-                contactLabel = "Phone Number";
-            } else if (signer.getExternalId() != null) {
-                contactInfo = signer.getExternalId();
-                contactLabel = "ID";
-            }
-            // This is now a fragment, assemble accordingly
-            Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
-            String resolvedStudyConsentAgreement = BridgeUtils.resolveTemplate(studyConsentAgreement, map);
-            
-            map.put("consent.body", resolvedStudyConsentAgreement);
-            map.put("participant.name", username);
-            map.put("participant.signing.date", signingDate);
-            map.put("participant.contactInfo", contactInfo);
-            map.put("participant.contactLabel", contactLabel);
-            map.put("participant.sharing", sharingLabel);
-            return BridgeUtils.resolveTemplate(xmlTemplateWithSignatureBlock, map);
+        // A prior format using '@@' as a delimiter is no longer used by any study in production.
+        
+        String contactInfo = "";
+        String contactLabel = "";
+        if (signer.getEmail() != null && TRUE.equals(signer.getEmailVerified())) {
+            contactInfo = signer.getEmail();
+            contactLabel = "Email Address";
+        } else if (signer.getPhone() != null && TRUE.equals(signer.getPhoneVerified())) {
+            contactInfo = signer.getPhone().getNationalFormat();
+            contactLabel = "Phone Number";
+        } else if (signer.getExternalId() != null) {
+            contactInfo = signer.getExternalId();
+            contactLabel = "ID";
         }
+        
+        // This is now a fragment, assemble accordingly
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+        map.put("participant.name", username);
+        map.put("participant.signing.date", signingDate);
+        map.put("participant.contactInfo", contactInfo);
+        map.put("participant.contactLabel", contactLabel);
+        map.put("participant.sharing", sharingLabel);
+        String resolvedStudyConsentAgreement = BridgeUtils.resolveTemplate(studyConsentAgreement, map);
+        
+        map.put("consent.body", resolvedStudyConsentAgreement);
+        return BridgeUtils.resolveTemplate(xmlTemplateWithSignatureBlock, map);
     }
 
     // Helper method to check if the given string is a valid Base64 string. Returns false for null or blank strings.

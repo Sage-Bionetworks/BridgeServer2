@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.Charset.defaultCharset;
+import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,15 +22,12 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Document.OutputSettings.Syntax;
-import org.jsoup.nodes.Entities.EscapeMode;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -62,7 +60,32 @@ import com.lowagie.text.DocumentException;
 @Component
 public class StudyConsentService {
     private static final Logger logger = LoggerFactory.getLogger(StudyConsentService.class);
-
+    
+    /**
+     * By including the signature block through the StudyConsentService, we are able to 
+     * centralize the definition of the block in one place, and apply it to both old and 
+     * new consent documents. We will test and add the block to any document that removes 
+     * the participant's signature or signing date. 
+     */
+    public static final String SIGNATURE_BLOCK = "<table class=\"bridge-sig-block\">"+
+            "<tbody><tr><td>${participant.name}<div class=\"label\">Name of Adult Participant</div></td>"+
+            "<td><img brimg=\"\" alt=\"\" onerror=\"this.style.display='none'\" src=\"cid:consentSignature\" />"+
+            "<div class=\"label\">Signature of Adult Participant</div></td>"+
+            "<td>${participant.signing.date}<div class=\"label\">Date</div></td></tr>"+
+            "<tr><td>${participant.contactInfo}<div class=\"label\">${participant.contactLabel}</div></td>"+
+            "<td>${participant.sharing}<div class=\"label\">Sharing Option</div></td></tr></tbody></table>";
+    
+    /**
+     * For the published version of the consent document, every template variable in the footer needs
+     * to have a suitable value.
+     */
+    Map<String, String> SIGNATURE_BLOCK_VARS = new ImmutableMap.Builder<String, String>()
+            .put("participant.name", "")
+            .put("participant.signing.date", "")
+            .put("participant.contactInfo", "")
+            .put("participant.sharing", "")
+            .put("participant.contactLabel", "Email, Phone, or ID").build();
+    
     static final String CONSENT_HTML_SUFFIX = "/consent.html";
     static final String CONSENT_PDF_SUFFIX = "/consent.pdf";
 
@@ -78,7 +101,7 @@ public class StudyConsentService {
     private String publicationsBucket = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
     private String fullPageTemplate;
     
-    @Value("classpath:conf/study-defaults/consent-unsigned-page.xhtml")
+    @Value("classpath:conf/study-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.fullPageTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
@@ -129,6 +152,8 @@ public class StudyConsentService {
         
         String sanitizedContent = sanitizeHTML(form.getDocumentContent());
         Validate.entityThrowingException(validator, new StudyConsentForm(sanitizedContent));
+        
+        sanitizedContent = appendSignatureBlockIfNeeded(sanitizedContent);
 
         long createdOn = DateUtils.getCurrentMillisFromEpoch();
         String storagePath = subpopGuid.getGuid() + "." + createdOn;
@@ -271,23 +296,27 @@ public class StudyConsentService {
             logger.info("Finished reading consent from bucket " + consentsBucket + " storagePath " +
                     consent.getStoragePath() + " (" + content.length() + " chars) in " +
                     stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
-            return content;
+            // Add a signature block if this document does not contain one.
+            return appendSignatureBlockIfNeeded(content);
         } catch(IOException ioe) {
             logger.error("Failure loading storagePath: " + consent.getStoragePath());
             throw new BridgeServiceException(ioe);
         }
     }
     
-    private String sanitizeHTML(String documentContent) {
-        documentContent = Jsoup.clean(documentContent, BridgeConstants.CKEDITOR_WHITELIST);
-        Document document = Jsoup.parseBodyFragment(documentContent);
-        document.outputSettings().escapeMode(EscapeMode.xhtml)
-            .prettyPrint(false).syntax(Syntax.xml).charset("UTF-8");
-        return document.body().html();
+    private String appendSignatureBlockIfNeeded(String content) {
+        // The user can change the signature block, they can remove parts of the signature block,
+        // but if the person's name or the signing date are gone, we're assuming that they've 
+        // removed too much, and we re-append the signature block.
+        if (!content.contains("${participant.name}") || !content.contains("${participant.signing.date}")) {
+            content = content + SIGNATURE_BLOCK;
+        }
+        return content;
     }
     
     private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
         Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> XML_ESCAPER.translate(value));
+        map.putAll(SIGNATURE_BLOCK_VARS);
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 
         map.put("consent.body", resolvedHTML);

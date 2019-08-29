@@ -29,11 +29,9 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -64,6 +62,22 @@ public class DynamoStudyTest {
     }
 
     @Test
+    public void fitBitScopesIsNeverNull() {
+        // Starts as empty.
+        Study study = Study.create();
+        assertTrue(study.getFitBitScopes().isEmpty());
+
+        // Set value works.
+        List<String> scopeList = ImmutableList.of("DailyActivitySummary", "HeartRate", "Sleep");
+        study.setFitBitScopes(scopeList);
+        assertEquals(study.getFitBitScopes(), scopeList);
+
+        // Set to null makes it empty again.
+        study.setFitBitScopes(null);
+        assertTrue(study.getFitBitScopes().isEmpty());
+    }
+
+    @Test
     public void uploadMetadataFieldDefListIsNeverNull() {
         // make field for test
         List<UploadFieldDefinition> fieldDefList = new ArrayList<>();
@@ -84,6 +98,25 @@ public class DynamoStudyTest {
     }
 
     @Test
+    public void reauthenticationEnabled() {
+        // Starts as null.
+        Study study = Study.create();
+        assertNull(study.isReauthenticationEnabled());
+
+        // Set to true.
+        study.setReauthenticationEnabled(true);
+        assertTrue(study.isReauthenticationEnabled());
+
+        // Set to false.
+        study.setReauthenticationEnabled(false);
+        assertFalse(study.isReauthenticationEnabled());
+
+        // Set back to null.
+        study.setReauthenticationEnabled(null);
+        assertNull(study.isReauthenticationEnabled());
+    }
+
+    @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
         EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsed()
@@ -93,11 +126,17 @@ public class DynamoStudyTest {
     }
 
     @Test
+    public void testToString() {
+        // Basic test that toString doesn't crash.
+        assertNotNull(Study.create().toString());
+    }
+
+    @Test
     public void studyFullySerializesForCaching() throws Exception {
         final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
         
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
-                OAuthProviderTest.CALLBACK_URL);
+                OAuthProviderTest.CALLBACK_URL, null);
         study.getOAuthProviders().put("myProvider", oauthProvider);
 
         study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
@@ -128,30 +167,6 @@ public class DynamoStudyTest {
         assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
         assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
         assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEqualsAndNotNull(study.getVerifyEmailTemplate(),
-                JsonUtils.asEntity(node, "verifyEmailTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getResetPasswordTemplate(),
-                JsonUtils.asEntity(node, "resetPasswordTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getEmailSignInTemplate(),
-                JsonUtils.asEntity(node, "emailSignInTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getAccountExistsTemplate(),
-                JsonUtils.asEntity(node, "accountExistsTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getSignedConsentTemplate(),
-                JsonUtils.asEntity(node, "signedConsentTemplate", EmailTemplate.class));
-        assertEqualsAndNotNull(study.getAppInstallLinkTemplate(),
-                JsonUtils.asEntity(node, "appInstallLinkTemplate", EmailTemplate.class));
-        assertEquals(JsonUtils.asEntity(node, "resetPasswordSmsTemplate", SmsTemplate.class),
-                study.getResetPasswordSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "phoneSignInSmsTemplate", SmsTemplate.class),
-                study.getPhoneSignInSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "appInstallLinkSmsTemplate", SmsTemplate.class),
-                study.getAppInstallLinkSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "verifyPhoneSmsTemplate", SmsTemplate.class),
-                study.getVerifyPhoneSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "accountExistsSmsTemplate", SmsTemplate.class),
-                study.getAccountExistsSmsTemplate());
-        assertEquals(JsonUtils.asEntity(node, "signedConsentSmsTemplate", SmsTemplate.class),
-                study.getSignedConsentSmsTemplate());
         assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
         assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
         assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
@@ -160,7 +175,6 @@ public class DynamoStudyTest {
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
-        assertTrue(node.get("externalIdValidationEnabled").asBoolean());
         assertTrue(node.get("externalIdRequiredOnSignup").asBoolean());
         assertTrue(node.get("emailSignInEnabled").asBoolean());
         assertTrue(node.get("reauthenticationEnabled").booleanValue());
@@ -187,6 +201,10 @@ public class DynamoStudyTest {
         assertEquals(androidLink.get("namespace").textValue(), "namespace");
         assertEquals(androidLink.get("package_name").textValue(), "package_name");
         assertEquals(androidLink.get("sha256_cert_fingerprints").get(0).textValue(), "sha256_cert_fingerprints");
+
+        JsonNode fitBitScopesNode = node.get("fitBitScopes");
+        assertEquals(fitBitScopesNode.size(), 1);
+        assertEquals(fitBitScopesNode.get(0).textValue(), "HeartRate");
 
         // validate minAppVersion
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");

@@ -193,10 +193,6 @@ public interface Account extends BridgeEntity {
     Boolean getNotifyByEmail();
     void setNotifyByEmail(Boolean notifyByEmail);
     
-    /** The external ID that has been assigned to this account. */
-    String getExternalId();
-    void setExternalId(String externalId);
-    
     /** The data groups assigned to this account. */
     Set<String> getDataGroups();
     void setDataGroups(Set<String> dataGroups);

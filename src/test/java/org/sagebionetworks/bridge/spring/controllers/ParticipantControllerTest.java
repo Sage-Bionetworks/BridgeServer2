@@ -116,6 +116,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -145,7 +146,7 @@ public class ParticipantControllerTest extends Mockito {
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
 
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", EMAIL,
-            PHONE, null, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
+            PHONE, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
             ENABLED, TEST_STUDY, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
@@ -182,7 +183,10 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     UserAdminService mockUserAdminService;
-
+    
+    @Mock
+    RequestInfoService requestInfoService;
+    
     @Mock
     HttpServletRequest mockRequest;
 
@@ -268,7 +272,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test
@@ -534,7 +538,7 @@ public class ParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfo("userId");
 
         // serialization was tested separately... just validate the object is there
@@ -555,7 +559,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
     }
 

@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
 import java.io.UnsupportedEncodingException;
@@ -11,10 +13,12 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,6 +29,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Document.OutputSettings.Syntax;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities.EscapeMode;
+import org.jsoup.safety.Cleaner;
+
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -41,6 +52,8 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
+
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -116,16 +129,10 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
-        for (AccountSubstudy accountSubstudy: account.getAccountSubstudies()) {
-            if (accountSubstudy.getExternalId() != null) {
-                builder.add(accountSubstudy.getExternalId());
-            }
-        }
-        if (account.getExternalId() != null) {
-            builder.add(account.getExternalId());
-        }
-        return builder.build();
+        return account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getExternalId)
+                .filter(Objects::nonNull)
+                .collect(toImmutableSet());
     }
     
     /** Gets the request context for the current thread. See also RequestInterceptor. */
@@ -589,5 +596,38 @@ public class BridgeUtils {
         checkArgument(StringUtils.isNotBlank(value));
         
         return value; 
+    }
+    
+    public static String templateTypeToLabel(TemplateType type) {
+        List<String> words = Arrays.asList(type.name().toLowerCase().split("_"));
+        List<String> capitalized = words.stream().map(StringUtils::capitalize).collect(toList());
+        if (capitalized.get(0).equals("Sms")) {
+            capitalized.remove(0);
+            capitalized.add("Default (SMS)");
+        }
+        if (capitalized.get(0).equals("Email")) {
+            capitalized.remove(0);
+            capitalized.add("Default (Email)");
+        }
+        return Joiner.on(" ").join(capitalized);
+    } 
+    
+    public static String sanitizeHTML(String documentContent) {
+        if (StringUtils.isBlank(documentContent)) {
+            return documentContent;
+        }
+        // the prior version of this still pretty printed the output... this uglier use of JSoup's
+        // APIs does not pretty print the output.
+        Document dirty = Jsoup.parseBodyFragment(documentContent);
+        Cleaner cleaner = new Cleaner(BridgeConstants.CKEDITOR_WHITELIST);
+        Document clean = cleaner.clean(dirty);
+        // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
+        // brimg is not a valid attribute, it marks our one template image.
+        for (Element el : clean.select("img[brimg]")) {
+            el.attr("src", "cid:consentSignature");
+        }
+        clean.outputSettings().escapeMode(EscapeMode.xhtml)
+            .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
+        return clean.body().html();
     }
 }

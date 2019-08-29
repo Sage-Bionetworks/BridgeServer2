@@ -9,9 +9,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class EmailSignInEmailProviderTest {
 
@@ -27,13 +27,17 @@ public class EmailSignInEmailProviderTest {
         study.setName("Study name");
         study.setIdentifier("foo");
         study.setSupportEmail("support@email.com");
-        study.setEmailSignInTemplate(new EmailTemplate(SUBJECT_TEMPLATE, BODY_TEMPLATE, MimeType.HTML));
+        
+        TemplateRevision revision = TemplateRevision.create();
+        revision.setSubject(SUBJECT_TEMPLATE);
+        revision.setDocumentContent(BODY_TEMPLATE);
+        revision.setMimeType(MimeType.HTML);
         
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getEmailSignInTemplate())
+                .withTemplateRevision(revision)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withToken("email", BridgeUtils.encodeURIComponent(RECIPIENT_EMAIL))
                 .withToken("token", "ABC").build();

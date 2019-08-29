@@ -7,7 +7,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.Template;
+import org.sagebionetworks.bridge.models.templates.Template;
 
 public class TemplateValidator implements Validator {
 

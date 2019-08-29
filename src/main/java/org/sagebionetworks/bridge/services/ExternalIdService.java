@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -53,9 +54,10 @@ public class ExternalIdService {
     
     public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
         checkNotNull(studyId);
-        checkNotNull(externalId);
         
-        // Not filtered because there's no public API to retrieve an individual external ID.
+        if (StringUtils.isBlank(externalId)) {
+            return Optional.empty();
+        }
         return externalIdDao.getExternalId(studyId, externalId);
     }
     
@@ -103,10 +105,6 @@ public class ExternalIdService {
     public void deleteExternalIdPermanently(Study study, ExternalIdentifier externalId) {
         checkNotNull(study);
         checkNotNull(externalId);
-        
-        if (study.isExternalIdValidationEnabled()) {
-            throw new BadRequestException("Cannot delete IDs while externalId validation is enabled for this study.");
-        }
         
         ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));

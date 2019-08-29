@@ -124,6 +124,7 @@ public class OAuthService {
     
     private OAuthAccessToken getTokenForGrant(OAuthAccessGrant grant) {
         DateTime expiresOn = new DateTime(grant.getExpiresOn(), DateTimeZone.UTC);
-        return new OAuthAccessToken(grant.getVendorId(), grant.getAccessToken(), expiresOn, grant.getProviderUserId());
+        return new OAuthAccessToken(grant.getVendorId(), grant.getAccessToken(), expiresOn, grant.getProviderUserId(),
+                grant.getScopes());
     }
 }

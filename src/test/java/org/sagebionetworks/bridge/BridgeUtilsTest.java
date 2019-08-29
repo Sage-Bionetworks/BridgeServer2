@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -218,10 +221,9 @@ public class BridgeUtilsTest {
         as2.setExternalId("subBextId");
         AccountSubstudy as3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "userId");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
-        account.setExternalId("subDextId");
         
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
-        assertEquals(externalIds, ImmutableSet.of("subAextId","subBextId","subDextId"));
+        assertEquals(externalIds, ImmutableSet.of("subAextId","subBextId"));
     }
     
     @Test
@@ -795,6 +797,31 @@ public class BridgeUtilsTest {
         BridgeUtils.toSynapseFriendlyName("  #");
     }
     
+    @Test
+    public void templateTypeToLabel() {
+        String label = BridgeUtils.templateTypeToLabel(SMS_APP_INSTALL_LINK);
+        assertEquals(label, "App Install Link Default (SMS)");
+
+        label = BridgeUtils.templateTypeToLabel(EMAIL_SIGNED_CONSENT);
+        assertEquals(label, "Signed Consent Default (Email)");
+    }
+    
+    @Test
+    public void sanitizeHTML() {
+        String content = SIGNATURE_BLOCK + "<p id=remove-me>Test<script>This should be removed</script><img onerror=''>";
+        
+        String result = BridgeUtils.sanitizeHTML(content);
+        
+        // 1. The signature is entirely preserved, including stuff like src="cid:consentSignature"
+        // 2. HTML is sanitized (tags removed, others closed, etc.)
+        assertEquals(result, SIGNATURE_BLOCK + "<p>Test<img onerror=\"\" /></p>");
+    }
+    
+    @Test
+    public void sanitizeHTMLWithNull() {
+        assertNull(BridgeUtils.sanitizeHTML(null));
+    }
+
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(second.size(), first.size());

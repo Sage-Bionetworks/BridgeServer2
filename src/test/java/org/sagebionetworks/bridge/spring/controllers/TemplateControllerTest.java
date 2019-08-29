@@ -4,8 +4,13 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.models.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -31,9 +36,11 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.Template;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.TemplateService;
 
 public class TemplateControllerTest extends Mockito {
@@ -49,6 +56,9 @@ public class TemplateControllerTest extends Mockito {
     @Mock
     HttpServletResponse mockResponse;
     
+    @Mock
+    StudyService mockStudyService;
+    
     @InjectMocks
     @Spy
     TemplateController controller;
@@ -57,6 +67,8 @@ public class TemplateControllerTest extends Mockito {
     ArgumentCaptor<Template> templateCaptor;
     
     UserSession session;
+    
+    Study study;
     
     @BeforeMethod
     public void beforeMethod() {
@@ -69,8 +81,22 @@ public class TemplateControllerTest extends Mockito {
         session.setStudyIdentifier(TEST_STUDY);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        study = Study.create();
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(TemplateController.class);
+        assertGet(TemplateController.class, "getTemplates");
+        assertPost(TemplateController.class, "createTemplate");
+        assertGet(TemplateController.class, "getTemplate");
+        assertPost(TemplateController.class, "updateTemplate");
+        assertDelete(TemplateController.class, "deleteTemplate");
+    }
+    
     @Test
     public void getTemplates() {
         List<? extends Template> items = ImmutableList.of(Template.create(), Template.create());
@@ -109,13 +135,13 @@ public class TemplateControllerTest extends Mockito {
         mockRequestBody(mockRequest, template);
         
         GuidVersionHolder holder = new GuidVersionHolder(GUID, 1L);
-        when(mockTemplateService.createTemplate(eq(TEST_STUDY), any())).thenReturn(holder);
+        when(mockTemplateService.createTemplate(eq(study), any())).thenReturn(holder);
         
         GuidVersionHolder result = controller.createTemplate();
         assertEquals(result.getGuid(), GUID);
         assertEquals(result.getVersion(), new Long(1));
         
-        verify(mockTemplateService).createTemplate(eq(TEST_STUDY), templateCaptor.capture());
+        verify(mockTemplateService).createTemplate(eq(study), templateCaptor.capture());
         assertEquals(templateCaptor.getValue().getName(), "This is a name");
     }
     

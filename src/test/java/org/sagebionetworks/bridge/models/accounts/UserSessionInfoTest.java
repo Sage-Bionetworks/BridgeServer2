@@ -72,6 +72,7 @@ public class UserSessionInfoTest {
         assertEquals(node.get("id").textValue(), participant.getId());
         assertEquals(node.get("substudyIds").size(), 1);
         assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
+        assertEquals(node.get("externalId").textValue(), "externalIdA");
         assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
@@ -91,7 +92,7 @@ public class UserSessionInfoTest {
         assertEquals(consentStatus.size(), 7);
         
         // ... and no things that shouldn't be there
-        assertEquals(node.size(), 22);
+        assertEquals(node.size(), 23);
     }
     
     @Test

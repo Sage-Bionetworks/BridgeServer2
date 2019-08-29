@@ -10,8 +10,8 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
 import com.amazonaws.services.sns.model.PublishRequest;
@@ -23,13 +23,13 @@ public class SmsMessageProvider {
     private final Map<String,String> tokenMap;
     private final Phone phone;
     private final SmsType smsType;
-    private final SmsTemplate template;
+    private final TemplateRevision revision;
 
-    private SmsMessageProvider(Study study, SmsTemplate template, SmsType smsType, Phone phone,
+    private SmsMessageProvider(Study study, TemplateRevision revision, SmsType smsType, Phone phone,
             Map<String, String> tokenMap) {
         this.study = study;
         this.smsType = smsType;
-        this.template = template;
+        this.revision = revision;
         this.phone = phone;
         this.tokenMap = tokenMap;
     }
@@ -37,8 +37,8 @@ public class SmsMessageProvider {
     public Study getStudy() {
         return study;
     }
-    public SmsTemplate getTemplate() {
-        return template;
+    public TemplateRevision getTemplateRevision() {
+        return revision;
     }
     public Phone getPhone() {
         return phone;
@@ -63,7 +63,7 @@ public class SmsMessageProvider {
 
     /** SMS message to send, with template variables resolved. */
     public String getFormattedMessage() {
-        return BridgeUtils.resolveTemplate(template.getMessage(), tokenMap).trim();
+        return BridgeUtils.resolveTemplate(revision.getDocumentContent(), tokenMap).trim();
     }
 
     public PublishRequest getSmsRequest() {
@@ -88,14 +88,14 @@ public class SmsMessageProvider {
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Phone phone;
         private SmsType smsType;
-        private SmsTemplate template;
+        private TemplateRevision revision;
 
         public Builder withStudy(Study study) {
             this.study = study;
             return this;
         }
-        public Builder withSmsTemplate(SmsTemplate template) {
-            this.template = template;
+        public Builder withTemplateRevision(TemplateRevision revision) {
+            this.revision = revision;
             return this;
         }
         public Builder withToken(String name, String value) {
@@ -120,7 +120,7 @@ public class SmsMessageProvider {
         }
         public SmsMessageProvider build() {
             checkNotNull(study);
-            checkNotNull(template);
+            checkNotNull(revision);
             checkNotNull(phone);
             checkNotNull(smsType);
             tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
@@ -131,7 +131,7 @@ public class SmsMessageProvider {
             // remove nulls, these will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
 
-            return new SmsMessageProvider(study, template, smsType, phone, ImmutableMap.copyOf(tokenMap));
+            return new SmsMessageProvider(study, revision, smsType, phone, ImmutableMap.copyOf(tokenMap));
         }
     }
 }

@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -128,9 +129,11 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, updated);
         
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
-                .withClientInfo(getClientInfoFromUserAgentHeader())
+                .withClientInfo(reqContext.getCallerClientInfo())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
@@ -317,7 +320,7 @@ public class ParticipantController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         // Verify it's in the same study as the researcher.
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
         } else if (!study.getStudyIdentifier().equals(requestInfo.getStudyIdentifier())) {

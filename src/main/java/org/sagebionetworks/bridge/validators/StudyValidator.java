@@ -22,10 +22,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.upload.UploadFieldSize;
@@ -111,6 +109,9 @@ public class StudyValidator implements Validator {
         if (isBlank(study.getName())) {
             errors.rejectValue("name", "is required");
         }
+        if (study.isReauthenticationEnabled() == null) {
+            errors.rejectValue("reauthenticationEnabled", "is required");
+        }
         if (study.getShortName() != null && study.getShortName().length() > 10) {
             errors.rejectValue("shortName", "must be 10 characters or less");
         }
@@ -159,34 +160,6 @@ public class StudyValidator implements Validator {
         if (study.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
-        validateEmailTemplate(errors, study.getVerifyEmailTemplate(), "verifyEmailTemplate", "${url}", "${emailVerificationUrl}");
-        validateEmailTemplate(errors, study.getResetPasswordTemplate(), "resetPasswordTemplate", "${url}", "${resetPasswordUrl}");
-        // Existing studies don't have the template, we use a default template. Okay to be missing.
-        if (study.getSignedConsentTemplate() != null) {
-            validateEmailTemplate(errors, study.getSignedConsentTemplate(), "signedConsentTemplate");    
-        }
-        if (study.getEmailSignInTemplate() != null) {
-            validateEmailTemplate(errors, study.getEmailSignInTemplate(), "emailSignInTemplate", "${url}", "${emailSignInUrl}",
-                    "${token}");
-        }
-        if (study.getAccountExistsTemplate() != null) {
-            validateEmailTemplate(errors, study.getAccountExistsTemplate(), "accountExistsTemplate", "${url}",
-                    "${emailSignInUrl}", "${resetPasswordUrl}");
-        }
-        if (study.getAppInstallLinkTemplate() != null) {
-            validateEmailTemplate(errors, study.getAppInstallLinkTemplate(), "appInstallLinkTemplate", "${url}",
-                    "${appInstallUrl}");
-        }
-        validateSmsTemplate(errors, study.getResetPasswordSmsTemplate(), "resetPasswordSmsTemplate", "${url}", "${resetPasswordUrl}");
-        validateSmsTemplate(errors, study.getPhoneSignInSmsTemplate(), "phoneSignInSmsTemplate", "${token}");
-        validateSmsTemplate(errors, study.getAppInstallLinkSmsTemplate(), "appInstallLinkSmsTemplate", "${url}", "${appInstallUrl}");
-        validateSmsTemplate(errors, study.getVerifyPhoneSmsTemplate(), "verifyPhoneSmsTemplate", "${token}");
-        validateSmsTemplate(errors, study.getAccountExistsSmsTemplate(), "accountExistsSmsTemplate", "${token}",
-                "${resetPasswordUrl}");
-        // Existing studies don't have the template, we use a default template. Okay to be missing.
-        if (study.getSignedConsentSmsTemplate() != null) {
-            validateSmsTemplate(errors, study.getSignedConsentSmsTemplate(), "signedConsentSmsTemplate", "${consentUrl}");    
-        }
         
         for (String userProfileAttribute : study.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
@@ -205,13 +178,8 @@ public class StudyValidator implements Validator {
         //     externalIdValidationEnabled and externalIdRequiredOnSignup can vary independently
         // emailVerificationEnabled=false:
         //     externalIdValidationEnabled and externalIdRequiredOnSignup must both be true
-        if (!study.isEmailVerificationEnabled()) {
-            if (!study.isExternalIdRequiredOnSignup()) {
-                errors.rejectValue("externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
-            }
-            if (!study.isExternalIdValidationEnabled()) {
-                errors.rejectValue("externalIdValidationEnabled", "cannot be disabled if email verification has been disabled");
-            }
+        if (!study.isEmailVerificationEnabled() && !study.isExternalIdRequiredOnSignup()) {
+            errors.rejectValue("externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
         }
 
         // Links in installedLinks are length-constrained by SMS.
@@ -342,59 +310,6 @@ public class StudyValidator implements Validator {
         return (value >= min && value <= PasswordPolicy.FIXED_MAX_LENGTH);
     }
     
-    private void validateEmailTemplate(Errors errors, EmailTemplate template, String fieldName, String... templateVariables) {
-        if (template == null) {
-            errors.rejectValue(fieldName, "is required");
-        } else {
-            errors.pushNestedPath(fieldName);
-            if (isBlank(template.getSubject())) {
-                errors.rejectValue("subject", "cannot be blank");
-            }
-            if (isBlank(template.getBody())) {
-                errors.rejectValue("body", "cannot be blank");
-            } else if (templateVariables.length > 0) {
-                boolean missingTemplateVariable = true;
-                for (int i=0; i < templateVariables.length; i++) {
-                    if (template.getBody().contains(templateVariables[i])) {
-                        missingTemplateVariable = false;
-                        break;
-                    }
-                }
-                if (missingTemplateVariable) {
-                    errors.rejectValue("body", "must contain one of these template variables: "
-                            + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
-                }
-            }
-            errors.popNestedPath();
-        }        
-    }
-    
-    private void validateSmsTemplate(Errors errors, SmsTemplate template, String fieldName, String... templateVariables) {
-        if (template != null) {
-            errors.pushNestedPath(fieldName);
-            // This is not necessarily going to prevent the message from be split because the template variables haven't
-            // been substituted. We do calculate this more accurately in the study manager right now.
-            if (isBlank(template.getMessage())) {
-                errors.rejectValue("message", "cannot be blank");
-            } else if (template.getMessage().length() > 160) {
-                errors.rejectValue("message", "cannot be more than 160 characters");
-            } else {
-                boolean missingTemplateVariable = true;
-                for (int i=0; i < templateVariables.length; i++) {
-                    if (template.getMessage().contains(templateVariables[i])) {
-                        missingTemplateVariable = false;
-                        break;
-                    }
-                }
-                if (missingTemplateVariable) {
-                    errors.rejectValue("message", "must contain one of these template variables: "
-                            + BridgeUtils.COMMA_SPACE_JOINER.join(templateVariables));
-                }
-            }
-            errors.popNestedPath();
-        }        
-    }
-
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
             for (String group : dataGroups) {

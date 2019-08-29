@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -9,17 +11,18 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -49,7 +52,9 @@ import org.springframework.validation.Validator;
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
-    
+
+    static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
+
     public enum ChannelType {
         EMAIL,
         PHONE,
@@ -240,13 +245,6 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(participant);
         
-        // External ID accounts are created enabled, so we do not allow public API callers to enter random 
-        // strings, they must be known and assignable. This logic is not applied to accounts created through 
-        // the administrative APIs.
-        if (BridgeUtils.isExternalIdAccount(participant) && !study.isExternalIdValidationEnabled()) {
-            throw new UnauthorizedException("External ID management is not enabled for this study");
-        }
-
         try {
             // This call is exposed without authentication, so the request context has no roles, and no roles 
             // can be assigned to this user.
@@ -321,9 +319,6 @@ public class AuthenticationService {
     public GeneratedPassword generatePassword(Study study, String externalId, boolean createAccount) {
         checkNotNull(study);
         
-        if (!study.isExternalIdValidationEnabled()) {
-            throw new BadRequestException("External ID management disabled for this study");
-        }
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
@@ -373,35 +368,78 @@ public class AuthenticationService {
     
     private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
             Validator validator) {
-        
-        // Throws AuthenticationFailedException if the token is missing or incorrect
-        AccountId accountId = accountWorkflowService.channelSignIn(channelType, context, signIn, validator);
+        Validate.entityThrowingException(validator, signIn);
+
+        // Verify sign-in token.
+        CacheKey cacheKey = getCacheKeyForChannelSignIn(channelType, signIn);
+        String storedToken = cacheProvider.getObject(cacheKey, String.class);
+        String unformattedSubmittedToken = signIn.getToken().replaceAll("[-\\s]", "");
+        if (storedToken == null || !storedToken.equals(unformattedSubmittedToken)) {
+            throw new AuthenticationFailedException();
+        }
+
+        AccountId accountId = signIn.getAccountId();
         Account account = accountDao.getAccount(accountId);
         // This should be unlikely, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        clearSession(context.getStudyIdentifier(), account.getId());
-        
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
         // Update account state before we create the session, so it's accurate...
         accountDao.verifyChannel(channelType, account);
 
-        Study study = studyService.getStudy(signIn.getStudyId());
-        UserSession session = getSessionFromAccount(study, context, account);
-        
-        if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
-            account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);
+        // Check if we have a cached session for this sign-in token.
+        UserSession cachedSession = null;
+        CacheKey sessionCacheKey = CacheKey.channelSignInToSessionToken(storedToken);
+        String cachedSessionToken = cacheProvider.getObject(sessionCacheKey, String.class);
+        if (cachedSessionToken != null) {
+            cachedSession = cacheProvider.getUserSession(cachedSessionToken);
         }
-        cacheProvider.setUserSession(session);
-        
+
+        UserSession session;
+        if (cachedSession != null) {
+            // If we have a cached session, then just use that session.
+            session = cachedSession;
+        } else {
+            // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
+            // Then, create a new session.
+            clearSession(context.getStudyIdentifier(), account.getId());
+            Study study = studyService.getStudy(signIn.getStudyId());
+            session = getSessionFromAccount(study, context, account);
+
+            // Check intent to participate.
+            if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
+                account = accountDao.getAccount(accountId);
+                session = getSessionFromAccount(study, context, account);
+            }
+            cacheProvider.setUserSession(session);
+
+            // Set the sign-in token cache key to the 5 minute grace period. This means that if the app successfully
+            // signs in, but there's a network glitch and they don't get the session token, they can try again with the
+            // same token.
+            cacheProvider.setExpiration(cacheKey, SIGNIN_GRACE_PERIOD_SECONDS);
+
+            // Cache the session token under the sign-in token, so that if the same token comes in during the grace
+            // period, we can return the same session with the same token.
+            cacheProvider.setObject(sessionCacheKey, session.getSessionToken(), SIGNIN_GRACE_PERIOD_SECONDS);
+        }
+
         if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
         return session;
+    }
+
+    private static CacheKey getCacheKeyForChannelSignIn(ChannelType channelType, SignIn signIn) {
+        if (channelType == EMAIL) {
+            return CacheKey.emailSignInRequest(signIn);
+        } else if (channelType == PHONE) {
+            return CacheKey.phoneSignInRequest(signIn);
+        } else {
+            throw new UnsupportedOperationException("Channel type not implemented");
+        }
     }
 
     /**
@@ -435,7 +473,7 @@ public class AuthenticationService {
         CriteriaContext newContext = updateContextFromSession(context, session);
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
-        if (!study.isReauthenticationEnabled()) {
+        if (!Boolean.TRUE.equals(study.isReauthenticationEnabled())) {
             account.setReauthToken(null);
         } else {
             String reauthToken = generateReauthToken();

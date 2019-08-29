@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
+
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +18,7 @@ import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
@@ -49,6 +53,8 @@ public class IntentService {
     private AccountDao accountDao;
     
     private ParticipantService participantService;
+    
+    private TemplateService templateService;
 
     /** SMS Service, used to send app install links via text message. */
     @Autowired
@@ -91,6 +97,11 @@ public class IntentService {
         this.participantService = participantService;
     }
     
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
+    }
+    
     public void submitIntentToParticipate(IntentToParticipate intent) {
         Validate.entityThrowingException(IntentToParticipateValidator.INSTANCE, intent);
         
@@ -130,9 +141,10 @@ public class IntentService {
                     // The URL being sent does not expire. We send with a transaction delivery type because
                     // this is a critical step in onboarding through this workflow and message needs to be 
                     // sent immediately after consenting.
+                    TemplateRevision revision = templateService.getRevisionForUser(study, SMS_APP_INSTALL_LINK);
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
                             .withStudy(study)
-                            .withSmsTemplate(study.getAppInstallLinkSmsTemplate())
+                            .withTemplateRevision(revision)
                             .withTransactionType()
                             .withPhone(intent.getPhone())
                             .withToken(APP_INSTALL_URL_KEY, url).build();
@@ -140,9 +152,10 @@ public class IntentService {
                     // SMS Service.
                     smsService.sendSmsMessage(null, provider);
                 } else {
+                    TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_APP_INSTALL_LINK);
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
                             .withStudy(study)
-                            .withEmailTemplate(study.getAppInstallLinkTemplate())
+                            .withTemplateRevision(revision)
                             .withRecipientEmail(intent.getEmail())
                             .withType(EmailType.APP_INSTALL)
                             .withToken(APP_INSTALL_URL_KEY, url)

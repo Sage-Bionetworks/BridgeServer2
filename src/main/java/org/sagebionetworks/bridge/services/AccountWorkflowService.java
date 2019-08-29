@@ -3,18 +3,23 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_ACCOUNT_EXISTS;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_RESET_PASSWORD;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_VERIFY_PHONE;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.EMAIL_SIGNIN_REQUEST;
 import static org.sagebionetworks.bridge.validators.SignInValidator.PHONE_SIGNIN_REQUEST;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-
-import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
@@ -23,13 +28,12 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -37,11 +41,8 @@ import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.redis.JedisOps;
-import org.sagebionetworks.bridge.redis.JedisTransaction;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
@@ -103,15 +104,6 @@ public class AccountWorkflowService {
     static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
-    // Enumeration of request types that we want to throttle on. Used to differentiate between request types and
-    // generate cache keys.
-    private enum ThrottleRequestType {
-        EMAIL_SIGNIN,
-        PHONE_SIGNIN,
-        VERIFY_EMAIL,
-        VERIFY_PHONE
-    }
-
     private static class VerificationData {
         private final String studyId;
         private final String userId;
@@ -143,24 +135,18 @@ public class AccountWorkflowService {
     private int channelThrottleTimeoutSeconds;
 
     // Dependent services
-    private JedisOps jedisOps;
     private SmsService smsService;
     private StudyService studyService;
     private SendMailService sendMailService;
     private AccountDao accountDao;
     private CacheProvider cacheProvider;
+    private TemplateService templateService;
 
     /** Bridge config, used to get config values such as throttle configuration. */
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
         this.channelThrottleMaxRequests = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS);
         this.channelThrottleTimeoutSeconds = bridgeConfig.getInt(CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS);
-    }
-
-    /** JedisOps, used for basic Redis operations, like expire() and incr(). */
-    @Resource(name = "jedisOps")
-    public final void setJedisOps(JedisOps jedisOps) {
-        this.jedisOps = jedisOps;
     }
 
     /** SMS Service, used to send account workflow text messages. */
@@ -187,6 +173,11 @@ public class AccountWorkflowService {
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+    }
+    
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
     }
 
     final AtomicLong getEmailSignInRequestInMillis() {
@@ -223,9 +214,10 @@ public class AccountWorkflowService {
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
 
+        TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_VERIFY_EMAIL);
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
-                .withEmailTemplate(study.getVerifyEmailTemplate())
+                .withTemplateRevision(revision)
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
                 .withToken(OLD_URL_KEY, oldUrl)
@@ -254,10 +246,11 @@ public class AccountWorkflowService {
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
+        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_VERIFY_PHONE);
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
                 .withToken("token", formattedSpToken)
-                .withSmsTemplate(study.getVerifyPhoneSmsTemplate())
+                .withTemplateRevision(revision)
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
@@ -326,9 +319,11 @@ public class AccountWorkflowService {
         boolean sendPhone = !study.isAutoVerificationPhoneSuppressed();
         
         if (verifiedEmail && sendEmail) {
-            sendPasswordResetRelatedEmail(study, account.getEmail(), true, study.getAccountExistsTemplate());
+            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_ACCOUNT_EXISTS);
+            sendPasswordResetRelatedEmail(study, account.getEmail(), true, revision);
         } else if (verifiedPhone && sendPhone) {
-            sendPasswordResetRelatedSMS(study, account, true, study.getAccountExistsSmsTemplate());
+            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_ACCOUNT_EXISTS);
+            sendPasswordResetRelatedSMS(study, account, true, revision);
         }
     }
     
@@ -351,15 +346,17 @@ public class AccountWorkflowService {
             boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
             boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
             if (account.getEmail() != null && emailVerified) {
-                sendPasswordResetRelatedEmail(study, account.getEmail(), false, study.getResetPasswordTemplate());
+                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+                sendPasswordResetRelatedEmail(study, account.getEmail(), false, revision);
             } else if (account.getPhone() != null && phoneVerified) {
-                sendPasswordResetRelatedSMS(study, account, false, study.getResetPasswordSmsTemplate());
+                TemplateRevision revision = templateService.getRevisionForUser(study, SMS_RESET_PASSWORD);
+                sendPasswordResetRelatedSMS(study, account, false, revision);
             }
         }
     }
     
     private void sendPasswordResetRelatedEmail(Study study, String email, boolean includeEmailSignIn,
-            EmailTemplate template) {
+            TemplateRevision revision) {
         String sptoken = getNextToken();
         
         CacheKey cacheKey = CacheKey.passwordResetForEmail(sptoken, study.getIdentifier());
@@ -370,7 +367,7 @@ public class AccountWorkflowService {
         
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
             .withStudy(study)
-            .withEmailTemplate(template)
+            .withTemplateRevision(revision)
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
             .withToken(OLD_URL_KEY, url)
@@ -400,7 +397,7 @@ public class AccountWorkflowService {
     }
     
     private void sendPasswordResetRelatedSMS(Study study, Account account, boolean includePhoneSignIn,
-            SmsTemplate template) {
+            TemplateRevision revision) {
         Phone phone = account.getPhone();
         String sptoken = getNextToken();
         
@@ -408,9 +405,9 @@ public class AccountWorkflowService {
         cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(study, sptoken);
-
+        
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
-        builder.withSmsTemplate(template);
+        builder.withTemplateRevision(revision);
         builder.withTransactionType();
         builder.withStudy(study);
         builder.withPhone(phone);
@@ -480,9 +477,10 @@ public class AccountWorkflowService {
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
             
+            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_PHONE_SIGN_IN);
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
                     .withStudy(study)
-                    .withSmsTemplate(study.getPhoneSignInSmsTemplate())
+                    .withTemplateRevision(revision)
                     .withTransactionType()
                     .withPhone(signIn.getPhone())
                     .withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS)
@@ -510,8 +508,10 @@ public class AccountWorkflowService {
             // need to provide host/email/studyId/token variables for earlier versions of the email sign in template 
             // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
             // into that template.
+            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGN_IN);
+            
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withEmailTemplate(study.getEmailSignInTemplate())
+                .withTemplateRevision(revision)
                 .withStudy(study)
                 .withRecipientEmail(signIn.getEmail())
                 .withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()))
@@ -586,38 +586,6 @@ public class AccountWorkflowService {
         return account.getId();
     }
 
-    /**
-     * Attempts to validate a sign in request using a token that was stored and then sent 
-     * via SMS or an email message. 
-     * 
-     * @return AccountId the accountId of the account if the sign in is successful.
-     * @throws AuthenticationFailedException
-     *             if the token is missing or invalid (not a successful sign in attempt).
-     */
-    public AccountId channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
-            Validator validator) {
-        Validate.entityThrowingException(validator, signIn);
-       
-        CacheKey cacheKey = null;
-        if (channelType == EMAIL) {
-            cacheKey = CacheKey.emailSignInRequest(signIn);
-        } else if (channelType == PHONE) {
-            cacheKey = CacheKey.phoneSignInRequest(signIn);
-        } else {
-            throw new UnsupportedOperationException("Channel type not implemented");
-        }
-
-        String storedToken = cacheProvider.getObject(cacheKey, String.class);
-        String unformattedSubmittedToken = signIn.getToken().replaceAll("[-\\s]", "");
-        if (storedToken == null || !storedToken.equals(unformattedSubmittedToken)) {
-            throw new AuthenticationFailedException();
-        }
-        // Consume the key regardless of what happens
-        cacheProvider.removeObject(cacheKey);
-        
-        return signIn.getAccountId();
-    }
-    
     private void saveVerification(String sptoken, VerificationData data) {
         checkArgument(isNotBlank(sptoken));
         checkNotNull(data);
@@ -698,26 +666,27 @@ public class AccountWorkflowService {
 
     // Check if the request is throttled. Key is either email address or phone, depending on the type.
     private boolean isRequestThrottled(ThrottleRequestType type, String userId) {
-        if (type == ThrottleRequestType.PHONE_SIGNIN) {
-            // mPower 2.0 is currently blocked because of issues with phone sign-in. Long-term, we'll want to add a
-            // grace period for the phone token, similar to reauth. Short-term, we disable throttling for phone sign-in
-            // (but not for email, so it doesn't impact our spam rating).
-            return false;
-        }
-
         // Generate key, which is in the form of channel-throttling:[type]:[userId].
-        String cacheKey = "channel-throttling:" + type.toString().toLowerCase() + ":" + userId;
+        CacheKey cacheKey = CacheKey.channelThrottling(type, userId);
 
-        // We use Jedis to atomically increment the key value, and then set an expiration on it. The return value of
-        // exec() is the list of Jedis results in order. For the incr(), the result is the value after incrementing.
-        // This is the number of times we've requested in the last time period. If this exceeds the max requests, we're
-        // throttled.
-        int numRequests;
-        try (JedisTransaction transaction = jedisOps.getTransaction(cacheKey)) {
-            List<Object> resultList = transaction.incr(cacheKey).expire(cacheKey, channelThrottleTimeoutSeconds)
-                    .exec();
-            numRequests = ((Long) resultList.get(0)).intValue();
+        Integer numRequests = cacheProvider.getObject(cacheKey, Integer.class);
+        if (numRequests == null) {
+            // Fall back to 0.
+            numRequests = 0;
         }
-        return numRequests > channelThrottleMaxRequests;
+
+        if (numRequests < channelThrottleMaxRequests) {
+            // We've seen less than the maximum number of requests. We can let this request through without throttling.
+            // But we should increment the request count in Redis. Reset the expiration so that participants can't
+            // exceed the throttle limit by making a bunch of requests at the end of the throttle window.
+            cacheProvider.setObject(cacheKey, numRequests + 1, channelThrottleTimeoutSeconds);
+            return false;
+        } else {
+            // We've seen at least as many requests as our limit (or more), so this next request will push us over the
+            // limit. Throttle this.
+            // Don't update Redis, since we throttle email/SMS sent, not requests. This allows the expiration to expire
+            // naturally.
+            return true;
+        }
     }
 }

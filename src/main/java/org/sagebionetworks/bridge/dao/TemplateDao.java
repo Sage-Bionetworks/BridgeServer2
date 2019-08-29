@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Template;
-import org.sagebionetworks.bridge.models.TemplateType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.templates.Template;
+import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public interface TemplateDao {
     
@@ -14,10 +15,11 @@ public interface TemplateDao {
 
     Optional<Template> getTemplate(StudyIdentifier studyId, String guid);
     
-    void createTemplate(Template template);
+    void createTemplate(Template template, Consumer<Template> consumer);
     
     void updateTemplate(Template template);
     
     void deleteTemplatePermanently(StudyIdentifier studyId, String guid);
     
+    void deleteTemplatesForStudy(StudyIdentifier studyId);
 }

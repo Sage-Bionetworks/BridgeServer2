@@ -628,6 +628,21 @@ public class HibernateAccountDaoTest {
         verify(mockHibernateHelper, never()).update(any(), eq(null));
     }
 
+    // branch coverage
+    @Test
+    public void reauthenticationFlagNull() {
+        study.setReauthenticationEnabled(null);
+
+        try {
+            dao.reauthenticate(study, REAUTH_SIGNIN);
+            fail("Should have thrown exception");
+        } catch (UnauthorizedException e) {
+            // expected exception
+        }
+        verify(mockHibernateHelper, never()).queryGet(any(), any(), any(), any(), eq(HibernateAccount.class));
+        verify(mockHibernateHelper, never()).update(any(), eq(null));
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void reauthenticateAccountNotFound() throws Exception {
         // mock hibernate
@@ -804,7 +819,6 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setExternalId(EXTERNAL_ID);
 
         // Execute. Identifiers not allows to change.
         dao.updateAccount(account, null);
@@ -824,7 +838,6 @@ public class HibernateAccountDaoTest {
         assertEquals(updatedHibernateAccount.getCreatedOn().getMillis(), 1234);
         assertEquals(updatedHibernateAccount.getPasswordModifiedOn().getMillis(), 5678);
         assertEquals(updatedHibernateAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(updatedHibernateAccount.getExternalId(), EXTERNAL_ID);
     }
 
     @Test
@@ -877,7 +890,6 @@ public class HibernateAccountDaoTest {
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(Boolean.TRUE);
         persistedAccount.setPhoneVerified(Boolean.TRUE);
-        persistedAccount.setExternalId("some-other-extid");
 
         // Set a dummy modifiedOn to make sure we're overwriting it.
         persistedAccount.setModifiedOn(new DateTime(5678L));
@@ -891,7 +903,6 @@ public class HibernateAccountDaoTest {
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
         account.setPhoneVerified(Boolean.FALSE);
-        account.setExternalId(EXTERNAL_ID);
 
         // Identifiers ARE allowed to change here.
         dao.updateAccount(account, null);
@@ -907,7 +918,6 @@ public class HibernateAccountDaoTest {
         assertEquals(updatedHibernateAccount.getPhone().getNationalFormat(), OTHER_PHONE.getNationalFormat());
         assertEquals(updatedHibernateAccount.getEmailVerified(), Boolean.FALSE);
         assertEquals(updatedHibernateAccount.getPhoneVerified(), Boolean.FALSE);
-        assertEquals(updatedHibernateAccount.getExternalId(), EXTERNAL_ID);
     }
 
     @Test
@@ -1072,7 +1082,7 @@ public class HibernateAccountDaoTest {
     public void getByExternalId() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
                 + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "
-                + "AND (acctSubstudy.externalId=:externalId OR acct.externalId=:externalId) GROUP BY acct.id";
+                + "AND acctSubstudy.externalId=:externalId GROUP BY acct.id";
 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
@@ -1116,7 +1126,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPaged() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "
-                + "acct.firstName, acct.lastName, acct.email, acct.phone, acct.externalId, "
+                + "acct.firstName, acct.lastName, acct.email, acct.phone, "
                 + "acct.id, acct.status) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
                 + "WHERE acct.studyId = :studyId GROUP BY acct.id";
@@ -1208,7 +1218,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) FROM "
+                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status) FROM "
                 + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
                 + "acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND acct.email LIKE "
                 + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
@@ -1323,7 +1333,7 @@ public class HibernateAccountDaoTest {
     @Test
     public void getPagedWithOptionalEmptySetParams() throws Exception {
         String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.externalId, acct.id, acct.status) FROM "
+                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status) FROM "
                 + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
                 + "acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND acct.email LIKE "
                 + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
@@ -1433,7 +1443,6 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setEmail(EMAIL);
         hibernateAccount.setPhone(TestConstants.PHONE);
-        hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setFirstName(FIRST_NAME);
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON);
@@ -1456,7 +1465,6 @@ public class HibernateAccountDaoTest {
         assertEquals(accountSummary.getStudyIdentifier(), TestConstants.TEST_STUDY);
         assertEquals(accountSummary.getEmail(), EMAIL);
         assertEquals(accountSummary.getPhone(), TestConstants.PHONE);
-        assertEquals(accountSummary.getExternalId(), EXTERNAL_ID);
         assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA", "substudyB", "externalIdB"));
         assertEquals(accountSummary.getFirstName(), FIRST_NAME);
         assertEquals(accountSummary.getLastName(), LAST_NAME);
@@ -1509,13 +1517,12 @@ public class HibernateAccountDaoTest {
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setStatus(AccountStatus.ENABLED);
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
-        assertEquals(accountSummary.getExternalId(), EXTERNAL_ID);
+        assertEquals(accountSummary.getId(), ACCOUNT_ID);
     }
 
     @Test
@@ -1790,7 +1797,6 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         hibernateAccount.setPhone(TestConstants.PHONE);
         hibernateAccount.setPhoneVerified(true);
-        hibernateAccount.setExternalId(EXTERNAL_ID);
         hibernateAccount.setEmail(EMAIL);
         hibernateAccount.setEmailVerified(true);
         hibernateAccount.setStatus(AccountStatus.ENABLED);

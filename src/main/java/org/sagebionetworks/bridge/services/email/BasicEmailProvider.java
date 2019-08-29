@@ -16,9 +16,9 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.studies.EmailTemplate;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -29,17 +29,17 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     private final String overrideSenderEmail;
     private final Set<String> recipientEmails;
     private final Map<String,String> tokenMap;
-    private final EmailTemplate template;
+    private final TemplateRevision revision;
     private final List<MimeBodyPart> attachments;
     private final EmailType type;
     
     private BasicEmailProvider(Study study, String overrideSenderEmail, Map<String,String> tokenMap,
-            Set<String> recipientEmails, EmailTemplate template, List<MimeBodyPart> attachments, EmailType type) {
+            Set<String> recipientEmails, TemplateRevision revision, List<MimeBodyPart> attachments, EmailType type) {
         super(study);
         this.overrideSenderEmail = overrideSenderEmail;
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
-        this.template = template;
+        this.revision = revision;
         this.attachments = attachments;
         this.type = type;
     }
@@ -63,8 +63,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     public Map<String,String> getTokenMap() {
         return tokenMap;
     }
-    public EmailTemplate getTemplate() {
-        return template;
+    public TemplateRevision getTemplateRevision() {
+        return revision;
     }
 
     /** Email type. Examples include email verification, sign-in, consent, etc. */
@@ -76,7 +76,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         final MimeTypeEmailBuilder emailBuilder = new MimeTypeEmailBuilder();
 
-        final String formattedSubject = BridgeUtils.resolveTemplate(template.getSubject(), tokenMap);
+        final String formattedSubject = BridgeUtils.resolveTemplate(revision.getSubject(), tokenMap);
         emailBuilder.withSubject(formattedSubject);
 
         final String sendFromEmail = getFormattedSenderEmail();
@@ -87,8 +87,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
         
         final MimeBodyPart bodyPart = new MimeBodyPart();
-        final String formattedBody = BridgeUtils.resolveTemplate(template.getBody(), tokenMap);
-        bodyPart.setContent(formattedBody, template.getMimeType().toString() + "; charset=utf-8");
+        final String formattedBody = BridgeUtils.resolveTemplate(revision.getDocumentContent(), tokenMap);
+        bodyPart.setContent(formattedBody, revision.getMimeType().toString() + "; charset=utf-8");
         emailBuilder.withMessageParts(bodyPart);
         
         for (MimeBodyPart attachment : attachments) {
@@ -107,7 +107,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
         private List<MimeBodyPart> attachments = Lists.newArrayList();
-        private EmailTemplate template;
+        private TemplateRevision revision;
         private EmailType type;
 
         public Builder withStudy(Study study) {
@@ -146,8 +146,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             }
             return this;
         }
-        public Builder withEmailTemplate(EmailTemplate template) {
-            this.template = template;
+        public Builder withTemplateRevision(TemplateRevision revision) {
+            this.revision = revision;
             return this;
         }
         public Builder withToken(String name, String value) {
@@ -167,14 +167,14 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
 
         public BasicEmailProvider build() {
             checkNotNull(study);
-            checkNotNull(template);
+            checkNotNull(revision);
             
             tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             
             return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails,
-                    template, attachments, type);
+                    revision, attachments, type);
         }
     }
 }

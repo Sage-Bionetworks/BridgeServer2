@@ -28,13 +28,13 @@ public class StudyConsentViewTest {
         String json = BridgeObjectMapper.get().writeValueAsString(view);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals(node.get("documentContent").asText(), "<document/>");
-        assertEquals(node.get("createdOn").asText(), "1970-01-01T00:00:00.200Z");
-        assertEquals(node.get("subpopulationGuid").asText(), "test");
-        assertEquals(node.get("type").asText(), "StudyConsent");
+        assertEquals("<document/>", node.get("documentContent").asText());
+        assertEquals("1970-01-01T00:00:00.200Z", node.get("createdOn").asText());
+        assertEquals("test", node.get("subpopulationGuid").asText());
+        assertEquals("StudyConsent", node.get("type").asText());
         
         StudyConsentForm form = BridgeObjectMapper.get().readValue(json, StudyConsentForm.class);
-        assertEquals(form.getDocumentContent(), "<document/>");
+        assertEquals("<document/>", form.getDocumentContent());
     }
     
 }

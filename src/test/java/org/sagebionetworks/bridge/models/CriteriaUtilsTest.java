@@ -1,9 +1,16 @@
 package org.sagebionetworks.bridge.models;
 
+import static java.util.Comparator.comparingLong;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
+import static org.sagebionetworks.bridge.models.CriteriaUtils.matchCriteria;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -11,14 +18,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class CriteriaUtilsTest {
@@ -31,141 +37,148 @@ public class CriteriaUtilsTest {
     private static ClientInfo IOS_CLIENT_INFO = ClientInfo.fromUserAgentCache("app/4 (deviceName; iPhone OS/3.9) BridgeJavaSDK/12");
     private static ClientInfo ANDROID_CLIENT_INFO = ClientInfo.fromUserAgentCache("app/4 (deviceName; Android/3.9) BridgeJavaSDK/12");
     
-    private Criteria criteria;
-    
-    @BeforeMethod
-    public void before() {
-        criteria = Criteria.create();
-        criteria.setKey(KEY);
-    }
-    
     @Test
     public void matchesAgainstNothing() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).build();
         
-        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        Criteria criteria = getCriteria().build();
+        
+        assertTrue(matchCriteria(context, criteria));
     }
     
     @Test
     public void matchesAppRange() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).build();
         
         // These should all match v4
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 4)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, null)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, 4)));
+        assertTrue(matchCriteria(context, getCriteria().minAppVersion(IOS, 1).build()));
+        assertTrue(matchCriteria(context, getCriteria().maxAppVersion(IOS, 4).build()));
+        assertTrue(matchCriteria(context, getCriteria().appVersion(IOS, 1, 4).build()));
     }
     
     @Test
     public void filtersAppRange() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).build();
         
         // None of these match v4 of an app
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 2)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 5, null)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 6, 11)));
+        assertFalse(matchCriteria(context, getCriteria().maxAppVersion(IOS, 2).build()));
+        assertFalse(matchCriteria(context, getCriteria().minAppVersion(IOS, 5).build()));
+        assertFalse(matchCriteria(context, getCriteria().appVersion(IOS, 6, 11).build()));
     }
     
     @Test
     public void matchesAndroidAppRange() {
-        CriteriaContext context = getContext(ANDROID_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(ANDROID_CLIENT_INFO).build();
         
         // These all match because the os name matches and so matching is used
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 4)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, null)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, 4)));
+        assertTrue(matchCriteria(context, getCriteria().maxAppVersion(ANDROID, 4).build()));
+        assertTrue(matchCriteria(context, getCriteria().minAppVersion(ANDROID, 1).build()));
+        assertTrue(matchCriteria(context, getCriteria().appVersion(ANDROID, 1, 4).build()));
     }
     
     @Test
     public void filtersAppRangeWithAndroid() {
-        CriteriaContext context = getContext(ANDROID_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(ANDROID_CLIENT_INFO).build();
         
         // These do not match because the os name matches and so matching is applied
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 2)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 5, null)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 6, 11)));
+        assertFalse(matchCriteria(context, getCriteria().maxAppVersion(ANDROID, 2).build()));
+        assertFalse(matchCriteria(context, getCriteria().minAppVersion(ANDROID, 5).build()));
+        assertFalse(matchCriteria(context, getCriteria().appVersion(ANDROID, 6, 11).build()));
     }
     
     @Test
     public void doesNotFilterOutIosWithAndroidAppRange() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO);
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).build();
         
         // But although these do not match the version, the client is different so no filtering occurs
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, null, 2)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 5, null)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 6, 11)));
+        assertTrue(matchCriteria(context, getCriteria().maxAppVersion(ANDROID, 2).build()));
+        assertTrue(matchCriteria(context, getCriteria().minAppVersion(ANDROID, 5).build()));
+        assertTrue(matchCriteria(context, getCriteria().appVersion(ANDROID, 6, 11).build()));
     }
     
     @Test
     public void matchesAppRangeIfNoPlatformDeclared() {
         CriteriaContext context = new CriteriaContext.Builder()
-            .withContext(getContext(IOS_SHORT_INFO))
+            .withContext(getContext().withClientInfo(IOS_SHORT_INFO).build())
             .withClientInfo(ClientInfo.fromUserAgentCache("app/4")).build();
         
         // When the user agent doesn't include platform information, then filtering is not applied
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, null, 2)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 5, null)));
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, IOS, 6, 11)));
+        assertTrue(matchCriteria(context, getCriteria().maxAppVersion(IOS, 2).build()));
+        assertTrue(matchCriteria(context, getCriteria().minAppVersion(IOS, 5).build()));
+        assertTrue(matchCriteria(context, getCriteria().appVersion(IOS, 6, 11).build()));
     }
     
     @Test
     public void allOfGroupsMatch() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO); // has group1, and group2
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1"), EMPTY_SET, null, null, null)));
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).withUserDataGroups(USER_DATA_GROUPS)
+                .build();
+        
+        assertTrue(matchCriteria(context, getCriteria().allOfGroups(ImmutableSet.of("group1")).build()));
         // Two groups are required, that still matches
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1", "group2"), EMPTY_SET, null, null, null)));
+        assertTrue(matchCriteria(context, getCriteria().allOfGroups(ImmutableSet.of("group1", "group2")).build()));
         // but this doesn't
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1", "group3"), EMPTY_SET, null, null, null)));
+        assertFalse(matchCriteria(context, getCriteria().allOfGroups(ImmutableSet.of("group1", "group3")).build()));
     }
     
     @Test
     public void noneOfGroupsMatch() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO); // has group1, and group2
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).withUserDataGroups(USER_DATA_GROUPS)
+                .build();
         // Here, any group at all prevents a match.
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, ImmutableSet.of("group3", "group1"), null, null, null)));
+        assertFalse(matchCriteria(context, getCriteria().noneOfGroups(ImmutableSet.of("group3", "group1")).build()));
     }
 
     @Test
     public void noneOfGroupsDefinedButDontPreventMatch() {
-        CriteriaContext context = getContext(IOS_CLIENT_INFO); // does not have group3, so it is matched
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, ImmutableSet.of("group3"), null, null, null)));
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO).withUserDataGroups(USER_DATA_GROUPS)
+                .build();
+        assertTrue(matchCriteria(context, getCriteria().noneOfGroups(ImmutableSet.of("group3")).build()));
     }
     
     @Test
     public void allOfSubstudyIdsMatch() {
-        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // has substudyA, and substudyB
-        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA"), EMPTY_SET, null, null, null)));
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO)
+                .withUserSubstudyIds(ImmutableSet.of("substudyA", "substudyB")).build();
+        
+        assertTrue(matchCriteria(context, getCriteria().allOfSubstudyIds(ImmutableSet.of("substudyA")).build()));
         // Two groups are required, that still matches
-        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA", "substudyB"), EMPTY_SET, null, null, null)));
+        assertTrue(matchCriteria(context,
+                getCriteria().allOfSubstudyIds(ImmutableSet.of("substudyA", "substudyB")).build()));
         // but this doesn't
-        assertFalse(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(ImmutableSet.of("substudyA", "substudyC"), EMPTY_SET, null, null, null)));
+        assertFalse(matchCriteria(context,
+                getCriteria().allOfSubstudyIds(ImmutableSet.of("substudyA", "substudyc")).build()));
     }
     
     @Test
     public void noneOfSubstudyIdsMatch() {
-        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // has substudyA, and substudyB
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO)
+                .withUserSubstudyIds(ImmutableSet.of("substudyA", "substudyB")).build();
         // Here, any group at all prevents a match.
-        assertFalse(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(EMPTY_SET, ImmutableSet.of("substudyC", "substudyA"), null, null, null)));
+        assertFalse(matchCriteria(context,
+                getCriteria().noneOfSubstudyIds(ImmutableSet.of("substudyC", "substudyA")).build()));
     }
 
     @Test
     public void noneOfSubstudyIdsDefinedButDontPreventMatch() {
-        CriteriaContext context = getSubstudyContext(IOS_CLIENT_INFO); // does not have substudyC, so it is matched
-        assertTrue(CriteriaUtils.matchCriteria(context, getSubstudyCriteria(EMPTY_SET, ImmutableSet.of("substudyC"), null, null, null)));
+        CriteriaContext context = getContext().withClientInfo(IOS_CLIENT_INFO)
+                .withUserSubstudyIds(ImmutableSet.of("substudyA", "substudyB")).build();
+        
+        assertTrue(matchCriteria(context,
+                getCriteria().noneOfSubstudyIds(ImmutableSet.of("substudyC")).build()));
     }
     
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT).build();
-        assertTrue(CriteriaUtils.matchCriteria(context, getCriteria(EMPTY_SET, EMPTY_SET, null, null, null)));
-        assertFalse(CriteriaUtils.matchCriteria(context, getCriteria(ImmutableSet.of("group1"), EMPTY_SET, null, null, null)));
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withClientInfo(UNKNOWN_CLIENT).build();
+        
+        assertTrue(matchCriteria(context, getCriteria().build()));
+        assertFalse(matchCriteria(context, getCriteria().allOfSubstudyIds(ImmutableSet.of("group1")).build()));
     }
     
     @Test
     public void validateIosMinMaxSameVersionOK() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, 1, 1);
+        Criteria criteria = getCriteria().appVersion(IOS, 1, 1).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -174,7 +187,7 @@ public class CriteriaUtilsTest {
 
     @Test
     public void validateIosCannotSetMaxUnderMinAppVersion() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, 2, 1);
+        Criteria criteria = getCriteria().appVersion(IOS, 2, 1).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -184,7 +197,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateIosCannotSetMinLessThanZero() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);
+        Criteria criteria = getCriteria().minAppVersion(IOS, -2).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -195,7 +208,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateAndroidMinMaxSameVersionOK() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 1, 1);
+        Criteria criteria = getCriteria().appVersion(ANDROID, 1, 1).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -204,7 +217,7 @@ public class CriteriaUtilsTest {
 
     @Test
     public void validateAndroidCannotSetMaxUnderMinAppVersion() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, 2, 1);
+        Criteria criteria = getCriteria().appVersion(ANDROID, 2, 1).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -214,7 +227,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateAndroidCannotSetMinLessThanZero() {
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, ANDROID, -2, null);
+        Criteria criteria = getCriteria().minAppVersion(ANDROID, -2).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
@@ -263,7 +276,9 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateDataGroupCannotBeWrong() {
-        Criteria criteria = getCriteria(ImmutableSet.of("group1"), ImmutableSet.of("group2"), null, null, null);
+        Criteria criteria = getCriteria().allOfGroups(ImmutableSet.of("group1"))
+                .noneOfGroups(ImmutableSet.of("group2")).build();
+        
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, ImmutableSet.of("group3"), EMPTY_SET, errors);
         assertEquals(errors.getFieldErrors("allOfGroups").get(0).getCode(), "'group1' is not in enumeration: group3");
@@ -272,7 +287,9 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateDataGroupNotBothRequiredAndProhibited() {
-        Criteria criteria = getCriteria(ImmutableSet.of("group1","group2","group3"), ImmutableSet.of("group2","group3"), null, null, null);
+        Criteria criteria = getCriteria().allOfGroups(ImmutableSet.of("group1", "group2", "group3"))
+                .noneOfGroups(ImmutableSet.of("group2", "group3")).build();
+        
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, ImmutableSet.of("group1","group2","group3","group4"), EMPTY_SET, errors);
         // It's a set so validate without describing the order of the groups in the error message
@@ -283,9 +300,8 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateSubstudyIdCannotBeWrong() {
-        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
-        criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA"));
-        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB"));
+        Criteria criteria = getCriteria().allOfSubstudyIds(ImmutableSet.of("substudyA"))
+                .noneOfSubstudyIds(ImmutableSet.of("substudyB")).build();
         
         Errors errors = Validate.getErrorsFor(criteria);
         CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("substudyC"), errors);
@@ -295,7 +311,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void validateSubstudyIdNotBothRequiredAndProhibited() {
-        Criteria criteria = getCriteria(ImmutableSet.of(), ImmutableSet.of(), null, null, null);
+        Criteria criteria = getCriteria().build();
         criteria.setAllOfSubstudyIds(ImmutableSet.of("substudyA", "substudyB", "substudyC"));
         criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyB", "substudyC"));
         Errors errors = Validate.getErrorsFor(criteria);
@@ -307,41 +323,53 @@ public class CriteriaUtilsTest {
     }
     
     @Test
+    public void validateLanguage() {
+        Criteria criteria = getCriteria().minAppVersion(IOS, -2).lang("ena").build();
+        
+        Errors errors = Validate.getErrorsFor(criteria);
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").get(0).getCode().contains("is not a valid language code"));
+        
+        errors = Validate.getErrorsFor(criteria);
+        criteria.setLanguage("en");
+        CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
+        assertTrue(errors.getFieldErrors("language").isEmpty());
+    }
+    
+    @Test
     public void matchesLanguage() {
         // If a language is declared, the user has to match it.
-        Criteria criteria = getCriteria(EMPTY_SET, EMPTY_SET, IOS, -2, null);
-        criteria.setLanguage("en");
+        Criteria criteria = getCriteria().minAppVersion(IOS, -2).lang("en").build();
         
         // Requires English, user declares English, it matches
-        CriteriaContext context = getContextWithLanguage("en");
-        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        CriteriaContext context = getContext().withLanguages(ImmutableList.of("en")).build();
+        assertTrue(matchCriteria(context, criteria));
         
         // Requires English, user declares Spanish, it does not match
-        context = getContextWithLanguage("es");
-        assertFalse(CriteriaUtils.matchCriteria(context, criteria));
+        context = getContext().withLanguages(ImmutableList.of("es")).build();
+        assertFalse(matchCriteria(context, criteria));
         
         // Doesn't require a language, so we do not care about the user's language to select this
         criteria.setLanguage(null);
-        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        assertTrue(matchCriteria(context, criteria));
         
         // Requires English, but the user declares no language, this does NOT match.
         criteria.setLanguage("en");
-        context = getContextWithLanguage(null);
-        assertFalse(CriteriaUtils.matchCriteria(context, criteria));
+        context = getContext().build();
+        assertFalse(matchCriteria(context, criteria));
     }
     
     @Test
     public void matchesLanguageRegardlessOfCase() {
-        Criteria criteria = getCriteria(null, null, IOS, -2, null);
-        criteria.setLanguage("EN");
+        Criteria criteria = getCriteria().minAppVersion(IOS, -2).lang("EN").build();
         
-        CriteriaContext context = getContextWithLanguage("en");
-        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        CriteriaContext context = getContext().withLanguages(ImmutableList.of("en")).build();
+        assertTrue(matchCriteria(context, criteria));
         
         criteria.setLanguage("en");
         
-        context = getContextWithLanguage("EN");
-        assertTrue(CriteriaUtils.matchCriteria(context, criteria));
+        context = getContext().withLanguages(ImmutableList.of("EN")).build();
+        assertTrue(matchCriteria(context, criteria));
     }
     
     // We had a report that this was not working so I mocked this out... it filters correctly.
@@ -349,68 +377,159 @@ public class CriteriaUtilsTest {
     public void testThatMoleMapperConfigurationWorks() {
         ClientInfo info = ClientInfo.parseUserAgentString("MoleMapper/4 (iPhone 6S+; iPhone OS/9.3.4) BridgeSDK/7");
         
-        Criteria oldCriteria = Criteria.create();
-        oldCriteria.setMinAppVersion("iPhone OS", 0);
-        oldCriteria.setMaxAppVersion("iPhone OS", 3);
+        Criteria oldCriteria = getCriteria().appVersion(IOS, 0, 3).appVersion(ANDROID, 0, 0).build();
         
-        oldCriteria.setMinAppVersion("Android", 0);
-        oldCriteria.setMaxAppVersion("Android", 0);
-        
-        CriteriaContext context = getContext(info);
-        assertFalse(CriteriaUtils.matchCriteria(context, oldCriteria));
+        CriteriaContext context = getContext().withClientInfo(info).build();
+        assertFalse(matchCriteria(context, oldCriteria));
         
         Criteria newCriteria = Criteria.create();
         newCriteria.setMinAppVersion("iPhone OS", 4);
         
-        assertTrue(CriteriaUtils.matchCriteria(context, newCriteria));
+        assertTrue(matchCriteria(context, newCriteria));
+    }
+    
+    @Test
+    public void filterByCriteriaSortsByLanguageOrder() {
+        // If a language is declared, the user has to match it.
+        AppConfig enAppConfig = AppConfig.create();
+        Criteria enCriteria = getCriteria().lang("en").build();
+        enAppConfig.setCriteria(enCriteria);
+        
+        AppConfig frAppConfig = AppConfig.create();
+        Criteria frCriteria = getCriteria().lang("fr").build();
+        frAppConfig.setCriteria(frCriteria);
+
+        AppConfig zhAppConfig = AppConfig.create();
+        Criteria zhCriteria = getCriteria().lang("zh").build();
+        zhAppConfig.setCriteria(zhCriteria);
+        
+        List<AppConfig> collection = ImmutableList.of(zhAppConfig, enAppConfig, frAppConfig);
+        
+        // The user wants French more than English, so French should be first in the list.
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("de", "fr", "en")).build();
+        
+        // Although English is first, we correctly understand that the French app config is the 
+        // one the user prefers (given the order of the languages in the context).
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, null);
+        assertEquals(selected.size(), 2);
+        assertSame(selected.get(0), frAppConfig);
+        assertSame(selected.get(1), enAppConfig);
+        
+        // Let's do it again with a different language preference... the results should change
+        context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("en", "fr", "zh")).build();
+        selected = CriteriaUtils.filterByCriteria(context, collection, null);
+        assertEquals(selected.size(), 3);
+        assertSame(selected.get(0), enAppConfig);
+        assertSame(selected.get(1), frAppConfig);
+        assertSame(selected.get(2), zhAppConfig);
+    }
+    
+    @Test
+    public void filterByCriteriaDoesNotChangeSortOrderWithoutLanguages() { 
+        AppConfig appConfig1 = AppConfig.create();
+        Criteria criteria1 = getCriteria().allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig1.setCriteria(criteria1);
+        
+        AppConfig appConfig2 = AppConfig.create();
+        Criteria criteria2 = getCriteria().allOfGroups(ImmutableSet.of("group2")).build();
+        appConfig2.setCriteria(criteria2);
+
+        AppConfig appConfig3 = AppConfig.create();
+        Criteria criteria3 = getCriteria().allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig3.setCriteria(criteria3);
+        
+        List<AppConfig> collection = ImmutableList.of(appConfig1, appConfig2, appConfig3);
+
+        // User has languages, but criteria don't match against them. The results returned do not 
+        // change their sort order.
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("en", "fr")).withUserDataGroups(USER_DATA_GROUPS).build();
+        
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, null);
+        assertEquals(selected.size(), 3);
+        assertSame(selected.get(0), appConfig1);
+        assertSame(selected.get(1), appConfig2);
+        assertSame(selected.get(2), appConfig3);
+    }
+    
+    @Test
+    public void filterByCriteriaSortedWithAdditionalComparator() {
+        AppConfig appConfig1 = AppConfig.create();
+        Criteria criteria1 = getCriteria().lang("de").allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig1.setCriteria(criteria1);
+        appConfig1.setCreatedOn(TIMESTAMP.minusHours(1).getMillis());
+        
+        AppConfig appConfig2 = AppConfig.create();
+        Criteria criteria2 = getCriteria().lang("de").allOfGroups(ImmutableSet.of("group2")).build();
+        appConfig2.setCriteria(criteria2);
+        appConfig2.setCreatedOn(TIMESTAMP.minusHours(2).getMillis());
+
+        AppConfig appConfig3 = AppConfig.create();
+        Criteria criteria3 = getCriteria().lang("en").allOfGroups(ImmutableSet.of("group1")).build();
+        appConfig3.setCriteria(criteria3);
+        appConfig3.setCreatedOn(TIMESTAMP.minusHours(3).getMillis());
+        
+        List<AppConfig> collection = ImmutableList.of(appConfig1, appConfig2, appConfig3);
+        
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+                .withLanguages(ImmutableList.of("de", "en")).withUserDataGroups(USER_DATA_GROUPS).build();
+        
+        // All of these match, but they are returned in 
+        List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, comparingLong(AppConfig::getCreatedOn));
+        assertSame(selected.get(0), appConfig2);
+        assertSame(selected.get(1), appConfig1);
+        assertSame(selected.get(2), appConfig3);
     }
 
-    private Criteria getCriteria(Set<String> required, Set<String> prohibited, String os, Integer min, Integer max) {
-        Criteria criteria = Criteria.create();
-        criteria.setKey(KEY);
-        if (min != null) {
-            criteria.setMinAppVersion(os, min);    
-        }
-        if (max != null) {
-            criteria.setMaxAppVersion(os, max);    
-        }
-        criteria.setAllOfGroups(required);
-        criteria.setNoneOfGroups(prohibited);
-        return criteria;
+    private CriteriaContext.Builder getContext() {
+        return new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY);
     }
     
-    private Criteria getSubstudyCriteria(Set<String> required, Set<String> prohibited, String os, Integer min, Integer max) {
-        Criteria criteria = Criteria.create();
-        criteria.setKey(KEY);
-        if (min != null) {
-            criteria.setMinAppVersion(os, min);    
+    private CritBuilder getCriteria() { 
+        return new CritBuilder();
+    }
+    
+    private static class CritBuilder {
+        private Criteria criteria = Criteria.create();
+        
+        CritBuilder lang(String language) {
+            criteria.setLanguage(language);
+            return this;
         }
-        if (max != null) {
-            criteria.setMaxAppVersion(os, max);    
+        CritBuilder allOfGroups(Set<String> allOfGroups) {
+            criteria.setAllOfGroups(allOfGroups);
+            return this;
         }
-        criteria.setAllOfSubstudyIds(required);
-        criteria.setNoneOfSubstudyIds(prohibited);
-        return criteria;
-    }    
-    
-    private CriteriaContext getContextWithLanguage(String lang) {
-        List<String> list = (lang == null) ? Lists.newArrayList() : Lists.newArrayList(lang);
-        return new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
-            .withLanguages(list).build();
+        CritBuilder noneOfGroups(Set<String> noneOfGroups) {
+            criteria.setNoneOfGroups(noneOfGroups);
+            return this;
+        }
+        CritBuilder allOfSubstudyIds(Set<String> substudyIds) {
+            criteria.setAllOfSubstudyIds(substudyIds);
+            return this;
+        }
+        CritBuilder noneOfSubstudyIds(Set<String> substudyIds) {
+            criteria.setNoneOfSubstudyIds(substudyIds);
+            return this;
+        }
+        CritBuilder minAppVersion(String osName, int minAppVersion) {
+            criteria.setMinAppVersion(osName, minAppVersion);
+            return this;
+        }
+        CritBuilder maxAppVersion(String osName, int maxAppVersion) {
+            criteria.setMaxAppVersion(osName, maxAppVersion);
+            return this;
+        }
+        CritBuilder appVersion(String osName, int minAppVersion, int maxAppVersion) {
+            criteria.setMinAppVersion(osName, minAppVersion);
+            criteria.setMaxAppVersion(osName, maxAppVersion);
+            return this;
+        }
+        Criteria build() {
+            criteria.setKey(KEY);
+            return criteria;
+        }
     }
-    
-    private CriteriaContext getContext(ClientInfo clientInfo) {
-        return new CriteriaContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(clientInfo)
-                .withUserDataGroups(ImmutableSet.of("group1", "group2")).build();
-    }
-    
-    private CriteriaContext getSubstudyContext(ClientInfo clientInfo) {
-        return new CriteriaContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(clientInfo)
-                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
-    }
-    
 }

@@ -264,7 +264,8 @@ public class CacheProviderMockTest {
 
     @Test
     public void getObject() throws Exception {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                "callbackUrl", null);
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
         when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
@@ -285,7 +286,8 @@ public class CacheProviderMockTest {
     
     @Test
     public void getObjectWithReexpire() throws Exception {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                "callbackUrl", null);
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
         when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
         
@@ -307,8 +309,10 @@ public class CacheProviderMockTest {
     
     @Test
     public void getObjectWithTypeReference() throws Exception {
-        OAuthProvider provider1 = new OAuthProvider("clientId1", "secret1", "endpoint1", "callbackUrl1");
-        OAuthProvider provider2 = new OAuthProvider("clientId2", "secret2", "endpoint2", "callbackUrl2");
+        OAuthProvider provider1 = new OAuthProvider("clientId1", "secret1", "endpoint1",
+                "callbackUrl1", null);
+        OAuthProvider provider2 = new OAuthProvider("clientId2", "secret2", "endpoint2",
+                "callbackUrl2", null);
         List<OAuthProvider> providers = Lists.newArrayList(provider1, provider2);
         String ser = BridgeObjectMapper.get().writeValueAsString(providers);
         when(jedisOps.get(CACHE_KEY.toString())).thenReturn(ser);
@@ -442,10 +446,17 @@ public class CacheProviderMockTest {
         verify(transaction).del(CACHE_KEY.toString());
         verify(transaction).exec();
     }
-    
+
+    @Test
+    public void setExpiration() {
+        cacheProvider.setExpiration(CACHE_KEY, 100);
+        verify(jedisOps).expire(CACHE_KEY.toString(), 100);
+    }
+
     @Test
     public void setObject() throws Exception {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                "callbackUrl", null);
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
         when(jedisOps.set(CACHE_KEY.toString(), ser)).thenReturn("OK");
         
@@ -463,7 +474,8 @@ public class CacheProviderMockTest {
     
     @Test
     public void setObjectWithExpire() throws Exception {
-        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint", "callbackUrl");
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                "callbackUrl", null);
         String ser = BridgeObjectMapper.get().writeValueAsString(provider);
         when(jedisOps.setex(CACHE_KEY.toString(), 100, ser)).thenReturn("OK");
         
