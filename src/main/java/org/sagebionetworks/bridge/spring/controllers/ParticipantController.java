@@ -305,7 +305,7 @@ public class ParticipantController extends BaseController {
         getAuthenticatedSession(WORKER);
 
         // Verify it's in the same study as the researcher.
-        RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
         } else if (!studyId.equals(requestInfo.getStudyIdentifier().getIdentifier())) {

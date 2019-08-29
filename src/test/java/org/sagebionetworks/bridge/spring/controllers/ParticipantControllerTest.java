@@ -185,7 +185,7 @@ public class ParticipantControllerTest extends Mockito {
     UserAdminService mockUserAdminService;
     
     @Mock
-    RequestInfoService requestInfoService;
+    RequestInfoService mockRequestInfoService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -538,7 +538,7 @@ public class ParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
 
-        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfo("userId");
 
         // serialization was tested separately... just validate the object is there
@@ -559,7 +559,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
 
-        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
     }
 
@@ -576,7 +576,7 @@ public class ParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
 
         assertEquals(result, requestInfo);
@@ -601,7 +601,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
 
-        doReturn(requestInfo).when(mockCacheProvider).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
     }
     
