@@ -300,13 +300,12 @@ public class ParticipantController extends BaseController {
     @GetMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo")
     public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) throws Exception {
         getAuthenticatedSession(WORKER);
-        Study study = studyService.getStudy(studyId);
 
         // Verify it's in the same study as the researcher.
         RequestInfo requestInfo = cacheProvider.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!study.getStudyIdentifier().equals(requestInfo.getStudyIdentifier())) {
+        } else if (!studyId.equals(requestInfo.getStudyIdentifier().getIdentifier())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
         return requestInfo;
