@@ -507,6 +507,18 @@ public class StudyService {
 
         // These cannot be set through the API and will be null here, so they are set on update
         Study originalStudy = studyDao.getStudy(study.getIdentifier());
+        if (study.getDefaultTemplates().isEmpty()) {
+            Map<String,String> map = new HashMap<>();
+            for (TemplateType type: TemplateType.values()) {
+                String typeName = type.name().toLowerCase();
+                Template template = Template.create();
+                template.setName(BridgeUtils.templateTypeToLabel(type));
+                template.setTemplateType(type);
+                GuidVersionHolder keys = templateService.createTemplate(study, template);
+                map.put(typeName, keys.getGuid());
+            }
+            study.setDefaultTemplates(map);
+        }
         
         checkViolationConstraints(originalStudy, study);
         
