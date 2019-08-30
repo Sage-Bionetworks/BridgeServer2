@@ -166,6 +166,7 @@ public class ActivityEventServiceTest {
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), anyBoolean());
     }
     
+    @Test
     public void canSetStudyStartDateWithEnrollment() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("enrollment", ENROLLMENT);
@@ -183,6 +184,7 @@ public class ActivityEventServiceTest {
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), eq(false));
     }
     
+    @Test
     public void canSetStudyStartDateWithActivitiesRetrieved() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("enrollment", ENROLLMENT);
@@ -202,6 +204,7 @@ public class ActivityEventServiceTest {
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), eq(false));
     }
     
+    @Test
     public void canSetStudyStartDateWithCreatedOn() {
         Map<String, DateTime> map = Maps.newHashMap();
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
@@ -220,7 +223,7 @@ public class ActivityEventServiceTest {
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
         verify(mockStudyService).getStudy(STUDY_ID);
-        verify(mockParticipantService).getParticipant(study, HEALTH_CODE, false);
+        verify(mockParticipantService).getParticipant(study, "healthcode:"+HEALTH_CODE, false);
     }
     
     @Test
