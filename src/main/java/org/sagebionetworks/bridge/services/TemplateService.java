@@ -48,7 +48,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -209,32 +208,27 @@ public class TemplateService {
         defaultTemplatesMap.put(SMS_VERIFY_PHONE, Triple.of(null, defaultVerifyPhoneSmsTemplate, TEXT));
     }
     
-    public TemplateRevision getRevisionForUser(Study study, TemplateType type) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
-        CriteriaContext context = new CriteriaContext.Builder()
-            .withClientInfo(reqContext.getCallerClientInfo())
-            .withLanguages(reqContext.getCallerLanguages())
-            .withStudyIdentifier(study.getStudyIdentifier())
-            .build();
-
-        Template template = getTemplateForUser(study, context, type)
+    public TemplateRevision getRevisionForCaller(Study study, TemplateType type) {
+        Template template = getTemplateForCaller(study, type)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         return templateRevisionDao.getTemplateRevision(template.getGuid(), template.getPublishedCreatedOn())
                 .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
     }
     
     @SuppressWarnings("unchecked")
-    Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
-        checkNotNull(context);
+    Optional<Template> getTemplateForCaller(Study study, TemplateType type) {
         checkNotNull(type);
 
+        RequestContext context = BridgeUtils.getRequestContext();
+        
         ResourceList<Template> results = (ResourceList<Template>)templateDao.getTemplates(
-                context.getStudyIdentifier(), type, null, null, false);
+                study.getStudyIdentifier(), type, null, null, false);
         for (Template template : results.getItems()) {
             loadCriteria(template);
         }
 
-        List<Template> templateMatches = CriteriaUtils.filterByCriteria(context, results.getItems(), null);
+        List<Template> templateMatches = CriteriaUtils.filterByCriteria(
+                context, results.getItems(), null);
         
         // The ideal case: one and only one template matches the user's context
         if (templateMatches.size() == 1) {
@@ -244,7 +238,7 @@ public class TemplateService {
         String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             // Specified default may not exist, log as integrity violation, but continue
-            Optional<Template> optional = templateDao.getTemplate(context.getStudyIdentifier(), defaultGuid);
+            Optional<Template> optional = templateDao.getTemplate(study.getStudyIdentifier(), defaultGuid);
             if (optional.isPresent()) {
                 return optional;
             }

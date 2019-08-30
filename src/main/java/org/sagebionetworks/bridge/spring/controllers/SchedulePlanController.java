@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -49,8 +48,7 @@ public class SchedulePlanController extends BaseController {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
-                study.getStudyIdentifier(), includeDeleted);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(study.getStudyIdentifier(), includeDeleted);
         return new ResourceList<>(plans);
     }
 
@@ -61,8 +59,7 @@ public class SchedulePlanController extends BaseController {
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         // We don't filter plans when we return a list of all of them for developers.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId,
-                includeDeleted);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId, includeDeleted);
         return new ResourceList<>(plans);
     }
 

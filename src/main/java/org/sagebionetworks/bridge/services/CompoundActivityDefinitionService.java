@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -112,7 +111,7 @@ public class CompoundActivityDefinitionService {
     private void checkConstraintViolations(StudyIdentifier studyId, String taskId) {
         // You cannot physically delete a compound activity if it is referenced by a logically deleted schedule plan. 
         // It's possible the schedule plan could be restored. All you can do is logically delete the compound activity.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId, true);
         SchedulePlan match = findFirstMatchingPlan(plans, taskId);
         if (match != null) {
             throw new ConstraintViolationException.Builder().withMessage(

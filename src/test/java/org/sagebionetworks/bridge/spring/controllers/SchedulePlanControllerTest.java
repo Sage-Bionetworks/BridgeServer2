@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getSimpleSchedulePlan;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -110,13 +109,13 @@ public class SchedulePlanControllerTest extends Mockito {
     public void getSchedulePlansForWorker() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(WORKER);
         SchedulePlan plan = createSchedulePlan();
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false))
+        when(mockSchedulePlanService.getSchedulePlans(TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(plan));
         
         ResourceList<SchedulePlan> result = controller.getSchedulePlansForWorker(TEST_STUDY_IDENTIFIER, false);
         assertEquals(result.getItems().get(0), plan);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false);
+        verify(mockSchedulePlanService).getSchedulePlans(TEST_STUDY, false);
     }
 
     @Test
@@ -157,11 +156,11 @@ public class SchedulePlanControllerTest extends Mockito {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_STUDY));
         
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(TEST_STUDY, false)).thenReturn(plans);
         
         ResourceList<SchedulePlan> result = controller.getSchedulePlans(false);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false);
+        verify(mockSchedulePlanService).getSchedulePlans(TEST_STUDY, false);
         
         assertEquals(1, result.getItems().size());
         assertEquals(plans.get(0).getGuid(), result.getItems().get(0).getGuid());
@@ -171,11 +170,11 @@ public class SchedulePlanControllerTest extends Mockito {
     public void getSchedulePlansIncludeDeleted() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_STUDY));
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, true)).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(TEST_STUDY, true)).thenReturn(plans);
         
         ResourceList<SchedulePlan> result = controller.getSchedulePlans(true);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, true);
+        verify(mockSchedulePlanService).getSchedulePlans(TEST_STUDY, true);
         
         assertEquals(1, result.getItems().size());
         assertEquals(plans.get(0).getGuid(), result.getItems().get(0).getGuid());

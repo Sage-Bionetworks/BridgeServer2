@@ -85,7 +85,7 @@ public class ScheduleContextTest {
         assertEquals(context.getEndsOn(), endsOn);
         assertEquals(context.getEvent(ENROLLMENT), events.get(ENROLLMENT));
         assertEquals(context.getMinimumPerSchedule(), 3);
-        assertEquals(context.getCriteriaContext().getHealthCode(), HEALTH_CODE);
+        assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getCriteriaContext().getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(context.getCriteriaContext().getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
         assertEquals(context.getStartsOn(), startsOn);
@@ -108,7 +108,7 @@ public class ScheduleContextTest {
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserDataGroups().isEmpty());
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserSubstudyIds().isEmpty());
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getLanguages().isEmpty());
-        assertNull(EMPTY_CONTEXT.getCriteriaContext().getHealthCode());
+        assertNull(EMPTY_CONTEXT.getHealthCode());
         assertNull(EMPTY_CONTEXT.getCriteriaContext().getUserId());
         assertEquals(EMPTY_CONTEXT.getCriteriaContext().getStudyIdentifier(), TEST_STUDY);
         assertEquals(EMPTY_CONTEXT.getCriteriaContext().getClientInfo(), ClientInfo.UNKNOWN_CLIENT);

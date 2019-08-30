@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -23,7 +24,6 @@ import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -129,8 +129,7 @@ public class CompoundActivityDefinitionServiceTest {
         Activity newActivity = new Activity.Builder()
                 .withCompoundActivity(compoundActivity).build();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true))
-                .thenReturn(Lists.newArrayList(plan));
+        when(schedulePlanService.getSchedulePlans(TEST_STUDY, true)).thenReturn(Lists.newArrayList(plan));
         
         // Now, a schedule plan exists that references this task ID. It cannot be deleted.
         try {

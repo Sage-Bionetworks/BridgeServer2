@@ -207,7 +207,7 @@ public class SubpopulationService {
         
         List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), false);
         
-        return CriteriaUtils.filterByCriteria(context, subpops, null);
+        return CriteriaUtils.filterByCriteria(context.toRequestContext(), subpops, null);
     }
 
     /**

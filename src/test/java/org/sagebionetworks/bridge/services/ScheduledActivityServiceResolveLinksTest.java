@@ -9,11 +9,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -22,6 +24,7 @@ import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -154,8 +157,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         plan.setStrategy(strategy);
 
         // And the schedule plan service returns the schedule plan.
-        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
-                .thenReturn(ImmutableList.of(plan));
+        when(mockSchedulePlanService.getSchedulePlans(TEST_STUDY, false)).thenReturn(ImmutableList.of(plan));
     }
 
     @Test
@@ -184,11 +186,13 @@ public class ScheduledActivityServiceResolveLinksTest {
                 .withTaskIdentifier(COMPOUND_ACTIVITY_REF_TASK_ID).build();
         Activity activity = new Activity.Builder().withCompoundActivity(inputCompoundActivity).build();
         setupSchedulePlanServiceWithActivity(activity);
+        
+        BridgeUtils.setRequestContext(SCHEDULE_CONTEXT.getCriteriaContext().toRequestContext());
 
         AppConfig appConfig = AppConfig.create();
         appConfig.setSurveyReferences(Lists.newArrayList(new SurveyReference("surveyRefId", SURVEY_GUID, DateTime.now())));
         appConfig.setSchemaReferences(Lists.newArrayList(new SchemaReference(SCHEMA_ID, 3)));
-        when(appConfigService.getAppConfigForUser(SCHEDULE_CONTEXT.getCriteriaContext(), false)).thenReturn(appConfig);
+        when(appConfigService.getAppConfigForCaller()).thenReturn(Optional.of(appConfig));
 
         // Execute.
         List<ScheduledActivity> scheduledActivityList = scheduledActivityService.scheduleActivitiesForPlans(

@@ -6,16 +6,17 @@ import static java.util.Comparator.comparingLong;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -25,6 +26,7 @@ import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -106,21 +108,18 @@ public class AppConfigService {
         return appConfigDao.getAppConfig(studyId, guid);
     }
     
-    public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
-        checkNotNull(context);
+    public Optional<AppConfig> getAppConfigForCaller() {
+        RequestContext context = BridgeUtils.getRequestContext();
+        StudyIdentifier studyId = new StudyIdentifierImpl(context.getCallerStudyId());
+        
+        List<AppConfig> appConfigs = getAppConfigs(studyId, false);
 
-        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
-
-        List<AppConfig> matches = CriteriaUtils.filterByCriteria(context, appConfigs,
-                comparingLong(AppConfig::getCreatedOn));
+        List<AppConfig> matches = CriteriaUtils.filterByCriteria(
+                context, appConfigs, comparingLong(AppConfig::getCreatedOn));
 
         // Should have matched one and only one app config.
         if (matches.isEmpty()) {
-            if (throwException) {
-                throw new EntityNotFoundException(AppConfig.class);    
-            } else {
-                return null;
-            }
+            return Optional.empty();
         } else if (matches.size() != 1) {
             // If there is more than one match, return the one created first, but log a message
             LOG.info("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
@@ -128,19 +127,19 @@ public class AppConfigService {
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference))
+            .map(surveyReference -> resolveSurvey(studyId, surveyReference))
             .collect(Collectors.toList()));
         
         ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
         for (ConfigReference configRef : matched.getConfigReferences()) {
-            AppConfigElement element = retrieveConfigElement(context.getStudyIdentifier(), configRef, matched.getGuid());
+            AppConfigElement element = retrieveConfigElement(studyId, configRef, matched.getGuid());
             if (element != null) {
                 builder.put(configRef.getId(), element.getData());    
             }
         }
         matched.setConfigElements(builder.build());
 
-        return matched;
+        return Optional.of(matched);
     }
 
     protected AppConfigElement retrieveConfigElement(StudyIdentifier studyId, ConfigReference configRef, String appConfigGuid) {

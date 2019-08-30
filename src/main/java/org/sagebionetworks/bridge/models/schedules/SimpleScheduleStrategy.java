@@ -29,7 +29,7 @@ public final class SimpleScheduleStrategy implements ScheduleStrategy {
     }
     
     @Override
-    public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
+    public Schedule getScheduleForCaller(SchedulePlan plan) {
         return schedule;
     }
     

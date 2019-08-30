@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.spring.filters;
 
 import static java.util.stream.Collectors.toCollection;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
@@ -87,6 +89,7 @@ public class RequestFilter implements Filter {
         }
         RequestContext.Builder builder = new RequestContext.Builder()
                 .withRequestId(requestId)
+                .withCallerIpAddress(parseIpAddress(getRemoteAddress(request)))
                 .withCallerClientInfo(getClientInfoFromUserAgentHeader(request, response))
                 .withCallerLanguages(getLanguagesFromAcceptLanguageHeader(request, response));
         setRequestContext(builder.build());
@@ -171,5 +174,28 @@ public class RequestFilter implements Filter {
         } else {
             response.setHeader(BRIDGE_API_STATUS_HEADER, msg);
         }
-    }    
+    }
+    
+    static String getRemoteAddress(HttpServletRequest request) {
+        String forwardHeader = request.getHeader(X_FORWARDED_FOR_HEADER);
+        return (forwardHeader == null) ? request.getRemoteAddr() : forwardHeader;
+    }
+    
+    // Helper method to parse an IP address from a raw string, as specified by getRemoteAddress().
+    static String parseIpAddress(String fullIpAddressString) {
+        if (isBlank(fullIpAddressString)) {
+            // Canonicalize unspecified IP address to null.
+            return null;
+        }
+
+        // Remote address comes from the X-Forwarded-For header. Since we're behind Amazon, this is almost always
+        // 2 IP addresses, separated by a comma and a space. The second is an Amazon router. The first one is probably
+        // the real IP address.
+        //
+        // Note that this isn't fool-proof. X-Forwarded-For can be spoofed. Also, double-proxies might exist, or the
+        // first IP address might simply resolve to 192.168.X.1. In local, this is probably just 127.0.0.1. But at
+        // least this is an added layer of defense vs not IP-locking at all.
+        String[] ipAddressArray = fullIpAddressString.split(",");
+        return ipAddressArray[0];
+    }
 }

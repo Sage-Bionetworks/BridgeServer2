@@ -6,6 +6,8 @@ import java.util.Set;
 
 import org.springframework.validation.Errors;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
@@ -41,8 +43,11 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
      *      criteria.
      */
     @Override
-    public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
-        List<ScheduleCriteria> found = CriteriaUtils.filterByCriteria(context.getCriteriaContext(), scheduleCriteria, null);
+    public Schedule getScheduleForCaller(SchedulePlan plan) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        
+        List<ScheduleCriteria> found = CriteriaUtils.filterByCriteria(
+                context, scheduleCriteria, null);
         return (found.isEmpty()) ? null : found.get(0).getSchedule();
     }
 

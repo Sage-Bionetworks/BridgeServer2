@@ -222,7 +222,7 @@ public class AccountWorkflowServiceTest {
         revision.setSubject(subject);
         revision.setDocumentContent(body);
         revision.setMimeType(type);
-        when(mockTemplateService.getRevisionForUser(any(), eq(templateType))).thenReturn(revision);
+        when(mockTemplateService.getRevisionForCaller(any(), eq(templateType))).thenReturn(revision);
     }
     
     @Test

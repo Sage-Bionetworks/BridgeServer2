@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -126,7 +125,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
     @Test
     public void getSchedulePlans() {
         mockSchedulePlanQuery();
-        List<SchedulePlan> plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        List<SchedulePlan> plans = dao.getSchedulePlans(TEST_STUDY, false);
         assertEquals(plans.size(), 1);
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
@@ -137,7 +136,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
     @Test
     public void getSchedulePlansRetrievesCriteria() {
         mockSchedulePlanQuery();
-        List<SchedulePlan> plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        List<SchedulePlan> plans = dao.getSchedulePlans(TEST_STUDY, false);
         
         SchedulePlan plan = plans.get(0);
         CriteriaScheduleStrategy strategy = (CriteriaScheduleStrategy)plan.getStrategy();
@@ -154,7 +153,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         persistedCriteria.setMaxAppVersion(IOS, 65);
         when(mockCriteriaDao.getCriteria(key)).thenReturn(persistedCriteria);
         
-        plans = dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        plans = dao.getSchedulePlans(TEST_STUDY, false);
         plan = plans.get(0);
         strategy = (CriteriaScheduleStrategy)plan.getStrategy();
         criteria = strategy.getScheduleCriteria().get(0).getCriteria();
@@ -278,7 +277,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
     @Test
     public void getSchedulePlansExcludesLogicallyDeleted() {
         mockSchedulePlanQuery();
-        dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        dao.getSchedulePlans(TestConstants.TEST_STUDY, false);
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
         
@@ -291,7 +290,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
     @Test
     public void getSchedulePlansIncludesLogicallyDeleted() {
         mockSchedulePlanQuery();
-        dao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        dao.getSchedulePlans(TestConstants.TEST_STUDY, true);
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
         

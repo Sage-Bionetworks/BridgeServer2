@@ -188,8 +188,8 @@ public class NotificationTopicService {
         }
 
         // Determine topics to subscribe to based on criteria.
-        Set<String> desiredTopicGuidSet = filterByCriteria(context, criteriaTopicList, null).stream()
-                .map(NotificationTopic::getGuid).collect(Collectors.toSet());
+        Set<String> desiredTopicGuidSet = filterByCriteria(context.toRequestContext(), criteriaTopicList, null)
+                .stream().map(NotificationTopic::getGuid).collect(Collectors.toSet());
 
         // Subscribe user to topics.
         for (NotificationRegistration oneRegistration : registrationList) {

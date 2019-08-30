@@ -11,6 +11,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -35,7 +40,6 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -94,7 +98,7 @@ public class AuthenticationServiceMockTest {
     private static final List<String> LANGUAGES = ImmutableList.of("es","de");
     private static final String SESSION_TOKEN = "SESSION_TOKEN";
     private static final String SUPPORT_EMAIL = "support@support.com";
-    private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
+    private static final String STUDY_ID = TEST_STUDY_IDENTIFIER;
     private static final String RECIPIENT_EMAIL = "email@email.com";
     private static final String TOKEN = "ABC-DEF";
     private static final String TOKEN_UNFORMATTED = "ABCDEF";
@@ -106,12 +110,12 @@ public class AuthenticationServiceMockTest {
     private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
             .withToken(TOKEN).build();
     private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withStudy(STUDY_ID)
-            .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
+            .withPhone(PHONE).withToken(TOKEN).build();
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(STUDY_ID)
-            .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
+            .withPhone(PHONE).withPassword(PASSWORD).build();
     private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(STUDY_ID).withEmail(RECIPIENT_EMAIL)
             .withReauthToken(TOKEN).build();
 
@@ -130,14 +134,14 @@ public class AuthenticationServiceMockTest {
     private static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withStudyIdentifier(TEST_STUDY).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
-    private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, USER_ID);
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
-            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withSubstudyIds(USER_SUBSTUDY_IDS)
             .withLanguages(LANGUAGES).build();
 
     @Mock
@@ -214,10 +218,11 @@ public class AuthenticationServiceMockTest {
     
     @Test // Test some happy path stuff, like the correct initialization of the user session
     public void signIn() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("127.1.1.11").build());
         study.setReauthenticationEnabled(true);
         
-        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
-        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
@@ -225,10 +230,9 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withStudyIdentifier(TEST_STUDY)
             .withLanguages(LANGUAGES)
-            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
-            .withIpAddress("127.1.1.11").build();
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -250,14 +254,13 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
-        assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
-        assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(updatedContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
@@ -288,10 +291,11 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void signInThrowsConsentRequiredException() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("127.1.1.11").build());
         study.setReauthenticationEnabled(true);
         
-        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
-        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
@@ -299,10 +303,9 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withStudyIdentifier(TEST_STUDY)
             .withLanguages(LANGUAGES)
-            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
-            .withIpAddress("127.1.1.11").build();
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -329,14 +332,13 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
-        assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
-        assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(updatedContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
@@ -703,7 +705,7 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void requestResetInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE)
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE)
                 .withEmail(RECIPIENT_EMAIL).build();
         service.requestResetPassword(study, false, signIn);
     }
@@ -734,14 +736,14 @@ public class AuthenticationServiceMockTest {
     @Test
     public void signUpWithPhoneOK() {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
+        StudyParticipant participant = new StudyParticipant.Builder().withPhone(PHONE)
                 .withPassword(PASSWORD).build();
         
         service.signUp(study, participant);
         
         verify(participantService).createParticipant(eq(study), participantCaptor.capture(), eq(true));
         StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getPhone().getNumber(), TestConstants.PHONE.getNumber());
+        assertEquals(captured.getPhone().getNumber(), PHONE.getNumber());
         assertEquals(captured.getPassword(), PASSWORD);
     }
     
@@ -760,7 +762,7 @@ public class AuthenticationServiceMockTest {
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals(captured.getId(), "user-id");
-        assertEquals(captured.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -778,7 +780,7 @@ public class AuthenticationServiceMockTest {
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals(captured.getExternalId(), EXTERNAL_ID);
-        assertEquals(captured.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -804,7 +806,7 @@ public class AuthenticationServiceMockTest {
         // Put some stuff in participant to verify session is initialized
         StudyParticipant participant = new StudyParticipant.Builder().withDataGroups(DATA_GROUP_SET)
                 .withEmail(RECIPIENT_EMAIL).withHealthCode(HEALTH_CODE).withId(USER_ID).withLanguages(LANGUAGES)
-                .withFirstName("Test").withLastName("Tester").withPhone(TestConstants.PHONE).build();
+                .withFirstName("Test").withLastName("Tester").withPhone(PHONE).build();
         doReturn(participant).when(participantService).getParticipant(study, account, false);
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         doReturn(account).when(accountDao).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
@@ -840,7 +842,7 @@ public class AuthenticationServiceMockTest {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE).withToken("ABC DEF")
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE).withToken("ABC DEF")
                 .build();
         service.phoneSignIn(CONTEXT, signIn);
     }
@@ -855,7 +857,7 @@ public class AuthenticationServiceMockTest {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
-        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(TestConstants.PHONE)
+        SignIn signIn = new SignIn.Builder().withStudy(STUDY_ID).withPhone(PHONE)
                 .withToken(TOKEN_UNFORMATTED).build();
         service.phoneSignIn(CONTEXT, signIn);
     }
@@ -947,7 +949,7 @@ public class AuthenticationServiceMockTest {
         Account mockAccount = mock(Account.class);
 
         CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY).build();
         TestUtils.mockEditAccount(accountDao, mockAccount);
         doReturn(mockAccount).when(accountDao).getAccount(any());
         
@@ -957,24 +959,24 @@ public class AuthenticationServiceMockTest {
         
         service.getSession(study, context);
         
-        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
+        verify(accountDao).editAccount(eq(TEST_STUDY), eq("healthCode"), any());
         verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
     @Test
     public void resendEmailVerification() {
-        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, RECIPIENT_EMAIL);
+        AccountId accountId = AccountId.forEmail(TEST_STUDY_IDENTIFIER, RECIPIENT_EMAIL);
         service.resendVerification(ChannelType.EMAIL, accountId);
         
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(accountIdCaptor.getValue().getEmail(), RECIPIENT_EMAIL);
     }
 
     @Test
     public void resendEmailVerificationNoAccount() {
-        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.EMAIL);
+        AccountId accountId = AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL);
         
         // Does not throw an EntityNotFoundException to hide this information from API uses
         doThrow(new EntityNotFoundException(Account.class))
@@ -991,13 +993,13 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void resendPhoneVerification() {
-        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        AccountId accountId = AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE);
         service.resendVerification(ChannelType.PHONE, accountId);
         
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
         
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
-        assertEquals(accountIdCaptor.getValue().getPhone(), TestConstants.PHONE);
+        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(accountIdCaptor.getValue().getPhone(), PHONE);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -1061,7 +1063,7 @@ public class AuthenticationServiceMockTest {
         } catch(EntityAlreadyExistsException e) {
             // expected exception
         }
-        verify(accountDao).getAccount(AccountId.forExternalId(TestConstants.TEST_STUDY_IDENTIFIER, EXTERNAL_ID));
+        verify(accountDao).getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, EXTERNAL_ID));
         verify(participantService).createParticipant(eq(study), any(), eq(false));
         verifyNoMoreInteractions(accountDao);
         verifyNoMoreInteractions(participantService);
@@ -1258,11 +1260,11 @@ public class AuthenticationServiceMockTest {
     public void getSessionFromAccount() {
         // Create inputs.
         Study study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         study.setReauthenticationEnabled(true);
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
@@ -1281,7 +1283,7 @@ public class AuthenticationServiceMockTest {
         assertTrue(session.isAuthenticated());
         assertEquals(session.getEnvironment(), Environment.LOCAL);
         assertEquals(session.getIpAddress(), IP_ADDRESS);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         
@@ -1294,8 +1296,7 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(false);
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         Account account = Account.create();
 
@@ -1319,8 +1320,7 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(null);
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         Account account = Account.create();
 
@@ -1364,7 +1364,7 @@ public class AuthenticationServiceMockTest {
         validator.setStudyService(studyService);
         service.setPasswordResetValidator(validator);
         
-        PasswordReset reset = new PasswordReset(PASSWORD, TOKEN, TestConstants.TEST_STUDY_IDENTIFIER);
+        PasswordReset reset = new PasswordReset(PASSWORD, TOKEN, TEST_STUDY_IDENTIFIER);
         service.resetPassword(reset);
         verify(accountWorkflowService).resetPassword(reset);
     }
@@ -1375,7 +1375,7 @@ public class AuthenticationServiceMockTest {
         validator.setStudyService(studyService);
         service.setPasswordResetValidator(validator);
         
-        PasswordReset reset = new PasswordReset(PASSWORD, null, TestConstants.TEST_STUDY_IDENTIFIER);
+        PasswordReset reset = new PasswordReset(PASSWORD, null, TEST_STUDY_IDENTIFIER);
         service.resetPassword(reset);
     }
     
@@ -1383,11 +1383,11 @@ public class AuthenticationServiceMockTest {
     public void existingLanguagePreferencesAreLoaded() {
         // Language prefs in the user object and the criteria context are different; the values from the 
         // database are taken. These cannot be picked up from the HTTP request once they are set.
-        account.setLanguages(TestConstants.LANGUAGES);
+        account.setLanguages(LANGUAGES);
         when(accountDao.authenticate(study, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withId(USER_ID).withLanguages(TestConstants.LANGUAGES).build();
+                .withId(USER_ID).withLanguages(LANGUAGES).build();
         when(participantService.getParticipant(study, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
         
@@ -1397,7 +1397,7 @@ public class AuthenticationServiceMockTest {
         
         UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
         
-        assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
+        assertEquals(session.getParticipant().getLanguages(), LANGUAGES);
         
         verify(accountDao, never()).editAccount(any(), any(), any());
    }
@@ -1415,13 +1415,13 @@ public class AuthenticationServiceMockTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withContext(CONTEXT)
-                .withLanguages(TestConstants.LANGUAGES).build();
+                .withLanguages(LANGUAGES).build();
         
         UserSession session = service.signIn(study, context, EMAIL_PASSWORD_SIGN_IN);
         
-        assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
+        assertEquals(session.getParticipant().getLanguages(), LANGUAGES);
         
         // Note that the context does not have the healthCode, you must use the participant
-        verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(accountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
    }    
 }

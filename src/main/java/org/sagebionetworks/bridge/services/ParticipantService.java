@@ -224,7 +224,6 @@ public class ParticipantService {
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withUserId(userId)
-                .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
                 .withLanguages(requestInfo.getLanguages())
                 .withUserDataGroups(account.getDataGroups())
@@ -300,7 +299,6 @@ public class ParticipantService {
             CriteriaContext context = new CriteriaContext.Builder()
                 .withStudyIdentifier(study.getStudyIdentifier())
                 .withUserId(account.getId())
-                .withHealthCode(account.getHealthCode())
                 .withUserDataGroups(account.getDataGroups())
                 .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
                 .withClientInfo(requestInfo.getClientInfo())
@@ -974,7 +972,6 @@ public class ParticipantService {
         
         return new CriteriaContext.Builder()
             .withStudyIdentifier(study.getStudyIdentifier())
-            .withHealthCode(participant.getHealthCode())
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)
             .withUserDataGroups(participant.getDataGroups())

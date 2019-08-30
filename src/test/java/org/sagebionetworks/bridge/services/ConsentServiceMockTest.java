@@ -166,7 +166,7 @@ public class ConsentServiceMockTest {
         revision.setSubject("signedConsent subject");
         revision.setDocumentContent("signedConsent body");
         revision.setMimeType(MimeType.HTML);
-        when(templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForCaller(study, EMAIL_SIGNED_CONSENT)).thenReturn(revision);
 
         account = Account.create();
         account.setId(ID);
@@ -862,7 +862,7 @@ public class ConsentServiceMockTest {
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("some test content");
-        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForCaller(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
 
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, true);
@@ -936,7 +936,7 @@ public class ConsentServiceMockTest {
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("some test content");
-        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForCaller(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
         
         consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
 

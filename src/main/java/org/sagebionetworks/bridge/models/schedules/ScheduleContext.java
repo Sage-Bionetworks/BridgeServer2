@@ -30,9 +30,11 @@ public final class ScheduleContext {
     private final DateTime accountCreatedOn;
     private final int minimumPerSchedule;
     private final CriteriaContext criteriaContext;
+    private final String healthCode;
     
-    private ScheduleContext(DateTimeZone initialTimeZone, DateTime startsOn, DateTime endsOn, Map<String, DateTime> events,
-            int minimumPerSchedule, DateTime accountCreatedOn, CriteriaContext criteriaContext) {
+    private ScheduleContext(DateTimeZone initialTimeZone, DateTime startsOn, DateTime endsOn,
+            Map<String, DateTime> events, int minimumPerSchedule, DateTime accountCreatedOn,
+            CriteriaContext criteriaContext, String healthCode) {
         this.initialTimeZone = initialTimeZone;
         this.endsOn = endsOn;
         this.events = events;
@@ -40,6 +42,7 @@ public final class ScheduleContext {
         this.minimumPerSchedule = minimumPerSchedule;
         this.accountCreatedOn = accountCreatedOn;
         this.criteriaContext = criteriaContext;
+        this.healthCode = healthCode;
     }
     
     /**
@@ -92,14 +95,19 @@ public final class ScheduleContext {
     public DateTime getAccountCreatedOn() {
         return accountCreatedOn;
     }
-    
+
     public CriteriaContext getCriteriaContext() {
         return criteriaContext;
     }
     
+    public String getHealthCode() {
+        return healthCode;
+    }
+    
     @Override
     public int hashCode() {
-        return Objects.hash(initialTimeZone, endsOn, events, startsOn, accountCreatedOn, minimumPerSchedule, criteriaContext);
+        return Objects.hash(initialTimeZone, endsOn, events, startsOn, accountCreatedOn, minimumPerSchedule,
+                criteriaContext, healthCode);
     }
 
     @Override
@@ -113,14 +121,15 @@ public final class ScheduleContext {
                 Objects.equals(events, other.events) && Objects.equals(startsOn, other.startsOn) &&
                 Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
-                Objects.equals(criteriaContext, other.criteriaContext));
+                Objects.equals(criteriaContext, other.criteriaContext) &&
+                Objects.equals(healthCode, other.healthCode));
     }
 
     @Override
     public String toString() {
         return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", startsOn=" + startsOn
                 + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
-                + ", criteriaContext=" + criteriaContext + "]";
+                + ", criteriaContext=" + criteriaContext + ", healthCode=[REDACTED]]";
     }
 
 
@@ -132,6 +141,7 @@ public final class ScheduleContext {
         private int minimumPerSchedule;
         private DateTime accountCreatedOn;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
+        private String healthCode;
         
         public Builder withStudyIdentifier(String studyId) {
             contextBuilder.withStudyIdentifier(new StudyIdentifierImpl(studyId));
@@ -142,7 +152,7 @@ public final class ScheduleContext {
             return this;
         }
         public Builder withHealthCode(String healthCode) {
-            contextBuilder.withHealthCode(healthCode);
+            this.healthCode = healthCode;
             return this;
         }
         public Builder withUserId(String userId) {
@@ -200,6 +210,7 @@ public final class ScheduleContext {
             withStartsOn(context.startsOn);
             withMinimumPerSchedule(context.minimumPerSchedule);
             withAccountCreatedOn(context.accountCreatedOn);
+            withHealthCode(context.healthCode);
             contextBuilder.withContext(context.criteriaContext);
             return this;
         }
@@ -211,7 +222,7 @@ public final class ScheduleContext {
                 startsOn = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
             }
             return new ScheduleContext(initialTimeZone, startsOn, endsOn, events, minimumPerSchedule, accountCreatedOn,
-                    contextBuilder.build());
+                    contextBuilder.build(), healthCode);
         }
     }
 }

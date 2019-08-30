@@ -231,7 +231,7 @@ public class ConsentService {
             }
             addStudyConsentRecipients(study, recipientEmails);
             if (!recipientEmails.isEmpty()) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
+                TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withStudy(study)
@@ -403,7 +403,7 @@ public class ConsentService {
                 xmlTemplateWithSignatureBlock);
         
         if (verifiedEmail) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
+            TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                     .withStudy(study)
@@ -434,7 +434,7 @@ public class ConsentService {
         } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
-        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_SIGNED_CONSENT);
+        TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_SIGNED_CONSENT);
 
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)

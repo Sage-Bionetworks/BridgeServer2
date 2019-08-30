@@ -268,12 +268,12 @@ public class ScheduledActivityServiceDuplicateTest {
         doReturn(dbActivities).when(activityDao).getActivities(any(), any());
         
         // Correctly scheduled one-time tasks coming from scheduler
-        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         verify(activityDao).getActivities(any(), any());
-        verify(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        verify(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         allWithinQueryWindow(activities, context);
         // With persisted tasks included, this finished task is not returned.
@@ -296,13 +296,13 @@ public class ScheduledActivityServiceDuplicateTest {
         doReturn(dbActivities).when(activityDao).getActivities(any(), any());
         
         // Correctly scheduled one-time tasks coming from scheduler
-        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
-        verify(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        verify(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         allWithinQueryWindow(activities, context);
         assertEquals(filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size(), 0);
@@ -320,13 +320,13 @@ public class ScheduledActivityServiceDuplicateTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         
         // Correctly scheduled one-time tasks coming from scheduler
-        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
-        verify(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        verify(schedulePlanService).getSchedulePlans(any(), eq(false));
         // This one is there...
         assertEquals(filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size(), 1);
         assertEquals(filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size(), 1);
@@ -344,13 +344,13 @@ public class ScheduledActivityServiceDuplicateTest {
         schedule.setScheduleType(ScheduleType.ONCE);
         
         // Correctly scheduled one-time tasks coming from scheduler
-        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), eq(false));
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
-        verify(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
+        verify(schedulePlanService).getSchedulePlans(any(), eq(false));
         assertEquals(filterByGuid(activities, "bea8fd5d-7622-451f-a727-f9e37f00e1be").size(), 1);
         assertEquals(filterByGuid(activities, "6966c3d7-0949-43a8-804e-efc25d0f83e2").size(), 1);
         assertEquals(filterByGuid(activities, "79cf1788-a087-4fa3-92e4-92e43d9699a7").size(), 1);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -10,9 +11,12 @@ import static org.testng.Assert.fail;
 import java.util.List;
 import java.util.Set;
 
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -21,6 +25,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -64,6 +69,11 @@ public class CriteriaScheduleStrategyTest {
     public void before() {
         strategy = new CriteriaScheduleStrategy();
         PLAN.setStrategy(strategy);
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
     
     @Test
@@ -216,13 +226,13 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithAppVersions();
         setUpStrategyWithProhibitedDataGroups();
         
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(CLIENT_INFO)
-                .withUserDataGroups(Sets.newHashSet("group1"))
-                .withHealthCode("BBB").build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(TEST_STUDY)
+                .withCallerClientInfo(CLIENT_INFO)
+                .withCallerDataGroups(Sets.newHashSet("group1"))
+                .withCallerHealthCode("BBB").build());
 
-        Schedule schedule = strategy.getScheduleForUser(PLAN, context);
+        Schedule schedule = strategy.getScheduleForCaller(PLAN);
         assertNull(schedule);
     }
     
@@ -232,15 +242,15 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithOneRequiredDataGroup();
         setUpStrategyWithProhibitedDataGroups();
         
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(CLIENT_INFO)
-                .withHealthCode("AAA").build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(TEST_STUDY)
+                .withCallerClientInfo(CLIENT_INFO)
+                .withCallerHealthCode("AAA").build());
         
         // First two ScheduleCriteria don't match; the first because the app version is wrong 
         // and the second because the user does not have a required data group. The last ScheduleCriteria 
         // matches and returns the last schedule in the list
-        Schedule schedule = strategy.getScheduleForUser(PLAN, context);
+        Schedule schedule = strategy.getScheduleForCaller(PLAN);
         assertEquals(schedule, SCHEDULE_FOR_STRATEGY_WITH_PROHIBITED_DATA_GROUPS);
     }
     
@@ -249,14 +259,14 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithAllRequirements();
         setUpStrategyWithAppVersions(); // certainly should not match this one, although criteria are valid
         
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withUserDataGroups(Sets.newHashSet("req1", "req2"))
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
-                .withHealthCode("AAA").build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerDataGroups(ImmutableSet.of("req1", "req2"))
+                .withCallerStudyId(TEST_STUDY)
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
+                .withCallerHealthCode("AAA").build());
         
         // Matches the first schedule, not the second schedule (although it also matches)
-        Schedule schedule = strategy.getScheduleForUser(PLAN, context);
+        Schedule schedule = strategy.getScheduleForCaller(PLAN);
         assertEquals(schedule, SCHEDULE_FOR_STRATEGY_WITH_ALL_REQUIREMENTS);
     }
 
@@ -404,17 +414,17 @@ public class CriteriaScheduleStrategyTest {
     }
 
     private Schedule getScheduleFromStrategy(ClientInfo info) {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-study")
-                .withClientInfo(info).build();
-        return strategy.getScheduleForUser(PLAN, context);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(new StudyIdentifierImpl("test-study"))
+                .withCallerClientInfo(info).build());
+        return strategy.getScheduleForCaller(PLAN);
     }
     
     private Schedule getScheduleFromStrategy(Set<String> dataGroups) {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-study")
-                .withUserDataGroups(dataGroups).build();
-        return strategy.getScheduleForUser(PLAN, context);
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(new StudyIdentifierImpl("test-study"))
+                .withCallerDataGroups(dataGroups).build());
+        return strategy.getScheduleForCaller(PLAN);
     }
     
     private void setUpStrategyWithAppVersions() {

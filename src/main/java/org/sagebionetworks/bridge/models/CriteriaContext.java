@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
@@ -15,22 +16,17 @@ import com.google.common.collect.ImmutableSet;
 public final class CriteriaContext {
     
     private final StudyIdentifier studyId;
-    private final String healthCode;
     private final String userId;
     private final ClientInfo clientInfo;
-    private final String ipAddress;
     private final Set<String> userDataGroups;
     private final Set<String> userSubstudyIds;
-    // This set has ordered keys (most to least preferential)
     private final List<String> languages;
     
-    private CriteriaContext(StudyIdentifier studyId, String healthCode, String userId, ClientInfo clientInfo,
-            String ipAddress, Set<String> userDataGroups, Set<String> userSubstudyIds, List<String> languages) {
+    private CriteriaContext(StudyIdentifier studyId, String userId, ClientInfo clientInfo, Set<String> userDataGroups,
+            Set<String> userSubstudyIds, List<String> languages) {
         this.studyId = studyId;
-        this.healthCode = healthCode;
         this.userId = userId;
         this.clientInfo = clientInfo;
-        this.ipAddress = ipAddress;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
         this.userSubstudyIds = (userSubstudyIds == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userSubstudyIds);
         this.languages = (languages == null) ? ImmutableList.of() : languages;
@@ -47,11 +43,6 @@ public final class CriteriaContext {
         return clientInfo;
     }
 
-    /** The user's IP Address, as reported by Amazon. */
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
     public Set<String> getUserDataGroups() {
         return userDataGroups;
     }
@@ -62,10 +53,6 @@ public final class CriteriaContext {
     
     public StudyIdentifier getStudyIdentifier() {
         return studyId;
-    }
-    
-    public String getHealthCode() {
-        return healthCode;
     }
     
     public String getUserId() {
@@ -82,11 +69,21 @@ public final class CriteriaContext {
     public List<String> getLanguages() {
         return languages;
     }
+    
+    public RequestContext toRequestContext() {
+        return new RequestContext.Builder()
+                .withCallerStudyId(studyId)
+                .withCallerUserId(userId)
+                .withCallerClientInfo(clientInfo)
+                .withCallerDataGroups(userDataGroups)
+                .withCallerSubstudies(userSubstudyIds)
+                .withCallerLanguages(languages)
+                .build();
+    }
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, healthCode, userId, clientInfo, ipAddress, userDataGroups, userSubstudyIds,
-                languages);
+        return Objects.hash(studyId, userId, clientInfo, userDataGroups, userSubstudyIds, languages);
     }
 
     @Override
@@ -97,11 +94,9 @@ public final class CriteriaContext {
             return false;
         CriteriaContext other = (CriteriaContext)obj;
         return (Objects.equals(clientInfo, other.clientInfo) &&
-                Objects.equals(ipAddress, other.ipAddress) &&
                 Objects.equals(userDataGroups, other.userDataGroups) &&
                 Objects.equals(userSubstudyIds, other.userSubstudyIds) &&
                 Objects.equals(studyId, other.studyId) && 
-                Objects.equals(healthCode, other.healthCode) && 
                 Objects.equals(userId, other.userId) &&
                 Objects.equals(languages, other.languages));
     }
@@ -109,26 +104,20 @@ public final class CriteriaContext {
     @Override
     public String toString() {
         return "CriteriaContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo
-                + ", ipAddress=" + ipAddress + ", userDataGroups=" + userDataGroups + ", userSubstudies=" 
-                + userSubstudyIds + ", languages=" + languages + "]";
+                + ", userDataGroups=" + userDataGroups + ", userSubstudies=" + userSubstudyIds + ", languages="
+                + languages + "]";
     }
 
     public static class Builder {
         private StudyIdentifier studyId;
-        private String healthCode;
         private String userId;
         private ClientInfo clientInfo;
-        private String ipAddress;
         private Set<String> userDataGroups;
         private Set<String> userSubstudyIds;
         private List<String> languages;
 
         public Builder withStudyIdentifier(StudyIdentifier studyId) {
             this.studyId = studyId;
-            return this;
-        }
-        public Builder withHealthCode(String healthCode) {
-            this.healthCode = healthCode;
             return this;
         }
         public Builder withUserId(String userId) {
@@ -139,13 +128,6 @@ public final class CriteriaContext {
             this.clientInfo = clientInfo;
             return this;
         }
-
-        /** @see #getIpAddress */
-        public Builder withIpAddress(String ipAddress) {
-            this.ipAddress = ipAddress;
-            return this;
-        }
-
         public Builder withUserDataGroups(Set<String> userDataGroups) {
             this.userDataGroups = userDataGroups;
             return this;
@@ -161,10 +143,8 @@ public final class CriteriaContext {
 
         public Builder withContext(CriteriaContext context) {
             this.studyId = context.studyId;
-            this.healthCode = context.healthCode;
             this.userId = context.userId;
             this.clientInfo = context.clientInfo;
-            this.ipAddress = context.ipAddress;
             this.userDataGroups = context.userDataGroups;
             this.userSubstudyIds = context.userSubstudyIds;
             this.languages = context.languages;
@@ -176,8 +156,7 @@ public final class CriteriaContext {
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new CriteriaContext(studyId, healthCode, userId, clientInfo, ipAddress, userDataGroups,
-                    userSubstudyIds, languages);
+            return new CriteriaContext(studyId, userId, clientInfo, userDataGroups, userSubstudyIds, languages);
         }
     }
 }

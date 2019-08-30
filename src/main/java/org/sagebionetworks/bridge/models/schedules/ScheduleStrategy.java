@@ -24,7 +24,7 @@ public interface ScheduleStrategy {
      * call for a user must return the same schedule), and it must be possible to enumerate all 
      * possible schedules that can be returned by this strategy.
      */
-    Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context);
+    Schedule getScheduleForCaller(SchedulePlan plan);
     
     /**
      * Validate that the strategy implementation instance is valid.

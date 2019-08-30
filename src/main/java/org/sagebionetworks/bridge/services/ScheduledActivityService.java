@@ -186,7 +186,7 @@ public class ScheduledActivityService {
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
 
-        String healthCode = context.getCriteriaContext().getHealthCode();
+        String healthCode = context.getHealthCode();
         activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
@@ -214,7 +214,7 @@ public class ScheduledActivityService {
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
-        String healthCode = context.getCriteriaContext().getHealthCode();
+        String healthCode = context.getHealthCode();
         activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
@@ -275,7 +275,7 @@ public class ScheduledActivityService {
         // lose existing activities. So during the time window the user is looking at, we will return any activities that exist.
         for (String activityGuid : activityGuids) {
             ForwardCursorPagedResourceList<ScheduledActivity> list = activityDao.getActivityHistoryV2(
-                    context.getCriteriaContext().getHealthCode(), activityGuid,
+                    context.getHealthCode(), activityGuid,
                     context.getStartsOn(), context.getEndsOn(), null,
                     API_MAXIMUM_PAGE_SIZE);
             if (list != null) {
@@ -286,7 +286,7 @@ public class ScheduledActivityService {
         }
         // IA-587: When a one-time task falls outside the schedule window, it's not returned by the 
         // query above, so it is recreated, and it loses its finished state. Load all remaining scheduled activities.
-        String healthCode = context.getCriteriaContext().getHealthCode();
+        String healthCode = context.getHealthCode();
         for (ScheduledActivity activity : scheduledActivities) {
             if (!dbMap.containsKey(activity.getGuid())) {
                 ScheduledActivity dbActivity = activityDao.getActivity(context.getStartsOn().getZone(), healthCode,
@@ -392,7 +392,7 @@ public class ScheduledActivityService {
     }
 
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
-        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getHealthCode());
+        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getHealthCode());
 
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
@@ -407,10 +407,10 @@ public class ScheduledActivityService {
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
 
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
-                context.getCriteriaContext().getStudyIdentifier(), false);
+        List<SchedulePlan> plans = schedulePlanService
+                .getSchedulePlans(context.getCriteriaContext().getStudyIdentifier(), false);
         
-        AppConfig appConfig = appConfigService.getAppConfigForUser(context.getCriteriaContext(), false);
+        AppConfig appConfig = appConfigService.getAppConfigForCaller().orElse(null);
         Map<String, SurveyReference> surveyReferences = (appConfig == null) ? ImmutableMap.of()
                 : Maps.uniqueIndex(appConfig.getSurveyReferences(), SurveyReference::getGuid);
         Map<String, SchemaReference> schemaReferences = (appConfig == null) ? ImmutableMap.of()
@@ -421,7 +421,7 @@ public class ScheduledActivityService {
                 context.getCriteriaContext().getStudyIdentifier());
         
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            Schedule schedule = plan.getStrategy().getScheduleForCaller(plan);
             if (schedule != null) {
                 List<ScheduledActivity> activities = schedule.getScheduler().getScheduledActivities(plan, context);
                 for (ScheduledActivity schActivity : activities) {

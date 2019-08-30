@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
@@ -54,9 +53,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
-            boolean includeDeleted) {
-        checkNotNull(clientInfo);
+    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();

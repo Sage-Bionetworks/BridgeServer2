@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
@@ -26,6 +28,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AppConfigDao;
@@ -33,7 +36,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -140,6 +142,7 @@ public class AppConfigServiceTest {
     @AfterMethod
     public void after() {
         RESULTS.clear();
+        BridgeUtils.setRequestContext(null);
     }
     
     private AppConfig setupConfigsForUser() {
@@ -203,13 +206,13 @@ public class AppConfigServiceTest {
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
         when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig2 = setupConfigsForUser();
         
-        AppConfig match = service.getAppConfigForUser(context, true);
+        AppConfig match = service.getAppConfigForCaller().get();
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
@@ -237,16 +240,16 @@ public class AppConfigServiceTest {
         when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id1", 1L)).thenReturn(element1);
         when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id2", 2L)).thenReturn(element2);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setSurveyReferences(null);
         appConfig.setSchemaReferences(null);
         appConfig.setConfigReferences(refs);
         
-        AppConfig match = service.getAppConfigForUser(context, true);
+        AppConfig match = service.getAppConfigForCaller().get();
         
         assertEquals(match.getConfigElements().size(), 2);
         assertEquals(match.getConfigElements().get("id1"), clientData1);
@@ -276,15 +279,15 @@ public class AppConfigServiceTest {
                 .thenThrow(new EntityNotFoundException(AppConfigElement.class));
         when(mockAppConfigElementService.getElementRevision(TEST_STUDY, "id2", 2L)).thenReturn(element2);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(UNKNOWN_CLIENT)
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setGuid("abc-def");
         appConfig.setConfigReferences(refs);
         
-        AppConfig match = service.getAppConfigForUser(context, true);
+        AppConfig match = service.getAppConfigForCaller().get();
         
         assertEquals(match.getConfigElements().size(), 1);
         // id1 is not included but this does not prevent id2 from being included.
@@ -296,9 +299,9 @@ public class AppConfigServiceTest {
 
     @Test
     public void getAppConfigForUserMatchesMultipleAppConfigs() throws Exception {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(UNKNOWN_CLIENT)
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig1 = AppConfig.create();
         appConfig1.setLabel("AppConfig1");
@@ -314,7 +317,7 @@ public class AppConfigServiceTest {
         
         when(mockDao.getAppConfigs(TEST_STUDY, false)).thenReturn(RESULTS);
         
-        AppConfig appConfig = service.getAppConfigForUser(context, false);
+        AppConfig appConfig = service.getAppConfigForCaller().get();
 
         assertEquals(appConfig, appConfig2);
     }
@@ -322,13 +325,13 @@ public class AppConfigServiceTest {
     // This should not actually ever happen. We're suppressing exceptions if the survey is missing.
     @Test
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig2 = setupConfigsForUser();
         
-        AppConfig match = service.getAppConfigForUser(context, true);
+        AppConfig match = service.getAppConfigForCaller().get();
         assertEquals(match, appConfig2);
         
         assertEquals(match.getSurveyReferences().get(0), SURVEY_REF_LIST.get(0));        
@@ -336,38 +339,37 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfigForUserSurveyIdentifierAlreadySet() throws Exception {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         AppConfig appConfig2 = setupConfigsForUser();
         appConfig2.setSurveyReferences(Lists.newArrayList(new SurveyReference("anIdentifier", "guid", DateTime.now())));
         
-        AppConfig match = service.getAppConfigForUser(context, true);
+        AppConfig match = service.getAppConfigForCaller().get();
         
         assertEquals(match.getSurveyReferences().get(0).getIdentifier(), "anIdentifier");
         verify(mockSurveyService, never()).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void getAppConfigForUserThrowsException() {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         setupConfigsForUser();
-        service.getAppConfigForUser(context, true);
+        assertFalse(service.getAppConfigForCaller().isPresent());
     }
     
     @Test
-    public void getAppCOnfigForUserReturnsNull() {
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+    public void getAppConfigForUserReturnsNull() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         setupConfigsForUser();
-        AppConfig result = service.getAppConfigForUser(context, false);
-        assertNull(result);
+        assertFalse(service.getAppConfigForCaller().isPresent());
     }
 
     @Test
@@ -378,12 +380,12 @@ public class AppConfigServiceTest {
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
         when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, SURVEY_KEY, false, false)).thenReturn(survey);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withCallerStudyId(TEST_STUDY).build());
         
         setupConfigsForUser();
-        AppConfig appConfig = service.getAppConfigForUser(context, true);
+        AppConfig appConfig = service.getAppConfigForCaller().get();
         assertEquals(appConfig.getCreatedOn(), EARLIER_TIMESTAMP);
         assertEquals(appConfig.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
     }

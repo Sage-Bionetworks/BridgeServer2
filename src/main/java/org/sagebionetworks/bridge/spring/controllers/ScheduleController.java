@@ -17,12 +17,9 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -75,20 +72,11 @@ public class ScheduleController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         StudyIdentifier studyId = session.getStudyIdentifier();
         
-        ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
-
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withLanguages(getLanguages(session))
-                .withStudyIdentifier(studyId)
-                .withHealthCode(session.getHealthCode())
-                .withUserId(session.getId())
-                .withClientInfo(clientInfo).build();
-        
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId, false);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId, false);
 
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            Schedule schedule = plan.getStrategy().getScheduleForCaller(plan);
             if (schedule != null) {
                 schedules.add(schedule);
             } else {

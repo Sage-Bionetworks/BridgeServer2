@@ -17,23 +17,25 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 
 import com.google.common.collect.Sets;
 
 /**
  * Utility classes for working with domain entities that should be matched by a growing list of criteria, such as the
  * version of the app making a request or the data groups associated to a user. Matching is currently done through
- * information passed in through the ScheduleContext, a parameter object of values against which matching occurs.
+ * information passed in through the RequestContext, often the same context as the request, but it can also be created 
+ * to represent another account than the caller.
  */
 public class CriteriaUtils {
     
     public static <T extends HasCriteria> List<T> filterByCriteria(
-            CriteriaContext context, Collection<T> coll, Comparator<T> secondComparator) {
+            RequestContext context, Collection<T> coll, Comparator<T> secondComparator) {
         checkNotNull(context);
         checkNotNull(coll);
         
         // Sort by language
-        final List<String> langs = context.getLanguages();
+        final List<String> langs = context.getCallerLanguages();
         Comparator<T> comparator = (sel1, sel2) -> {
             int posLang1 = langs.indexOf(sel1.getCriteria().getLanguage());
             int posLang2 = langs.indexOf(sel2.getCriteria().getLanguage());
@@ -54,19 +56,19 @@ public class CriteriaUtils {
      * the criteria for including an object in the content that a user sees. Returns true if the object should be
      * included, and false otherwise.
      */
-    static boolean matchCriteria(CriteriaContext context, Criteria criteria) {
+    static boolean matchCriteria(RequestContext context, Criteria criteria) {
         checkNotNull(context);
-        checkNotNull(context.getLanguages());
-        checkNotNull(context.getClientInfo());
-        checkNotNull(context.getUserDataGroups());
+        checkNotNull(context.getCallerLanguages());
+        checkNotNull(context.getCallerClientInfo());
+        checkNotNull(context.getCallerDataGroups());
         checkNotNull(criteria);
         checkNotNull(criteria.getAllOfGroups());
         checkNotNull(criteria.getNoneOfGroups());
         checkNotNull(criteria.getAllOfSubstudyIds());
         checkNotNull(criteria.getNoneOfSubstudyIds());
         
-        Integer appVersion = context.getClientInfo().getAppVersion();
-        String appOs = context.getClientInfo().getOsName();
+        Integer appVersion = context.getCallerClientInfo().getAppVersion();
+        String appOs = context.getCallerClientInfo().getOsName();
         if (appVersion != null && appOs != null) {
             Integer minAppVersion = criteria.getMinAppVersion(appOs);
             Integer maxAppVersion = criteria.getMaxAppVersion(appOs);
@@ -75,21 +77,21 @@ public class CriteriaUtils {
                 return false;
             }
         }
-        Set<String> dataGroups = context.getUserDataGroups();
+        Set<String> dataGroups = context.getCallerDataGroups();
         if (!dataGroups.containsAll(criteria.getAllOfGroups())) {
             return false;
         }
         if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
             return false;
         }
-        Set<String> substudies = context.getUserSubstudyIds();
+        Set<String> substudies = context.getCallerSubstudies();
         if (!substudies.containsAll(criteria.getAllOfSubstudyIds())) {
             return false;
         }
         if (!Collections.disjoint(substudies, criteria.getNoneOfSubstudyIds())) {
             return false;
         }
-        if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
+        if (languageDoesNotMatch(context.getCallerLanguages(), criteria.getLanguage())) {
             return false;
         }
         return true;

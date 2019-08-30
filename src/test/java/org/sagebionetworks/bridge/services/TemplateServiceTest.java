@@ -62,7 +62,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -102,9 +101,6 @@ public class TemplateServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<TemplateRevision> revisionCaptor;
-    
-    @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
     
     Study study;
     
@@ -171,9 +167,11 @@ public class TemplateServiceTest extends Mockito {
         return template;
     }
     
-    private CriteriaContext makeContext(String lang) {
-        return new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).withLanguages(ImmutableList.of(lang))
-                .build();
+    private void makeContext(String lang) {
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerLanguages(ImmutableList.of(lang));
+        builder.withCallerStudyId(TEST_STUDY);
+        BridgeUtils.setRequestContext(builder.build());
     }
     
     private void mockGetTemplates(List<? extends Template> list) {
@@ -196,8 +194,9 @@ public class TemplateServiceTest extends Mockito {
         Template t1 = makeTemplate(GUID1, "en");
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
+        makeContext("fr"); 
         
-        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
+        Template template = service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).get();
         assertEquals(template, t2);
     }
     
@@ -207,10 +206,10 @@ public class TemplateServiceTest extends Mockito {
         Template t1 = makeTemplate(GUID1, "fr");
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
-        
         mockTemplateDefault(GUID2);
+        makeContext("fr");
         
-        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
+        Template template = service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).get();
         assertEquals(template, t2);
     }
     
@@ -220,10 +219,10 @@ public class TemplateServiceTest extends Mockito {
         Template t1 = makeTemplate(GUID1, "fr");
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
-        
         mockTemplateDefault("guid-matches-nothing");
+        makeContext("fr");
         
-        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
+        Template template = service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).get();
         assertEquals(template, t1);
     }
     
@@ -233,11 +232,11 @@ public class TemplateServiceTest extends Mockito {
         Template t1 = makeTemplate(GUID1, "fr");
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
-        
         // no default in the study map at all
         mockTemplateDefault(null);
+        makeContext("fr");
         
-        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
+        Template template = service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).get();
         assertEquals(template, t1);
     }
     
@@ -247,11 +246,11 @@ public class TemplateServiceTest extends Mockito {
         Template t1 = makeTemplate(GUID1, "en");
         Template t2 = makeTemplate(GUID2, "en");
         mockGetTemplates(ImmutableList.of(t1, t2));
-        
         // no default in the study map at all
         mockTemplateDefault(null);
+        makeContext("fr");
         
-        Template template = service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
+        Template template = service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).get();
         assertEquals(template, t1);
     }
     
@@ -259,18 +258,19 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void getTemplateForUserMatchesNoneNoTemplateToReturn() {
         mockGetTemplates(ImmutableList.of());
-        
         mockTemplateDefault(GUID1); // doesn't matter
+        makeContext("fr");
         
-        assertFalse(service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).isPresent());
+        assertFalse(service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).isPresent());
     }
     
     // No templates returned, none matching, no default, return null
     @Test
     public void getTemplateForUserMatchesNoneNoDefaultNoTemplateToReturn() {
         mockGetTemplates(ImmutableList.of());
-
-        assertFalse(service.getTemplateForUser(study, makeContext("fr"), EMAIL_RESET_PASSWORD).isPresent());
+        makeContext("fr");
+        
+        assertFalse(service.getTemplateForCaller(study, EMAIL_RESET_PASSWORD).isPresent());
     }
 
     @Test
@@ -650,14 +650,10 @@ public class TemplateServiceTest extends Mockito {
         
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         
-        TemplateRevision retrieved = service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+        TemplateRevision retrieved = service.getRevisionForCaller(study, EMAIL_RESET_PASSWORD);
         assertSame(retrieved, r2);
         
-        verify(service).getTemplateForUser(eq(study), contextCaptor.capture(), eq(EMAIL_RESET_PASSWORD));
-        
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getLanguages(), LANGUAGES);
-        assertEquals(context.getClientInfo(), clientInfo);
+        verify(service).getTemplateForCaller(eq(study), eq(EMAIL_RESET_PASSWORD));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -676,7 +672,7 @@ public class TemplateServiceTest extends Mockito {
         
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         
-        service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+        service.getRevisionForCaller(study, EMAIL_RESET_PASSWORD);
     }
     
     @Test

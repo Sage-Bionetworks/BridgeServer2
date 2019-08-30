@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
@@ -274,23 +273,23 @@ public class SchedulePlanServiceMockTest {
     @Test
     public void getSchedulePlansExcludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(TestConstants.TEST_STUDY, false)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        List<SchedulePlan> returned = service.getSchedulePlans(TestConstants.TEST_STUDY, false);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        verify(mockSchedulePlanDao).getSchedulePlans(TestConstants.TEST_STUDY, false);
     }
     
     @Test
     public void getSchedulePlansIncludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(TestConstants.TEST_STUDY, true)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        List<SchedulePlan> returned = service.getSchedulePlans(TestConstants.TEST_STUDY, true);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        verify(mockSchedulePlanDao).getSchedulePlans(TestConstants.TEST_STUDY, true);
     }
     
     @Test

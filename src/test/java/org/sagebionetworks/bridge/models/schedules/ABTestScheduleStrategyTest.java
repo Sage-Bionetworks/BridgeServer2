@@ -13,6 +13,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -93,10 +94,10 @@ public class ABTestScheduleStrategyTest {
 
         List<Schedule> schedules = Lists.newArrayList();
         for (String healthCode : healthCodes) {
-            ScheduleContext context = new ScheduleContext.Builder()
-                    .withStudyIdentifier(study.getStudyIdentifier())
-                    .withHealthCode(healthCode).build();
-            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            BridgeUtils.setRequestContext(new RequestContext.Builder()
+                    .withCallerStudyId(study.getStudyIdentifier())
+                    .withCallerHealthCode(healthCode).build());
+            Schedule schedule = plan.getStrategy().getScheduleForCaller(plan);
             schedules.add(schedule);
         }
 

@@ -123,7 +123,7 @@ public class IntentServiceTest {
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
         revision.setMimeType(TEXT);
-        when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        when(mockTemplateService.getRevisionForCaller(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
@@ -161,7 +161,7 @@ public class IntentServiceTest {
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
         revision.setMimeType(TEXT);
-        when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        when(mockTemplateService.getRevisionForCaller(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
                 TestConstants.PHONE);
@@ -200,7 +200,7 @@ public class IntentServiceTest {
         revision.setSubject("subject");
         revision.setDocumentContent("body ${appInstallUrl}");
         revision.setMimeType(HTML);
-        when(mockTemplateService.getRevisionForUser(mockStudy, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
+        when(mockTemplateService.getRevisionForCaller(mockStudy, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
 
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), 
                 TestConstants.TEST_STUDY, "email@email.com");

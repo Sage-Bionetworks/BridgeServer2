@@ -277,7 +277,6 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(context.getMinimumPerSchedule(), 5);
         
         CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getLanguages(), LANGUAGES);
         assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(critContext.getStudyIdentifier().getIdentifier(), TEST_STUDY_IDENTIFIER);
@@ -550,7 +549,6 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         CriteriaContext critContext = context.getCriteriaContext();
         assertEquals(critContext.getStudyIdentifier(), TEST_STUDY);
-        assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getUserId(), ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         assertEquals(critContext.getUserDataGroups(), USER_DATA_GROUPS);

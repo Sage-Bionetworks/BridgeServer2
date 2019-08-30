@@ -401,7 +401,7 @@ public class TestUtils {
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = Lists.newArrayList();
         for (SchedulePlan plan : plans) {
-            Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
+            Schedule schedule = plan.getStrategy().getScheduleForCaller(plan);
             // It's become possible for a user to match no schedule
             if (schedule != null) {
                 scheduledActivities.addAll(schedule.getScheduler().getScheduledActivities(plan, context));

@@ -23,8 +23,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -56,17 +56,14 @@ public class AppConfigController extends BaseController {
     public String getStudyAppConfig(@PathVariable String studyId) {
         Study study = studyService.getStudy(studyId);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext.Builder build = BridgeUtils.getRequestContext().toBuilder();
+        build.withCallerStudyId(study.getStudyIdentifier());
+        BridgeUtils.setRequestContext(build.build());
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(reqContext.getCallerLanguages())
-                .withClientInfo(reqContext.getCallerClientInfo())
-                .withStudyIdentifier(study.getStudyIdentifier())
-                .build();
-        
-        CacheKey cacheKey = getCriteriaContextCacheKey(context);
+        CacheKey cacheKey = getContextCacheKey();
         String json = viewCache.getView(cacheKey, () -> {
-            AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
+            AppConfig appConfig = appConfigService.getAppConfigForCaller()
+                    .orElseThrow(() -> new EntityNotFoundException(AppConfig.class));
             // So we can delete all the relevant cached versions, keep track of them under the study
             cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(study.getStudyIdentifier()), cacheKey.toString());
             return appConfig;
@@ -133,15 +130,16 @@ public class AppConfigController extends BaseController {
         return new StatusMessage("App config deleted.");
     }
 
-    private CacheKey getCriteriaContextCacheKey(CriteriaContext context) {
-        ClientInfo info = context.getClientInfo();
+    private CacheKey getContextCacheKey() {
+        RequestContext context = BridgeUtils.getRequestContext();
+        ClientInfo info = context.getCallerClientInfo();
         String appVersion = info.getAppVersion() == null ? "0" : Integer.toString(info.getAppVersion());
         String osName = info.getOsName() == null ? "" : info.getOsName();
-        String studyId = context.getStudyIdentifier().getIdentifier();
+        String studyId = context.getCallerStudyId();
         // Languages. We don't provide a UI to create filtering criteria for these, but if they are 
         // set through our API, and they are included in the Accept-Language header, we will filter on 
         // them, so it's important they be part of the key
-        String langs = BridgeUtils.SPACE_JOINER.join(context.getLanguages());
+        String langs = BridgeUtils.SPACE_JOINER.join(context.getCallerLanguages());
         
         return CacheKey.viewKey(AppConfig.class, appVersion, osName, langs, studyId);
     }

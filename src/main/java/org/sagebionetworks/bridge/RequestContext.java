@@ -16,19 +16,24 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 public class RequestContext {
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, ImmutableSet.of(),
-            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of());
+            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null, null, ImmutableSet.of());
 
     private final String requestId;
-    private final StudyIdentifier callerStudyId;
-    private final Set<String> callerSubstudies;
-    private final Set<Roles> callerRoles;
-    private final String callerUserId;
     private final ClientInfo callerClientInfo;
     private final List<String> callerLanguages;    
+    // Authenticated requests can acquire additional information
+    private final StudyIdentifier callerStudyId;
+    private final String callerUserId;
+    private final Set<String> callerSubstudies;
+    private final Set<Roles> callerRoles;
+    private final String callerHealthCode;
+    private final String callerIpAddress;
+    private final Set<String> callerDataGroups;
     private final Metrics metrics;
     
     private RequestContext(Metrics metrics, String requestId, String callerStudyId, Set<String> callerSubstudies,
-            Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages) {
+            Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages,
+            String callerHealthCode, String callerIpAddress, Set<String> callerDataGroups) {
         this.requestId = requestId;
         this.callerStudyId = (callerStudyId == null) ? null : new StudyIdentifierImpl(callerStudyId);
         this.callerSubstudies = callerSubstudies;
@@ -36,6 +41,9 @@ public class RequestContext {
         this.callerUserId = callerUserId;
         this.callerClientInfo = callerClientInfo;
         this.callerLanguages = callerLanguages;
+        this.callerHealthCode = callerHealthCode;
+        this.callerIpAddress = callerIpAddress;
+        this.callerDataGroups = callerDataGroups;
         this.metrics = metrics;
     }
     
@@ -66,6 +74,16 @@ public class RequestContext {
     public List<String> getCallerLanguages() {
         return callerLanguages;
     }
+    public String getCallerHealthCode() {
+        return callerHealthCode;
+    }
+    public String getCallerIpAddress() { 
+        return callerIpAddress;
+    }
+    public Set<String> getCallerDataGroups() {
+        return callerDataGroups;
+    }
+    
     public RequestContext.Builder toBuilder() {
         return new RequestContext.Builder()
             .withRequestId(requestId)
@@ -75,6 +93,9 @@ public class RequestContext {
             .withCallerRoles(callerRoles)
             .withCallerSubstudies(callerSubstudies)
             .withCallerUserId(callerUserId)
+            .withCallerHealthCode(callerHealthCode)
+            .withCallerIpAddress(callerIpAddress)
+            .withCallerDataGroups(callerDataGroups)
             .withMetrics(metrics);
     }
     
@@ -86,7 +107,10 @@ public class RequestContext {
         private String requestId;
         private String callerUserId;
         private ClientInfo callerClientInfo;
-        private List<String> callerLanguages;    
+        private List<String> callerLanguages;
+        private String callerHealthCode;
+        private String callerIpAddress;
+        private Set<String> callerDataGroups;
 
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
@@ -120,6 +144,18 @@ public class RequestContext {
             this.callerLanguages = callerLanguages;
             return this;
         }
+        public Builder withCallerHealthCode(String callerHealthCode) {
+            this.callerHealthCode = callerHealthCode;
+            return this;
+        }
+        public Builder withCallerIpAddress(String callerIpAddress) {
+            this.callerIpAddress = callerIpAddress;
+            return this;
+        }
+        public Builder withCallerDataGroups(Set<String> callerDataGroups) {
+            this.callerDataGroups = (callerDataGroups == null) ? null : ImmutableSet.copyOf(callerDataGroups);
+            return this;
+        }
         
         public RequestContext build() {
             if (requestId == null) {
@@ -140,8 +176,11 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
+            if (callerDataGroups == null) {
+                callerDataGroups = ImmutableSet.of();
+            }
             return new RequestContext(metrics, requestId, callerStudyId, callerSubstudies, callerRoles, callerUserId,
-                    callerClientInfo, callerLanguages);
+                    callerClientInfo, callerLanguages, callerHealthCode, callerIpAddress, callerDataGroups);
         }
     }
 
@@ -150,6 +189,7 @@ public class RequestContext {
         return "RequestContext [requestId=" + requestId + ", callerStudyId=" + callerStudyId + ", callerSubstudies="
                 + callerSubstudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
                 + ", callerClientInfo=" + callerClientInfo + ", callerLanguages=" + callerLanguages + ", metrics="
-                + metrics + "]";
+                + metrics + ", callerHealthCode=[REDACTED], callerIpAddress=" + callerIpAddress + ", callerDataGroups="
+                + callerDataGroups + "]";
     }
 }

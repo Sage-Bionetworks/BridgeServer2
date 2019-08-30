@@ -37,7 +37,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
-import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -68,7 +67,6 @@ public class ScheduleControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
-        ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
         List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyId);
         
@@ -77,7 +75,7 @@ public class ScheduleControllerTest extends Mockito {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setStrategy(new ScheduleStrategy() {
             @Override
-            public Schedule getScheduleForUser(SchedulePlan plan, ScheduleContext context) {
+            public Schedule getScheduleForCaller(SchedulePlan plan) {
                 return null;
             }
             @Override
@@ -90,13 +88,14 @@ public class ScheduleControllerTest extends Mockito {
         });
         plans.add(plan);
         
-        when(mockSchedulePlanService.getSchedulePlans(clientInfo, studyId, false)).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(studyId, false)).thenReturn(plans);
         
         UserSession session = new UserSession();
         session.setStudyIdentifier(studyId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app name/9")).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -155,7 +154,7 @@ public class ScheduleControllerTest extends Mockito {
         plan.setStrategy(strategy);
         plans.add(plan);
         
-        when(mockSchedulePlanService.getSchedulePlans(any(), any(), anyBoolean())).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(any(), anyBoolean())).thenReturn(plans);
         controller.setSchedulePlanService(mockSchedulePlanService);
         
         String result = controller.getSchedulesV3();

@@ -754,7 +754,6 @@ public class ParticipantServiceTest {
         CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
         assertEquals(criteriaContext.getStudyIdentifier(), TestConstants.TEST_STUDY);
         assertEquals(criteriaContext.getUserId(), ID);
-        assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
         assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
         assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
@@ -1029,7 +1028,6 @@ public class ParticipantServiceTest {
         CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
         assertEquals(criteriaContext.getStudyIdentifier(), TestConstants.TEST_STUDY);
         assertEquals(criteriaContext.getUserId(), ID);
-        assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
         assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
         assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);

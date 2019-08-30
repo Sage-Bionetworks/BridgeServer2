@@ -141,7 +141,7 @@ public class IntentService {
                     // The URL being sent does not expire. We send with a transaction delivery type because
                     // this is a critical step in onboarding through this workflow and message needs to be 
                     // sent immediately after consenting.
-                    TemplateRevision revision = templateService.getRevisionForUser(study, SMS_APP_INSTALL_LINK);
+                    TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_APP_INSTALL_LINK);
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
                             .withStudy(study)
                             .withTemplateRevision(revision)
@@ -152,7 +152,7 @@ public class IntentService {
                     // SMS Service.
                     smsService.sendSmsMessage(null, provider);
                 } else {
-                    TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_APP_INSTALL_LINK);
+                    TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_APP_INSTALL_LINK);
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
                             .withStudy(study)
                             .withTemplateRevision(revision)

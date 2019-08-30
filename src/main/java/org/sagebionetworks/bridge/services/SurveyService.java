@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
@@ -332,7 +331,7 @@ public class SurveyService {
     private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
         // You cannot physically delete a survey if it is referenced by a logically deleted schedule plan. It's possible
         // the schedule plan could be restored. All you can do is logically delete the survey.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(studyId, true);
 
         // If a schedule points to this specific survey, don't allow the physical delete.
         SchedulePlan match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {

@@ -102,7 +102,7 @@ public abstract class ActivityScheduler {
                 schActivity.setSchedulePlanGuid(plan.getGuid());
                 // Use the time zone of the request, not the initial time zone that is used for event dates
                 schActivity.setTimeZone(context.getEndsOn().getZone());
-                schActivity.setHealthCode(context.getCriteriaContext().getHealthCode());
+                schActivity.setHealthCode(context.getHealthCode());
                 schActivity.setActivity(activity);
                 LocalDateTime localScheduledOn = localDate.toLocalDateTime(localTime);
                 schActivity.setLocalScheduledOn(localScheduledOn);

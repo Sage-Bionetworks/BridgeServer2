@@ -214,7 +214,7 @@ public class AccountWorkflowService {
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
 
-        TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_VERIFY_EMAIL);
+        TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_VERIFY_EMAIL);
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withStudy(study)
                 .withTemplateRevision(revision)
@@ -246,7 +246,7 @@ public class AccountWorkflowService {
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
-        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_VERIFY_PHONE);
+        TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_VERIFY_PHONE);
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
                 .withStudy(study)
                 .withToken("token", formattedSpToken)
@@ -319,10 +319,10 @@ public class AccountWorkflowService {
         boolean sendPhone = !study.isAutoVerificationPhoneSuppressed();
         
         if (verifiedEmail && sendEmail) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_ACCOUNT_EXISTS);
+            TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_ACCOUNT_EXISTS);
             sendPasswordResetRelatedEmail(study, account.getEmail(), true, revision);
         } else if (verifiedPhone && sendPhone) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_ACCOUNT_EXISTS);
+            TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_ACCOUNT_EXISTS);
             sendPasswordResetRelatedSMS(study, account, true, revision);
         }
     }
@@ -346,10 +346,10 @@ public class AccountWorkflowService {
             boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
             boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
             if (account.getEmail() != null && emailVerified) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
+                TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_RESET_PASSWORD);
                 sendPasswordResetRelatedEmail(study, account.getEmail(), false, revision);
             } else if (account.getPhone() != null && phoneVerified) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, SMS_RESET_PASSWORD);
+                TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_RESET_PASSWORD);
                 sendPasswordResetRelatedSMS(study, account, false, revision);
             }
         }
@@ -477,7 +477,7 @@ public class AccountWorkflowService {
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
             
-            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_PHONE_SIGN_IN);
+            TemplateRevision revision = templateService.getRevisionForCaller(study, SMS_PHONE_SIGN_IN);
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
                     .withStudy(study)
                     .withTemplateRevision(revision)
@@ -508,7 +508,7 @@ public class AccountWorkflowService {
             // need to provide host/email/studyId/token variables for earlier versions of the email sign in template 
             // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
             // into that template.
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGN_IN);
+            TemplateRevision revision = templateService.getRevisionForCaller(study, EMAIL_SIGN_IN);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withTemplateRevision(revision)

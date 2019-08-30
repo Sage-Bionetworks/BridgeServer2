@@ -137,7 +137,6 @@ public class ParticipantController extends BaseController {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
                 .withClientInfo(reqContext.getCallerClientInfo())
-                .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
                 .withUserSubstudyIds(updated.getSubstudyIds())

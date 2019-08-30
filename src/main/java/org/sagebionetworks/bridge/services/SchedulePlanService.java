@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -48,9 +47,8 @@ public class SchedulePlanService {
         this.substudyService = substudyService;
     }
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
-            boolean includeDeleted) {
-        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier, includeDeleted);
+    public List<SchedulePlan> getSchedulePlans(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+        return schedulePlanDao.getSchedulePlans(studyIdentifier, includeDeleted);
     }
 
     public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {

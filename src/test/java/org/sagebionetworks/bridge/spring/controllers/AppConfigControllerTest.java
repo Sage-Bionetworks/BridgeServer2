@@ -3,9 +3,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.UA;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -16,6 +18,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +39,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -56,7 +58,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class AppConfigControllerTest extends Mockito {
     
     private static final String GUID = "guid";
-    private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TestConstants.TEST_STUDY);
+    private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TEST_STUDY);
     
     @InjectMocks
     @Spy
@@ -114,8 +116,8 @@ public class AppConfigControllerTest extends Mockito {
         session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder()
-                .withDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withLanguages(TestConstants.LANGUAGES)
+                .withDataGroups(USER_DATA_GROUPS)
+                .withLanguages(LANGUAGES)
                 .withRoles(ImmutableSet.of(DEVELOPER))
                 .withHealthCode(HEALTH_CODE)
                 .build());
@@ -143,21 +145,15 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockService.getAppConfigForCaller()).thenReturn(Optional.of(appConfig));
         
         String string = controller.getStudyAppConfig("api");
         AppConfig returnedValue = BridgeObjectMapper.get().readValue(string, AppConfig.class);
         assertEquals(returnedValue, appConfig);
         
-        verify(mockService).getAppConfigForUser(contextCaptor.capture(), eq(true));
-        CriteriaContext capturedContext = contextCaptor.getValue();
+        verify(mockService).getAppConfigForCaller();
         
-        assertEquals(capturedContext.getStudyIdentifier(), TEST_STUDY);
-        assertEquals(capturedContext.getClientInfo().getAppName(), "Asthma");
-        assertEquals(capturedContext.getClientInfo().getAppVersion(), new Integer(26));
-        assertEquals(capturedContext.getLanguages(), ImmutableList.of("en"));
-        assertEquals(capturedContext.getClientInfo().getOsName(), "iPhone OS");
         BridgeUtils.setRequestContext(null);
     }
 
@@ -260,10 +256,10 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
-        when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockService.getAppConfigForCaller()).thenReturn(Optional.of(appConfig));
         
-        controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
+        controller.getStudyAppConfig(TEST_STUDY_IDENTIFIER);
         
         verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:api:AppConfig:view");
     }
