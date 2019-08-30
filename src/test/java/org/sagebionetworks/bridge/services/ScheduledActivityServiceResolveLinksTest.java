@@ -21,10 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -58,8 +60,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     private static final DateTime SURVEY_CREATED_ON_DATE_TIME = new DateTime(SURVEY_CREATED_ON_MILLIS);
 
     // We only care about ClientInfo (which is automatically populated to ClientInfo.UNKNOWN_CLIENT) and study ID.
-    private static final ScheduleContext SCHEDULE_CONTEXT = new ScheduleContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+    private static final ScheduleContext SCHEDULE_CONTEXT = new ScheduleContext.Builder().build();
 
     private CompoundActivityDefinitionService mockCompoundActivityDefinitionService;
     private SchedulePlanService mockSchedulePlanService;
@@ -115,6 +116,13 @@ public class ScheduledActivityServiceResolveLinksTest {
         scheduledActivityService.setSchemaService(mockSchemaService);
         scheduledActivityService.setSurveyService(mockSurveyService);
         scheduledActivityService.setAppConfigService(appConfigService);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(TEST_STUDY).build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
 
     private void setupSchedulePlanServiceWithActivity(Activity activity) {
@@ -187,7 +195,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         Activity activity = new Activity.Builder().withCompoundActivity(inputCompoundActivity).build();
         setupSchedulePlanServiceWithActivity(activity);
         
-        BridgeUtils.setRequestContext(SCHEDULE_CONTEXT.getCriteriaContext().toRequestContext());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(TEST_STUDY).build());
 
         AppConfig appConfig = AppConfig.create();
         appConfig.setSurveyReferences(Lists.newArrayList(new SurveyReference("surveyRefId", SURVEY_GUID, DateTime.now())));

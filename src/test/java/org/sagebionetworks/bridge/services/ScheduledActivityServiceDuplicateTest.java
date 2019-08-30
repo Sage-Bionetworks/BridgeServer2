@@ -23,6 +23,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -170,18 +173,21 @@ public class ScheduledActivityServiceDuplicateTest {
         service.setSchedulePlanService(schedulePlanService);
         service.setAppConfigService(appConfigService);
         
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
+                .withCallerStudyId(new StudyIdentifierImpl("test-study"))
+                .withCallerUserId("6m7Yj31Pp41yjvoyU5y6RE").build());
+        
         contextBuilder = new ScheduleContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
                 .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
-                .withStudyIdentifier("test-study")
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
-                .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
-                .withUserId("6m7Yj31Pp41yjvoyU5y6RE");
+                .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f");
     }
     
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+        BridgeUtils.setRequestContext(null);
     }
     
     // "healthCode (S)","guid (S)","data (S)","localScheduledOn (S)","persistent (N)",

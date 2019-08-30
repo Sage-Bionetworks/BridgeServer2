@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -57,7 +56,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -273,14 +271,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), MSK);
-        assertEquals(context.getCriteriaContext().getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getMinimumPerSchedule(), 5);
-        
-        CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(critContext.getLanguages(), LANGUAGES);
-        assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(critContext.getStudyIdentifier().getIdentifier(), TEST_STUDY_IDENTIFIER);
-        assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
@@ -363,7 +354,6 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(contextCaptor.getValue().getEndsOn().withMillisOfSecond(0), expectedEndsOn);
         assertEquals(contextCaptor.getValue().getInitialTimeZone(), expectedEndsOn.getZone());
         assertEquals(contextCaptor.getValue().getMinimumPerSchedule(), 0);
-        assertEquals(contextCaptor.getValue().getCriteriaContext().getClientInfo(), CLIENT_INFO);
     }
 
     @SuppressWarnings("unchecked")
@@ -546,14 +536,6 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(context.getEndsOn(), endsOn);
         assertEquals(0, context.getMinimumPerSchedule());
         assertEquals(context.getAccountCreatedOn(), ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC));
-        
-        CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(critContext.getStudyIdentifier(), TEST_STUDY);
-        assertEquals(critContext.getUserId(), ID);
-        assertEquals(critContext.getClientInfo(), CLIENT_INFO);
-        assertEquals(critContext.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(critContext.getLanguages(), LANGUAGES);
     }
 
     @Test(expectedExceptions = BadRequestException.class)

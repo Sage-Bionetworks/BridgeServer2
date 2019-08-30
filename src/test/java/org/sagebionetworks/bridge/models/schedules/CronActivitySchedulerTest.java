@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,6 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(2))
             .withEvents(events).build();
@@ -87,7 +85,6 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withMinimumPerSchedule(8)
@@ -110,7 +107,6 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withEvents(events).build();
@@ -304,7 +300,6 @@ public class CronActivitySchedulerTest {
         DateTime now = DateTime.parse("2016-05-12T17:13:13.044-07:00"); // later in a different timezone
 
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(initialTimeZone)
             .withStartsOn(now)
             .withEndsOn(now.plusDays(1))
@@ -325,7 +320,6 @@ public class CronActivitySchedulerTest {
     
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
             .withEvents(events).build();

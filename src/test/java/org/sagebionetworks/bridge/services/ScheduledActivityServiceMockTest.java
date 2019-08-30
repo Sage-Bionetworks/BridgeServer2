@@ -76,7 +76,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class ScheduledActivityServiceMockTest {
 
@@ -160,6 +159,8 @@ public class ScheduledActivityServiceMockTest {
         service.setActivityEventService(activityEventService);
         service.setSurveyService(surveyService);
         service.setAppConfigService(appConfigService);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(TEST_STUDY).build());
     }
     
     @AfterMethod
@@ -243,7 +244,6 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC).withEndsOn(NOW.minusSeconds(1)).build());
     }
@@ -251,7 +251,6 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS).plusSeconds(1)).build());
@@ -260,7 +259,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsListOfActivitiesWithNullElement() {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         scheduledActivities.set(0, null);
         
         service.updateScheduledActivities("AAA", scheduledActivities);
@@ -269,7 +268,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsListOfActivitiesWithTaskThatLacksGUID() {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         scheduledActivities.get(0).setGuid(null);
         
         service.updateScheduledActivities("AAA", scheduledActivities);
@@ -278,7 +277,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void removesDuplicateActivities() {
         ScheduleContext context = createScheduleContext(ENDS_ON.plusDays(3)).build();
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         int size = scheduledActivities.size();
         
         // Now duplicate the members of the list
@@ -298,12 +297,10 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
-                .withHealthCode(HEALTH_CODE)
-                .withUserId(USER_ID).build();        
+                .withHealthCode(HEALTH_CODE).build();        
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         assertTrue(activities.size() > 0);
@@ -312,12 +309,10 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void surveysAreResolved() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
-                .withHealthCode(HEALTH_CODE)
-                .withUserId(USER_ID).build();        
+                .withHealthCode(HEALTH_CODE).build();        
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         //noinspection Convert2streamapi
@@ -333,7 +328,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void updateActivitiesWorks() throws Exception {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> scheduledActivities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         
         int count = scheduledActivities.size();
         scheduledActivities.get(0).setStartedOn(NOW.getMillis());
@@ -377,7 +372,7 @@ public class ScheduledActivityServiceMockTest {
         }
         
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         activities.get(0).setClientData(array);
         
         service.updateScheduledActivities("BBB", activities);
@@ -386,7 +381,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void activityListWithNullsRejected() {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         activities.set(0, null);
         
         service.updateScheduledActivities("BBB", activities);
@@ -395,7 +390,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void activityListWithNullGuidRejected() {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         activities.get(1).setGuid(null);
         
         service.updateScheduledActivities("BBB", activities);
@@ -970,19 +965,15 @@ public class ScheduledActivityServiceMockTest {
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
         when(schedulePlanService.getSchedulePlans(new StudyIdentifierImpl("test-study"), false)).thenReturn(schedulePlans);
         
-        ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         ScheduleContext context = new ScheduleContext.Builder()
-            .withClientInfo(info)
-            .withStudyIdentifier("test-study")
-            .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
-                .withEndsOn(startsOn.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
-                .withInitialTimeZone(timeZone)
+            .withEndsOn(startsOn.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
+            .withInitialTimeZone(timeZone)
             .withHealthCode("AAA")
-            .withUserId(USER_ID)
             .withStartsOn(startsOn)
             .withAccountCreatedOn(startsOn.minusDays(4))
             .build();
         
+        ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerClientInfo(info)
                 .withCallerStudyId(new StudyIdentifierImpl("test-study"))
@@ -998,10 +989,6 @@ public class ScheduledActivityServiceMockTest {
         assertEquals(schActivities.size(), 6);
         
         // Not a parkinson patient, get 1 task
-        context = new ScheduleContext.Builder()
-                .withContext(context)
-                .withUserDataGroups(Sets.newHashSet("test_user")).build();
-        
         BridgeUtils.setRequestContext(BridgeUtils.getRequestContext().toBuilder()
                 .withCallerDataGroups(ImmutableSet.of("test_user")).build());
         
@@ -1019,11 +1006,9 @@ public class ScheduledActivityServiceMockTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withInitialTimeZone(DateTimeZone.UTC)
-                .withUserId("userId")
                 .withAccountCreatedOn(NOW.minusDays(3))
                 .withHealthCode("healthCode")
-                .withEndsOn(NOW.plusDays(3))
-                .withStudyIdentifier("studyId").build();
+                .withEndsOn(NOW.plusDays(3)).build();
         
         Activity activity = new Activity.Builder().withLabel("Label").withSurvey("surveyId", "guid", null).build();
         
@@ -1347,8 +1332,6 @@ public class ScheduledActivityServiceMockTest {
         when(schedulePlanService.getSchedulePlans(TEST_STUDY, false)).thenReturn(Lists.newArrayList(plan));
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withUserId("userId")
                 .withStartsOn(startsOn)
                 .withAccountCreatedOn(enrollment)
                 .withInitialTimeZone(initialTimeZone)
@@ -1412,9 +1395,9 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
+        return new ScheduleContext.Builder().withInitialTimeZone(DateTimeZone.UTC)
                 .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
-                .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
+                .withHealthCode(HEALTH_CODE).withEvents(events);
     }
     
 }

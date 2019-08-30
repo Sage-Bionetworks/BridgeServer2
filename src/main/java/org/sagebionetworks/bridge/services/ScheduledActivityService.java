@@ -33,6 +33,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -47,6 +49,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -407,8 +410,10 @@ public class ScheduledActivityService {
     protected List<ScheduledActivity> scheduleActivitiesForPlans(ScheduleContext context) {
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
 
+        RequestContext requestContext = BridgeUtils.getRequestContext();
+        
         List<SchedulePlan> plans = schedulePlanService
-                .getSchedulePlans(context.getCriteriaContext().getStudyIdentifier(), false);
+                .getSchedulePlans(new StudyIdentifierImpl(requestContext.getCallerStudyId()), false);
         
         AppConfig appConfig = appConfigService.getAppConfigForCaller().orElse(null);
         Map<String, SurveyReference> surveyReferences = (appConfig == null) ? ImmutableMap.of()
@@ -417,8 +422,8 @@ public class ScheduledActivityService {
                 : Maps.uniqueIndex(appConfig.getSchemaReferences(), SchemaReference::getId);
 
         ReferenceResolver resolver = new ReferenceResolver(compoundActivityDefinitionService, schemaService,
-                surveyService, surveyReferences, schemaReferences, context.getCriteriaContext().getClientInfo(),
-                context.getCriteriaContext().getStudyIdentifier());
+                surveyService, surveyReferences, schemaReferences, requestContext.getCallerClientInfo(),
+                new StudyIdentifierImpl(requestContext.getCallerStudyId()));
         
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForCaller(plan);

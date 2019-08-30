@@ -225,7 +225,13 @@ public class ScheduledActivityController extends BaseController {
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,
             DateTime startsOn, DateTime endsOn, int minPerSchedule) {
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext.Builder reqBuilder = BridgeUtils.getRequestContext().toBuilder();
+        reqBuilder.withCallerDataGroups(session.getParticipant().getDataGroups());
+        reqBuilder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        reqBuilder.withCallerUserId(session.getId());
+        reqBuilder.withCallerStudyId(session.getStudyIdentifier());
+        reqBuilder.withCallerLanguages(getLanguages(session));
+        BridgeUtils.setRequestContext(reqBuilder.build());
         
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
         
@@ -237,20 +243,12 @@ public class ScheduledActivityController extends BaseController {
         if (initialTimeZone == null) {
             initialTimeZone = persistTimeZone(session, requestTimeZone);
         }
-
         builder.withStartsOn(startsOn);
         builder.withEndsOn(endsOn);
         builder.withInitialTimeZone(initialTimeZone);
-        builder.withUserDataGroups(session.getParticipant().getDataGroups());
-        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withHealthCode(session.getHealthCode());
-        builder.withUserId(session.getId());
-        builder.withStudyIdentifier(session.getStudyIdentifier());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
-        builder.withLanguages(getLanguages(session));
-        builder.withClientInfo(reqContext.getCallerClientInfo());
         builder.withMinimumPerSchedule(minPerSchedule);
-        
         ScheduleContext context = builder.build();
         
         RequestInfo requestInfo = getRequestInfoBuilder(session).withTimeZone(requestTimeZone)

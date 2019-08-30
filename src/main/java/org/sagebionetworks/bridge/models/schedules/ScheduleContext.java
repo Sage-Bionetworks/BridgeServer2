@@ -1,16 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -29,19 +23,16 @@ public final class ScheduleContext {
     private final Map<String,DateTime> events;
     private final DateTime accountCreatedOn;
     private final int minimumPerSchedule;
-    private final CriteriaContext criteriaContext;
     private final String healthCode;
     
     private ScheduleContext(DateTimeZone initialTimeZone, DateTime startsOn, DateTime endsOn,
-            Map<String, DateTime> events, int minimumPerSchedule, DateTime accountCreatedOn,
-            CriteriaContext criteriaContext, String healthCode) {
+            Map<String, DateTime> events, int minimumPerSchedule, DateTime accountCreatedOn, String healthCode) {
         this.initialTimeZone = initialTimeZone;
         this.endsOn = endsOn;
         this.events = events;
         this.startsOn = startsOn;
         this.minimumPerSchedule = minimumPerSchedule;
         this.accountCreatedOn = accountCreatedOn;
-        this.criteriaContext = criteriaContext;
         this.healthCode = healthCode;
     }
     
@@ -96,10 +87,6 @@ public final class ScheduleContext {
         return accountCreatedOn;
     }
 
-    public CriteriaContext getCriteriaContext() {
-        return criteriaContext;
-    }
-    
     public String getHealthCode() {
         return healthCode;
     }
@@ -107,7 +94,7 @@ public final class ScheduleContext {
     @Override
     public int hashCode() {
         return Objects.hash(initialTimeZone, endsOn, events, startsOn, accountCreatedOn, minimumPerSchedule,
-                criteriaContext, healthCode);
+                healthCode);
     }
 
     @Override
@@ -121,7 +108,6 @@ public final class ScheduleContext {
                 Objects.equals(events, other.events) && Objects.equals(startsOn, other.startsOn) &&
                 Objects.equals(minimumPerSchedule, other.minimumPerSchedule) &&
                 Objects.equals(accountCreatedOn, other.accountCreatedOn) && 
-                Objects.equals(criteriaContext, other.criteriaContext) &&
                 Objects.equals(healthCode, other.healthCode));
     }
 
@@ -129,7 +115,7 @@ public final class ScheduleContext {
     public String toString() {
         return "ScheduleContext [initialTimeZone=" + initialTimeZone + ", endsOn=" + endsOn + ", events=" + events + ", startsOn=" + startsOn
                 + ", accountCreatedOn=" + accountCreatedOn + ", minimumPerSchedule=" + minimumPerSchedule 
-                + ", criteriaContext=" + criteriaContext + ", healthCode=[REDACTED]]";
+                + ", healthCode=[REDACTED]]";
     }
 
 
@@ -140,27 +126,10 @@ public final class ScheduleContext {
         private Map<String,DateTime> events;
         private int minimumPerSchedule;
         private DateTime accountCreatedOn;
-        private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         private String healthCode;
         
-        public Builder withStudyIdentifier(String studyId) {
-            contextBuilder.withStudyIdentifier(new StudyIdentifierImpl(studyId));
-            return this;
-        }
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
-            contextBuilder.withStudyIdentifier(studyId);
-            return this;
-        }
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
-            return this;
-        }
-        public Builder withUserId(String userId) {
-            contextBuilder.withUserId(userId);
-            return this;
-        }
-        public Builder withClientInfo(ClientInfo clientInfo) {
-            contextBuilder.withClientInfo(clientInfo);
             return this;
         }
         public Builder withMinimumPerSchedule(int minimumPerSchedule) {
@@ -181,14 +150,6 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withUserDataGroups(Set<String> userDataGroups) {
-            contextBuilder.withUserDataGroups(userDataGroups);
-            return this;
-        }
-        public Builder withUserSubstudyIds(Set<String> userSubstudyIds) {
-            contextBuilder.withUserSubstudyIds(userSubstudyIds);
-            return this;
-        }
         public Builder withStartsOn(DateTime startsOn) {
             this.startsOn = startsOn;
             return this;
@@ -199,10 +160,6 @@ public final class ScheduleContext {
             }
             return this;
         }
-        public Builder withLanguages(List<String> languages) {
-            contextBuilder.withLanguages(languages);
-            return this;
-        }
         public Builder withContext(ScheduleContext context) {
             withInitialTimeZone(context.initialTimeZone);
             withEndsOn(context.endsOn);
@@ -211,7 +168,6 @@ public final class ScheduleContext {
             withMinimumPerSchedule(context.minimumPerSchedule);
             withAccountCreatedOn(context.accountCreatedOn);
             withHealthCode(context.healthCode);
-            contextBuilder.withContext(context.criteriaContext);
             return this;
         }
         
@@ -222,7 +178,7 @@ public final class ScheduleContext {
                 startsOn = (initialTimeZone == null) ? DateTime.now() : DateTime.now(initialTimeZone);
             }
             return new ScheduleContext(initialTimeZone, startsOn, endsOn, events, minimumPerSchedule, accountCreatedOn,
-                    contextBuilder.build(), healthCode);
+                    healthCode);
         }
     }
 }

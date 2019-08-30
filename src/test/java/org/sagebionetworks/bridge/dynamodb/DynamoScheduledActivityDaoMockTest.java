@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -169,14 +168,12 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         mockMapperResults(activities);
         List<ScheduledActivity> activities2 = activityDao.getActivities(context.getInitialTimeZone(), activities);
 
@@ -199,14 +196,12 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
-            .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
             .withHealthCode(HEALTH_CODE)
             .withEvents(events).build();
 
-        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(context);
+        List<ScheduledActivity> activities = TestUtils.runSchedulerForActivities(TEST_STUDY, context);
         // Only mock the return of one of these activities
         mockMapperResults(Lists.newArrayList(activities.get(0)));
         

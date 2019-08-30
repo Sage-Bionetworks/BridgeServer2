@@ -411,8 +411,8 @@ public class TestUtils {
         return scheduledActivities;
     }
 
-    public static List<ScheduledActivity> runSchedulerForActivities(ScheduleContext context) {
-        return runSchedulerForActivities(getSchedulePlans(context.getCriteriaContext().getStudyIdentifier()), context);
+    public static List<ScheduledActivity> runSchedulerForActivities(StudyIdentifier studyId, ScheduleContext context) {
+        return runSchedulerForActivities(getSchedulePlans(studyId), context);
     }
 
     public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {

@@ -9,7 +9,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
 import java.util.List;
 import java.util.Map;
@@ -78,7 +77,6 @@ public class ActivitySchedulerTest {
         Map<String,DateTime> empty = Maps.newHashMap();
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
@@ -86,7 +84,6 @@ public class ActivitySchedulerTest {
         assertEquals(scheduledActivities.size(), 0);
         
         context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -459,8 +456,8 @@ public class ActivitySchedulerTest {
     }
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("healthCode").withEvents(events).build();
+        return new ScheduleContext.Builder().withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("healthCode")
+                .withEvents(events).build();
     }
     
 }

@@ -34,9 +34,6 @@ public class ScheduleContextValidator implements Validator {
         if (context.getHealthCode() == null) {
             errors.rejectValue("healthCode", "is required");
         }
-        if (context.getCriteriaContext().getUserId() == null) {
-            errors.rejectValue("userId", "is required");
-        }
         if (context.getAccountCreatedOn() == null) {
             errors.rejectValue("accountCreatedOn", "is required");
         }
