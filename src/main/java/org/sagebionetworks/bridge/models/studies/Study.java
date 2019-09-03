@@ -92,12 +92,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
     /** @see #isAutoVerificationEmailSuppressed */
     void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
 
-    /** List of FitBit scopes that are configured for this study. */
-    List<String> getFitBitScopes();
-
-    /** @see #getFitBitScopes */
-    void setFitBitScopes(List<String> fitBitScopes);
-
     /**
      * True if sessions for unprivileged participant accounts should be locked to an IP address. (Privileged account
      * sessions are _always_ locked to an IP address.)
