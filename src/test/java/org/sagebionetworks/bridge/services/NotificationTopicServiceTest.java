@@ -26,13 +26,13 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.dao.TopicSubscriptionDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -50,9 +50,9 @@ import com.google.common.collect.Maps;
 public class NotificationTopicServiceTest {
     private static final String CRITERIA_GROUP_1 = "criteria-group-1";
     private static final String CRITERIA_GROUP_2 = "criteria-group-2";
-    private static final CriteriaContext EMPTY_CONTEXT = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .build();
     private static final String HEALTH_CODE = "health-code";
+    private static final RequestContext EMPTY_CONTEXT = new RequestContext.Builder().withCallerStudyId(TEST_STUDY)
+            .withCallerHealthCode(HEALTH_CODE).build();
 
     private static final NotificationTopic CRITERIA_TOPIC_1;
     static {
@@ -309,7 +309,7 @@ public class NotificationTopicServiceTest {
         when(mockTopicDao.listTopics(TEST_STUDY, true)).thenReturn(ImmutableList.of(MANUAL_TOPIC_1, MANUAL_TOPIC_2));
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(TEST_STUDY, EMPTY_CONTEXT, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(EMPTY_CONTEXT);
 
         // No subscription changes.
         verifyZeroInteractions(mockSubscriptionDao);
@@ -323,7 +323,7 @@ public class NotificationTopicServiceTest {
         when(mockRegistrationDao.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of());
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(TEST_STUDY, EMPTY_CONTEXT, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(EMPTY_CONTEXT);
 
         // No subscription changes.
         verifyZeroInteractions(mockSubscriptionDao);
@@ -346,11 +346,12 @@ public class NotificationTopicServiceTest {
                 getSub(CRITERIA_TOPIC_1.getGuid()), getSub(MANUAL_TOPIC_1.getGuid())));
 
         // Create criteria context with data group 2.
-        CriteriaContext context = new CriteriaContext.Builder().withContext(EMPTY_CONTEXT).withUserDataGroups(
-                ImmutableSet.of(CRITERIA_GROUP_2)).build();
+        RequestContext.Builder builder = EMPTY_CONTEXT.toBuilder();
+        builder.withCallerDataGroups(ImmutableSet.of(CRITERIA_GROUP_2));
+        RequestContext context = builder.build();
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(TEST_STUDY, context, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(context);
 
         // We un-sub from criteria topic 1 and sub to criteria topic 2.
         verify(mockSubscriptionDao).unsubscribe(PUSH_REGISTRATION, CRITERIA_TOPIC_1);

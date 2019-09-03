@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
@@ -38,6 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -122,15 +122,15 @@ public class AuthenticationService {
     /**
      * Sign in using a phone number and a token that was sent to that phone number via SMS. 
      */
-    public UserSession phoneSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.PHONE, context, signIn, SignInValidator.PHONE_SIGNIN);
+    public UserSession phoneSignIn(final SignIn signIn) {
+        return channelSignIn(ChannelType.PHONE, signIn, SignInValidator.PHONE_SIGNIN);
     }
     
     /**
      * Sign in using an email address and a token that was supplied via a message to that email address. 
      */
-    public UserSession emailSignIn(CriteriaContext context, final SignIn signIn) {
-        return channelSignIn(ChannelType.EMAIL, context, signIn, SignInValidator.EMAIL_SIGNIN);
+    public UserSession emailSignIn(final SignIn signIn) {
+        return channelSignIn(ChannelType.EMAIL, signIn, SignInValidator.EMAIL_SIGNIN);
     }
     
     /**
@@ -159,17 +159,17 @@ public class AuthenticationService {
      * @return
      *      newly created session object (not persisted)
      */
-    public UserSession getSession(Study study, CriteriaContext context) {
+    public UserSession getSession(Study study) {
         checkNotNull(study);
-        checkNotNull(context);
 
-        Account account = accountDao.getAccount(context.getAccountId());
-        return getSessionFromAccount(study, context, account);
+        RequestContext context = BridgeUtils.getRequestContext();
+        AccountId accountId = AccountId.forId(context.getCallerStudyId(), context.getCallerUserId());
+        Account account = accountDao.getAccount(accountId);
+        return getSessionFromAccount(study, account);
     }
 
-    public UserSession signIn(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+    public UserSession signIn(Study study, SignIn signIn) throws EntityNotFoundException {
         checkNotNull(study);
-        checkNotNull(context);
         checkNotNull(signIn);
         
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
@@ -177,13 +177,13 @@ public class AuthenticationService {
         Account account = accountDao.authenticate(study, signIn);
         
         clearSession(study.getStudyIdentifier(), account.getId());
-        UserSession session = getSessionFromAccount(study, context, account);
+        UserSession session = getSessionFromAccount(study, account);
 
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
             account = accountDao.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);
+            session = getSessionFromAccount(study, account);
         }
         cacheProvider.setUserSession(session);
         
@@ -193,10 +193,9 @@ public class AuthenticationService {
         return session;
     }
     
-    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn)
+    public UserSession reauthenticate(Study study, SignIn signIn)
             throws EntityNotFoundException {
         checkNotNull(study);
-        checkNotNull(context);
         checkNotNull(signIn);
         
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn); 
@@ -214,7 +213,7 @@ public class AuthenticationService {
 
         Account account = accountDao.reauthenticate(study, signIn);
         
-        UserSession session = getSessionFromAccount(study, context, account);
+        UserSession session = getSessionFromAccount(study, account);
         // If session exists, preserve the session token. Reauthenticating before the session times out will not
         // refresh the token or change the timeout, but it is harmless. At the time the session is set to
         // time out, it will still time out and the client will need to reauthenticate again.
@@ -367,7 +366,7 @@ public class AuthenticationService {
         return PasswordGenerator.INSTANCE.nextPassword(Math.max(32, policyLength));
     }
     
-    private UserSession channelSignIn(ChannelType channelType, CriteriaContext context, SignIn signIn,
+    private UserSession channelSignIn(ChannelType channelType, SignIn signIn,
             Validator validator) {
         Validate.entityThrowingException(validator, signIn);
 
@@ -406,14 +405,14 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getStudyIdentifier(), account.getId());
+            clearSession(new StudyIdentifierImpl(signIn.getStudyId()), account.getId());
             Study study = studyService.getStudy(signIn.getStudyId());
-            session = getSessionFromAccount(study, context, account);
+            session = getSessionFromAccount(study, account);
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
                 account = accountDao.getAccount(accountId);
-                session = getSessionFromAccount(study, context, account);
+                session = getSessionFromAccount(study, account);
             }
             cacheProvider.setUserSession(session);
 
@@ -447,21 +446,21 @@ public class AuthenticationService {
      * Constructs a session based on the user's account, participant, and request context. This is called by sign-in
      * APIs, which creates the session. Package-scoped for unit tests.
      */
-    UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
+    UserSession getSessionFromAccount(Study study, Account account) {
         StudyParticipant participant = participantService.getParticipant(study, account, false);
 
+        final RequestContext context = BridgeUtils.getRequestContext();
+        
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.
-        if (participant.getLanguages().isEmpty() && !context.getLanguages().isEmpty()) {
+        if (participant.getLanguages().isEmpty() && !context.getCallerLanguages().isEmpty()) {
             participant = new StudyParticipant.Builder().copyOf(participant)
-                    .withLanguages(context.getLanguages()).build();
+                    .withLanguages(context.getCallerLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
             accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
-                    accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
+                    accountToEdit -> accountToEdit.setLanguages(context.getCallerLanguages()));
         }
-
-        RequestContext reqContext = BridgeUtils.getRequestContext();
         
         // Create new session.
         UserSession session = new UserSession(participant);
@@ -470,12 +469,20 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         // this has already been parsed by request filter, does not need to be parsed again
-        session.setIpAddress(reqContext.getCallerIpAddress()); 
+        session.setIpAddress(context.getCallerIpAddress()); 
         session.setStudyIdentifier(study.getStudyIdentifier());
         session.setReauthToken(account.getReauthToken());
         
-        CriteriaContext newContext = updateContextFromSession(context, session);
-        session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerLanguages(session.getParticipant().getLanguages());
+        builder.withCallerDataGroups(session.getParticipant().getDataGroups());
+        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        builder.withCallerUserId(session.getId());
+        
+        RequestContext updatedContext = builder.build();
+        BridgeUtils.setRequestContext(updatedContext);
+        
+        session.setConsentStatuses(consentService.getConsentStatuses(updatedContext, account));
         
         if (!Boolean.TRUE.equals(study.isReauthenticationEnabled())) {
             account.setReauthToken(null);
@@ -500,18 +507,6 @@ public class AuthenticationService {
         AccountId accountId = AccountId.forId(studyId.getIdentifier(), userId);
         accountDao.deleteReauthToken(accountId);
         cacheProvider.removeSessionByUserId(userId);
-    }
-
-    // Sign-in methods contain a criteria context that includes no user information. After signing in, we need to
-    // create an updated context with user info.
-    private static CriteriaContext updateContextFromSession(CriteriaContext originalContext, UserSession session) {
-        return new CriteriaContext.Builder()
-                .withContext(originalContext)
-                .withLanguages(session.getParticipant().getLanguages())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-                .withUserId(session.getId())
-                .build();
     }
     
     protected String getGuid() {

@@ -235,12 +235,12 @@ public class AuthenticationControllerTest extends Mockito {
         
         userSession.setAuthenticated(true);
         study.setIdentifier("study-test");
-        doReturn(userSession).when(mockAuthService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
+        doReturn(userSession).when(mockAuthService).emailSignIn(any(SignIn.class));
         
         JsonNode node = controller.emailSignIn();
         assertTrue(node.get("authenticated").booleanValue());
      
-        verify(mockAuthService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
+        verify(mockAuthService).emailSignIn(signInCaptor.capture());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(captured.getEmail(), TEST_EMAIL);
@@ -261,7 +261,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedEmailSignInStillLogsStudyId() throws Exception {
         // Set up test.
         TestUtils.mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.emailSignIn(any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -288,11 +288,11 @@ public class AuthenticationControllerTest extends Mockito {
         DateTimeUtils.setCurrentMillisFixed(timestamp);
         try {
             mockJson("{'study':'study-key','email':'email@email.com','reauthToken':'abc'}");
-            when(mockAuthService.reauthenticate(any(), any(), any())).thenReturn(userSession);
+            when(mockAuthService.reauthenticate(any(), any())).thenReturn(userSession);
             
             JsonNode node = controller.reauthenticate();
             
-            verify(mockAuthService).reauthenticate(any(), any(), signInCaptor.capture());
+            verify(mockAuthService).reauthenticate(any(), signInCaptor.capture());
             SignIn signIn = signInCaptor.getValue();
             assertEquals(signIn.getStudyId(), "study-key");
             assertEquals(signIn.getEmail(), "email@email.com");
@@ -310,7 +310,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedReauthStillLogsStudyId() throws Exception {
         // Set up test.
         mockJson("{'study':'study-key','email':'email@email.com','reauthToken':'abc'}");
-        when(mockAuthService.reauthenticate(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.reauthenticate(any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -489,7 +489,7 @@ public class AuthenticationControllerTest extends Mockito {
         // mock AuthenticationService
         ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
         UserSession session = createSession(consentStatus, role);
-        when(mockAuthService.signIn(any(), any(), any())).thenReturn(session);
+        when(mockAuthService.signIn(any(), any())).thenReturn(session);
         
         // execute and validate
         JsonNode result = controller.signInV3();
@@ -508,7 +508,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // validate signIn
         ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
-        verify(mockAuthService).signIn(same(study), any(), signInCaptor.capture());
+        verify(mockAuthService).signIn(same(study), signInCaptor.capture());
 
         SignIn signIn = signInCaptor.getValue();
         assertEquals(TEST_EMAIL, signIn.getEmail());
@@ -666,7 +666,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // mock AuthenticationService
         UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
-        when(mockAuthService.signIn(any(), any(), any())).thenReturn(session);
+        when(mockAuthService.signIn(any(), any())).thenReturn(session);
         
         // execute and validate
         controller.signIn();
@@ -695,7 +695,7 @@ public class AuthenticationControllerTest extends Mockito {
         when(controller.bridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
         UserSession session = createSession(null, null);
-        when(mockAuthService.signIn(any(), any(), any())).thenReturn(session);
+        when(mockAuthService.signIn(any(), any())).thenReturn(session);
         
         controller.signIn();
         
@@ -975,7 +975,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void phoneSignIn() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
         
-        when(mockAuthService.phoneSignIn(any(), any())).thenReturn(userSession);
+        when(mockAuthService.phoneSignIn(any())).thenReturn(userSession);
         
         JsonNode result = controller.phoneSignIn();
         
@@ -983,10 +983,7 @@ public class AuthenticationControllerTest extends Mockito {
         assertEquals(TEST_SESSION_TOKEN, result.get("sessionToken").textValue());
         assertEquals("UserSessionInfo", result.get("type").textValue());
         
-        verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
-        
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier().getIdentifier());
+        verify(mockAuthService).phoneSignIn(signInCaptor.capture());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
@@ -1020,7 +1017,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedPhoneSignInStillLogsStudyId() throws Exception {
         // Set up test.
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.phoneSignIn(any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1039,7 +1036,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void signInV3ThrowsNotFound() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
         
-        when(mockAuthService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
+        when(mockAuthService.signIn(any(), any())).thenThrow(new UnauthorizedException());
         
         controller.signInV3();
     }
@@ -1049,7 +1046,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedSignInV3StillLogsStudyId() throws Exception {
         // Set up test.
         mockRequestBody(mockRequest, EMAIL_PASSWORD_SIGN_IN_REQUEST);
-        when(mockAuthService.signIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.signIn(any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1067,7 +1064,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void signInV4ThrowsUnauthoried() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN);
         
-        when(mockAuthService.signIn(any(), any(), any())).thenThrow(new UnauthorizedException());
+        when(mockAuthService.signIn(any(), any())).thenThrow(new UnauthorizedException());
         
         controller.signIn();
     }
@@ -1076,7 +1073,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void failedSignInV4StillLogsStudyId() throws Exception {
         // Set up test.
         mockRequestBody(mockRequest, EMAIL_PASSWORD_SIGN_IN_REQUEST);
-        when(mockAuthService.signIn(any(), any(), any())).thenThrow(EntityNotFoundException.class);
+        when(mockAuthService.signIn(any(), any())).thenThrow(EntityNotFoundException.class);
 
         // Execute.
         try {
@@ -1093,7 +1090,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_PASSWORD_SIGN_IN_REQUEST);
-        when(mockAuthService.signIn(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.signIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.signIn();
@@ -1106,7 +1103,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedEmailSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, EMAIL_SIGN_IN_REQUEST);
-        when(mockAuthService.emailSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.emailSignIn(any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.emailSignIn();
@@ -1119,7 +1116,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedPhoneSignInSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, PHONE_SIGN_IN_REQUEST);
-        when(mockAuthService.phoneSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.phoneSignIn(any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.phoneSignIn();
@@ -1132,7 +1129,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void unconsentedReauthSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, REAUTH_REQUEST);
-        when(mockAuthService.reauthenticate(any(), any(), any())).thenThrow(new ConsentRequiredException(userSession));
+        when(mockAuthService.reauthenticate(any(), any())).thenThrow(new ConsentRequiredException(userSession));
 
         try {
             controller.reauthenticate();

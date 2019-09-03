@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.GuidHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -59,8 +60,10 @@ public class NotificationRegistrationController extends BaseController {
         NotificationRegistration registration = parseJson(NotificationRegistration.class);
         registration.setHealthCode(session.getHealthCode());
         
+        updateRequestContext(session);
+        
         NotificationRegistration result = notificationsService.createRegistration(session.getStudyIdentifier(),
-                getCriteriaContext(session), registration);
+                BridgeUtils.getRequestContext(), registration);
         
         return new GuidHolder(result.getGuid());
     }

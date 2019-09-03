@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.CriteriaContext.Builder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -271,17 +272,13 @@ public abstract class BaseController {
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
-
-            CriteriaContext newContext = new CriteriaContext.Builder()
-                .withLanguages(languages)
-                .withClientInfo(reqContext.getCallerClientInfo())
-                .withUserId(session.getId())
-                .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .build();
-
-            sessionUpdateService.updateLanguage(session, newContext);
+            
+            // TODO
+            // Totally redundant because we're about to change this from all the call sites
+            // of this method
+            RequestContext.Builder builder = reqContext.toBuilder();
+            builder.withCallerLanguages(languages);
+            sessionUpdateService.updateLanguage(session, builder.build());
         }
         return languages;
     }
@@ -295,20 +292,18 @@ public abstract class BaseController {
             .build();
     }
     
-    CriteriaContext getCriteriaContext(UserSession session) {
+    void updateRequestContext(UserSession session) {
         checkNotNull(session);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
-        return new CriteriaContext.Builder()
-            .withLanguages(getLanguages(session))
-            .withClientInfo(reqContext.getCallerClientInfo())
-            .withUserId(session.getId())
-            .withUserDataGroups(session.getParticipant().getDataGroups())
-            .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-            .withStudyIdentifier(session.getStudyIdentifier())
-            .build();
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerLanguages(getLanguages(session));
+        builder.withCallerDataGroups(session.getParticipant().getDataGroups());
+        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        builder.withCallerStudyId(session.getStudyIdentifier());
+        builder.withCallerUserId(session.getId());
+        BridgeUtils.setRequestContext(builder.build());
     }
-
+    
     protected @Nonnull <T> T parseJson(Class<? extends T> clazz) {
         try {
             return MAPPER.readValue(request().getInputStream(), clazz);

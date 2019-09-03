@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
@@ -130,11 +130,12 @@ public class ConsentController extends BaseController {
         long withdrewOn = DateTime.now().getMillis();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
-        CriteriaContext context = getCriteriaContext(session);
-        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), context, withdrawal, withdrewOn);
+        updateRequestContext(session);
+        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), BridgeUtils.getRequestContext(),
+                withdrawal, withdrewOn);
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
-        UserSession updatedSession = authenticationService.getSession(study, context);
+        UserSession updatedSession = authenticationService.getSession(study);
         sessionUpdateService.updateSession(session, updatedSession);
 
         return UserSessionInfo.toJSON(updatedSession);
@@ -189,8 +190,9 @@ public class ConsentController extends BaseController {
         // On client update, clients have sent consent signatures even before the session reflects the need
         // for the new consent. Update the criteria context before consent, using the latest User-Agent
         // header, so the server is synchronized with the client's state.
-        CriteriaContext context = getCriteriaContext(session);
-        Map<SubpopulationGuid,ConsentStatus> consentStatuses = consentService.getConsentStatuses(context);
+        updateRequestContext(session);
+        Map<SubpopulationGuid, ConsentStatus> consentStatuses = consentService
+                .getConsentStatuses(BridgeUtils.getRequestContext());
         
         // If provided subpopulation is not in the statuses, it either doesn't exist or doesn't apply to 
         // this user, and we return a 404
@@ -203,8 +205,7 @@ public class ConsentController extends BaseController {
                 sharing.getSharingScope(), true);
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
-        CriteriaContext updatedContext = getCriteriaContext(session);
-        UserSession updatedSession = authenticationService.getSession(study, updatedContext);
+        UserSession updatedSession = authenticationService.getSession(study);
         sessionUpdateService.updateSession(session, updatedSession);
         
         return UserSessionInfo.toJSON(updatedSession);

@@ -6,8 +6,8 @@ import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -53,8 +53,8 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
 
-    public void updateLanguage(UserSession session, CriteriaContext context) {
-        updateCriteria(session, context, builder(session).withLanguages(context.getLanguages()).build());
+    public void updateLanguage(UserSession session, RequestContext context) {
+        updateCriteria(session, context, builder(session).withLanguages(context.getCallerLanguages()).build());
     }
     
     public void updateExternalId(UserSession session, ExternalIdentifier externalId) {
@@ -62,15 +62,15 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateParticipant(UserSession session, CriteriaContext context, StudyParticipant participant) {
+    public void updateParticipant(UserSession session, RequestContext context, StudyParticipant participant) {
         updateCriteria(session, context, participant);
     }
     
-    public void updateDataGroups(UserSession session, CriteriaContext context) {
-        updateCriteria(session, context, builder(session).withDataGroups(context.getUserDataGroups()).build());
+    public void updateDataGroups(UserSession session, RequestContext context) {
+        updateCriteria(session, context, builder(session).withDataGroups(context.getCallerDataGroups()).build());
     }
 
-    private void updateCriteria(UserSession session, CriteriaContext context, StudyParticipant participant) {
+    private void updateCriteria(UserSession session, RequestContext context, StudyParticipant participant) {
         // Update session and consent statuses.
         session.setParticipant(participant);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
@@ -78,8 +78,7 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
 
         // Manage notifications, if necessary.
-        notificationTopicService.manageCriteriaBasedSubscriptions(context.getStudyIdentifier(), context,
-                participant.getHealthCode());
+        notificationTopicService.manageCriteriaBasedSubscriptions(context);
     }
     
     public void updateSharingScope(UserSession session, SharingScope sharingScope) {

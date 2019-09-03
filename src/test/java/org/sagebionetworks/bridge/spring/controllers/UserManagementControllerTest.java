@@ -37,6 +37,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -142,7 +143,7 @@ public class UserManagementControllerTest extends Mockito {
                 .withPassword(PASSWORD).build();
         mockRequestBody(mockRequest, signIn);
 
-        when(mockAuthService.signIn(eq(mockStudy), any(CriteriaContext.class), signInCaptor.capture()))
+        when(mockAuthService.signIn(eq(mockStudy), signInCaptor.capture()))
                 .thenReturn(session);
 
         JsonNode result = controller.signInForAdmin();
@@ -172,7 +173,7 @@ public class UserManagementControllerTest extends Mockito {
 
         // But this person is actually a worker, not an admin
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER)).build());
-        when(mockAuthService.signIn(eq(mockStudy), any(CriteriaContext.class), signInCaptor.capture()))
+        when(mockAuthService.signIn(eq(mockStudy), signInCaptor.capture()))
                 .thenReturn(session);
 
         try {

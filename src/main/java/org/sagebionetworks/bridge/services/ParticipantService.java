@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -221,13 +220,13 @@ public class ParticipantService {
         }
         Set<String> substudyIds = account.getAccountSubstudies().stream()
                 .map(AccountSubstudy::getSubstudyId).collect(BridgeCollectors.toImmutableSet());
-        CriteriaContext criteriaContext = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier())
-                .withUserId(userId)
-                .withClientInfo(requestInfo.getClientInfo())
-                .withLanguages(requestInfo.getLanguages())
-                .withUserDataGroups(account.getDataGroups())
-                .withUserSubstudyIds(substudyIds)
+        RequestContext requestContext = new RequestContext.Builder()
+                .withCallerStudyId(study.getStudyIdentifier())
+                .withCallerUserId(userId)
+                .withCallerClientInfo(requestInfo.getClientInfo())
+                .withCallerLanguages(requestInfo.getLanguages())
+                .withCallerDataGroups(account.getDataGroups())
+                .withCallerSubstudies(substudyIds)
                 .build();
 
         // Participant must be consented.
@@ -244,7 +243,7 @@ public class ParticipantService {
         registration.setEndpoint(account.getPhone().getNumber());
 
         // Create registration.
-        notificationsService.createRegistration(study.getStudyIdentifier(), criteriaContext, registration);
+        notificationsService.createRegistration(study.getStudyIdentifier(), requestContext, registration);
     }
 
     public StudyParticipant getParticipant(Study study, String userId, boolean includeHistory) {
@@ -254,8 +253,8 @@ public class ParticipantService {
         return getParticipant(study, account, includeHistory);
     }
     
-    public StudyParticipant getSelfParticipant(Study study, CriteriaContext context, boolean includeHistory) {
-        AccountId accountId = AccountId.forId(study.getIdentifier(),  context.getUserId());
+    public StudyParticipant getSelfParticipant(Study study, RequestContext context, boolean includeHistory) {
+        AccountId accountId = AccountId.forId(study.getIdentifier(), context.getCallerUserId());
         Account account = getAccountThrowingException(accountId); // already filters for substudy
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
@@ -263,7 +262,7 @@ public class ParticipantService {
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
-            copyHistoryToParticipant(builder, account, context.getStudyIdentifier());
+            copyHistoryToParticipant(builder, account, context.getCallerStudyIdentifier());
         }
         return builder.build();
     }
@@ -296,13 +295,13 @@ public class ParticipantService {
         // Without requestInfo, we cannot reliably determine if the user is consented
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
-            CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier())
-                .withUserId(account.getId())
-                .withUserDataGroups(account.getDataGroups())
-                .withUserSubstudyIds(assoc.getSubstudyIdsVisibleToCaller())
-                .withClientInfo(requestInfo.getClientInfo())
-                .withLanguages(requestInfo.getLanguages()).build();
+            RequestContext context = new RequestContext.Builder()
+                .withCallerStudyId(study.getStudyIdentifier())
+                .withCallerUserId(account.getId())
+                .withCallerDataGroups(account.getDataGroups())
+                .withCallerSubstudies(assoc.getSubstudyIdsVisibleToCaller())
+                .withCallerClientInfo(requestInfo.getClientInfo())
+                .withCallerLanguages(requestInfo.getLanguages()).build();
             copyConsentStatusToParticipant(builder, account, context);
         }
         return builder.build();
@@ -346,7 +345,7 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder copyConsentStatusToParticipant(StudyParticipant.Builder builder, Account account, CriteriaContext context) {
+    private StudyParticipant.Builder copyConsentStatusToParticipant(StudyParticipant.Builder builder, Account account, RequestContext context) {
         Map<SubpopulationGuid, ConsentStatus> consentStatuses = consentService.getConsentStatuses(context, account);
         boolean isConsented = ConsentStatus.isUserConsented(consentStatuses);
         builder.withConsented(isConsented);
@@ -732,7 +731,7 @@ public class ParticipantService {
         checkArgument(withdrewOn > 0);
 
         StudyParticipant participant = getParticipant(study, userId, false);
-        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
+        RequestContext context = getRequestContextForParticipant(study, participant);
 
         consentService.withdrawConsent(study, subpopGuid, participant, context, withdrawal, withdrewOn);
     }
@@ -838,9 +837,8 @@ public class ParticipantService {
         return activityEventService.getActivityEventList(account.getHealthCode());
     }
     
-    public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
+    public StudyParticipant updateIdentifiers(Study study, IdentifierUpdate update) {
         checkNotNull(study);
-        checkNotNull(context);
         checkNotNull(update);
         
         // Validate
@@ -854,8 +852,9 @@ public class ParticipantService {
         } else {
             account = accountDao.authenticate(study, update.getSignIn());
         }
+        RequestContext context = BridgeUtils.getRequestContext();
         // Verify the account matches the current caller
-        if (!account.getId().equals(context.getUserId())) {
+        if (!account.getId().equals(context.getCallerUserId())) {
             throw new EntityNotFoundException(Account.class);
         }
         
@@ -966,17 +965,17 @@ public class ParticipantService {
     }
      
     
-    private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
+    private RequestContext getRequestContextForParticipant(Study study, StudyParticipant participant) {
         RequestInfo info = requestInfoService.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
-        return new CriteriaContext.Builder()
-            .withStudyIdentifier(study.getStudyIdentifier())
-            .withUserId(participant.getId())
-            .withClientInfo(clientInfo)
-            .withUserDataGroups(participant.getDataGroups())
-            .withUserSubstudyIds(participant.getSubstudyIds())
-            .withLanguages(participant.getLanguages()).build();
+        return new RequestContext.Builder()
+            .withCallerStudyId(study.getStudyIdentifier())
+            .withCallerUserId(participant.getId())
+            .withCallerClientInfo(clientInfo)
+            .withCallerDataGroups(participant.getDataGroups())
+            .withCallerSubstudies(participant.getSubstudyIds())
+            .withCallerLanguages(participant.getLanguages()).build();
     }
 
     private boolean callerIsAdmin(Set<Roles> callerRoles) {

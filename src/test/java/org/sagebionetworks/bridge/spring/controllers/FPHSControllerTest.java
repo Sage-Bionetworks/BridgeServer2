@@ -28,6 +28,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -174,7 +175,7 @@ public class FPHSControllerTest extends Mockito {
         assertEquals(result.getMessage(), "External identifier added to user profile.");
 
         assertEquals(session.getParticipant().getDataGroups(), ImmutableSet.of("football_player"));
-        verify(mockConsentService).getConsentStatuses(any(CriteriaContext.class));
+        verify(mockConsentService).getConsentStatuses(any(RequestContext.class));
     }
     
     @Test

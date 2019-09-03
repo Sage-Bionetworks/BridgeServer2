@@ -7,6 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -38,6 +40,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -46,7 +49,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -100,8 +102,8 @@ public class ConsentServiceMockTest {
     private static final StudyParticipant PHONE_PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
             .withId(ID).withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.TRUE)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
-    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder().withUserId(PARTICIPANT.getId())
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+    private static final RequestContext CONTEXT = new RequestContext.Builder().withCallerUserId(PARTICIPANT.getId())
+            .withCallerStudyId(TEST_STUDY).build();
 
     @Spy
     private ConsentService consentService;
@@ -161,6 +163,7 @@ public class ConsentServiceMockTest {
         consentService.setTemplateService(templateService);
 
         study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
+        study.setIdentifier(TEST_STUDY_IDENTIFIER);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("signedConsent subject");
@@ -328,7 +331,8 @@ public class ConsentServiceMockTest {
         // Execute and validate.
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
-        verify(accountDao).getAccount(CONTEXT.getAccountId());
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, ID);
+        verify(accountDao).getAccount(accountId);
         verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
         verify(sendMailService).sendEmail(emailCaptor.capture());
 

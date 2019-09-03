@@ -204,11 +204,9 @@ public class ParticipantController extends BaseController {
         
         IdentifierUpdate update = parseJson(IdentifierUpdate.class);
         Study study = studyService.getStudy(session.getStudyIdentifier());
-
-        CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(study, context, update);
-        sessionUpdateService.updateParticipant(session, context, participant);
+        StudyParticipant participant = participantService.updateIdentifiers(study, update);
+        sessionUpdateService.updateParticipant(session, BridgeUtils.getRequestContext(), participant);
         
         return UserSessionInfo.toJSON(session);
     }

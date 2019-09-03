@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.CriteriaUtils.filterByCriteria;
 
 import java.util.ArrayList;
@@ -18,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.dao.NotificationTopicDao;
 import org.sagebionetworks.bridge.dao.TopicSubscriptionDao;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
@@ -164,15 +162,12 @@ public class NotificationTopicService {
      * match the criteria context will be subscribed. All other topics will be unsubscribed. This only considers
      * criteria-managed subscriptions. Manually-managed subscriptions will be untouched.
      */
-    public void manageCriteriaBasedSubscriptions(StudyIdentifier studyId, CriteriaContext context, String healthCode) {
-        checkNotNull(studyId);
-        checkNotNull(context);
-        checkNotNull(healthCode);
-        checkArgument(isNotBlank(healthCode));
+    public void manageCriteriaBasedSubscriptions(RequestContext proxyContext) {
+        checkNotNull(proxyContext);
 
         // Check study for topics. Only consider topics with criteria. Include logically deleted topics 
         // so that if they are undeleted, the user's subscription state is correct
-        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId, true);
+        List<NotificationTopic> allTopicList = topicDao.listTopics(proxyContext.getCallerStudyIdentifier(), true);
         List<NotificationTopic> criteriaTopicList = allTopicList.stream()
                 .filter(topic -> topic.getCriteria() != null).collect(Collectors.toList());
         if (criteriaTopicList.isEmpty()) {
@@ -181,14 +176,14 @@ public class NotificationTopicService {
         }
 
         // Check participant for notification registrations.
-        List<NotificationRegistration> registrationList = registrationDao.listRegistrations(healthCode);
+        List<NotificationRegistration> registrationList = registrationDao.listRegistrations(proxyContext.getCallerHealthCode());
         if (registrationList.isEmpty()) {
             // Short cut: No registrations means nothing to manage.
             return;
         }
 
         // Determine topics to subscribe to based on criteria.
-        Set<String> desiredTopicGuidSet = filterByCriteria(context.toRequestContext(), criteriaTopicList, null)
+        Set<String> desiredTopicGuidSet = filterByCriteria(proxyContext, criteriaTopicList, null)
                 .stream().map(NotificationTopic::getGuid).collect(Collectors.toSet());
 
         // Subscribe user to topics.

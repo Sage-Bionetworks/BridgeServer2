@@ -15,10 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -121,10 +121,10 @@ public class NotificationsService {
      * then that registration record will be returned in lieu of creating a redundant record.
      * </p>
      */
-    public NotificationRegistration createRegistration(StudyIdentifier studyId, CriteriaContext context,
+    public NotificationRegistration createRegistration(StudyIdentifier studyId, RequestContext proxyContext,
             NotificationRegistration registration) {
         checkNotNull(studyId);
-        checkNotNull(context);
+        checkNotNull(proxyContext);
         checkNotNull(registration);
 
         adjustToCanonicalOsNameIfNeeded(registration);
@@ -140,7 +140,7 @@ public class NotificationsService {
         } else {
             if (registration.getProtocol() == NotificationProtocol.SMS) {
                 // Can only create SMS registration for the user's own phone number, and only if it's verified.
-                StudyParticipant participant = participantService.getParticipant(study, context.getUserId(),
+                StudyParticipant participant = participantService.getParticipant(study, proxyContext.getCallerUserId(),
                         false);
                 if (!TRUE.equals(participant.getPhoneVerified()) ||
                     !participant.getPhone().getNumber().equals(registration.getEndpoint())) {
@@ -152,8 +152,7 @@ public class NotificationsService {
         }
 
         // Manage notifications, if necessary.
-        notificationTopicService.manageCriteriaBasedSubscriptions(context.getStudyIdentifier(), context,
-                registration.getHealthCode());
+        notificationTopicService.manageCriteriaBasedSubscriptions(proxyContext);
 
         return createdRegistration;
     }

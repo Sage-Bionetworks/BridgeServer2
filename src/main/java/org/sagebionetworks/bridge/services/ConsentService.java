@@ -22,6 +22,7 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -30,7 +31,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -255,10 +255,11 @@ public class ConsentService {
      * has consented to the right consents to have access to the study, and whether or not those 
      * consents are up-to-date.
      */
-    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(RequestContext context) {
         checkNotNull(context);
         
-        Account account = accountDao.getAccount(context.getAccountId());
+        AccountId accountId = AccountId.forId(context.getCallerStudyId(),  context.getCallerUserId());
+        Account account = accountDao.getAccount(accountId);
         return getConsentStatuses(context, account);
     }
     
@@ -267,7 +268,7 @@ public class ConsentService {
      * has consented to the right consents to have access to the study, and whether or not those 
      * consents are up-to-date. 
      */
-    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context, Account account) {
+    public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(RequestContext context, Account account) {
         checkNotNull(context);
         
         ImmutableMap.Builder<SubpopulationGuid, ConsentStatus> builder = new ImmutableMap.Builder<>();
@@ -294,7 +295,7 @@ public class ConsentService {
      * the user's participation) will not be deleted.
      */
     public Map<SubpopulationGuid, ConsentStatus> withdrawConsent(Study study, SubpopulationGuid subpopGuid,
-            StudyParticipant participant, CriteriaContext context, Withdrawal withdrawal, long withdrewOn) {
+            StudyParticipant participant, RequestContext context, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(study);
         checkNotNull(context);
         checkNotNull(subpopGuid);
@@ -303,7 +304,8 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
         
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        Account account = accountDao.getAccount(context.getAccountId());
+        AccountId accountId = AccountId.forId(study.getIdentifier(), context.getCallerUserId());
+        Account account = accountDao.getAccount(accountId);
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);

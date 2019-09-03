@@ -68,7 +68,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -168,8 +167,8 @@ public class ParticipantServiceTest {
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
-    private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withUserId(ID).withStudyIdentifier(TestConstants.TEST_STUDY).build();
+    private static final RequestContext CONTEXT = new RequestContext.Builder()
+            .withCallerUserId(ID).withCallerUserId(ID).withCallerStudyId(TEST_STUDY).build();
     private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
@@ -239,7 +238,7 @@ public class ParticipantServiceTest {
     ArgumentCaptor<Study> studyCaptor;
     
     @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
+    ArgumentCaptor<RequestContext> requestContextCaptor;
     
     @Captor
     ArgumentCaptor<AccountId> accountIdCaptor;
@@ -284,7 +283,7 @@ public class ParticipantServiceTest {
         }).when(accountDao).updateAccount(any(), any());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerSubstudies(CALLER_SUBS).build());
+                .withCallerUserId(ID).withCallerSubstudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
@@ -745,19 +744,18 @@ public class ParticipantServiceTest {
         participantService.createSmsRegistration(STUDY, ID);
 
         // Verify.
-        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
         ArgumentCaptor<NotificationRegistration> registrationCaptor = ArgumentCaptor.forClass(
                 NotificationRegistration.class);
-        verify(notificationsService).createRegistration(eq(TestConstants.TEST_STUDY), criteriaContextCaptor.capture(),
+        verify(notificationsService).createRegistration(eq(TEST_STUDY), requestContextCaptor.capture(),
                 registrationCaptor.capture());
 
-        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(criteriaContext.getStudyIdentifier(), TestConstants.TEST_STUDY);
-        assertEquals(criteriaContext.getUserId(), ID);
-        assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
-        assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
-        assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(criteriaContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        RequestContext requestContext = requestContextCaptor.getValue();
+        assertEquals(requestContext.getCallerStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(requestContext.getCallerUserId(), ID);
+        assertEquals(requestContext.getCallerClientInfo(), CLIENT_INFO);
+        assertEquals(requestContext.getCallerLanguages(), TestConstants.LANGUAGES);
+        assertEquals(requestContext.getCallerDataGroups(), TestConstants.USER_DATA_GROUPS);
+        assertEquals(requestContext.getCallerSubstudies(), TestConstants.USER_SUBSTUDY_IDS);
 
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(registration.getHealthCode(), HEALTH_CODE);
@@ -882,7 +880,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, true);
         
-        assertEquals(retrieved.getId(), CONTEXT.getUserId());
+        assertEquals(retrieved.getId(), CONTEXT.getCallerUserId());
         assertEquals(retrieved.getLastName(), "lastName");
         // These have been filtered
         assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
@@ -914,7 +912,7 @@ public class ParticipantServiceTest {
         
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, false);
         
-        assertEquals(retrieved.getId(), CONTEXT.getUserId());
+        assertEquals(retrieved.getId(), CONTEXT.getCallerUserId());
         // These have been filtered
         assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
         // Consent was calculated
@@ -1022,16 +1020,15 @@ public class ParticipantServiceTest {
         assertTrue(retrievedHistory2.isEmpty());
 
         // Verify context passed to consent service.
-        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(consentService).getConsentStatuses(criteriaContextCaptor.capture(), same(account));
+        verify(consentService).getConsentStatuses(requestContextCaptor.capture(), same(account));
 
-        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(criteriaContext.getStudyIdentifier(), TestConstants.TEST_STUDY);
-        assertEquals(criteriaContext.getUserId(), ID);
-        assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
-        assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
-        assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(criteriaContext.getUserSubstudyIds(), ImmutableSet.of("substudyA", "substudyB", "substudyC"));
+        RequestContext criteriaContext = requestContextCaptor.getValue();
+        assertEquals(criteriaContext.getCallerStudyIdentifier(), TEST_STUDY);
+        assertEquals(criteriaContext.getCallerUserId(), ID);
+        assertEquals(criteriaContext.getCallerClientInfo(), CLIENT_INFO);
+        assertEquals(criteriaContext.getCallerLanguages(), TestConstants.LANGUAGES);
+        assertEquals(criteriaContext.getCallerDataGroups(), TestConstants.USER_DATA_GROUPS);
+        assertEquals(criteriaContext.getCallerSubstudies(), ImmutableSet.of("substudyA", "substudyB", "substudyC"));
     }
     
     @Test
@@ -1701,9 +1698,9 @@ public class ParticipantServiceTest {
         participantService.withdrawConsent(STUDY, ID, SUBPOP_GUID, withdrawal, withdrewOn);
         
         verify(consentService).withdrawConsent(eq(STUDY), eq(SUBPOP_GUID), participantCaptor.capture(),
-                contextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
+                requestContextCaptor.capture(), eq(withdrawal), eq(withdrewOn));
         assertEquals(participantCaptor.getValue().getId(), ID);
-        assertEquals(contextCaptor.getValue().getUserId(), ID);
+        assertEquals(requestContextCaptor.getValue().getCallerUserId(), ID);
     }
     
     @Test
@@ -1817,7 +1814,7 @@ public class ParticipantServiceTest {
         try {
             // And so this fails...
             IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID);
-            participantService.updateIdentifiers(STUDY, CONTEXT, update);
+            participantService.updateIdentifiers(STUDY, update);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             assertEquals(e.getMessage(), "Account not found.");
@@ -1833,8 +1830,10 @@ public class ParticipantServiceTest {
         as.setExternalId(EXTERNAL_ID);
         account.setAccountSubstudies(Sets.newHashSet(as));
         // RequestContext already has substudyB
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+        
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerSubstudies(ImmutableSet.of("substudyB"));
+        BridgeUtils.setRequestContext(builder.build());
         
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
@@ -1843,7 +1842,7 @@ public class ParticipantServiceTest {
         when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(newExtId));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId");
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         verify(accountDao).updateAccount(eq(account), any());
         
@@ -1871,7 +1870,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, TestConstants.PHONE, null);
         
-        StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        StudyParticipant returned = participantService.updateIdentifiers(STUDY, update);
         
         assertEquals(account.getPhone(), TestConstants.PHONE);
         assertEquals(account.getPhoneVerified(), Boolean.FALSE);
@@ -1894,7 +1893,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
         
-        StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        StudyParticipant returned = participantService.updateIdentifiers(STUDY, update);
         
         assertEquals(account.getEmail(), "email@email.com");
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
@@ -1907,25 +1906,25 @@ public class ParticipantServiceTest {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidates() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null);
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithBlankEmail() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, null);
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithBlankExternalId() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, " ");
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithInvalidPhone() {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("US", "1231231234"), null);
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
     }
     
     @Test
@@ -1936,7 +1935,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
         
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         verify(accountDao).reauthenticate(STUDY, REAUTH_REQUEST);
     }
@@ -1951,7 +1950,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
 
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         assertEquals(account.getEmail(), "email@email.com");
         assertEquals(account.getEmailVerified(), Boolean.TRUE);
@@ -1969,7 +1968,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, EMAIL, null, null);
         
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
@@ -1989,7 +1988,7 @@ public class ParticipantServiceTest {
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, null, null, "extid");
         
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         verify(externalIdService).commitAssignExternalId(differentExternalId);
     }
@@ -2003,7 +2002,7 @@ public class ParticipantServiceTest {
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
         
         try {
-            participantService.updateIdentifiers(STUDY, CONTEXT, update);
+            participantService.updateIdentifiers(STUDY, update);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             verify(accountDao, never()).updateAccount(any(), any());
@@ -2025,7 +2024,7 @@ public class ParticipantServiceTest {
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "updated@email.com",
                 new Phone("4082588569", "US"), EXTERNAL_ID);
         
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         // None of these have changed.
         assertEquals(account.getEmail(), EMAIL);
@@ -2046,7 +2045,7 @@ public class ParticipantServiceTest {
         // Add phone
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
                 null);
-        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        participantService.updateIdentifiers(STUDY, update);
         
         // externalIdService not called
         verify(accountDao).updateAccount(any(), eq(null));
@@ -2880,7 +2879,7 @@ public class ParticipantServiceTest {
         doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
         try {
             IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID);
-            participantService.updateIdentifiers(STUDY, CONTEXT, update);
+            participantService.updateIdentifiers(STUDY, update);
             fail("Should have thrown an exception");
         } catch(ConcurrentModificationException e) {
             verify(externalIdService).unassignExternalId(account, EXTERNAL_ID); 

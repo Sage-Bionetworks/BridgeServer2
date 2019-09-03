@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -94,7 +93,7 @@ public class UserAdminServiceMockTest {
     private RequestInfoService requestInfoService;
     
     @Captor
-    private ArgumentCaptor<CriteriaContext> contextCaptor;
+    private ArgumentCaptor<RequestContext> contextCaptor;
     
     @Captor
     private ArgumentCaptor<SignIn> signInCaptor;
@@ -159,8 +158,8 @@ public class UserAdminServiceMockTest {
         verify(participantService).createParticipant(study, participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
+        RequestContext context = contextCaptor.getValue();
+        assertEquals(context.getCallerStudyId(), study.getStudyIdentifier());
         
         verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("foo1")), any(StudyParticipant.class), any(),
                 eq(SharingScope.NO_SHARING), eq(false));
@@ -188,8 +187,8 @@ public class UserAdminServiceMockTest {
         verify(participantService).createParticipant(study, participant, false);
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
+        RequestContext context = contextCaptor.getValue();
+        assertEquals(context.getCallerStudyId(), study.getStudyIdentifier());
         
         SignIn signIn = signInCaptor.getValue();
         assertEquals(signIn.getPhone(), participant.getPhone());
@@ -254,16 +253,12 @@ public class UserAdminServiceMockTest {
         when(consentService.getConsentStatuses(any())).thenReturn(ImmutableMap.of());
         
         UserSession session = new UserSession(participant);
-        when(authenticationService.getSession(eq(study), any())).thenReturn(session);
+        when(authenticationService.getSession(eq(study))).thenReturn(session);
         
         service.createUser(study, participant, null, false, true);
         
         verify(authenticationService, never()).signIn(any(), any(), any());
-        verify(authenticationService).getSession(eq(study), contextCaptor.capture());
-        
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
-        assertEquals(context.getAccountId().getId(), USER_ID);
+        verify(authenticationService).getSession(eq(study));
     }
     
     @Test

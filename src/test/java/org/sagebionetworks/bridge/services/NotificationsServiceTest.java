@@ -22,11 +22,11 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.NotificationRegistrationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotImplementedException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -52,8 +52,8 @@ public class NotificationsServiceTest {
     private static final String OS_NAME = "iPhone OS";
     private static final String PLATFORM_ARN = "arn:platform";
 
-    private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withStudyIdentifier(STUDY_ID)
-            .withUserId(USER_ID).build();
+    private static final RequestContext DUMMY_CONTEXT = new RequestContext.Builder().withCallerHealthCode(HEALTH_CODE)
+            .withCallerStudyId(STUDY_ID).withCallerUserId(USER_ID).build();
 
     @Mock
     private NotificationTopicService mockNotificationTopicService;
@@ -134,7 +134,7 @@ public class NotificationsServiceTest {
         assertEquals(result, registration);
 
         // We also manage criteria-based topics.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(STUDY_ID, DUMMY_CONTEXT, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(DUMMY_CONTEXT);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class NotificationsServiceTest {
         assertEquals(result, registration);
 
         // We also manage criteria-based topics.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(STUDY_ID, DUMMY_CONTEXT, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(DUMMY_CONTEXT);
     }
 
     @Test(expectedExceptions = BadRequestException.class)

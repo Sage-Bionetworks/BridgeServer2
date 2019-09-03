@@ -16,12 +16,12 @@ import org.springframework.validation.Validator;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -202,12 +202,12 @@ public class SubpopulationService {
      * Get all subpopulations for a user that match the provided CriteriaContext information. 
      * Returns an empty list if no subpopulations match.
      */
-    public List<Subpopulation> getSubpopulationsForUser(CriteriaContext context) {
+    public List<Subpopulation> getSubpopulationsForUser(RequestContext context) {
         checkNotNull(context);
         
-        List<Subpopulation> subpops = getSubpopulations(context.getStudyIdentifier(), false);
+        List<Subpopulation> subpops = getSubpopulations(context.getCallerStudyIdentifier(), false);
         
-        return CriteriaUtils.filterByCriteria(context.toRequestContext(), subpops, null);
+        return CriteriaUtils.filterByCriteria(context, subpops, null);
     }
 
     /**
