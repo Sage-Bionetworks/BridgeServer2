@@ -41,7 +41,17 @@ public enum ActivityEventObjectType {
     /**
      * A custom event defined at the study level.
      */
-    CUSTOM;
+    CUSTOM,
+    /**
+     * Event records the date the account was created on. This event does not update after creation.
+     */
+    CREATED_ON,
+    /**
+     * A study start date event determined by the date the activities_retrieved or enrollment event are
+     * received. If neither event exists then this event records the date the account was created on. 
+     * Event is not persisted.
+     */
+    STUDY_START_DATE;
     
     public static final EnumSet<ActivityEventObjectType> UNARY_EVENTS = EnumSet.of(ENROLLMENT, ACTIVITIES_RETRIEVED);
 }

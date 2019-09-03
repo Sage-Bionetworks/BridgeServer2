@@ -302,6 +302,20 @@ public class ParticipantController extends BaseController {
         ObjectWriter writer = StudyParticipant.API_WITH_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
     }
+    
+    @GetMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo")
+    public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) throws Exception {
+        getAuthenticatedSession(WORKER);
+
+        // Verify it's in the same study as the researcher.
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
+        if (requestInfo == null) {
+            requestInfo = new RequestInfo.Builder().build();
+        } else if (!studyId.equals(requestInfo.getStudyIdentifier().getIdentifier())) {
+            throw new EntityNotFoundException(StudyParticipant.class);
+        }
+        return requestInfo;
+    }
 
     @GetMapping("/v3/participants/{userId}/requestInfo")
     public RequestInfo getRequestInfo(@PathVariable String userId) throws Exception {
@@ -317,7 +331,7 @@ public class ParticipantController extends BaseController {
         }
         return requestInfo;
     }
-
+    
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
@@ -505,7 +519,7 @@ public class ParticipantController extends BaseController {
         participantService.sendSmsMessage(study, userId, template);
         return new StatusMessage("Message sent.");
     }
-
+    
     private JsonNode getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
             String emailFilter, String phoneFilter, String startDateString, String endDateString,
             String startTimeString, String endTimeString) {

@@ -135,9 +135,9 @@ public class ScheduledActivityServiceMockTest {
         
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
                 .thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
-
+        
         Map<String,DateTime> map = ImmutableMap.of();
-        when(activityEventService.getActivityEventMap(anyString())).thenReturn(map);
+        when(activityEventService.getActivityEventMap(eq(TEST_STUDY.getIdentifier()), anyString())).thenReturn(map);
         
         when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -961,7 +961,7 @@ public class ScheduledActivityServiceMockTest {
             
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", startsOn.withZone(DateTimeZone.UTC).minusDays(3));
-        when(activityEventService.getActivityEventMap("AAA")).thenReturn(events);
+        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), "AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         
@@ -1232,7 +1232,7 @@ public class ScheduledActivityServiceMockTest {
                 .put("activity:0c48dbe7-4091-4024-b199-e81a8f7327ed:finished", 
                         new DateTime(finishedActivity.getFinishedOn(), TIME_ZONE))
                 .build();
-        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(eventsMap);
+        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(eventsMap);
         return createScheduleContext(ENDS_ON).withEvents(eventsMap).build();
     }
     
@@ -1323,7 +1323,7 @@ public class ScheduledActivityServiceMockTest {
         
         Map<String,DateTime> eventMap = Maps.newHashMap();
         eventMap.put("enrollment", enrollment);
-        when(activityEventService.getActivityEventMap("healthCode")).thenReturn(eventMap);
+        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), "healthCode")).thenReturn(eventMap);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
@@ -1343,7 +1343,7 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
-        verify(activityEventService).getActivityEventMap("healthCode");
+        verify(activityEventService).getActivityEventMap(TEST_STUDY.getIdentifier(), "healthCode");
         verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
         
         return activities.get(0).getScheduledOn().toString();

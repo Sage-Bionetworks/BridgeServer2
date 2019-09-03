@@ -371,7 +371,7 @@ public class ParticipantService {
     public DateTime getStudyStartTime(AccountId accountId) {
         Account account = getAccountThrowingException(accountId);
 
-        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getStudyId(), account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name()
                 .toLowerCase());
         if (activitiesRetrievedDateTime != null) {
@@ -836,8 +836,8 @@ public class ParticipantService {
     
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
         Account account = getAccountThrowingException(study, userId);
-
-        return activityEventService.getActivityEventList(account.getHealthCode());
+        
+        return activityEventService.getActivityEventList(study.getIdentifier(), account.getHealthCode());
     }
     
     public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {

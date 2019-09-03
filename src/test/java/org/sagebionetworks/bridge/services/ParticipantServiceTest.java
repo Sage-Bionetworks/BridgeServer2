@@ -1062,7 +1062,7 @@ public class ParticipantServiceTest {
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
@@ -1074,7 +1074,7 @@ public class ParticipantServiceTest {
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
@@ -1087,7 +1087,7 @@ public class ParticipantServiceTest {
         // Set up mocks.
         when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
-        when(activityEventService.getActivityEventMap(HEALTH_CODE)).thenReturn(ImmutableMap.of());
+        when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
         DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
@@ -2512,7 +2512,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityEvents(STUDY, ID);
         
-        verify(activityEventService).getActivityEventList(HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(STUDY.getIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -2726,7 +2726,7 @@ public class ParticipantServiceTest {
         
         participantService.getActivityEvents(STUDY, ID);
         
-        verify(activityEventService).getActivityEventList(HEALTH_CODE);      
+        verify(activityEventService).getActivityEventList(STUDY.getIdentifier(), HEALTH_CODE);
     }
     
     @Test
@@ -2987,10 +2987,10 @@ public class ParticipantServiceTest {
         StudyParticipant.Builder builder = withParticipant().withSubstudyIds(participantSubstudies);
         
         for (String substudyId : callerSubstudies) {
-            when(substudyService.getSubstudy(TEST_STUDY, substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());
         }
         for (String substudyId : participantSubstudies) {
-            when(substudyService.getSubstudy(TEST_STUDY, substudyId, false)).thenReturn(Substudy.create());    
+            when(substudyService.getSubstudy(STUDY.getStudyIdentifier(), substudyId, false)).thenReturn(Substudy.create());
         }
         return builder;
     }
