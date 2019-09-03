@@ -8,11 +8,11 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -126,6 +126,7 @@ public class UserAdminService {
                 .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
         
+        RequestContext callerContext = BridgeUtils.getRequestContext();
         IdentifierHolder identifier = null;
         try {
             // This used to hard-code the admin role to allow assignment of roles; now it must actually be called by an 
@@ -134,9 +135,9 @@ public class UserAdminService {
             StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
             
             // We don't filter users by any of these filtering criteria in the admin API.
-            CriteriaContext context = new CriteriaContext.Builder()
-                    .withUserId(identifier.getIdentifier())
-                    .withStudyIdentifier(study.getStudyIdentifier()).build();
+            RequestContext proxyContext = new RequestContext.Builder().withCallerUserId(identifier.getIdentifier())
+                    .withCallerStudyId(study.getStudyIdentifier()).build();
+            BridgeUtils.setRequestContext(proxyContext);
             
             if (consentUser) {
                 String name = String.format("[Signature for %s]", updatedParticipant.getEmail());
@@ -146,7 +147,7 @@ public class UserAdminService {
                 if (subpopGuid != null) {
                     consentService.consentToResearch(study, subpopGuid, updatedParticipant, signature, NO_SHARING, false);
                 } else {
-                    Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
+                    Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(proxyContext);
                     for (ConsentStatus consentStatus : statuses.values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
@@ -156,10 +157,9 @@ public class UserAdminService {
                 }
             }
             if (signUserIn) {
-                // We do ignore consent state here as our intention may be to create a user who is signed in but not
-                // consented.
                 try {
-                    return authenticationService.signIn(study, context, signIn);    
+                    BridgeUtils.setRequestContext(proxyContext);
+                    return authenticationService.signIn(study, signIn);    
                 } catch(ConsentRequiredException e) {
                     return e.getUserSession();
                 }
@@ -167,7 +167,7 @@ public class UserAdminService {
             }
             // Return a session *without* signing in because we have 3 sign in pathways that we want to test. In this case
             // we're creating a session but not authenticating you which is only a thing that's useful for tests.
-            UserSession session = authenticationService.getSession(study, context);
+            UserSession session = authenticationService.getSession(study);
             session.setAuthenticated(false);
             return session;
         } catch(RuntimeException e) {
@@ -177,6 +177,8 @@ public class UserAdminService {
                 deleteUser(study, identifier.getIdentifier());    
             }
             throw e;
+        } finally {
+            BridgeUtils.setRequestContext(callerContext);
         }
     }
 

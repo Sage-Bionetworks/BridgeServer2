@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -50,6 +52,11 @@ public class ABTestScheduleStrategyTest {
         for (int i = 0; i < 1000; i++) {
             healthCodes.add(BridgeUtils.generateGuid());
         }
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

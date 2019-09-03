@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_FILTER;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS;
@@ -166,7 +167,7 @@ public class ScheduledActivityServiceMockTest {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test(expectedExceptions = BadRequestException.class)

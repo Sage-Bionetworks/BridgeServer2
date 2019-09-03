@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
@@ -52,7 +53,7 @@ public class BridgeUtilsTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

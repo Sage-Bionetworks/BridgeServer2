@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.filters;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -50,7 +51,7 @@ public class MetricsFilterTest extends Mockito {
     
     @AfterMethod
     private void after() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
         DateTimeUtils.setCurrentMillisSystem();
     }
 

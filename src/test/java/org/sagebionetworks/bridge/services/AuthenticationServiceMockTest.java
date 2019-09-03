@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -40,7 +41,6 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -56,8 +56,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
@@ -216,7 +214,7 @@ public class AuthenticationServiceMockTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test // Test some happy path stuff, like the correct initialization of the user session
@@ -231,11 +229,6 @@ public class AuthenticationServiceMockTest {
         account.setHealthCode(HEALTH_CODE);
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
-        
-        RequestContext context = new RequestContext.Builder()
-            .withCallerStudyId(TEST_STUDY)
-            .withCallerLanguages(LANGUAGES)
-            .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -304,11 +297,6 @@ public class AuthenticationServiceMockTest {
         account.setHealthCode(HEALTH_CODE);
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
-        
-        RequestContext context = new RequestContext.Builder()
-            .withCallerStudyId(TEST_STUDY)
-            .withCallerLanguages(LANGUAGES)
-            .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -1269,7 +1257,6 @@ public class AuthenticationServiceMockTest {
         study.setReauthenticationEnabled(true);
 
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
@@ -1301,8 +1288,6 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(false);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
-
         Account account = Account.create();
 
         // Mock pre-reqs.
@@ -1324,8 +1309,6 @@ public class AuthenticationServiceMockTest {
         // Create inputs.
         Study study = Study.create();
         study.setReauthenticationEnabled(null);
-
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         Account account = Account.create();
 

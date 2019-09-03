@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -41,7 +42,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
@@ -317,7 +317,7 @@ public class SubpopulationServiceTest {
         
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop));
         
-        CriteriaContext context = createContext();
+        RequestContext context = createContext();
         
         List<Subpopulation> subpops = service.getSubpopulationsForUser(context);
         Subpopulation retrieved = subpops.get(0);
@@ -330,7 +330,7 @@ public class SubpopulationServiceTest {
     @Test
     public void getSubpopulationsForUserConstructsCriteriaIfNotSaved() {
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop));
-        CriteriaContext context = createContext();
+        RequestContext context = createContext();
         
         List<Subpopulation> subpops = service.getSubpopulationsForUser(context);
         Subpopulation retrieved = subpops.get(0);
@@ -372,9 +372,9 @@ public class SubpopulationServiceTest {
         subpop1.setDefaultGroup(true);
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop1));
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_STUDY)
+        RequestContext context = new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withCallerStudyId(TEST_STUDY)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
 
@@ -391,9 +391,9 @@ public class SubpopulationServiceTest {
         Subpopulation subpop1 = createSubpop(SUBPOP_1, null, null, "unmatcheableGroup");
         when(subpopDao.getSubpopulations(TEST_STUDY, true, false)).thenReturn(ImmutableList.of(subpop1));
 
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_STUDY)
+        RequestContext context = new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.UNKNOWN_CLIENT)
+                .withCallerStudyId(TEST_STUDY)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
@@ -420,20 +420,20 @@ public class SubpopulationServiceTest {
         verify(cacheProvider, times(2)).removeObject(CacheKey.subpopList(TEST_STUDY));
     }
     
-    private CriteriaContext createContext() {
-        return new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
-                .withUserDataGroups(CRITERIA.getAllOfGroups())
-                .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
+    private RequestContext createContext() {
+        return new RequestContext.Builder()
+                .withCallerStudyId(TEST_STUDY)
+                .withCallerDataGroups(CRITERIA.getAllOfGroups())
+                .withCallerClientInfo(ClientInfo.UNKNOWN_CLIENT)
                 .build();
     }
     
-    private CriteriaContext criteriaContext(int version, String tag) {
-        CriteriaContext.Builder builder = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
-                .withStudyIdentifier(TEST_STUDY);
+    private RequestContext criteriaContext(int version, String tag) {
+        RequestContext.Builder builder = new RequestContext.Builder()
+                .withCallerClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
+                .withCallerStudyId(TEST_STUDY);
         if (tag != null) {
-            builder.withUserDataGroups(ImmutableSet.of(tag));    
+            builder.withCallerDataGroups(ImmutableSet.of(tag));    
         }
         return builder.build();
     }

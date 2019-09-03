@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -64,6 +66,11 @@ public class StudyParticipantValidatorTest {
         study.setDataGroups(STUDY_DATA_GROUPS);
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.getUserProfileAttributes().add("phone");
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

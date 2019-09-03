@@ -39,10 +39,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext.Builder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -282,7 +280,13 @@ public abstract class BaseController {
         }
         return languages;
     }
-
+    
+    void updateRequestContext(StudyIdentifier studyId) {
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerStudyId(studyId);
+        BridgeUtils.setRequestContext(builder.build());
+    }
+    /*
     CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
@@ -291,7 +295,7 @@ public abstract class BaseController {
             .withClientInfo(reqContext.getCallerClientInfo())
             .build();
     }
-    
+    */
     void updateRequestContext(UserSession session) {
         checkNotNull(session);
         

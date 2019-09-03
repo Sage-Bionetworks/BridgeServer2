@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -107,7 +106,7 @@ public class UserProfileControllerTest extends Mockito {
     ArgumentCaptor<Set<String>> stringSetCaptor;
     
     @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
+    ArgumentCaptor<RequestContext> requestContextCaptor;
     
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
@@ -164,7 +163,7 @@ public class UserProfileControllerTest extends Mockito {
     
     @AfterMethod
     public void after() {
-        setRequestContext(NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test
@@ -307,15 +306,15 @@ public class UserProfileControllerTest extends Mockito {
         assertEquals(result.get("dataGroups").get(0).textValue(), "group1");
         
         verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
-        verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
+        verify(mockConsentService).getConsentStatuses(requestContextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(participant.getId(), USER_ID);
         assertEquals(participant.getDataGroups(), dataGroupSet);
         assertEquals(participant.getFirstName(), "First");
         assertEquals(participant.getSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(contextCaptor.getValue().getUserDataGroups(), dataGroupSet);
-        assertEquals(contextCaptor.getValue().getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(requestContextCaptor.getValue().getCallerDataGroups(), dataGroupSet);
+        assertEquals(requestContextCaptor.getValue().getCallerSubstudies(), USER_SUBSTUDY_IDS);
         
         // Session continues to be initialized
         assertEquals(session.getParticipant().getDataGroups(), dataGroupSet);

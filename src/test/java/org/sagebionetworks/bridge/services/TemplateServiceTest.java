@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -140,7 +141,7 @@ public class TemplateServiceTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private Resource res(TemplateType type) {

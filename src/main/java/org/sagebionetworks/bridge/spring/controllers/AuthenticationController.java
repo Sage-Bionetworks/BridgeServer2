@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -73,10 +72,10 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         UserSession session = null;
         try {
-            session = authenticationService.emailSignIn(context, signInRequest);
+            updateRequestContext(study.getStudyIdentifier());
+            session = authenticationService.emailSignIn(signInRequest);
         } catch(ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;
@@ -112,11 +111,10 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-        
         UserSession session = null;
         try {
-            session = authenticationService.phoneSignIn(context, signInRequest);
+            updateRequestContext(study.getStudyIdentifier());
+            session = authenticationService.phoneSignIn(signInRequest);
         } catch(ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;
@@ -134,11 +132,10 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signIn.getStudyId());
         verifySupportedVersionOrThrowException(study);
 
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
-
         UserSession session;
         try {
-            session = authenticationService.signIn(study, context, signIn);
+            updateRequestContext(study.getStudyIdentifier());
+            session = authenticationService.signIn(study, signIn);
         } catch (ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;
@@ -160,10 +157,10 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         UserSession session;
         try {
-            session = authenticationService.reauthenticate(study, context, signInRequest);
+            updateRequestContext(study.getStudyIdentifier());
+            session = authenticationService.reauthenticate(study, signInRequest);
         } catch (ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;

@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -55,10 +54,10 @@ public class UserManagementController extends BaseController {
                 .withStudy(BridgeConstants.API_STUDY_ID_STRING).build();        
         
         Study study = studyService.getStudy(signIn.getStudyId());
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        updateRequestContext(study.getStudyIdentifier());
 
         // We do not check consent, but do verify this is an administrator
-        UserSession session = authenticationService.signIn(study, context, signIn);
+        UserSession session = authenticationService.signIn(study, signIn);
 
         if (!session.isInRole(Roles.ADMIN)) {
             authenticationService.signOut(session);

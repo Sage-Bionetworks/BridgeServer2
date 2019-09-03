@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -162,7 +163,7 @@ public class HibernateAccountDaoTest {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
 
     @Test

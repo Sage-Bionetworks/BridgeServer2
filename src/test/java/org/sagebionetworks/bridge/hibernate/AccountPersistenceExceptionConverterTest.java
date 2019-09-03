@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -40,13 +41,13 @@ public class AccountPersistenceExceptionConverterTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
         converter = new AccountPersistenceExceptionConverter(accountDao);
     }
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

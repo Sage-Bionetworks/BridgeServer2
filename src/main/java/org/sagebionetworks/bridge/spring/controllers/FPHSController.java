@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
@@ -67,9 +67,8 @@ public class FPHSController extends BaseController {
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withExternalId(externalId.getIdentifier()).withDataGroups(dataGroups).build();
         
-        CriteriaContext context = getCriteriaContext(session);
-        
-        sessionUpdateService.updateParticipant(session, context, updated);
+        updateRequestContext(session);
+        sessionUpdateService.updateParticipant(session, BridgeUtils.getRequestContext(), updated);
         
         return new StatusMessage("External identifier added to user profile.");
     }

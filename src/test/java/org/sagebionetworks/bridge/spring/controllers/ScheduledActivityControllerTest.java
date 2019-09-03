@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
@@ -200,7 +201,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     
     @AfterMethod
     public void afterMethod( ) {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

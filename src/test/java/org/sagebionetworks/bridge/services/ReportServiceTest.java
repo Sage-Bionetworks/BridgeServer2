@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -24,6 +25,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -129,7 +131,12 @@ public class ReportServiceTest {
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index))
                 .withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {

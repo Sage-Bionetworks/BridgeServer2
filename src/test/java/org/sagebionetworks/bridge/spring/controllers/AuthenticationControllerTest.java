@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
-import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -188,7 +188,7 @@ public class AuthenticationControllerTest extends Mockito {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
 
     @Test
@@ -474,8 +474,6 @@ public class AuthenticationControllerTest extends Mockito {
     
     @SuppressWarnings("deprecation")
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
-        // Even if a session token already exists, we still ignore it and call signIn anyway.
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
 
         // mock request
         String requestJsonString = "{\n" +
@@ -487,7 +485,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(requestJsonString));
 
         // mock AuthenticationService
-        ConsentStatus consentStatus = (isConsented) ? TestConstants.REQUIRED_SIGNED_CURRENT : null;
+        ConsentStatus consentStatus = (isConsented) ? REQUIRED_SIGNED_CURRENT : null;
         UserSession session = createSession(consentStatus, role);
         when(mockAuthService.signIn(any(), any())).thenReturn(session);
         
@@ -654,8 +652,6 @@ public class AuthenticationControllerTest extends Mockito {
     public void localSignInSetsSessionCookie() throws Exception {
         when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
-
         // mock request
         String requestJsonString = "{" +
                 "\"email\":\"" + TEST_EMAIL + "\"," +
@@ -665,7 +661,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(requestJsonString));
 
         // mock AuthenticationService
-        UserSession session = createSession(TestConstants.REQUIRED_SIGNED_CURRENT, null);
+        UserSession session = createSession(REQUIRED_SIGNED_CURRENT, null);
         when(mockAuthService.signIn(any(), any())).thenReturn(session);
         
         // execute and validate

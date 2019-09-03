@@ -27,7 +27,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.JsonUtils;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -116,9 +115,9 @@ public class UserProfileController extends BaseController {
                 .withId(userId).build();
         participantService.updateParticipant(study, updated);
         
-        CriteriaContext context = getCriteriaContext(session);
+        updateRequestContext(session);
         
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, BridgeUtils.getRequestContext(), updated);
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
@@ -182,18 +181,15 @@ public class UserProfileController extends BaseController {
         
         participantService.updateParticipant(study, updated);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerLanguages(session.getParticipant().getLanguages());
+        builder.withCallerUserId(session.getId());
+        builder.withCallerDataGroups(updated.getDataGroups());
+        builder.withCallerSubstudies(updated.getSubstudyIds());
+        builder.withCallerStudyId(study.getStudyIdentifier());
+        BridgeUtils.setRequestContext(builder.build());
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(session.getParticipant().getLanguages())
-                .withClientInfo(reqContext.getCallerClientInfo())
-                .withUserId(session.getId())
-                .withUserDataGroups(updated.getDataGroups())
-                .withUserSubstudyIds(updated.getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .build();
-        
-        sessionUpdateService.updateDataGroups(session, context);
+        sessionUpdateService.updateDataGroups(session, builder.build());
         
         return UserSessionInfo.toJSON(session);
     }

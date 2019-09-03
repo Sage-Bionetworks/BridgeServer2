@@ -8,6 +8,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -120,7 +121,7 @@ public class UserAdminServiceMockTest {
         UserSession session = new UserSession();
         session.setConsentStatuses(statuses);
         
-        when(authenticationService.signIn(any(), any(), any())).thenReturn(session);
+        when(authenticationService.signIn(any(), any())).thenReturn(session);
         
         doReturn(new IdentifierHolder(USER_ID)).when(participantService).createParticipant(any(), any(),
                 anyBoolean());
@@ -130,7 +131,7 @@ public class UserAdminServiceMockTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -156,10 +157,7 @@ public class UserAdminServiceMockTest {
         service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, participant, false);
-        verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
-        
-        RequestContext context = contextCaptor.getValue();
-        assertEquals(context.getCallerStudyId(), study.getStudyIdentifier());
+        verify(authenticationService).signIn(eq(study), signInCaptor.capture());
         
         verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("foo1")), any(StudyParticipant.class), any(),
                 eq(SharingScope.NO_SHARING), eq(false));
@@ -170,7 +168,8 @@ public class UserAdminServiceMockTest {
         assertEquals(signIn.getEmail(), participant.getEmail());
         assertEquals(signIn.getPassword(), participant.getPassword());
         
-        verify(consentService).getConsentStatuses(context);
+        verify(consentService).getConsentStatuses(contextCaptor.capture());
+        assertEquals(contextCaptor.getValue().getCallerStudyId(), study.getIdentifier());
     }
     
     @Test
@@ -185,16 +184,14 @@ public class UserAdminServiceMockTest {
         service.createUser(study, participant, null, true, true);
         
         verify(participantService).createParticipant(study, participant, false);
-        verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
-        
-        RequestContext context = contextCaptor.getValue();
-        assertEquals(context.getCallerStudyId(), study.getStudyIdentifier());
+        verify(authenticationService).signIn(eq(study), signInCaptor.capture());
         
         SignIn signIn = signInCaptor.getValue();
         assertEquals(signIn.getPhone(), participant.getPhone());
         assertEquals(signIn.getPassword(), participant.getPassword());
         
-        verify(consentService).getConsentStatuses(context);
+        verify(consentService).getConsentStatuses(contextCaptor.capture());
+        assertEquals(contextCaptor.getValue().getCallerStudyId(), study.getIdentifier());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -257,7 +254,7 @@ public class UserAdminServiceMockTest {
         
         service.createUser(study, participant, null, false, true);
         
-        verify(authenticationService, never()).signIn(any(), any(), any());
+        verify(authenticationService, never()).signIn(any(), any());
         verify(authenticationService).getSession(eq(study));
     }
     
@@ -269,7 +266,7 @@ public class UserAdminServiceMockTest {
         Study study = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
-        when(authenticationService.signIn(eq(study), any(), any()))
+        when(authenticationService.signIn(eq(study), any()))
                 .thenThrow(new ConsentRequiredException(new UserSession(participant)));
         
         // specifically do not ask to sign these required consents. Should not throw ConsentRequiredException, 

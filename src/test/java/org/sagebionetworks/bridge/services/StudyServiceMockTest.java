@@ -55,6 +55,7 @@ import org.sagebionetworks.repo.model.util.ModelConstants;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -225,6 +226,11 @@ public class StudyServiceMockTest extends Mockito {
         teamMemberInvitation = new MembershipInvitation();
         teamMemberInvitation.setInviteeId(TEST_USER_ID.toString());
         teamMemberInvitation.setTeamId(TEST_TEAM_ID);
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(null);
     }
 
     private Study getTestStudy() {

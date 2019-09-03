@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
-import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -157,7 +156,7 @@ public class StudyReportControllerTest extends Mockito {
     
     @AfterMethod
     public void after() {
-        setRequestContext(NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.REQUIRED_UNSIGNED;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.UNCONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.WITHDRAWAL;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -217,13 +219,13 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
+        StudyIdentifier studyId = new StudyIdentifierImpl(REQUIRED_UNSIGNED.getSubpopulationGuid());
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
         session.setStudyIdentifier(studyId);
-        when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
+        when(mockAuthService.getSession((Study)any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
-        when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
+        when(mockConsentService.getConsentStatuses(any())).thenReturn(UNCONSENTED_STATUS_MAP);
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
         
         JsonNode result = controller.giveV1();
@@ -248,7 +250,7 @@ public class ConsentControllerTest extends Mockito {
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
         session.setStudyIdentifier(studyId);
-        when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
+        when(mockAuthService.getSession((Study)any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
         when(mockStudyService.getStudy(studyId)).thenReturn(study);
@@ -273,7 +275,7 @@ public class ConsentControllerTest extends Mockito {
                 "'signedOn': '" + badSignedOn.toString() + "'}");
         mockRequestBody(mockRequest, json);
         
-        when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
+        when(mockAuthService.getSession((Study)any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
@@ -313,7 +315,7 @@ public class ConsentControllerTest extends Mockito {
         // this call from succeeding unless it's absolutely necessary (see BRIDGE-2418 about 
         // removing the requirement that a withdrawal reason be submitted).
         doReturn(session).when(controller).getAuthenticatedSession();
-        when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
+        when(mockAuthService.getSession((Study)any())).thenReturn(updatedSession);
         session.setConsentStatuses(TestConstants.UNCONSENTED_STATUS_MAP);
 
         JsonNode result = controller.withdrawConsent();
@@ -335,7 +337,7 @@ public class ConsentControllerTest extends Mockito {
         // this call from succeeding unless it's absolutely necessary (see BRIDGE-2418 about 
         // removing the requirement that a withdrawal reason be submitted).
         doReturn(session).when(controller).getAuthenticatedSession();
-        when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
+        when(mockAuthService.getSession((Study)any())).thenReturn(updatedSession);
         session.setConsentStatuses(TestConstants.UNCONSENTED_STATUS_MAP);
 
         JsonNode result = controller.withdrawConsentV2(SUBPOP_GUID.getGuid());

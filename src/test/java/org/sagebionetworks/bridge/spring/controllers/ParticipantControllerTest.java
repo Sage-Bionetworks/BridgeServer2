@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -76,6 +77,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
@@ -86,7 +88,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -192,6 +193,9 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     HttpServletResponse mockResponse;
+    
+    @Mock
+    AccountDao mockAccountDao;
 
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -215,7 +219,7 @@ public class ParticipantControllerTest extends Mockito {
     ArgumentCaptor<DateTime> endsOnCaptor;
 
     @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
+    ArgumentCaptor<RequestContext> requesContextCaptor;
 
     @Captor
     ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
@@ -272,7 +276,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test
@@ -596,8 +600,8 @@ public class ParticipantControllerTest extends Mockito {
 
         String result = controller.getSelfParticipant(false);
 
-        verify(mockParticipantService).getSelfParticipant(eq(study), contextCaptor.capture(), eq(false));
-        assertEquals(contextCaptor.getValue().getUserId(), USER_ID);
+        verify(mockParticipantService).getSelfParticipant(eq(study), requesContextCaptor.capture(), eq(false));
+        assertEquals(requesContextCaptor.getValue().getCallerUserId(), USER_ID);
 
         StudyParticipant deserParticipant = MAPPER.readValue(result, StudyParticipant.class);
 
@@ -694,15 +698,15 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(captured.getAttributes().get("can_be_recontacted"), "true");
 
-        verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
-        assertEquals(context.getUserId(), USER_ID);
-        assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
+        verify(mockConsentService).getConsentStatuses(requesContextCaptor.capture());
+        RequestContext context = requesContextCaptor.getValue();
+        assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getCallerUserId(), USER_ID);
+        assertEquals(context.getCallerClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         assertNull(BridgeUtils.getRequestContext().getCallerIpAddress());
-        assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getLanguages(), LANGUAGES);
+        assertEquals(context.getCallerDataGroups(), USER_DATA_GROUPS);
+        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getCallerLanguages(), LANGUAGES);
     }
 
     // Some values will be missing in the JSON and should be preserved from this original participant object.
@@ -1140,14 +1144,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithPhone() throws Exception {
         mockRequestBody(mockRequest, PHONE_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(study), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
+        verify(mockParticipantService).updateIdentifiers(eq(study), identifierUpdateCaptor.capture());
         verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
         assertEquals(sessionCaptor.getValue().getId(), participant.getId());
 
@@ -1162,14 +1165,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithEmail() throws Exception {
         mockRequestBody(mockRequest, EMAIL_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(study), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
+        verify(mockParticipantService).updateIdentifiers(eq(study), identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
         assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());
@@ -1182,14 +1184,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithExternalId() throws Exception {
         mockRequestBody(mockRequest, EXTID_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(study), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
+        verify(mockParticipantService).updateIdentifiers(eq(study), identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
         assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());

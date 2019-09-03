@@ -36,12 +36,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -104,8 +102,8 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        CriteriaContext context = getCriteriaContext(session);
-        StudyParticipant participant = participantService.getSelfParticipant(study, context, consents);
+        StudyParticipant participant = participantService.getSelfParticipant(study, BridgeUtils.getRequestContext(),
+                consents);
         
         return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
     }
@@ -132,18 +130,13 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, updated);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withDataGroups(updated.getDataGroups())
+                .withSubstudyIds(updated.getSubstudyIds())
+                .build());
+        updateRequestContext(session);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(session.getParticipant().getLanguages())
-                .withClientInfo(reqContext.getCallerClientInfo())
-                .withUserId(session.getId())
-                .withUserDataGroups(updated.getDataGroups())
-                .withUserSubstudyIds(updated.getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
-                .build();
-        
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, BridgeUtils.getRequestContext(), updated);
         
         return UserSessionInfo.toJSON(session);
     }

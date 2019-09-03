@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
@@ -72,7 +73,6 @@ import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -117,7 +117,7 @@ public class BaseControllerTest extends Mockito {
     private RequestInfoService requestInfoService;
 
     @Captor
-    private ArgumentCaptor<CriteriaContext> contextCaptor;
+    private ArgumentCaptor<RequestContext> requestContextCaptor;
     
     @Captor
     private ArgumentCaptor<Cookie> cookieCaptor;
@@ -153,7 +153,7 @@ public class BaseControllerTest extends Mockito {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
 
     @Test
@@ -354,10 +354,10 @@ public class BaseControllerTest extends Mockito {
         controller.getLanguages(session);
         
         verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
-        verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
+        verify(mockSessionUpdateService).updateLanguage(eq(session), requestContextCaptor.capture());
         
-        CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getLanguages(), LANGUAGES);
+        RequestContext context = requestContextCaptor.getValue();
+        assertEquals(context.getCallerLanguages(), LANGUAGES);
     }
     
     @Test
@@ -376,22 +376,23 @@ public class BaseControllerTest extends Mockito {
     }
 
     @Test
-    public void getCriteriaContextWithStudyId() {
+    public void updateRequestContextWithStudyId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en"))
                 .build());
         when(mockRequest.getHeader(BridgeConstants.X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
         
-        CriteriaContext context = controller.getCriteriaContext(TEST_STUDY);
+        controller.updateRequestContext(TEST_STUDY);
+        RequestContext context = BridgeUtils.getRequestContext();
         
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
-        assertEquals(context.getLanguages(), ImmutableList.of("en"));
-        assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
+        assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getCallerLanguages(), ImmutableList.of("en"));
+        assertEquals(context.getCallerClientInfo(), ClientInfo.fromUserAgentCache(UA));
     }
 
     @Test
-    public void getCriteriaContextWithSession() {
+    public void updateRequestContextWithSession() {
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
         session.setStudyIdentifier(TEST_STUDY);
@@ -400,14 +401,15 @@ public class BaseControllerTest extends Mockito {
                 .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withLanguages(LANGUAGES).withHealthCode(HEALTH_CODE).withId(USER_ID).build());
         
-        CriteriaContext context = controller.getCriteriaContext(session);
+        controller.updateRequestContext(session);
+        RequestContext context = BridgeUtils.getRequestContext();
         
-        assertEquals(context.getLanguages(), LANGUAGES);
-        assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
-        assertEquals(context.getUserId(), USER_ID);
-        assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getCallerLanguages(), LANGUAGES);
+        assertEquals(context.getCallerClientInfo(), ClientInfo.fromUserAgentCache(UA));
+        assertEquals(context.getCallerUserId(), USER_ID);
+        assertEquals(context.getCallerDataGroups(), USER_DATA_GROUPS);
+        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
     }
 
     @Test
@@ -669,7 +671,7 @@ public class BaseControllerTest extends Mockito {
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         List<String> languages = controller.getLanguages(session);
-        assertEquals(LANGUAGES, languages);
+        assertEquals(languages, LANGUAGES);
 
         // Verify we saved the language to the account.
         verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
@@ -677,8 +679,8 @@ public class BaseControllerTest extends Mockito {
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
         // well as other things outside the scope of this test.)
-        verify(mockSessionUpdateService).updateLanguage(same(session), contextCaptor.capture());
-        assertEquals(LANGUAGES, contextCaptor.getValue().getLanguages());
+        verify(mockSessionUpdateService).updateLanguage(same(session), requestContextCaptor.capture());
+        assertEquals(requestContextCaptor.getValue().getCallerLanguages(), LANGUAGES);
     }
 
     @Test

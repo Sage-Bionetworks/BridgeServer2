@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -122,7 +123,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
 
     private void setupSchedulePlanServiceWithActivity(Activity activity) {

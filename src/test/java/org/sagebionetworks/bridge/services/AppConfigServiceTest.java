@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
@@ -142,7 +143,7 @@ public class AppConfigServiceTest {
     @AfterMethod
     public void after() {
         RESULTS.clear();
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private AppConfig setupConfigsForUser() {

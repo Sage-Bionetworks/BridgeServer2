@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
@@ -37,7 +38,7 @@ public class ExternalIdValidatorTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     @Test

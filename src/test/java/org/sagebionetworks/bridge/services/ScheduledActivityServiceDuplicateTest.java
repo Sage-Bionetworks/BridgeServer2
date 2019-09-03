@@ -4,6 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -187,7 +188,7 @@ public class ScheduledActivityServiceDuplicateTest {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     // "healthCode (S)","guid (S)","data (S)","localScheduledOn (S)","persistent (N)",
