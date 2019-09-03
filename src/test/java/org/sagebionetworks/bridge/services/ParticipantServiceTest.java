@@ -1793,6 +1793,7 @@ public class ParticipantServiceTest {
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(externalIdService).commitAssignExternalId(extId);
         
         assertEquals(accountCaptor.getValue().getAccountSubstudies().size(), 2);
         RequestContext context = BridgeUtils.getRequestContext();
@@ -2007,7 +2008,7 @@ public class ParticipantServiceTest {
     }
     
     @Test
-    public void updateIdentifiersDoesNotReassignExistingExternalId() throws Exception {
+    public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountDao.getAccount(any())).thenReturn(account);
@@ -2021,6 +2022,24 @@ public class ParticipantServiceTest {
         verify(accountDao).updateAccount(any(), eq(null));
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());
+    }
+    
+    @Test
+    public void updateIdentifiersDoesNothingWhenExternalIdResubmitted() throws Exception {
+        mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
+        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
+        
+        // Submit the same external ID as an update
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        // Nothing is called. Nothing happens.
+        verify(accountDao, never()).updateAccount(any(), any());
+        verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+        verify(externalIdService, never()).commitAssignExternalId(any());        
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
