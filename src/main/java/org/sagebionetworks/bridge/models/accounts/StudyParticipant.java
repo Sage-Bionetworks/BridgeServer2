@@ -49,7 +49,7 @@ public final class StudyParticipant implements BridgeEntity {
             new SimpleFilterProvider().addFilter("filter",
             SimpleBeanPropertyFilter.serializeAllExcept("healthCode", "encryptedHealthCode")));
     
-    private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(
+    public static final Encryptor ENCRYPTOR = new AesGcmEncryptor(
             BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     
     private final String firstName;

@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -145,9 +144,6 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<PasswordReset> passwordResetCaptor;
-
-    @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
     
     Study study;
     

@@ -16,6 +16,8 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTimeZone;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -58,6 +60,10 @@ public class SessionUpdateServiceTest {
     @Mock
     private UserSession updatedSession;
     
+    @Captor
+    ArgumentCaptor<RequestContext> requestContextCaptor;
+
+    
     private SessionUpdateService service;
     
     @BeforeMethod
@@ -88,25 +94,30 @@ public class SessionUpdateServiceTest {
 
         // Create inputs.
         UserSession session = new UserSession();
+        session.setStudyIdentifier(API_STUDY_ID);
         session.setParticipant(EMPTY_PARTICIPANT);
 
         List<String> languages = ImmutableList.of("es");
-        RequestContext context = new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
-                .withCallerHealthCode(HEALTH_CODE).withCallerLanguages(languages).build();
 
         // Execute test.
-        service.updateLanguage(session, context);
+        service.updateLanguage(session, languages);
 
         // Verify consent service.
-        verify(mockConsentService).getConsentStatuses(context);
-
+        verify(mockConsentService).getConsentStatuses(requestContextCaptor.capture());
+        
         // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(session.getParticipant().getLanguages().iterator().next(), "es");
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(context);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(requestContextCaptor.capture());
+        
+        RequestContext rq1 = requestContextCaptor.getAllValues().get(0);
+        assertEquals(rq1.getCallerLanguages(), languages);
+        
+        RequestContext rq2 = requestContextCaptor.getAllValues().get(1);
+        assertEquals(rq2.getCallerLanguages(), languages);
     }
 
     @Test
@@ -127,16 +138,14 @@ public class SessionUpdateServiceTest {
 
         // Create inputs.
         UserSession session = new UserSession();
+        session.setStudyIdentifier(API_STUDY_ID);
         session.setParticipant(EMPTY_PARTICIPANT);
 
-        RequestContext context = new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
-                .withCallerHealthCode(HEALTH_CODE).build();
-
         // Execute test.
-        service.updateParticipant(session, context, EMPTY_PARTICIPANT);
+        service.updateParticipant(session, EMPTY_PARTICIPANT);
 
         // Verify consent service.
-        verify(mockConsentService).getConsentStatuses(context);
+        verify(mockConsentService).getConsentStatuses(requestContextCaptor.capture());
 
         // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
@@ -144,19 +153,27 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(context);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(requestContextCaptor.capture());
+        
+        RequestContext rq1 = requestContextCaptor.getAllValues().get(0);
+        assertEquals(rq1.getCallerStudyIdentifier(), API_STUDY_ID);
+        assertEquals(rq1.getCallerHealthCode(), HEALTH_CODE);
+        
+        RequestContext rq2 = requestContextCaptor.getAllValues().get(0);
+        assertEquals(rq2.getCallerStudyIdentifier(), API_STUDY_ID);
+        assertEquals(rq2.getCallerHealthCode(), HEALTH_CODE);
     }
     
     @Test
     public void updateParticipantWithConsentUpdate() {
         UserSession session = new UserSession();
-        StudyParticipant participant = new StudyParticipant.Builder().build();
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build();
         RequestContext context = new RequestContext.Builder().withCallerStudyId(API_STUDY_ID).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
                 
         when(mockConsentService.getConsentStatuses(context)).thenReturn(statuses);
         
-        service.updateParticipant(session, context, participant);
+        service.updateParticipant(session, participant);
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(session.getParticipant(), participant);
@@ -170,17 +187,19 @@ public class SessionUpdateServiceTest {
 
         // Create inputs.
         UserSession session = new UserSession();
+        session.setStudyIdentifier(API_STUDY_ID);
         session.setParticipant(EMPTY_PARTICIPANT);
 
         Set<String> dataGroups = Sets.newHashSet("data1");
-        RequestContext context = new RequestContext.Builder().withCallerDataGroups(dataGroups)
-                .withCallerHealthCode(HEALTH_CODE).withCallerStudyId(API_STUDY_ID).build();
 
         // Execute test.
-        service.updateDataGroups(session, context);
+        service.updateDataGroups(session, dataGroups);
 
         // Verify consent service.
-        verify(mockConsentService).getConsentStatuses(context);
+        verify(mockConsentService).getConsentStatuses(requestContextCaptor.capture());
+        assertEquals(requestContextCaptor.getValue().getCallerHealthCode(), HEALTH_CODE);
+        assertEquals(requestContextCaptor.getValue().getCallerDataGroups(), dataGroups);
+        assertEquals(requestContextCaptor.getValue().getCallerStudyIdentifier(), API_STUDY_ID);
 
         // Verify saved session.
         verify(mockCacheProvider).setUserSession(session);
@@ -188,7 +207,7 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(context);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(requestContextCaptor.capture());
     }
 
     @Test

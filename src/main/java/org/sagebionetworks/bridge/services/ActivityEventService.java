@@ -6,7 +6,10 @@ import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap.Builder;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
@@ -17,6 +20,7 @@ import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Tuple;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -29,12 +33,24 @@ import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
-
+    private ParticipantService participantService;
+    private StudyService studyService;
+    
     @Autowired
     final void setActivityEventDao(ActivityEventDao activityEventDao) {
         this.activityEventDao = activityEventDao;
     }
-
+    
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
     /**
      * Publishes a custom event. Note that this automatically prepends "custom:" to the event key to form the event ID
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
@@ -131,6 +147,16 @@ public class ActivityEventService {
         }
     }
     
+    public void publishCreatedOnEvent(String healthCode, DateTime createdOn) {
+        checkNotNull(healthCode);
+        
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(healthCode)
+                .withTimestamp(createdOn)
+                .withObjectType(ActivityEventObjectType.CREATED_ON).build();
+        activityEventDao.publishEvent(event);
+    }
+    
     /**
      * ActivityEvents can be published directly, although all supported events have a more 
      * specific service method that should be preferred. This method can be used for 
@@ -141,17 +167,39 @@ public class ActivityEventService {
         checkNotNull(event);
         activityEventDao.publishEvent(event);
     }
-
+    
     /**
-     * Gets the activity events times for a specific user in order to schedule against them.
-     */
-    public Map<String, DateTime> getActivityEventMap(String healthCode) {
+    * Gets the activity events times for a specific user in order to schedule against them.
+    */
+    public Map<String, DateTime> getActivityEventMap(String studyId, String healthCode) {
         checkNotNull(healthCode);
-        return activityEventDao.getActivityEventMap(healthCode);
+        Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode);
+        Builder<String, DateTime> builder = ImmutableMap.<String, DateTime>builder();
+        
+        DateTime activitiesRetrieved = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
+        DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
+        DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
+        if (createdOn == null) {
+            Study study = studyService.getStudy(studyId);
+            StudyParticipant studyParticipant = participantService.getParticipant(study, "healthcode:"+healthCode, false);
+            createdOn = studyParticipant.getCreatedOn();
+            publishCreatedOnEvent(healthCode, createdOn);
+            builder.put(ActivityEventObjectType.CREATED_ON.name().toLowerCase(), createdOn);
+        }
+        DateTime studyStartDate = createdOn;
+        if (activitiesRetrieved != null) {
+            studyStartDate = activitiesRetrieved;
+        } else if (enrollment != null) {
+            studyStartDate = enrollment;
+        }
+        builder.put(ActivityEventObjectType.STUDY_START_DATE.name().toLowerCase(), studyStartDate);
+        builder.putAll(activityMap);
+        
+        return builder.build();
     }
-
-    public List<ActivityEvent> getActivityEventList(String healthCode) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(healthCode);
+    
+    public List<ActivityEvent> getActivityEventList(String studyId, String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(studyId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
@@ -167,7 +215,6 @@ public class ActivityEventService {
         }
         return activityEventList;
     }
-
     public void deleteActivityEvents(String healthCode) {
         checkNotNull(healthCode);
         activityEventDao.deleteActivityEvents(healthCode);

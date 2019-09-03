@@ -499,7 +499,6 @@ public class TestUtils {
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setShortName("ShortName");
         study.setAutoVerificationEmailSuppressed(true);
-        study.setFitBitScopes(Lists.newArrayList("HeartRate"));
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         study.setStudyIdExcludedInExport(true);
         study.setIdentifier(id);

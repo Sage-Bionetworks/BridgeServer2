@@ -186,7 +186,7 @@ public class ParticipantControllerTest extends Mockito {
     UserAdminService mockUserAdminService;
     
     @Mock
-    RequestInfoService requestInfoService;
+    RequestInfoService mockRequestInfoService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -245,7 +245,7 @@ public class ParticipantControllerTest extends Mockito {
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
 
         participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withSubstudyIds(CALLER_SUBS)
-                .withId(USER_ID).build();
+                .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
 
         session = new UserSession(participant);
         session.setAuthenticated(true);
@@ -297,6 +297,7 @@ public class ParticipantControllerTest extends Mockito {
         assertCreate(ParticipantController.class, "createParticipant");
         assertGet(ParticipantController.class, "getParticipant");
         assertGet(ParticipantController.class, "getParticipantForWorker");
+        assertGet(ParticipantController.class, "getRequestInfoForWorker");
         assertGet(ParticipantController.class, "getRequestInfo");
         assertPost(ParticipantController.class, "updateParticipant");
         assertPost(ParticipantController.class, "signOut");
@@ -460,6 +461,7 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockParticipantService).signUserOut(study, USER_ID, false);
     }
 
+    
     @Test
     public void updateParticipant() throws Exception {
         study.getUserProfileAttributes().add("can_be_recontacted");
@@ -534,13 +536,13 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(participant.getAttributes().get("phone"), "123456789");
         assertEquals(participant.getLanguages(), ImmutableList.of("en", "fr"));
     }
-
+    
     @Test
     public void getParticipantRequestInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
 
-        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfo("userId");
 
         // serialization was tested separately... just validate the object is there
@@ -561,10 +563,52 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
 
-        doReturn(requestInfo).when(requestInfoService).getRequestInfo("userId");
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantRequestInfoForWorkerOnly() throws Exception {
+        controller.getRequestInfoForWorker(study.getIdentifier(), USER_ID);
+    }
+    
+    @Test
+    public void getParticipantRequestInfoForWorker() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
+
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
+        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+
+        assertEquals(result, requestInfo);
+    }
+    
+    @Test
+    public void getParticipantRequestInfoForWorkerIsNullsafe() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        // There is no request info.
+        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+
+        assertNotNull(result); // values are all null, but object is returned
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantRequestInfoForWorkerOnlyReturnsCurrentStudyInfo() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
+        session.setParticipant(participant);
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
+                .withTimeZone(DateTimeZone.forOffsetHours(-7))
+                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+
+        doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
+        controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+    }
+    
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder(USER_ID);
 
@@ -721,7 +765,7 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withFirstName("firstName")
                 .withLastName("lastName").withEmail("email@email.com").withId("id").withPassword("password")
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withNotifyByEmail(true)
-                .withDataGroups(ImmutableSet.of("group1", "group2")).withAttributes(attrs)
+                .withDataGroups(ImmutableSet.of("group1", "group2")).withAttributes(attrs).withHealthCode(HEALTH_CODE)
                 .withLanguages(ImmutableList.of("en")).withStatus(AccountStatus.DISABLED).withExternalId("POWERS")
                 .build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
@@ -753,7 +797,7 @@ public class ParticipantControllerTest extends Mockito {
     
     @Test
     public void participantUpdateSelfCannotToggleSharingWhenUnconsented() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(NO_SHARING).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).withSharingScope(NO_SHARING).build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
 
         String json = createJson("{'sharingScope':'all_qualified_researchers'}");
@@ -786,7 +830,8 @@ public class ParticipantControllerTest extends Mockito {
     public void updateSelfCallCannotChangeIdToSomeoneElse() throws Exception {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
-        participant = new StudyParticipant.Builder().copyOf(participant).withId(USER_ID).build();
+        participant = new StudyParticipant.Builder().copyOf(participant).withHealthCode(HEALTH_CODE).withId(USER_ID)
+                .build();
         doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
 
         // Now change to some other ID

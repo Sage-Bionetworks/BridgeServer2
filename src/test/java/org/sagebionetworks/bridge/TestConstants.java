@@ -8,7 +8,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -48,8 +47,6 @@ public class TestConstants {
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
-    public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
-            .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";

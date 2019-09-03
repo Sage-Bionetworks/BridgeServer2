@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.models.accounts.StudyParticipant.ENCRYPTOR;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.util.Collections;
@@ -175,7 +176,14 @@ public abstract class BaseController {
         RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
         // If the user has already persisted languages, we'll use that instead of the Accept-Language header
         builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerHealthCode(session.getHealthCode());
+        // Health code is currently encryped in Redis. We have to decrypt here.
+        String healthCode = null;
+        if (session.getParticipant().getHealthCode() != null) {
+            healthCode = session.getParticipant().getHealthCode();
+        } else if (session.getParticipant().getEncryptedHealthCode() != null) {
+            healthCode = ENCRYPTOR.decrypt(session.getParticipant().getEncryptedHealthCode());
+        }
+        builder.withCallerHealthCode(healthCode);
         builder.withCallerStudyId(session.getStudyIdentifier());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
@@ -270,13 +278,7 @@ public abstract class BaseController {
         if (!languages.isEmpty()) {
             accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
-            
-            // TODO
-            // Totally redundant because we're about to change this from all the call sites
-            // of this method
-            RequestContext.Builder builder = reqContext.toBuilder();
-            builder.withCallerLanguages(languages);
-            sessionUpdateService.updateLanguage(session, builder.build());
+            sessionUpdateService.updateLanguage(session, languages);
         }
         return languages;
     }
@@ -286,16 +288,8 @@ public abstract class BaseController {
         builder.withCallerStudyId(studyId);
         BridgeUtils.setRequestContext(builder.build());
     }
-    /*
-    CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
-        return new CriteriaContext.Builder()
-            .withStudyIdentifier(studyId)
-            .withLanguages(reqContext.getCallerLanguages())
-            .withClientInfo(reqContext.getCallerClientInfo())
-            .build();
-    }
-    */
+
+
     void updateRequestContext(UserSession session) {
         checkNotNull(session);
         

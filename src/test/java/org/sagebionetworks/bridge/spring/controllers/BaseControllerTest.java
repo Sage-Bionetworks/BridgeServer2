@@ -354,10 +354,7 @@ public class BaseControllerTest extends Mockito {
         controller.getLanguages(session);
         
         verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
-        verify(mockSessionUpdateService).updateLanguage(eq(session), requestContextCaptor.capture());
-        
-        RequestContext context = requestContextCaptor.getValue();
-        assertEquals(context.getCallerLanguages(), LANGUAGES);
+        verify(mockSessionUpdateService).updateLanguage(session, LANGUAGES);
     }
     
     @Test
@@ -679,8 +676,7 @@ public class BaseControllerTest extends Mockito {
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
         // well as other things outside the scope of this test.)
-        verify(mockSessionUpdateService).updateLanguage(same(session), requestContextCaptor.capture());
-        assertEquals(requestContextCaptor.getValue().getCallerLanguages(), LANGUAGES);
+        verify(mockSessionUpdateService).updateLanguage(session, LANGUAGES);
     }
 
     @Test

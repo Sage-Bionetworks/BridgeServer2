@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
@@ -193,7 +194,7 @@ public class ScheduledActivityService {
         activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(context);
+        Map<String, DateTime> events = createEventsMap(study.getStudyIdentifier(), context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
         
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(updatedContext);
@@ -221,7 +222,7 @@ public class ScheduledActivityService {
         activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
-        Map<String, DateTime> events = createEventsMap(context);
+        Map<String, DateTime> events = createEventsMap(study.getStudyIdentifier(), context);
         ScheduleContext updatedContext = new ScheduleContext.Builder().withContext(context).withEvents(events).build();
 
         List<ScheduledActivity> scheduledActivities = scheduleActivitiesForPlans(updatedContext);
@@ -394,9 +395,8 @@ public class ScheduledActivityService {
         }
     }
 
-    private Map<String, DateTime> createEventsMap(ScheduleContext context) {
-        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getHealthCode());
-
+    private Map<String, DateTime> createEventsMap(StudyIdentifier studyId, ScheduleContext context) {
+        Map<String,DateTime> events = activityEventService.getActivityEventMap(studyId.getIdentifier(), context.getHealthCode());
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
             builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getInitialTimeZone()));

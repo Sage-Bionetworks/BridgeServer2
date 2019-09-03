@@ -21,8 +21,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -117,7 +115,7 @@ public class UserProfileController extends BaseController {
         
         updateRequestContext(session);
         
-        sessionUpdateService.updateParticipant(session, BridgeUtils.getRequestContext(), updated);
+        sessionUpdateService.updateParticipant(session, updated);
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
         viewCache.removeView(cacheKey);
@@ -180,16 +178,7 @@ public class UserProfileController extends BaseController {
                 .withId(session.getId()).build();
         
         participantService.updateParticipant(study, updated);
-        
-        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
-        builder.withCallerLanguages(session.getParticipant().getLanguages());
-        builder.withCallerUserId(session.getId());
-        builder.withCallerDataGroups(updated.getDataGroups());
-        builder.withCallerSubstudies(updated.getSubstudyIds());
-        builder.withCallerStudyId(study.getStudyIdentifier());
-        BridgeUtils.setRequestContext(builder.build());
-        
-        sessionUpdateService.updateDataGroups(session, builder.build());
+        sessionUpdateService.updateDataGroups(session, updated.getDataGroups());
         
         return UserSessionInfo.toJSON(session);
     }

@@ -1,11 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.models.accounts.StudyParticipant.ENCRYPTOR;
+
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -53,8 +59,8 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
 
-    public void updateLanguage(UserSession session, RequestContext context) {
-        updateCriteria(session, context, builder(session).withLanguages(context.getCallerLanguages()).build());
+    public void updateLanguage(UserSession session, List<String> languages) {
+        updateCriteria(session, builder(session).withLanguages(languages).build());
     }
     
     public void updateExternalId(UserSession session, ExternalIdentifier externalId) {
@@ -62,15 +68,34 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateParticipant(UserSession session, RequestContext context, StudyParticipant participant) {
-        updateCriteria(session, context, participant);
+    public void updateParticipant(UserSession session, StudyParticipant participant) {
+        updateCriteria(session, participant);
     }
     
-    public void updateDataGroups(UserSession session, RequestContext context) {
-        updateCriteria(session, context, builder(session).withDataGroups(context.getCallerDataGroups()).build());
+    public void updateDataGroups(UserSession session, Set<String> dataGroups) {
+        updateCriteria(session, builder(session).withDataGroups(dataGroups).build());
     }
 
-    private void updateCriteria(UserSession session, RequestContext context, StudyParticipant participant) {
+    private void updateCriteria(UserSession session, StudyParticipant participant) {
+        // Health code is currently encryped in Redis. We have to decrypt here.
+        String healthCode = null;
+        if (participant.getHealthCode() != null) {
+            healthCode = participant.getHealthCode();
+        } else if (participant.getEncryptedHealthCode() != null) {
+            healthCode = ENCRYPTOR.decrypt(participant.getEncryptedHealthCode());    
+        }
+        checkNotNull(healthCode, "Health code is missing");
+        
+        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
+        builder.withCallerStudyId(session.getStudyIdentifier());
+        builder.withCallerSubstudies(participant.getSubstudyIds());
+        builder.withCallerRoles(participant.getRoles());
+        builder.withCallerUserId(participant.getId());
+        builder.withCallerHealthCode(healthCode);
+        builder.withCallerDataGroups(participant.getDataGroups());
+        builder.withCallerLanguages(participant.getLanguages());
+        RequestContext context = builder.build();
+        
         // Update session and consent statuses.
         session.setParticipant(participant);
         Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);

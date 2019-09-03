@@ -1,9 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -19,6 +15,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -49,7 +46,7 @@ import com.google.common.collect.Lists;
  * to verify de-duplication and the correct fix for any schedule that has no times in it (the time must be set to 
  * a standard time and midnight seems to work regardless of when the timestamp is).
  */
-public class ScheduledActivityServiceDuplicateTest {
+public class ScheduledActivityServiceDuplicateTest extends Mockito {
     //"studyKey (S)","guid (S)","label (S)","modifiedOn (N)","strategy (S)","version (N)"
     private static final String[][] SCHEDULE_PLAN_RECORDS = new String[][] {
         new String[] {"lilly","04aaee5e-6e8e-4282-8b8a-4c041af09434","Onsite Schedule 4","1462824789953","{\"type\":\"CriteriaScheduleStrategy\",\"scheduleCriteria\":[{\"schedule\":{\"scheduleType\":\"once\",\"eventId\":\"activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished\",\"activities\":[{\"label\":\"Activity Session 4\",\"labelDetail\":\"Do in clinic - 5 minutes\",\"guid\":\"d9a52be9-4c59-4c67-a0d6-236b7bf92c45\",\"task\":{\"identifier\":\"1-Combo-295f81EF-13CB-4DB4-8223-10A173AA0780\",\"type\":\"TaskReference\"},\"activityType\":\"task\",\"type\":\"Activity\"}],\"persistent\":false,\"delay\":\"PT12H\",\"expires\":\"PT1H\",\"times\":[],\"type\":\"Schedule\"},\"criteria\":{\"allOfGroups\":[\"onsite\"],\"noneOfGroups\":[],\"type\":\"Criteria\"},\"type\":\"ScheduleCriteria\"}]}","4"},
@@ -183,6 +180,8 @@ public class ScheduledActivityServiceDuplicateTest {
                 .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f");
+        
+        when(study.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("test-study"));
     }
     
     @AfterMethod
@@ -255,7 +254,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:6966c3d7-0949-43a8-804e-efc25d0f83e2:finished", new DateTime(1471742129501L, DateTimeZone.UTC))
             .put("activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished", new DateTime(1473284085378L, DateTimeZone.UTC))
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
-        doReturn(events).when(activityEventService).getActivityEventMap(HEALTH_CODE);
+        doReturn(events).when(activityEventService).getActivityEventMap("test-study", HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
         contextBuilder.withInitialTimeZone(zone);
         return contextBuilder.build();
