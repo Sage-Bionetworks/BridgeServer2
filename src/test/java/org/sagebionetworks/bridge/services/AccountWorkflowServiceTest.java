@@ -410,7 +410,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @Test
     public void verifyEmail() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
             createJson("{'studyId':'api','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
@@ -439,7 +439,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = ".*Account not found.*")
     public void verifyNoAccount() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
             createJson("{'studyId':'api','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
@@ -452,7 +452,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
     public void verifyWithMismatchedChannel() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
             createJson("{'studyId':'api','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
@@ -466,7 +466,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
     public void verifyEmailExpired() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis()+1);
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
             createJson("{'studyId':'api','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
@@ -480,7 +480,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp=".*That email address has already been verified.*")
     public void verifyEmailAlreadyVerified() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis()+1);
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
             createJson("{'studyId':'api','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
@@ -504,7 +504,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @Test
     public void verifyPhone() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
                 TestUtils.createJson("{'studyId':'api','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
@@ -522,7 +522,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*That phone number has already been verified.*")
     public void verifyPhoneAlreadyVerified() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis());
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
                 TestUtils.createJson("{'studyId':'api','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
@@ -538,7 +538,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
     public void verifyPhoneExpired() {
-        when(service.getDateTime()).thenReturn(TIMESTAMP.getMillis()+1);
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
                 TestUtils.createJson("{'studyId':'api','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));

@@ -217,7 +217,7 @@ public class AccountWorkflowService {
         }
 
         String sptoken = getNextToken();
-        long expiresOn = getDateTime() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
+        long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
 
@@ -251,7 +251,7 @@ public class AccountWorkflowService {
             return;
         }
         String sptoken = getNextPhoneToken();
-        long expiresOn = getDateTime() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
+        long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId, expiresOn));
         
@@ -310,7 +310,7 @@ public class AccountWorkflowService {
         } else if (type == ChannelType.PHONE && TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException(String.format(ALREADY_VERIFIED, "phone number"));
         }
-        if (data.getExpiresOn() < getDateTime()) {
+        if (data.getExpiresOn() < getDateTimeInMillis()) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         return account;
@@ -705,7 +705,7 @@ public class AccountWorkflowService {
         }
     }
     
-    long getDateTime() {
+    long getDateTimeInMillis() {
         return DateTime.now().getMillis();
     }
 }
