@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
@@ -54,6 +55,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
@@ -63,8 +65,9 @@ public class AccountWorkflowService {
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
-    private static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
-    private static final String VERIFY_TOKEN_EXPIRED = "Verification token is invalid (it may have expired, or already been used).";
+    static final String PASSWORD_RESET_TOKEN_EXPIRED = "Password reset token has expired (or already been used).";
+    static final String VERIFY_TOKEN_EXPIRED = "This verification token is no longer valid.";
+    static final String ALREADY_VERIFIED = "That %s has already been verified.";
     
     // These are component tokens we include in URLs, but they are also included as is in the template variables
     // for further customization on a case-by-case basis.
@@ -101,16 +104,18 @@ public class AccountWorkflowService {
     private final AtomicLong emailSignInRequestInMillis = new AtomicLong(200L);
     private final AtomicLong phoneSignInRequestInMillis = new AtomicLong(200L);
     
-    static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours 
+    static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours
+    static final int VERIFY_CACHE_IN_SECONDS = 60*60*24*30; // 30 days
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
     private static class VerificationData {
         private final String studyId;
         private final String userId;
         private final ChannelType type;
+        private final long expiresOn;
         @JsonCreator
         public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("type") ChannelType type,
-                @JsonProperty("userId") String userId) {
+                @JsonProperty("userId") String userId, @JsonProperty("createdOn") long expiresOn) {
             checkArgument(isNotBlank(studyId));
             checkArgument(isNotBlank(userId));
             this.studyId = studyId;
@@ -118,6 +123,7 @@ public class AccountWorkflowService {
             // On deployment, this value will be missing, and by inference is for email verifications
             // in process, since phone verification won't have existed until the deployment.
             this.type = (type == null) ? ChannelType.EMAIL : type;
+            this.expiresOn = expiresOn;
         }
         public String getStudyId() {
             return studyId;
@@ -127,6 +133,9 @@ public class AccountWorkflowService {
         }
         public ChannelType getType() {
             return type;
+        }
+        public long getExpiresOn() {
+            return expiresOn;
         }
     }
 
@@ -208,8 +217,9 @@ public class AccountWorkflowService {
         }
 
         String sptoken = getNextToken();
+        long expiresOn = getDateTime() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId));
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
 
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
@@ -241,8 +251,9 @@ public class AccountWorkflowService {
             return;
         }
         String sptoken = getNextPhoneToken();
-        
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId));
+        long expiresOn = getDateTime() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
+
+        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId, expiresOn));
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
@@ -286,17 +297,21 @@ public class AccountWorkflowService {
         checkNotNull(verification);
 
         VerificationData data = restoreVerification(verification.getSptoken());
-        if (data == null) {
-            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
-        }
-        if (data.getType() != type) {
+        if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         Study study = studyService.getStudy(data.getStudyId());
-
         Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
+        }
+        if (type == ChannelType.EMAIL && TRUE.equals(account.getEmailVerified())) {
+            throw new BadRequestException(String.format(ALREADY_VERIFIED, "email address"));
+        } else if (type == ChannelType.PHONE && TRUE.equals(account.getPhoneVerified())) {
+            throw new BadRequestException(String.format(ALREADY_VERIFIED, "phone number"));
+        }
+        if (data.getExpiresOn() < getDateTime()) {
+            throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         return account;
     }
@@ -593,7 +608,7 @@ public class AccountWorkflowService {
         try {
             CacheKey cacheKey = CacheKey.verificationToken(sptoken);
             cacheProvider.setObject(cacheKey, BridgeObjectMapper.get().writeValueAsString(data),
-                    VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+                    VERIFY_CACHE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -606,7 +621,7 @@ public class AccountWorkflowService {
         String json = cacheProvider.getObject(cacheKey, String.class);
         if (json != null) {
             try {
-                cacheProvider.removeObject(cacheKey);
+                // Do not remove. Even when expired we want to map back to an account
                 return BridgeObjectMapper.get().readValue(json, VerificationData.class);
             } catch (IOException e) {
                 throw new BridgeServiceException(e);
@@ -688,5 +703,9 @@ public class AccountWorkflowService {
             // naturally.
             return true;
         }
+    }
+    
+    long getDateTime() {
+        return DateTime.now().getMillis();
     }
 }
