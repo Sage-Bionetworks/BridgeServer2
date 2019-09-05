@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterables;
 
@@ -1318,5 +1319,24 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(userId, USER_ID);
 
         verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
+    }
+    
+    @Test
+    public void serializeVerificationData() throws Exception { 
+        AccountWorkflowService.VerificationData data = new AccountWorkflowService.VerificationData(
+                TEST_STUDY_IDENTIFIER, ChannelType.PHONE, USER_ID, TIMESTAMP.getMillis());
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(data);
+        assertEquals(node.get("studyId").textValue(), TEST_STUDY_IDENTIFIER);
+        assertEquals(node.get("type").textValue(), "phone");
+        assertEquals(node.get("userId").textValue(), USER_ID);
+        assertEquals(node.get("expiresOn").longValue(), TIMESTAMP.getMillis());
+        
+        AccountWorkflowService.VerificationData deser = BridgeObjectMapper.get().readValue(node.toString(),
+                AccountWorkflowService.VerificationData.class);
+        assertEquals(deser.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(deser.getType(), ChannelType.PHONE);
+        assertEquals(deser.getUserId(), USER_ID);
+        assertEquals(deser.getExpiresOn(), TIMESTAMP.getMillis());
     }
 }

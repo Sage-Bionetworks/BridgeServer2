@@ -108,7 +108,7 @@ public class AccountWorkflowService {
     static final int VERIFY_CACHE_IN_SECONDS = 60*60*24*30; // 30 days
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
-    private static class VerificationData {
+    static class VerificationData {
         private final String studyId;
         private final String userId;
         private final ChannelType type;
