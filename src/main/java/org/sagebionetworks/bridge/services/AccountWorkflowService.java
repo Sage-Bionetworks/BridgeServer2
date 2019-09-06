@@ -218,7 +218,7 @@ public class AccountWorkflowService {
 
         String sptoken = getNextToken();
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
-
+        
         saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
 
         String oldUrl = getVerifyEmailURL(study, sptoken);

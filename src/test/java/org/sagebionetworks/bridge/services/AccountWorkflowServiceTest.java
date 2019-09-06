@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
@@ -32,6 +33,7 @@ import java.util.Map;
 
 import javax.mail.internet.MimeBodyPart;
 
+import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -39,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -72,7 +75,6 @@ import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterables;
 
@@ -209,6 +211,12 @@ public class AccountWorkflowServiceTest extends Mockito {
 
         // Add params to mock account.
         when(mockAccount.getId()).thenReturn(USER_ID);
+        when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private void mockRevision(TemplateType templateType, String subject, String body, MimeType type) {
@@ -233,6 +241,8 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(node.get("studyId").textValue(), "api");
         assertEquals(node.get("userId").textValue(), "userId");
         assertEquals(node.get("type").textValue(), "email");
+        assertEquals(node.get("expiresOn").longValue(),
+                TIMESTAMP.getMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS * 1000));
         
         BasicEmailProvider provider = emailProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
@@ -288,6 +298,8 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(node.get("studyId").textValue(), "api");
         assertEquals(node.get("userId").textValue(), "userId");
         assertEquals(node.get("type").textValue(), "phone");
+        assertEquals(node.get("expiresOn").longValue(),
+                TIMESTAMP.getMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS * 1000));
         
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
         Map<String,String> tokens = provider.getTokenMap();
