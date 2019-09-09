@@ -32,9 +32,9 @@ function success() {
     $("#m1").text("Your email address has now been verified.");
     $("#m2").html("You can now leave this web page and go back to the "+studyName+" application.");
 }
-function failure() {
-    $("#m1").text("Your email address could not be verified.");
-    $("#m2").html("Please refresh the page; if the problem persists, contact <a href='mailto:"+supportEmail+"'>"+supportEmail+"</a> to receive further assistance.");
+function failure(message) {
+    $("#m1").text(message);
+    $("#m2").html("Contact <a href='mailto:"+supportEmail+"'>"+supportEmail+"</a> to receive further assistance.");
 }
 try {
     if (!params.study) {
@@ -52,22 +52,11 @@ try {
         if (response.status === 412) {
             success();
         } else {
-            try {
-                var message = response.responseJSON.message;
-                if (message === "Account not found.") {
-                    $("#m1").text("It looks like your email address has already been verified.");
-                    $("#m2").html("You can try using the "+studyName+" application at this point.");
-                } else {
-                    failure();
-                }
-            } catch(e) {
-                failure();
-            }
+            failure(response.responseJSON.message);
         }
     });
 } catch(e) { // happens if the query string is wrong.
-    console.log(e);
-    failure();
+    failure(e.message);
 }
 
 </script>
