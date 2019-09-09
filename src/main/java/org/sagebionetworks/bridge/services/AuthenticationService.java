@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -460,13 +461,15 @@ public class AuthenticationService {
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
+        RequestContext reqContext = BridgeUtils.getRequestContext();
+        
         // Create new session.
         UserSession session = new UserSession(participant);
         session.setSessionToken(getGuid());
         session.setInternalSessionToken(getGuid());
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
-        session.setIpAddress(context.getIpAddress());
+        session.setIpAddress(reqContext.getCallerIpAddress());
         session.setStudyIdentifier(study.getStudyIdentifier());
         session.setReauthToken(account.getReauthToken());
         

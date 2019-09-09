@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.util.Collections;
@@ -182,7 +180,8 @@ public abstract class BaseController {
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
         builder.withCallerUserId(session.getParticipant().getId());
-        BridgeUtils.setRequestContext(builder.build());
+        RequestContext reqContext = builder.build();
+        BridgeUtils.setRequestContext(reqContext);
         
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
@@ -190,8 +189,8 @@ public abstract class BaseController {
         Set<Roles> userRoles = session.getParticipant().getRoles();
         boolean userHasRoles = !userRoles.isEmpty();
         if (study.isParticipantIpLockingEnabled() || userHasRoles) {
-            String sessionIpAddress = parseIpAddress(session.getIpAddress());
-            String requestIpAddress = parseIpAddress(getRemoteAddress());
+            String sessionIpAddress = session.getIpAddress();
+            String requestIpAddress = reqContext.getCallerIpAddress();
             if (!Objects.equals(sessionIpAddress, requestIpAddress)) {
                 throw new NotAuthenticatedException();
             }
@@ -276,7 +275,6 @@ public abstract class BaseController {
                 .withLanguages(languages)
                 .withClientInfo(reqContext.getCallerClientInfo())
                 .withHealthCode(session.getHealthCode())
-                .withIpAddress(session.getIpAddress())
                 .withUserId(session.getId())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
@@ -294,7 +292,6 @@ public abstract class BaseController {
             .withStudyIdentifier(studyId)
             .withLanguages(reqContext.getCallerLanguages())
             .withClientInfo(reqContext.getCallerClientInfo())
-            .withIpAddress(getRemoteAddress())
             .build();
     }
     
@@ -306,7 +303,6 @@ public abstract class BaseController {
             .withLanguages(getLanguages(session))
             .withClientInfo(reqContext.getCallerClientInfo())
             .withHealthCode(session.getHealthCode())
-            .withIpAddress(session.getIpAddress())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
             .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
@@ -330,30 +326,6 @@ public abstract class BaseController {
      */
     Metrics getMetrics() {
         return BridgeUtils.getRequestContext().getMetrics();
-    }
-
-    /** The user's IP Address, as reported by Amazon. Package-scoped for unit tests. */
-    String getRemoteAddress() {
-        String forwardHeader = request().getHeader(X_FORWARDED_FOR_HEADER);
-        return (forwardHeader == null) ? request().getRemoteAddr() : forwardHeader;
-    }
-
-    // Helper method to parse an IP address from a raw string, as specified by getRemoteAddress().
-    private static String parseIpAddress(String fullIpAddressString) {
-        if (isBlank(fullIpAddressString)) {
-            // Canonicalize unspecified IP address to null.
-            return null;
-        }
-
-        // Remote address comes from the X-Forwarded-For header. Since we're behind Amazon, this is almost always
-        // 2 IP addresses, separated by a comma and a space. The second is an Amazon router. The first one is probably
-        // the real IP address.
-        //
-        // Note that this isn't fool-proof. X-Forwarded-For can be spoofed. Also, double-proxies might exist, or the
-        // first IP address might simply resolve to 192.168.X.1. In local, this is probably just 127.0.0.1. But at
-        // least this is an added layer of defense vs not IP-locking at all.
-        String[] ipAddressArray = fullIpAddressString.split(",");
-        return ipAddressArray[0];
     }
 
     /** Writes the user's account ID, internal session ID, and study ID to the metrics. */

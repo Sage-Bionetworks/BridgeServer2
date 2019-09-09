@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -209,7 +210,11 @@ public class AuthenticationServiceMockTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+    }
+    
+    void setIpAddress(String ipAddress) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(ipAddress).build());
     }
     
     @Test // Test some happy path stuff, like the correct initialization of the user session
@@ -224,11 +229,12 @@ public class AuthenticationServiceMockTest {
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
         
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        
         CriteriaContext context = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY)
             .withLanguages(LANGUAGES)
-            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
-            .withIpAddress("127.1.1.11").build();
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -245,7 +251,7 @@ public class AuthenticationServiceMockTest {
         
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         assertTrue(session.isAuthenticated());
-        assertEquals(session.getIpAddress(), "127.1.1.11");
+        assertEquals(session.getIpAddress(), IP_ADDRESS);
         assertEquals(session.getSessionToken(), SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
@@ -298,11 +304,12 @@ public class AuthenticationServiceMockTest {
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
         
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        
         CriteriaContext context = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY)
             .withLanguages(LANGUAGES)
-            .withClientInfo(ClientInfo.fromUserAgentCache("app/13"))
-            .withIpAddress("127.1.1.11").build();
+            .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
         doReturn(account).when(accountDao).authenticate(study, EMAIL_PASSWORD_SIGN_IN);
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(study, account, false);
@@ -324,7 +331,7 @@ public class AuthenticationServiceMockTest {
         
         assertEquals(session.getConsentStatuses(), UNCONSENTED_STATUS_MAP);
         assertTrue(session.isAuthenticated());
-        assertEquals(session.getIpAddress(), "127.1.1.11");
+        assertEquals(session.getIpAddress(), IP_ADDRESS);
         assertEquals(session.getSessionToken(), SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
@@ -1260,9 +1267,10 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         study.setReauthenticationEnabled(true);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
@@ -1294,8 +1302,9 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(false);
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
         Account account = Account.create();
 
@@ -1319,8 +1328,9 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(null);
 
-        CriteriaContext context = new CriteriaContext.Builder().withIpAddress(IP_ADDRESS)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
         Account account = Account.create();
 
