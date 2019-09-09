@@ -229,7 +229,7 @@ public class AuthenticationServiceMockTest {
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY)
@@ -304,7 +304,7 @@ public class AuthenticationServiceMockTest {
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         account.setId(USER_ID);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
             .withStudyIdentifier(TestConstants.TEST_STUDY)
@@ -1268,7 +1268,7 @@ public class AuthenticationServiceMockTest {
         study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         study.setReauthenticationEnabled(true);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        setIpAddress(IP_ADDRESS);
 
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
@@ -1302,7 +1302,7 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(false);
 
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        setIpAddress(IP_ADDRESS);
 
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
@@ -1328,7 +1328,7 @@ public class AuthenticationServiceMockTest {
         Study study = Study.create();
         study.setReauthenticationEnabled(null);
 
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS).build());
+        setIpAddress(IP_ADDRESS);
 
         CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
 
