@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.spring.filters;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
+import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
+import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
@@ -320,5 +322,41 @@ public class RequestFilterTest extends Mockito {
 
         // verify if it set warning header
         verify(mockResponse).setHeader(BRIDGE_API_STATUS_HEADER, WARN_NO_ACCEPT_LANGUAGE);
+    }
+    
+    @Test
+    public void getRemoteAddress() {
+        when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
+        
+        String address = RequestFilter.getRemoteAddress(mockRequest);
+        assertEquals(address, IP_ADDRESS);
+    }
+    
+    @Test
+    public void getRemoteAddressFallsBackToServletAPI() {
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
+        
+        String address = RequestFilter.getRemoteAddress(mockRequest);
+        assertEquals(address, IP_ADDRESS);
+    }
+    
+    @Test
+    public void getRemoteAddressFails() {
+        String address = RequestFilter.getRemoteAddress(mockRequest);
+        assertNull(address);
+    }
+    
+    @Test
+    public void getRemoteAddressFromHeader() throws Exception {
+        when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
+
+        assertEquals(IP_ADDRESS, RequestFilter.getRemoteAddress(mockRequest));
+    }
+
+    @Test
+    public void getRemoteAddressFromFallback() throws Exception {
+        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
+        
+        assertEquals(IP_ADDRESS, RequestFilter.getRemoteAddress(mockRequest));
     }
 }

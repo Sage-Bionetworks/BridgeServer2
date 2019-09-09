@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADE
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
-import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
@@ -389,7 +388,6 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getStudyIdentifier(), TEST_STUDY);
         assertEquals(context.getLanguages(), ImmutableList.of("en"));
         assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
-        assertEquals(context.getIpAddress(), IP_ADDRESS);
     }
 
     @Test
@@ -407,7 +405,6 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getLanguages(), LANGUAGES);
         assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
         assertEquals(context.getHealthCode(), HEALTH_CODE);
-        assertEquals(context.getIpAddress(), IP_ADDRESS);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
@@ -450,28 +447,6 @@ public class BaseControllerTest extends Mockito {
         
         Metrics retrievedMetrics = controller.getMetrics();
         assertEquals(retrievedMetrics, metrics);
-    }
-
-    @Test
-    public void getRemoteAddress() {
-        when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
-        
-        String address = controller.getRemoteAddress();
-        assertEquals(address, IP_ADDRESS);
-    }
-    
-    @Test
-    public void getRemoteAddressFallsBackToServletAPI() {
-        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
-        
-        String address = controller.getRemoteAddress();
-        assertEquals(address, IP_ADDRESS);
-    }
-    
-    @Test
-    public void getRemoteAddressFails() {
-        String address = controller.getRemoteAddress();
-        assertNull(address);
     }
 
     @Test
@@ -737,6 +712,8 @@ public class BaseControllerTest extends Mockito {
     }
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void ipLockingForPrivilegedAccounts() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+
         // Setup test
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
                 .build();
@@ -749,7 +726,6 @@ public class BaseControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(controller.getRemoteAddress()).thenReturn("different address");
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -757,6 +733,8 @@ public class BaseControllerTest extends Mockito {
     
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void ipLockingForParticipantsEnabled() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+        
         // Setup test
         session.setAuthenticated(true);
         session.setIpAddress("original address");
@@ -766,7 +744,6 @@ public class BaseControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(controller.getRemoteAddress()).thenReturn("different address");
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -774,6 +751,8 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void ipLockingForParticipantsDisabled() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+        
         // Setup test
         session.setAuthenticated(true);
         session.setIpAddress("original address");
@@ -783,20 +762,21 @@ public class BaseControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(controller.getRemoteAddress()).thenReturn("different address");
-
+        
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
     }
 
     @Test
     public void ipLockingSameIpAddress() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("same address").build());
+        
         // Setup test - Append different load balancers to make sure we handle this properly.
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
                 .build();
 
         session.setAuthenticated(true);
-        session.setIpAddress("same address, load balancer A");
+        session.setIpAddress("same address");
         session.setParticipant(participant);
         session.setStudyIdentifier(TEST_STUDY);
 
@@ -804,7 +784,6 @@ public class BaseControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(controller.getRemoteAddress()).thenReturn("same address, load balancer B");
 
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
@@ -953,18 +932,5 @@ public class BaseControllerTest extends Mockito {
         
         verify(mockResponse, never()).addCookie(any());
     }
-    
-    @Test
-    public void getRemoteAddressFromHeader() throws Exception {
-        when(mockRequest.getHeader(X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
 
-        assertEquals(IP_ADDRESS, controller.getRemoteAddress());
-    }
-
-    @Test
-    public void getRemoteAddressFromFallback() throws Exception {
-        when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
-        
-        assertEquals(IP_ADDRESS, controller.getRemoteAddress());
-    }
 }
