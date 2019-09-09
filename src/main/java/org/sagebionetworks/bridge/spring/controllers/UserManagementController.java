@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,12 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -37,12 +39,12 @@ public class UserManagementController extends BaseController {
     private static final String CONSENT_FIELD = "consent";
 
     private UserAdminService userAdminService;
-
+    
     @Autowired
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-
+    
     @PostMapping("/v3/auth/admin/signIn")
     public JsonNode signInForAdmin() throws Exception {
         SignIn originSignIn = parseJson(SignIn.class);
@@ -52,7 +54,7 @@ public class UserManagementController extends BaseController {
         
         // Adjust the sign in so it is always done against the API study.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
-                .withStudy(BridgeConstants.API_STUDY_ID_STRING).build();        
+                .withStudy(API_STUDY_ID_STRING).build();        
         
         Study study = studyService.getStudy(signIn.getStudyId());
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
@@ -75,6 +77,13 @@ public class UserManagementController extends BaseController {
     @PostMapping("/v3/auth/admin/study")
     public JsonNode changeStudyForAdmin() throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);
+        
+        // Verify that this account is in the API study and if it's not, this is prohibited.
+        AccountId accountId = AccountId.forId(API_STUDY_ID_STRING, session.getId());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new UnauthorizedException("Study admin cannot change studies.");
+        }
 
         // The only part of this payload we care about is the study property
         SignIn signIn = parseJson(SignIn.class);
