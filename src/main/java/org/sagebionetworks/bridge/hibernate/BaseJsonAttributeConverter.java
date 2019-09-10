@@ -11,8 +11,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 /**

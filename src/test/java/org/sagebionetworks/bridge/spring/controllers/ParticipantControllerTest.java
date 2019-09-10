@@ -7,9 +7,11 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
+import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.ENCRYPTED_HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.NOTIFICATION_MESSAGE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
@@ -121,7 +123,6 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.springframework.web.bind.annotation.PathVariable;
 
 public class ParticipantControllerTest extends Mockito {
 
@@ -702,8 +703,8 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void updateSelfParticipant() throws Exception {
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
+                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -712,8 +713,9 @@ public class ParticipantControllerTest extends Mockito {
                 .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withHealthCode(HEALTH_CODE).build();
         session.setParticipant(participant);
+        session.setIpAddress(IP_ADDRESS); // if this is not the same as request, you get an authentication error
 
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
 
         String json = MAPPER.writeValueAsString(participant);
         mockRequestBody(mockRequest, json);
@@ -725,6 +727,7 @@ public class ParticipantControllerTest extends Mockito {
 
         // verify the object is passed to service, one field is sufficient
         verify(mockCacheProvider).setUserSession(any());
+        
         // No roles are passed in this method, and the substudies of the user are passed
         verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
 
@@ -744,7 +747,6 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
-        assertNull(context.getIpAddress());
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(context.getLanguages(), LANGUAGES);
@@ -754,6 +756,9 @@ public class ParticipantControllerTest extends Mockito {
     // This allows client to provide JSON that's less than the entire participant.
     @Test
     public void partialUpdateSelfParticipant() throws Exception {
+        // User must be consented to change sharing status
+        session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        
         Map<String, String> attrs = ImmutableMap.of("foo", "bar", "baz", "bap");
 
         StudyParticipant participant = new StudyParticipant.Builder().withFirstName("firstName")
@@ -762,7 +767,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withDataGroups(ImmutableSet.of("group1", "group2")).withAttributes(attrs)
                 .withLanguages(ImmutableList.of("en")).withStatus(AccountStatus.DISABLED).withExternalId("POWERS")
                 .build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
 
         String json = createJson("{'externalId':'simpleStringChange'," + "'sharingScope':'no_sharing',"
                 + "'notifyByEmail':false," + "'attributes':{'baz':'belgium'}," + "'languages':['fr'],"
@@ -788,6 +793,20 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getLanguages(), ImmutableList.of("fr"));
         assertEquals(captured.getExternalId(), "simpleStringChange");
     }
+    
+    @Test
+    public void participantUpdateSelfCannotToggleSharingWhenUnconsented() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(NO_SHARING).build();
+        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
+
+        String json = createJson("{'sharingScope':'all_qualified_researchers'}");
+        mockRequestBody(mockRequest, json);
+
+        controller.updateSelfParticipant();
+
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        assertEquals(participantCaptor.getValue().getSharingScope(), NO_SHARING);
+    }
 
     @Test
     public void requestResetPassword() throws Exception {
@@ -811,7 +830,7 @@ public class ParticipantControllerTest extends Mockito {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
         participant = new StudyParticipant.Builder().copyOf(participant).withId(USER_ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
 
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();

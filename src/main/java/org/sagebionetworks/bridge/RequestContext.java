@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 public class RequestContext {
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, ImmutableSet.of(),
-            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of());
+            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
 
     private final String requestId;
     private final StudyIdentifier callerStudyId;
@@ -26,9 +26,11 @@ public class RequestContext {
     private final ClientInfo callerClientInfo;
     private final List<String> callerLanguages;    
     private final Metrics metrics;
+    private final String callerIpAddress;
     
     private RequestContext(Metrics metrics, String requestId, String callerStudyId, Set<String> callerSubstudies,
-            Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages) {
+            Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages,
+            String callerIpAddress) {
         this.requestId = requestId;
         this.callerStudyId = (callerStudyId == null) ? null : new StudyIdentifierImpl(callerStudyId);
         this.callerSubstudies = callerSubstudies;
@@ -37,6 +39,7 @@ public class RequestContext {
         this.callerClientInfo = callerClientInfo;
         this.callerLanguages = callerLanguages;
         this.metrics = metrics;
+        this.callerIpAddress = callerIpAddress;
     }
     
     public Metrics getMetrics() {
@@ -66,6 +69,10 @@ public class RequestContext {
     public List<String> getCallerLanguages() {
         return callerLanguages;
     }
+    /** The user's IP Address, as reported by Amazon. */
+    public String getCallerIpAddress() {
+        return callerIpAddress;
+    }
     public RequestContext.Builder toBuilder() {
         return new RequestContext.Builder()
             .withRequestId(requestId)
@@ -75,7 +82,8 @@ public class RequestContext {
             .withCallerRoles(callerRoles)
             .withCallerSubstudies(callerSubstudies)
             .withCallerUserId(callerUserId)
-            .withMetrics(metrics);
+            .withMetrics(metrics)
+            .withCallerIpAddress(callerIpAddress);
     }
     
     public static class Builder {
@@ -86,7 +94,8 @@ public class RequestContext {
         private String requestId;
         private String callerUserId;
         private ClientInfo callerClientInfo;
-        private List<String> callerLanguages;    
+        private List<String> callerLanguages;
+        private String callerIpAddress;
 
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
@@ -120,6 +129,10 @@ public class RequestContext {
             this.callerLanguages = callerLanguages;
             return this;
         }
+        public Builder withCallerIpAddress(String callerIpAddress) {
+            this.callerIpAddress = callerIpAddress;
+            return this;
+        }
         
         public RequestContext build() {
             if (requestId == null) {
@@ -141,7 +154,7 @@ public class RequestContext {
                 metrics = new Metrics(requestId);
             }
             return new RequestContext(metrics, requestId, callerStudyId, callerSubstudies, callerRoles, callerUserId,
-                    callerClientInfo, callerLanguages);
+                    callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
 
@@ -149,7 +162,7 @@ public class RequestContext {
     public String toString() {
         return "RequestContext [requestId=" + requestId + ", callerStudyId=" + callerStudyId + ", callerSubstudies="
                 + callerSubstudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
-                + ", callerClientInfo=" + callerClientInfo + ", callerLanguages=" + callerLanguages + ", metrics="
-                + metrics + "]";
+                + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
+                + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
     }
 }

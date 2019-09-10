@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
@@ -215,11 +216,11 @@ public class BridgeUtilsTest {
     @Test
     public void collectExternalIds() {
         Account account = Account.create();
-        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
         as1.setExternalId("subAextId");
-        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
         as2.setExternalId("subBextId");
-        AccountSubstudy as3 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "userId");
+        AccountSubstudy as3 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "userId");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
         
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
@@ -230,7 +231,25 @@ public class BridgeUtilsTest {
     public void collectExternalIdsNullsAreIgnored() {
         Set<String> externalIds = BridgeUtils.collectExternalIds(Account.create());
         assertEquals(externalIds, ImmutableSet.of());
-    }    
+    } 
+    
+    @Test
+    public void collectSubstudyIds() {
+        Account account = Account.create();
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+        AccountSubstudy as3 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "userId");
+        account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
+        
+        Set<String> externalIds = BridgeUtils.collectSubstudyIds(account);
+        assertEquals(externalIds, ImmutableSet.of("substudyA","substudyB", "substudyC"));
+    }
+    
+    @Test
+    public void collectSubstudyIdsNullsAreIgnored() {
+        Set<String> externalIds = BridgeUtils.collectSubstudyIds(Account.create());
+        assertEquals(externalIds, ImmutableSet.of());
+    }
     
     @Test
     public void filterForSubstudyAccountRemovesUnsharedSubstudyIds() {

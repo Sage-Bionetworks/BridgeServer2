@@ -59,7 +59,6 @@ public final class DynamoStudy implements Study {
     private String identifier;
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
-    private List<String> fitBitScopes;
     private boolean participantIpLockingEnabled;
     private boolean studyIdExcludedInExport;
     private String supportEmail;
@@ -101,7 +100,6 @@ public final class DynamoStudy implements Study {
 
     public DynamoStudy() {
         automaticCustomEvents = new HashMap<>();
-        fitBitScopes = new ArrayList<>();
         uploadMetadataFieldDefinitions = new ArrayList<>();
         profileAttributes = new HashSet<>();
         taskIdentifiers = new HashSet<>();
@@ -202,18 +200,6 @@ public final class DynamoStudy implements Study {
     @Override
     public void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed) {
         this.autoVerificationEmailSuppressed = autoVerificationEmailSuppressed;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public List<String> getFitBitScopes() {
-        return fitBitScopes;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setFitBitScopes(List<String> fitBitScopes) {
-        this.fitBitScopes = fitBitScopes != null ? fitBitScopes : new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -634,7 +620,7 @@ public final class DynamoStudy implements Study {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, fitBitScopes, participantIpLockingEnabled, studyIdExcludedInExport,
+                autoVerificationEmailSuppressed, participantIpLockingEnabled, studyIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
                 consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
@@ -656,7 +642,6 @@ public final class DynamoStudy implements Study {
         return (Objects.equals(identifier, other.identifier)
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
-                && Objects.equals(fitBitScopes, other.fitBitScopes)
                 && Objects.equals(participantIpLockingEnabled, other.participantIpLockingEnabled)
                 && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)

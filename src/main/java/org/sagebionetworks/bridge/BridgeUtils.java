@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -41,7 +42,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -135,6 +135,12 @@ public class BridgeUtils {
                 .collect(toImmutableSet());
     }
     
+    public static Set<String> collectSubstudyIds(Account account) {
+        return account.getAccountSubstudies().stream()
+                .map(AccountSubstudy::getSubstudyId)
+                .collect(toImmutableSet());
+    }
+    
     /** Gets the request context for the current thread. See also RequestInterceptor. */
     public static RequestContext getRequestContext() {
         RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
@@ -158,9 +164,12 @@ public class BridgeUtils {
             }
             Set<AccountSubstudy> matched = account.getAccountSubstudies().stream()
                     .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
-                    .collect(BridgeCollectors.toImmutableSet());
+                    .collect(toSet());
             
             if (!matched.isEmpty()) {
+                // Hibernate managed objects use a collection implementation that tracks changes,
+                // and shouldn't be set with a Java library collection. Here it is okay because 
+                // we're filtering an object to return through the API, and it won't be persisted.
                 account.setAccountSubstudies(matched);
                 return account;
             }
