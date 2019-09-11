@@ -131,11 +131,10 @@ public class StudyController extends BaseController {
     public Study getStudy(@PathVariable String identifier) throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN, WORKER);
         
-        // Caller must have permissions to operate on this study. However worker may be used
+        // Caller must be a full admin to get any study, however worker may be used
         // cross study, so exclude it from this check
-        if (!session.isInRole(WORKER) &&
-            !session.getStudyIdentifier().getIdentifier().equals(identifier)) {
-            throw new UnauthorizedException("Study admin cannot retrieve other studies.");
+        if (!session.isInRole(WORKER)) {
+            verifyCrossStudyAdmin(session.getId(), "Study admin cannot retrieve other studies.");
         }
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
         return studyService.getStudy(identifier, true);
