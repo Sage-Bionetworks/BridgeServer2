@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -32,7 +33,7 @@ import org.sagebionetworks.bridge.services.FPHSService;
 @RestController
 public class FPHSController extends BaseController {
     
-    private static final StudyIdentifier FPHS_ID = new StudyIdentifierImpl("fphs");
+    static final StudyIdentifier FPHS_ID = new StudyIdentifierImpl("fphs");
     
     private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
             new TypeReference<List<FPHSExternalIdentifier>>() {};
@@ -77,7 +78,11 @@ public class FPHSController extends BaseController {
     @PostMapping("/fphs/externalIds")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage addExternalIdentifiers() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        if (!FPHS_ID.equals(session.getStudyIdentifier())) {
+            throw new UnauthorizedException("Cannot create identifiers in FPHS study.");
+        }
         
         List<FPHSExternalIdentifier> externalIds = MAPPER.convertValue(parseJson(JsonNode.class),
                 EXTERNAL_ID_TYPE_REF);

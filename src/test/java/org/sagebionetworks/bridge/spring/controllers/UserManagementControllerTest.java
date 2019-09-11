@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
@@ -210,7 +211,7 @@ public class UserManagementControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void changeStudyForStudyAdmin() throws Exception {
+    public void changeStudyRejectsStudyAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
 
         session.setStudyIdentifier(new StudyIdentifierImpl("some-other-study"));
@@ -236,9 +237,18 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        
         // same study id as above test
         StatusMessage result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
         assertEquals(result, UserManagementController.CREATED_MSG);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void createUserWithStudyIdRejectsStudyAdmin() throws Exception {
+        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
+        
+        controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
     }
 
     @Test

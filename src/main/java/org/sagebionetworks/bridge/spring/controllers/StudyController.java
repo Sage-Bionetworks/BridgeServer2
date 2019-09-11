@@ -114,8 +114,13 @@ public class StudyController extends BaseController {
 
     @PostMapping("/v3/studies/{identifier}")
     public VersionHolder updateStudy(@PathVariable String identifier) throws Exception {
-        getAuthenticatedSession(ADMIN);
-
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        // ADMIN must have permissions to operate on this study.
+        if (!session.getStudyIdentifier().getIdentifier().equals(identifier)) {
+            throw new UnauthorizedException("Study admin cannot update another study");
+        }
+        
         Study studyUpdate = parseJson(Study.class);
         studyUpdate.setIdentifier(identifier);
         studyUpdate = studyService.updateStudy(studyUpdate, true);
@@ -124,8 +129,14 @@ public class StudyController extends BaseController {
 
     @GetMapping("/v3/studies/{identifier}")
     public Study getStudy(@PathVariable String identifier) throws Exception {
-        getAuthenticatedSession(ADMIN, WORKER);
-
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        
+        // Caller must have permissions to operate on this study. However worker may be used
+        // cross study, so exclude it from this check
+        if (!session.isInRole(WORKER) &&
+            !session.getStudyIdentifier().getIdentifier().equals(identifier)) {
+            throw new UnauthorizedException("Study admin cannot retrieve other studies.");
+        }
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
         return studyService.getStudy(identifier, true);
     }
@@ -146,7 +157,9 @@ public class StudyController extends BaseController {
                     .withRequestParam("summary", true);
             return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
         }
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
 
         // otherwise, return all studies including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
@@ -156,8 +169,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         Study study = parseJson(Study.class);
         study = studyService.createStudy(study);
         return new VersionHolder(study.getVersion());
@@ -166,8 +180,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/init")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudyAndUsers() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
         Study study = studyService.createStudyAndUsers(studyAndUsers);
 
@@ -192,10 +207,11 @@ public class StudyController extends BaseController {
     @DeleteMapping("/v3/studies/{identifier}")
     public StatusMessage deleteStudy(@PathVariable String identifier,
             @RequestParam(defaultValue = "false") boolean physical) throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
         if (studyWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot delete studies.");
         studyService.deleteStudy(identifier, Boolean.valueOf(physical));
 
         return DELETED_MSG;

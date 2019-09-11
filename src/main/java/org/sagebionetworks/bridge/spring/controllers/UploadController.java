@@ -165,7 +165,7 @@ public class UploadController extends BaseController {
     
     @GetMapping("/v3/uploads/{uploadId}")
     public UploadView getUpload(@PathVariable String uploadId) {
-        getAuthenticatedSession(Roles.ADMIN, Roles.WORKER);
+        UserSession session = getAuthenticatedSession(Roles.ADMIN, Roles.WORKER);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
@@ -174,6 +174,10 @@ public class UploadController extends BaseController {
             HealthDataRecord record = healthDataService.getRecordById(recordId);
             if (record == null) {
                 throw new EntityNotFoundException(HealthDataRecord.class);
+            }
+            // You cannot authenticate in one study, and then retrieve a record from another study
+            if (!session.getStudyIdentifier().getIdentifier().equals(record.getStudyId())) {
+                throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
             }
             uploadId = record.getUploadId();
         }

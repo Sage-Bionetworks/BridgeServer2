@@ -5,9 +5,11 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -49,6 +51,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -61,11 +64,13 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -110,6 +115,9 @@ public class StudyControllerTest extends Mockito {
     UploadService mockUploadService;
     
     @Mock
+    AccountDao mockAccountDao;
+    
+    @Mock
     BridgeConfig mockBridgeConfig;
     
     @Mock
@@ -130,6 +138,7 @@ public class StudyControllerTest extends Mockito {
         
         // mock session with study identifier
         when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockSession.getId()).thenReturn(USER_ID);
         
         study = new DynamoStudy();
         study.setSupportEmail(EMAIL_ADDRESS);
@@ -137,7 +146,8 @@ public class StudyControllerTest extends Mockito {
         study.setSynapseProjectId(TEST_PROJECT_ID);
         study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         study.setActive(true);
-        
+     
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(study);
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(VERIFIED);
@@ -569,7 +579,59 @@ public class StudyControllerTest extends Mockito {
 
         assertTrue(result.contains("healthCodeExportEnabled"));
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateStudyRejectsStudyAdmin() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
+        controller.updateStudy("some-study");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getStudyRejectsStudyAdmin() throws Exception { 
+        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        
+        controller.getStudy("some-study");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getAllStudiesFullStudyRejectsStudyAdmin() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
+        when(mockSession.getId()).thenReturn("other-id");
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.getAllStudies(null, null);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void createStudyRejectsStudyAdmin() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
+        when(mockSession.getId()).thenReturn("other-id");
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.createStudy();
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void createStudyAndUsersRejectsStudyAdmin() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
+        when(mockSession.getId()).thenReturn("other-id");
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.createStudyAndUsers();
+    }
+        
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteRejectsStudyAdmin() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
+        when(mockSession.getId()).thenReturn("other-id");
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.deleteStudy(TEST_STUDY_IDENTIFIER, true);
+    }
+    
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         if (role != null) {

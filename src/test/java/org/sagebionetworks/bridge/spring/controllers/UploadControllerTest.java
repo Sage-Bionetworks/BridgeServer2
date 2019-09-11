@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -321,11 +322,13 @@ public class UploadControllerTest extends Mockito {
         assertEquals(node.get("healthData").get("healthCode").textValue(), HEALTH_CODE);
     }
 
-    @Test
-    public void getUploadByRecordId() throws Exception {
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        when(mockResearcherSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("researcher-study-id"));
         
         HealthDataRecord record = HealthDataRecord.create();
+        record.setStudyId(TEST_STUDY_IDENTIFIER);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
