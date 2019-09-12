@@ -35,11 +35,11 @@ public class MasterSchedulerService {
         return schedulerConfigDao.getAllSchedulerConfig();
     }
 
-    public void createSchedulerConfig(MasterSchedulerConfig schedulerConfig) {
+    public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig schedulerConfig) {
         checkNotNull(schedulerConfig.getScheduleId());
         
         Validate.entityThrowingException(MasterSchedulerConfigValidator.INSTANCE, schedulerConfig);
-        schedulerConfigDao.createSchedulerConfig(schedulerConfig);
+        return schedulerConfigDao.createSchedulerConfig(schedulerConfig);
     }
 
     public MasterSchedulerConfig getSchedulerConfig(String scheduleId) {
@@ -54,28 +54,18 @@ public class MasterSchedulerService {
         return schedulerConfig;
     }
 
-    public void updateSchedulerConfig(String scheduleId, MasterSchedulerConfig schedulerConfig) {
+    public MasterSchedulerConfig updateSchedulerConfig(String scheduleId, MasterSchedulerConfig schedulerConfig) {
         checkNotNull(scheduleId);
+        checkNotNull(schedulerConfig);
         
         Validate.entityThrowingException(MasterSchedulerConfigValidator.INSTANCE, schedulerConfig);
         
-        MasterSchedulerConfig oldSchedulerConfig = schedulerConfigDao.getSchedulerConfig(scheduleId);
-        if (oldSchedulerConfig == null) {
-            throw new BadRequestException("Can't update scheduler config for scheduleId=" + scheduleId 
-                    + ": scheduler does not exists");
-        }
-        
-        schedulerConfigDao.updateSchedulerConfig(schedulerConfig);
+        return schedulerConfigDao.updateSchedulerConfig(schedulerConfig);
     }
 
     public void deleteSchedulerConfig(String scheduleId) {
         checkNotNull(scheduleId);
         
-        MasterSchedulerConfig schedulerConfig = schedulerConfigDao.getSchedulerConfig(scheduleId);
-        if (schedulerConfig == null) {
-            throw new BadRequestException("Can't delete scheduler config for scheduleId=" + scheduleId 
-                    + ": scheduler does not exists");
-        }
         schedulerConfigDao.deleteSchedulerConfig(scheduleId);
     }
 }

@@ -1,23 +1,31 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.MasterSchedulerConfigDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
+import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 @Component
@@ -29,7 +37,7 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
      * exist (including both the hash key and the range key).
      */
     private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
-            .withExpectedEntry("key", new ExpectedAttributeValue(false));
+            .withExpectedEntry("scheduleId", new ExpectedAttributeValue(false));
     
     private DynamoDBMapper mapper;
     
@@ -60,12 +68,18 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         DynamoMasterSchedulerConfig configKey = new DynamoMasterSchedulerConfig();
         configKey.setScheduleId(scheduleId);
         
-        return mapper.load(configKey);
+        MasterSchedulerConfig saved =  mapper.load(configKey);
+        if (saved == null) {
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
+        }
+        return saved;
     }
 
     @Override
-    public void createSchedulerConfig(MasterSchedulerConfig config) {
+    public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig config) {
+        checkNotNull(config);
         checkArgument(isNotBlank(config.getScheduleId()));
+        
         DynamoMasterSchedulerConfig ddbConfig = (DynamoMasterSchedulerConfig) config;
         ddbConfig.setVersion(null);
         
@@ -73,12 +87,14 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         try {
             mapper.save(ddbConfig, DOES_NOT_EXIST_EXPRESSION);
         } catch (ConditionalCheckFailedException ex) {
-            throw new ConcurrentModificationException(ddbConfig);
+            throw new EntityAlreadyExistsException(MasterSchedulerConfig.class, "scheduleId", config.getScheduleId());
         }
+        return config;
     }
 
     @Override
     public MasterSchedulerConfig updateSchedulerConfig(MasterSchedulerConfig config) {
+        checkNotNull(config);
         checkArgument(isNotBlank(config.getScheduleId()));
         
         try {
@@ -93,9 +109,15 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
     public void deleteSchedulerConfig(String scheduleId) {
         checkArgument(isNotBlank(scheduleId));
         
-        DynamoMasterSchedulerConfig configKey = new DynamoMasterSchedulerConfig();
-        configKey.setScheduleId(scheduleId);
-        
-        mapper.delete(configKey);
+        MasterSchedulerConfig saved = getSchedulerConfig(scheduleId);
+        if (saved != null) {
+            try {
+                mapper.delete(saved);
+            } catch(ConditionalCheckFailedException e) {
+                throw new ConcurrentModificationException(saved);
+            }
+        } else {
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
+        }
     }
 }

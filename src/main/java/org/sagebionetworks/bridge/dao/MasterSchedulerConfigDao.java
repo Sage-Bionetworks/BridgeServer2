@@ -19,8 +19,9 @@ public interface MasterSchedulerConfigDao {
     /**
      * Create a scheduler configuration object. If the object already exists, 
      * a copy will be created.
+     * @return 
      */
-    public void createSchedulerConfig(MasterSchedulerConfig config);
+    public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig config);
     
     /**
      * Update an existing scheduler config.
