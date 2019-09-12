@@ -34,12 +34,12 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
     private DynamoDBMapper mapper;
     
     @Resource(name = "masterSchedulerConfigMapper")
-    final void setMasterSchedulerConfigMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
     @Override
-    public List<MasterSchedulerConfig> getSchedulerConfig() {
+    public List<MasterSchedulerConfig> getAllSchedulerConfig() {
         DynamoMasterSchedulerConfig configKey = new DynamoMasterSchedulerConfig();
         // Mapper.scan
         DynamoDBQueryExpression<DynamoMasterSchedulerConfig> query = new DynamoDBQueryExpression<DynamoMasterSchedulerConfig>()
@@ -64,7 +64,7 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
     }
 
     @Override
-    public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig config) {
+    public void createSchedulerConfig(MasterSchedulerConfig config) {
         checkArgument(isNotBlank(config.getScheduleId()));
         DynamoMasterSchedulerConfig ddbConfig = (DynamoMasterSchedulerConfig) config;
         ddbConfig.setVersion(null);
@@ -75,7 +75,6 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         } catch (ConditionalCheckFailedException ex) {
             throw new ConcurrentModificationException(ddbConfig);
         }
-        return ddbConfig;
     }
 
     @Override
