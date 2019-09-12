@@ -24,14 +24,12 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.CacheAdminService;
 
 public class CacheAdminControllerTest extends Mockito {
@@ -94,10 +92,7 @@ public class CacheAdminControllerTest extends Mockito {
         when(mockCacheAdminService.listItems()).thenReturn(items);
         
         // This should be a ResourceList, but it's not currently, so we're maintaining that.
-        Set<String> cacheItems = controller.listItems();
-        assertEquals(items, cacheItems);
-        
-        verify(mockCacheAdminService).listItems();
+        controller.listItems();
     }
     
     @Test
@@ -113,9 +108,6 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void removeItemRejectsStudyAdmin() throws Exception {
-        StatusMessage result = controller.removeItem("cacheKey");
-        assertEquals("Item removed from cache.", result.getMessage());
-        
-        verify(mockCacheAdminService).removeItem("cacheKey");
+        controller.removeItem("cacheKey");
     }    
 }

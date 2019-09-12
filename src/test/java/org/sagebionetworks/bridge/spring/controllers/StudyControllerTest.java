@@ -24,6 +24,7 @@ import static org.sagebionetworks.bridge.spring.controllers.StudyController.RESE
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -38,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -129,6 +131,12 @@ public class StudyControllerTest extends Mockito {
     @Spy
     @InjectMocks
     StudyController controller;
+    
+    @Captor
+    ArgumentCaptor<Study> studyCaptor;
+    
+    @Captor
+    ArgumentCaptor<StudyAndUsers> studyAndUsersCaptor;
     
     private Study study;
     
@@ -579,6 +587,26 @@ public class StudyControllerTest extends Mockito {
 
         assertTrue(result.contains("healthCodeExportEnabled"));
     }
+
+    @Test
+    public void updateStudy() throws Exception {
+        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        Study created = Study.create();
+        created.setVersion(3L);
+        when(mockStudyService.updateStudy(any(), anyBoolean())).thenReturn(created);
+        
+        Study study = Study.create();
+        study.setName("value to seek");
+        mockRequestBody(mockRequest, study);
+        
+        VersionHolder holder = controller.updateStudy(TEST_STUDY_IDENTIFIER);
+        assertEquals(holder.getVersion(), Long.valueOf(3L));
+        
+        verify(mockStudyService).updateStudy(studyCaptor.capture(), eq(true));
+        assertEquals(studyCaptor.getValue().getName(), "value to seek");
+    }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateStudyRejectsStudyAdmin() throws Exception {
@@ -588,9 +616,21 @@ public class StudyControllerTest extends Mockito {
         controller.updateStudy("some-study");
     }
     
+    @Test
+    public void getStudy() throws Exception {
+        Study retrieved = Study.create();
+        when(mockStudyService.getStudy("some-study", true)).thenReturn(retrieved);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        
+        Study result = controller.getStudy("some-study");
+        assertSame(result, retrieved);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getStudyRejectsStudyAdmin() throws Exception { 
         when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockSession.isInRole(WORKER)).thenReturn(false);
+        when(mockSession.getId()).thenReturn("not-an-id-that-fetches-an-account-in-this-study");
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         controller.getStudy("some-study");
@@ -605,6 +645,59 @@ public class StudyControllerTest extends Mockito {
         controller.getAllStudies(null, null);
     }
     
+    @Test
+    public void getAllStudiesSummary() throws Exception {
+        // Two active and one deleted study
+        Study study1 = Study.create();
+        study1.setName("study1");
+        study1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
+        study1.setActive(true);
+        Study study2 = Study.create();
+        study2.setName("study2");
+        study2.setActive(true);
+        Study study3 = Study.create();
+        study3.setName("study3");
+        study3.setActive(false);
+        List<Study> studies = ImmutableList.of(study1, study2, study3);
+        when(mockStudyService.getStudies()).thenReturn(studies);
+        
+        String json = controller.getAllStudies("summary", null);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        assertEquals(node.get("items").size(), 2);
+        assertEquals(node.get("items").get(0).get("name").textValue(), "study1");
+        assertEquals(node.get("items").get(1).get("name").textValue(), "study2");
+        assertNull(node.get("items").get(0).get("sponsorName"));
+        assertTrue(node.get("requestParams").get("summary").booleanValue());
+    }
+    
+    @Test
+    public void getAllStudies() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        // Two active and one deleted study
+        Study study1 = Study.create();
+        study1.setName("study1");
+        study1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
+        study1.setActive(true);
+        Study study2 = Study.create();
+        study2.setName("study2");
+        study2.setActive(true);
+        Study study3 = Study.create();
+        study3.setName("study3");
+        study3.setActive(false);
+        List<Study> studies = ImmutableList.of(study1, study2, study3);
+        when(mockStudyService.getStudies()).thenReturn(studies);
+        
+        String json = controller.getAllStudies(null, null);
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        
+        assertEquals(node.get("items").size(), 3);
+        assertEquals(node.get("items").get(0).get("name").textValue(), "study1");
+        assertEquals(node.get("items").get(0).get("sponsorName").textValue(), "sponsor name");
+        assertEquals(node.get("items").get(1).get("name").textValue(), "study2");
+        assertEquals(node.get("items").get(2).get("name").textValue(), "study3");
+        assertFalse(node.get("requestParams").get("summary").booleanValue());
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createStudyRejectsStudyAdmin() throws Exception {
         when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
@@ -612,6 +705,24 @@ public class StudyControllerTest extends Mockito {
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
         controller.createStudy();
+    }
+    
+    @Test
+    public void createStudy() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+
+        Study created = Study.create();
+        created.setVersion(3L);
+        when(mockStudyService.createStudy(any())).thenReturn(created);
+        
+        Study newStudy = Study.create();
+        newStudy.setName("some study");
+        mockRequestBody(mockRequest, newStudy);
+        
+        VersionHolder keys = controller.createStudy();
+        assertEquals(keys.getVersion(), Long.valueOf(3L));
+        
+        verify(mockStudyService).createStudy(newStudy);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -622,14 +733,70 @@ public class StudyControllerTest extends Mockito {
         
         controller.createStudyAndUsers();
     }
+    
+    @Test
+    public void createStudyAndusers() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void deleteRejectsStudyAdmin() throws Exception {
+        Study created = Study.create();
+        created.setVersion(3L);
+        when(mockStudyService.createStudyAndUsers(any())).thenReturn(created);
+        
+        Study newStudy = Study.create();
+        newStudy.setName("some study");
+        
+        StudyAndUsers studyAndUsers = new StudyAndUsers(
+                ImmutableList.of("admin1", "admin2"), newStudy,
+                ImmutableList.of(new StudyParticipant.Builder().build()));
+        mockRequestBody(mockRequest, studyAndUsers);
+        
+        VersionHolder keys = controller.createStudyAndUsers();
+        assertEquals(keys.getVersion(), Long.valueOf(3L));
+        
+        verify(mockStudyService).createStudyAndUsers(studyAndUsersCaptor.capture());
+        
+        StudyAndUsers captured =  studyAndUsersCaptor.getValue();
+        assertEquals(captured.getAdminIds(), ImmutableList.of("admin1", "admin2"));
+        assertEquals(captured.getUsers().size(), 1);
+        assertEquals(captured.getStudy(), newStudy);
+    }
+        
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*Study admins cannot delete studies.*")
+    public void deleteStudyRejectsStudyAdmin() throws Exception {
         when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
         when(mockSession.getId()).thenReturn("other-id");
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
-        controller.deleteStudy(TEST_STUDY_IDENTIFIER, true);
+        controller.deleteStudy("other-study", true);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*Admin cannot delete the study they are associated with.*")
+    public void deleteStudyRejectsCallerInStudy() throws Exception {
+        // API is protected by the whitelist so this test must target some other study
+        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.deleteStudy("other-study", true);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*other-study is protected by whitelist.*")
+    public void deleteStudyRejectsWhitelistedStudy() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        when(controller.getStudyWhitelist()).thenReturn(ImmutableSet.of("other-study"));
+        controller.deleteStudy("other-study", true);
+    }
+    
+    @Test
+    public void deleteStudy() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.deleteStudy("delete-study", true);
+        
+        verify(mockStudyService).deleteStudy("delete-study", Boolean.TRUE);
     }
     
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
