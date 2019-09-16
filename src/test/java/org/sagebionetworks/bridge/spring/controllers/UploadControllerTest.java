@@ -2,7 +2,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -30,6 +34,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -37,6 +42,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -68,6 +74,9 @@ public class UploadControllerTest extends Mockito {
     
     @Mock
     HealthCodeDao mockHealthCodeDao;
+    
+    @Mock
+    AccountDao mockAccountDao;
     
     @Mock
     RequestInfoService mockRequestInfoService;
@@ -323,15 +332,18 @@ public class UploadControllerTest extends Mockito {
 
     @Test
     public void getUploadByRecordId() throws Exception {
+        doReturn(USER_ID).when(mockResearcherSession).getId();
+        doReturn(TEST_STUDY).when(mockResearcherSession).getStudyIdentifier();
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
+        record.setStudyId(TEST_STUDY_IDENTIFIER);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("researcher-study-id");
+        upload.setStudyId(TEST_STUDY_IDENTIFIER);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -343,6 +355,54 @@ public class UploadControllerTest extends Mockito {
         assertEquals(node.get("completedBy").textValue(), "s3_worker");
         assertEquals(node.get("type").textValue(), "Upload");
         assertEquals(node.get("healthData").get("healthCode").textValue(), HEALTH_CODE);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp=".*Study admin cannot retrieve upload in another study.*")
+    public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(USER_ID).when(mockResearcherSession).getId();
+        when(mockResearcherSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("researcher-study-id"));
+
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setStudyId(TEST_STUDY_IDENTIFIER);
+        record.setUploadId(UPLOAD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
+        
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("researcher-study-id");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
+
+        when(mockUploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        controller.getUpload("recordId:record-id");
+    }
+
+    @Test
+    public void getUploadByRecordIdWorksForFullAdmin() throws Exception {
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(USER_ID).when(mockResearcherSession).getId();
+        when(mockResearcherSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setStudyId("some-other-study");
+        record.setUploadId(UPLOAD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
+        
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("some-other-study");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
+
+        when(mockUploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        UploadView view = controller.getUpload("recordId:record-id");
+        assertNotNull(view);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

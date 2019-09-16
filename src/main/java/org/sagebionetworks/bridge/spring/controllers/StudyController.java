@@ -93,6 +93,11 @@ public class StudyController extends BaseController {
     final void setUploadService(UploadService uploadService) {
         this.uploadService = uploadService;
     }
+    
+    // To enable mocking of values.
+    Set<String> getStudyWhitelist() {
+        return studyWhitelist;
+    }
 
     @GetMapping("/v3/studies/self")
     public Study getCurrentStudy() throws Exception {
@@ -114,8 +119,13 @@ public class StudyController extends BaseController {
 
     @PostMapping("/v3/studies/{identifier}")
     public VersionHolder updateStudy(@PathVariable String identifier) throws Exception {
-        getAuthenticatedSession(ADMIN);
-
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        // ADMIN must have permissions to operate on this study.
+        if (!session.getStudyIdentifier().getIdentifier().equals(identifier)) {
+            throw new UnauthorizedException("Study admin cannot update another study");
+        }
+        
         Study studyUpdate = parseJson(Study.class);
         studyUpdate.setIdentifier(identifier);
         studyUpdate = studyService.updateStudy(studyUpdate, true);
@@ -124,8 +134,13 @@ public class StudyController extends BaseController {
 
     @GetMapping("/v3/studies/{identifier}")
     public Study getStudy(@PathVariable String identifier) throws Exception {
-        getAuthenticatedSession(ADMIN, WORKER);
-
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        
+        // Caller must be a full admin to get any study, however worker may be used
+        // cross study, so exclude it from this check
+        if (!session.isInRole(WORKER)) {
+            verifyCrossStudyAdmin(session.getId(), "Study admin cannot retrieve other studies.");
+        }
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
         return studyService.getStudy(identifier, true);
     }
@@ -146,7 +161,9 @@ public class StudyController extends BaseController {
                     .withRequestParam("summary", true);
             return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
         }
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
 
         // otherwise, return all studies including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
@@ -156,8 +173,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         Study study = parseJson(Study.class);
         study = studyService.createStudy(study);
         return new VersionHolder(study.getVersion());
@@ -166,8 +184,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/init")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudyAndUsers() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
         Study study = studyService.createStudyAndUsers(studyAndUsers);
 
@@ -192,10 +211,19 @@ public class StudyController extends BaseController {
     @DeleteMapping("/v3/studies/{identifier}")
     public StatusMessage deleteStudy(@PathVariable String identifier,
             @RequestParam(defaultValue = "false") boolean physical) throws Exception {
-        getAuthenticatedSession(ADMIN);
-        if (studyWhitelist.contains(identifier)) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot delete studies.");
+        
+        // Finally, you cannot delete your own study because it locks this user out of their session.
+        // This is true of *all* users in the study, btw. There is an action in the BSM that iterates 
+        // through all the participants in a study and signs them out one-by-one.
+        if (session.getStudyIdentifier().getIdentifier().equals(identifier)) {
+            throw new UnauthorizedException("Admin cannot delete the study they are associated with.");
+        }
+        if (getStudyWhitelist().contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
+        
         studyService.deleteStudy(identifier, Boolean.valueOf(physical));
 
         return DELETED_MSG;
