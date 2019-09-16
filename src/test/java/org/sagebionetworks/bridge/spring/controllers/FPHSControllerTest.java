@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.spring.controllers.FPHSController.FPHS_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -17,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -32,6 +33,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -43,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.FPHSService;
@@ -66,6 +69,9 @@ public class FPHSControllerTest extends Mockito {
     
     @Mock
     CacheProvider mockCacheProvider;
+    
+    @Mock
+    AccountDao mockAccountDao;
     
     @Mock
     NotificationTopicService mockNotificationTopicService;
@@ -92,19 +98,19 @@ public class FPHSControllerTest extends Mockito {
         controller.setSessionUpdateService(sessionUpdateService);
         
         Study study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(FPHS_ID.getIdentifier());
 
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(FPHS_ID)).thenReturn(study);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
     
     private UserSession setUserSession() {
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("BBB").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode("BBB").build();
         
         UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(new StudyIdentifierImpl("fphs"));
         session.setAuthenticated(true);
         
         doReturn(session).when(controller).getSessionIfItExists();
@@ -156,7 +162,7 @@ public class FPHSControllerTest extends Mockito {
     
     @Test
     public void registrationRequiresAuthenticatedConsentedUser() throws Exception {
-        mockRequestBody(mockRequest, ExternalIdentifier.create(TEST_STUDY, "foo"));
+        mockRequestBody(mockRequest, ExternalIdentifier.create(FPHS_ID, "foo"));
         try {
             controller.registerExternalIdentifier();
             fail("Should have thrown exception");
@@ -168,7 +174,7 @@ public class FPHSControllerTest extends Mockito {
     @Test
     public void registrationOK() throws Exception {
         UserSession session = setUserSession();
-        mockRequestBody(mockRequest, ExternalIdentifier.create(TEST_STUDY, "foo"));
+        mockRequestBody(mockRequest, ExternalIdentifier.create(FPHS_ID, "foo"));
 
         StatusMessage result = controller.registerExternalIdentifier();
         assertEquals(result.getMessage(), "External identifier added to user profile.");
@@ -203,7 +209,7 @@ public class FPHSControllerTest extends Mockito {
         UserSession session = setUserSession();
         // Now when we have an admin user, we get back results
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(Sets.newHashSet(Roles.ADMIN)).build());
+                .withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         StatusMessage result = controller.addExternalIdentifiers();
         assertEquals(result.getMessage(), "External identifiers added.");
         
@@ -212,5 +218,22 @@ public class FPHSControllerTest extends Mockito {
         
         List<FPHSExternalIdentifier> passedList = (List<FPHSExternalIdentifier>)captor.getValue();
         assertEquals(passedList.size(), 2);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void addIdentifiersOKRejectsStudyAdmin() throws Exception {
+        FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
+        FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
+        mockRequestBody(mockRequest, ImmutableList.of(id1, id2));
+        
+        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(Study.create());
+        
+        UserSession session = setUserSession();
+        session.setStudyIdentifier(TEST_STUDY);
+        // Now when we have an admin user, we get back results
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(ADMIN)).build());
+        
+        controller.addExternalIdentifiers();
     }
 }

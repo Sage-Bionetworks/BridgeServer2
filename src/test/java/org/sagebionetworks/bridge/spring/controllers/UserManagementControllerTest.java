@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
@@ -39,13 +40,17 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -81,6 +86,9 @@ public class UserManagementControllerTest extends Mockito {
     @Mock
     HttpServletResponse mockResponse;
     
+    @Mock
+    AccountDao mockAccountDao;
+    
     @Spy
     @InjectMocks
     UserManagementController controller;
@@ -100,7 +108,7 @@ public class UserManagementControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
 
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withRoles(ImmutableSet.of(ADMIN)).withEmail(EMAIL).build();
+                .withId(USER_ID).withRoles(ImmutableSet.of(ADMIN)).withEmail(EMAIL).build();
 
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
@@ -186,6 +194,9 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void changeStudyForAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
 
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
@@ -197,6 +208,18 @@ public class UserManagementControllerTest extends Mockito {
         controller.changeStudyForAdmin();
         assertEquals(session.getStudyIdentifier().getIdentifier(), "nextStudy");
         verify(mockCacheProvider).setUserSession(session);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void changeStudyRejectsStudyAdmin() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+
+        session.setStudyIdentifier(new StudyIdentifierImpl("some-other-study"));
+        
+        SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
+        mockRequestBody(mockRequest, signIn);
+        
+        controller.changeStudyForAdmin();
     }
 
     @Test
@@ -214,9 +237,18 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        
         // same study id as above test
         StatusMessage result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
         assertEquals(result, UserManagementController.CREATED_MSG);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void createUserWithStudyIdRejectsStudyAdmin() throws Exception {
+        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
+        
+        controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
     }
 
     @Test
