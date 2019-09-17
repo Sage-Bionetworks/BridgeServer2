@@ -33,7 +33,6 @@ import java.util.Map;
 
 import javax.mail.internet.MimeBodyPart;
 
-import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;

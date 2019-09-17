@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.CacheAdminService;
 
 @CrossOrigin
@@ -29,14 +30,18 @@ public class CacheAdminController extends BaseController {
     
     @GetMapping
     public Set<String> listItems() throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot list cache keys.");
         
         return cacheAdminService.listItems();
     }
     
     @DeleteMapping("{cacheKey}")
     public StatusMessage removeItem(@PathVariable String cacheKey) throws Exception {
-        getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        verifyCrossStudyAdmin(session.getId(), "Study admins cannot delete cache keys.");
         
         cacheAdminService.removeItem(cacheKey);
         
