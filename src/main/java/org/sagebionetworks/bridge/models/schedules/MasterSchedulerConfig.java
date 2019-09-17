@@ -38,4 +38,7 @@ public interface MasterSchedulerConfig extends BridgeEntity {
      */
     public String getSqsQueueUrl();
     public void setSqsQueueUrl(String sqsQueueUrl);
+    
+    public Long getVersion();
+    public void setVersion(Long versions);
 }
