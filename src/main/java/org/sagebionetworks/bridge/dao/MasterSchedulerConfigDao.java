@@ -17,9 +17,8 @@ public interface MasterSchedulerConfigDao {
     public MasterSchedulerConfig getSchedulerConfig(String scheduleId);
     
     /**
-     * Create a scheduler configuration object. If the object already exists, 
-     * a copy will be created.
-     * @return 
+     * Create a scheduler configuration object. Cannot create new configs with 
+     * duplicate scheduleId.
      */
     public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig config);
     
@@ -29,8 +28,7 @@ public interface MasterSchedulerConfigDao {
     public MasterSchedulerConfig updateSchedulerConfig(MasterSchedulerConfig config);
     
     /**
-     * Delete an individual scheduler config by marking it as deleted. The record 
-     * will not be returned from the APIs but it is still in the database.
+     * Delete an individual scheduler config.
      */
     public void deleteSchedulerConfig(String scheduleId);
 }

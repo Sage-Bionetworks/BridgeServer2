@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -13,20 +14,16 @@ import org.sagebionetworks.bridge.dao.MasterSchedulerConfigDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 @Component
 public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao {
@@ -34,10 +31,12 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
     /**
      * DynamoDB save expression for conditional puts if and only if the row doesn't already exist. This save expression
      * is executed on the row that would be written to. We only need to check the hash key, since the entire row won't
-     * exist (including both the hash key and the range key).
+     * exist.
      */
-    private static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
+    static final DynamoDBSaveExpression DOES_NOT_EXIST_EXPRESSION = new DynamoDBSaveExpression()
             .withExpectedEntry("scheduleId", new ExpectedAttributeValue(false));
+    
+    static final String SCHEDULE_ID = "scheduleId";
     
     private DynamoDBMapper mapper;
     
@@ -48,17 +47,11 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
 
     @Override
     public List<MasterSchedulerConfig> getAllSchedulerConfig() {
-        DynamoMasterSchedulerConfig configKey = new DynamoMasterSchedulerConfig();
-        // Mapper.scan
-        DynamoDBQueryExpression<DynamoMasterSchedulerConfig> query = new DynamoDBQueryExpression<DynamoMasterSchedulerConfig>()
-                .withHashKeyValues(configKey);
-        PaginatedQueryList<DynamoMasterSchedulerConfig> results = mapper.query(DynamoMasterSchedulerConfig.class, query);
+        DynamoDBScanExpression scan = new DynamoDBScanExpression();
         
-        List<MasterSchedulerConfig> list = Lists.newArrayListWithCapacity(results.size());
-        for (DynamoMasterSchedulerConfig config : results) {
-            list.add(config);
-        }
-        return null;
+        List<DynamoMasterSchedulerConfig> mappings = mapper.scan(DynamoMasterSchedulerConfig.class, scan);
+        
+        return new ArrayList<MasterSchedulerConfig>(mappings);
     }
 
     @Override
@@ -68,11 +61,7 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         DynamoMasterSchedulerConfig configKey = new DynamoMasterSchedulerConfig();
         configKey.setScheduleId(scheduleId);
         
-        MasterSchedulerConfig saved =  mapper.load(configKey);
-        if (saved == null) {
-            throw new EntityNotFoundException(MasterSchedulerConfig.class);
-        }
-        return saved;
+        return mapper.load(configKey);
     }
 
     @Override
@@ -87,7 +76,7 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         try {
             mapper.save(ddbConfig, DOES_NOT_EXIST_EXPRESSION);
         } catch (ConditionalCheckFailedException ex) {
-            throw new EntityAlreadyExistsException(MasterSchedulerConfig.class, "scheduleId", config.getScheduleId());
+            throw new EntityAlreadyExistsException(MasterSchedulerConfig.class, SCHEDULE_ID, config.getScheduleId());
         }
         return config;
     }
@@ -97,10 +86,14 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
         checkNotNull(config);
         checkArgument(isNotBlank(config.getScheduleId()));
         
+        Map<String, ExpectedAttributeValue> map = ImmutableMap.of(
+                SCHEDULE_ID, new ExpectedAttributeValue().withValue(new AttributeValue(config.getScheduleId())));
+        DynamoDBSaveExpression doesExistExpression = new DynamoDBSaveExpression().withExpected(map);
+        
         try {
-            mapper.save(config);
+            mapper.save(config, doesExistExpression);
         } catch (ConditionalCheckFailedException ex) {
-            throw new ConcurrentModificationException(config);
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
         }
         return config;
     }
@@ -109,15 +102,14 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
     public void deleteSchedulerConfig(String scheduleId) {
         checkArgument(isNotBlank(scheduleId));
         
-        MasterSchedulerConfig saved = getSchedulerConfig(scheduleId);
-        if (saved != null) {
+        MasterSchedulerConfig config = getSchedulerConfig(scheduleId);
+        if (config != null) {
             try {
-                mapper.delete(saved);
+                mapper.delete(config);
             } catch(ConditionalCheckFailedException e) {
-                throw new ConcurrentModificationException(saved);
+                throw new ConcurrentModificationException(config);
             }
-        } else {
-            throw new EntityNotFoundException(MasterSchedulerConfig.class);
         }
+        
     }
 }

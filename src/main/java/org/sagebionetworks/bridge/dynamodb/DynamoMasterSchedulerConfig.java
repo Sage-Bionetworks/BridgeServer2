@@ -65,11 +65,13 @@ public class DynamoMasterSchedulerConfig implements MasterSchedulerConfig {
      * not modify this value. This will be automatically incremented by Bridge.
      */
     @DynamoDBVersionAttribute
+    @Override
     public Long getVersion() {
         return version;
     }
 
     /** @see #getVersion */
+    @Override
     public void setVersion(Long version) {
         this.version = version;
     }
