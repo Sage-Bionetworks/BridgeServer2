@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.API_SUBPOP;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.SHARED_SUBPOP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -111,6 +112,10 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         
         verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
                 subpopCaptor.capture(), eq(false), eq(false));
+        
+        assertEquals(BridgeUtils.getRequestContext().getCallerStudyId(), BridgeConstants.API_STUDY_ID_STRING);
+        assertEquals(BridgeUtils.getRequestContext().getCallerRoles(), ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER));
+        assertEquals(BridgeUtils.getRequestContext().getCallerUserId(), "DefaultStudyBootstrapper");
         
         assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(0));
         assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(1));
