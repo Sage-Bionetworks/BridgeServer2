@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.List;
 
 import org.sagebionetworks.bridge.dao.MasterSchedulerConfigDao;
 import org.sagebionetworks.bridge.dao.MasterSchedulerStatusDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.TimestampHolder;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.validators.MasterSchedulerConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -18,7 +18,6 @@ public class MasterSchedulerService {
     
     private MasterSchedulerConfigDao schedulerConfigDao;
 
-    @SuppressWarnings("unused")
     private MasterSchedulerStatusDao schedulerStatusDao;
 
     @Autowired
@@ -36,7 +35,7 @@ public class MasterSchedulerService {
     }
 
     public MasterSchedulerConfig createSchedulerConfig(MasterSchedulerConfig schedulerConfig) {
-        checkNotNull(schedulerConfig.getScheduleId());
+        checkNotNull(schedulerConfig);
         
         Validate.entityThrowingException(MasterSchedulerConfigValidator.INSTANCE, schedulerConfig);
         return schedulerConfigDao.createSchedulerConfig(schedulerConfig);
@@ -47,8 +46,7 @@ public class MasterSchedulerService {
         
         MasterSchedulerConfig schedulerConfig = schedulerConfigDao.getSchedulerConfig(scheduleId);
         if (schedulerConfig == null) {
-            throw new BadRequestException("Can't get scheduler config for scheduleId=" + scheduleId 
-                    + ": scheduler does not exists");
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
         }
         
         return schedulerConfig;
@@ -58,7 +56,12 @@ public class MasterSchedulerService {
         checkNotNull(scheduleId);
         checkNotNull(schedulerConfig);
         
+        schedulerConfig.setScheduleId(scheduleId);
         Validate.entityThrowingException(MasterSchedulerConfigValidator.INSTANCE, schedulerConfig);
+        MasterSchedulerConfig saved = schedulerConfigDao.getSchedulerConfig(scheduleId);
+        if (saved == null) {
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
+        }
         
         return schedulerConfigDao.updateSchedulerConfig(schedulerConfig);
     }
@@ -67,5 +70,9 @@ public class MasterSchedulerService {
         checkNotNull(scheduleId);
         
         schedulerConfigDao.deleteSchedulerConfig(scheduleId);
+    }
+    
+    public TimestampHolder getSchedulerStatus() {
+        return schedulerStatusDao.getLastProcessedTime();
     }
 }

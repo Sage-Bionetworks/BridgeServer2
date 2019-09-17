@@ -2,9 +2,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.Roles;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.TimestampHolder;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.services.MasterSchedulerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 @RestController
 public class MasterSchedulerController extends BaseController {
-    static final StatusMessage CREATED_MSG = new StatusMessage("Scheduler config created.");
-    static final StatusMessage UPDATED_MSG = new StatusMessage("Scheduler config updated.");
     static final StatusMessage DELETED_MSG = new StatusMessage("Scheduler config deleted.");
 
+    
     @Autowired
     MasterSchedulerService schedulerService;
 
@@ -33,20 +33,21 @@ public class MasterSchedulerController extends BaseController {
 
     @GetMapping("/v3/schedulerconfigs")
     public ResourceList<MasterSchedulerConfig> getAllSchedulerConfigs() {
-        getAuthenticatedSession(Roles.ADMIN);
+        getAuthenticatedSession(ADMIN);
+        
         List<MasterSchedulerConfig> configs = schedulerService.getAllSchedulerConfigs();
+        
         return new ResourceList<>(configs);
     }
 
     @PostMapping("/v3/schedulerconfigs")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createSchedulerConfig() {
-        getAuthenticatedSession(Roles.ADMIN);
-
+    public MasterSchedulerConfig createSchedulerConfig() {
+        getAuthenticatedSession(ADMIN);
+        
         MasterSchedulerConfig schedulerConfig = parseJson(MasterSchedulerConfig.class);
         
-        schedulerService.createSchedulerConfig(schedulerConfig);
-        return CREATED_MSG;
+        return schedulerService.createSchedulerConfig(schedulerConfig);
     }
 
     /**
@@ -54,7 +55,7 @@ public class MasterSchedulerController extends BaseController {
      */
     @GetMapping("/v3/schedulerconfigs/{scheduleId}")
     public MasterSchedulerConfig getSchedulerConfig(@PathVariable String scheduleId) {
-        getAuthenticatedSession(Roles.ADMIN);
+        getAuthenticatedSession(ADMIN);
         
         return schedulerService.getSchedulerConfig(scheduleId);
     }
@@ -63,13 +64,12 @@ public class MasterSchedulerController extends BaseController {
      * Update a single scheduler config.
      */
     @PostMapping("/v3/schedulerconfigs/{scheduleId}")
-    public StatusMessage updateSchedulerConfig(@PathVariable String scheduleId) {
-        getAuthenticatedSession(Roles.ADMIN);
+    public MasterSchedulerConfig updateSchedulerConfig(@PathVariable String scheduleId) {
+        getAuthenticatedSession(ADMIN);
         
         MasterSchedulerConfig schedulerConfig = parseJson(MasterSchedulerConfig.class);
         
-        schedulerService.updateSchedulerConfig(scheduleId, schedulerConfig);
-        return UPDATED_MSG;
+        return schedulerService.updateSchedulerConfig(scheduleId, schedulerConfig);
     }
 
     /**
@@ -77,9 +77,20 @@ public class MasterSchedulerController extends BaseController {
      */
     @DeleteMapping("/v3/schedulerconfigs/{scheduleId}")
     public StatusMessage deleteSchedulerConfig(@PathVariable String scheduleId) {
-        getAuthenticatedSession(Roles.ADMIN);
+        getAuthenticatedSession(ADMIN);
         
         schedulerService.deleteSchedulerConfig(scheduleId);
         return DELETED_MSG;
+    }
+    
+
+    /**
+     * Get the last time scheduler ran.
+     */
+    @GetMapping("/v3/schedulerstatus")
+    public TimestampHolder getSchedulerStatus() {
+        getAuthenticatedSession(ADMIN);
+        
+        return schedulerService.getSchedulerStatus();
     }
 }
