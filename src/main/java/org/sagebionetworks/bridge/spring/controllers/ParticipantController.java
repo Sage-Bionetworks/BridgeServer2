@@ -122,7 +122,8 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, session.getId(), true);
+        // Don't need history to update StudyParticipant.
+        StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
         StudyParticipant updated = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
@@ -132,6 +133,10 @@ public class ParticipantController extends BaseController {
                 .withId(session.getId()).build();
         participantService.updateParticipant(study, updated);
         
+        // Construction of the participant record now includes some fields that aren't set directly by the update,
+        // such as substudy associations. Load a completely updated participant record. Do get history 
+        // for consent and session.
+        StudyParticipant updatedParticipant = participantService.getParticipant(study, session.getId(), true);
         RequestContext reqContext = BridgeUtils.getRequestContext();
         
         CriteriaContext context = new CriteriaContext.Builder()
@@ -139,12 +144,12 @@ public class ParticipantController extends BaseController {
                 .withClientInfo(reqContext.getCallerClientInfo())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
-                .withUserDataGroups(updated.getDataGroups())
-                .withUserSubstudyIds(updated.getSubstudyIds())
+                .withUserDataGroups(updatedParticipant.getDataGroups())
+                .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
         
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, context, updatedParticipant);
         
         return UserSessionInfo.toJSON(session);
     }
