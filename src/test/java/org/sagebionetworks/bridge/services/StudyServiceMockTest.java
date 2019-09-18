@@ -150,6 +150,8 @@ public class StudyServiceMockTest extends Mockito {
     SynapseClient mockSynapseClient;
     @Mock
     TemplateService mockTemplateService;
+    @Mock
+    FileService mockFileService;
     
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -709,6 +711,7 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
         verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
+        verify(mockFileService).deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
     }
 
     private Template createTemplate(String guid) {

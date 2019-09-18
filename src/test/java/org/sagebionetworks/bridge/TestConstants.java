@@ -108,6 +108,8 @@ public class TestConstants {
             .withSignedOn(TIMESTAMP.getMillis()).build();
     
     public static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(REQUIRED_UNSIGNED.getSubpopulationGuid());
+    
+    public static final String GUID = "oneGuid";
 
     public static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1","group2");
 

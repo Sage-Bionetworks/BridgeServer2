@@ -1,99 +1,116 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.FileDao;
+import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.files.File;
+import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.validators.FileMetadataValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class FileService {
     
-    private FileDao fileDao;
+    private FileMetadataDao fileMetadataDao;
     
     @Autowired
-    final void setFileDao(FileDao fileDao) {
-        this.fileDao = fileDao;
+    final void setFileMetadataDao(FileMetadataDao fileMetadataDao) {
+        this.fileMetadataDao = fileMetadataDao;
     }
     
-    public PagedResourceList<File> getFiles(StudyIdentifier studyId, Integer offset, Integer pageSize, boolean includeDeleted) {
+    public PagedResourceList<FileMetadata> getFiles(StudyIdentifier studyId, int offset, int pageSize, boolean includeDeleted) {
         checkNotNull(studyId);
         
-        if (pageSize == null) {
-            pageSize = API_DEFAULT_PAGE_SIZE;
-        }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
-        }        
-        return fileDao.getFiles(studyId, offset, pageSize, includeDeleted);
+        }
+        return fileMetadataDao.getFiles(studyId, offset, pageSize, includeDeleted);
     }
     
-    public File getFile(StudyIdentifier studyId, String guid) {
+    public FileMetadata getFile(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        return fileDao.getFile(studyId, guid)
-                .orElseThrow(() -> new EntityNotFoundException(File.class));
+        return fileMetadataDao.getFile(studyId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(FileMetadata.class));
     }
     
-    public File createFile(StudyIdentifier studyId, File file) {
+    public FileMetadata createFile(StudyIdentifier studyId, FileMetadata metadata) {
         checkNotNull(studyId);
-        checkNotNull(file);
+        checkNotNull(metadata);
         
-        file.setVersion(0);
-        file.setDeleted(false);
-        file.setGuid(generateGuid());
-        file.setStudyId(studyId.getIdentifier());
-        return fileDao.createFile(file);
+        Validate.entityThrowingException(FileMetadataValidator.INSTANCE, metadata);
+        
+        DateTime timestamp = getDateTime();
+        
+        metadata.setVersion(0);
+        metadata.setDeleted(false);
+        metadata.setGuid(generateGuid());
+        metadata.setStudyId(studyId.getIdentifier());
+        metadata.setCreatedOn(timestamp);
+        metadata.setModifiedOn(timestamp);
+        return fileMetadataDao.createFile(metadata);
     }
     
-    public File updateFile(StudyIdentifier studyId, File file) {
+    public FileMetadata updateFile(StudyIdentifier studyId, FileMetadata metadata) {
         checkNotNull(studyId);
-        checkNotNull(file);
+        checkNotNull(metadata);
         
-        file.setStudyId(studyId.getIdentifier());
-        
-        File existing = getFile(studyId, file.getGuid());
-        if (existing.isDeleted() && file.isDeleted()) {
-            throw new EntityNotFoundException(File.class);
+        if (isBlank(metadata.getGuid())) {
+            throw new BadRequestException("File has no guid");
         }
-        return fileDao.updateFile(file);
+        FileMetadata existing = getFile(studyId, metadata.getGuid());
+        if (existing.isDeleted() && metadata.isDeleted()) {
+            throw new EntityNotFoundException(FileMetadata.class);
+        }
+        Validate.entityThrowingException(FileMetadataValidator.INSTANCE, metadata);
+        
+        metadata.setStudyId(studyId.getIdentifier());
+        metadata.setModifiedOn(getDateTime());
+        metadata.setCreatedOn(existing.getCreatedOn());
+        return fileMetadataDao.updateFile(metadata);
     }
     
     public void deleteFile(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        File existing = getFile(studyId, guid);
+        FileMetadata existing = getFile(studyId, guid);
         if (existing.isDeleted()) {
-            throw new EntityNotFoundException(File.class);
+            throw new EntityNotFoundException(FileMetadata.class);
         }        
         existing.setDeleted(true);
-        updateFile(studyId, existing);
+        existing.setModifiedOn(getDateTime());
+        fileMetadataDao.updateFile(existing);
     }
     
     public void deleteFilePermanently(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        fileDao.deleteFilePermanently(studyId, guid);
+        fileMetadataDao.deleteFilePermanently(studyId, guid);
     }
     
     public void deleteAllStudyFiles(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        fileDao.deleteAllStudyFiles(studyId);
+        fileMetadataDao.deleteAllStudyFiles(studyId);
+    }
+    
+    protected DateTime getDateTime() {
+        return new DateTime();
     }
     
     protected String generateGuid() {

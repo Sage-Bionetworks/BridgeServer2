@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.files;
 
 import java.util.Objects;
 
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -9,20 +10,29 @@ import javax.persistence.Version;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @Entity
-@Table(name = "Files")
-public class File implements BridgeEntity {
+@Table(name = "FileMetadata")
+public final class FileMetadata implements BridgeEntity {
+    @JsonIgnore
     private String studyId;
     private String name;
+    @Id
     private String guid;
     private String description;
     private String mimeType;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime createdOn;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime modifiedOn;
     private boolean deleted;
-    private int version;
+    @Version
+    private long version;
     
-    @JsonIgnore
     public String getStudyId() {
         return studyId;
     }
@@ -35,7 +45,6 @@ public class File implements BridgeEntity {
     public void setName(String name) {
         this.name = name;
     }
-    @Id
     public String getGuid() {
         return guid;
     }
@@ -62,17 +71,28 @@ public class File implements BridgeEntity {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
-    @Version
-    public int getVersion() {
+    public long getVersion() {
         return version;
     }
-    public void setVersion(int version) {
+    public void setVersion(long version) {
         this.version = version;
+    }
+    public DateTime getCreatedOn() {
+        return createdOn;
+    }
+    public void setCreatedOn(DateTime createdOn) {
+        this.createdOn = createdOn;
+    }
+    public DateTime getModifiedOn() {
+        return modifiedOn;
+    }
+    public void setModifiedOn(DateTime modifiedOn) {
+        this.modifiedOn = modifiedOn;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, deleted, description, guid, mimeType, name);
+        return Objects.hash(studyId, deleted, description, guid, mimeType, name, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -80,17 +100,21 @@ public class File implements BridgeEntity {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        File other = (File) obj;
+        FileMetadata other = (FileMetadata) obj;
         return (Objects.equals(studyId, other.studyId) &&
                 Objects.equals(deleted, other.deleted) && 
                 Objects.equals(description, other.description) &&
                 Objects.equals(guid, other.guid) &&
                 Objects.equals(mimeType, other.mimeType) &&
-                Objects.equals(name, other.name));
+                Objects.equals(name, other.name) &&
+                Objects.equals(createdOn, other.createdOn) &&
+                Objects.equals(modifiedOn, other.modifiedOn) &&
+                Objects.equals(version, other.version));
     }
     @Override
     public String toString() {
-        return "File [studyId=" + studyId + ", name=" + name + ", guid=" + guid + ", description=" + description
-                + ", mimeType=" + mimeType + ", deleted=" + deleted + "]";
+        return "FileMetadata [studyId=" + studyId + ", name=" + name + ", guid=" + guid + ", description=" + description
+                + ", mimeType=" + mimeType + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", deleted="
+                + deleted + ", version=" + version + "]";
     }
 }

@@ -12,20 +12,19 @@ import com.google.common.collect.ImmutableMap;
 
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.dao.FileDao;
+import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.files.File;
+import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 @Component
-public class HibernateFileDao implements FileDao {
-    private static final String SELECT_FILE = "SELECT file ";
-    private static final String SELECT_COUNT = "SELECT count(guid) ";
-    private static final String GET_ALL = "FROM File as file " + 
-            "WHERE studyId = :studyId ORDER BY createdOn DESC";
-    private static final String GET_ACTIVE = "FROM File as file " + 
-            "WHERE studyId = :studyId AND deleted = 0 ORDER BY createdOn DESC";
-    private static final String DELETE_STUDY = "DELETE FROM File WHERE studyId = :studyId";
+public class HibernateFileMetadataDao implements FileMetadataDao {
+    static final String SELECT_COUNT = "SELECT count(guid) "; 
+    static final String DELETE = "DELETE ";
+    static final String FROM_FILE = "FROM FileMetadata WHERE studyId = :studyId";
+    static final String WO_DELETED = " AND deleted = 0";
+    static final String WITH_GUID = " AND guid = :guid";
+    static final String ORDER_BY = " ORDER BY name";    
     
     private HibernateHelper hibernateHelper;
     
@@ -35,37 +34,36 @@ public class HibernateFileDao implements FileDao {
     }
     
     @Override
-    public Optional<File> getFile(StudyIdentifier studyId, String guid) {
+    public Optional<FileMetadata> getFile(StudyIdentifier studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
         Map<String, Object> params = ImmutableMap.of("studyId", studyId.getIdentifier(), "guid", guid);
 
-        List<File> files = hibernateHelper.queryGet(SELECT_FILE, params, null, null, File.class);
+        List<FileMetadata> files = hibernateHelper.queryGet(FROM_FILE+WITH_GUID, params, null, null, FileMetadata.class);
         return (files.isEmpty()) ? Optional.empty() : Optional.of(files.get(0));
     }
 
     @Override
-    public PagedResourceList<File> getFiles(StudyIdentifier studyId, Integer offset, Integer limit,
-            boolean includeDeleted) {
+    public PagedResourceList<FileMetadata> getFiles(StudyIdentifier studyId, int offset, int limit, boolean includeDeleted) {
         checkNotNull(studyId);
         
-        String countQuery = SELECT_COUNT + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
-        String getQuery = SELECT_FILE + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);        
-        
+        String countQuery = SELECT_COUNT+FROM_FILE + (!includeDeleted ? WO_DELETED : "");
+        String getQuery = FROM_FILE + (!includeDeleted ? WO_DELETED : "") + ORDER_BY;
+
         Map<String,Object> params = ImmutableMap.of("studyId", studyId.getIdentifier());
         int count = hibernateHelper.queryCount(countQuery, params);
         
-        List<File> files = hibernateHelper.queryGet(getQuery, params, offset, limit, File.class);
+        List<FileMetadata> files = hibernateHelper.queryGet(getQuery, params, offset, limit, FileMetadata.class);
         
         return new PagedResourceList<>(files, count)
-                .withRequestParam("offset", offset)
-                .withRequestParam("limit", limit)
+                .withRequestParam("offsetBy", offset)
+                .withRequestParam("pageSize", limit)
                 .withRequestParam("includeDeleted", includeDeleted);
     }
 
     @Override
-    public File createFile(File file) {
+    public FileMetadata createFile(FileMetadata file) {
         checkNotNull(file);
         
         hibernateHelper.create(file, null);
@@ -73,7 +71,7 @@ public class HibernateFileDao implements FileDao {
     }
 
     @Override
-    public File updateFile(File file) {
+    public FileMetadata updateFile(FileMetadata file) {
         checkNotNull(file);
         
         hibernateHelper.update(file, null);
@@ -85,17 +83,17 @@ public class HibernateFileDao implements FileDao {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        File file = hibernateHelper.getById(File.class, guid);
+        FileMetadata file = hibernateHelper.getById(FileMetadata.class, guid);
         if (file == null || !file.getStudyId().equals(studyId.getIdentifier())) {
             return;
         }
-        hibernateHelper.deleteById(File.class, guid);
+        hibernateHelper.deleteById(FileMetadata.class, guid);
     }
     
     @Override
     public void deleteAllStudyFiles(StudyIdentifier studyId) {
         checkNotNull(studyId);
         
-        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("studyId", studyId.getIdentifier()));   
+        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", studyId.getIdentifier()));   
     }
 }
