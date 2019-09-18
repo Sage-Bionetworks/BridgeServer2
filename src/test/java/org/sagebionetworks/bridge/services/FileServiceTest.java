@@ -15,6 +15,7 @@ import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -31,7 +32,7 @@ public class FileServiceTest extends Mockito {
 
     private static final String NAME = "oneName";
     
-    @Spy
+    @Mock
     FileMetadataDao mockFileDao;
     
     @InjectMocks

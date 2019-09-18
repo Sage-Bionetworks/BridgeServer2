@@ -222,7 +222,8 @@ CREATE TABLE IF NOT EXISTS `FileMetadata` (
     `deleted` tinyint(1) NOT NULL DEFAULT '0',
     `version` int(10) unsigned NOT NULL,
     PRIMARY KEY (`guid`),
-    KEY `Studies_idx` (`studyId`)
+    KEY `Studies_idx` (`studyId`),
+    KEY `studyId_guid_idx` (`studyId`,`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `FileRevisions` (
