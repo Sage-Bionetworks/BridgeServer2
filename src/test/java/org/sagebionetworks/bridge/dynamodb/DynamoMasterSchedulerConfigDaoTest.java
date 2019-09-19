@@ -1,21 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -23,36 +8,24 @@ import java.util.List;
 import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBSaveExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
-import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
-import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -118,9 +91,9 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
     
     @Test
     public void testCreateSchedulerConfig() {
-        MasterSchedulerConfig config = createMockConfig();
+        MasterSchedulerConfig config = TestUtils.getMasterSchedulerConfig();
         
-        MasterSchedulerConfig returned = dao.createSchedulerConfig(config);
+        MasterSchedulerConfig result = dao.createSchedulerConfig(config);
         
         // verify mapper call
         verify(mockMapper).save(configCaptor.capture(), any(DynamoDBSaveExpression.class));
@@ -131,10 +104,9 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         assertTrue(mapperConfig.getRequestTemplate().get("a").booleanValue());
         assertEquals(mapperConfig.getRequestTemplate().get("b").textValue(), "string");
         assertEquals(mapperConfig.getSqsQueueUrl(), SQS_QUEUE_URL);
-        assertNull(mapperConfig.getVersion());
         
         // config returned by dao is the same one that was sent to the mapper
-        assertSame(returned, mapperConfig);
+        assertSame(result, mapperConfig);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -149,16 +121,16 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         doThrow(new ConditionalCheckFailedException("message"))
             .when(mockMapper).save(any(), any(DynamoDBSaveExpression.class));
         
-        MasterSchedulerConfig config = createMockConfig();
+        MasterSchedulerConfig config = TestUtils.getMasterSchedulerConfig();
         
         dao.createSchedulerConfig(config);
     }
     
     @Test
     public void testUpdateSchedulerConfig() {
-        MasterSchedulerConfig updatedConfig = createMockConfig();
+        MasterSchedulerConfig updatedConfig = TestUtils.getMasterSchedulerConfig();
         
-        MasterSchedulerConfig returned = dao.updateSchedulerConfig(updatedConfig);
+        MasterSchedulerConfig result = dao.updateSchedulerConfig(updatedConfig);
         
         // verify mapper call
         verify(mockMapper).save(configCaptor.capture(), saveExpressionCaptor.capture());
@@ -176,7 +148,7 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         assertEquals(map.get("scheduleId").getValue().getS(), mapperConfig.getScheduleId());
         
         // schema returned by dao is the same one that was sent to the mapper
-        assertSame(returned, mapperConfig);
+        assertSame(result, mapperConfig);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -191,7 +163,7 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         doThrow(new ConditionalCheckFailedException("message"))
             .when(mockMapper).save(any(), any(DynamoDBSaveExpression.class));
         
-        MasterSchedulerConfig updatedConfig = createMockConfig();
+        MasterSchedulerConfig updatedConfig = TestUtils.getMasterSchedulerConfig();
         
         dao.updateSchedulerConfig(updatedConfig);
     }
@@ -227,20 +199,5 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(config);
         
         dao.deleteSchedulerConfig(SCHEDULE_ID);
-    }
-    
-    private MasterSchedulerConfig createMockConfig() {
-        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
-        objNode.put("a", true);
-        objNode.put("b", "string");
-        
-        MasterSchedulerConfig config = MasterSchedulerConfig.create();
-        config.setScheduleId(SCHEDULE_ID);
-        config.setCronSchedule(CRON_SCHEDULE);
-        config.setRequestTemplate(objNode);
-        config.setSqsQueueUrl(SQS_QUEUE_URL);
-        config.setVersion(1L);
-        
-        return config;
     }
 }

@@ -10,9 +10,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -32,15 +32,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.TimestampHolder;
+import org.sagebionetworks.bridge.models.DateTimeHolder;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
@@ -49,7 +47,7 @@ import org.sagebionetworks.bridge.services.MasterSchedulerService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class MasterSchedulerControllerTest extends Mockito {
-    private static final long TIME_STAMP = DateTime.parse("2018-03-27T18:30-07:00").getMillis();
+    private static final DateTime LAST_PROCESSED_TIME = DateTime.parse("2017-06-03T20:50:21.650-08:00");
     private static final String SCHEDULE_ID = "test-schedule-id";
     private static final String CRON_SCHEDULE = "testCronSchedule";
     private static final String UPDATED_CRON_SCHEDULE = "updatedCronSchedule";
@@ -58,19 +56,22 @@ public class MasterSchedulerControllerTest extends Mockito {
     private static final long VERSION = 1L;
     
     @Mock
-    MasterSchedulerService mockSchedulerService;
+    private MasterSchedulerService mockSchedulerService;
     
     @Mock
-    StudyService mockStudyService;
+    private StudyService mockStudyService;
     
     @Mock
-    HttpServletRequest mockRequest;
+    private AccountDao mockAccountDao;
     
     @Mock
-    HttpServletResponse mockResponse;
+    private HttpServletRequest mockRequest;
+    
+    @Mock
+    private HttpServletResponse mockResponse;
     
     @Captor
-    ArgumentCaptor<MasterSchedulerConfig> configCaptor;
+    private ArgumentCaptor<MasterSchedulerConfig> configCaptor;
     
     @Spy
     @InjectMocks
@@ -78,28 +79,23 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     MasterSchedulerConfig mockConfig;
     
-    UserSession session; 
-    
     Study study;
     
+    UserSession mockSession; 
+    
     @BeforeMethod
-    private void before() {
+    private void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
+        mockSession = new UserSession();
+        mockSession.setStudyIdentifier(TEST_STUDY);
+        mockSession.setAuthenticated(true);
+        mockSession.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        
         mockConfig = TestUtils.getMasterSchedulerConfig();
-        
-        study = new DynamoStudy();
-        study.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
-        
-        session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
-        session.setAuthenticated(true);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        
-        doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -118,7 +114,6 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     @Test
     public void getAllSchedulerConfigs() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
         List<MasterSchedulerConfig> configs = ImmutableList.of(mockConfig, mockConfig, mockConfig);
         
         // Mock service.
@@ -128,14 +123,14 @@ public class MasterSchedulerControllerTest extends Mockito {
         ResourceList<MasterSchedulerConfig> result = controller.getAllSchedulerConfigs();
         
         assertEquals(result.getItems().size(), 3);
+        assertEquals(result.getItems().get(0).getScheduleId(), SCHEDULE_ID);
+        assertEquals(result.getItems().get(1).getCronSchedule(), CRON_SCHEDULE);
+        assertEquals(result.getItems().get(2).getSqsQueueUrl(), SQS_QUEUE_URL);
         verify(mockSchedulerService).getAllSchedulerConfigs();
     }
     
     @Test
     public void createSchedulerConfig() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        
         mockRequestBody(mockRequest, mockConfig);
         
         // Mock service.
@@ -145,7 +140,8 @@ public class MasterSchedulerControllerTest extends Mockito {
         MasterSchedulerConfig result = controller.createSchedulerConfig();
         
         assertEquals(result.getScheduleId(), SCHEDULE_ID);
-
+        assertSame(result, mockConfig);
+        
         // Verify service.
         verify(mockSchedulerService).createSchedulerConfig(configCaptor.capture());
         
@@ -158,20 +154,8 @@ public class MasterSchedulerControllerTest extends Mockito {
         assertEquals(config.getVersion(), new Long(VERSION));
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void createSchedulerConfigAdminOnly() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        
-        controller.createSchedulerConfig();
-        
-        verify(mockSchedulerService, never()).createSchedulerConfig(any());
-    }
-    
     @Test
     public void getSchedulerConfig() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        
         // Mock service.
         when(mockSchedulerService.getSchedulerConfig(SCHEDULE_ID)).thenReturn(mockConfig);
         
@@ -184,9 +168,6 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     @Test
     public void updateSchedulerConfig() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        
         MasterSchedulerConfig updatedConfig = MasterSchedulerConfig.create();
         updatedConfig.setScheduleId("test-schedule-id");
         updatedConfig.setCronSchedule(UPDATED_CRON_SCHEDULE);
@@ -196,13 +177,12 @@ public class MasterSchedulerControllerTest extends Mockito {
         mockRequestBody(mockRequest, updatedConfig);
         
         // Mock service.
-        when(mockSchedulerService.getSchedulerConfig(SCHEDULE_ID)).thenReturn(mockConfig);
         when(mockSchedulerService.updateSchedulerConfig(eq(SCHEDULE_ID), any())).thenReturn(updatedConfig);
         
         // Execute and validate.
         MasterSchedulerConfig result = controller.updateSchedulerConfig(SCHEDULE_ID);
-        
         assertEquals(result.getScheduleId(), SCHEDULE_ID);
+        assertSame(result, updatedConfig);
         
         // Verify service.
         verify(mockSchedulerService).updateSchedulerConfig(anyString(), configCaptor.capture());
@@ -218,9 +198,6 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     @Test
     public void deleteSchedulerConfig() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        
         StatusMessage message = controller.deleteSchedulerConfig(SCHEDULE_ID);
         
         assertEquals(message.getMessage(), "Scheduler config deleted.");
@@ -230,13 +207,10 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     @Test
     public void getSchedulerStatus() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        DateTimeHolder timestamp = new DateTimeHolder(LAST_PROCESSED_TIME);
+        when(mockSchedulerService.getSchedulerStatus()).thenReturn(timestamp);
         
-        TimestampHolder mockTimestamp = new TimestampHolder(TIME_STAMP);
-        when(mockSchedulerService.getSchedulerStatus()).thenReturn(mockTimestamp);
-        
-        TimestampHolder result = controller.getSchedulerStatus();
-        assertSame(result, mockTimestamp);
+        DateTimeHolder result = controller.getSchedulerStatus();
+        assertSame(result, timestamp);
     }
 }

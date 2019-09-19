@@ -2,8 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.MasterSchedulerStatusDao;
-import org.sagebionetworks.bridge.models.TimestampHolder;
+import org.sagebionetworks.bridge.models.DateTimeHolder;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -16,12 +17,12 @@ public class DynamoMasterSchedulerStatusDao implements MasterSchedulerStatusDao 
     private DynamoDBMapper mapper;
     
     @Resource(name = "masterSchedulerStatusMapper")
-    final void setMasterSchedulerStatusMapper(DynamoDBMapper mapper) {
+    final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
     @Override
-    public TimestampHolder getLastProcessedTime() {
+    public DateTimeHolder getLastProcessedTime() {
         DynamoMasterSchedulerStatus statusKey = new DynamoMasterSchedulerStatus();
         statusKey.setHashKey(SCHEDULER_STATUS_HASH_KEY);
         
@@ -29,6 +30,6 @@ public class DynamoMasterSchedulerStatusDao implements MasterSchedulerStatusDao 
         if (status == null) {
             return null;
         }
-        return new TimestampHolder(status.getLastProcessedTime());
+        return new DateTimeHolder(new DateTime(status.getLastProcessedTime()));
     }
 }

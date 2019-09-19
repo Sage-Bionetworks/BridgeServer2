@@ -6,7 +6,7 @@ import java.util.List;
 import org.sagebionetworks.bridge.dao.MasterSchedulerConfigDao;
 import org.sagebionetworks.bridge.dao.MasterSchedulerStatusDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.TimestampHolder;
+import org.sagebionetworks.bridge.models.DateTimeHolder;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.validators.MasterSchedulerConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -21,12 +21,12 @@ public class MasterSchedulerService {
     private MasterSchedulerStatusDao schedulerStatusDao;
 
     @Autowired
-    public final void setSchedulerConfigDao(MasterSchedulerConfigDao schedulerConfigDao) {
+    final void setSchedulerConfigDao(MasterSchedulerConfigDao schedulerConfigDao) {
         this.schedulerConfigDao = schedulerConfigDao;
     }
     
     @Autowired
-    public final void setSchedulerStatusDao(MasterSchedulerStatusDao schedulerStatusDao) {
+    final void setSchedulerStatusDao(MasterSchedulerStatusDao schedulerStatusDao) {
         this.schedulerStatusDao = schedulerStatusDao;
     }
     
@@ -69,10 +69,15 @@ public class MasterSchedulerService {
     public void deleteSchedulerConfig(String scheduleId) {
         checkNotNull(scheduleId);
         
+        MasterSchedulerConfig schedulerConfig = schedulerConfigDao.getSchedulerConfig(scheduleId);
+        if (schedulerConfig == null) {
+            throw new EntityNotFoundException(MasterSchedulerConfig.class);
+        }
+        
         schedulerConfigDao.deleteSchedulerConfig(scheduleId);
     }
     
-    public TimestampHolder getSchedulerStatus() {
+    public DateTimeHolder getSchedulerStatus() {
         return schedulerStatusDao.getLastProcessedTime();
     }
 }

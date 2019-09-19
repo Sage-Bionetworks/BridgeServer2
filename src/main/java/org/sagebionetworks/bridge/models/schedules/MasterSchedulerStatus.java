@@ -25,6 +25,4 @@ public interface MasterSchedulerStatus extends BridgeEntity {
      */
     public Long getLastProcessedTime();
     public void setLastProcessedTime(Long lastProcessedTime);
-
-
 }
