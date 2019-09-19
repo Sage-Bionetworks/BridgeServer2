@@ -813,6 +813,23 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test
+    public void participantUpdateSelfWithNullSharingDoesNotClearSharing() throws Exception {
+        // It's not a matter of consent... the user is consented:
+        session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(ALL_QUALIFIED_RESEARCHERS).build();
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+
+        String json = createJson("{}");
+        mockRequestBody(mockRequest, json);
+
+        controller.updateSelfParticipant();
+
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        assertEquals(participantCaptor.getValue().getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
+    }
+    
+    @Test
     public void requestResetPassword() throws Exception {
         StatusMessage result = controller.requestResetPassword(USER_ID);
         assertEquals(result.getMessage(), "Request to reset password sent to user.");
