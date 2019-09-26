@@ -235,3 +235,8 @@ CREATE TABLE IF NOT EXISTS `FileRevisions` (
     PRIMARY KEY (`fileGuid`, `createdOn`),
     CONSTRAINT `FileMetadata-Guid-Constraint` FOREIGN KEY (`fileGuid`) REFERENCES `FileMetadata` (`guid`) ON DELETE CASCADE
 ) CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+-- changeset bridge:8
+
+ALTER TABLE `Accounts`
+DROP COLUMN `stormpathPasswordHash`;
