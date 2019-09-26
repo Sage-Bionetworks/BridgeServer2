@@ -85,6 +85,8 @@ public class DynamoSurveyDao implements SurveyDao {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
                 dynamoSurveys = queryBySecondaryIndex();
+            } else if (surveyGuid.startsWith("identifier:")) { 
+                dynamoSurveys = queryBySurveyIdentifier();
             } else {
                 dynamoSurveys = query();
             }
@@ -138,6 +140,30 @@ public class DynamoSurveyDao implements SurveyDao {
             if (notDeleted) {
                 query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
             }
+            return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+        }
+        
+        private List<DynamoSurvey> queryBySurveyIdentifier() {
+            if (studyIdentifier == null) {
+                throw new IllegalStateException("Calculated the need to query by secondary index, but study identifier is not set");
+            }
+            DynamoSurvey hashKey = new DynamoSurvey();
+            hashKey.setStudyIdentifier(studyIdentifier);
+            hashKey.setIdentifier(surveyGuid.substring(11));
+            DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
+            query.withHashKeyValues(hashKey);
+            query.withConsistentRead(false);
+            query.withRangeKeyCondition("identifier", equalsString(surveyGuid.substring(11)));
+            if (published) {
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
+            }
+            if (notDeleted) {
+                query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
+            }
+            if (createdOn != 0L) {
+                query.withRangeKeyCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
+            }
+            
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
         }
 
