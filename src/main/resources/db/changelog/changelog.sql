@@ -208,3 +208,30 @@ CREATE TABLE IF NOT EXISTS `RequestInfos` (
 
 ALTER TABLE `AccountLanguages`
 ADD COLUMN `order_index` int(8) DEFAULT 0;
+
+-- changeset bridge:7
+
+CREATE TABLE IF NOT EXISTS `FileMetadata` (
+    `studyId` varchar(255) NOT NULL,
+    `guid` varchar(60) NOT NULL,
+    `name` varchar(255) DEFAULT NULL,
+    `createdOn` BIGINT UNSIGNED NOT NULL,
+    `modifiedOn` BIGINT UNSIGNED NOT NULL,
+    `description` text,
+    `mimeType` varchar(255) DEFAULT NULL,
+    `deleted` tinyint(1) NOT NULL DEFAULT '0',
+    `version` int(10) unsigned NOT NULL,
+    PRIMARY KEY (`guid`),
+    KEY `Studies_idx` (`studyId`),
+    KEY `studyId_guid_idx` (`studyId`,`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `FileRevisions` (
+    `fileGuid` varchar(60) NOT NULL, 
+    `createdOn` BIGINT UNSIGNED NOT NULL,
+    `description` text,
+    `uploadURL` VARCHAR(512) DEFAULT NULL,
+    `status` ENUM('PENDING','AVAILABLE') NOT NULL,
+    PRIMARY KEY (`fileGuid`, `createdOn`),
+    CONSTRAINT `FileMetadata-Guid-Constraint` FOREIGN KEY (`fileGuid`) REFERENCES `FileMetadata` (`guid`) ON DELETE CASCADE
+) CHARACTER SET utf8 COLLATE utf8_unicode_ci;

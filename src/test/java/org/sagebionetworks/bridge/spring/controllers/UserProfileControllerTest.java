@@ -34,6 +34,7 @@ import com.google.common.collect.Sets;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -235,7 +236,13 @@ public class UserProfileControllerTest extends Mockito {
                 .withLastName("OldLastName")
                 .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withId(USER_ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        
+        StudyParticipant updatedParticipant = new StudyParticipant.Builder()
+                .copyOf(participant)
+                .withFirstName("First")
+                .withLastName("Last").build();
+        
+        doReturn(participant, updatedParticipant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
@@ -249,18 +256,17 @@ public class UserProfileControllerTest extends Mockito {
         assertEquals(result.get("externalId").textValue(), "originalId");
                 
         // Verify that existing user information (health code) has been retrieved and used when updating session
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
-        StudyParticipant capturedParticipant = participantCaptor.getValue();
-        assertEquals(capturedParticipant.getHealthCode(), "existingHealthCode");
-        assertEquals(capturedParticipant.getExternalId(), "originalId");
-        
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        InOrder inOrder = inOrder(mockParticipantService);
+        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        inOrder.verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, true);
         
         StudyParticipant persisted = participantCaptor.getValue();
+        assertEquals(persisted.getHealthCode(), "existingHealthCode");
+        assertEquals(persisted.getExternalId(), "originalId");
         assertEquals(persisted.getId(), USER_ID);
         assertEquals(persisted.getFirstName(), "First");
         assertEquals(persisted.getLastName(), "Last");
-        assertEquals(persisted.getExternalId(), "originalId"); // not changed by the JSON submitted
         assertEquals(persisted.getAttributes().get("foo"), "belgium");
     }
     

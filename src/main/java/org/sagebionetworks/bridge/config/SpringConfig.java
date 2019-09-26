@@ -100,6 +100,7 @@ import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverte
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -632,6 +633,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateTemplate.class);
         metadataSources.addAnnotatedClass(HibernateTemplateRevision.class);
         metadataSources.addAnnotatedClass(RequestInfo.class);
+        metadataSources.addAnnotatedClass(FileMetadata.class);
         
         return metadataSources.buildMetadata().buildSessionFactory();
     }

@@ -51,6 +51,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
@@ -122,16 +123,26 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, session.getId(), true);
-        StudyParticipant updated = new StudyParticipant.Builder()
+        StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
+        StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
-                // Cannot change sharing if the user is not consented. This method should probably require consent
-                // but since historically it did not, we will not change it now.
-                .withSharingScope(session.doesConsent() ? participant.getSharingScope() : existing.getSharingScope())
-                .withId(session.getId()).build();
+                .withId(session.getId());
+        // Only change sharing scope if the user is submitting a value AND they are consented.
+        SharingScope sharingScope = participant.getSharingScope();
+        if (sharingScope != null && session.doesConsent()) {
+            builder.withSharingScope(sharingScope);
+        } else {
+            builder.withSharingScope(existing.getSharingScope());
+        }
+        StudyParticipant updated = builder.build();
+        
         participantService.updateParticipant(study, updated);
         
+        // Construction of the participant record now includes some fields that aren't set directly by the update,
+        // such as substudy associations. Load a completely updated participant record. Do get history 
+        // for consent and session.
+        StudyParticipant updatedParticipant = participantService.getParticipant(study, session.getId(), true);
         RequestContext reqContext = BridgeUtils.getRequestContext();
         
         CriteriaContext context = new CriteriaContext.Builder()
@@ -139,12 +150,12 @@ public class ParticipantController extends BaseController {
                 .withClientInfo(reqContext.getCallerClientInfo())
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
-                .withUserDataGroups(updated.getDataGroups())
-                .withUserSubstudyIds(updated.getSubstudyIds())
+                .withUserDataGroups(updatedParticipant.getDataGroups())
+                .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
                 .withStudyIdentifier(session.getStudyIdentifier())
                 .build();
         
-        sessionUpdateService.updateParticipant(session, context, updated);
+        sessionUpdateService.updateParticipant(session, context, updatedParticipant);
         
         return UserSessionInfo.toJSON(session);
     }
