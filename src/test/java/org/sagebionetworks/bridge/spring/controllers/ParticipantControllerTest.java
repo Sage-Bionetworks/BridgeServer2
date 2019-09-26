@@ -62,6 +62,7 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -715,7 +716,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
         session.setIpAddress(IP_ADDRESS); // if this is not the same as request, you get an authentication error
 
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
 
         String json = MAPPER.writeValueAsString(participant);
         mockRequestBody(mockRequest, json);
@@ -728,9 +729,12 @@ public class ParticipantControllerTest extends Mockito {
         // verify the object is passed to service, one field is sufficient
         verify(mockCacheProvider).setUserSession(any());
         
+        InOrder inOrder = inOrder(mockParticipantService);
+        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, false);
         // No roles are passed in this method, and the substudies of the user are passed
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
-
+        inOrder.verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, true);
+        
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(captured.getId(), USER_ID);
@@ -767,7 +771,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withDataGroups(ImmutableSet.of("group1", "group2")).withAttributes(attrs)
                 .withLanguages(ImmutableList.of("en")).withStatus(AccountStatus.DISABLED).withExternalId("POWERS")
                 .build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
 
         String json = createJson("{'externalId':'simpleStringChange'," + "'sharingScope':'no_sharing',"
                 + "'notifyByEmail':false," + "'attributes':{'baz':'belgium'}," + "'languages':['fr'],"
@@ -797,7 +801,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void participantUpdateSelfCannotToggleSharingWhenUnconsented() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(NO_SHARING).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
 
         String json = createJson("{'sharingScope':'all_qualified_researchers'}");
         mockRequestBody(mockRequest, json);
@@ -808,6 +812,23 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(participantCaptor.getValue().getSharingScope(), NO_SHARING);
     }
 
+    @Test
+    public void participantUpdateSelfWithNullSharingDoesNotClearSharing() throws Exception {
+        // It's not a matter of consent... the user is consented:
+        session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(ALL_QUALIFIED_RESEARCHERS).build();
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+
+        String json = createJson("{}");
+        mockRequestBody(mockRequest, json);
+
+        controller.updateSelfParticipant();
+
+        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        assertEquals(participantCaptor.getValue().getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
+    }
+    
     @Test
     public void requestResetPassword() throws Exception {
         StatusMessage result = controller.requestResetPassword(USER_ID);
@@ -830,7 +851,7 @@ public class ParticipantControllerTest extends Mockito {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
         participant = new StudyParticipant.Builder().copyOf(participant).withId(USER_ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, true);
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
 
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();

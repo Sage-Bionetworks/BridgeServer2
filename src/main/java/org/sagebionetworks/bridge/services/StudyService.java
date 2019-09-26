@@ -125,6 +125,7 @@ public class StudyService {
     private ExternalIdService externalIdService;
     private SubstudyService substudyService;
     private TemplateService templateService;
+    private FileService fileService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per study
     private String studyEmailVerificationTemplate;
@@ -214,6 +215,10 @@ public class StudyService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
+    }
+    @Autowired
+    final void setFileService(FileService fileService) {
+        this.fileService = fileService;
     }
     
     public Study getStudy(String identifier, boolean includeDeleted) {
@@ -649,6 +654,7 @@ public class StudyService {
                     existing.getStudyIdentifier());
             subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
             topicService.deleteAllTopics(existing.getStudyIdentifier());
+            fileService.deleteAllStudyFiles(existing.getStudyIdentifier());
         }
 
         cacheProvider.removeStudy(identifier);
