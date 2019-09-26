@@ -26,10 +26,10 @@ public class DynamoMasterSchedulerStatusDao implements MasterSchedulerStatusDao 
         DynamoMasterSchedulerStatus statusKey = new DynamoMasterSchedulerStatus();
         statusKey.setHashKey(SCHEDULER_STATUS_HASH_KEY);
         
-        DynamoMasterSchedulerStatus status = mapper.load(statusKey);
-        if (status == null) {
-            return null;
+        DynamoMasterSchedulerStatus statusMapper = mapper.load(statusKey);
+        if (statusMapper == null) {
+            return new DateTimeHolder(null);
         }
-        return new DateTimeHolder(new DateTime(status.getLastProcessedTime()));
+        return new DateTimeHolder(new DateTime(statusMapper.getLastProcessedTime()));
     }
 }

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -104,7 +105,7 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         assertTrue(mapperConfig.getRequestTemplate().get("a").booleanValue());
         assertEquals(mapperConfig.getRequestTemplate().get("b").textValue(), "string");
         assertEquals(mapperConfig.getSqsQueueUrl(), SQS_QUEUE_URL);
-        
+        assertNull(mapperConfig.getVersion());
         // config returned by dao is the same one that was sent to the mapper
         assertSame(result, mapperConfig);
     }
