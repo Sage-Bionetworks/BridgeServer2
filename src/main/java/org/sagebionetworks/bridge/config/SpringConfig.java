@@ -65,6 +65,8 @@ import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
+import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerConfig;
+import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerStatus;
 import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
@@ -423,6 +425,18 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper schedulePlanMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoSchedulePlan.class);
+    }
+    
+    @Bean(name = "masterSchedulerConfigMapper")
+    @Autowired
+    public DynamoDBMapper masterSchedulerConfigMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoMasterSchedulerConfig.class);
+    }
+    
+    @Bean(name = "masterSchedulerStatusMapper")
+    @Autowired
+    public DynamoDBMapper masterSchedulerStatusMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoMasterSchedulerStatus.class);
     }
     
     @Bean(name = "notificationRegistrationMapper")

@@ -71,6 +71,9 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER)).withCallerUserId("DefaultStudyBootstrapper").build());
+
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
             studyService.getStudy(API_STUDY_ID);
@@ -93,8 +96,6 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setVerifyChannelOnSignInEnabled(true);
             study = studyService.createStudy(study);
             
-            BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
-                    .withCallerRoles(ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER)).build());
             StudyParticipant admin = new StudyParticipant.Builder()
                     .withEmail(config.get("admin.email"))
                     .withPassword(config.get("admin.password"))

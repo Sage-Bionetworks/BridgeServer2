@@ -27,6 +27,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -68,6 +69,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionRequest;
 import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
@@ -601,7 +603,21 @@ public class TestUtils {
         element.setVersion(1L);
         return element;
     }
-
+    
+    public static MasterSchedulerConfig getMasterSchedulerConfig() {
+        ObjectNode objNode = JsonNodeFactory.instance.objectNode();
+        objNode.put("a", true);
+        objNode.put("b", "string");
+        
+        MasterSchedulerConfig config = MasterSchedulerConfig.create();
+        config.setScheduleId("test-schedule-id");
+        config.setCronSchedule("testCronSchedule");
+        config.setRequestTemplate(objNode);
+        config.setSqsQueueUrl("testSysQueueUrl");
+        config.setVersion(1L);
+        
+        return config;
+    }
     public static JsonNode getClientData() {
         try {
             String json = TestUtils.createJson("{'booleanFlag':true,'stringValue':'testString','intValue':4}");
