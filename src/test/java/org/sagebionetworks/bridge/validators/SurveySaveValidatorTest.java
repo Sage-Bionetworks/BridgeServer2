@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.YearConstraints;
 import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
@@ -120,7 +121,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setIdentifier("");
 
-        assertValidatorMessage(validator, survey, "elements[11].identifier", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].identifier", "is required");
     }
 
     @Test
@@ -130,7 +131,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setTitle("");
 
-        assertValidatorMessage(validator, survey, "elements[11].title", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].title", "is required");
     }
 
     @Test
@@ -140,7 +141,7 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setPrompt("");
 
-        assertValidatorMessage(validator, survey, "elements[11].prompt", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].prompt", "is required");
     }
 
     @Test
@@ -150,9 +151,9 @@ public class SurveySaveValidatorTest {
         SurveyInfoScreen screen = (SurveyInfoScreen) last(survey);
         screen.setImage(new Image("", 0, 0));
 
-        assertValidatorMessage(validator, survey, "elements[11].image.width", "is required");
-        assertValidatorMessage(validator, survey, "elements[11].image.height", "is required");
-        assertValidatorMessage(validator, survey, "elements[11].image.source", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].image.width", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].image.height", "is required");
+        assertValidatorMessage(validator, survey, "elements[12].image.source", "is required");
     }
 
     @Test
@@ -1143,6 +1144,57 @@ public class SurveySaveValidatorTest {
         pcc.setCountryCode(null);
         
         assertValidatorMessage(validator, survey, "elements[10].constraints.postalCode", "is required");
+    }
+    
+    @Test
+    public void validatesYearEarliestYearValidYear() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearConstraints year = (YearConstraints)TestSurvey.selectBy(survey, DataType.YEAR).getConstraints();
+        year.setEarliestValue("not a date");
+        
+        assertValidatorMessage(validator, survey, "elements[11].constraints.earliestValue", "is not a year");
+    }
+    
+    @Test
+    public void validatesYearLatestYearValidYear() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearConstraints year = (YearConstraints)TestSurvey.selectBy(survey, DataType.YEAR).getConstraints();
+        year.setLatestValue("201001");
+        
+        assertValidatorMessage(validator, survey, "elements[11].constraints.latestValue", "is not a year");
+    }
+    
+    @Test
+    public void validatesYearEarliestYearTooFarPast() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearConstraints year = (YearConstraints)TestSurvey.selectBy(survey, DataType.YEAR).getConstraints();
+        year.setEarliestValue("1539");
+        
+        assertValidatorMessage(validator, survey, "elements[11].constraints.earliestValue", "is an invalid year (too far in past)");
+    }
+    
+    @Test
+    public void validatesYearLatestYearTooFarFuture() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearConstraints year = (YearConstraints)TestSurvey.selectBy(survey, DataType.YEAR).getConstraints();
+        year.setLatestValue("3100");
+        
+        assertValidatorMessage(validator, survey, "elements[11].constraints.latestValue", "is an invalid year (too far in future)");
+    }
+    
+    @Test
+    public void validatesYearEarliestBeforeLatestYear() {
+        survey = new TestSurvey(SurveySaveValidatorTest.class, false);
+        
+        YearConstraints year = (YearConstraints)TestSurvey.selectBy(survey, DataType.YEAR).getConstraints();
+        year.setEarliestValue("2010");
+        year.setLatestValue("2000");
+        
+        assertValidatorMessage(validator, survey, "elements[11].constraints.earliestValue", "is after the latest value");
     }
     
     private Survey updateSurveyWithBeforeRulesInOneQuestion(SurveyRule... rules) {

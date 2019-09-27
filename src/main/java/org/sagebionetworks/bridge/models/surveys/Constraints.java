@@ -24,7 +24,8 @@ import com.google.common.collect.Lists;
     @Type(name="height", value=HeightConstraints.class),
     @Type(name="weight",value=WeightConstraints.class),
     @Type(name="yearmonth", value=YearMonthConstraints.class),
-    @Type(name="postalcode", value=PostalCodeConstraints.class)
+    @Type(name="postalcode", value=PostalCodeConstraints.class),
+    @Type(name="year", value=YearConstraints.class)
 })
 public class Constraints {
 

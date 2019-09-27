@@ -13,5 +13,6 @@ public enum DataType {
     HEIGHT,
     WEIGHT,
     YEARMONTH,
-    POSTALCODE
+    POSTALCODE,
+    YEAR
 }
