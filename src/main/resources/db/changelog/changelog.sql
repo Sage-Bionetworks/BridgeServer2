@@ -240,3 +240,8 @@ CREATE TABLE IF NOT EXISTS `FileRevisions` (
 
 ALTER TABLE `Accounts`
 DROP COLUMN `stormpathPasswordHash`;
+
+-- changeset bridge:9
+
+ALTER TABLE `FileRevisions`
+ADD COLUMN `mimeType` varchar(255) DEFAULT NULL;

@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.spring.controllers.FileMetadataController.DELETE_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.FileController.DELETE_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -56,7 +56,7 @@ public class FileMetadataControllerTest extends Mockito {
     
     @Spy
     @InjectMocks
-    FileMetadataController controller;
+    FileController controller;
     
     UserSession session;
     
@@ -73,12 +73,12 @@ public class FileMetadataControllerTest extends Mockito {
 
     @Test
     public void verifyAnnotations() throws Exception {
-        assertCrossOrigin(FileMetadataController.class);
-        assertGet(FileMetadataController.class, "getFiles");
-        assertCreate(FileMetadataController.class, "createFile");
-        assertGet(FileMetadataController.class, "getFile");
-        assertPost(FileMetadataController.class, "updateFile");
-        assertDelete(FileMetadataController.class, "deleteFile");
+        assertCrossOrigin(FileController.class);
+        assertGet(FileController.class, "getFiles");
+        assertCreate(FileController.class, "createFile");
+        assertGet(FileController.class, "getFile");
+        assertPost(FileController.class, "updateFile");
+        assertDelete(FileController.class, "deleteFile");
     }
     
     @Test

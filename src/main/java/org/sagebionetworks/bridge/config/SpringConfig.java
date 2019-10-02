@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.config;
 
+import static com.amazonaws.regions.Regions.US_EAST_1;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,12 +19,16 @@ import javax.sql.DataSource;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -101,6 +107,7 @@ import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -246,7 +253,15 @@ public class SpringConfig {
     public AmazonS3Client s3CmsClient(BasicAWSCredentials s3CmsCredentials) {
         return new AmazonS3Client(s3CmsCredentials);
     }
-
+    
+    @Bean(name = "fileUploadS3Client")
+    @Resource(name = "awsCredentials")
+    public AmazonS3 fileUploadS3Client(BasicAWSCredentials awsCredentials) {
+        // We need different credentials and we need path style enabled for uploads to work from a browser
+        return AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true).withRegion(US_EAST_1)
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
+    }
+    
     @Bean(name ="uploadTokenServiceClient")
     @Resource(name = "s3UploadCredentials")
     public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
@@ -634,6 +649,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateTemplateRevision.class);
         metadataSources.addAnnotatedClass(RequestInfo.class);
         metadataSources.addAnnotatedClass(FileMetadata.class);
+        metadataSources.addAnnotatedClass(FileRevision.class);
         
         return metadataSources.buildMetadata().buildSessionFactory();
     }
