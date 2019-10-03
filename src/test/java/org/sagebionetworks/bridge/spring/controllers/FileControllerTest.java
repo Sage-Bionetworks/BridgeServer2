@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.FileController.DELETE_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.FileController.UPLOAD_FINISHED_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -38,9 +40,12 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.services.FileService;
 
-public class FileMetadataControllerTest extends Mockito {
+public class FileControllerTest extends Mockito {
+    
+    private static final DateTime CREATED_ON = new DateTime();
     
     @Mock
     FileService mockFileService;
@@ -53,6 +58,12 @@ public class FileMetadataControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<FileMetadata> metadataCaptor;
+    
+    @Captor
+    ArgumentCaptor<FileRevision> revisionCaptor;
+    
+    @Captor
+    ArgumentCaptor<DateTime> dateTimeCaptor;
     
     @Spy
     @InjectMocks
@@ -192,5 +203,36 @@ public class FileMetadataControllerTest extends Mockito {
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
         verify(mockFileService).deleteFilePermanently(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void createFileRevision() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+
+        FileRevision revision = new FileRevision();
+        revision.setName("name");
+        revision.setDescription("description");
+        revision.setMimeType("text/plain");
+        mockRequestBody(mockRequest, revision);
+        
+        controller.createFileRevision(GUID);
+        
+        verify(mockFileService).createFileRevision(eq(TEST_STUDY), revisionCaptor.capture());
+        FileRevision captured = revisionCaptor.getValue();
+        assertEquals(GUID, captured.getFileGuid());
+        assertEquals("name", captured.getName());
+        assertEquals("description", captured.getDescription());
+        assertEquals("text/plain", captured.getMimeType());
+    }
+    
+    @Test
+    public void finishFileRevision() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        StatusMessage message = controller.finishFileRevision(GUID, CREATED_ON.toString());
+        assertEquals(UPLOAD_FINISHED_MSG, message);
+
+        verify(mockFileService).finishFileRevision(eq(TEST_STUDY), eq(GUID), dateTimeCaptor.capture());
+        assertEquals(CREATED_ON.toString(), dateTimeCaptor.getValue().toString());
     }
 }

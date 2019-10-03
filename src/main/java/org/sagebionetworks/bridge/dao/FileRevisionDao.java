@@ -15,4 +15,6 @@ public interface FileRevisionDao {
     void createFileRevision(FileRevision revision);
     
     void updateFileRevision(FileRevision revision);
+    
+    void deleteFileRevision(FileRevision revision);
 }

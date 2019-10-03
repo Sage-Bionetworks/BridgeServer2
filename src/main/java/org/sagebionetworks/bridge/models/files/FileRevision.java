@@ -25,7 +25,9 @@ public class FileRevision implements BridgeEntity {
     @Id
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
+    private String name;
     private String description;
+    private Long size;
     private String uploadURL;
     @Enumerated(EnumType.STRING)
     private FileRevisionStatus status;
@@ -44,6 +46,12 @@ public class FileRevision implements BridgeEntity {
     }
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
     }
     public String getDescription() {
         return description;
@@ -69,10 +77,16 @@ public class FileRevision implements BridgeEntity {
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
     }    
+    public Long getSize() {
+        return size;
+    }
+    public void setSize(Long size) {
+        this.size = size;
+    }    
     public String getDownloadURL() {
         return downloadURL;
     }
     public void setDownloadURL(String downloadURL) {
         this.downloadURL = downloadURL;
-    }    
+    }
 }

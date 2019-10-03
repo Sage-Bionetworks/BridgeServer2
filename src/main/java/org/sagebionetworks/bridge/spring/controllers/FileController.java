@@ -4,8 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -33,6 +31,8 @@ import org.sagebionetworks.bridge.services.FileService;
 public class FileController extends BaseController {
     
     static final StatusMessage DELETE_MSG = new StatusMessage("File metadata and revisions deleted.");
+    static final StatusMessage UPLOAD_FINISHED_MSG = new StatusMessage("File revision upload completed.");
+
     private FileService fileService;
     
     @Autowired
@@ -114,5 +114,15 @@ public class FileController extends BaseController {
         revision.setFileGuid(guid);
         
         return fileService.createFileRevision(session.getStudyIdentifier(), revision);
+    }
+    
+    @PostMapping("/v3/files/{guid}/revisions/{createdOn}")
+    public StatusMessage finishFileRevision(@PathVariable String guid, @PathVariable("createdOn") String createdOnStr) throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        DateTime createdOn = DateTime.parse(createdOnStr);
+        
+        fileService.finishFileRevision(session.getStudyIdentifier(), guid, createdOn);
+        return UPLOAD_FINISHED_MSG;
     }
 }

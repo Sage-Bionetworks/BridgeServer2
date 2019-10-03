@@ -7,6 +7,8 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
 
 import java.net.URL;
@@ -16,6 +18,7 @@ import javax.annotation.Resource;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +26,11 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.dao.FileRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
@@ -38,12 +41,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class FileService {
     
-    static final String CONFIG_KEY_REVISIONS_BUCKET = "revisions.bucket";
-    static final long EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
+    static final int EXPIRATION_IN_MINUTES = 10;
     
     private FileMetadataDao fileMetadataDao;
     
     private FileRevisionDao fileRevisionDao;
+    
+    private Environment env;
     
     private String revisionsBucket;
     
@@ -61,7 +65,8 @@ public class FileService {
     
     @Autowired
     final void setConfig(BridgeConfig config) {
-        revisionsBucket = config.getProperty(CONFIG_KEY_REVISIONS_BUCKET);
+        revisionsBucket = config.getHostnameWithPostfix("docs");
+        env = config.getEnvironment();
     }
     
     // Note: this client has too many permissions. We'll need to substitute.
@@ -153,9 +158,13 @@ public class FileService {
         // Will throw if the file doesn't exist in the caller's study
         getFile(studyId, guid);
         
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }        
         PagedResourceList<FileRevision> revisions = fileRevisionDao.getFileRevisions(guid, offset, pageSize);
         for (FileRevision rev : revisions.getItems()) {
-            rev.setDownloadURL("http://" + revisionsBucket + "/" + guid + "." + rev.getCreatedOn().getMillis());
+            String protocol = (env == LOCAL) ? "http" : "https";
+            rev.setDownloadURL(protocol + "://" + revisionsBucket + "/" + guid + "." + rev.getCreatedOn().getMillis());
         }
         return revisions;
     }
@@ -169,13 +178,15 @@ public class FileService {
         revision.setStatus(PENDING);
 
         String fileName = revision.getFileGuid() + "." + revision.getCreatedOn().getMillis();
-        Date expiration = DateTime.now(UTC).plusMinutes(10).toDate();
+        Date expiration = getDateTime().plusMinutes(EXPIRATION_IN_MINUTES).toDate();
         
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(revisionsBucket, fileName, PUT);
         request.setExpiration(expiration);
         request.setContentType(revision.getMimeType());
+        ResponseHeaderOverrides headers = new ResponseHeaderOverrides()
+                .withContentDisposition("attachment; filename=\""+revision.getName()+"\"");
+        request.setResponseHeaders(headers);
         
-        // request.setContentMd5(uploadMd5); I sure hope this isn't necessary
         URL uploadURL = s3Client.generatePresignedUrl(request);
         revision.setUploadURL(uploadURL.toExternalForm());
         
@@ -183,17 +194,24 @@ public class FileService {
         return revision;
     }
     
-    public FileRevision updateFileRevision(StudyIdentifier studyId, FileRevision revision) {
-        FileRevision existing = fileRevisionDao.getFileRevision(revision.getFileGuid(), revision.getCreatedOn())
+    public void finishFileRevision(StudyIdentifier studyId, String fileGuid, DateTime createdOn) {
+        FileRevision existing = fileRevisionDao.getFileRevision(fileGuid, createdOn)
                 .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
-        // Currently the only thing that can really be updated is the status of the file revision.
-        existing.setStatus(revision.getStatus());
+        
+        // examine if it is actually on S3
+        String fileName = existing.getFileGuid() + "." + existing.getCreatedOn().getMillis();
+        if (!s3Client.doesObjectExist(revisionsBucket, fileName)) {
+            // Delete this record.
+            fileRevisionDao.deleteFileRevision(existing);
+            throw new EntityNotFoundException(FileRevision.class);
+        }
+        existing.setUploadURL(null);
+        existing.setStatus(AVAILABLE);
         fileRevisionDao.updateFileRevision(existing);
-        return existing;
     }
     
     protected DateTime getDateTime() {
-        return new DateTime();
+        return new DateTime().withZone(UTC);
     }
     
     protected String generateGuid() {

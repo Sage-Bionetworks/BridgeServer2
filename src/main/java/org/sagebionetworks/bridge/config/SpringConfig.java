@@ -21,7 +21,6 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -254,10 +253,17 @@ public class SpringConfig {
         return new AmazonS3Client(s3CmsCredentials);
     }
     
+    @Bean(name = "awsFileRevisionCredentials")
+    public BasicAWSCredentials awsFileRevisionCredentials() {
+        BridgeConfig bridgeConfig = bridgeConfig();
+        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.file.revisions"),
+                bridgeConfig.getProperty("aws.secret.key.file.revisions"));
+    }
+            
+    // This client can only PUT files to the docs bucket
     @Bean(name = "fileUploadS3Client")
-    @Resource(name = "awsCredentials")
+    @Resource(name = "awsFileRevisionCredentials")
     public AmazonS3 fileUploadS3Client(BasicAWSCredentials awsCredentials) {
-        // We need different credentials and we need path style enabled for uploads to work from a browser
         return AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true).withRegion(US_EAST_1)
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
     }

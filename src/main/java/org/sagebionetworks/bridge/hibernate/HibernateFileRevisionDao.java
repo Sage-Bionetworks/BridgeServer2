@@ -64,4 +64,10 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
     public void updateFileRevision(FileRevision revision) {
         hibernateHelper.update(revision, null);
     }
+    
+    @Override
+    public void deleteFileRevision(FileRevision revision) {
+        FileRevisionId revisionId = new FileRevisionId(revision.getFileGuid(), revision.getCreatedOn());
+        hibernateHelper.deleteById(FileRevision.class, revisionId);
+    }
 }
