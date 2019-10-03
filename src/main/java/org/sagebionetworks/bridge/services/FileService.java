@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
+import static org.sagebionetworks.bridge.validators.FileRevisionValidator.INSTANCE;
 
 import java.net.URL;
 import java.util.Date;
@@ -69,7 +70,6 @@ public class FileService {
         env = config.getEnvironment();
     }
     
-    // Note: this client has too many permissions. We'll need to substitute.
     @Resource(name = "fileUploadS3Client")
     public void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
@@ -164,7 +164,7 @@ public class FileService {
         PagedResourceList<FileRevision> revisions = fileRevisionDao.getFileRevisions(guid, offset, pageSize);
         for (FileRevision rev : revisions.getItems()) {
             String protocol = (env == LOCAL) ? "http" : "https";
-            rev.setDownloadURL(protocol + "://" + revisionsBucket + "/" + guid + "." + rev.getCreatedOn().getMillis());
+            rev.setDownloadURL(protocol + "://" + revisionsBucket + "/" + getFileName(rev));
         }
         return revisions;
     }
@@ -173,11 +173,13 @@ public class FileService {
         // Will throw if the file doesn't exist in the caller's study
         getFile(studyId, revision.getFileGuid());
         
+        Validate.entityThrowingException(INSTANCE, revision);
+        
         // Set system properties.
         revision.setCreatedOn(getDateTime());
         revision.setStatus(PENDING);
 
-        String fileName = revision.getFileGuid() + "." + revision.getCreatedOn().getMillis();
+        String fileName = getFileName(revision);
         Date expiration = getDateTime().plusMinutes(EXPIRATION_IN_MINUTES).toDate();
         
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(revisionsBucket, fileName, PUT);
@@ -199,15 +201,20 @@ public class FileService {
                 .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
         
         // examine if it is actually on S3
-        String fileName = existing.getFileGuid() + "." + existing.getCreatedOn().getMillis();
+        String fileName = getFileName(existing);
         if (!s3Client.doesObjectExist(revisionsBucket, fileName)) {
-            // Delete this record.
+            // If not, delete this record to clean up
             fileRevisionDao.deleteFileRevision(existing);
             throw new EntityNotFoundException(FileRevision.class);
         }
+        // Otherwise, mark the record available
         existing.setUploadURL(null);
         existing.setStatus(AVAILABLE);
         fileRevisionDao.updateFileRevision(existing);
+    }
+    
+    protected String getFileName(FileRevision revision) {
+        return revision.getFileGuid() + "." + revision.getCreatedOn().getMillis();
     }
     
     protected DateTime getDateTime() {

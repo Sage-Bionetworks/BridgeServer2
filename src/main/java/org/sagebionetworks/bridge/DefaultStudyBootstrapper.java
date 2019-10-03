@@ -67,7 +67,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
-        //dynamoInitializer.init(tables);
+        dynamoInitializer.init(tables);
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         

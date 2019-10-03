@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +33,8 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
 
     @Override
     public PagedResourceList<FileRevision> getFileRevisions(String guid, int offset, int pageSize) {
+        checkNotNull(guid);
+        
         String countQuery = SELECT_COUNT + FROM_REVISION;
         String getQuery = FROM_REVISION + ORDER_BY;
 
@@ -46,6 +50,9 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
     
     @Override
     public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {
+        checkNotNull(guid);
+        checkNotNull(createdOn);
+        
         FileRevisionId revisionId = new FileRevisionId(guid, createdOn);
         
         FileRevision revision = hibernateHelper.getById(FileRevision.class, revisionId);
@@ -57,16 +64,22 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
 
     @Override
     public void createFileRevision(FileRevision revision) {
+        checkNotNull(revision);
+        
         hibernateHelper.create(revision, null);
     }
 
     @Override
     public void updateFileRevision(FileRevision revision) {
+        checkNotNull(revision);
+        
         hibernateHelper.update(revision, null);
     }
     
     @Override
     public void deleteFileRevision(FileRevision revision) {
+        checkNotNull(revision);
+        
         FileRevisionId revisionId = new FileRevisionId(revision.getFileGuid(), revision.getCreatedOn());
         hibernateHelper.deleteById(FileRevision.class, revisionId);
     }

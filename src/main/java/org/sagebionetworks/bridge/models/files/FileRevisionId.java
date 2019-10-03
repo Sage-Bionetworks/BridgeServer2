@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 
 @SuppressWarnings("serial")
 @Embeddable
-public class FileRevisionId implements Serializable {
+public final class FileRevisionId implements Serializable {
     @Column(name = "fileGuid")
     private String fileGuid;
 
