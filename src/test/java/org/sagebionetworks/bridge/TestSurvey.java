@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.TimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.YearConstraints;
 import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule.Operator;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -208,6 +209,20 @@ public class TestSurvey extends DynamoSurvey {
         }
     };
 
+    private DynamoSurveyQuestion yearQuestion = new DynamoSurveyQuestion() {
+        {
+            YearConstraints yc = new YearConstraints();
+            yc.setEarliestValue("2000");
+            yc.setLatestValue("2030");
+            yc.setAllowFuture(true);
+            setPrompt("What year will you turn 65?");
+            setIdentifier("year");
+            setUiHint(UIHint.YEAR);
+            setConstraints(yc);
+            setGuid(UUID.randomUUID().toString());
+        }
+    };
+    
     public TestSurvey(Class<?> cls, boolean makeNew) {
         setGuid(UUID.randomUUID().toString());
         setName("General Blood Pressure Survey");
@@ -230,6 +245,7 @@ public class TestSurvey extends DynamoSurvey {
         elements.add(stringQuestion);
         elements.add(yearMonthQuestion);
         elements.add(postalCodeQuestion);
+        elements.add(yearQuestion);
 
         if (makeNew) {
             setGuid(null);
@@ -300,5 +316,11 @@ public class TestSurvey extends DynamoSurvey {
     @JsonIgnore
     public SurveyQuestion getYearMonthQuestion() {
         return yearMonthQuestion;
+    }
+
+    @DynamoDBIgnore
+    @JsonIgnore
+    public SurveyQuestion getYearQuestion() {
+        return yearQuestion;
     }
 }

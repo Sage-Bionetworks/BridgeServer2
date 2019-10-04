@@ -19,6 +19,7 @@ public enum UIHint {
     HEIGHT,
     BLOODPRESSURE,
     YEARMONTH,
-    POSTALCODE
+    POSTALCODE,
+    YEAR
     
 }

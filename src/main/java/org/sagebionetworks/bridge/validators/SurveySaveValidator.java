@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_INFO_SCREEN_TYPE;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
 
@@ -38,11 +39,14 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestionOption;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
+import org.sagebionetworks.bridge.models.surveys.YearConstraints;
 import org.sagebionetworks.bridge.models.surveys.YearMonthConstraints;
 import org.sagebionetworks.bridge.upload.UploadUtil;
 
 @Component
 public class SurveySaveValidator implements Validator {
+    
+    private static Pattern YEAR_PATTERN = Pattern.compile("^\\d{4}$");
     
     private final Set<String> dataGroups;
     
@@ -330,6 +334,8 @@ public class SurveySaveValidator implements Validator {
             doValidateConstraintsType(errors, hint, (PostalCodeConstraints)con);
         } else if (con instanceof NumericalConstraints) {
             doValidateConstraintsType(errors, hint, (NumericalConstraints)con);
+        } else if (con instanceof YearConstraints) {
+            doValidateConstraintsType(errors, hint, (YearConstraints)con);
         }
     }
 
@@ -431,6 +437,38 @@ public class SurveySaveValidator implements Validator {
             if (latestDate.isBefore(earliestDate)) {
                 errors.rejectValue("earliestValue", "is after the latest value");
             }
+        }
+    }
+    
+    private void doValidateConstraintsType(Errors errors, UIHint hint, YearConstraints con) {
+        String earliestValue = con.getEarliestValue();
+        String latestValue = con.getLatestValue();
+        
+        int earliestYear = -1;
+        int latestYear = -1;
+        if (isNotBlank(earliestValue)) {
+            if (YEAR_PATTERN.matcher(earliestValue).matches()) {
+                earliestYear = Integer.parseInt(earliestValue);
+                if (earliestYear < 1900) {
+                    errors.rejectValue("earliestValue", "is an invalid year (too far in past)");
+                }
+            } else {
+                errors.rejectValue("earliestValue", "is not a year");
+            }
+        }
+        if (isNotBlank(latestValue)) {
+            if (YEAR_PATTERN.matcher(latestValue).matches()) {
+                latestYear = Integer.parseInt(latestValue);
+                if (latestYear > 2500) {
+                    errors.rejectValue("latestValue", "is an invalid year (too far in future)");
+                }
+            } else {
+                errors.rejectValue("latestValue", "is not a year");
+            }
+        }
+        // Both dates were parseable, and so are comparable.
+        if (latestYear < earliestYear) {
+            errors.rejectValue("earliestValue", "is after the latest value");
         }
     }
     
