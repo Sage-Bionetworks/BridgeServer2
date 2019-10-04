@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +17,8 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
@@ -21,6 +26,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -145,15 +151,15 @@ public class DynamoSurveyDao implements SurveyDao {
         
         private List<DynamoSurvey> queryBySurveyIdentifier() {
             if (studyIdentifier == null) {
-                throw new IllegalStateException("Calculated the need to query by secondary index, but study identifier is not set");
+                throw new IllegalStateException("Querying by survey identifier, but study identifier is not set");
             }
             DynamoSurvey hashKey = new DynamoSurvey();
             hashKey.setStudyIdentifier(studyIdentifier);
-            hashKey.setIdentifier(surveyGuid.substring(11));
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withHashKeyValues(hashKey);
             query.withConsistentRead(false);
             query.withRangeKeyCondition("identifier", equalsString(surveyGuid.substring(11)));
+            
             if (published) {
                 query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
             }
@@ -161,10 +167,14 @@ public class DynamoSurveyDao implements SurveyDao {
                 query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
             }
             if (createdOn != 0L) {
-                query.withRangeKeyCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
+                query.withQueryFilterEntry(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
             }
             
-            return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+            List<DynamoSurvey> results = surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+            
+            List<DynamoSurvey> surveys = new ArrayList<>(results);
+            Collections.sort(surveys, Collections.reverseOrder(Comparator.comparing(DynamoSurvey::getCreatedOn)));
+            return surveys;
         }
 
         private Condition equalsNumber(String equalTo) {
