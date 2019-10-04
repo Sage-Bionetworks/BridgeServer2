@@ -90,6 +90,9 @@ public class FileControllerTest extends Mockito {
         assertGet(FileController.class, "getFile");
         assertPost(FileController.class, "updateFile");
         assertDelete(FileController.class, "deleteFile");
+        assertGet(FileController.class, "getFileRevisions");
+        assertCreate(FileController.class, "createFileRevision");
+        assertPost(FileController.class, "finishFileRevision");
     }
     
     @Test

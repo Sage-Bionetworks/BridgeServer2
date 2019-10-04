@@ -106,6 +106,7 @@ public class FileController extends BaseController {
     }
     
     @PostMapping("/v3/files/{guid}/revisions")
+    @ResponseStatus(HttpStatus.CREATED)
     public FileRevision createFileRevision(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
