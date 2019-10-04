@@ -193,6 +193,10 @@ public class FileService {
         revision.setUploadURL(uploadURL.toExternalForm());
         
         fileRevisionDao.createFileRevision(revision);
+        
+        String protocol = (env == LOCAL) ? "http" : "https";
+        revision.setDownloadURL(protocol + "://" + revisionsBucket + "/" + getFileName(revision));
+
         return revision;
     }
     

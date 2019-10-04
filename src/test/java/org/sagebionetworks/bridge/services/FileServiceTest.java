@@ -316,6 +316,7 @@ public class FileServiceTest extends Mockito {
         assertEquals(returned.getCreatedOn(), TIMESTAMP);
         assertEquals(returned.getStatus(), PENDING);
         assertEquals(returned.getUploadURL(), "https://" + UPLOAD_BUCKET);
+        assertEquals(returned.getDownloadURL(), "https://docs.sagebridge.org/oneGuid.1422319112486");
         
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
