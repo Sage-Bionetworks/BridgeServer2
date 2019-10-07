@@ -253,16 +253,10 @@ public class SpringConfig {
         return new AmazonS3Client(s3CmsCredentials);
     }
     
-    @Bean(name = "awsFileRevisionCredentials")
-    public BasicAWSCredentials awsFileRevisionCredentials() {
-        BridgeConfig bridgeConfig = bridgeConfig();
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.file.revisions"),
-                bridgeConfig.getProperty("aws.secret.key.file.revisions"));
-    }
-            
-    // This client can only PUT files to the docs bucket
+    // This client needs to be configured to handle S3 file paths differently, so we can use bucket
+    // names with periods in them (and we need these in turn so they can be fronted with CloudFront).
     @Bean(name = "fileUploadS3Client")
-    @Resource(name = "awsFileRevisionCredentials")
+    @Resource(name = "awsCredentials")
     public AmazonS3 fileUploadS3Client(BasicAWSCredentials awsCredentials) {
         return AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true).withRegion(US_EAST_1)
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
