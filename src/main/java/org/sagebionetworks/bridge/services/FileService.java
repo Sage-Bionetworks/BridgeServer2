@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.validators.FileRevisionValidator.INSTAN
 
 import java.net.URL;
 import java.util.Date;
+import java.util.Optional;
 
 import javax.annotation.Resource;
 
@@ -152,6 +153,11 @@ public class FileService {
         checkNotNull(studyId);
         
         fileMetadataDao.deleteAllStudyFiles(studyId);
+    }
+    
+    public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {
+        
+        return fileRevisionDao.getFileRevision(guid, createdOn);
     }
     
     public PagedResourceList<FileRevision> getFileRevisions(StudyIdentifier studyId, String guid, int offset, int pageSize) {

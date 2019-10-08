@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.validators.FileRevisionValidator.INSTAN
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 
 public class FileRevisionValidatorTest {

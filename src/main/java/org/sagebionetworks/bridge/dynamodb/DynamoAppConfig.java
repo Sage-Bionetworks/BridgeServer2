@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -43,6 +44,17 @@ public class DynamoAppConfig implements AppConfig {
             return CONFIG_REF_LIST_TYPE;
         }
     }
+    
+    public static class FileReferenceListMarshaller extends ListMarshaller<FileReference> {
+        private static final TypeReference<List<FileReference>> FILE_REF_LIST_TYPE =
+                new TypeReference<List<FileReference>>() {};
+
+        /** {@inheritDoc} */
+        @Override
+        public TypeReference<List<FileReference>> getTypeReference() {
+            return FILE_REF_LIST_TYPE;
+        }
+    }    
 
     private String studyId;
     private String label;
@@ -54,6 +66,7 @@ public class DynamoAppConfig implements AppConfig {
     private List<SurveyReference> surveyReferences;
     private List<SchemaReference> schemaReferences;
     private List<ConfigReference> configReferences;
+    private List<FileReference> fileReferences;
     boolean configIncluded;
     private Map<String,JsonNode> configElements;
     private Long version;
@@ -179,11 +192,26 @@ public class DynamoAppConfig implements AppConfig {
         return configReferences;
     }
     
+    @DynamoDBTypeConverted(converter=FileReferenceListMarshaller.class)
+    @Override
+    public void setFileReferences(List<FileReference> references) {
+        this.fileReferences = references;
+    }
+    
+    @DynamoDBTypeConverted(converter=FileReferenceListMarshaller.class)
+    @Override
+    public List<FileReference> getFileReferences() {
+        if (fileReferences == null) {
+            fileReferences = new ArrayList<>();
+        }
+        return fileReferences;
+    }
+    
     @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
     @Override
     public void setConfigReferences(List<ConfigReference> references) {
         this.configReferences = references;
-    }
+    }    
     
     @DynamoDBIgnore
     @Override
@@ -221,7 +249,7 @@ public class DynamoAppConfig implements AppConfig {
     @Override
     public int hashCode() {
         return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,
-                surveyReferences, version, deleted);
+                surveyReferences, configReferences, fileReferences, version, deleted);
     }
 
     @Override
@@ -236,6 +264,8 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(label, other.label) && Objects.equals(modifiedOn, other.modifiedOn)
                 && Objects.equals(getSchemaReferences(), other.getSchemaReferences())
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
+                && Objects.equals(getConfigReferences(), other.getConfigReferences())
+                && Objects.equals(getFileReferences(), other.getFileReferences())
                 && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version)
                 && Objects.equals(deleted, other.deleted);
     }
@@ -245,6 +275,7 @@ public class DynamoAppConfig implements AppConfig {
         return "DynamoAppConfig [studyId=" + studyId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
                 + ", surveyReferences=" + getSurveyReferences() + ", schemaReferences=" + getSchemaReferences()
+                + ", configReferences=" + getConfigReferences() + ", fileReferences=" + getFileReferences()
                 + ", version=" + version + ", deleted=" + deleted + "]";
     }
 }

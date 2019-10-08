@@ -18,6 +18,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -73,13 +74,16 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
-    private SubstudyService substudyService;
+    private SubstudyService mockSubstudyService;
     
     @Mock
     private SurveyService mockSurveyService;
     
     @Mock
     private UploadSchemaService mockSchemaService;
+    
+    @Mock
+    private FileService mockFileService;
     
     @Mock
     private UploadSchema mockUploadSchema;
@@ -91,7 +95,7 @@ public class AppConfigServiceTest {
     private Survey mockSurvey;
     
     @Mock
-    private ReferenceResolver referenceResolver;
+    private ReferenceResolver mockReferenceResolver;
     
     @Captor
     private ArgumentCaptor<AppConfig> appConfigCaptor;
@@ -103,6 +107,7 @@ public class AppConfigServiceTest {
     private ArgumentCaptor<SchemaReference> schemaRefCaptor;
     
     @Spy
+    @InjectMocks
     private AppConfigService service;
 
     private Study study;
@@ -110,13 +115,6 @@ public class AppConfigServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        service.setAppConfigDao(mockDao);
-        service.setStudyService(mockStudyService);
-        service.setSurveyService(mockSurveyService);
-        service.setUploadSchemaService(mockSchemaService);
-        service.setSubstudyService(substudyService);
-        service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
@@ -131,7 +129,7 @@ public class AppConfigServiceTest {
         when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
      
-        when(substudyService.getSubstudyIds(TEST_STUDY)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY.getIdentifier());
@@ -422,7 +420,7 @@ public class AppConfigServiceTest {
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getGuid(), GUID);
         
-        verify(substudyService).getSubstudyIds(TEST_STUDY);
+        verify(mockSubstudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
@@ -441,7 +439,7 @@ public class AppConfigServiceTest {
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(appConfigCaptor.getValue(), oldConfig);
         
-        verify(substudyService).getSubstudyIds(TEST_STUDY);
+        verify(mockSubstudyService).getSubstudyIds(TEST_STUDY);
 
         assertEquals(oldConfig, returnValue);
     }

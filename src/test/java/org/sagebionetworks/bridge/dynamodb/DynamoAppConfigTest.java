@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -18,6 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -48,6 +50,9 @@ public class DynamoAppConfigTest {
     private static final List<ConfigReference> CONFIG_REFS = ImmutableList.of(
             new ConfigReference("config1", 1L),
             new ConfigReference("config2", 2L));
+    private static final List<FileReference> FILE_REFS = ImmutableList.of(
+            new FileReference(GUID, TIMESTAMP),
+            new FileReference("twoGuid", TIMESTAMP));
     private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigTest.class));
     
     @Test
@@ -63,16 +68,19 @@ public class DynamoAppConfigTest {
         assertNotNull(config.getConfigReferences());
         assertNotNull(config.getSchemaReferences());
         assertNotNull(config.getSurveyReferences());
+        assertNotNull(config.getFileReferences());
         
         config.setConfigElements(null);
         config.setConfigReferences(null);
         config.setSchemaReferences(null);
         config.setSurveyReferences(null);
+        config.setFileReferences(null);
         
         assertNotNull(config.getConfigElements());
         assertNotNull(config.getConfigReferences());
         assertNotNull(config.getSchemaReferences());
         assertNotNull(config.getSurveyReferences());
+        assertNotNull(config.getFileReferences());
     }
 
     @Test
@@ -94,6 +102,7 @@ public class DynamoAppConfigTest {
         appConfig.setSurveyReferences(SURVEY_REFS);
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setConfigReferences(CONFIG_REFS);
+        appConfig.setFileReferences(FILE_REFS);
         appConfig.setConfigElements(ImmutableMap.of("config1", TestUtils.getClientData()));
         appConfig.setClientData(clientData);
         appConfig.setVersion(3L);
@@ -101,7 +110,7 @@ public class DynamoAppConfigTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         
-        assertEquals(node.size(), 12);
+        assertEquals(node.size(), 13);
         JsonNode critNode = node.get("criteria");
         assertEquals(critNode.get("language").textValue(), "fr");
         assertEquals(critNode.get("allOfGroups").size(), 2);
@@ -147,6 +156,12 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("surveyReferences").get(1).get("guid").textValue(),
                 appConfig.getSurveyReferences().get(1).getGuid());
         assertEquals(node.get("surveyReferences").get(1).get("createdOn").textValue(), SURVEY_PUB_DATE.toString());
+        
+        assertEquals(node.get("fileReferences").size(), 2);
+        assertEquals(node.get("fileReferences").get(0).get("guid").textValue(), GUID);
+        assertEquals(node.get("fileReferences").get(0).get("createdOn").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("fileReferences").get(1).get("guid").textValue(), "twoGuid");
+        assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getStudyId());

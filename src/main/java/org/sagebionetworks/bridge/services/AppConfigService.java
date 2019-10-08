@@ -53,6 +53,8 @@ public class AppConfigService {
     
     private UploadSchemaService schemaService;
     
+    private FileService fileService;
+    
     @Autowired
     final void setAppConfigDao(AppConfigDao appConfigDao) {
         this.appConfigDao = appConfigDao;
@@ -81,6 +83,11 @@ public class AppConfigService {
     @Autowired
     final void setAppConfigElementService(AppConfigElementService appConfigElementService) {
         this.appConfigElementService = appConfigElementService;
+    }
+    
+    @Autowired
+    final void setFileService(FileService fileService) {
+        this.fileService = fileService;
     }
     
     // In order to mock this value;
@@ -185,8 +192,8 @@ public class AppConfigService {
         
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
         
-        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
-                study.getDataGroups(), substudyIds, true);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
+                fileService, study.getDataGroups(), substudyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -218,8 +225,8 @@ public class AppConfigService {
         
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
         
-        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService,
-                study.getDataGroups(), substudyIds, false);
+        Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
+                fileService, study.getDataGroups(), substudyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.

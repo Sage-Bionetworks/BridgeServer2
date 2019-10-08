@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -11,6 +12,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.files.FileReference;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -19,6 +22,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
+import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 import org.springframework.validation.Errors;
@@ -29,15 +33,17 @@ public class AppConfigValidator implements Validator {
     private SurveyService surveyService;
     private UploadSchemaService schemaService;
     private AppConfigElementService appConfigElementService;
+    private FileService fileService;
     private boolean isNew;
     private Set<String> dataGroups;
     private Set<String> substudyIds;
     
     public AppConfigValidator(SurveyService surveyService, UploadSchemaService schemaService,
-            AppConfigElementService appConfigElementService, Set<String> dataGroups, Set<String> substudyIds,
-            boolean isNew) {
+            AppConfigElementService appConfigElementService, FileService fileService, Set<String> dataGroups,
+            Set<String> substudyIds, boolean isNew) {
         this.surveyService = surveyService;
         this.schemaService = schemaService;
+        this.fileService = fileService;
         this.appConfigElementService = appConfigElementService;
         this.dataGroups = dataGroups;
         this.substudyIds = substudyIds;
@@ -127,7 +133,6 @@ public class AppConfigValidator implements Validator {
             }
         }
         if (appConfig.getSurveyReferences() != null) {
-            
             for (int i=0; i < appConfig.getSurveyReferences().size(); i++) {
                 SurveyReference ref = appConfig.getSurveyReferences().get(i);
                 errors.pushNestedPath("surveyReferences["+i+"]");
@@ -144,6 +149,26 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("", "does not refer to a survey");    
                     } else if (!survey.isPublished()) {
                         errors.rejectValue("", "has not been published");
+                    }
+                }
+                errors.popNestedPath();
+            }
+        }
+        if (appConfig.getFileReferences() != null) {
+            for (int i=0; i < appConfig.getFileReferences().size(); i++) {
+                FileReference ref = appConfig.getFileReferences().get(i);
+                errors.pushNestedPath("fileReferences["+i+"]");
+                if (ref.getGuid() == null || ref.getCreatedOn() == null) {
+                    if (ref.getGuid() == null) {
+                        errors.rejectValue("fileGuid", "is required");
+                    }
+                    if (ref.getCreatedOn() == null) {
+                        errors.rejectValue("createdOn", "is required");
+                    }
+                } else {
+                    Optional<FileRevision> revision = fileService.getFileRevision(ref.getGuid(), ref.getCreatedOn());
+                    if (!revision.isPresent()) {
+                        errors.rejectValue("", "does not refer to a file revision");
                     }
                 }
                 errors.popNestedPath();

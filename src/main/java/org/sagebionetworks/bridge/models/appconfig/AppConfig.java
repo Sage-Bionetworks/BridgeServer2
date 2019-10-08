@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoAppConfig;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.HasCriteria;
+import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -50,6 +51,9 @@ public interface AppConfig extends BridgeEntity, HasCriteria {
     
     List<ConfigReference> getConfigReferences();
     void setConfigReferences(List<ConfigReference> references);
+    
+    List<FileReference> getFileReferences();
+    void setFileReferences(List<FileReference> references);
     
     Map<String,JsonNode> getConfigElements();
     void setConfigElements(Map<String,JsonNode> configElements);
