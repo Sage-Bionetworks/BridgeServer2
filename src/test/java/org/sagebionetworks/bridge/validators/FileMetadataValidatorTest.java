@@ -13,7 +13,6 @@ public class FileMetadataValidatorTest {
     public void validates() { 
         FileMetadata metadata = new FileMetadata();
         metadata.setName("name");
-        metadata.setMimeType("text/html");
         metadata.setDescription("A description");
         
         Validate.entityThrowingException(INSTANCE, metadata);
@@ -22,17 +21,8 @@ public class FileMetadataValidatorTest {
     @Test
     public void nameRequired() {
         FileMetadata metadata = new FileMetadata();
-        metadata.setMimeType("text/html");
         
         assertValidatorMessage(INSTANCE, metadata, "name", "is required");
     }
     
-    @Test
-    public void mimeTypeInvalid() {
-        FileMetadata metadata = new FileMetadata();
-        metadata.setName("test name");
-        metadata.setMimeType("some nonsense");
-        
-        assertValidatorMessage(INSTANCE, metadata, "mimeType", "is not recognizable as a valid mime type");        
-    }
 }

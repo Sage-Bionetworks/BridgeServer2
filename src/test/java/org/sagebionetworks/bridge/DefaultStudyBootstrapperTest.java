@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.API_SUBPOP;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.SHARED_SUBPOP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
