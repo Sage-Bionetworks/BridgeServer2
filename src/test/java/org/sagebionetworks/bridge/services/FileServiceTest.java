@@ -299,6 +299,12 @@ public class FileServiceTest extends Mockito {
         service.getFileRevisions(TEST_STUDY, GUID, 0, 1000);
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = ".*FileMetadata not found.*")
+    public void getFileRevisionsNotFound() { 
+        service.getFileRevisions(TEST_STUDY, GUID, 0, 1000);
+    }
+    
     @Test
     public void createFileRevision() throws Exception {
         FileMetadata metadata = new FileMetadata();
@@ -334,7 +340,16 @@ public class FileServiceTest extends Mockito {
             expectedExceptionsMessageRegExp=".*FileMetadata not found.*")
     public void createFileRevisionNotFound() throws Exception {
         FileRevision revision = new FileRevision();
+        revision.setName("name");
+        revision.setMimeType("application/pdf");
         revision.setFileGuid(GUID);
+        
+        service.createFileRevision(TEST_STUDY, revision);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void createFileRevisionInvalid() { 
+        FileRevision revision = new FileRevision();
         
         service.createFileRevision(TEST_STUDY, revision);
     }
@@ -344,6 +359,7 @@ public class FileServiceTest extends Mockito {
         FileRevision existing = new FileRevision();
         existing.setFileGuid(GUID);        
         existing.setCreatedOn(TIMESTAMP);
+        existing.setUploadURL("some-upload-url");
         when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.of(existing));
         
         when(mockS3Client.doesObjectExist(UPLOAD_BUCKET, GUID + "." + TIMESTAMP.getMillis())).thenReturn(true);

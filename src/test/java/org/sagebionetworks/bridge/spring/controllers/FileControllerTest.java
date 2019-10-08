@@ -33,6 +33,8 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -210,8 +212,6 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void createFileRevision() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-
         FileRevision revision = new FileRevision();
         revision.setName("name");
         revision.setDescription("description");
@@ -230,12 +230,40 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void finishFileRevision() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        
         StatusMessage message = controller.finishFileRevision(GUID, CREATED_ON.toString());
         assertEquals(UPLOAD_FINISHED_MSG, message);
 
         verify(mockFileService).finishFileRevision(eq(TEST_STUDY), eq(GUID), dateTimeCaptor.capture());
         assertEquals(CREATED_ON.toString(), dateTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getFileRevisions() throws Exception {
+        PagedResourceList<FileRevision> list = new PagedResourceList<>(ImmutableList.of(new FileRevision(), new FileRevision()), 2);
+        when(mockFileService.getFileRevisions(TEST_STUDY, GUID, 10, 50)).thenReturn(list);
+        
+        PagedResourceList<FileRevision> revisions = controller.getFileRevisions(GUID, "10", "50");
+        assertSame(revisions, list);
+        
+        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 10, 50);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*bad-value is not an integer.*")
+    public void getFileRevisionsBadOffset() { 
+        controller.getFileRevisions(GUID, "bad-value", "50");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*bad-value is not an integer.*")
+    public void getFileRevisionsBadPageSize() { 
+        controller.getFileRevisions(GUID, "10", "bad-value");
+    }
+    
+    @Test
+    public void getFileRevisionsDefaults() { 
+        controller.getFileRevisions(GUID, null, null);
+        
+        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 0, API_DEFAULT_PAGE_SIZE);
     }
 }
