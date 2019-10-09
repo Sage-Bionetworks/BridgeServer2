@@ -24,7 +24,6 @@ public final class FileMetadata implements BridgeEntity {
     @Id
     private String guid;
     private String description;
-    private String mimeType;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -57,13 +56,6 @@ public final class FileMetadata implements BridgeEntity {
     public void setDescription(String description) {
         this.description = description;
     }
-    /** Probably optional since S3 autodetects, but some files (e.g. without extensions) may need it. */
-    public String getMimeType() {
-        return mimeType; 
-    }
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
     /** Files support logical deletion. Revisions remain accessible on S3 for released clients and configurations. */
     public boolean isDeleted() {
         return deleted;
@@ -92,7 +84,7 @@ public final class FileMetadata implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, deleted, description, guid, mimeType, name, createdOn, modifiedOn, version);
+        return Objects.hash(studyId, deleted, description, guid, name, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -105,7 +97,6 @@ public final class FileMetadata implements BridgeEntity {
                 Objects.equals(deleted, other.deleted) && 
                 Objects.equals(description, other.description) &&
                 Objects.equals(guid, other.guid) &&
-                Objects.equals(mimeType, other.mimeType) &&
                 Objects.equals(name, other.name) &&
                 Objects.equals(createdOn, other.createdOn) &&
                 Objects.equals(modifiedOn, other.modifiedOn) &&
@@ -114,7 +105,7 @@ public final class FileMetadata implements BridgeEntity {
     @Override
     public String toString() {
         return "FileMetadata [studyId=" + studyId + ", name=" + name + ", guid=" + guid + ", description=" + description
-                + ", mimeType=" + mimeType + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", deleted="
-                + deleted + ", version=" + version + "]";
+                + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", deleted=" + deleted + ", version="
+                + version + "]";
     }
 }

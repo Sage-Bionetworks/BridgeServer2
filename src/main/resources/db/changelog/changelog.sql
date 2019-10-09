@@ -240,3 +240,15 @@ CREATE TABLE IF NOT EXISTS `FileRevisions` (
 
 ALTER TABLE `Accounts`
 DROP COLUMN `stormpathPasswordHash`;
+
+-- changeset bridge:9
+
+ALTER TABLE `FileMetadata`
+DROP COLUMN `mimeType`;
+
+ALTER TABLE `FileRevisions`
+ADD COLUMN `mimeType` varchar(255) DEFAULT NULL,
+ADD COLUMN `name` varchar(255) DEFAULT NULL,
+ADD COLUMN `size` bigint(20) DEFAULT NULL,
+MODIFY COLUMN `uploadURL` VARCHAR(1024) DEFAULT NULL;
+

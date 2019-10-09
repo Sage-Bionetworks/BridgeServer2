@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,17 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.services.FileService;
 
 @CrossOrigin
 @RestController
-public class FileMetadataController extends BaseController {
+public class FileController extends BaseController {
     
     static final StatusMessage DELETE_MSG = new StatusMessage("File metadata and revisions deleted.");
+    static final StatusMessage UPLOAD_FINISHED_MSG = new StatusMessage("File revision upload completed.");
+
     private FileService fileService;
     
     @Autowired
@@ -87,5 +92,38 @@ public class FileMetadataController extends BaseController {
             fileService.deleteFile(session.getStudyIdentifier(), guid);
         }
         return DELETE_MSG;
+    }
+    
+    @GetMapping("/v3/files/{guid}/revisions")
+    public PagedResourceList<FileRevision> getFileRevisions(@PathVariable String guid,
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+
+        return fileService.getFileRevisions(session.getStudyIdentifier(), guid, offsetInt, pageSizeInt);
+    }
+    
+    @PostMapping("/v3/files/{guid}/revisions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public FileRevision createFileRevision(@PathVariable String guid) throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        // The only information that can really be submitted is a description
+        FileRevision revision = parseJson(FileRevision.class);
+        revision.setFileGuid(guid);
+        
+        return fileService.createFileRevision(session.getStudyIdentifier(), revision);
+    }
+    
+    @PostMapping("/v3/files/{guid}/revisions/{createdOn}")
+    public StatusMessage finishFileRevision(@PathVariable String guid, @PathVariable("createdOn") String createdOnStr) throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        DateTime createdOn = DateTime.parse(createdOnStr);
+        
+        fileService.finishFileRevision(session.getStudyIdentifier(), guid, createdOn);
+        return UPLOAD_FINISHED_MSG;
     }
 }

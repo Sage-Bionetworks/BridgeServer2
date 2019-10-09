@@ -30,7 +30,6 @@ public class FileMetadataTest extends Mockito {
         metadata.setName("oneName");
         metadata.setGuid(GUID);
         metadata.setDescription("oneDescription");
-        metadata.setMimeType("text/html");
         metadata.setDeleted(true);
         metadata.setVersion(3L);
         metadata.setCreatedOn(TIMESTAMP);
@@ -40,7 +39,6 @@ public class FileMetadataTest extends Mockito {
         assertEquals(node.get("name").textValue(), "oneName");
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("description").textValue(), "oneDescription");
-        assertEquals(node.get("mimeType").textValue(), "text/html");
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").intValue(), 3);
         assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
@@ -53,7 +51,6 @@ public class FileMetadataTest extends Mockito {
         assertEquals(deser.getName(), "oneName");
         assertEquals(deser.getGuid(), GUID);
         assertEquals(deser.getDescription(), "oneDescription");
-        assertEquals(deser.getMimeType(), "text/html");
         assertTrue(deser.isDeleted());
         assertEquals(deser.getVersion(), 3L);
         assertEquals(deser.getCreatedOn(), TIMESTAMP);

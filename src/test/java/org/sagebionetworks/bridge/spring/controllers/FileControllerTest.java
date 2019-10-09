@@ -11,7 +11,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.spring.controllers.FileMetadataController.DELETE_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.FileController.DELETE_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.FileController.UPLOAD_FINISHED_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -31,6 +33,8 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -38,9 +42,12 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.services.FileService;
 
-public class FileMetadataControllerTest extends Mockito {
+public class FileControllerTest extends Mockito {
+    
+    private static final DateTime CREATED_ON = new DateTime();
     
     @Mock
     FileService mockFileService;
@@ -54,9 +61,15 @@ public class FileMetadataControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<FileMetadata> metadataCaptor;
     
+    @Captor
+    ArgumentCaptor<FileRevision> revisionCaptor;
+    
+    @Captor
+    ArgumentCaptor<DateTime> dateTimeCaptor;
+    
     @Spy
     @InjectMocks
-    FileMetadataController controller;
+    FileController controller;
     
     UserSession session;
     
@@ -73,12 +86,15 @@ public class FileMetadataControllerTest extends Mockito {
 
     @Test
     public void verifyAnnotations() throws Exception {
-        assertCrossOrigin(FileMetadataController.class);
-        assertGet(FileMetadataController.class, "getFiles");
-        assertCreate(FileMetadataController.class, "createFile");
-        assertGet(FileMetadataController.class, "getFile");
-        assertPost(FileMetadataController.class, "updateFile");
-        assertDelete(FileMetadataController.class, "deleteFile");
+        assertCrossOrigin(FileController.class);
+        assertGet(FileController.class, "getFiles");
+        assertCreate(FileController.class, "createFile");
+        assertGet(FileController.class, "getFile");
+        assertPost(FileController.class, "updateFile");
+        assertDelete(FileController.class, "deleteFile");
+        assertGet(FileController.class, "getFileRevisions");
+        assertCreate(FileController.class, "createFileRevision");
+        assertPost(FileController.class, "finishFileRevision");
     }
     
     @Test
@@ -192,5 +208,62 @@ public class FileMetadataControllerTest extends Mockito {
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
         verify(mockFileService).deleteFilePermanently(TEST_STUDY, GUID);
+    }
+    
+    @Test
+    public void createFileRevision() throws Exception {
+        FileRevision revision = new FileRevision();
+        revision.setName("name");
+        revision.setDescription("description");
+        revision.setMimeType("text/plain");
+        mockRequestBody(mockRequest, revision);
+        
+        controller.createFileRevision(GUID);
+        
+        verify(mockFileService).createFileRevision(eq(TEST_STUDY), revisionCaptor.capture());
+        FileRevision captured = revisionCaptor.getValue();
+        assertEquals(GUID, captured.getFileGuid());
+        assertEquals("name", captured.getName());
+        assertEquals("description", captured.getDescription());
+        assertEquals("text/plain", captured.getMimeType());
+    }
+    
+    @Test
+    public void finishFileRevision() throws Exception {
+        StatusMessage message = controller.finishFileRevision(GUID, CREATED_ON.toString());
+        assertEquals(UPLOAD_FINISHED_MSG, message);
+
+        verify(mockFileService).finishFileRevision(eq(TEST_STUDY), eq(GUID), dateTimeCaptor.capture());
+        assertEquals(CREATED_ON.toString(), dateTimeCaptor.getValue().toString());
+    }
+    
+    @Test
+    public void getFileRevisions() throws Exception {
+        PagedResourceList<FileRevision> list = new PagedResourceList<>(ImmutableList.of(new FileRevision(), new FileRevision()), 2);
+        when(mockFileService.getFileRevisions(TEST_STUDY, GUID, 10, 50)).thenReturn(list);
+        
+        PagedResourceList<FileRevision> revisions = controller.getFileRevisions(GUID, "10", "50");
+        assertSame(revisions, list);
+        
+        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 10, 50);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*bad-value is not an integer.*")
+    public void getFileRevisionsBadOffset() { 
+        controller.getFileRevisions(GUID, "bad-value", "50");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*bad-value is not an integer.*")
+    public void getFileRevisionsBadPageSize() { 
+        controller.getFileRevisions(GUID, "10", "bad-value");
+    }
+    
+    @Test
+    public void getFileRevisionsDefaults() { 
+        controller.getFileRevisions(GUID, null, null);
+        
+        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 0, API_DEFAULT_PAGE_SIZE);
     }
 }
