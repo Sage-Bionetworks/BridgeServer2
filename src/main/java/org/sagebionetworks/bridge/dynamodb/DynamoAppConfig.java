@@ -211,7 +211,7 @@ public class DynamoAppConfig implements AppConfig {
     @Override
     public void setConfigReferences(List<ConfigReference> references) {
         this.configReferences = references;
-    }    
+    }
     
     @DynamoDBIgnore
     @Override

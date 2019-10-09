@@ -379,4 +379,15 @@ public class FileServiceTest extends Mockito {
         }
         verify(mockFileRevisionDao).deleteFileRevision(existing);
     }
+    
+    @Test
+    public void getFileRevision() { 
+        FileRevision revision = new FileRevision();
+        when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.of(revision));
+        
+        Optional<FileRevision> returned = service.getFileRevision(GUID, TIMESTAMP);
+        assertSame(returned.get(), revision);
+        
+        verify(mockFileRevisionDao).getFileRevision(GUID, TIMESTAMP);
+    }
 }

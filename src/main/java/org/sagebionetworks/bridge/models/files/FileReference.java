@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.files;
 
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.config.Environment.PROD;
 
 import java.util.Objects;
 
@@ -17,9 +17,8 @@ import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 public class FileReference {
     
-    private static final Environment ENV = BridgeConfigFactory.getConfig().getEnvironment();
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
-    
+    private final Environment env;
+    private final String baseUrl;
     private final String guid;
     private final DateTime createdOn;
     
@@ -27,6 +26,16 @@ public class FileReference {
     public FileReference(@JsonProperty("guid") String guid, @JsonProperty("createdOn") DateTime createdOn) {
         this.guid = guid;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
+        this.env = BridgeConfigFactory.getConfig().getEnvironment();
+        this.baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
+    }
+    
+    // For testing, allow setting of configuration
+    public FileReference(Environment env, String baseUrl, String guid, DateTime createdOn) {
+        this.guid = guid;
+        this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
+        this.env = env;
+        this.baseUrl = baseUrl;
     }
 
     public String getGuid() {
@@ -40,13 +49,13 @@ public class FileReference {
         if (guid == null || createdOn == null) {
             return null;
         }
-        String protocol = (ENV == LOCAL) ? "http" : "https";
-        return protocol + "://" + BASE_URL + "/" + guid + "." + createdOn.getMillis();
+        String protocol = (env == PROD) ? "https" : "http";
+        return protocol + "://" + baseUrl + "/" + guid + "." + createdOn.getMillis();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(guid, createdOn);
+        return Objects.hash(guid, createdOn, env, baseUrl);
     }
 
     @Override
@@ -56,11 +65,15 @@ public class FileReference {
         if (obj == null || getClass() != obj.getClass())
             return false;
         FileReference other = (FileReference) obj;
-        return (Objects.equals(createdOn, other.createdOn) && Objects.equals(guid, other.guid));
+        return (Objects.equals(createdOn, other.createdOn) && 
+                Objects.equals(guid, other.guid) &&
+                Objects.equals(env, other.env) &&
+                Objects.equals(baseUrl, other.baseUrl));
     }
 
     @Override
     public String toString() {
-        return "FileReference [guid=" + guid + ", createdOn=" + createdOn + ", href=" + getHref() + "]";
+        return "FileReference [env=" + env + ", baseUrl=" + baseUrl + ", guid=" + guid + 
+            ", createdOn=" + createdOn + "]";
     }
 }

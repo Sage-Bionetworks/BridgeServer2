@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.files;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -23,4 +24,9 @@ public class FileReferenceTest {
         assertTrue(ref.getHref().contains(HREF));
     }
  
+    @Test
+    public void testWithEnv() {
+        FileReference ref = new FileReference(PROD, "docs.test.com", GUID, TIMESTAMP);
+        assertEquals(ref.getHref(), "https://docs.test.com/oneGuid." + TIMESTAMP.getMillis());
+    }
 }
