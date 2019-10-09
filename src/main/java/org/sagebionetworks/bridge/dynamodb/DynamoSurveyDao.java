@@ -48,6 +48,8 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoSurveyDao implements SurveyDao {
 
+    static final String IDENTIFIER_PREFIX = "identifier:";
+    
     class QueryBuilder {
         
         private static final String PUBLISHED_PROPERTY = "published";
@@ -91,7 +93,7 @@ public class DynamoSurveyDao implements SurveyDao {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
                 dynamoSurveys = queryBySecondaryIndex();
-            } else if (surveyGuid.startsWith("identifier:")) { 
+            } else if (surveyGuid.toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
                 dynamoSurveys = queryBySurveyIdentifier();
             } else {
                 dynamoSurveys = query();
@@ -296,8 +298,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey updateSurvey(Survey survey) {
-        Survey existing = getSurvey(survey, false);
+    public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
+        Survey existing = getSurvey(studyIdentifier, survey, false);
         
         // copy over mutable fields
         existing.setName(survey.getName());
@@ -316,8 +318,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
-        DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
+    public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(studyIdentifier, keys, true);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);
@@ -341,8 +343,9 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys, false);
+    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(studyIdentifier, keys, false);
+
         if (existing != null) {
             deleteAllElements(existing.getGuid(), existing.getCreatedOn());
             surveyMapper.delete(existing);
@@ -392,7 +395,11 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
+    public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
+        if (keys.getGuid() != null && keys.getGuid().toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
+            return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+                    .setSkipElements(!includeElements).getOne();
+        }
         return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
