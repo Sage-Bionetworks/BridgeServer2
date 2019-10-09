@@ -24,8 +24,8 @@ public class FileReference {
     private final DateTime createdOn;
     
     @JsonCreator
-    public FileReference(@JsonProperty("guid") String fileGuid, @JsonProperty("createdOn") DateTime createdOn) {
-        this.guid = fileGuid;
+    public FileReference(@JsonProperty("guid") String guid, @JsonProperty("createdOn") DateTime createdOn) {
+        this.guid = guid;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
     }
 
@@ -37,6 +37,9 @@ public class FileReference {
         return createdOn;
     }
     public String getHref() {
+        if (guid == null || createdOn == null) {
+            return null;
+        }
         String protocol = (ENV == LOCAL) ? "http" : "https";
         return protocol + "://" + BASE_URL + "/" + guid + "." + createdOn.getMillis();
     }

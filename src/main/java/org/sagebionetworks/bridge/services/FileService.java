@@ -156,7 +156,6 @@ public class FileService {
     }
     
     public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {
-        
         return fileRevisionDao.getFileRevision(guid, createdOn);
     }
     
