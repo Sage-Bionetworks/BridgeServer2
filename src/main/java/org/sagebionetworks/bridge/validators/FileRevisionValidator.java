@@ -18,6 +18,9 @@ public class FileRevisionValidator implements Validator {
     public void validate(Object object, Errors errors) {
         FileRevision file = (FileRevision)object;
         
+        if (StringUtils.isBlank(file.getFileGuid())) {
+            errors.rejectValue("fileGuid", "is required");
+        }
         if (StringUtils.isBlank(file.getName())) {
             errors.rejectValue("name", "is required");
         }

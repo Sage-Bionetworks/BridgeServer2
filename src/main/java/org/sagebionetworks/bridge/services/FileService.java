@@ -178,10 +178,10 @@ public class FileService {
     }
     
     public FileRevision createFileRevision(StudyIdentifier studyId, FileRevision revision) {
+        Validate.entityThrowingException(INSTANCE, revision);
+        
         // Will throw if the file doesn't exist in the caller's study
         getFile(studyId, revision.getFileGuid());
-        
-        Validate.entityThrowingException(INSTANCE, revision);
         
         // Set system properties.
         revision.setCreatedOn(getDateTime());
