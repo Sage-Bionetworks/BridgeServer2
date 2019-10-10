@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
-public class FileReference {
+public final class FileReference {
     
     private final Environment env;
     private final String baseUrl;

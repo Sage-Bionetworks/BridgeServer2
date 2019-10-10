@@ -54,7 +54,7 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
         checkNotNull(createdOn);
         
         FileRevisionId revisionId = new FileRevisionId(guid, createdOn);
-
+        
         FileRevision revision = hibernateHelper.getById(FileRevision.class, revisionId);
         if (revision == null) {
             return Optional.empty();

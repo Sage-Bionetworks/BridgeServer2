@@ -173,6 +173,7 @@ public class DynamoAppConfigTest {
         assertEquals(deser.getSurveyReferences(), appConfig.getSurveyReferences());
         assertEquals(deser.getSchemaReferences(), appConfig.getSchemaReferences());
         assertEquals(deser.getConfigReferences(), appConfig.getConfigReferences());
+        assertEquals(deser.getFileReferences(), appConfig.getFileReferences());
         assertEquals(deser.getConfigElements(), appConfig.getConfigElements());
         assertEquals(deser.getCreatedOn(), appConfig.getCreatedOn());
         assertEquals(deser.getModifiedOn(), appConfig.getModifiedOn());
