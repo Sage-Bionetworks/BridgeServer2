@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 public final class FileReference {
     
-    private final Environment env;
-    private final String baseUrl;
     private final String guid;
     private final DateTime createdOn;
     
@@ -26,16 +24,6 @@ public final class FileReference {
     public FileReference(@JsonProperty("guid") String guid, @JsonProperty("createdOn") DateTime createdOn) {
         this.guid = guid;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
-        this.env = BridgeConfigFactory.getConfig().getEnvironment();
-        this.baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
-    }
-    
-    // For testing, allow setting of configuration
-    public FileReference(Environment env, String baseUrl, String guid, DateTime createdOn) {
-        this.guid = guid;
-        this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
-        this.env = env;
-        this.baseUrl = baseUrl;
     }
 
     public String getGuid() {
@@ -49,13 +37,15 @@ public final class FileReference {
         if (guid == null || createdOn == null) {
             return null;
         }
+        Environment env = BridgeConfigFactory.getConfig().getEnvironment();
+        String baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
         String protocol = (env == PROD) ? "https" : "http";
         return protocol + "://" + baseUrl + "/" + guid + "." + createdOn.getMillis();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(guid, createdOn, env, baseUrl);
+        return Objects.hash(guid, createdOn);
     }
 
     @Override
@@ -66,9 +56,7 @@ public final class FileReference {
             return false;
         FileReference other = (FileReference) obj;
         return (Objects.equals(createdOn, other.createdOn) && 
-                Objects.equals(guid, other.guid) &&
-                Objects.equals(env, other.env) &&
-                Objects.equals(baseUrl, other.baseUrl));
+                Objects.equals(guid, other.guid));
     }
 
     @Override

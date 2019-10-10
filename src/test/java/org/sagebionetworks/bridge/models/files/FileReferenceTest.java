@@ -8,50 +8,87 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class FileReferenceTest {
+@PrepareForTest({BridgeConfigFactory.class})
+public class FileReferenceTest extends PowerMockTestCase {
     
-    private static final String HREF = BridgeConfigFactory.getConfig()
-            .getHostnameWithPostfix("docs") + "/" + GUID + "." + TIMESTAMP.getMillis();
-
+    private BridgeConfig config;
+    
     @Test
     public void equalsVerifier() {
         EqualsVerifier.forClass(FileReference.class).allFieldsShouldBeUsed().verify();
     }
     
     @Test
-    public void nullValues() throws Exception {
-        FileReference ref = BridgeObjectMapper.get().readValue("{}", FileReference.class);
+    public void nullGuid() throws Exception {
+        FileReference ref = new FileReference(null, TIMESTAMP);
         assertNull(ref.getGuid());
+        assertEquals(ref.getCreatedOn(), TIMESTAMP);
+        assertNull(ref.getHref());
+    }
+    
+    @Test
+    public void nullCreatedOn() throws Exception {
+        FileReference ref = new FileReference(GUID, null);
+        assertEquals(ref.getGuid(), GUID);
         assertNull(ref.getCreatedOn());
         assertNull(ref.getHref());
     }
     
     @Test
-    public void test() {
+    public void canSerialization() throws Exception {
+        String href = "http://" + BridgeConfigFactory.getConfig()
+                .getHostnameWithPostfix("docs") + "/" + GUID + "." + TIMESTAMP.getMillis();
+        
         FileReference ref = new FileReference(GUID, TIMESTAMP);
         
-        assertEquals(ref.getGuid(), GUID);
-        assertEquals(ref.getCreatedOn(), TIMESTAMP);
-        assertTrue(ref.getHref().contains(HREF));
+        JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
+        assertEquals(node.get("guid").textValue(), GUID);
+        assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("type").textValue(), "FileReference");
+        
+        FileReference deser = BridgeObjectMapper.get().readValue(node.toString(), FileReference.class);
+        assertEquals(deser.getGuid(), GUID);
+        assertEquals(deser.getCreatedOn(), TIMESTAMP);
+        assertEquals(deser.getHref(), href);
     }
  
     @Test
     public void testWithProdEnv() {
-        FileReference ref = new FileReference(PROD, "docs.test.com", GUID, TIMESTAMP);
+        PowerMockito.mockStatic(BridgeConfigFactory.class);
+        config = Mockito.mock(BridgeConfig.class);
+        Mockito.when(BridgeConfigFactory.getConfig()).thenReturn(config);
+        
+        Mockito.when(config.getEnvironment()).thenReturn(PROD);
+        Mockito.when(config.getHostnameWithPostfix("docs")).thenReturn("docs.test.com");
+        
+        FileReference ref = new FileReference(GUID, TIMESTAMP);
         assertEquals(ref.getHref(), "https://docs.test.com/oneGuid." + TIMESTAMP.getMillis());
     }
 
     @Test
     public void testWithStagingEnv() {
-        FileReference ref = new FileReference(UAT, "docs.test.com", GUID, TIMESTAMP);
-        assertEquals(ref.getHref(), "http://docs.test.com/oneGuid." + TIMESTAMP.getMillis());
+        PowerMockito.mockStatic(BridgeConfigFactory.class);
+        config = Mockito.mock(BridgeConfig.class);
+        Mockito.when(BridgeConfigFactory.getConfig()).thenReturn(config);
+        
+        Mockito.when(config.getEnvironment()).thenReturn(UAT);
+        Mockito.when(config.getHostnameWithPostfix("docs")).thenReturn("docs-staging.test.com");
+        
+        FileReference ref = new FileReference(GUID, TIMESTAMP);
+        assertEquals(ref.getHref(), "http://docs-staging.test.com/oneGuid." + TIMESTAMP.getMillis());
     }
 }
