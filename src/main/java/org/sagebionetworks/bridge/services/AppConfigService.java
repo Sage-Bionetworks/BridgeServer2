@@ -206,6 +206,7 @@ public class AppConfigService {
         newAppConfig.setSurveyReferences(appConfig.getSurveyReferences());
         newAppConfig.setSchemaReferences(appConfig.getSchemaReferences());
         newAppConfig.setConfigReferences(appConfig.getConfigReferences());
+        newAppConfig.setFileReferences(appConfig.getFileReferences());
         newAppConfig.setCreatedOn(timestamp);
         newAppConfig.setModifiedOn(timestamp);
         newAppConfig.setGuid(getGUID());

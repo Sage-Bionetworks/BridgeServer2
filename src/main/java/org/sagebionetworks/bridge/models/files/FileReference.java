@@ -73,7 +73,6 @@ public class FileReference {
 
     @Override
     public String toString() {
-        return "FileReference [env=" + env + ", baseUrl=" + baseUrl + ", guid=" + guid + 
-            ", createdOn=" + createdOn + "]";
+        return "FileReference [guid=" + guid + ", createdOn=" + createdOn + "]";
     }
 }

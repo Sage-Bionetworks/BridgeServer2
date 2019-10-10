@@ -183,15 +183,6 @@ public class DynamoAppConfig implements AppConfig {
         this.schemaReferences = references;
     }
     
-    @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
-    @Override
-    public List<ConfigReference> getConfigReferences() {
-        if (configReferences == null) {
-            configReferences = new ArrayList<>();
-        }
-        return configReferences;
-    }
-    
     @DynamoDBTypeConverted(converter=FileReferenceListMarshaller.class)
     @Override
     public void setFileReferences(List<FileReference> references) {
@@ -205,6 +196,15 @@ public class DynamoAppConfig implements AppConfig {
             fileReferences = new ArrayList<>();
         }
         return fileReferences;
+    }
+    
+    @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
+    @Override
+    public List<ConfigReference> getConfigReferences() {
+        if (configReferences == null) {
+            configReferences = new ArrayList<>();
+        }
+        return configReferences;
     }
     
     @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)

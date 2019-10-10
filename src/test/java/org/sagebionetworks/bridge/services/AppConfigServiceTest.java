@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +41,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.files.FileReference;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -62,6 +65,7 @@ public class AppConfigServiceTest {
             .of(new SurveyReference(null, "guid", DateTime.now()));
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
+    private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -392,7 +396,7 @@ public class AppConfigServiceTest {
         when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
         when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
         when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
-        
+        when(mockFileService.getFileRevision(eq(GUID), any())).thenReturn(Optional.of(new FileRevision()));
         when(mockSurvey.isPublished()).thenReturn(true);
         
         AppConfig newConfig = setupAppConfig();
@@ -400,18 +404,20 @@ public class AppConfigServiceTest {
         newConfig.setSurveyReferences(SURVEY_REF_LIST);
         newConfig.setSchemaReferences(SCHEMA_REF_LIST);
         newConfig.setConfigReferences(CONFIG_REF_LIST);
+        newConfig.setFileReferences(FILE_REF_LIST);
         
         AppConfig returnValue = service.createAppConfig(TEST_STUDY, newConfig);
         
         assertEquals(returnValue.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getGuid(), GUID);
-        assertEquals(returnValue.getLabel(), newConfig.getLabel()); //
-        assertEquals(returnValue.getStudyId(), TEST_STUDY.getIdentifier()); //
+        assertEquals(returnValue.getLabel(), newConfig.getLabel());
+        assertEquals(returnValue.getStudyId(), TEST_STUDY.getIdentifier());
         assertEquals(returnValue.getClientData(), TestUtils.getClientData());
         assertEquals(returnValue.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(returnValue.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(returnValue.getConfigReferences(), CONFIG_REF_LIST);
+        assertEquals(returnValue.getFileReferences(), FILE_REF_LIST);
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
         
@@ -419,6 +425,13 @@ public class AppConfigServiceTest {
         assertEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getGuid(), GUID);
+        assertEquals(captured.getLabel(), newConfig.getLabel());
+        assertEquals(captured.getStudyId(), TEST_STUDY.getIdentifier());
+        assertEquals(captured.getClientData().toString(), TestUtils.getClientData().toString());
+        assertEquals(captured.getSurveyReferences(), SURVEY_REF_LIST);
+        assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);
+        assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
+        assertEquals(captured.getFileReferences(), FILE_REF_LIST);
         
         verify(mockSubstudyService).getSubstudyIds(TEST_STUDY);
     }
