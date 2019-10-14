@@ -57,6 +57,7 @@ public class FileReferenceTest extends PowerMockTestCase {
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
+        assertEquals(node.get("href").textValue(), href);
         assertEquals(node.get("type").textValue(), "FileReference");
         
         FileReference deser = BridgeObjectMapper.get().readValue(node.toString(), FileReference.class);
