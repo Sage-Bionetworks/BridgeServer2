@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.SURVEY_QUESTION_TYPE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -631,7 +632,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = 
             "Calculated the need to query by secondary index, but study identifier is not set")
     public void secondaryIndexRequiresStudyIdWithStudyIdentifier() {
-        dao.versionSurvey(TEST_STUDY, new DynamoSurvey());
+        dao.getAllSurveysMostRecentVersion(null, true);
     }
     
     @Test
@@ -703,6 +704,13 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
         assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
+        assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
+        assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getS(), SURVEY_ID);
+        
+        assertEquals(query.getQueryFilter().size(), 1);
+        verifyCreatedOnQueryCondition(query);
+        
         verify(mockSurveyElementMapper).queryPage(eq(DynamoSurveyElement.class), elementQueryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurveyElement> elementQuery = elementQueryCaptor.getValue();
         assertEquals(elementQuery.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + TIMESTAMP);
@@ -716,14 +724,6 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setIdentifier(SURVEY_ID);
         survey.setCreatedOn(TIMESTAMP);
         mockSurveyMapper(survey);
-        
-        // There is a question that should be retrieved.
-        DynamoSurveyQuestion element = new DynamoSurveyQuestion();
-        element.setType(SurveyElementConstants.SURVEY_QUESTION_TYPE);
-        element.setUiHint(UIHint.BLOODPRESSURE);
-        element.setConstraints(new BloodPressureConstraints());
-        when(mockSurveyElementMapper.queryPage(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementResultsPage);
-        when(mockElementResultsPage.getResults()).thenReturn(ImmutableList.of(element));
         
         Survey result = dao.getSurvey(TEST_STUDY, SURVEY_IDENTIFIER_KEYS, false);
         assertSame(result, survey);
@@ -919,5 +919,11 @@ public class DynamoSurveyDaoTest extends Mockito {
         Condition studyIdCond = query.getQueryFilter().get("published");
         assertEquals(studyIdCond.getComparisonOperator(), EQ.name());
         assertEquals(studyIdCond.getAttributeValueList().get(0).getN(), "1");
+    }
+    
+    private void verifyCreatedOnQueryCondition(DynamoDBQueryExpression<DynamoSurvey> query) {
+        Condition createdOnCond = query.getQueryFilter().get("versionedOn");
+        assertEquals(createdOnCond.getComparisonOperator(), EQ.name());
+        assertNotEquals(createdOnCond.getAttributeValueList().get(0).getN(), new Long(0));
     }
 }

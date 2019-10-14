@@ -73,7 +73,11 @@ public class DynamoSurveyDao implements SurveyDao {
             return this;
         }
         QueryBuilder setStudy(StudyIdentifier studyIdentifier) {
-            this.studyIdentifier = studyIdentifier.getIdentifier();
+            if (studyIdentifier == null) {
+                this.studyIdentifier = null;
+            } else {
+                this.studyIdentifier = studyIdentifier.getIdentifier();
+            }
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -396,11 +400,7 @@ public class DynamoSurveyDao implements SurveyDao {
      */
     @Override
     public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
-        if (keys.getGuid() != null && keys.getGuid().toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
-            return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
-                    .setSkipElements(!includeElements).getOne();
-        }
-        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
 
