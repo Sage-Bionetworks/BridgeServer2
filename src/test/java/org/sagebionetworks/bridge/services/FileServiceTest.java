@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
+import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
 import static org.sagebionetworks.bridge.services.FileService.EXPIRATION_IN_MINUTES;
@@ -34,6 +35,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.dao.FileRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -47,6 +49,7 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 public class FileServiceTest extends Mockito {
 
     private static final String UPLOAD_BUCKET = "docs.sagebridge.org";
+    private static final String UPLOAD_BUCKET_STAGING = "docs-staging.sagebridge.org";
     private static final String NAME = "oneName";
     private static final String DOWNLOAD_URL_1 = "https://docs.sagebridge.org/oneGuid.1422319112486";
     private static final String DOWNLOAD_URL_2 = "https://docs.sagebridge.org/oneGuid.1422311912486";
@@ -352,6 +355,28 @@ public class FileServiceTest extends Mockito {
         FileRevision revision = new FileRevision();
         
         service.createFileRevision(TEST_STUDY, revision);
+    }
+    
+    @Test
+    public void createFileRevisionInStaging() throws Exception {
+        reset(mockConfig);
+        when(mockConfig.getEnvironment()).thenReturn(UAT);
+        when(mockConfig.getHostnameWithPostfix("docs")).thenReturn(UPLOAD_BUCKET_STAGING);
+        service.setConfig(mockConfig);
+        
+        FileMetadata metadata = new FileMetadata();
+        doReturn(metadata).when(service).getFile(TEST_STUDY, GUID);
+        
+        URL url = new URL("https://" + UPLOAD_BUCKET);
+        when(mockS3Client.generatePresignedUrl(any())).thenReturn(url);
+        
+        FileRevision revision = new FileRevision();
+        revision.setName("name.pdf");
+        revision.setFileGuid(GUID);
+        revision.setMimeType("application/pdf");
+        
+        FileRevision returned = service.createFileRevision(TEST_STUDY, revision);
+        assertEquals(returned.getDownloadURL(), "http://docs-staging.sagebridge.org/oneGuid.1422319112486");
     }
         
     @Test

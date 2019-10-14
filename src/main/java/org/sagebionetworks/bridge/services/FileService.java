@@ -7,7 +7,6 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
@@ -164,8 +163,7 @@ public class FileService {
         }        
         PagedResourceList<FileRevision> revisions = fileRevisionDao.getFileRevisions(guid, offset, pageSize);
         for (FileRevision rev : revisions.getItems()) {
-            String protocol = (env == PROD) ? "https" : "http";
-            rev.setDownloadURL(protocol + "://" + revisionsBucket + "/" + getFileName(rev));
+            rev.setDownloadURL(getDownloadURL(rev));
         }
         return revisions;
     }
@@ -194,9 +192,7 @@ public class FileService {
         revision.setUploadURL(uploadURL.toExternalForm());
         
         fileRevisionDao.createFileRevision(revision);
-        
-        String protocol = (env == LOCAL) ? "http" : "https";
-        revision.setDownloadURL(protocol + "://" + revisionsBucket + "/" + getFileName(revision));
+        revision.setDownloadURL(getDownloadURL(revision));
 
         return revision;
     }
@@ -218,10 +214,16 @@ public class FileService {
         fileRevisionDao.updateFileRevision(existing);
     }
     
+    protected String getDownloadURL(FileRevision revision) {
+        String protocol = (env == PROD) ? "https" : "http";
+        String fileName = getFileName(revision);
+        return protocol + "://" + revisionsBucket + "/" + fileName;
+    }
+
     protected String getFileName(FileRevision revision) {
         return revision.getFileGuid() + "." + revision.getCreatedOn().getMillis();
     }
-    
+
     protected DateTime getDateTime() {
         return new DateTime().withZone(UTC);
     }
