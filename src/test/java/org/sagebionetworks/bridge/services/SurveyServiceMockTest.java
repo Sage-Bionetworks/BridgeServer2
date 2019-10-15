@@ -336,7 +336,7 @@ public class SurveyServiceMockTest {
         assertEquals(paramsCaptor.getValue().get("surveyGuid"), survey.getGuid());
         assertEquals(paramsCaptor.getValue().get("surveyCreatedOn"), survey.getCreatedOn());
         
-        verify(mockSurveyDao).deleteSurveyPermanently(any(), keysCaptor.capture());
+        verify(mockSurveyDao).deleteSurveyPermanently(eq(TEST_STUDY), keysCaptor.capture());
         assertEquals(keysCaptor.getValue(), survey);
     }
 
@@ -396,7 +396,7 @@ public class SurveyServiceMockTest {
         doReturn(null).when(mockSurveyDao).getSurvey(any(), any(), anyBoolean());
         try {
             // Submitted a survey, it doesn't actually match anything in the system.
-            service.deleteSurvey(TEST_STUDY, Survey.create());
+            service.deleteSurvey(TEST_STUDY, SURVEY_KEYS);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             verify(mockSurveyDao, never()).deleteSurvey(any());
@@ -573,6 +573,8 @@ public class SurveyServiceMockTest {
         when(mockSurveyDao.getSurvey(any(), any(), anyBoolean())).thenReturn(existing);
         
         Survey update = Survey.create();
+        update.setGuid(SURVEY_GUID);
+        update.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         update.setDeleted(true);
         
         service.updateSurvey(TEST_STUDY, update);
@@ -583,6 +585,8 @@ public class SurveyServiceMockTest {
         when(mockSurveyDao.getSurvey(any(), any(), anyBoolean())).thenReturn(null);
         
         Survey update = Survey.create();
+        update.setGuid(SURVEY_GUID);
+        update.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         update.setDeleted(false);
         
         service.updateSurvey(TEST_STUDY, update);
@@ -599,6 +603,8 @@ public class SurveyServiceMockTest {
         
         // Not undeleting... should throw exception
         Survey update = Survey.create();
+        update.setGuid(SURVEY_GUID);
+        update.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         update.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         update.getElements().add(SurveyInfoScreen.create());
         service.updateSurvey(TEST_STUDY, update);
@@ -615,12 +621,13 @@ public class SurveyServiceMockTest {
         when(mockSurveyDao.getSurvey(any(), any(), eq(true))).thenReturn(existing);
         
         Survey update = Survey.create();
+        update.setGuid(SURVEY_GUID);
         update.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         update.setDeleted(false);
         
         service.updateSurvey(TEST_STUDY, update);
         
-        verify(mockSurveyDao).updateSurvey(any(), surveyCaptor.capture());
+        verify(mockSurveyDao).updateSurvey(eq(TEST_STUDY), surveyCaptor.capture());
         assertFalse(surveyCaptor.getValue().isDeleted());
     }
     
@@ -726,6 +733,8 @@ public class SurveyServiceMockTest {
     @Test
     public void updateSurveyInOtherStudy() {
         Survey survey = Survey.create();
+        survey.setGuid(SURVEY_GUID);
+        survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         when(mockSurveyDao.getSurvey(TEST_STUDY, (GuidCreatedOnVersionHolder)survey, false)).thenReturn(survey);
         
@@ -740,6 +749,8 @@ public class SurveyServiceMockTest {
     @Test
     public void publishSurveyInOtherStudy() {
         Survey survey = Survey.create();
+        survey.setGuid(SURVEY_GUID);
+        survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         when(mockSurveyDao.getSurvey(TEST_STUDY, (GuidCreatedOnVersionHolder)survey, true)).thenReturn(survey);
         
