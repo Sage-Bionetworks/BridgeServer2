@@ -14,10 +14,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -39,6 +41,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.files.FileReference;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
@@ -61,6 +65,7 @@ public class AppConfigServiceTest {
             .of(new SurveyReference(null, "guid", DateTime.now()));
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
+    private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -73,13 +78,16 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
-    private SubstudyService substudyService;
+    private SubstudyService mockSubstudyService;
     
     @Mock
     private SurveyService mockSurveyService;
     
     @Mock
     private UploadSchemaService mockSchemaService;
+    
+    @Mock
+    private FileService mockFileService;
     
     @Mock
     private UploadSchema mockUploadSchema;
@@ -91,7 +99,7 @@ public class AppConfigServiceTest {
     private Survey mockSurvey;
     
     @Mock
-    private ReferenceResolver referenceResolver;
+    private ReferenceResolver mockReferenceResolver;
     
     @Captor
     private ArgumentCaptor<AppConfig> appConfigCaptor;
@@ -103,6 +111,7 @@ public class AppConfigServiceTest {
     private ArgumentCaptor<SchemaReference> schemaRefCaptor;
     
     @Spy
+    @InjectMocks
     private AppConfigService service;
 
     private Study study;
@@ -110,13 +119,6 @@ public class AppConfigServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        service.setAppConfigDao(mockDao);
-        service.setStudyService(mockStudyService);
-        service.setSurveyService(mockSurveyService);
-        service.setUploadSchemaService(mockSchemaService);
-        service.setSubstudyService(substudyService);
-        service.setAppConfigElementService(mockAppConfigElementService);
         
         when(service.getCurrentTimestamp()).thenReturn(TIMESTAMP.getMillis());
         when(service.getGUID()).thenReturn(GUID);
@@ -131,7 +133,7 @@ public class AppConfigServiceTest {
         when(mockDao.getAppConfig(TEST_STUDY, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
      
-        when(substudyService.getSubstudyIds(TEST_STUDY)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        when(mockSubstudyService.getSubstudyIds(TEST_STUDY)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY.getIdentifier());
@@ -394,7 +396,7 @@ public class AppConfigServiceTest {
         when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
         when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
         when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
-        
+        when(mockFileService.getFileRevision(eq(GUID), any())).thenReturn(Optional.of(new FileRevision()));
         when(mockSurvey.isPublished()).thenReturn(true);
         
         AppConfig newConfig = setupAppConfig();
@@ -402,18 +404,20 @@ public class AppConfigServiceTest {
         newConfig.setSurveyReferences(SURVEY_REF_LIST);
         newConfig.setSchemaReferences(SCHEMA_REF_LIST);
         newConfig.setConfigReferences(CONFIG_REF_LIST);
+        newConfig.setFileReferences(FILE_REF_LIST);
         
         AppConfig returnValue = service.createAppConfig(TEST_STUDY, newConfig);
         
         assertEquals(returnValue.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getGuid(), GUID);
-        assertEquals(returnValue.getLabel(), newConfig.getLabel()); //
-        assertEquals(returnValue.getStudyId(), TEST_STUDY.getIdentifier()); //
+        assertEquals(returnValue.getLabel(), newConfig.getLabel());
+        assertEquals(returnValue.getStudyId(), TEST_STUDY.getIdentifier());
         assertEquals(returnValue.getClientData(), TestUtils.getClientData());
         assertEquals(returnValue.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(returnValue.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(returnValue.getConfigReferences(), CONFIG_REF_LIST);
+        assertEquals(returnValue.getFileReferences(), FILE_REF_LIST);
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
         
@@ -421,8 +425,15 @@ public class AppConfigServiceTest {
         assertEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getGuid(), GUID);
+        assertEquals(captured.getLabel(), newConfig.getLabel());
+        assertEquals(captured.getStudyId(), TEST_STUDY.getIdentifier());
+        assertEquals(captured.getClientData().toString(), TestUtils.getClientData().toString());
+        assertEquals(captured.getSurveyReferences(), SURVEY_REF_LIST);
+        assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);
+        assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
+        assertEquals(captured.getFileReferences(), FILE_REF_LIST);
         
-        verify(substudyService).getSubstudyIds(TEST_STUDY);
+        verify(mockSubstudyService).getSubstudyIds(TEST_STUDY);
     }
     
     @Test
@@ -441,7 +452,7 @@ public class AppConfigServiceTest {
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(appConfigCaptor.getValue(), oldConfig);
         
-        verify(substudyService).getSubstudyIds(TEST_STUDY);
+        verify(mockSubstudyService).getSubstudyIds(TEST_STUDY);
 
         assertEquals(oldConfig, returnValue);
     }

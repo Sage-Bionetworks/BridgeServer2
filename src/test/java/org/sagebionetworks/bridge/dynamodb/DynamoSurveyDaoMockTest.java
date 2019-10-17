@@ -116,7 +116,7 @@ public class DynamoSurveyDaoMockTest {
         // spy getSurvey() - There's a lot of complex logic in that query builder that's irrelevant to what we're
         // trying to test. Rather than over-specify our test and make our tests overly complicated, we'll just spy out
         // getSurvey().
-        doReturn(survey).when(surveyDao).getSurvey(eq(SURVEY_KEY), anyBoolean());
+        doReturn(survey).when(surveyDao).getSurvey(any(), eq(SURVEY_KEY), anyBoolean());
     }
 
     @Test
@@ -168,7 +168,7 @@ public class DynamoSurveyDaoMockTest {
         
         survey.setDeleted(false);
         survey.setName("New title");
-        Survey updatedSurvey = surveyDao.updateSurvey(survey);
+        Survey updatedSurvey = surveyDao.updateSurvey(TestConstants.TEST_STUDY, survey);
         
         assertEquals(updatedSurvey.getName(), "New title");
     }
@@ -217,7 +217,7 @@ public class DynamoSurveyDaoMockTest {
         doNothing().when(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
         
         // Execute
-        surveyDao.deleteSurveyPermanently(SURVEY_KEY);
+        surveyDao.deleteSurveyPermanently(TestConstants.TEST_STUDY, SURVEY_KEY);
 
         // Validate backends
         verify(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
@@ -232,7 +232,7 @@ public class DynamoSurveyDaoMockTest {
         doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("keys", DateTime.now().getMillis());
-        surveyDao.deleteSurveyPermanently(keys);
+        surveyDao.deleteSurveyPermanently(TestConstants.TEST_STUDY, keys);
         
         verify(mockSurveyMapper, never()).delete(any());
     }
@@ -251,7 +251,7 @@ public class DynamoSurveyDaoMockTest {
         
         survey.setDeleted(false);
         survey.getElements().add(SurveyInfoScreen.create());
-        surveyDao.updateSurvey(survey);
+        surveyDao.updateSurvey(TestConstants.TEST_STUDY, survey);
 
         verify(mockSurveyMapper).save(surveyCaptor.capture());
         assertFalse(surveyCaptor.getValue().isDeleted());

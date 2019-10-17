@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +17,8 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
@@ -21,6 +26,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
@@ -42,6 +48,8 @@ import com.google.common.collect.Maps;
 @Component
 public class DynamoSurveyDao implements SurveyDao {
 
+    static final String IDENTIFIER_PREFIX = "identifier:";
+    
     class QueryBuilder {
         
         private static final String PUBLISHED_PROPERTY = "published";
@@ -65,7 +73,11 @@ public class DynamoSurveyDao implements SurveyDao {
             return this;
         }
         QueryBuilder setStudy(StudyIdentifier studyIdentifier) {
-            this.studyIdentifier = studyIdentifier.getIdentifier();
+            if (studyIdentifier == null) {
+                this.studyIdentifier = null;
+            } else {
+                this.studyIdentifier = studyIdentifier.getIdentifier();
+            }
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -85,6 +97,8 @@ public class DynamoSurveyDao implements SurveyDao {
             List<DynamoSurvey> dynamoSurveys = null;
             if (surveyGuid == null) {
                 dynamoSurveys = queryBySecondaryIndex();
+            } else if (surveyGuid.toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
+                dynamoSurveys = queryBySurveyIdentifier();
             } else {
                 dynamoSurveys = query();
             }
@@ -139,6 +153,34 @@ public class DynamoSurveyDao implements SurveyDao {
                 query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
             }
             return surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+        }
+        
+        private List<DynamoSurvey> queryBySurveyIdentifier() {
+            if (studyIdentifier == null) {
+                throw new IllegalStateException("Querying by survey identifier, but study identifier is not set");
+            }
+            DynamoSurvey hashKey = new DynamoSurvey();
+            hashKey.setStudyIdentifier(studyIdentifier);
+            DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
+            query.withHashKeyValues(hashKey);
+            query.withConsistentRead(false);
+            query.withRangeKeyCondition("identifier", equalsString(surveyGuid.substring(11)));
+            
+            if (published) {
+                query.withQueryFilterEntry(PUBLISHED_PROPERTY, equalsNumber("1"));
+            }
+            if (notDeleted) {
+                query.withQueryFilterEntry(DELETED_PROPERTY, equalsNumber("0"));
+            }
+            if (createdOn != 0L) {
+                query.withQueryFilterEntry(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
+            }
+            
+            List<DynamoSurvey> results = surveyMapper.queryPage(DynamoSurvey.class, query).getResults();
+            
+            List<DynamoSurvey> surveys = new ArrayList<>(results);
+            Collections.sort(surveys, Collections.reverseOrder(Comparator.comparing(DynamoSurvey::getCreatedOn)));
+            return surveys;
         }
 
         private Condition equalsNumber(String equalTo) {
@@ -260,8 +302,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey updateSurvey(Survey survey) {
-        Survey existing = getSurvey(survey, false);
+    public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
+        Survey existing = getSurvey(studyIdentifier, survey, false);
         
         // copy over mutable fields
         existing.setName(survey.getName());
@@ -280,8 +322,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey versionSurvey(GuidCreatedOnVersionHolder keys) {
-        DynamoSurvey existing = (DynamoSurvey)getSurvey(keys, true);
+    public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(studyIdentifier, keys, true);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);
@@ -305,8 +347,9 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(keys, false);
+    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(studyIdentifier, keys, false);
+
         if (existing != null) {
             deleteAllElements(existing.getGuid(), existing.getCreatedOn());
             surveyMapper.delete(existing);
@@ -356,8 +399,8 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements) {
-        return new QueryBuilder().setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+    public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
+        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
 

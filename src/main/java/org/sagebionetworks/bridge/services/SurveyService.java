@@ -78,7 +78,7 @@ public class SurveyService {
     }
     
     public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
-        Survey survey = surveyDao.getSurvey(keys, includeElements);
+        Survey survey = surveyDao.getSurvey(studyIdentifier, keys, includeElements);
         if (!isInStudy(studyIdentifier, survey)) {
             if (throwException) {
                 throw new EntityNotFoundException(Survey.class);    
@@ -126,8 +126,10 @@ public class SurveyService {
      */
     public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
+        checkNotNull(survey.getGuid(), "Guid cannot be null");
+        checkNotNull(survey.getCreatedOn(), "createdOn cannot be null");
         
-        Survey existing = surveyDao.getSurvey(survey, false);
+        Survey existing = surveyDao.getSurvey(studyIdentifier, survey, false);
         if (existing == null || (existing.isDeleted() && survey.isDeleted()) || !isInStudy(studyIdentifier, survey)) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -135,9 +137,9 @@ public class SurveyService {
         if (existing.isPublished()) {
             // If the existing survey is published, the only thing you can do is undelete it.
             if (existing.isDeleted() && !survey.isDeleted()) {
-                existing = surveyDao.getSurvey(survey, true); // get all the children for the update
+                existing = surveyDao.getSurvey(studyIdentifier, survey, true); // get all the children for the update
                 existing.setDeleted(false);
-                return surveyDao.updateSurvey(existing);
+                return surveyDao.updateSurvey(studyIdentifier, existing);
             } else {
                 throw new PublishedSurveyException(survey);
             }
@@ -150,7 +152,7 @@ public class SurveyService {
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
         
-        return surveyDao.updateSurvey(survey);
+        return surveyDao.updateSurvey(studyIdentifier, survey);
     }
 
     /**
@@ -159,7 +161,10 @@ public class SurveyService {
      * a survey.
      */
     public Survey publishSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
-        Survey existing = surveyDao.getSurvey(keys, true);
+        checkNotNull(keys.getGuid(), "Guid cannot be null");
+        checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
+        
+        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, true);
         if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -172,11 +177,14 @@ public class SurveyService {
      * Copy the survey and return a new version of it.
      */
     public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        Survey existing = surveyDao.getSurvey(keys, false);
+        checkNotNull(keys.getGuid(), "Guid cannot be null");
+        checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
+        
+        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, false);
         if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
-        return surveyDao.versionSurvey(keys);
+        return surveyDao.versionSurvey(studyIdentifier, keys);
     }
 
     /**
@@ -187,7 +195,10 @@ public class SurveyService {
      * schema, etc. This is how study developers should delete surveys. 
      */
     public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        Survey existing = surveyDao.getSurvey(keys, true);
+        checkNotNull(keys.getGuid(), "Guid cannot be null");
+        checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
+        
+        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, true);
         if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -211,12 +222,15 @@ public class SurveyService {
      */
     public void deleteSurveyPermanently(StudyIdentifier studyIdentifier,
             GuidCreatedOnVersionHolder keys) {
-        Survey existing = surveyDao.getSurvey(keys, false);
+        checkNotNull(keys.getGuid());
+        checkNotNull(keys.getCreatedOn());
+        
+        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, false);
         if (existing == null || !isInStudy(studyIdentifier, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
         checkConstraintsBeforePhysicalDelete(studyIdentifier, keys);
-        surveyDao.deleteSurveyPermanently(keys);
+        surveyDao.deleteSurveyPermanently(studyIdentifier, keys);
     }
 
     // Helper method to verify if there is any shared module related to specified survey

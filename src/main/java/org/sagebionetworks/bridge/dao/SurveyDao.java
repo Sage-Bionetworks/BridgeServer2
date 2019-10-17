@@ -16,13 +16,13 @@ public interface SurveyDao {
     /**
      * Update an unpublished survey. A survey version can be edited until it is published.
      */
-    Survey updateSurvey(Survey survey);
+    Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey);
     
     /**
      * Version this survey (create a copy with a new createdOn timestamp). New versions are 
      * created unpublished and can be modified.
      */
-    Survey versionSurvey(GuidCreatedOnVersionHolder keys);
+    Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
 
     /**
      * Make this version of this survey available for scheduling. One scheduled for publishing,
@@ -55,12 +55,12 @@ public interface SurveyDao {
      *
      * @param keys survey keys (guid, created-on timestamp)
      */
-    void deleteSurveyPermanently(GuidCreatedOnVersionHolder keys);
+    void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
 
     /**
      * Get a specific version of a survey with or without its elements.
      */
-    Survey getSurvey(GuidCreatedOnVersionHolder keys, boolean includeElements);
+    Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements);
 
     /**
      * Helper method to get the survey guid for the given study and survey identifier. Returns null if no such survey
