@@ -2,7 +2,12 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
 
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -173,6 +178,9 @@ public class HibernateSurvey implements Survey {
     
     /** An ordered collection of SurveyElement sub-types (in the order they will 
      * appear in the survey). */
+    @CollectionTable(name = "SurveyElements", joinColumns = @JoinColumn(name = "surveyGuid", referencedColumnName = "guid"))
+    @Column(name = "elements")
+    @ElementCollection(fetch = FetchType.EAGER)
     public List<SurveyElement> getElements() {
         return elements;
     }
