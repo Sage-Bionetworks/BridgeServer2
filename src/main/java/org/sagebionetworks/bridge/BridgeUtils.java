@@ -242,6 +242,10 @@ public class BridgeUtils {
             return AccountId.forExternalId(studyId, identifier.substring(11));
         } else if (identifier.toLowerCase().startsWith("healthcode:")) {
             return AccountId.forHealthCode(studyId, identifier.substring(11));
+        } else if (identifier.toLowerCase().startsWith("synapseuserid:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(14));
+        } else if (identifier.toLowerCase().startsWith("syn:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(4));
         }
         return AccountId.forId(studyId, identifier);
     }

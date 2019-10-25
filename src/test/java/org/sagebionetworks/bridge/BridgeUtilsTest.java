@@ -431,6 +431,18 @@ public class BridgeUtilsTest {
         accountId = BridgeUtils.parseAccountId("test", "unk:IdentifierA9");
         assertEquals(accountId.getStudyId(), "test");
         assertEquals(accountId.getId(), "unk:IdentifierA9");
+        
+        accountId = BridgeUtils.parseAccountId("test", "synapseUserId:IdentifierA10");
+        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getSynapseUserId(), "IdentifierA10");
+        
+        accountId = BridgeUtils.parseAccountId("test", "synapseuserid:IdentifierA11");
+        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getSynapseUserId(), "IdentifierA11");
+        
+        accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
+        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
     }
     
     @Test

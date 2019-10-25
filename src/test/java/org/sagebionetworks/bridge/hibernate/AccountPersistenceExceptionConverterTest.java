@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.mockito.Mockito.verify;
@@ -20,6 +22,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -63,7 +66,7 @@ public class AccountPersistenceExceptionConverterTest {
         account.setEmail(EMAIL);
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setEmail(EMAIL);
         
@@ -77,7 +80,7 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "Email address has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), "userId");
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
     }
     
     @Test
@@ -87,7 +90,7 @@ public class AccountPersistenceExceptionConverterTest {
         account.setPhone(PHONE);
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setPhone(PHONE);
         
@@ -101,12 +104,12 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "Phone number has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), "userId");
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
     }
 
     @Test
     public void entityAlreadyExistsForExternalId() {
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "something", "userId");
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "something", USER_ID);
         acctSubstudy.setExternalId("ext");
         
         HibernateAccount account = new HibernateAccount();
@@ -114,7 +117,7 @@ public class AccountPersistenceExceptionConverterTest {
         account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
         
@@ -127,7 +130,7 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), "userId");
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
     }
     
     @Test
@@ -135,15 +138,15 @@ public class AccountPersistenceExceptionConverterTest {
         HibernateAccount account = new HibernateAccount();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+                .create(TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
         HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+                .create(TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
         as2.setExternalId("externalIdB");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdB"))).thenReturn(existing);
@@ -155,7 +158,7 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), "userId");
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
     }
     
     @Test
@@ -166,15 +169,15 @@ public class AccountPersistenceExceptionConverterTest {
         HibernateAccount account = new HibernateAccount();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+                .create(TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
         HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+                .create(TEST_STUDY_IDENTIFIER, "substudyB", USER_ID);
         as2.setExternalId("externalIdB");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2));
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         
         // Accept anything here, but verify that it is externalIdB still (the first that would match
@@ -188,7 +191,7 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), "userId");
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
         
         verify(accountDao).getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdA"));
     }
@@ -201,12 +204,12 @@ public class AccountPersistenceExceptionConverterTest {
         HibernateAccount account = new HibernateAccount();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+                .create(TEST_STUDY_IDENTIFIER, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
         account.setAccountSubstudies(ImmutableSet.of(as1));
         
         Account existing = Account.create();
-        existing.setId("userId");
+        existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         
         // Accept anything here, but verify that it is externalIdA (which won't match user calling method)
@@ -249,6 +252,25 @@ public class AccountPersistenceExceptionConverterTest {
         
         RuntimeException result = converter.convert(pe, null);
         assertEquals(result.getClass(), ConstraintViolationException.class);
+    }
+    
+    @Test
+    public void entityAlreadyExistsForSynapseUserId() {
+        HibernateAccount account = new HibernateAccount();
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        account.setId(USER_ID);
+        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        
+        when(accountDao.getAccount(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)))
+                .thenReturn(account);
+        
+        org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
+                "Duplicate entry 'tim.powers' for key 'Accounts-StudyId-SynapseUserId-Index'", null, null);
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException result = converter.convert(pe, account);
+        assertEquals(result.getClass(), EntityAlreadyExistsException.class);
+        assertEquals(result.getMessage(), "Synapse User ID has already been used by another account.");
     }
     
     @Test

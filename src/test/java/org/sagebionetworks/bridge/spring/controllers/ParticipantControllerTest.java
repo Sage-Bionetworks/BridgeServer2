@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.NOTIFICATION_MESSAGE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
@@ -148,7 +149,7 @@ public class ParticipantControllerTest extends Mockito {
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
 
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", EMAIL,
-            PHONE, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
+            SYNAPSE_USER_ID, PHONE, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
             ENABLED, TEST_STUDY, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()

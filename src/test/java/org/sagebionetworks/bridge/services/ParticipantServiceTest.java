@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
@@ -655,6 +656,29 @@ public class ParticipantServiceTest {
         assertFalse(account.getEmailVerified());
     }
     
+    @Test
+    public void createParticipantSynapseUserIdIsEnabled() {
+        mockHealthCodeAndAccountRetrieval(null, null, null);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
+        participantService.createParticipant(STUDY, participant, false);
+        
+        assertEquals(account.getStatus(), AccountStatus.ENABLED);
+        assertFalse(account.getPhoneVerified());
+        assertFalse(account.getEmailVerified());
+    }
+    
+    @Test
+    public void createParticipantSynapseUserIdWithDeviationIsDisabled() {
+        mockHealthCodeAndAccountRetrieval(null, null, null);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withPassword(PASSWORD).build();
+        participantService.createParticipant(STUDY, participant, false);
+        
+        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*must be assigned to one or more of these substudies: substudyId.*")
     public void createParticipantMustIncludeCallerSubstudy() {
@@ -1157,7 +1181,7 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
 
-        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
+        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).withSynapseUserId(SYNAPSE_USER_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
         // The order here is significant.
@@ -1170,6 +1194,7 @@ public class ParticipantServiceTest {
         assertEquals(account.getLastName(), LAST_NAME);
         assertEquals(account.getAttributes().get("can_be_recontacted"), "true");
         assertEquals(account.getClientData(), TestUtils.getClientData());
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);

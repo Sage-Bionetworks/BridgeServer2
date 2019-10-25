@@ -81,6 +81,9 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Phone-Index'")) {
                     eae = createEntityAlreadyExistsException("Phone number",
                             AccountId.forPhone(account.getStudyId(), account.getPhone()));
+                } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-SynapseUserId-Index'")) {
+                    eae = createEntityAlreadyExistsException("Synapse User ID",
+                            AccountId.forSynapseUserId(account.getStudyId(), account.getSynapseUserId()));
                 }
                 if (eae != null) {
                     return eae;

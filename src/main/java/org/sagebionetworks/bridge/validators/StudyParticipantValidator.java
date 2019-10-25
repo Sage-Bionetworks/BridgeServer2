@@ -6,7 +6,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -50,8 +49,9 @@ public class StudyParticipantValidator implements Validator {
             Phone phone = participant.getPhone();
             String email = participant.getEmail();
             String externalId = participant.getExternalId();
-            if (email == null && isBlank(externalId) && phone == null) {
-                errors.reject("email, phone, or externalId is required");
+            String synapseUserId = participant.getSynapseUserId();
+            if (email == null && isBlank(externalId) && phone == null && isBlank(synapseUserId)) {
+                errors.reject("email, phone, synapseUserId or externalId is required");
             }
             // If provided, phone must be valid
             if (phone != null && !Phone.isValid(phone)) {
@@ -97,8 +97,12 @@ public class StudyParticipantValidator implements Validator {
             }
         }
         // Never okay to have a blank external ID. It can produce errors later when querying for ext IDs
-        if (participant.getExternalId() != null && StringUtils.isBlank(participant.getExternalId())) {
+        if (participant.getExternalId() != null && isBlank(participant.getExternalId())) {
             errors.rejectValue("externalId", "cannot be blank");
+        }
+        
+        if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
+            errors.rejectValue("synapseUserId", "cannot be blank");
         }
                 
         for (String dataGroup : participant.getDataGroups()) {

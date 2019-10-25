@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static java.lang.Boolean.TRUE;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -67,6 +71,7 @@ public class StudyParticipantTest {
         assertEquals(node.get("lastName").asText(), "lastName");
         assertEquals(node.get("email").asText(), "email@email.com");
         assertEquals(node.get("externalId").asText(), "externalId");
+        assertEquals(node.get("synapseUserId").asText(), SYNAPSE_USER_ID);
         assertEquals(node.get("password").asText(), "newUserPassword");
         assertEquals(node.get("sharingScope").asText(), "sponsors_and_partners");
         assertTrue(node.get("notifyByEmail").asBoolean());
@@ -104,13 +109,14 @@ public class StudyParticipantTest {
 
         assertEquals(node.get("attributes").get("A").asText(), "B");
         assertEquals(node.get("attributes").get("C").asText(), "D");
-        assertEquals(node.size(), 25);
+        assertEquals(node.size(), 26);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");
         assertEquals(deserParticipant.getLastName(), "lastName");
         assertEquals(deserParticipant.getEmail(), "email@email.com");
         assertEquals(deserParticipant.getExternalId(), "externalId");
+        assertEquals(deserParticipant.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(deserParticipant.getPassword(), "newUserPassword");
         assertEquals(deserParticipant.getTimeZone(), TIME_ZONE);
         assertEquals(deserParticipant.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
@@ -167,19 +173,20 @@ public class StudyParticipantTest {
         assertEquals(copy.getLastName(), "lastName");
         assertEquals(copy.getEmail(), "email@email.com");
         assertEquals(copy.getPhone().getNationalFormat(), PHONE.getNationalFormat());
-        assertEquals(copy.getEmailVerified(), Boolean.TRUE);
-        assertEquals(copy.getPhoneVerified(), Boolean.TRUE);
+        assertEquals(copy.getEmailVerified(), TRUE);
+        assertEquals(copy.getPhoneVerified(), TRUE);
         assertEquals(copy.getExternalId(), "externalId");
+        assertEquals(copy.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(copy.getPassword(), "newUserPassword");
         assertEquals(copy.getTimeZone(), TIME_ZONE);
-        assertEquals(copy.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
+        assertEquals(copy.getSharingScope(), SPONSORS_AND_PARTNERS);
         assertTrue(copy.isNotifyByEmail());
         assertEquals(copy.getDataGroups(), DATA_GROUPS);
         assertEquals(copy.getHealthCode(), "healthCode");
         assertEquals(copy.getAttributes(), ATTRIBUTES);
         assertTrue(copy.isConsented());
         assertEquals(copy.getCreatedOn(), CREATED_ON);
-        assertEquals(copy.getStatus(), AccountStatus.ENABLED);
+        assertEquals(copy.getStatus(), ENABLED);
         assertEquals(copy.getSubstudyIds(), SUBSTUDIES);
         assertEquals(copy.getId(), ACCOUNT_ID);
         assertEquals(copy.getClientData(), TestUtils.getClientData());
@@ -273,6 +280,10 @@ public class StudyParticipantTest {
     public void canCopyExternalIdsVerified() { 
         assertCopyField("externalIds", (builder)-> verify(builder).withExternalIds(any()));
     }
+    @Test
+    public void canCopyGetSynapseUserId() {
+        assertCopyField("synapseUserId", (builder) -> verify(builder).withSynapseUserId(any()));
+    }
     
     @Test
     public void testNullResiliency() {
@@ -363,11 +374,12 @@ public class StudyParticipantTest {
                 .withLastName("lastName")
                 .withEmail("email@email.com")
                 .withPhone(PHONE)
-                .withPhoneVerified(Boolean.TRUE)
-                .withEmailVerified(Boolean.TRUE)
+                .withPhoneVerified(TRUE)
+                .withEmailVerified(TRUE)
                 .withExternalId("externalId")
+                .withSynapseUserId(SYNAPSE_USER_ID)
                 .withPassword("newUserPassword")
-                .withSharingScope(SharingScope.SPONSORS_AND_PARTNERS)
+                .withSharingScope(SPONSORS_AND_PARTNERS)
                 .withNotifyByEmail(true)
                 .withDataGroups(DATA_GROUPS)
                 .withHealthCode("healthCode")
