@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
+import java.io.IOException;
+
 import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,9 +34,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.OAuthProviderService;
 
 @CrossOrigin
 @RestController
@@ -42,9 +46,16 @@ public class AuthenticationController extends BaseController {
 
     private AccountWorkflowService accountWorkflowService;
     
+    private OAuthProviderService oauthProviderService;
+    
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
+    }
+
+    @Autowired
+    final void setOAuthProviderService(OAuthProviderService oauthProviderService) {
+        this.oauthProviderService = oauthProviderService;
     }
     
     @PostMapping("/v3/auth/email")
@@ -290,6 +301,13 @@ public class AuthenticationController extends BaseController {
         getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
         return new StatusMessage("Password has been changed.");
+    }
+    
+    @PostMapping("/v3/auth/oauth/signIn")
+    public UserSession oauthSignIn() throws IOException {
+        OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
+        
+        return oauthProviderService.oauthSignIn(token);
     }
 
     private Study getStudyOrThrowException(String studyId) {

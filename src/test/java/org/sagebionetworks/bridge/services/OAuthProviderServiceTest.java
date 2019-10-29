@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.doReturn;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -55,7 +56,7 @@ public class OAuthProviderServiceTest {
     private static final String SECRET = "secret";
     private static final String USER_ID = "26FWFL";
     private static final String VENDOR_ID = "vendorId";
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(VENDOR_ID, AUTH_TOKEN_STRING);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, AUTH_TOKEN_STRING);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             null);
     private static final OAuthProvider PROVIDER_WITH_INTROSPECT = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT,
@@ -175,14 +176,14 @@ public class OAuthProviderServiceTest {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallWithoutAuthTokenRefreshes() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(VENDOR_ID, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null);
         
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallAuthAndRefreshTokenMissing() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(VENDOR_ID, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null);
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     

@@ -2,6 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.commons.codec.binary.Base64.encodeBase64String;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -29,17 +33,20 @@ import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,7 +59,7 @@ import com.google.common.collect.Sets;
  * implementations vary. 
  */
 @Component
-class OAuthProviderService {
+public class OAuthProviderService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthProviderService.class);
 
     private static final String ACCESS_TOKEN_PROP_NAME = "access_token";
@@ -74,10 +81,22 @@ class OAuthProviderService {
     private static final Pattern SCOPE_PAIR_SPLIT_PATTERN = Pattern.compile("\\s*[{},]\\s*");
     private static final String SCOPE_PROP_NAME = "scope";
     private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
+    private static final String SYNAPSE_VENDOR_ID = "synapse";
     static final String TOKEN_PROP_NAME = "token";
     private static final String PROVIDER_USER_ID = "user_id";
     private static final Set<String> INVALID_OR_EXPIRED_ERRORS = Sets.newHashSet("invalid_token", "expired_token", "invalid_grant");
     private static final Set<String> INVALID_CLIENT_ERRORS = Sets.newHashSet("invalid_client");
+    
+    private String synapseOauthURL;
+    private String synapseClientID;
+    private String synapseClientSecret;
+
+    @Autowired
+    final void setBridgeConfig(BridgeConfig config) {
+        this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
+        this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
+        this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
+    }
 
     /**
      * Simple container for the response, parsed before closing the stream.
@@ -136,6 +155,56 @@ class OAuthProviderService {
         }
     }
 
+    /**
+     * Authenticate a Bridge user via the Synapse OAuth server. This is the second contact of the Synapse
+     * server, after a client has sent a user authenticate on the Synapse server web site and the Synapse 
+     * server has redirected back to the Bridge client. The information required is very similar to an OAuth 
+     * provider as configured by a study administrator, but it's internal to our system and so it is 
+     * configured like other components of the server software.
+     *   
+     * @param authToken that was passed from the Synapse server back to the authenticating client
+     * @return userSession if the authToken can be used to retrieve Open Connect information about a user, 
+     * and the Synapse user ID matches the Synapse user ID stored in the Bridge Account record in the 
+     * indicated study, return a session. Otherwise, throw a "not found" exception.
+     * 
+     * @throws IOException, EntityNotFoundException
+     */
+    public UserSession oauthSignIn(OAuthAuthorizationToken authToken) throws IOException {
+        checkNotNull(authToken);
+        
+        if (authToken.getVendorId() == null) {
+            throw new BadRequestException("Vendor ID required");
+        } else if (!SYNAPSE_VENDOR_ID.equals(authToken.getVendorId())) {
+            throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
+        }
+        if (authToken.getStudyId() == null) {
+            throw new BadRequestException("Study ID required");
+        }
+        if (authToken.getAuthToken() == null) {
+            throw new BadRequestException("Authorization token required");
+        }
+        String authHeader = this.synapseClientID + ":" + this.synapseClientSecret;
+        String encodedAuthHeader = "Basic " + encodeBase64String(authHeader.getBytes(defaultCharset()));
+        
+        HttpPost client = new HttpPost(this.synapseOauthURL);
+        client.addHeader(AUTHORIZATION_PROP_NAME, encodedAuthHeader);
+        
+        List<NameValuePair> pairs = new ArrayList<>();
+        pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, AUTHORIZATION_CODE_VALUE));
+        pairs.add(new BasicNameValuePair(CODE_PROP_NAME, authToken.getAuthToken()));
+        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, "https://research.sagebridge.org/!oauth"));
+        client.setEntity(formEntity(pairs));
+        
+        Response response = executeInternal(client);
+        
+        System.out.println("*******");
+        System.out.println(response.getBody().toString());
+        System.out.println(response.getBody().get("id_token").get("userid").textValue());
+        
+        return null;
+    }
+    
+    
     /**
      * Request an access grant token.
      */
@@ -355,7 +424,7 @@ class OAuthProviderService {
      * UnsupportedEncodingException is one of those checked exceptions that will *never* be thrown if you use the
      * default system encoding.
      */
-    private UrlEncodedFormEntity formEntity(List<NameValuePair> pairs) {
+    protected UrlEncodedFormEntity formEntity(List<NameValuePair> pairs) {
         try {
             return new UrlEncodedFormEntity(pairs);
         } catch (UnsupportedEncodingException e) {
