@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -304,22 +305,19 @@ public class AuthenticationController extends BaseController {
     }
     
     @PostMapping("/v3/auth/oauth/signIn")
-    public JsonNode oauthSignIn() throws IOException {
+    public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
         Account account = oauthProviderService.oauthSignIn(token);
         Study study = studyService.getStudy(account.getStudyId());
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
-        UserSession session = null;
-        try {
-            session = authenticationService.getSessionFromAccount(study, context, account);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
-            throw e;
-        }
+        UserSession session = authenticationService.getSessionFromAccount(study, context, account);
+        cacheProvider.setUserSession(session);
         setCookieAndRecordMetrics(session);
-
+        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+            throw new ConsentRequiredException(session);
+        }
         return UserSessionInfo.toJSON(session);
     }
 

@@ -1,8 +1,13 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -12,6 +17,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
+
+import java.io.IOException;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
@@ -32,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -59,13 +67,16 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -74,6 +85,7 @@ import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.OAuthProviderService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 
 public class AuthenticationControllerTest extends Mockito {
@@ -112,6 +124,9 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     StudyService mockStudyService;
+    
+    @Mock
+    OAuthProviderService mockOauthProviderService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -191,6 +206,12 @@ public class AuthenticationControllerTest extends Mockito {
         BridgeUtils.setRequestContext(null);
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(AuthenticationController.class);
+        assertPost(AuthenticationController.class, "oauthSignIn");
+    }
+    
     @Test
     public void requestEmailSignIn() throws Exception {
         // Mock.
@@ -1127,6 +1148,44 @@ public class AuthenticationControllerTest extends Mockito {
         } catch(ConsentRequiredException e) {
         }
         verifyCommonLoggingForSignIns();
+    }
+    
+    @Test
+    public void oauthSignIn() throws Exception {
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken");
+        mockRequestBody(mockRequest, token);
+        
+        Account account = Account.create();
+        account.setStudyId(TEST_STUDY_ID_STRING);
+        userSession.setConsentStatuses(CONSENTED_STATUS_MAP);
+        when(mockOauthProviderService.oauthSignIn(token)).thenReturn(account);
+        when(mockAuthService.getSessionFromAccount(eq(study), any(), eq(account))).thenReturn(userSession);
+        
+        JsonNode node = controller.oauthSignIn();
+        assertEquals(node.get("sessionToken").textValue(), TEST_SESSION_TOKEN);
+        
+        verifyCommonLoggingForSignIns();
+        verify(mockCacheProvider).setUserSession(userSession);
+    }
+    
+    @Test
+    public void unconsentedOauthSignIn() throws Exception {
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken");
+        mockRequestBody(mockRequest, token);
+        
+        Account account = Account.create();
+        account.setStudyId(TEST_STUDY_ID_STRING);
+        when(mockOauthProviderService.oauthSignIn(token)).thenReturn(account);
+        when(mockAuthService.getSessionFromAccount(eq(study), any(), eq(account))).thenReturn(userSession);
+        
+        try {
+            controller.oauthSignIn();
+            fail("Should have thrown exeption");
+        } catch(ConsentRequiredException e) {
+            assertEquals(e.getUserSession().getSessionToken(), TEST_SESSION_TOKEN);
+        }
+        verifyCommonLoggingForSignIns();
+        verify(mockCacheProvider).setUserSession(userSession);
     }
 
     @Test
