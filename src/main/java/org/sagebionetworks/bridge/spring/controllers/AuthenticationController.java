@@ -304,10 +304,23 @@ public class AuthenticationController extends BaseController {
     }
     
     @PostMapping("/v3/auth/oauth/signIn")
-    public UserSession oauthSignIn() throws IOException {
+    public JsonNode oauthSignIn() throws IOException {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
-        return oauthProviderService.oauthSignIn(token);
+        Account account = oauthProviderService.oauthSignIn(token);
+        Study study = studyService.getStudy(account.getStudyId());
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = null;
+        try {
+            session = authenticationService.getSessionFromAccount(study, context, account);
+        } catch(ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
+        }
+        setCookieAndRecordMetrics(session);
+
+        return UserSessionInfo.toJSON(session);
     }
 
     private Study getStudyOrThrowException(String studyId) {

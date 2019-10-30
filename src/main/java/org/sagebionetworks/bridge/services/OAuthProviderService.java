@@ -9,6 +9,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -34,16 +40,25 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,12 +105,19 @@ public class OAuthProviderService {
     private String synapseOauthURL;
     private String synapseClientID;
     private String synapseClientSecret;
+    
+    private AccountDao accountDao;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
         this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
         this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
         this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
+    }
+    
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
 
     /**
@@ -169,7 +191,7 @@ public class OAuthProviderService {
      * 
      * @throws IOException, EntityNotFoundException
      */
-    public UserSession oauthSignIn(OAuthAuthorizationToken authToken) throws IOException {
+    public Account oauthSignIn(OAuthAuthorizationToken authToken) throws IOException {
         checkNotNull(authToken);
         
         if (authToken.getVendorId() == null) {
@@ -192,18 +214,50 @@ public class OAuthProviderService {
         List<NameValuePair> pairs = new ArrayList<>();
         pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, AUTHORIZATION_CODE_VALUE));
         pairs.add(new BasicNameValuePair(CODE_PROP_NAME, authToken.getAuthToken()));
-        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, "https://research.sagebridge.org/!oauth"));
+        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, "https://research.sagebridge.org/oauth.html"));
         client.setEntity(formEntity(pairs));
         
         Response response = executeInternal(client);
-        
         System.out.println("*******");
+        if (response.getStatusCode() < 200 || response.getStatusCode() > 299) {
+            throw new BadRequestException(response.getBody().get("reason").textValue());
+        }
         System.out.println(response.getBody().toString());
-        System.out.println(response.getBody().get("id_token").get("userid").textValue());
         
-        return null;
+        String token = response.getBody().get("id_token").textValue();
+        System.out.println(token);
+        try {
+            Jws<Claims> jwt = Jwts.parser()
+                    .setSigningKey(getRSAPublicKey())
+                    .setAllowedClockSkewSeconds(10)
+                    .parseClaimsJws(token);
+            
+            String userId = jwt.getBody().get("userid", String.class);
+            
+            // Fuck yeah motherfucker, we got a user ID.
+            AccountId accountId = AccountId.forSynapseUserId(authToken.getStudyId(), userId);
+            
+            Account account = accountDao.getAccount(accountId);
+            if (account != null) {
+                return account;
+            }
+        } catch(JwtException e) {
+            throw new BridgeServiceException(e);
+        }
+        throw new EntityNotFoundException(Account.class);
     }
     
+    public static RSAPublicKey getRSAPublicKey() {
+        BigInteger modulus = new BigInteger("23849945482965474905145517268643374920797943471323985175965744145737716565974743372430224111712427375247329399083025816245758319370417823556150277277108206652909956951038779719911852573197057021578055098390526471329800633323810194331080461575761929434803674679324161848934212115408664545557149085782355814220300934332546841936281140526074557863136209882049706193681336920386488318165861734677089379383062612396288597494008262190644212623312133588769704107491411726875356548977535231883438734129050591099689225763743937356377342527223979976407213258598569748635314939347146403284906522122994148568855913460554935920381");
+        BigInteger publicExponent = new BigInteger("65537");
+        RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, publicExponent);
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return (RSAPublicKey)kf.generatePublic(keySpec);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        } 
+    }    
     
     /**
      * Request an access grant token.
