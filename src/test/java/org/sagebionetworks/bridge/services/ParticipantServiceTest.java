@@ -937,6 +937,7 @@ public class ParticipantServiceTest {
         
         // Some data to verify
         account.setId(ID);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
         Set<AccountSubstudy> accountSubstudies = new HashSet<>();
         for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(STUDY.getIdentifier(), substudyId, ID);
@@ -952,6 +953,7 @@ public class ParticipantServiceTest {
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, false);
         
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
+        assertEquals(retrieved.getSynapseUserId(), SYNAPSE_USER_ID);
         // These have been filtered
         assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
         // Consent was calculated
@@ -989,6 +991,7 @@ public class ParticipantServiceTest {
         account.setDataGroups(TestUtils.newLinkedHashSet("group1","group2"));
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
         AccountSubstudy acctSubstudy1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", ID);
         acctSubstudy1.setExternalId("externalIdA");
         AccountSubstudy acctSubstudy2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", ID);
@@ -1045,6 +1048,7 @@ public class ParticipantServiceTest {
         assertEquals(participant.getTimeZone(), USER_TIME_ZONE);
         assertEquals(participant.getLanguages(), USER_LANGUAGES);
         assertEquals(participant.getClientData(), TestUtils.getClientData());
+        assertEquals(participant.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(participant.getExternalIds().size(), 2);
         assertEquals(participant.getExternalIds().get("substudyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("substudyB"), "externalIdB");
