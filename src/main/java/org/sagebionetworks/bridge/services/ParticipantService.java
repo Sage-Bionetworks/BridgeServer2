@@ -460,6 +460,7 @@ public class ParticipantService {
         if (shouldEnableCompleteSynapseUserIdAccount(participant)) {
             account.setStatus(ENABLED);
         }
+        account.setSynapseUserId(participant.getSynapseUserId());
         
         // Set up the external ID object and the changes to the account, attempt to save the external ID 
         // within an account transaction, and roll back the account if the external ID save fails. If the 

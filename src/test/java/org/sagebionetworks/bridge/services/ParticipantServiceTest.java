@@ -330,7 +330,8 @@ public class ParticipantServiceTest extends Mockito {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
 
-        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
+        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, participant, true);
         assertEquals(idHolder.getIdentifier(), ID);
         
@@ -365,6 +366,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getDataGroups(), Sets.newHashSet("group1","group2"));
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
