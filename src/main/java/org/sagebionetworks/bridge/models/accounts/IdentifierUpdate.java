@@ -11,14 +11,17 @@ public class IdentifierUpdate implements BridgeEntity {
     private final String emailUpdate;
     private final Phone phoneUpdate;
     private final String externalIdUpdate;
+    private final String synapseUserIdUpdate;
     
     @JsonCreator
     public IdentifierUpdate(@JsonProperty("signIn") SignIn signIn, @JsonProperty("emailUpdate") String emailUpdate,
-            @JsonProperty("phoneUpdate") Phone phoneUpdate, @JsonProperty("externalIdUpdate") String externalIdUpdate) {
+            @JsonProperty("phoneUpdate") Phone phoneUpdate, @JsonProperty("externalIdUpdate") String externalIdUpdate,
+            @JsonProperty("synapseUserIdUpdate") String synapseUserIdUpdate) {
         this.signIn = signIn;
         this.emailUpdate = emailUpdate;
         this.phoneUpdate = phoneUpdate;
         this.externalIdUpdate = externalIdUpdate;
+        this.synapseUserIdUpdate = synapseUserIdUpdate;
     }
     
     public SignIn getSignIn() {
@@ -35,5 +38,9 @@ public class IdentifierUpdate implements BridgeEntity {
     
     public String getExternalIdUpdate() {
         return externalIdUpdate;
+    }
+    
+    public String getSynapseUserIdUpdate() {
+        return synapseUserIdUpdate;
     }
 }
