@@ -1263,7 +1263,7 @@ public class ParticipantControllerTest extends Mockito {
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(update.getSignIn().getEmail(), PHONE_PASSWORD_SIGN_IN_REQUEST.getEmail());
+        assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());
         assertEquals(update.getSignIn().getPassword(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword());
         assertEquals(update.getExternalIdUpdate(), "some-new-extid");
         assertNull(update.getPhoneUpdate());

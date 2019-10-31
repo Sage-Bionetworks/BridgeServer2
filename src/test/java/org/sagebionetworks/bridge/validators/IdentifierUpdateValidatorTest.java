@@ -117,7 +117,7 @@ public class IdentifierUpdateValidatorTest {
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null, null);
         assertValidatorMessage(validator, update, "IdentifierUpdate",
-                "requires at least one updated identifier (email, phone, externalId)");
+                "requires at least one updated identifier (email, phone, externalId, synapseUserId)");
     }
     
     @Test

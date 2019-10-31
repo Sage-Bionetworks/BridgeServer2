@@ -2002,6 +2002,18 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
     }
+    
+    @Test
+    public void updateIdentifiersAddsSynapseUserId() {
+        mockAccountNoEmail();
+        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, null, SYNAPSE_USER_ID);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
+    }
 
     @Test
     public void updateIdentifiersCreatesExternalIdWithAssignment() {

@@ -83,7 +83,7 @@ public class IdentifierUpdateValidator implements Validator {
             }
         }
         if (updateFields < 1) {
-            errors.reject("requires at least one updated identifier (email, phone, externalId)");
+            errors.reject("requires at least one updated identifier (email, phone, externalId, synapseUserId)");
         }
     }
     
