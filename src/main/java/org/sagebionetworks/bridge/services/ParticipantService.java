@@ -460,6 +460,7 @@ public class ParticipantService {
         if (shouldEnableCompleteSynapseUserIdAccount(participant)) {
             account.setStatus(ENABLED);
         }
+        account.setSynapseUserId(participant.getSynapseUserId());
         
         // Set up the external ID object and the changes to the account, attempt to save the external ID 
         // within an account transaction, and roll back the account if the external ID save fails. If the 
@@ -573,7 +574,6 @@ public class ParticipantService {
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
-        account.setSynapseUserId(participant.getSynapseUserId());
         account.setMigrationVersion(MIGRATION_VERSION);
        
         // Sign out the user if you make alterations that will change the security state of 
@@ -879,6 +879,10 @@ public class ParticipantService {
             account.setEmail(update.getEmailUpdate());
             account.setEmailVerified( !study.isEmailVerificationEnabled() );
             sendEmailVerification = true;
+            accountUpdated = true;
+        }
+        if (update.getSynapseUserIdUpdate() != null && account.getSynapseUserId() == null) {
+            account.setSynapseUserId(update.getSynapseUserIdUpdate());
             accountUpdated = true;
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());

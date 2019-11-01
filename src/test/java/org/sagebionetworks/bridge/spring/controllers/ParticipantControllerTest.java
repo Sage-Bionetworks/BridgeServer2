@@ -159,11 +159,13 @@ public class ParticipantControllerTest extends Mockito {
             .withStudy(TEST_STUDY_IDENTIFIER).withPhone(PHONE)
             .withPassword(PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            PHONE, null);
+            PHONE, null, null);
     private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            EMAIL, null, null);
+            EMAIL, null, null, null);
     private static final IdentifierUpdate EXTID_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST, null,
-            null, "some-new-extid");
+            null, "some-new-extid", null);
+    private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
+            null, null, SYNAPSE_USER_ID);
 
     @InjectMocks
     @Spy
@@ -1264,6 +1266,27 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());
         assertEquals(update.getSignIn().getPassword(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword());
         assertEquals(update.getExternalIdUpdate(), "some-new-extid");
+        assertNull(update.getPhoneUpdate());
+    }
+    
+    @Test
+    public void updateIdentifiersWithSynapseUserId() throws Exception {
+        mockRequestBody(mockRequest, SYNAPSE_ID_UPDATE);
+
+        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+
+        JsonNode result = controller.updateIdentifiers();
+
+        assertEquals(result.get("id").textValue(), USER_ID);
+
+        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
+                identifierUpdateCaptor.capture());
+
+        IdentifierUpdate update = identifierUpdateCaptor.getValue();
+        assertEquals(update.getSignIn().getEmail(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail());
+        assertEquals(update.getSignIn().getPassword(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword());
+        assertEquals(update.getSynapseUserIdUpdate(), SYNAPSE_USER_ID);
+        assertNull(update.getExternalIdUpdate());
         assertNull(update.getPhoneUpdate());
     }
 

@@ -74,8 +74,16 @@ public class IdentifierUpdateValidator implements Validator {
                 }
             }
         }
+        if (update.getSynapseUserIdUpdate() != null) {
+            updateFields++;
+            if (isBlank(update.getSynapseUserIdUpdate())) {
+                errors.rejectValue("synapseUserIdUpdate", "cannot be blank");
+            } else if (!update.getSynapseUserIdUpdate().matches("^[0-9]+$")) {
+                errors.rejectValue("synapseUserIdUpdate", "should be a string containing a positive integer");
+            }
+        }
         if (updateFields < 1) {
-            errors.reject("requires at least one updated identifier (email, phone, externalId)");
+            errors.reject("requires at least one updated identifier (email, phone, externalId, synapseUserId)");
         }
     }
     
