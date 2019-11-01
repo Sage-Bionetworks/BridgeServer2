@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.collectSubstudyIds;
@@ -10,6 +11,12 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -51,7 +58,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -63,7 +69,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -324,6 +329,7 @@ public class ParticipantService {
         builder.withAttributes(account.getAttributes());
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
+        builder.withSynapseUserId(account.getSynapseUserId());
         return builder;
     }
     
@@ -364,13 +370,12 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId);
 
         Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getStudyId(), account.getHealthCode());
-        DateTime activitiesRetrievedDateTime = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name()
-                .toLowerCase());
+        DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
             return activitiesRetrievedDateTime;
         }
 
-        DateTime enrollmentDateTime = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
+        DateTime enrollmentDateTime = activityMap.get(ENROLLMENT.name().toLowerCase());
         if (enrollmentDateTime != null) {
             return enrollmentDateTime;
         }
@@ -414,15 +419,15 @@ public class ParticipantService {
         account.setStudyId(study.getIdentifier());
         account.setEmail(participant.getEmail());
         account.setPhone(participant.getPhone());
-        account.setEmailVerified(Boolean.FALSE);
-        account.setPhoneVerified(Boolean.FALSE);
+        account.setEmailVerified(FALSE);
+        account.setPhoneVerified(FALSE);
         account.setHealthCode(generateGUID());
-        account.setStatus(AccountStatus.UNVERIFIED);
+        account.setStatus(UNVERIFIED);
 
         // Hash password if it has been supplied.
         if (participant.getPassword() != null) {
             try {
-                PasswordAlgorithm passwordAlgorithm = PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+                PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
                 String passwordHash = passwordAlgorithm.generateHash(participant.getPassword());
                 account.setPasswordAlgorithm(passwordAlgorithm);
                 account.setPasswordHash(passwordHash);
@@ -439,18 +444,23 @@ public class ParticipantService {
         if (participant.getEmail() != null && !sendEmailVerification) {
             // not verifying, so consider it verified
             account.setEmailVerified(true); 
-            account.setStatus(AccountStatus.ENABLED);
+            account.setStatus(ENABLED);
         }
         if (participant.getPhone() != null && !shouldSendVerification) {
             // not verifying, so consider it verified
             account.setPhoneVerified(true); 
-            account.setStatus(AccountStatus.ENABLED);
+            account.setStatus(ENABLED);
         }
-        // If external ID only was provided, then the account will need to be enabled through use of the 
-        // the AuthenticationService.generatePassword() pathway.
+        // If external ID or Synapse ID only was provided, then the account will need to be enabled through 
+        // use of the the AuthenticationService.generatePassword() pathway, or through authentication via 
+        // Synapse
         if (shouldEnableCompleteExternalIdAccount(participant)) {
-            account.setStatus(AccountStatus.ENABLED);
+            account.setStatus(ENABLED);
         }
+        if (shouldEnableCompleteSynapseUserIdAccount(participant)) {
+            account.setStatus(ENABLED);
+        }
+        account.setSynapseUserId(participant.getSynapseUserId());
         
         // Set up the external ID object and the changes to the account, attempt to save the external ID 
         // within an account transaction, and roll back the account if the external ID save fails. If the 
@@ -499,6 +509,11 @@ public class ParticipantService {
     private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
         return participant.getEmail() == null && participant.getPhone() == null && 
             participant.getExternalId() != null && participant.getPassword() != null;
+    }
+    
+    private boolean shouldEnableCompleteSynapseUserIdAccount(StudyParticipant participant) {
+        return participant.getEmail() == null && participant.getPhone() == null && 
+            participant.getSynapseUserId() != null && participant.getPassword() == null;
     }
 
     public void updateParticipant(Study study, StudyParticipant participant) {
@@ -559,7 +574,7 @@ public class ParticipantService {
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
-        account.setMigrationVersion(AccountDao.MIGRATION_VERSION);
+        account.setMigrationVersion(MIGRATION_VERSION);
        
         // Sign out the user if you make alterations that will change the security state of 
         // the account. Otherwise very strange bugs can results.
@@ -864,6 +879,10 @@ public class ParticipantService {
             account.setEmail(update.getEmailUpdate());
             account.setEmailVerified( !study.isEmailVerificationEnabled() );
             sendEmailVerification = true;
+            accountUpdated = true;
+        }
+        if (update.getSynapseUserIdUpdate() != null && account.getSynapseUserId() == null) {
+            account.setSynapseUserId(update.getSynapseUserIdUpdate());
             accountUpdated = true;
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());

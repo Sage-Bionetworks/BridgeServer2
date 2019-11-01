@@ -238,10 +238,16 @@ public class BridgeUtils {
     public static AccountId parseAccountId(String studyId, String identifier) {
         checkNotNull(studyId);
         checkNotNull(identifier);
-        if (identifier.toLowerCase().startsWith("externalid:")) {
+        
+        String id = identifier.toLowerCase();
+        if (id.startsWith("externalid:")) {
             return AccountId.forExternalId(studyId, identifier.substring(11));
-        } else if (identifier.toLowerCase().startsWith("healthcode:")) {
+        } else if (id.startsWith("healthcode:")) {
             return AccountId.forHealthCode(studyId, identifier.substring(11));
+        } else if (id.startsWith("synapseuserid:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(14));
+        } else if (id.startsWith("syn:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(4));
         }
         return AccountId.forId(studyId, identifier);
     }

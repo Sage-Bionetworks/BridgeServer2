@@ -1,24 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.same;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -111,7 +104,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class ParticipantServiceTest {
+public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
     private static final ClientInfo CLIENT_INFO = new ClientInfo.Builder().withAppName("unit test")
             .withAppVersion(4).build();
@@ -337,7 +330,8 @@ public class ParticipantServiceTest {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
 
-        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
+        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
         IdentifierHolder idHolder = participantService.createParticipant(STUDY, participant, true);
         assertEquals(idHolder.getIdentifier(), ID);
         
@@ -372,6 +366,7 @@ public class ParticipantServiceTest {
         assertEquals(account.getDataGroups(), Sets.newHashSet("group1","group2"));
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
@@ -655,6 +650,29 @@ public class ParticipantServiceTest {
         assertFalse(account.getEmailVerified());
     }
     
+    @Test
+    public void createParticipantSynapseUserIdIsEnabled() {
+        mockHealthCodeAndAccountRetrieval(null, null, null);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
+        participantService.createParticipant(STUDY, participant, false);
+        
+        assertEquals(account.getStatus(), AccountStatus.ENABLED);
+        assertFalse(account.getPhoneVerified());
+        assertFalse(account.getEmailVerified());
+    }
+    
+    @Test
+    public void createParticipantSynapseUserIdWithDeviationIsDisabled() {
+        mockHealthCodeAndAccountRetrieval(null, null, null);
+
+        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withPassword(PASSWORD).build();
+        participantService.createParticipant(STUDY, participant, false);
+        
+        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*must be assigned to one or more of these substudies: substudyId.*")
     public void createParticipantMustIncludeCallerSubstudy() {
@@ -913,6 +931,7 @@ public class ParticipantServiceTest {
         
         // Some data to verify
         account.setId(ID);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
         Set<AccountSubstudy> accountSubstudies = new HashSet<>();
         for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(STUDY.getIdentifier(), substudyId, ID);
@@ -928,6 +947,7 @@ public class ParticipantServiceTest {
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, false);
         
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
+        assertEquals(retrieved.getSynapseUserId(), SYNAPSE_USER_ID);
         // These have been filtered
         assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
         // Consent was calculated
@@ -965,6 +985,7 @@ public class ParticipantServiceTest {
         account.setDataGroups(TestUtils.newLinkedHashSet("group1","group2"));
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
         AccountSubstudy acctSubstudy1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", ID);
         acctSubstudy1.setExternalId("externalIdA");
         AccountSubstudy acctSubstudy2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", ID);
@@ -1021,6 +1042,7 @@ public class ParticipantServiceTest {
         assertEquals(participant.getTimeZone(), USER_TIME_ZONE);
         assertEquals(participant.getLanguages(), USER_LANGUAGES);
         assertEquals(participant.getClientData(), TestUtils.getClientData());
+        assertEquals(participant.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(participant.getExternalIds().size(), 2);
         assertEquals(participant.getExternalIds().get("substudyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("substudyB"), "externalIdB");
@@ -1268,7 +1290,42 @@ public class ParticipantServiceTest {
         
         // We've tested this collection more thoroughly in updateParticipantTransfersSubstudyIdsForAdmins()
         verify(cacheProvider, never()).removeSessionByUserId(any());
-    }    
+    }
+    
+    @Test
+    public void updateParticipantDoesNotUpdateImmutableFields() {
+        mockHealthCodeAndAccountRetrieval(null, null, null);
+        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+ 
+        // There's a long list of fields you cannot update, set them all: 
+        StudyParticipant participant = withParticipant()
+                .withId(ID)
+                .withEmail("asdf")
+                .withPhone(new Phone("1234567890", "US"))
+                .withEmailVerified(true)
+                .withPhoneVerified(true)
+                .withSynapseUserId("asdf")
+                .withPassword("asdf")
+                .withHealthCode("asdf")
+                .withConsented(true)
+                .withRoles(ImmutableSet.of(ADMIN))
+                .withStatus(DISABLED)
+                .withCreatedOn(DateTime.now())
+                .withTimeZone(UTC).build();
+        participantService.updateParticipant(STUDY, participant);
+        
+        assertNull(account.getEmail());
+        assertNull(account.getPhone());
+        assertNull(account.getEmailVerified());
+        assertNull(account.getPhoneVerified());
+        assertNull(account.getSynapseUserId());
+        assertEquals(account.getHealthCode(), HEALTH_CODE);
+        assertTrue(account.getRoles().isEmpty());
+        assertNull(account.getStatus());
+        assertNull(account.getCreatedOn());
+        assertNull(account.getTimeZone());
+    }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateParticipantWithInvalidParticipant() {
@@ -1789,7 +1846,7 @@ public class ParticipantServiceTest {
         
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExtId");
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExtId", null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         verify(accountDao).updateAccount(accountCaptor.capture(), any());
@@ -1817,7 +1874,7 @@ public class ParticipantServiceTest {
         newExtId.setSubstudyId("substudyA");
         when(externalIdService.getExternalId(TEST_STUDY, "newExternalId")).thenReturn(Optional.of(newExtId));
         
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId");
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId", null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         verify(accountDao).updateAccount(eq(account), any());
@@ -1841,7 +1898,7 @@ public class ParticipantServiceTest {
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         when(accountDao.getAccount(any())).thenReturn(account);
         
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, TestConstants.PHONE, null);
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null, null);
         
         StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1864,7 +1921,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         STUDY.setAutoVerificationEmailSuppressed(false);
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null, null);
         
         StudyParticipant returned = participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1878,25 +1935,25 @@ public class ParticipantServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidates() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null);
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, null, null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithBlankEmail() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, null);
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, "", null, null, null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithBlankExternalId() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, " ");
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, " ", null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIdentifiersValidatesWithInvalidPhone() {
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("US", "1231231234"), null);
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("US", "1231231234"), null, null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
     }
     
@@ -1906,7 +1963,7 @@ public class ParticipantServiceTest {
         when(accountDao.reauthenticate(STUDY, REAUTH_REQUEST)).thenReturn(account);
         when(accountDao.getAccount(any())).thenReturn(account);
         
-        IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
+        IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null, null);
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1921,7 +1978,7 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(false);
         STUDY.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null, null);
 
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1939,13 +1996,25 @@ public class ParticipantServiceTest {
         STUDY.setEmailVerificationEnabled(true);
         STUDY.setAutoVerificationEmailSuppressed(true);
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, EMAIL, null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, EMAIL, null, null, null);
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
+    }
+    
+    @Test
+    public void updateIdentifiersAddsSynapseUserId() {
+        mockAccountNoEmail();
+        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountDao.getAccount(any())).thenReturn(account);
+        
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, null, SYNAPSE_USER_ID);
+        participantService.updateIdentifiers(STUDY, CONTEXT, update);
+        
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
     }
 
     @Test
@@ -1957,7 +2026,7 @@ public class ParticipantServiceTest {
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(externalIdService.getExternalId(any(), eq("extid"))).thenReturn(Optional.of(differentExternalId));
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, null, null, "extid");
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, null, null, "extid", null);
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -1970,7 +2039,7 @@ public class ParticipantServiceTest {
         account.setId("another-user-id");
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
-        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null);
+        IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null, null);
         
         try {
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
@@ -1987,13 +2056,14 @@ public class ParticipantServiceTest {
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, EXTERNAL_ID);
         account.setEmailVerified(TRUE);
         account.setPhoneVerified(TRUE);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
         when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Now that an external ID addition will simply add another external ID, the 
         // test has been changed to submit an existing external ID.
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "updated@email.com",
-                new Phone("4082588569", "US"), EXTERNAL_ID);
+                new Phone("4082588569", "US"), EXTERNAL_ID, "88888");
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
@@ -2002,6 +2072,7 @@ public class ParticipantServiceTest {
         assertEquals(account.getEmailVerified(), TRUE);
         assertEquals(account.getPhone(), PHONE);
         assertEquals(account.getPhoneVerified(), TRUE);
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         verify(accountDao, never()).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());
@@ -2015,7 +2086,7 @@ public class ParticipantServiceTest {
         
         // Add phone
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
-                null);
+                null, null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         // externalIdService not called
@@ -2033,7 +2104,7 @@ public class ParticipantServiceTest {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Submit the same external ID as an update
-        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID);
+        IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID, null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         // Nothing is called. Nothing happens.
@@ -2801,7 +2872,7 @@ public class ParticipantServiceTest {
         // Now... accountDao throws an exception
         doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
         try {
-            IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID);
+            IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID, null);
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
             fail("Should have thrown an exception");
         } catch(ConcurrentModificationException e) {

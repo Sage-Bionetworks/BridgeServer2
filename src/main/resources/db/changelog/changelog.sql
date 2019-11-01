@@ -252,3 +252,8 @@ ADD COLUMN `name` varchar(255) DEFAULT NULL,
 ADD COLUMN `size` bigint(20) DEFAULT NULL,
 MODIFY COLUMN `uploadURL` VARCHAR(1024) DEFAULT NULL;
 
+-- changeset bridge:10
+
+ALTER TABLE `Accounts`
+ADD COLUMN `synapseUserId` varchar(255) DEFAULT NULL,
+ADD UNIQUE KEY `Accounts-StudyId-SynapseUserId-Index` (`studyId`,`synapseUserId`);

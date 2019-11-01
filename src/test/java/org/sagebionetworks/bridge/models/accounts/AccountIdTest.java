@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -8,7 +10,6 @@ import static org.testng.Assert.assertTrue;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -37,6 +38,9 @@ public class AccountIdTest {
         
         assertTrue(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")
                 .equals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")));
+        
+        assertTrue(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)
+                .equals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)));
     }
     
     @Test
@@ -50,6 +54,8 @@ public class AccountIdTest {
         assertEquals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI").toString(), "AccountId [studyId=api, credential=HEALTH_CODE]");
         
         assertEquals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").toString(), "AccountId [studyId=api, credential=EXTID]");
+        
+        assertEquals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID).toString(), "AccountId [studyId=api, credential="+SYNAPSE_USER_ID+"]");
     }
     
     @Test
@@ -60,6 +66,7 @@ public class AccountIdTest {
         assertEquals(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).getPhone().getNumber(), number);
         assertEquals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "ABC-DEF").getHealthCode(), "ABC-DEF");
         assertEquals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").getExternalId(), "EXTID");
+        assertEquals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID).getSynapseUserId(), SYNAPSE_USER_ID);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -88,6 +95,11 @@ public class AccountIdTest {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
+    public void synapseUserIdAccessorThrows() {
+        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "one").getSynapseUserId();
+    }
+    
+    @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoEmail() {
         AccountId.forEmail(TEST_STUDY_IDENTIFIER, null);
     }
@@ -110,6 +122,11 @@ public class AccountIdTest {
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoExternalId() {
         AccountId.forExternalId(TEST_STUDY_IDENTIFIER, null);
+    }
+    
+    @Test(expectedExceptions = NullPointerException.class)
+    public void cannotCreateIdObjectWithNoSynapseUserId() {
+        AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -143,26 +160,27 @@ public class AccountIdTest {
         assertNull(accountId.getPhone());
         assertNull(accountId.getHealthCode());
         assertNull(accountId.getExternalId());
+        assertNull(accountId.getSynapseUserId());
     }
-    
 
     @Test
     public void canDeserialize() throws Exception {
         String json = TestUtils.createJson("{'study':'api'," +
-                "'email': '"+TestConstants.EMAIL+"'," +
+                "'email': '"+EMAIL+"'," +
                 "'healthCode': 'someHealthCode', "+
                 "'externalId': 'someExternalId', "+
-                "'phone': {'number': '"+TestConstants.PHONE.getNumber()+"', "+
-                "'regionCode':'"+TestConstants.PHONE.getRegionCode()+"'}}");
+                "'synapseUserId': 'synapseUserId', "+
+                "'phone': {'number': '"+PHONE.getNumber()+"', "+
+                "'regionCode':'"+PHONE.getRegionCode()+"'}}");
         
         AccountId identifier = BridgeObjectMapper.get().readValue(json, AccountId.class);
         
-        assertEquals(identifier.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
-        assertEquals(identifier.getEmail(), TestConstants.EMAIL);
+        assertEquals(identifier.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(identifier.getEmail(), EMAIL);
         assertEquals(identifier.getExternalId(), "someExternalId");
         assertEquals(identifier.getHealthCode(), "someHealthCode");
-        assertEquals(identifier.getPhone().getNumber(), TestConstants.PHONE.getNumber());
-        assertEquals(identifier.getPhone().getRegionCode(), TestConstants.PHONE.getRegionCode());
+        assertEquals(identifier.getSynapseUserId(), "synapseUserId");
+        assertEquals(identifier.getPhone().getNumber(), PHONE.getNumber());
+        assertEquals(identifier.getPhone().getRegionCode(), PHONE.getRegionCode());
     }
-    
 }

@@ -58,8 +58,8 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
     
     static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status) "+
-            "FROM HibernateAccount AS acct";
+            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
+            "acct.synapseUserId) FROM HibernateAccount AS acct";
             
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     
@@ -329,7 +329,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
-
+        
         List<HibernateAccount> accountList = hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
@@ -361,6 +361,8 @@ public class HibernateAccountDao implements AccountDao {
                 builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
+            } else if (unguarded.getSynapseUserId() != null) {
+                builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
                 builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
@@ -474,8 +476,8 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), assoc.getExternalIdsVisibleToCaller(),
-                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), studyId,
-                assoc.getSubstudyIdsVisibleToCaller());
+                hibernateAccount.getEmail(), hibernateAccount.getSynapseUserId(), hibernateAccount.getPhone(),
+                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
+                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
     }
 }
