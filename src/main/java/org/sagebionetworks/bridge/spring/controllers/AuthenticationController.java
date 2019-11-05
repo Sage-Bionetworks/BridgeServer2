@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -37,7 +36,6 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.sagebionetworks.bridge.services.OAuthProviderService;
 
 @CrossOrigin
 @RestController
@@ -45,18 +43,11 @@ public class AuthenticationController extends BaseController {
 
     private AccountWorkflowService accountWorkflowService;
     
-    private OAuthProviderService oauthProviderService;
-    
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
 
-    @Autowired
-    final void setOAuthProviderService(OAuthProviderService oauthProviderService) {
-        this.oauthProviderService = oauthProviderService;
-    }
-    
     @PostMapping("/v3/auth/email")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestEmailSignIn() { 
@@ -306,19 +297,19 @@ public class AuthenticationController extends BaseController {
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
-        // verifySupportedVersionOrThrowException and the consent check should not apply to 
-        // administrative accounts, but let's include them to be careful.
-        Account account = oauthProviderService.oauthSignIn(token);
-        Study study = studyService.getStudy(account.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        Study study = studyService.getStudy(token.getStudyId());
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
-        UserSession session = authenticationService.getSessionFromAccount(study, context, account);
-        cacheProvider.setUserSession(session);
-        setCookieAndRecordMetrics(session);
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
-            throw new ConsentRequiredException(session);
+        UserSession session = null;
+        try {
+            session = authenticationService.oauthSignIn(context, token);
+        } catch(ConsentRequiredException e) {
+            setCookieAndRecordMetrics(e.getUserSession());
+            throw e;
         }
+        setCookieAndRecordMetrics(session);
+        verifySupportedVersionOrThrowException(study);
+        
         return UserSessionInfo.toJSON(session);
     }
 

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -29,6 +30,7 @@ import java.util.Set;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InOrder;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -63,6 +65,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
@@ -162,6 +165,8 @@ public class AuthenticationServiceMockTest {
     @Mock
     private IntentService intentService;
     @Mock
+    private OAuthProviderService oauthProviderService;
+    @Mock
     private AccountSecretDao accountSecretDao;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
@@ -172,8 +177,9 @@ public class AuthenticationServiceMockTest {
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     @Spy
+    @InjectMocks
     private AuthenticationService service;
-
+    
     private Study study;
 
     private Account account;
@@ -190,19 +196,6 @@ public class AuthenticationServiceMockTest {
         
         account = Account.create();
         account.setId(USER_ID);
-
-        // Wire up service.
-        service.setCacheProvider(cacheProvider);
-        service.setBridgeConfig(config);
-        service.setConsentService(consentService);
-        service.setAccountDao(accountDao);
-        service.setPasswordResetValidator(passwordResetValidator);
-        service.setParticipantService(participantService);
-        service.setStudyService(studyService);
-        service.setAccountWorkflowService(accountWorkflowService);
-        service.setExternalIdService(externalIdService);
-        service.setIntentToParticipateService(intentService);
-        service.setAccountSecretDao(accountSecretDao);
 
         doReturn(SESSION_TOKEN).when(service).getGuid();
         doReturn(study).when(studyService).getStudy(STUDY_ID);
@@ -1433,5 +1426,61 @@ public class AuthenticationServiceMockTest {
         
         // Note that the context does not have the healthCode, you must use the participant
         verify(accountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
-   }    
+   }
+    
+   @Test
+   public void oauthSignIn() { 
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
+               "authToken", "callbackUrl");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
+       
+       AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       when(accountDao.getAccount(accountId)).thenReturn(account);
+       
+       when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
+       
+       StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
+       when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
+       
+       UserSession session = service.oauthSignIn(CONTEXT, token);
+       
+       assertEquals(session.getParticipant().getSynapseUserId(), "12345");
+       verify(accountDao).deleteReauthToken(ACCOUNT_ID);
+       verify(cacheProvider).removeSessionByUserId(USER_ID);
+       verify(cacheProvider).setUserSession(session);
+   }
+   
+   @Test(expectedExceptions = EntityNotFoundException.class)
+   public void oauthSignInNotFoundWrongToken() {
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
+               "authToken", "callbackUrl");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
+       
+       service.oauthSignIn(CONTEXT, token);
+   }
+
+   @Test(expectedExceptions = EntityNotFoundException.class)
+   public void oauthSignInNotFoundNoToken() {
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
+               "authToken", "callbackUrl");
+       
+       service.oauthSignIn(CONTEXT, token);
+   }
+   
+   @Test(expectedExceptions = ConsentRequiredException.class)
+   public void oauthSignInUnconsented() {
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
+               "authToken", "callbackUrl");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
+       
+       AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       when(accountDao.getAccount(accountId)).thenReturn(account);
+       
+       when(consentService.getConsentStatuses(any(), any())).thenReturn(UNCONSENTED_STATUS_MAP);
+       
+       StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
+       when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
+       
+       service.oauthSignIn(CONTEXT, token);
+   }
 }

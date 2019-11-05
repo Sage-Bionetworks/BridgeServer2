@@ -34,15 +34,12 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
@@ -107,9 +104,6 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Mock
     private BridgeConfig mockBridgeConfig;
-    
-    @Mock
-    private AccountDao mockAccountDao;
     
     @Mock
     private JwtParser mockJwtParser;
@@ -394,12 +388,8 @@ public class OAuthProviderServiceTest extends Mockito {
         when(mockJwtClaims.getBody()).thenReturn(mockClaims);
         when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
         
-        Account account = Account.create();
-        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
-        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
-        
-        Account returnValue = service.oauthSignIn(SIGNIN_TOKEN);
-        assertEquals(returnValue, account);
+        String returnValue = service.oauthSignIn(SIGNIN_TOKEN);
+        assertEquals(returnValue, "12345");
         
         String authHeader = "Basic " + Base64.encodeBase64String(
                 (SYNAPSE_OAUTH_CLIENT_ID_VALUE + ":" + SYNAPSE_OAUTH_CLIENT_SECRET_VALUE).getBytes());
@@ -436,23 +426,6 @@ public class OAuthProviderServiceTest extends Mockito {
         service.oauthSignIn(token);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void oauthSignInNotFound() throws Exception {
-        // This is not encrypted, the real token is public/private key encrypted. We mock the parser
-        // to avoid having to sign the payload.
-        mockAccessGrantCall(201, "{\"access_token\":\"not used\",\"id_token\":{\"userid\":\"12345\"}}");
-        
-        when(service.getJwtParser()).thenReturn(mockJwtParser);
-        when(mockJwtParser.parseClaimsJws(any())).thenReturn(mockJwtClaims);
-        when(mockJwtClaims.getBody()).thenReturn(mockClaims);
-        when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
-        
-        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
-        when(mockAccountDao.getAccount(accountId)).thenReturn(null);
-        
-        service.oauthSignIn(SIGNIN_TOKEN);
-    }
-    
     @Test
     public void oauthSignInErrorFromSynapse() throws Exception {
         // This is not encrypted, the real token is public/private key encrypted. We mock the parser
@@ -463,10 +436,6 @@ public class OAuthProviderServiceTest extends Mockito {
         when(mockJwtParser.parseClaimsJws(any())).thenReturn(mockJwtClaims);
         when(mockJwtClaims.getBody()).thenReturn(mockClaims);
         when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
-        
-        Account account = Account.create();
-        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
-        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
         
         try {
             service.oauthSignIn(SIGNIN_TOKEN);

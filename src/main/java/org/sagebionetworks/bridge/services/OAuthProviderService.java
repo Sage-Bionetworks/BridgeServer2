@@ -40,15 +40,12 @@ import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
@@ -73,7 +70,7 @@ import com.google.common.collect.Lists;
  * implementations vary. 
  */
 @Component
-public class OAuthProviderService {
+class OAuthProviderService {
     private static final Logger LOG = LoggerFactory.getLogger(OAuthProviderService.class);
 
     private static final String ACCESS_TOKEN_PROP_NAME = "access_token";
@@ -103,15 +100,18 @@ public class OAuthProviderService {
     static final String SYNAPSE_USERID_KEY = "userid";
     private static final String SYNAPSE_ID_TOKEN_KEY = "id_token";
     private static final String SYNAPSE_ERROR_KEY = "reason";
-    private static final BigInteger MODULUS = new BigInteger("23849945482965474905145517268643374920797943471323985175965744145737716565974743372430224111712427375247329399083025816245758319370417823556150277277108206652909956951038779719911852573197057021578055098390526471329800633323810194331080461575761929434803674679324161848934212115408664545557149085782355814220300934332546841936281140526074557863136209882049706193681336920386488318165861734677089379383062612396288597494008262190644212623312133588769704107491411726875356548977535231883438734129050591099689225763743937356377342527223979976407213258598569748635314939347146403284906522122994148568855913460554935920381");
+    private static final BigInteger MODULUS = new BigInteger("238499454829654749051455172686433749207979434713239851759657441457377"+
+            "1656597474337243022411171242737524732939908302581624575831937041782355615027727710820665290995695103877971991185257319"+
+            "7057021578055098390526471329800633323810194331080461575761929434803674679324161848934212115408664545557149085782355814"+
+            "2203009343325468419362811405260745578631362098820497061936813369203864883181658617346770893793830626123962885974940082"+
+            "6219064421262331213358876970410749141172687535654897753523188343873412905059109968922576374393735637734252722397997640"+
+            "7213258598569748635314939347146403284906522122994148568855913460554935920381");
     private static final BigInteger EXPONENT = new BigInteger("65537");
     private static final RSAPublicKeySpec KEY_SPEC = new RSAPublicKeySpec(MODULUS, EXPONENT);
     
     private String synapseOauthURL;
     private String synapseClientID;
     private String synapseClientSecret;
-    
-    private AccountDao accountDao;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
@@ -120,11 +120,6 @@ public class OAuthProviderService {
         this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
     }
     
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
-    }
-
     /**
      * Simple container for the response, parsed before closing the stream.
      */
@@ -197,7 +192,7 @@ public class OAuthProviderService {
      * 
      * @throws BadRequestException, EntityNotFoundException
      */
-    public Account oauthSignIn(OAuthAuthorizationToken authToken) {
+    public String oauthSignIn(OAuthAuthorizationToken authToken) {
         checkNotNull(authToken);
         
         if (authToken.getVendorId() == null) {
@@ -233,14 +228,7 @@ public class OAuthProviderService {
         
         String idTokenBlock = response.getBody().get(SYNAPSE_ID_TOKEN_KEY).textValue();
         Jws<Claims> jwt = parser.parseClaimsJws(idTokenBlock);
-        String userId = jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
-        
-        AccountId accountId = AccountId.forSynapseUserId(authToken.getStudyId(), userId);
-        Account account = accountDao.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return account;
+        return jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
     }
     
     JwtParser getJwtParser() {

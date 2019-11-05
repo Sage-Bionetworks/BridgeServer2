@@ -79,7 +79,6 @@ import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.sagebionetworks.bridge.services.OAuthProviderService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 
 public class AuthenticationControllerTest extends Mockito {
@@ -118,9 +117,6 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     StudyService mockStudyService;
-    
-    @Mock
-    OAuthProviderService mockOauthProviderService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -1152,14 +1148,13 @@ public class AuthenticationControllerTest extends Mockito {
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_ID_STRING);
         userSession.setConsentStatuses(CONSENTED_STATUS_MAP);
-        when(mockOauthProviderService.oauthSignIn(token)).thenReturn(account);
-        when(mockAuthService.getSessionFromAccount(eq(study), any(), eq(account))).thenReturn(userSession);
+        when(mockAuthService.oauthSignIn(any(), any())).thenReturn(userSession);
         
         JsonNode node = controller.oauthSignIn();
         assertEquals(node.get("sessionToken").textValue(), TEST_SESSION_TOKEN);
         
         verifyCommonLoggingForSignIns();
-        verify(mockCacheProvider).setUserSession(userSession);
+        verify(mockAuthService).oauthSignIn(any(), eq(token));
     }
     
     @Test
@@ -1169,8 +1164,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_ID_STRING);
-        when(mockOauthProviderService.oauthSignIn(token)).thenReturn(account);
-        when(mockAuthService.getSessionFromAccount(eq(study), any(), eq(account))).thenReturn(userSession);
+        when(mockAuthService.oauthSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
         
         try {
             controller.oauthSignIn();
@@ -1179,7 +1173,6 @@ public class AuthenticationControllerTest extends Mockito {
             assertEquals(e.getUserSession().getSessionToken(), TEST_SESSION_TOKEN);
         }
         verifyCommonLoggingForSignIns();
-        verify(mockCacheProvider).setUserSession(userSession);
     }
 
     @Test
