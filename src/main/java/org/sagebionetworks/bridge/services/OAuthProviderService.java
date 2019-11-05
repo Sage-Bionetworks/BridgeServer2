@@ -186,11 +186,9 @@ class OAuthProviderService {
      * configured like other components of the server software.
      *   
      * @param authToken that was passed from the Synapse server back to the authenticating client
-     * @return userSession if the authToken can be used to retrieve Open Connect information about a user, 
-     * and the Synapse user ID matches the Synapse user ID stored in the Bridge Account record in the 
-     * indicated study, return a session. Otherwise, throw a "not found" exception.
+     * @return synapseUserId if the exchange is successful
      * 
-     * @throws BadRequestException, EntityNotFoundException
+     * @throws BadRequestException
      */
     public String oauthSignIn(OAuthAuthorizationToken authToken) {
         checkNotNull(authToken);
@@ -231,6 +229,7 @@ class OAuthProviderService {
         return jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
     }
     
+    // isolating static accessor for mocking
     JwtParser getJwtParser() {
         return Jwts.parser();
     }
