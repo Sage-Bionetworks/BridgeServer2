@@ -4,9 +4,7 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
-import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -17,8 +15,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
-import java.io.IOException;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
@@ -39,7 +35,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -74,7 +69,6 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -1152,7 +1146,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test
     public void oauthSignIn() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken");
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
         mockRequestBody(mockRequest, token);
         
         Account account = Account.create();
@@ -1170,7 +1164,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test
     public void unconsentedOauthSignIn() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken");
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackurl");
         mockRequestBody(mockRequest, token);
         
         Account account = Account.create();

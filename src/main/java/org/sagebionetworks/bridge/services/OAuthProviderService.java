@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.Charset.defaultCharset;
-import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CALLBACK;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
@@ -111,7 +110,6 @@ public class OAuthProviderService {
     private String synapseOauthURL;
     private String synapseClientID;
     private String synapseClientSecret;
-    private String synapseCallback;
     
     private AccountDao accountDao;
 
@@ -120,7 +118,6 @@ public class OAuthProviderService {
         this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
         this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
         this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
-        this.synapseCallback = config.get(SYNAPSE_OAUTH_CALLBACK);
     }
     
     @Autowired
@@ -217,13 +214,13 @@ public class OAuthProviderService {
         
         // Synapse configuration, not stored in the table that's accessible to end users.
         OAuthProvider provider = new OAuthProvider(this.synapseClientID, this.synapseClientSecret, 
-                this.synapseOauthURL, this.synapseCallback, null);
+                this.synapseOauthURL, authToken.getCallbackUrl(), null);
         HttpPost client = createOAuthProviderPost(provider, provider.getEndpoint());
         
         List<NameValuePair> pairs = new ArrayList<>();
         pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, AUTHORIZATION_CODE_VALUE));
         pairs.add(new BasicNameValuePair(CODE_PROP_NAME, authToken.getAuthToken()));
-        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, this.synapseCallback));
+        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, authToken.getCallbackUrl()));
         client.setEntity(formEntity(pairs));
         
         Response response = executeGrantRequest(client);
@@ -478,7 +475,7 @@ public class OAuthProviderService {
      * UnsupportedEncodingException is one of those checked exceptions that will *never* be thrown if you use the
      * default system encoding.
      */
-    protected UrlEncodedFormEntity formEntity(List<NameValuePair> pairs) {
+    private UrlEncodedFormEntity formEntity(List<NameValuePair> pairs) {
         try {
             return new UrlEncodedFormEntity(pairs);
         } catch (UnsupportedEncodingException e) {

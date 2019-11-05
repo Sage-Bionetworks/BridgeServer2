@@ -14,7 +14,6 @@ public class BridgeConstants {
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
     public static final String SYNAPSE_OAUTH_CLIENT_ID = "synapse.oauth.client.id";
     public static final String SYNAPSE_OAUTH_URL = "synapse.oauth.url";
-    public static final String SYNAPSE_OAUTH_CALLBACK = "synapse.oauth.callback";
     public static final int SYNAPSE_TIMEOUT = 10000;
     
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";

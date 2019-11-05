@@ -39,8 +39,7 @@ public class OAuthController extends BaseController {
         
         JsonNode node = parseJson(JsonNode.class);
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
-        OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(session.getStudyIdentifier().getIdentifier(),
-                vendorId, token);
+        OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, vendorId, token, null);
         
         Study study = studyService.getStudy(session.getStudyIdentifier());
         

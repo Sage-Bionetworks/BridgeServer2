@@ -5,8 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 
-import java.io.IOException;
-
 import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -308,8 +306,11 @@ public class AuthenticationController extends BaseController {
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
+        // verifySupportedVersionOrThrowException and the consent check should not apply to 
+        // administrative accounts, but let's include them to be careful.
         Account account = oauthProviderService.oauthSignIn(token);
         Study study = studyService.getStudy(account.getStudyId());
+        verifySupportedVersionOrThrowException(study);
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
         UserSession session = authenticationService.getSessionFromAccount(study, context, account);

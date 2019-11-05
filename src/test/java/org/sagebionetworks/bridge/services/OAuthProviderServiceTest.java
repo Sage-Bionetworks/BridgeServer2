@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CALLBACK;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
@@ -57,7 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 
 public class OAuthProviderServiceTest extends Mockito {
-    private static final String SYNAPSE_OAUTH_CALLBACK_VALUE = "https://research.sagebridge.org";
+    private static final String CALLBACK_VALUE = "https://research.sagebridge.org";
     private static final String SYNAPSE_OAUTH_CLIENT_SECRET_VALUE = "client-secret";
     private static final String SYNAPSE_OAUTH_CLIENT_ID_VALUE = "client-id";
     private static final String SYNAPSE_OAUTH_URL_VALUE = "https://repo-prod.prod.sagebase.org/auth/v1/oauth2/token";
@@ -77,8 +76,8 @@ public class OAuthProviderServiceTest extends Mockito {
     private static final String USER_ID = "26FWFL";
     private static final String VENDOR_ID = "vendorId";
     private static final String SYNAPSE_ID = "synapse";
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, AUTH_TOKEN_STRING);
-    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, SYNAPSE_ID, AUTH_TOKEN_STRING);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, SYNAPSE_ID, AUTH_TOKEN_STRING, CALLBACK_VALUE);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             null);
     private static final OAuthProvider PROVIDER_WITH_INTROSPECT = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT,
@@ -143,7 +142,6 @@ public class OAuthProviderServiceTest extends Mockito {
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_URL)).thenReturn(SYNAPSE_OAUTH_URL_VALUE);
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_CLIENT_ID)).thenReturn(SYNAPSE_OAUTH_CLIENT_ID_VALUE);
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_CLIENT_SECRET)).thenReturn(SYNAPSE_OAUTH_CLIENT_SECRET_VALUE);
-        when(mockBridgeConfig.get(SYNAPSE_OAUTH_CALLBACK)).thenReturn(SYNAPSE_OAUTH_CALLBACK_VALUE);
         service.setBridgeConfig(mockBridgeConfig);
     }
     
@@ -227,14 +225,14 @@ public class OAuthProviderServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallWithoutAuthTokenRefreshes() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null, null);
         
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallAuthAndRefreshTokenMissing() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null, null);
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     
@@ -406,7 +404,7 @@ public class OAuthProviderServiceTest extends Mockito {
         String authHeader = "Basic " + Base64.encodeBase64String(
                 (SYNAPSE_OAUTH_CLIENT_ID_VALUE + ":" + SYNAPSE_OAUTH_CLIENT_SECRET_VALUE).getBytes());
         String body = "grant_type=authorization_code&code=" + BridgeUtils.encodeURIComponent(AUTH_TOKEN_STRING)
-                + "&redirect_uri=" + BridgeUtils.encodeURIComponent(SYNAPSE_OAUTH_CALLBACK_VALUE);
+                + "&redirect_uri=" + BridgeUtils.encodeURIComponent(CALLBACK_VALUE);
 
         HttpPost thePost = grantPostCaptor.getValue();
         assertEquals(thePost.getURI().toString(), SYNAPSE_OAUTH_URL_VALUE);
@@ -416,25 +414,25 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInNoVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, null, AUTH_TOKEN_STRING);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, null, AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInWrongVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "google", AUTH_TOKEN_STRING);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "google", AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignNoStudyId() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, SYNAPSE_ID, AUTH_TOKEN_STRING);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, SYNAPSE_ID, AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignNoCode() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, SYNAPSE_ID, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, SYNAPSE_ID, null, null);
         service.oauthSignIn(token);
     }
     
