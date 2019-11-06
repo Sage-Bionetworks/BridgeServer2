@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -53,6 +54,7 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -1435,9 +1437,8 @@ public class AuthenticationServiceMockTest {
        when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
        
        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       account.setRoles(ImmutableSet.of(DEVELOPER));
        when(accountDao.getAccount(accountId)).thenReturn(account);
-       
-       when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
@@ -1467,7 +1468,7 @@ public class AuthenticationServiceMockTest {
        service.oauthSignIn(CONTEXT, token);
    }
    
-   @Test(expectedExceptions = ConsentRequiredException.class)
+   @Test(expectedExceptions = UnauthorizedException.class)
    public void oauthSignInUnconsented() {
        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
                "authToken", "callbackUrl");
@@ -1475,8 +1476,6 @@ public class AuthenticationServiceMockTest {
        
        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
        when(accountDao.getAccount(accountId)).thenReturn(account);
-       
-       when(consentService.getConsentStatuses(any(), any())).thenReturn(UNCONSENTED_STATUS_MAP);
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);

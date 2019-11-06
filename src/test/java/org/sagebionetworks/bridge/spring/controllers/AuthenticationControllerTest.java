@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -62,7 +61,6 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -1145,9 +1143,6 @@ public class AuthenticationControllerTest extends Mockito {
         OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
         mockRequestBody(mockRequest, token);
         
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_ID_STRING);
-        userSession.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockAuthService.oauthSignIn(any(), any())).thenReturn(userSession);
         
         JsonNode node = controller.oauthSignIn();
@@ -1157,24 +1152,6 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).oauthSignIn(any(), eq(token));
     }
     
-    @Test
-    public void unconsentedOauthSignIn() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackurl");
-        mockRequestBody(mockRequest, token);
-        
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_ID_STRING);
-        when(mockAuthService.oauthSignIn(any(), any())).thenThrow(new ConsentRequiredException(userSession));
-        
-        try {
-            controller.oauthSignIn();
-            fail("Should have thrown exeption");
-        } catch(ConsentRequiredException e) {
-            assertEquals(e.getUserSession().getSessionToken(), TEST_SESSION_TOKEN);
-        }
-        verifyCommonLoggingForSignIns();
-    }
-
     @Test
     public void unconsentedReauthSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, REAUTH_REQUEST);

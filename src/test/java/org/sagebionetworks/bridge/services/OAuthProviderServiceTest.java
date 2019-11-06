@@ -381,7 +381,7 @@ public class OAuthProviderServiceTest extends Mockito {
     public void oauthSignIn() throws Exception {
         // This is not encrypted, the real token is public/private key encrypted. We mock the parser
         // to avoid having to sign the payload.
-        mockAccessGrantCall(201, "{\"access_token\":\"not used\",\"id_token\":{\"userid\":\"12345\"}}");
+        mockAccessGrantCall(201, "{\"access_token\":\"not used\",\"id_token\":{\"userid\":\"77777\"}}");
         
         when(service.getJwtParser()).thenReturn(mockJwtParser);
         when(mockJwtParser.parseClaimsJws(any())).thenReturn(mockJwtClaims);

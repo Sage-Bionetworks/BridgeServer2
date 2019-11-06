@@ -300,15 +300,8 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(token.getStudyId());
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
         
-        UserSession session = null;
-        try {
-            session = authenticationService.oauthSignIn(context, token);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
-            throw e;
-        }
+        UserSession session = authenticationService.oauthSignIn(context, token);
         setCookieAndRecordMetrics(session);
-        verifySupportedVersionOrThrowException(study);
         
         return UserSessionInfo.toJSON(session);
     }

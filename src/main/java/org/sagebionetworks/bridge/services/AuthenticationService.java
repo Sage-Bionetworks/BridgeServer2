@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -510,15 +511,15 @@ public class AuthenticationService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        if (account.getRoles().isEmpty()) {
+            throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
+        }
         
         clearSession(authToken.getStudyId(), account.getId());
         Study study = studyService.getStudy(authToken.getStudyId());
         UserSession session = getSessionFromAccount(study, context, account);
-
         cacheProvider.setUserSession(session);
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
-            throw new ConsentRequiredException(session);
-        }
+        
         return session;        
     }
     
