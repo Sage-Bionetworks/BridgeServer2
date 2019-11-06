@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import javax.servlet.http.Cookie;
 
@@ -291,7 +292,37 @@ public class AuthenticationController extends BaseController {
         authenticationService.resetPassword(passwordReset);
         return new StatusMessage("Password has been changed.");
     }
+    
+    @PostMapping("/v3/auth/study")
+    public JsonNode changeStudy() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        // The only part of this payload we care about is the study property
+        SignIn signIn = parseJson(SignIn.class);
+        String studyId = signIn.getStudyId();
 
+        // Verify the study exists
+        Study study = studyService.getStudy(studyId);
+        
+        // Verify the user exists. We only use synapse ID for this (and will eventually only show
+        // studies that are linked by Synapse ID, once everyone has migrated):
+        AccountId accountId = AccountId.forSynapseUserId(study.getIdentifier(), session.getParticipant().getSynapseUserId());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        
+        authenticationService.signOut(session);
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession newSession = authenticationService.getSession(study, context);
+        
+        
+        
+        
+        return UserSessionInfo.toJSON(newSession);
+    }
+    
     private Study getStudyOrThrowException(String studyId) {
         Study study = studyService.getStudy(studyId);
         verifySupportedVersionOrThrowException(study);

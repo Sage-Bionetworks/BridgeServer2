@@ -155,21 +155,38 @@ public class StudyController extends BaseController {
         if ("summary".equals(format) || "true".equals(summary)) {
             // then only return active study as summary
             List<Study> activeStudiesSummary = studies.stream()
-                    .filter(s -> s.isActive()).collect(Collectors.toList());
-            Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
+                    .filter(s -> s.isActive())
+                    .sorted(STUDY_COMPARATOR)
+                    .collect(Collectors.toList());
+            //Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
             ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
                     .withRequestParam("summary", true);
             return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
         }
-        UserSession session = getAuthenticatedSession(ADMIN);
+        if ("self".equals(format)) {
+            UserSession session = getAuthenticatedSession();
+            Study study = studyService.getStudy(session.getStudyIdentifier());
+            
+            Set<String> studyIds = accountDao.getStudyIdsForUser(study, session.getId());
+            List<Study> activeStudiesSummary = studies.stream()
+                    .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()))
+                    .sorted(STUDY_COMPARATOR)
+                    .collect(Collectors.toList());
+            //Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
+            ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
+                    .withRequestParam("summary", true);
+            return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
+        }
         
+        // Cross-study admins see everything, study admins cannot
+        UserSession session = getAuthenticatedSession(ADMIN);
         verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
 
         // otherwise, return all studies including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
                 new ResourceList<>(studies).withRequestParam("summary", false));
     }
-
+    
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() throws Exception {
