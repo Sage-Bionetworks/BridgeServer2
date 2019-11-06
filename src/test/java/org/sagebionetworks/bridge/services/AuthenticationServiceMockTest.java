@@ -1434,9 +1434,9 @@ public class AuthenticationServiceMockTest {
    public void oauthSignIn() { 
        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
                "authToken", "callbackUrl");
-       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
-       
        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
+       
        account.setRoles(ImmutableSet.of(DEVELOPER));
        when(accountDao.getAccount(accountId)).thenReturn(account);
        
@@ -1455,7 +1455,8 @@ public class AuthenticationServiceMockTest {
    public void oauthSignInNotFoundWrongToken() {
        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
                "authToken", "callbackUrl");
-       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
+       AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
        
        service.oauthSignIn(CONTEXT, token);
    }
@@ -1472,9 +1473,9 @@ public class AuthenticationServiceMockTest {
    public void oauthSignInUnconsented() {
        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
                "authToken", "callbackUrl");
-       when(oauthProviderService.oauthSignIn(token)).thenReturn("12345");
-       
        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
+       when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
+       
        when(accountDao.getAccount(accountId)).thenReturn(account);
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();

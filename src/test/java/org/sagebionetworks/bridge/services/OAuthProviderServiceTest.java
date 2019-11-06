@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
@@ -388,8 +389,8 @@ public class OAuthProviderServiceTest extends Mockito {
         when(mockJwtClaims.getBody()).thenReturn(mockClaims);
         when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
         
-        String returnValue = service.oauthSignIn(SIGNIN_TOKEN);
-        assertEquals(returnValue, "12345");
+        AccountId returnedValue = service.oauthSignIn(SIGNIN_TOKEN);
+        assertEquals(returnedValue, AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345"));
         
         String authHeader = "Basic " + Base64.encodeBase64String(
                 (SYNAPSE_OAUTH_CLIENT_ID_VALUE + ":" + SYNAPSE_OAUTH_CLIENT_SECRET_VALUE).getBytes());

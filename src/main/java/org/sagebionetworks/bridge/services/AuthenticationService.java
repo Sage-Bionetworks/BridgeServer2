@@ -498,15 +498,14 @@ public class AuthenticationService {
     }
     
     public UserSession oauthSignIn(CriteriaContext context, OAuthAuthorizationToken authToken) {
-        String synapseUserId = oauthProviderService.oauthSignIn(authToken);
+        AccountId accountId = oauthProviderService.oauthSignIn(authToken);
         
         // This has not been observed to happen but in theory the user could deny access to their
-        // user ID, preventing this from being returned despite a successful OAuth exchange.
-        if (synapseUserId == null) {
+        // Open Connect ID information, preventing this from being returned despite a successful 
+        // OAuth exchange.
+        if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        
-        AccountId accountId = AccountId.forSynapseUserId(authToken.getStudyId(), synapseUserId);
         Account account = accountDao.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

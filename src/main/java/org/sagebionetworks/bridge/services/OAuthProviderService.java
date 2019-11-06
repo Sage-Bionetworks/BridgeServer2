@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
@@ -178,19 +179,22 @@ class OAuthProviderService {
     }
 
     /**
-     * Authenticate a Bridge user via the Synapse OAuth server. This is the second contact of the Synapse
-     * server, after a client has sent a user to authenticate on the Synapse server web site and the Synapse 
-     * server has redirected back to the Bridge client with an authentication code. We now exchange it for 
-     * an authentication token, returned with the userid. The information required is very similar to an 
-     * OAuth provider as configured by a study administrator, but it's internal to our system and so it is 
-     * configured like other components of the server software.
-     *   
-     * @param authToken that was passed from the Synapse server back to the authenticating client
-     * @return synapseUserId if the exchange is successful
+     * Authenticate a Bridge user via an external OAuth server that supports Open Connect ID (identified by the supplied
+     * vendor ID; currently the only supported external authentication server is Synapse, but the same requirements are
+     * fulfilled by Google, Facebook, etc.). This is the second contact of the OAuth server, after a client has sent a
+     * user to authenticate on the OAuth server's web site and the OAuth server has redirected back to the Bridge client
+     * with an authentication code. We now exchange it for an authentication token as well as the additional OCID
+     * information to verify the identity of the caller (currently we ask for the user's Synapse ID from Synapse, but we
+     * could also use email or phone number).
+     * 
+     * @param authToken
+     *         that was passed from the OAuth server back to the authenticating client
+     * @return accountId if the exchange is successful, the accountId will contain an identifying credential that should
+     *         be usable to retrieve an account
      * 
      * @throws BadRequestException
      */
-    public String oauthSignIn(OAuthAuthorizationToken authToken) {
+    public AccountId oauthSignIn(OAuthAuthorizationToken authToken) {
         checkNotNull(authToken);
         
         if (authToken.getVendorId() == null) {
@@ -226,7 +230,12 @@ class OAuthProviderService {
         
         String idTokenBlock = response.getBody().get(SYNAPSE_ID_TOKEN_KEY).textValue();
         Jws<Claims> jwt = parser.parseClaimsJws(idTokenBlock);
-        return jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
+        String synapseUserId = jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
+        
+        if (synapseUserId != null) {
+            return AccountId.forSynapseUserId(authToken.getStudyId(), synapseUserId);
+        }
+        return null;
     }
     
     // isolating static accessor for mocking
