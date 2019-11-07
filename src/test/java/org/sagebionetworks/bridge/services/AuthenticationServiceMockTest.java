@@ -1470,7 +1470,7 @@ public class AuthenticationServiceMockTest {
    }
    
    @Test(expectedExceptions = UnauthorizedException.class)
-   public void oauthSignInUnconsented() {
+   public void oauthSignInNotAnAdministrativeUser() {
        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, "vendorId",
                "authToken", "callbackUrl");
        AccountId accountId = AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, "12345");
