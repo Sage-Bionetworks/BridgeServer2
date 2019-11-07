@@ -10,7 +10,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -25,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
@@ -89,32 +87,27 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     @Override
-    public Set<String> getStudyIdsForUser(Study study, String userId) {
-        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
+    public List<String> getStudyIdsForUser(StudyIdentifier studyId, String userId) {
+        AccountId accountId = AccountId.forId(studyId.getIdentifier(), userId);
         Account account = getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        
-        QueryBuilder builder = new QueryBuilder();
-        builder.append("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE ");
-        
         boolean hasEmail = (account.getEmail() != null && TRUE.equals(account.getEmailVerified()));
         
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE");
         if (hasEmail) {
             builder.append("email = :email", "email", account.getEmail());
         }
         if (hasEmail && account.getSynapseUserId() != null) {
-            builder.append(" OR ");
+            builder.append("OR");
         }
         if (account.getSynapseUserId() != null) {
             builder.append("synapseUserId = :synapseUserId", "synapseUserId", account.getSynapseUserId());
         }
-        
-        System.out.println(builder.getQuery());
-        
-        List<String> studyIds = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), 0, 1000, String.class); 
-        return ImmutableSet.copyOf(studyIds);
+        System.out.println(builder.getParameters());
+        return hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), null, null, String.class); 
     }
     
     /**

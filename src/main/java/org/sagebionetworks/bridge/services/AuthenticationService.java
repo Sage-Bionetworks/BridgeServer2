@@ -164,6 +164,9 @@ public class AuthenticationService {
         checkNotNull(context);
 
         Account account = accountDao.getAccount(context.getAccountId());
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         return getSessionFromAccount(study, context, account);
     }
 

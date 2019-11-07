@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.studies.Study.STUDY_LIST_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.Arrays;
@@ -150,35 +152,18 @@ public class StudyController extends BaseController {
     
     @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllStudies(@RequestParam(required = false) String format,
-            @RequestParam(required = false) String summary) throws Exception {
+            @RequestParam(required = false) String summary) throws Exception {        
+        
         List<Study> studies = studyService.getStudies();
         if ("summary".equals(format) || "true".equals(summary)) {
             // then only return active study as summary
             List<Study> activeStudiesSummary = studies.stream()
-                    .filter(s -> s.isActive())
-                    .sorted(STUDY_COMPARATOR)
-                    .collect(Collectors.toList());
-            //Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
+                    .filter(s -> s.isActive()).collect(Collectors.toList());
+            Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
             ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
                     .withRequestParam("summary", true);
-            return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
+            return STUDY_LIST_WRITER.writeValueAsString(summaries);  
         }
-        if ("self".equals(format)) {
-            UserSession session = getAuthenticatedSession();
-            Study study = studyService.getStudy(session.getStudyIdentifier());
-            
-            Set<String> studyIds = accountDao.getStudyIdsForUser(study, session.getId());
-            List<Study> activeStudiesSummary = studies.stream()
-                    .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()))
-                    .sorted(STUDY_COMPARATOR)
-                    .collect(Collectors.toList());
-            //Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
-            ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
-                    .withRequestParam("summary", true);
-            return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
-        }
-        
-        // Cross-study admins see everything, study admins cannot
         UserSession session = getAuthenticatedSession(ADMIN);
         verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
 
@@ -187,6 +172,21 @@ public class StudyController extends BaseController {
                 new ResourceList<>(studies).withRequestParam("summary", false));
     }
     
+    @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getStudyMemberships() throws Exception {   
+        UserSession session = getAuthenticatedSession();
+        
+        Study study = studyService.getStudy(session.getStudyIdentifier());
+        List<String> studyIds = accountDao.getStudyIdsForUser(study, session.getId());
+
+        List<Study> studies = studyService.getStudies().stream()
+            .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()))
+            .sorted(STUDY_COMPARATOR)
+            .collect(toList());
+        ResourceList<Study> summaries = new ResourceList<Study>(studies);
+        return STUDY_LIST_WRITER.writeValueAsString(summaries);
+    }
+
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() throws Exception {

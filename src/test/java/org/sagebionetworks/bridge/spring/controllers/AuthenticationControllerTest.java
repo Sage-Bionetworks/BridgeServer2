@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
@@ -1142,6 +1144,33 @@ public class AuthenticationControllerTest extends Mockito {
         }
         verifyCommonLoggingForSignIns();
     }
+    
+    @Test
+    public void changeStudy() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(new StudyIdentifierImpl("my-new-study"));
+        session.setSessionToken("new-session-token");
+        
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(study);
+        when(mockAuthService.getSession(eq(study), any())).thenReturn(session);
+        
+        JsonNode node = controller.changeStudy();
+        assertEquals(node.get("sessionToken").textValue(), "new-session-token");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp=".*Only administrative accounts can change studies.*")
+    public void changeStudyNotAuthorized() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        controller.changeStudy();
+    }    
 
     private void mockResetPasswordRequest() throws Exception {
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 

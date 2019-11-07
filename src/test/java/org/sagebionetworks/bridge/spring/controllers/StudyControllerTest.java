@@ -184,6 +184,7 @@ public class StudyControllerTest extends Mockito {
         assertPost(StudyController.class, "verifySenderEmail");
         assertGet(StudyController.class, "getUploads");
         assertGet(StudyController.class, "getUploadsForStudy");
+        assertGet(StudyController.class, "getStudyMemberships");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -797,6 +798,36 @@ public class StudyControllerTest extends Mockito {
         controller.deleteStudy("delete-study", true);
         
         verify(mockStudyService).deleteStudy("delete-study", Boolean.TRUE);
+    }
+    
+    @Test
+    public void getStudyMemberships() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        Study studyA = createStudy("Study A", "studyA", false);
+        Study studyB = createStudy("Study B", "studyB", true);
+        Study studyC = createStudy("Study C", "studyC", true);
+        Study studyD = createStudy("Study D", "studyD", true);
+        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
+        
+        when(mockAccountDao.getStudyIdsForUser(any(), eq(USER_ID))).thenReturn(ImmutableList.of("studyA", "studyB", "studyC"));
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+        
+        assertEquals(node.size(), 2);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+    }
+    
+    private Study createStudy(String name, String identifier, boolean active) {
+        Study study = Study.create();
+        study.setName(name);
+        study.setIdentifier(identifier);
+        study.setActive(active);
+        return study;
     }
     
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {

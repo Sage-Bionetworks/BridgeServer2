@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -25,7 +24,7 @@ public interface AccountDao {
     
     int MIGRATION_VERSION = 1;
     
-    Set<String> getStudyIdsForUser(Study study, String userId);
+    List<String> getStudyIdsForUser(StudyIdentifier studyId, String userId);
     
     /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
