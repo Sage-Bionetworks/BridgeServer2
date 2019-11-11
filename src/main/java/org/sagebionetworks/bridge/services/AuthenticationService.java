@@ -24,12 +24,14 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -37,7 +39,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -72,6 +73,7 @@ public class AuthenticationService {
     private IntentService intentService;
     private ExternalIdService externalIdService;
     private AccountSecretDao accountSecretDao;
+    private OAuthProviderService oauthProviderService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -117,6 +119,10 @@ public class AuthenticationService {
     @Autowired
     final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
         this.accountSecretDao = accountSecretDao;
+    }
+    @Autowired
+    final void setOAuthProviderService(OAuthProviderService oauthProviderService) {
+        this.oauthProviderService = oauthProviderService;
     }
     
     /**
@@ -176,7 +182,7 @@ public class AuthenticationService {
         
         Account account = accountDao.authenticate(study, signIn);
         
-        clearSession(study.getStudyIdentifier(), account.getId());
+        clearSession(study.getIdentifier(), account.getId());
         UserSession session = getSessionFromAccount(study, context, account);
 
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
@@ -406,7 +412,7 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getStudyIdentifier(), account.getId());
+            clearSession(context.getStudyIdentifier().getIdentifier(), account.getId());
             Study study = studyService.getStudy(signIn.getStudyId());
             session = getSessionFromAccount(study, context, account);
 
@@ -491,12 +497,37 @@ public class AuthenticationService {
         return SecureTokenGenerator.INSTANCE.nextToken();
     }
     
+    public UserSession oauthSignIn(CriteriaContext context, OAuthAuthorizationToken authToken) {
+        AccountId accountId = oauthProviderService.oauthSignIn(authToken);
+        
+        // This has not been observed to happen but in theory the user could deny access to their
+        // Open Connect ID information, preventing this from being returned despite a successful 
+        // OAuth exchange.
+        if (accountId == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (account.getRoles().isEmpty()) {
+            throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
+        }
+        
+        clearSession(authToken.getStudyId(), account.getId());
+        Study study = studyService.getStudy(authToken.getStudyId());
+        UserSession session = getSessionFromAccount(study, context, account);
+        cacheProvider.setUserSession(session);
+        
+        return session;        
+    }
+    
     // As per https://sagebionetworks.jira.com/browse/BRIDGE-2127, signing in should invalidate any old sessions
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
-    private void clearSession(StudyIdentifier studyId, String userId) {
-        AccountId accountId = AccountId.forId(studyId.getIdentifier(), userId);
+    private void clearSession(String studyId, String userId) {
+        AccountId accountId = AccountId.forId(studyId, userId);
         accountDao.deleteReauthToken(accountId);
         cacheProvider.removeSessionByUserId(userId);
     }

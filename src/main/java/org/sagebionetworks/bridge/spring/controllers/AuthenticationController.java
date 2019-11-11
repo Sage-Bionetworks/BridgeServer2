@@ -32,6 +32,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -46,7 +47,7 @@ public class AuthenticationController extends BaseController {
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
-    
+
     @PostMapping("/v3/auth/email")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestEmailSignIn() { 
@@ -290,6 +291,19 @@ public class AuthenticationController extends BaseController {
         getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
         return new StatusMessage("Password has been changed.");
+    }
+    
+    @PostMapping("/v3/auth/oauth/signIn")
+    public JsonNode oauthSignIn() {
+        OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
+        
+        Study study = studyService.getStudy(token.getStudyId());
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.oauthSignIn(context, token);
+        setCookieAndRecordMetrics(session);
+        
+        return UserSessionInfo.toJSON(session);
     }
 
     private Study getStudyOrThrowException(String studyId) {

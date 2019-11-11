@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -66,6 +68,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -191,6 +194,12 @@ public class AuthenticationControllerTest extends Mockito {
         BridgeUtils.setRequestContext(null);
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(AuthenticationController.class);
+        assertPost(AuthenticationController.class, "oauthSignIn");
+    }
+    
     @Test
     public void requestEmailSignIn() throws Exception {
         // Mock.
@@ -1128,7 +1137,21 @@ public class AuthenticationControllerTest extends Mockito {
         }
         verifyCommonLoggingForSignIns();
     }
-
+    
+    @Test
+    public void oauthSignIn() throws Exception {
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
+        mockRequestBody(mockRequest, token);
+        
+        when(mockAuthService.oauthSignIn(any(), any())).thenReturn(userSession);
+        
+        JsonNode node = controller.oauthSignIn();
+        assertEquals(node.get("sessionToken").textValue(), TEST_SESSION_TOKEN);
+        
+        verifyCommonLoggingForSignIns();
+        verify(mockAuthService).oauthSignIn(any(), eq(token));
+    }
+    
     @Test
     public void unconsentedReauthSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, REAUTH_REQUEST);
