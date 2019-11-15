@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -177,7 +178,10 @@ public class StudyController extends BaseController {
     @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getStudyMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
-
+        
+        if (session.getParticipant().getRoles().isEmpty()) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
         List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
         Stream<Study> stream = studyService.getStudies().stream();
 

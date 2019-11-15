@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
@@ -1214,7 +1215,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
+            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
     public void changeStudyNotAuthorized() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
@@ -1263,7 +1264,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
+            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
     public void changeStudyUserHasNoAccessToStudy() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
@@ -1283,7 +1284,7 @@ public class AuthenticationControllerTest extends Mockito {
     // This would not appear to be logically possible, but to avoid a potention NPE exception
     // and a 500 error, so we check this.
     @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
+            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
     public void changeStudyWhereTheAccountSomehowDoesNotExist() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
