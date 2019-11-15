@@ -1281,7 +1281,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     // This would not appear to be logically possible, but to avoid a potention NPE exception
-    // and a 500 error, check this.
+    // and a 500 error, so we check this.
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
     public void changeStudyWhereTheAccountSomehowDoesNotExist() throws Exception {

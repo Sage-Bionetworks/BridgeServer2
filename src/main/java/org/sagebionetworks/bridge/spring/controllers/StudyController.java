@@ -181,7 +181,7 @@ public class StudyController extends BaseController {
         List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
         Stream<Study> stream = studyService.getStudies().stream();
 
-        // In our current study permissions model is that an admin in the API study is a 
+        // In our current study permissions model, an admin in the API study is a 
         // "cross-study admin" and can see all studies and can switch between all studies, 
         // so check for this condition.
         if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {

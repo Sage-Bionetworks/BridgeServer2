@@ -1815,6 +1815,12 @@ public class HibernateAccountDaoTest {
         Map<String,Object> params = paramCaptor.getValue();
         assertEquals(params.get("synapseUserId"), SYNAPSE_USER_ID);
     }
+    
+    @Test
+    public void getStudyIdsForUserNoSynapseUserId() throws Exception {
+        List<String> results = dao.getStudyIdsForUser(null);
+        assertTrue(results.isEmpty());
+    }
 
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);

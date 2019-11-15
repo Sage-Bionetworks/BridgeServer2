@@ -259,7 +259,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
         assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
-        assertEquals(updatedContext.getAccountId(), ACCOUNT_ID);
+        assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
@@ -339,7 +339,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
         assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
-        assertEquals(updatedContext.getAccountId(), ACCOUNT_ID);
+        assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
     }
@@ -948,8 +948,8 @@ public class AuthenticationServiceMockTest {
         // This specifically has to be a mock to easily mock the editAccount method on the DAO.
         Account mockAccount = mock(Account.class);
 
-        CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES)
-                .withUserId(USER_ID).withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
+                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
         TestUtils.mockEditAccount(accountDao, mockAccount);
         doReturn(mockAccount).when(accountDao).getAccount(any());
         

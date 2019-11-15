@@ -25,9 +25,8 @@ public interface AccountDao {
     int MIGRATION_VERSION = 1;
     
     /**
-     * Search for all accounts across studies that have the email or Synapse user ID in common, 
-     * and return a list of the study IDs where these accounts are found. The email should be 
-     * a verified email address.
+     * Search for all accounts across studies that have the same Synapse user ID in common, 
+     * and return a list of the study IDs where these accounts are found.
      * @param synapseUserId
      * @return list of study identifiers
      */

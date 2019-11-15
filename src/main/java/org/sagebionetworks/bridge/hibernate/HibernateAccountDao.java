@@ -339,8 +339,8 @@ public class HibernateAccountDao implements AccountDao {
         
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            // Now that we allow study switching, we must enforce study membership here
-            // as well as in the queries below.
+            // Now that we allow study switching, we must enforce study membership here in the getById()
+            // method as well as in the queries below.
             Account account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
             if (account != null && !account.getStudyId().equals(accountId.getStudyId())) {
                 return null;

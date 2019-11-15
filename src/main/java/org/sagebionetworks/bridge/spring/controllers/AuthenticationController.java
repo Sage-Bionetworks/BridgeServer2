@@ -320,7 +320,7 @@ public class AuthenticationController extends BaseController {
         List<String> studyIds = accountDao.getStudyIdsForUser(participant.getSynapseUserId());
         
         // Cross study administrator can switch to any study. Same implementation as UserManagementController
-        // because clients cannot tell who is a cross-study administration
+        // because clients cannot tell who is a cross-study administrator once they've switched studies.
         if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
             sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
             return UserSessionInfo.toJSON(session);
