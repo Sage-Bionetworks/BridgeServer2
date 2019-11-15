@@ -12,7 +12,6 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -54,7 +53,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -1806,17 +1804,15 @@ public class HibernateAccountDaoTest {
         hibernateAccount.setSynapseUserId(SYNAPSE_USER_ID);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
         
-        List<String> studyIds = ImmutableList.of("studyA", "studyB");
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(String.class))).thenReturn(studyIds);
+        List<String> queryResult = ImmutableList.of("studyA", "studyB");
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(String.class))).thenReturn(queryResult);
         
-        List<String> results = dao.getStudyIdsForUser(TEST_STUDY, ACCOUNT_ID);
-        assertEquals(results, studyIds);
+        List<String> results = dao.getStudyIdsForUser(SYNAPSE_USER_ID);
+        assertEquals(results, queryResult);
         
-        verify(mockHibernateHelper).queryGet(eq("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE email = :email OR synapseUserId = :synapseUserId"), 
-                paramCaptor.capture(), eq(null), eq(null), eq(String.class));
-        
+        verify(mockHibernateHelper).queryGet(eq("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE "+
+                "synapseUserId = :synapseUserId"), paramCaptor.capture(), eq(null), eq(null), eq(String.class));
         Map<String,Object> params = paramCaptor.getValue();
-        assertEquals(params.get("email"), EMAIL);
         assertEquals(params.get("synapseUserId"), SYNAPSE_USER_ID);
     }
 

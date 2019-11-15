@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toList;
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -15,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
@@ -175,16 +177,20 @@ public class StudyController extends BaseController {
     @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getStudyMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
-        
-        Study study = studyService.getStudy(session.getStudyIdentifier());
-        List<String> studyIds = accountDao.getStudyIdsForUser(study, session.getId());
 
-        List<Study> studies = studyService.getStudies().stream()
-            .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()))
-            .sorted(STUDY_COMPARATOR)
-            .collect(toList());
-        ResourceList<Study> summaries = new ResourceList<Study>(studies);
-        return STUDY_LIST_WRITER.writeValueAsString(summaries);
+        List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
+        Stream<Study> stream = studyService.getStudies().stream();
+
+        // In our current study permissions model is that an admin in the API study is a 
+        // "cross-study admin" and can see all studies and can switch between all studies, 
+        // so check for this condition.
+        if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
+            stream = stream.filter(s -> s.isActive());
+        } else {
+            stream = stream.filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
+        }
+        List<Study> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
+        return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies));
     }
 
     @PostMapping("/v3/studies")

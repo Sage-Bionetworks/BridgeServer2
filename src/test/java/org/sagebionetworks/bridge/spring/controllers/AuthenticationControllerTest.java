@@ -1,9 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -21,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -29,6 +35,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -47,6 +54,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -61,6 +69,7 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -68,6 +77,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -77,6 +87,7 @@ import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.RequestInfoService;
+import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 public class AuthenticationControllerTest extends Mockito {
     private static final String USER_AGENT_STRING = "App/14 (Unknown iPhone; iOS/9.0.2) BridgeSDK/4";
@@ -113,6 +124,9 @@ public class AuthenticationControllerTest extends Mockito {
     AccountWorkflowService mockWorkflowService;
     
     @Mock
+    AccountDao mockAccountDao;
+    
+    @Mock
     StudyService mockStudyService;
     
     @Mock
@@ -120,6 +134,9 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Mock
     RequestInfoService mockRequestInfoService;
+    
+    @Mock
+    SessionUpdateService mockSessionUpdateService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -193,6 +210,12 @@ public class AuthenticationControllerTest extends Mockito {
         BridgeUtils.setRequestContext(null);
     }
 
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(AuthenticationController.class);
+        assertPost(AuthenticationController.class, "oauthSignIn");
+    }
+    
     @Test
     public void requestEmailSignIn() throws Exception {
         // Mock.
@@ -1130,7 +1153,21 @@ public class AuthenticationControllerTest extends Mockito {
         }
         verifyCommonLoggingForSignIns();
     }
-
+    
+    @Test
+    public void oauthSignIn() throws Exception {
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
+        mockRequestBody(mockRequest, token);
+        
+        when(mockAuthService.oauthSignIn(any(), any())).thenReturn(userSession);
+        
+        JsonNode node = controller.oauthSignIn();
+        assertEquals(node.get("sessionToken").textValue(), TEST_SESSION_TOKEN);
+        
+        verifyCommonLoggingForSignIns();
+        verify(mockAuthService).oauthSignIn(any(), eq(token));
+    }
+    
     @Test
     public void unconsentedReauthSetsMetrics() throws Exception {
         mockRequestBody(mockRequest, REAUTH_REQUEST);
@@ -1148,30 +1185,121 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void changeStudy() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
-        userSession.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
+            .thenReturn(ImmutableList.of("my-new-study"));
+        
+        Account account = Account.create();
+        AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        Study newStudy = Study.create();
+        newStudy.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
 
         UserSession session = new UserSession();
-        session.setStudyIdentifier(new StudyIdentifierImpl("my-new-study"));
         session.setSessionToken("new-session-token");
-        
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(study);
-        when(mockAuthService.getSession(eq(study), any())).thenReturn(session);
+        when(mockAuthService.getSessionFromAccount(eq(newStudy), any(), eq(account))).thenReturn(session);
         
         JsonNode node = controller.changeStudy();
         assertEquals(node.get("sessionToken").textValue(), "new-session-token");
+
+        InOrder inOrder = Mockito.inOrder(mockAuthService, mockCacheProvider);
+        inOrder.verify(mockAuthService).signOut(userSession);
+        inOrder.verify(mockAuthService).getSessionFromAccount(eq(newStudy), any(), eq(account));
+        inOrder.verify(mockCacheProvider).setUserSession(session);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp=".*Only administrative accounts can change studies.*")
+            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
     public void changeStudyNotAuthorized() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         controller.changeStudy();
-    }    
+    }
 
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp=".*Account has not been assigned a Synapse user ID.*")
+    public void changeStudyNotAssignedSynapseId() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        controller.changeStudy();
+    }
+    
+    @Test
+    public void changeStudySupportsCrossStudyAdmin() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withRoles(ImmutableSet.of(ADMIN)).build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
+            .thenReturn(ImmutableList.of("my-new-study", TEST_STUDY_IDENTIFIER));
+        
+        Account account = Account.create();
+        AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        
+        Study newStudy = Study.create();
+        newStudy.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+
+        JsonNode node = controller.changeStudy();
+        // Note that we reuse the session here, as we did in an initial implementation for cross-study
+        // administrators.
+        assertEquals(node.get("sessionToken").textValue(), "session-token");
+        
+        verify(mockSessionUpdateService).updateStudy(userSession, newStudy.getStudyIdentifier());
+        
+        verify(mockAuthService, never()).signOut(any());
+        verify(mockAuthService, never()).getSessionFromAccount(any(), any(), any());
+        verify(mockCacheProvider, never()).setUserSession(any());
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
+    public void changeStudyUserHasNoAccessToStudy() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
+            .thenReturn(ImmutableList.of(TEST_STUDY_IDENTIFIER));
+        
+        Study newStudy = Study.create();
+        newStudy.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+
+        controller.changeStudy();
+    }
+    
+    // This would not appear to be logically possible, but to avoid a potention NPE exception
+    // and a 500 error, check this.
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp=".*Account does not have access to that study.*")
+    public void changeStudyWhereTheAccountSomehowDoesNotExist() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
+            .thenReturn(ImmutableList.of("my-new-study"));
+        
+        Study newStudy = Study.create();
+        newStudy.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+
+        controller.changeStudy();
+    }
+    
     private void mockResetPasswordRequest() throws Exception {
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
             "','sptoken':'aSpToken','password':'aPassword'}");

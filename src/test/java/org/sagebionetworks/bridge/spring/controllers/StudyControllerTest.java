@@ -6,7 +6,9 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -802,6 +804,11 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void getStudyMemberships() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
         Study studyA = createStudy("Study A", "studyA", false);
@@ -810,7 +817,8 @@ public class StudyControllerTest extends Mockito {
         Study studyD = createStudy("Study D", "studyD", true);
         when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
         
-        when(mockAccountDao.getStudyIdsForUser(any(), eq(USER_ID))).thenReturn(ImmutableList.of("studyA", "studyB", "studyC"));
+        List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
@@ -820,6 +828,37 @@ public class StudyControllerTest extends Mockito {
         assertEquals(node.get(0).get("identifier").textValue(), "studyB");
         assertEquals(node.get(1).get("name").textValue(), "Study C");
         assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+    }
+    
+    @Test
+    public void getStudyMembershipsForCrossStudyAdmin() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
+                .withEmailVerified(true).withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isInRole(ADMIN)).thenReturn(true);
+        
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        Study studyA = createStudy("Study A", "studyA", false);
+        Study studyB = createStudy("Study B", "studyB", true);
+        Study studyC = createStudy("Study C", "studyC", true);
+        Study studyD = createStudy("Study D", "studyD", true);
+        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
+        
+        // This user is only associated to the API study, but they are an admin
+        List<String> list = ImmutableList.of(TEST_STUDY_IDENTIFIER);
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+
+        assertEquals(node.size(), 3);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+        assertEquals(node.get(2).get("name").textValue(), "Study D");
+        assertEquals(node.get(2).get("identifier").textValue(), "studyD");
     }
     
     private Study createStudy(String name, String identifier, boolean active) {

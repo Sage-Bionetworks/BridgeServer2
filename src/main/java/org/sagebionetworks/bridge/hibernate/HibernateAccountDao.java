@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -87,27 +89,15 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     @Override
-    public List<String> getStudyIdsForUser(StudyIdentifier studyId, String userId) {
-        AccountId accountId = AccountId.forId(studyId.getIdentifier(), userId);
-        Account account = getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
+    public List<String> getStudyIdsForUser(String synapseUserId) {
+        if (isBlank(synapseUserId)) {
+            return ImmutableList.of();
         }
-        boolean hasEmail = (account.getEmail() != null && TRUE.equals(account.getEmailVerified()));
-        
-        QueryBuilder builder = new QueryBuilder();
-        builder.append("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE");
-        if (hasEmail) {
-            builder.append("email = :email", "email", account.getEmail());
-        }
-        if (hasEmail && account.getSynapseUserId() != null) {
-            builder.append("OR");
-        }
-        if (account.getSynapseUserId() != null) {
-            builder.append("synapseUserId = :synapseUserId", "synapseUserId", account.getSynapseUserId());
-        }
-        System.out.println(builder.getParameters());
-        return hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), null, null, String.class); 
+        QueryBuilder query = new QueryBuilder();
+        query.append(
+            "SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
+            "synapseUserId", synapseUserId);
+        return hibernateHelper.queryGet(query.getQuery(), query.getParameters(), null, null, String.class);
     }
     
     /**
@@ -349,7 +339,13 @@ public class HibernateAccountDao implements AccountDao {
         
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            // Now that we allow study switching, we must enforce study membership here
+            // as well as in the queries below.
+            Account account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            if (account != null && !account.getStudyId().equals(accountId.getStudyId())) {
+                return null;
+            }
+            return account;
         }
         
         QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);

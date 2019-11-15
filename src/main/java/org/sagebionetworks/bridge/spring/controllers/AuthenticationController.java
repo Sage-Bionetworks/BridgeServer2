@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+
+import java.util.List;
 
 import javax.servlet.http.Cookie;
 
@@ -32,6 +36,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -40,13 +45,15 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @RestController
 public class AuthenticationController extends BaseController {
 
+    private static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";
+    
     private AccountWorkflowService accountWorkflowService;
     
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
         this.accountWorkflowService = accountWorkflowService;
     }
-    
+
     @PostMapping("/v3/auth/email")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestEmailSignIn() { 
@@ -296,23 +303,66 @@ public class AuthenticationController extends BaseController {
     public JsonNode changeStudy() throws Exception {
         UserSession session = getAuthenticatedSession();
         
-        if (session.getParticipant().getRoles().isEmpty()) {
-            throw new UnauthorizedException("Only administrative accounts can change studies.");
+        // To switch studies, the account must be an administrative account with a Synapse User ID
+        StudyParticipant participant = session.getParticipant(); 
+        if (participant.getRoles().isEmpty()) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        } else if (participant.getSynapseUserId() == null) {
+            throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         
-        // The only part of this payload we care about is the study property
+        // Retrieve the desired study
         SignIn signIn = parseJson(SignIn.class);
-        String studyId = signIn.getStudyId();
+        String targetStudyId = signIn.getStudyId();
+        Study targetStudy = studyService.getStudy(targetStudyId);
 
-        // Verify the study exists
-        Study study = studyService.getStudy(studyId);
-        CriteriaContext context = getCriteriaContext(session);
+        // These are the accounts cross-study that are linked through the Synapse User ID
+        List<String> studyIds = accountDao.getStudyIdsForUser(participant.getSynapseUserId());
         
+        // Cross study administrator can switch to any study. Same implementation as UserManagementController
+        // because clients cannot tell who is a cross-study administration
+        if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
+            sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
+            return UserSessionInfo.toJSON(session);
+        }
+        
+        // Otherwise, verify the user has access to this study
+        if (!studyIds.contains(targetStudyId)) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
+        
+        // Make the switch
         authenticationService.signOut(session);
-        UserSession newSession = authenticationService.getSession(study, context);
+        
+        AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
+
+        // RequestContext reqContext = BridgeUtils.getRequestContext();
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withUserId(account.getId())
+            .withStudyIdentifier(targetStudy.getStudyIdentifier())
+            .build();
+        
+        UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);
         cacheProvider.setUserSession(newSession);
         
         return UserSessionInfo.toJSON(newSession);
+    }
+        
+    @PostMapping("/v3/auth/oauth/signIn")
+    public JsonNode oauthSignIn() {
+        OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
+        
+        Study study = studyService.getStudy(token.getStudyId());
+        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        
+        UserSession session = authenticationService.oauthSignIn(context, token);
+        setCookieAndRecordMetrics(session);
+        
+        return UserSessionInfo.toJSON(session);
     }
     
     private Study getStudyOrThrowException(String studyId) {

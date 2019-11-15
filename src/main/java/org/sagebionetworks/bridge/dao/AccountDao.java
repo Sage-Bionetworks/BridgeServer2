@@ -24,7 +24,14 @@ public interface AccountDao {
     
     int MIGRATION_VERSION = 1;
     
-    List<String> getStudyIdsForUser(StudyIdentifier studyId, String userId);
+    /**
+     * Search for all accounts across studies that have the email or Synapse user ID in common, 
+     * and return a list of the study IDs where these accounts are found. The email should be 
+     * a verified email address.
+     * @param synapseUserId
+     * @return list of study identifiers
+     */
+    List<String> getStudyIdsForUser(String synapseUserId);
     
     /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).

@@ -131,7 +131,7 @@ public class OAuthControllerTest extends Mockito {
     public void requestAccessTokenWithAccessToken() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, AUTH_TOKEN);
+        OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, null, AUTH_TOKEN, null);
         mockRequestBody(mockRequest, authToken);
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
