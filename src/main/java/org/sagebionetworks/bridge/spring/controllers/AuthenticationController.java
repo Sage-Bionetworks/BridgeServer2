@@ -8,8 +8,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 
-import java.util.List;
-
 import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -307,8 +304,6 @@ public class AuthenticationController extends BaseController {
         StudyParticipant participant = session.getParticipant(); 
         if (participant.getRoles().isEmpty()) {
             throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
-        } else if (participant.getSynapseUserId() == null) {
-            throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         
         // Retrieve the desired study
@@ -316,30 +311,28 @@ public class AuthenticationController extends BaseController {
         String targetStudyId = signIn.getStudyId();
         Study targetStudy = studyService.getStudy(targetStudyId);
 
-        // These are the accounts cross-study that are linked through the Synapse User ID
-        List<String> studyIds = accountDao.getStudyIdsForUser(participant.getSynapseUserId());
-        
-        // Cross study administrator can switch to any study. Same implementation as UserManagementController
-        // because clients cannot tell who is a cross-study administrator once they've switched studies.
-        if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
-            sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
-            return UserSessionInfo.toJSON(session);
+        // Cross study administrator can switch to any study. Implement this here because clients 
+        // cannot tell who is a cross-study administrator once they've switched studies.
+        if (session.isInRole(ADMIN)) {
+            AccountId adminId = AccountId.forId(API_STUDY_ID_STRING, session.getId());
+            if (accountDao.getAccount(adminId) != null) {
+                sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
+                return UserSessionInfo.toJSON(session);
+            }
         }
-        
         // Otherwise, verify the user has access to this study
-        if (!studyIds.contains(targetStudyId)) {
+        if (participant.getSynapseUserId() == null) {
+            throw new BadRequestException("Account has not been assigned a Synapse user ID");
+        }
+        AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
             throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
         }
         
         // Make the switch
         authenticationService.signOut(session);
         
-        AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
-        Account account = accountDao.getAccount(accountId);
-        if (account == null) {
-            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
-        }
-
         // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withUserId(account.getId())

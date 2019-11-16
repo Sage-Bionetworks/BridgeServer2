@@ -975,6 +975,21 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
+    public void getByIdWrongStudy() throws Exception {
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
+        hibernateAccount.setHealthCode(null);
+        hibernateAccount.setStudyId(TEST_STUDY_IDENTIFIER);
+        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+
+        // execute and validate
+        AccountId wrongStudy = AccountId.forId("wrong-study", ACCOUNT_ID);
+        Account account = dao.getAccount(wrongStudy);
+        assertNull(account);
+        
+        verify(mockHibernateHelper).getById(HibernateAccount.class, wrongStudy.getUnguardedAccountId().getId());
+    }
+    
+    @Test
     public void getByEmailSuccessWithHealthCode() throws Exception {
         String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
                 + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
@@ -1800,10 +1815,6 @@ public class HibernateAccountDaoTest {
     
     @Test
     public void getStudyIdsForUser() throws Exception {
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        hibernateAccount.setSynapseUserId(SYNAPSE_USER_ID);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
-        
         List<String> queryResult = ImmutableList.of("studyA", "studyB");
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(String.class))).thenReturn(queryResult);
         

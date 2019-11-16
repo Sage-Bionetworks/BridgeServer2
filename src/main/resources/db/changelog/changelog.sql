@@ -257,3 +257,7 @@ MODIFY COLUMN `uploadURL` VARCHAR(1024) DEFAULT NULL;
 ALTER TABLE `Accounts`
 ADD COLUMN `synapseUserId` varchar(255) DEFAULT NULL,
 ADD UNIQUE KEY `Accounts-StudyId-SynapseUserId-Index` (`studyId`,`synapseUserId`);
+
+-- changeset bridge:11
+
+CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);

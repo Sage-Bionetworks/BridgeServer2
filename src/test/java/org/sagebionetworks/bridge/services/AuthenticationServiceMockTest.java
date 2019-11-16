@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -1346,6 +1347,15 @@ public class AuthenticationServiceMockTest {
     public void getSession() {
         service.getSession(TOKEN);
         verify(cacheProvider).getUserSession(TOKEN);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp="Account not found.")
+    public void getSessionNotFound() {
+        CriteriaContext context = new CriteriaContext.Builder().withUserId(USER_ID)
+                .withStudyIdentifier(TEST_STUDY).build();        
+        
+        service.getSession(study, context);
     }
     
     @Test

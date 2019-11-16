@@ -183,15 +183,18 @@ public class StudyController extends BaseController {
             throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
         }
         List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
-        Stream<Study> stream = studyService.getStudies().stream();
-
+        
+        Stream<Study> stream = null;
         // In our current study permissions model, an admin in the API study is a 
         // "cross-study admin" and can see all studies and can switch between all studies, 
         // so check for this condition.
         if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
-            stream = stream.filter(s -> s.isActive());
+            stream = studyService.getStudies().stream()
+                .filter(s -> s.isActive());
         } else {
-            stream = stream.filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
+            stream = studyIds.stream()
+                .map(id -> studyService.getStudy(id))
+                .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
         }
         List<Study> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
         return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies));

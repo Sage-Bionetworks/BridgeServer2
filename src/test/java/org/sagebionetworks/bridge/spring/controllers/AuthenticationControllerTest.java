@@ -1187,11 +1187,8 @@ public class AuthenticationControllerTest extends Mockito {
     public void changeStudy() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
-                .withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
+                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
-        
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
-            .thenReturn(ImmutableList.of("my-new-study"));
         
         Account account = Account.create();
         AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
@@ -1236,16 +1233,13 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void changeStudySupportsCrossStudyAdmin() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
-        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
-                .withRoles(ImmutableSet.of(ADMIN)).build());
+        // Note that the cross-study administrator does not have a synapse user ID
+        userSession.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(ADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
-            .thenReturn(ImmutableList.of("my-new-study", TEST_STUDY_IDENTIFIER));
-        
-        Account account = Account.create();
-        AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, TEST_ACCOUNT_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
         
         Study newStudy = Study.create();
         newStudy.setIdentifier("my-new-study");
@@ -1288,11 +1282,8 @@ public class AuthenticationControllerTest extends Mockito {
     public void changeStudyWhereTheAccountSomehowDoesNotExist() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
-                .withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
-        
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
-            .thenReturn(ImmutableList.of("my-new-study"));
         
         Study newStudy = Study.create();
         newStudy.setIdentifier("my-new-study");

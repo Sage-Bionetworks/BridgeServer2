@@ -813,11 +813,10 @@ public class StudyControllerTest extends Mockito {
         when(mockSession.getParticipant()).thenReturn(participant);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
-        Study studyA = createStudy("Study A", "studyA", false);
-        Study studyB = createStudy("Study B", "studyB", true);
-        Study studyC = createStudy("Study C", "studyC", true);
-        Study studyD = createStudy("Study D", "studyD", true);
-        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
+        mockStudy("Study D", "studyD", true);
+        mockStudy("Study C", "studyC", true);
+        mockStudy("Study B", "studyB", true);
+        mockStudy("Study A", "studyA", false);
         
         List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
         when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
@@ -842,10 +841,10 @@ public class StudyControllerTest extends Mockito {
         
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
-        Study studyA = createStudy("Study A", "studyA", false);
-        Study studyB = createStudy("Study B", "studyB", true);
-        Study studyC = createStudy("Study C", "studyC", true);
-        Study studyD = createStudy("Study D", "studyD", true);
+        Study studyD = mockStudy("Study D", "studyD", true);
+        Study studyC = mockStudy("Study C", "studyC", true);
+        Study studyB = mockStudy("Study B", "studyB", true);
+        Study studyA = mockStudy("Study A", "studyA", false);
         when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
         
         // This user is only associated to the API study, but they are an admin
@@ -877,11 +876,12 @@ public class StudyControllerTest extends Mockito {
         controller.getStudyMemberships();
     }
     
-    private Study createStudy(String name, String identifier, boolean active) {
+    private Study mockStudy(String name, String identifier, boolean active) {
         Study study = Study.create();
         study.setName(name);
         study.setIdentifier(identifier);
         study.setActive(active);
+        when(mockStudyService.getStudy(identifier)).thenReturn(study);
         return study;
     }
     
