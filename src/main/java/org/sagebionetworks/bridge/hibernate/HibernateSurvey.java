@@ -2,29 +2,42 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinColumns;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyId;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
+import org.sagebionetworks.bridge.models.surveys.SurveySQL;
 
 import com.google.common.collect.ImmutableList;
 
 /** MySQL implementation of surveys via Hibernate. */
 @Entity
 @Table(name = "Surveys")
-public class HibernateSurvey implements Survey {
+@IdClass(SurveyId.class)
+public class HibernateSurvey implements SurveySQL {
     
     private String studyKey;
+    @Id
     private String guid;
+    @Id
     private long createdOn;
     private long modifiedOn;
     private String copyrightNotice;
@@ -36,12 +49,38 @@ public class HibernateSurvey implements Survey {
     private boolean published;
     private boolean deleted;
     private Integer schemaRevision;
-    private List<SurveyElement> elements;
+    
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, 
+    fetch = FetchType.EAGER, targetEntity=HibernateSurveyElement.class)
+    @JoinColumns({
+       @JoinColumn(name = "surveyGuid", referencedColumnName = "guid"),
+       @JoinColumn(name = "createdOn", referencedColumnName = "createdOn")
+
+    })
+//    @OnDelete(action=OnDeleteAction.CASCADE)
+    private List<HibernateSurveyElement> elements;
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
      */
     public HibernateSurvey() {}
+    
+    public HibernateSurvey(SurveySQL survey) {
+        this.studyKey = survey.getStudyIdentifier();
+        this.guid = survey.getGuid();
+        this.createdOn = survey.getCreatedOn();
+        this.modifiedOn = survey.getModifiedOn();
+        this.copyrightNotice = survey.getCopyrightNotice();
+        this.moduleId = survey.getModuleId();
+        this.moduleVersion = survey.getModuleVersion();
+        this.version = survey.getVersion();
+        this.name = survey.getName();
+        this.identifier = survey.getIdentifier();
+        this.published = survey.isPublished();
+        this.deleted = survey.isDeleted();
+        this.schemaRevision = survey.getSchemaRevision();
+        this.elements = (List<HibernateSurveyElement>) survey.getElements();
+    }
     
     /** Study ID the survey lives in. */
     public String getStudyIdentifier() {
@@ -178,27 +217,20 @@ public class HibernateSurvey implements Survey {
     
     /** An ordered collection of SurveyElement sub-types (in the order they will 
      * appear in the survey). */
-    @CollectionTable(name = "SurveyElements", joinColumns = @JoinColumn(name = "surveyGuid", referencedColumnName = "guid"))
-    @Column(name = "elements")
-    @ElementCollection(fetch = FetchType.EAGER)
-    public List<SurveyElement> getElements() {
+//    @CollectionTable(name = "SurveyElements", joinColumns = @JoinColumn(name = "surveyGuid", referencedColumnName = "guid"))
+//    @Column(name = "elements")
+//    @OrderColumn(name="order", insertable=true, updatable=true)
+//    @ElementCollection(fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "surveyGuid", cascade = CascadeType.ALL, orphanRemoval = true, 
+    fetch = FetchType.EAGER, targetEntity=HibernateSurveyElement.class)
+    @OnDelete(action=OnDeleteAction.CASCADE)
+    public List<HibernateSurveyElement> getElements() {
         return elements;
     }
     
     /** @see #getElements */
-    public void setElements(List<SurveyElement> elements) {
+    public void setElements(List<HibernateSurveyElement> elements) {
         this.elements = elements;
-    }
-    
-    /** */
-    public List<SurveyQuestion> getUnmodifiableQuestionList() {
-        ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<>();
-        for (SurveyElement element : elements) {
-            if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
-                builder.add((SurveyQuestion) element);
-            }
-        }
-        return builder.build();
     }
     
     public boolean keysEqual(GuidCreatedOnVersionHolder keys) {

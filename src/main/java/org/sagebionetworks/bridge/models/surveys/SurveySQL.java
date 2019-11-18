@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.models.surveys;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.hibernate.HibernateSurvey;
+import org.sagebionetworks.bridge.hibernate.HibernateSurveyElement;
+import org.sagebionetworks.bridge.hibernate.HibernateSurveyQuestion;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -10,12 +12,11 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 
-@JsonDeserialize(as=DynamoSurvey.class)
 @BridgeTypeName("Survey")
-public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
-    /** Convenience method for creating an instance of Survey using a concrete implementation. */
-    static Survey create() {
-        return new DynamoSurvey();
+@JsonDeserialize(as=HibernateSurvey.class)
+public interface SurveySQL extends GuidCreatedOnVersionHolder, BridgeEntity  {
+    static HibernateSurvey create() {
+        return new HibernateSurvey();
     }
 
     String getStudyIdentifier();
@@ -68,18 +69,18 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
 
     /** @see #getSchemaRevision */
     void setSchemaRevision(Integer schemaRevision);
-
-    List<SurveyElement> getElements();
-    void setElements(List<SurveyElement> elements);
     
-    default List<SurveyQuestion> getUnmodifiableQuestionList() {
-        ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<>();
-        for (SurveyElement element : getElements()) {
+    List<HibernateSurveyElement> getElements();
+    void setElements(List<HibernateSurveyElement> elements);
+    
+    default List<HibernateSurveyQuestion> getUnmodifiableQuestionList() {
+        ImmutableList.Builder<HibernateSurveyQuestion> builder = new ImmutableList.Builder<>();
+        for (SurveyElementSQL element : getElements()) {
             if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
-                builder.add((SurveyQuestion) element);
+                builder.add((HibernateSurveyQuestion) element);
             }
         }
+        
         return builder.build();
     }
-    
 }

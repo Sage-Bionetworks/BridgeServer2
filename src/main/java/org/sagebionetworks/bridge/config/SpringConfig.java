@@ -99,6 +99,8 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateSurvey;
+import org.sagebionetworks.bridge.hibernate.HibernateSurveyElement;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
@@ -107,6 +109,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
+import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -650,6 +653,8 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(RequestInfo.class);
         metadataSources.addAnnotatedClass(FileMetadata.class);
         metadataSources.addAnnotatedClass(FileRevision.class);
+        metadataSources.addAnnotatedClass(HibernateSurvey.class);
+        metadataSources.addAnnotatedClass(HibernateSurveyElement.class);
         
         return metadataSources.buildMetadata().buildSessionFactory();
     }
