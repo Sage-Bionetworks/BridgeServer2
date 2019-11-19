@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableList;
 @Entity
 @Table(name = "Surveys")
 @IdClass(SurveyId.class)
-public class HibernateSurvey implements SurveySQL {
+public class HibernateSurvey implements Survey {
     
     private String studyKey;
     @Id
@@ -57,15 +57,14 @@ public class HibernateSurvey implements SurveySQL {
        @JoinColumn(name = "createdOn", referencedColumnName = "createdOn")
 
     })
-//    @OnDelete(action=OnDeleteAction.CASCADE)
-    private List<HibernateSurveyElement> elements;
+    private List<SurveyElement> elements;
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
      */
     public HibernateSurvey() {}
     
-    public HibernateSurvey(SurveySQL survey) {
+    public HibernateSurvey(Survey survey) {
         this.studyKey = survey.getStudyIdentifier();
         this.guid = survey.getGuid();
         this.createdOn = survey.getCreatedOn();
@@ -79,7 +78,7 @@ public class HibernateSurvey implements SurveySQL {
         this.published = survey.isPublished();
         this.deleted = survey.isDeleted();
         this.schemaRevision = survey.getSchemaRevision();
-        this.elements = (List<HibernateSurveyElement>) survey.getElements();
+        this.elements = survey.getElements();
     }
     
     /** Study ID the survey lives in. */
@@ -217,23 +216,15 @@ public class HibernateSurvey implements SurveySQL {
     
     /** An ordered collection of SurveyElement sub-types (in the order they will 
      * appear in the survey). */
-//    @CollectionTable(name = "SurveyElements", joinColumns = @JoinColumn(name = "surveyGuid", referencedColumnName = "guid"))
-//    @Column(name = "elements")
-//    @OrderColumn(name="order", insertable=true, updatable=true)
-//    @ElementCollection(fetch = FetchType.EAGER)
     @OneToMany(mappedBy = "surveyGuid", cascade = CascadeType.ALL, orphanRemoval = true, 
     fetch = FetchType.EAGER, targetEntity=HibernateSurveyElement.class)
     @OnDelete(action=OnDeleteAction.CASCADE)
-    public List<HibernateSurveyElement> getElements() {
+    public List<SurveyElement> getElements() {
         return elements;
     }
     
     /** @see #getElements */
-    public void setElements(List<HibernateSurveyElement> elements) {
+    public void setElements(List<SurveyElement> elements) {
         this.elements = elements;
-    }
-    
-    public boolean keysEqual(GuidCreatedOnVersionHolder keys) {
-        return (keys != null && keys.getGuid().equals(guid) && keys.getCreatedOn() == createdOn);
     }
 }

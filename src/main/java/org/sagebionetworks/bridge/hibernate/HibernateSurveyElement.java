@@ -15,26 +15,14 @@ import org.sagebionetworks.bridge.models.surveys.SurveyElementSQL;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
-//@Embeddable
 @Entity
 @Table(name = "SurveyElements")
-public class HibernateSurveyElement implements SurveyElementSQL {
-    String CONSTRAINTS_PROPERTY = "constraints";
-    String FIRE_EVENT_PROPERTY = "fireEvent";
-    String GUID_PROPERTY = "guid";
-    String IDENTIFIER_PROPERTY = "identifier";
-    String IMAGE_PROPERTY = "image";
-    String PROMPT_DETAIL_PROPERTY = "promptDetail";
-    String PROMPT_PROPERTY = "prompt";
-    String BEFORE_RULES_PROPERTY = "beforeRules";
-    String AFTER_RULES_PROPERTY = "afterRules";
-    String TITLE_PROPERTY = "title";
-    String TYPE_PROPERTY = "type";
-    String UI_HINTS_PROPERTY = "uiHint";
+public class HibernateSurveyElement implements SurveyElement {
     
     @Id
-    private String guid;    
+    private String guid;
     private String surveyGuid;
     private String identifier;
     private String type;
@@ -45,12 +33,12 @@ public class HibernateSurveyElement implements SurveyElementSQL {
     private JsonNode data;
     
     @Column(columnDefinition = "mediumtext", name = "beforeRules", nullable = true)
-    @Convert(converter = JsonNodeAttributeConverter.class)
-    private JsonNode beforeRules;
+    @Convert(converter = SurveyRuleListConverter.class)
+    private List<SurveyRule> beforeRules;
     
     @Column(columnDefinition = "mediumtext", name = "afterRules", nullable = true)
-    @Convert(converter = JsonNodeAttributeConverter.class)
-    private JsonNode afterRules;
+    @Convert(converter = SurveyRuleListConverter.class)
+    private List<SurveyRule> afterRules;
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
@@ -99,17 +87,17 @@ public class HibernateSurveyElement implements SurveyElementSQL {
         this.data = data;
     }
     
-    public JsonNode getBeforeRules() {
-        return beforeRules;
+    public List<SurveyRule> getBeforeRules() {
+        return (this.beforeRules == null) ? null : ImmutableList.copyOf(this.beforeRules);
     }
-    public void setBeforeRules(JsonNode beforeRules) {
+    public void setBeforeRules(List<SurveyRule> beforeRules) {
         this.beforeRules = beforeRules;
     }
     
-    public JsonNode getAfterRules() {
-        return afterRules;
+    public List<SurveyRule> getAfterRules() {
+        return (this.afterRules == null) ? null : ImmutableList.copyOf(this.afterRules);
     }
-    public void setAfterRules(JsonNode afterRules) {
+    public void setAfterRules(List<SurveyRule> afterRules) {
         this.afterRules = afterRules;
     }
 }

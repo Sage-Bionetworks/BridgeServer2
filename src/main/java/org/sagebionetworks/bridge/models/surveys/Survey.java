@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.hibernate.HibernateSurvey;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -17,7 +18,11 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     static Survey create() {
         return new DynamoSurvey();
     }
-
+    
+    static Survey createHibernate() {
+        return new HibernateSurvey();
+    }
+    
     String getStudyIdentifier();
     void setStudyIdentifier(String studyIdentifier);
     
@@ -82,4 +87,7 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
         return builder.build();
     }
     
+    default boolean keysEqual(GuidCreatedOnVersionHolder keys) {
+        return (keys != null && keys.getGuid().equals(getGuid()) && keys.getCreatedOn() == getCreatedOn());
+    }
 }
