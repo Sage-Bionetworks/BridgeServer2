@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.models.surveys.SurveyElementConstants.S
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyInfoScreen;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurveyQuestion;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.hibernate.HibernateSurveyInfoScreen;
+import org.sagebionetworks.bridge.hibernate.HibernateSurveyQuestion;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +34,16 @@ public class SurveyElementFactory {
             return new DynamoSurveyQuestion(element);
         } else if (element.getType().equals(SURVEY_INFO_SCREEN_TYPE)) {
             return new DynamoSurveyInfoScreen(element);
+        } else {
+            throw new InvalidEntityException("Survey element type '"+element.getType()+"' not recognized.");
+        }
+    }
+    
+    public static SurveyElement fromHibernateEntity(SurveyElement element) {
+        if (element.getType().equals(SURVEY_QUESTION_TYPE)) {
+            return new HibernateSurveyQuestion(element);
+        } else if (element.getType().equals(SURVEY_INFO_SCREEN_TYPE)) {
+            return new HibernateSurveyInfoScreen(element);
         } else {
             throw new InvalidEntityException("Survey element type '"+element.getType()+"' not recognized.");
         }
