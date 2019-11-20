@@ -74,7 +74,7 @@ public class DynamoSurveyQuestionTest {
         question.setConstraints(c);
         
         String string = BridgeObjectMapper.get().writeValueAsString(question);
-        assertEquals(string, "{\"surveyCompoundKey\":\"AAA:1444471810000\",\"guid\":\"AAA\",\"identifier\":\"identifier\",\"type\":\"type\",\"prompt\":\"Prompt\",\"promptDetail\":\"Prompt Detail\",\"fireEvent\":false,\"constraints\":{\"rules\":[],\"dataType\":\"integer\",\"unit\":\"days\",\"minValue\":2.0,\"maxValue\":6.0,\"step\":2.0,\"type\":\"IntegerConstraints\"},\"uiHint\":\"checkbox\"}");
+        assertEquals(string, "{\"surveyCompoundKey\":\"AAA:1444471810000\",\"guid\":\"AAA\",\"identifier\":\"identifier\",\"type\":\"type\",\"prompt\":\"Prompt\",\"promptDetail\":\"Prompt Detail\",\"fireEvent\":false,\"constraints\":{\"rules\":[],\"dataType\":\"integer\",\"required\":false,\"unit\":\"days\",\"minValue\":2.0,\"maxValue\":6.0,\"step\":2.0,\"type\":\"IntegerConstraints\"},\"uiHint\":\"checkbox\"}");
 
         SurveyQuestion question2 = (SurveyQuestion)SurveyQuestion.fromJson(BridgeObjectMapper.get().readTree(string));
         assertEquals(question2.getPromptDetail(), question.getPromptDetail());
