@@ -19,10 +19,6 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
         return new DynamoSurvey();
     }
     
-    static Survey createHibernate() {
-        return new HibernateSurvey();
-    }
-    
     String getStudyIdentifier();
     void setStudyIdentifier(String studyIdentifier);
     

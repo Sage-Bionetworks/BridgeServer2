@@ -4,29 +4,28 @@ import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementSQL;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 @Entity
 @Table(name = "SurveyElements")
 public class HibernateSurveyElement implements SurveyElement {
-    
     @Id
     private String guid;
     private String surveyGuid;
     private String identifier;
     private String type;
     private int order;
+    @JsonIgnore
+    private String surveyCompoundKey;
     
     @Column(columnDefinition = "mediumtext", name = "data", nullable = true)
     @Convert(converter = JsonNodeAttributeConverter.class)
@@ -99,5 +98,17 @@ public class HibernateSurveyElement implements SurveyElement {
     }
     public void setAfterRules(List<SurveyRule> afterRules) {
         this.afterRules = afterRules;
+    }
+    
+    public String getSurveyCompoundKey() {
+        return surveyCompoundKey;
+    }
+    
+    public void setSurveyCompoundKey(String surveyCompoundKey) {
+        this.surveyCompoundKey = surveyCompoundKey;
+    }
+    
+    public void setSurveyKeyComponents(String surveyGuid, long createdOn) {
+        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(createdOn);
     }
 }

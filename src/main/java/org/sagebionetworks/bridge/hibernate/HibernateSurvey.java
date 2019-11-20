@@ -3,9 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import java.util.List;
 
 import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -13,20 +10,14 @@ import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import javax.persistence.OneToMany;
-import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyId;
-import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
-import org.sagebionetworks.bridge.models.surveys.SurveySQL;
-
-import com.google.common.collect.ImmutableList;
 
 /** MySQL implementation of surveys via Hibernate. */
 @Entity
@@ -78,7 +69,7 @@ public class HibernateSurvey implements Survey {
         this.published = survey.isPublished();
         this.deleted = survey.isDeleted();
         this.schemaRevision = survey.getSchemaRevision();
-        this.elements = survey.getElements();
+        this.elements = SurveyElementFactory.fromElementList(survey.getElements());
     }
     
     /** Study ID the survey lives in. */

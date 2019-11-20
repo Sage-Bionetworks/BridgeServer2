@@ -3,14 +3,8 @@ package org.sagebionetworks.bridge.hibernate;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
-import org.sagebionetworks.bridge.models.surveys.SurveyElementSQL;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
-import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreenSQL;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -55,7 +49,6 @@ public class HibernateSurveyInfoScreen extends HibernateSurveyElement implements
     }
 
     @Override
-    @DynamoDBIgnore
     public String getPromptDetail() {
         return promptDetail;
     }
@@ -66,7 +59,6 @@ public class HibernateSurveyInfoScreen extends HibernateSurveyElement implements
     }
     
     @Override
-    @DynamoDBIgnore
     public Image getImage() {
         return image;
     }
