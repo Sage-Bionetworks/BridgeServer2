@@ -71,6 +71,14 @@ public class UserManagementController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
+    /**
+     * This turned out to be useful... so useful we're opening it up to all administrative
+     * users.
+     * 
+     * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
+     * @throws Exception
+     */
+    @Deprecated
     @PostMapping("/v3/auth/admin/study")
     public JsonNode changeStudyForAdmin() throws Exception {
         UserSession session = getAuthenticatedSession(ADMIN);

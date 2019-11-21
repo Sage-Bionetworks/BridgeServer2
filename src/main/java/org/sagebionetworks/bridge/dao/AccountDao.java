@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -22,6 +23,14 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 public interface AccountDao {
     
     int MIGRATION_VERSION = 1;
+    
+    /**
+     * Search for all accounts across studies that have the same Synapse user ID in common, 
+     * and return a list of the study IDs where these accounts are found.
+     * @param synapseUserId
+     * @return list of study identifiers
+     */
+    List<String> getStudyIdsForUser(String synapseUserId);
     
     /**
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).

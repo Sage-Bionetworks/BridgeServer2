@@ -1,9 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import javax.servlet.http.Cookie;
 
@@ -293,6 +296,55 @@ public class AuthenticationController extends BaseController {
         return new StatusMessage("Password has been changed.");
     }
     
+    @PostMapping("/v3/auth/study")
+    public JsonNode changeStudy() throws Exception {
+        UserSession session = getAuthenticatedSession();
+        
+        // To switch studies, the account must be an administrative account with a Synapse User ID
+        StudyParticipant participant = session.getParticipant(); 
+        if (participant.getRoles().isEmpty()) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
+        
+        // Retrieve the desired study
+        SignIn signIn = parseJson(SignIn.class);
+        String targetStudyId = signIn.getStudyId();
+        Study targetStudy = studyService.getStudy(targetStudyId);
+
+        // Cross study administrator can switch to any study. Implement this here because clients 
+        // cannot tell who is a cross-study administrator once they've switched studies.
+        if (session.isInRole(ADMIN)) {
+            AccountId adminId = AccountId.forId(API_STUDY_ID_STRING, session.getId());
+            if (accountDao.getAccount(adminId) != null) {
+                sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
+                return UserSessionInfo.toJSON(session);
+            }
+        }
+        // Otherwise, verify the user has access to this study
+        if (participant.getSynapseUserId() == null) {
+            throw new BadRequestException("Account has not been assigned a Synapse user ID");
+        }
+        AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
+        Account account = accountDao.getAccount(accountId);
+        if (account == null) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
+        
+        // Make the switch
+        authenticationService.signOut(session);
+        
+        // RequestContext reqContext = BridgeUtils.getRequestContext();
+        CriteriaContext context = new CriteriaContext.Builder()
+            .withUserId(account.getId())
+            .withStudyIdentifier(targetStudy.getStudyIdentifier())
+            .build();
+        
+        UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);
+        cacheProvider.setUserSession(newSession);
+        
+        return UserSessionInfo.toJSON(newSession);
+    }
+        
     @PostMapping("/v3/auth/oauth/signIn")
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
@@ -305,7 +357,7 @@ public class AuthenticationController extends BaseController {
         
         return UserSessionInfo.toJSON(session);
     }
-
+    
     private Study getStudyOrThrowException(String studyId) {
         Study study = studyService.getStudy(studyId);
         verifySupportedVersionOrThrowException(study);

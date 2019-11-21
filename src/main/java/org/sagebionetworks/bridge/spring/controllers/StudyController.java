@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.util.stream.Collectors.toList;
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.studies.Study.STUDY_LIST_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.Arrays;
@@ -13,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
@@ -150,7 +155,8 @@ public class StudyController extends BaseController {
     
     @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllStudies(@RequestParam(required = false) String format,
-            @RequestParam(required = false) String summary) throws Exception {
+            @RequestParam(required = false) String summary) throws Exception {        
+        
         List<Study> studies = studyService.getStudies();
         if ("summary".equals(format) || "true".equals(summary)) {
             // then only return active study as summary
@@ -159,15 +165,39 @@ public class StudyController extends BaseController {
             Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
             ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
                     .withRequestParam("summary", true);
-            return Study.STUDY_LIST_WRITER.writeValueAsString(summaries);
+            return STUDY_LIST_WRITER.writeValueAsString(summaries);  
         }
         UserSession session = getAuthenticatedSession(ADMIN);
-        
         verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
 
         // otherwise, return all studies including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
                 new ResourceList<>(studies).withRequestParam("summary", false));
+    }
+    
+    @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getStudyMemberships() throws Exception {   
+        UserSession session = getAuthenticatedSession();
+        
+        if (session.getParticipant().getRoles().isEmpty()) {
+            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+        }
+        List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
+        
+        Stream<Study> stream = null;
+        // In our current study permissions model, an admin in the API study is a 
+        // "cross-study admin" and can see all studies and can switch between all studies, 
+        // so check for this condition.
+        if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
+            stream = studyService.getStudies().stream()
+                .filter(s -> s.isActive());
+        } else {
+            stream = studyIds.stream()
+                .map(id -> studyService.getStudy(id))
+                .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
+        }
+        List<Study> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
+        return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies));
     }
 
     @PostMapping("/v3/studies")

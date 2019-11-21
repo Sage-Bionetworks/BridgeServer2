@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -184,6 +187,7 @@ public class StudyControllerTest extends Mockito {
         assertPost(StudyController.class, "verifySenderEmail");
         assertGet(StudyController.class, "getUploads");
         assertGet(StudyController.class, "getUploadsForStudy");
+        assertGet(StudyController.class, "getStudyMemberships");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -797,6 +801,88 @@ public class StudyControllerTest extends Mockito {
         controller.deleteStudy("delete-study", true);
         
         verify(mockStudyService).deleteStudy("delete-study", Boolean.TRUE);
+    }
+    
+    @Test
+    public void getStudyMemberships() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withRoles(ImmutableSet.of(DEVELOPER))
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        mockStudy("Study D", "studyD", true);
+        mockStudy("Study C", "studyC", true);
+        mockStudy("Study B", "studyB", true);
+        mockStudy("Study A", "studyA", false);
+        
+        List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+        
+        assertEquals(node.size(), 2);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+    }
+    
+    @Test
+    public void getStudyMembershipsForCrossStudyAdmin() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
+                .withRoles(ImmutableSet.of(ADMIN)).withEmailVerified(true)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isInRole(ADMIN)).thenReturn(true);
+        
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        Study studyD = mockStudy("Study D", "studyD", true);
+        Study studyC = mockStudy("Study C", "studyC", true);
+        Study studyB = mockStudy("Study B", "studyB", true);
+        Study studyA = mockStudy("Study A", "studyA", false);
+        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
+        
+        // This user is only associated to the API study, but they are an admin
+        List<String> list = ImmutableList.of(TEST_STUDY_IDENTIFIER);
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+
+        assertEquals(node.size(), 3);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+        assertEquals(node.get(2).get("name").textValue(), "Study D");
+        assertEquals(node.get(2).get("identifier").textValue(), "studyD");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
+    public void getStudyMembershipsForNonAdminUsers() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        controller.getStudyMemberships();
+    }
+    
+    private Study mockStudy(String name, String identifier, boolean active) {
+        Study study = Study.create();
+        study.setName(name);
+        study.setIdentifier(identifier);
+        study.setActive(active);
+        when(mockStudyService.getStudy(identifier)).thenReturn(study);
+        return study;
     }
     
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
