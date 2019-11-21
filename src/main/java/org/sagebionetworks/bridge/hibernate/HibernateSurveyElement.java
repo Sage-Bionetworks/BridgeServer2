@@ -11,7 +11,6 @@ import javax.persistence.Table;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
@@ -21,11 +20,10 @@ public class HibernateSurveyElement implements SurveyElement {
     @Id
     private String guid;
     private String surveyGuid;
+    private long createdOn;
     private String identifier;
     private String type;
     private int order;
-    @JsonIgnore
-    private String surveyCompoundKey;
     
     @Column(columnDefinition = "mediumtext", name = "data", nullable = true)
     @Convert(converter = JsonNodeAttributeConverter.class)
@@ -50,7 +48,14 @@ public class HibernateSurveyElement implements SurveyElement {
     public void setSurveyGuid(String surveyGuid) {
         this.surveyGuid = surveyGuid;
     }
-
+    
+    public Long getCreatedOn() {
+        return createdOn;
+    }
+    public void setCreatedOn(Long createdOn) {
+        this.createdOn = createdOn;
+    }
+    
     public String getGuid() {
         return guid;
     }
@@ -101,14 +106,17 @@ public class HibernateSurveyElement implements SurveyElement {
     }
     
     public String getSurveyCompoundKey() {
-        return surveyCompoundKey;
+        return surveyGuid + ":" + Long.toString(createdOn);
     }
     
     public void setSurveyCompoundKey(String surveyCompoundKey) {
-        this.surveyCompoundKey = surveyCompoundKey;
+        if (surveyCompoundKey.contains(":")) {
+            setSurveyKeyComponents(surveyCompoundKey.split(":")[0], Long.valueOf(surveyCompoundKey.split(":")[1]));
+        }
     }
     
     public void setSurveyKeyComponents(String surveyGuid, long createdOn) {
-        this.surveyCompoundKey = surveyGuid + ":" + Long.toString(createdOn);
+        this.surveyGuid = surveyGuid;
+        this.createdOn = createdOn;
     }
 }

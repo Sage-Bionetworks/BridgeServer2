@@ -56,13 +56,7 @@ public class SurveyElementFactory {
     public static List<SurveyElement> fromElementList(List<SurveyElement> elements) {
         ImmutableList.Builder<SurveyElement> builder = new ImmutableList.Builder<>();
         for (SurveyElement element : elements) {
-            if (element.getType().equals(SURVEY_QUESTION_TYPE)) {
-                builder.add(new HibernateSurveyQuestion(element));
-            } else if (element.getType().equals(SURVEY_INFO_SCREEN_TYPE)) {
-                builder.add(new HibernateSurveyInfoScreen(element));
-            } else {
-                throw new InvalidEntityException("Survey element type '"+element.getType()+"' not recognized.");
-            }
+            builder.add(fromHibernateEntity(element));
         }
         return builder.build();
     }
