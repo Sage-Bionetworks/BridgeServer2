@@ -13,24 +13,26 @@ public class SurveyQuestionOptionTest {
 
     @Test
     public void allValues() {
-        SurveyQuestionOption option = new SurveyQuestionOption("test-label", "test-detail", "test-value", DUMMY_IMAGE);
+        SurveyQuestionOption option = new SurveyQuestionOption("test-label", "test-detail", "test-value", DUMMY_IMAGE, true);
         assertEquals(option.getLabel(), "test-label");
         assertEquals(option.getDetail(), "test-detail");
         assertEquals(option.getValue(), "test-value");
         assertEquals(option.getImage(), DUMMY_IMAGE);
-
+        assertTrue(option.isExclusive());
+        
         String optionString = option.toString();
         assertTrue(optionString.contains(option.getLabel()));
         assertTrue(optionString.contains(option.getDetail()));
         assertTrue(optionString.contains(option.getValue()));
         assertTrue(optionString.contains(option.getImage().toString()));
+        assertTrue(optionString.contains("exclusive=true"));
     }
 
     @Test
     public void blankValue() {
         String[] testCaseArr = { null, "", "   " };
         for (String oneTestCase : testCaseArr) {
-            SurveyQuestionOption option = new SurveyQuestionOption("test-label", null, oneTestCase, null);
+            SurveyQuestionOption option = new SurveyQuestionOption("test-label", null, oneTestCase, null, null);
             assertEquals(option.getValue(), "test-label");
         }
     }
@@ -41,9 +43,9 @@ public class SurveyQuestionOptionTest {
     }
 
     @Test
-    public void toStringAllNulls() {
+    public void toStringAllNulls() throws Exception {
         // Make sure toString() doesn't throw if all fields are null.
-        SurveyQuestionOption option = new SurveyQuestionOption(null, null, null, null);
+        SurveyQuestionOption option = new SurveyQuestionOption(null, null, null, null, null);
         assertNotNull(option.toString());
     }
 }
