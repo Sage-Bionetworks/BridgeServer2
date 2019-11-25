@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
@@ -43,8 +42,6 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -253,17 +250,6 @@ public abstract class BaseController {
         
         if (!clientInfo.isSupportedAppVersion(minVersionForOs)) {
             throw new UnsupportedVersionException(clientInfo);
-        }
-    }
-
-    /**
-     * For admin calls, the admin should either be in the API study, or the current target study.
-     */
-    void verifyCrossStudyAdmin(String userId, String errorMessage) {
-        AccountId accountId = AccountId.forId(API_STUDY_ID.getIdentifier(), userId);
-        Account account = accountDao.getAccount(accountId);
-        if (account == null) {
-            throw new UnauthorizedException(errorMessage);
         }
     }
 

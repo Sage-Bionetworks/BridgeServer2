@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toList;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.studies.Study.STUDY_LIST_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -112,24 +112,19 @@ public class StudyController extends BaseController {
     }
     
     @PostMapping("/v3/studies/self")
-    public VersionHolder updateStudyForDeveloper() throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+    public VersionHolder updateStudyForDeveloperOrAdmin() throws Exception {
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
         Study studyUpdate = parseJson(Study.class);
         studyUpdate.setIdentifier(studyId.getIdentifier());
-        studyUpdate = studyService.updateStudy(studyUpdate, false);
+        studyUpdate = studyService.updateStudy(studyUpdate, session.isInRole(ADMIN));
         return new VersionHolder(studyUpdate.getVersion());
     }
 
     @PostMapping("/v3/studies/{identifier}")
     public VersionHolder updateStudy(@PathVariable String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        
-        // ADMIN must have permissions to operate on this study.
-        if (!session.getStudyIdentifier().getIdentifier().equals(identifier)) {
-            throw new UnauthorizedException("Study admin cannot update another study");
-        }
+        getAuthenticatedSession(SUPERADMIN);
         
         Study studyUpdate = parseJson(Study.class);
         studyUpdate.setIdentifier(identifier);
@@ -139,13 +134,8 @@ public class StudyController extends BaseController {
 
     @GetMapping("/v3/studies/{identifier}")
     public Study getStudy(@PathVariable String identifier) throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        getAuthenticatedSession(SUPERADMIN, WORKER);
         
-        // Caller must be a full admin to get any study, however worker may be used
-        // cross study, so exclude it from this check
-        if (!session.isInRole(WORKER)) {
-            verifyCrossStudyAdmin(session.getId(), "Study admin cannot retrieve other studies.");
-        }
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
         return studyService.getStudy(identifier, true);
     }
@@ -167,8 +157,7 @@ public class StudyController extends BaseController {
                     .withRequestParam("summary", true);
             return STUDY_LIST_WRITER.writeValueAsString(summaries);  
         }
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot access all studies");
+        getAuthenticatedSession(SUPERADMIN);
 
         // otherwise, return all studies including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
@@ -188,7 +177,7 @@ public class StudyController extends BaseController {
         // In our current study permissions model, an admin in the API study is a 
         // "cross-study admin" and can see all studies and can switch between all studies, 
         // so check for this condition.
-        if (session.isInRole(ADMIN) && studyIds.contains(API_STUDY_ID_STRING)) {
+        if (session.isInRole(SUPERADMIN)) {
             stream = studyService.getStudies().stream()
                 .filter(s -> s.isActive());
         } else {
@@ -203,9 +192,8 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        getAuthenticatedSession(SUPERADMIN);
 
-        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         Study study = parseJson(Study.class);
         study = studyService.createStudy(study);
         return new VersionHolder(study.getVersion());
@@ -214,9 +202,8 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/init")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudyAndUsers() throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        getAuthenticatedSession(SUPERADMIN);
 
-        verifyCrossStudyAdmin(session.getId(), "Study admins cannot create studies.");
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
         Study study = studyService.createStudyAndUsers(studyAndUsers);
 
@@ -241,8 +228,7 @@ public class StudyController extends BaseController {
     @DeleteMapping("/v3/studies/{identifier}")
     public StatusMessage deleteStudy(@PathVariable String identifier,
             @RequestParam(defaultValue = "false") boolean physical) throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admins cannot delete studies.");
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
         
         // Finally, you cannot delete your own study because it locks this user out of their session.
         // This is true of *all* users in the study, btw. There is an action in the BSM that iterates 

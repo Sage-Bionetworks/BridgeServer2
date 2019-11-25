@@ -261,3 +261,9 @@ ADD UNIQUE KEY `Accounts-StudyId-SynapseUserId-Index` (`studyId`,`synapseUserId`
 -- changeset bridge:11
 
 CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);
+
+-- changeset bridge:12
+
+ALTER TABLE `AccountRoles`
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','WORKER','SUPERADMIN') NOT NULL;
+

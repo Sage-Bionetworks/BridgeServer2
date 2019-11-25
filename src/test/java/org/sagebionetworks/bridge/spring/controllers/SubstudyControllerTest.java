@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -73,7 +74,7 @@ public class SubstudyControllerTest extends Mockito {
 
         controller.setSubstudyService(service);
 
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
         doReturn(mockRequest).when(controller).request();
@@ -183,15 +184,5 @@ public class SubstudyControllerTest extends Mockito {
         assertEquals(result, SubstudyController.DELETED_MSG);
 
         verify(service).deleteSubstudyPermanently(TEST_STUDY, "id");
-    }
-
-    @Test
-    public void deleteSubstudyDeveloperCannotPhysicallyDelete() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-
-        StatusMessage result = controller.deleteSubstudy("id", true);
-        assertEquals(result, SubstudyController.DELETED_MSG);
-
-        verify(service).deleteSubstudy(TEST_STUDY, "id");
     }
 }

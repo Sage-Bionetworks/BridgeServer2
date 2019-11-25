@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN_ASSUMED_ROLES;
 
 import java.util.Collections;
 import java.util.Map;
@@ -13,6 +15,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class UserSession {
 
@@ -34,6 +37,16 @@ public class UserSession {
     
     public UserSession(StudyParticipant participant) {
         checkNotNull(participant);
+        // Superadmins are able to call most of the administrative UIs. To avoid manually specifying this
+        // in each and every controller call, we add these dependent roles to the session. They are currently
+        // visible in the session, but are not in the participant object you edit to update the account.
+        if (participant.getRoles().contains(SUPERADMIN)) {
+            ImmutableSet<Roles> roles = new ImmutableSet.Builder<Roles>()
+                    .addAll(participant.getRoles())
+                    .addAll(SUPERADMIN_ASSUMED_ROLES).build();
+            participant = new StudyParticipant.Builder().copyOf(participant)
+                    .withRoles(roles).build();
+        }
         this.participant = participant;
     }
 
