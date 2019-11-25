@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -17,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,7 +202,7 @@ public abstract class BaseController {
 
         // if there are roles, they are required
         boolean rolesRequired = (roles != null && roles.length > 0); 
-        boolean isInRole = (rolesRequired) ? !Collections.disjoint(Sets.newHashSet(roles), userRoles) : false;
+        boolean isInRole = (rolesRequired) ? session.isInRole(ImmutableSet.copyOf(roles)) : false;
         
         if ((consentRequired && session.doesConsent()) || (rolesRequired && isInRole)) {
             return session;

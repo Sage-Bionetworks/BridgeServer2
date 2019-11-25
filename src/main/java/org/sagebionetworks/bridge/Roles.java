@@ -14,12 +14,6 @@ public enum Roles {
     SUPERADMIN;
     
     /**
-     * If a user has the SUPERADMIN role, that account will also assume the following roles in the API, allowing 
-     * that account to perform almost all operations in the API.
-     */
-    public static final Set<Roles> SUPERADMIN_ASSUMED_ROLES = EnumSet.of(ADMIN, RESEARCHER, DEVELOPER);
-
-    /**
      * This user has a role that marks the user as a user of the non-participant APIs and/or the 
      * Bridge Study Manager.
      */
