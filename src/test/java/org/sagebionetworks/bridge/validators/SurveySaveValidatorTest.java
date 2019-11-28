@@ -303,7 +303,7 @@ public class SurveySaveValidatorTest {
     public void multiValueWithOptionWithInvalidValue() {
         String answerChoice = "@invalid#answer$";
         List<SurveyQuestionOption> optionList = ImmutableList
-                .of(new SurveyQuestionOption("My Question", null, answerChoice, null));
+                .of(new SurveyQuestionOption("My Question", null, answerChoice, null, null));
 
         SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
         ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);
@@ -314,10 +314,14 @@ public class SurveySaveValidatorTest {
 
     @Test
     public void multiValueWithDupeOptions() {
-        List<SurveyQuestionOption> optionList = ImmutableList.of(new SurveyQuestionOption("a", null, "a", null),
-                new SurveyQuestionOption("b1", null, "b", null), new SurveyQuestionOption("b2", null, "b", null),
-                new SurveyQuestionOption("c", null, "c", null), new SurveyQuestionOption("d1", null, "d", null),
-                new SurveyQuestionOption("d2", null, "d", null), new SurveyQuestionOption("e", null, "e", null));
+        List<SurveyQuestionOption> optionList = ImmutableList.of(
+                new SurveyQuestionOption("a", null, "a", null, null),
+                new SurveyQuestionOption("b1", null, "b", null, null),
+                new SurveyQuestionOption("b2", null, "b", null, null),
+                new SurveyQuestionOption("c", null, "c", null, null),
+                new SurveyQuestionOption("d1", null, "d", null, null),
+                new SurveyQuestionOption("d2", null, "d", null, null),
+                new SurveyQuestionOption("e", null, "e", null, null));
 
         SurveyQuestion question = ((TestSurvey) survey).getMultiValueQuestion();
         ((MultiValueConstraints) question.getConstraints()).setEnumeration(optionList);

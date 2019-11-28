@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.models.surveys.DateConstraints;
 import org.sagebionetworks.bridge.models.surveys.DateTimeConstraints;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
+import org.sagebionetworks.bridge.models.surveys.MultiValueConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
@@ -137,6 +139,11 @@ public class DynamoSurveyTest {
         
         SurveyInfoScreen retrievedScreen = (SurveyInfoScreen)convertedSurvey.getElements().get(convertedSurvey.getElements().size()-1);
         assertEquals(retrievedScreen.getAfterRules().get(0), rule);
+        
+        MultiValueConstraints mvc = (MultiValueConstraints)((SurveyQuestion)convertedSurvey.getElements().get(7)).getConstraints();
+        assertFalse(mvc.getEnumeration().get(3).isExclusive());
+        assertNull(mvc.getEnumeration().get(4).isExclusive());
+        assertTrue(mvc.getEnumeration().get(5).isExclusive());
     }
 
     @Test
