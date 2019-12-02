@@ -265,5 +265,5 @@ CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);
 -- changeset bridge:12
 
 ALTER TABLE `AccountRoles`
-MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','WORKER','SUPERADMIN') NOT NULL;
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','TEST_USERS','WORKER','SUPERADMIN') NOT NULL;
 

@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
@@ -998,12 +1000,28 @@ public class StudyServiceMockTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "User can only have roles developer and/or researcher.")
-    public void createStudyAndUsersUserInWrongRole() throws SynapseException {
+    public void createStudyAndUsersUserWithWorkerRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(WORKER));
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "User can only have roles developer and/or researcher.")
+    public void createStudyAndUsersUserWithSuperadminRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(SUPERADMIN));
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "User can only have roles developer and/or researcher.")
+    public void createStudyAndUsersUserWithAdminRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(ADMIN));
+    }
+    
+    private void createStudyAndUserInWrongRole(Set<Roles> roles) throws SynapseException {
         study.setExternalIdRequiredOnSignup(false);
         study.setSynapseDataAccessTeamId(null);
         study.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList.of(
-                new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL).withRoles(ImmutableSet.of(WORKER)).build());
+        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
+                .withEmail(TEST_USER_EMAIL).withRoles(roles).build());
         
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
 

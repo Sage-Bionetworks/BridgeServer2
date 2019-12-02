@@ -103,5 +103,4 @@ public class UserSessionInfoTest {
             assertFalse(node.get(fieldName).isNull(), fieldName + " should not be null");
         }
     }
-    
 }
