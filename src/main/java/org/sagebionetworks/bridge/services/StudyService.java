@@ -4,6 +4,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 
 import java.io.IOException;
@@ -52,7 +55,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -297,7 +299,7 @@ public class StudyService {
 
         // validate roles for each user
         for (StudyParticipant user: users) {
-            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(Roles.ADMIN, Roles.WORKER))) {
+            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(ADMIN, WORKER, SUPERADMIN))) {
                 throw new BadRequestException("User can only have roles developer and/or researcher.");
             }
             if (user.getRoles().isEmpty()) {

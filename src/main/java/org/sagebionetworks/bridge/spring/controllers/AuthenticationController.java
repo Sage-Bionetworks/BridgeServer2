@@ -1,12 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import javax.servlet.http.Cookie;
 
@@ -313,12 +312,9 @@ public class AuthenticationController extends BaseController {
 
         // Cross study administrator can switch to any study. Implement this here because clients 
         // cannot tell who is a cross-study administrator once they've switched studies.
-        if (session.isInRole(ADMIN)) {
-            AccountId adminId = AccountId.forId(API_STUDY_ID_STRING, session.getId());
-            if (accountDao.getAccount(adminId) != null) {
-                sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
-                return UserSessionInfo.toJSON(session);
-            }
+        if (session.isInRole(SUPERADMIN)) {
+            sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
+            return UserSessionInfo.toJSON(session);
         }
         // Otherwise, verify the user has access to this study
         if (participant.getSynapseUserId() == null) {

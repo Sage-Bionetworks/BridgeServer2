@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -57,8 +58,14 @@ public class CacheAdminControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(SUPERADMIN)).withId(USER_ID).build());
+        doAnswer(answer -> {
+            if (session.isInRole(SUPERADMIN)) {
+                return session;
+            }
+            throw new UnauthorizedException("Nope");
+        }).when(controller).getAuthenticatedSession(any());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -88,6 +95,9 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void listItemsRejectsStudyAdmin() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+        
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
         
@@ -108,6 +118,9 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void removeItemRejectsStudyAdmin() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+        
         controller.removeItem("cacheKey");
     }    
 }

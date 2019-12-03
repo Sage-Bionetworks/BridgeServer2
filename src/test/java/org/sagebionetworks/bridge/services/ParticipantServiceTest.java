@@ -7,11 +7,13 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -141,7 +143,7 @@ public class ParticipantServiceTest extends Mockito {
     private static final String ID = "ASDF";
     private static final String SUBSTUDY_ID = "substudyId";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
-    private static final Map<String,String> ATTRS = new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build();
+    private static final Map<String,String> ATTRS = ImmutableMap.of("can_be_recontacted","true");
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(STUDY.getIdentifier());
     private static final SubpopulationGuid SUBPOP_GUID_1 = SubpopulationGuid.create("guid1");
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, ID);
@@ -152,13 +154,13 @@ public class ParticipantServiceTest extends Mockito {
             .withPhone(PHONE)
             .withId(ID)
             .withPassword(PASSWORD)
-            .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
+            .withSharingScope(ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
             .withRoles(DEV_CALLER_ROLES)
             .withDataGroups(STUDY_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
-            .withStatus(AccountStatus.DISABLED)
+            .withStatus(DISABLED)
             .withTimeZone(USER_TIME_ZONE)
             .withClientData(TestUtils.getClientData()).build();
     
@@ -285,7 +287,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
     private void mockAccountRetrievalWithSubstudyD() {
@@ -363,7 +365,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);
         assertNull(account.getTimeZone());
-        assertEquals(account.getDataGroups(), Sets.newHashSet("group1","group2"));
+        assertEquals(account.getDataGroups(), ImmutableSet.of("group1","group2"));
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
@@ -855,22 +857,22 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void getPagedAccountSummariesWithInvalidAllOfGroup() {
-        AccountSummarySearch search = new AccountSummarySearch.Builder().withAllOfGroups(Sets.newHashSet("not_real_group")).build();
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withAllOfGroups(ImmutableSet.of("not_real_group")).build();
 
         participantService.getPagedAccountSummaries(STUDY, search);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void getPagedAccountSummariesWithInvalidNoneOfGroup() {
-        AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("not_real_group")).build();
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(ImmutableSet.of("not_real_group")).build();
 
         participantService.getPagedAccountSummaries(STUDY, search);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void getPagedAccountSummariesWithConflictingGroups() {
-        AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("group1"))
-                .withAllOfGroups(Sets.newHashSet("group1")).build();
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(ImmutableSet.of("group1"))
+                .withAllOfGroups(ImmutableSet.of("group1")).build();
         participantService.getPagedAccountSummaries(STUDY, search);
     }
     
@@ -1027,7 +1029,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getFirstName(), FIRST_NAME);
         assertEquals(participant.getLastName(), LAST_NAME);
         assertTrue(participant.isNotifyByEmail());
-        assertEquals(participant.getDataGroups(), Sets.newHashSet("group1","group2"));
+        assertEquals(participant.getDataGroups(), ImmutableSet.of("group1","group2"));
         assertTrue(collectExternalIds(account).contains("externalIdA"));
         assertTrue(collectExternalIds(account).contains("externalIdB"));
         assertEquals(participant.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
@@ -1195,7 +1197,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);
-        assertEquals(account.getDataGroups(), Sets.newHashSet("group1","group2"));
+        assertEquals(account.getDataGroups(), ImmutableSet.of("group1","group2"));
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertNull(account.getTimeZone());
     }
@@ -1331,7 +1333,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateParticipantWithInvalidParticipant() {
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = withParticipant().withDataGroups(Sets.newHashSet("bogusGroup")).build();
+        StudyParticipant participant = withParticipant().withDataGroups(ImmutableSet.of("bogusGroup")).build();
         participantService.updateParticipant(STUDY, participant);
     }
     
@@ -1390,42 +1392,52 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void userCannotCreateAnyRoles() {
-        verifyRoleCreate(Sets.newHashSet(), null);
+        verifyRoleCreate(ImmutableSet.of(), null);
     }
     
     @Test
     public void developerCanCreateDeveloperRole() {
-        verifyRoleCreate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+        verifyRoleCreate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
     }
     
     @Test
     public void researcherCanCreateDeveloperOrResearcherRole() {
-        verifyRoleCreate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+        verifyRoleCreate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER, RESEARCHER));
     }
     
     @Test
-    public void adminCanCreateAllRoles() {
-        verifyRoleCreate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void adminCanCreateAllRolesExceptSuperAdmin() {
+        verifyRoleCreate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    }
+    
+    @Test
+    public void superadminCanCreateAdminResercherDeveloperOrWorker() {
+        verifyRoleCreate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(SUPERADMIN, DEVELOPER, RESEARCHER, ADMIN, WORKER));
     }
     
     @Test
     public void userCannotUpdateAnyRoles() {
-        verifyRoleUpdate(Sets.newHashSet(), null);
+        verifyRoleUpdate(ImmutableSet.of(), null);
     }
     
     @Test
     public void developerCanUpdateDeveloperRole() {
-        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
     }
     
     @Test
     public void researcherCanUpdateDeveloperOrResearcherRole() {
-        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER, RESEARCHER));
     }
     
     @Test
-    public void adminCanUpdateAllRoles() {
-        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void adminCanUpdateAllRolesExceptSuperadmin() {
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    }
+    
+    @Test
+    public void superadminCanUpdateAdminResercherDeveloperOrWorker() {
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(SUPERADMIN, DEVELOPER, RESEARCHER, ADMIN, WORKER));
     }
     
     @Test
@@ -1536,50 +1548,50 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void developerCannotDowngradeAdmin() {
-        account.setRoles(Sets.newHashSet(ADMIN));
+        account.setRoles(ImmutableSet.of(ADMIN));
         
         // developer can add the developer role, but they cannot remove the admin role
-        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(ADMIN, DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(ADMIN, DEVELOPER));
     }
     
     @Test
     public void developerCannotDowngradeResearcher() {
-        account.setRoles(Sets.newHashSet(RESEARCHER));
+        account.setRoles(ImmutableSet.of(RESEARCHER));
         
         // developer can add the developer role, but they cannot remove the researcher role
-        verifyRoleUpdate(Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER, RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER, RESEARCHER));
     }
     
     @Test
     public void researcherCanDowngradeResearcher() {
-        account.setRoles(Sets.newHashSet(RESEARCHER));
+        account.setRoles(ImmutableSet.of(RESEARCHER));
         
         // researcher can change a researcher to a developer
-        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(DEVELOPER), Sets.newHashSet(DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
     }
     
     @Test
     public void adminCanChangeDeveloperToResearcher() {
-        account.setRoles(Sets.newHashSet(DEVELOPER));
+        account.setRoles(ImmutableSet.of(DEVELOPER));
         
         // admin can convert a developer to a researcher
-        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER));
     }
     
     @Test
     public void adminCanChangeResearcherToAdmin() {
-        account.setRoles(Sets.newHashSet(RESEARCHER));
+        account.setRoles(ImmutableSet.of(RESEARCHER));
         
         // admin can convert a researcher to an admin
-        verifyRoleUpdate(Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN), Sets.newHashSet(ADMIN));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN));
     }
     
     @Test
     public void researcherCanUpgradeDeveloperRole() {
-        account.setRoles(Sets.newHashSet(DEVELOPER));
+        account.setRoles(ImmutableSet.of(DEVELOPER));
         
         // researcher can convert a developer to a researcher
-        verifyRoleUpdate(Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER), Sets.newHashSet(RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER));
     }
     
     @Test
@@ -2541,7 +2553,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void normalUserCanAddExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
@@ -2559,7 +2571,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void normalUserCannotChangeExternalIdOnUpdate() {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
         
         extId.setSubstudyId(SUBSTUDY_ID); // same substudy, which is not allowable
         when(externalIdService.getExternalId(TEST_STUDY, "differentId")).thenReturn(Optional.of(extId));
@@ -2864,7 +2876,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void rollbackUpdateIdentifiersWhenAccountUpdateFails() {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
-        account.setAccountSubstudies(Sets.newHashSet());
+        account.setAccountSubstudies(new HashSet<>());
         when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         extId.setSubstudyId("substudyA");
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -3396,7 +3408,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = withParticipant()
-                .withRoles(Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
+                .withRoles(ImmutableSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, WORKER)).build();
         
         participantService.createParticipant(STUDY, participant, false);
         
@@ -3406,7 +3418,7 @@ public class ParticipantServiceTest extends Mockito {
         if (rolesThatAreSet != null) {
             assertEquals(account.getRoles(), rolesThatAreSet);
         } else {
-            assertEquals(Sets.newHashSet(), account.getRoles());
+            assertEquals(ImmutableSet.of(), account.getRoles());
         }
     }
     
@@ -3424,12 +3436,12 @@ public class ParticipantServiceTest extends Mockito {
         if (expected != null) {
             assertEquals(account.getRoles(), expected);
         } else {
-            assertEquals(Sets.newHashSet(), account.getRoles());
+            assertEquals(ImmutableSet.of(), account.getRoles());
         }
     }
     
     private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> expected) {
-        verifyRoleUpdate(callerRoles, Sets.newHashSet(ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
+        verifyRoleUpdate(callerRoles, ImmutableSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
     }
 
     // Makes a study instance, so tests can modify it without affecting other tests.

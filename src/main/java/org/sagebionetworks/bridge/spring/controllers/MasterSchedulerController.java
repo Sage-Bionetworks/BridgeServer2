@@ -2,11 +2,11 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import java.util.List;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.DateTimeHolder;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.services.MasterSchedulerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +33,7 @@ public class MasterSchedulerController extends BaseController {
 
     @GetMapping("/v3/schedulerconfigs")
     public ResourceList<MasterSchedulerConfig> getAllSchedulerConfigs() {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot get all scheduler configs.");
+        getAuthenticatedSession(SUPERADMIN);
         
         List<MasterSchedulerConfig> configs = schedulerService.getAllSchedulerConfigs();
         
@@ -44,8 +43,7 @@ public class MasterSchedulerController extends BaseController {
     @PostMapping("/v3/schedulerconfigs")
     @ResponseStatus(HttpStatus.CREATED)
     public MasterSchedulerConfig createSchedulerConfig() {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot create a scheduler config.");
+        getAuthenticatedSession(SUPERADMIN);
         
         MasterSchedulerConfig schedulerConfig = parseJson(MasterSchedulerConfig.class);
         
@@ -57,8 +55,7 @@ public class MasterSchedulerController extends BaseController {
      */
     @GetMapping("/v3/schedulerconfigs/{scheduleId}")
     public MasterSchedulerConfig getSchedulerConfig(@PathVariable String scheduleId) {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot get a scheduler config.");
+        getAuthenticatedSession(SUPERADMIN);
         
         return schedulerService.getSchedulerConfig(scheduleId);
     }
@@ -68,8 +65,7 @@ public class MasterSchedulerController extends BaseController {
      */
     @PostMapping("/v3/schedulerconfigs/{scheduleId}")
     public MasterSchedulerConfig updateSchedulerConfig(@PathVariable String scheduleId) {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot update a scheduler config.");
+        getAuthenticatedSession(SUPERADMIN);
         
         MasterSchedulerConfig schedulerConfig = parseJson(MasterSchedulerConfig.class);
         
@@ -81,8 +77,7 @@ public class MasterSchedulerController extends BaseController {
      */
     @DeleteMapping("/v3/schedulerconfigs/{scheduleId}")
     public StatusMessage deleteSchedulerConfig(@PathVariable String scheduleId) {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot delete a scheduler config.");
+        getAuthenticatedSession(SUPERADMIN);
         
         schedulerService.deleteSchedulerConfig(scheduleId);
         return DELETED_MSG;
@@ -94,8 +89,7 @@ public class MasterSchedulerController extends BaseController {
      */
     @GetMapping("/v3/schedulerstatus")
     public DateTimeHolder getSchedulerStatus() {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot get the scheduler status.");
+        getAuthenticatedSession(SUPERADMIN);
         
         return schedulerService.getSchedulerStatus();
     }

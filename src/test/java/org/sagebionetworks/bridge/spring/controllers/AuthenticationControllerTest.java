@@ -4,6 +4,7 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
@@ -1235,7 +1236,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, new SignIn.Builder().withStudy("my-new-study").build());
         // Note that the cross-study administrator does not have a synapse user ID
         userSession.setParticipant(new StudyParticipant.Builder()
-                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(ADMIN)).build());
+                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(SUPERADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, TEST_ACCOUNT_ID);

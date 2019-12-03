@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
@@ -79,7 +78,6 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
@@ -933,21 +931,5 @@ public class BaseControllerTest extends Mockito {
         assertEquals(SESSION_TOKEN, token);
         
         verify(mockResponse, never()).addCookie(any());
-    }
-
-    @Test
-    public void verifyCrossStudyAdmin() {
-        AccountId accountId = AccountId.forId(API_STUDY_ID.getIdentifier(), USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
-        
-        controller.verifyCrossStudyAdmin(USER_ID, "An error message");
-        
-        verify(mockAccountDao).getAccount(accountId);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*An error message.*")
-    public void verifyCrossStudyAdminFails() {
-        controller.verifyCrossStudyAdmin(USER_ID, "An error message");
     }
 }

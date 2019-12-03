@@ -383,8 +383,7 @@ public class UploadControllerTest extends Mockito {
     @Test
     public void getUploadByRecordIdWorksForFullAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
-        doReturn(USER_ID).when(mockResearcherSession).getId();
-        when(mockResearcherSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        doReturn(true).when(mockResearcherSession).isInRole(Roles.SUPERADMIN);
         
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
 

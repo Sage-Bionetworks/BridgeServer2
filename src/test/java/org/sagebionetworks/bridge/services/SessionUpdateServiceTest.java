@@ -4,7 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -91,7 +91,7 @@ public class SessionUpdateServiceTest {
         session.setParticipant(EMPTY_PARTICIPANT);
 
         List<String> languages = ImmutableList.of("es");
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
                 .withLanguages(languages).build();
 
         // Execute test.
@@ -106,13 +106,13 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY, context, HEALTH_CODE);
     }
 
     @Test
     public void updateExternalId() {
         UserSession session = new UserSession();
-        ExternalIdentifier externalId = ExternalIdentifier.create(API_STUDY_ID, "someExternalId");
+        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_STUDY, "someExternalId");
         
         service.updateExternalId(session, externalId);
         
@@ -129,7 +129,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setParticipant(EMPTY_PARTICIPANT);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
 
         // Execute test.
         service.updateParticipant(session, context, EMPTY_PARTICIPANT);
@@ -143,14 +143,14 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY, context, HEALTH_CODE);
     }
     
     @Test
     public void updateParticipantWithConsentUpdate() {
         UserSession session = new UserSession();
         StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_STUDY_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
                 
         when(mockConsentService.getConsentStatuses(context)).thenReturn(statuses);
@@ -174,7 +174,7 @@ public class SessionUpdateServiceTest {
         Set<String> dataGroups = Sets.newHashSet("data1");
         CriteriaContext context = new CriteriaContext.Builder()
                 .withUserDataGroups(dataGroups)
-                .withStudyIdentifier(API_STUDY_ID).build();
+                .withStudyIdentifier(TEST_STUDY).build();
 
         // Execute test.
         service.updateDataGroups(session, context);
@@ -188,7 +188,7 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(API_STUDY_ID, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY, context, HEALTH_CODE);
     }
 
     @Test

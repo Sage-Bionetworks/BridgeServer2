@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import java.util.List;
 import java.util.Set;
@@ -72,7 +73,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
-                .withCallerRoles(ImmutableSet.of(ADMIN, DEVELOPER, RESEARCHER)).withCallerUserId("DefaultStudyBootstrapper").build());
+                .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER)).withCallerUserId("DefaultStudyBootstrapper").build());
 
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {

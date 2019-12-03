@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisible
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -533,7 +534,7 @@ public class ParticipantService {
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
             Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
-            if (callerRoles.contains(ADMIN) || callerRoles.contains(WORKER)) {
+            if (callerRoles.contains(ADMIN) || callerRoles.contains(WORKER) || callerRoles.contains(SUPERADMIN)) {
                 account.setStatus(participant.getStatus());
             }
         }
