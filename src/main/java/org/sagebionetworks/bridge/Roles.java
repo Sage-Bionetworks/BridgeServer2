@@ -22,13 +22,13 @@ public enum Roles {
     /**
      * To assess if an API caller can add or remove a role to/from an account, the caller must have one of
      * the roles that is mapped to the role through this map. For example, if the caller wants to add the 
-     * RESEARCHER role to an account (or remove it), the caller must be an administrator or a researcher.
+     * RESEARCHER role to an account (or remove it), the caller must be an super-administrator or administrator.
      */
     public static final Map<Roles,EnumSet<Roles>> CAN_BE_EDITED_BY = new ImmutableMap.Builder<Roles, EnumSet<Roles>>()
         .put(SUPERADMIN, EnumSet.of(SUPERADMIN))
-        .put(ADMIN, EnumSet.of(SUPERADMIN, ADMIN))
-        .put(WORKER, EnumSet.of(SUPERADMIN, ADMIN))
-        .put(RESEARCHER, EnumSet.of(SUPERADMIN, ADMIN, RESEARCHER))
-        .put(DEVELOPER, EnumSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER))
+        .put(ADMIN, EnumSet.of(SUPERADMIN))
+        .put(WORKER, EnumSet.of(SUPERADMIN))
+        .put(RESEARCHER, EnumSet.of(SUPERADMIN, ADMIN))
+        .put(DEVELOPER, EnumSet.of(SUPERADMIN, ADMIN, RESEARCHER))
         .build();
 }
