@@ -1391,55 +1391,161 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void userCannotCreateAnyRoles() {
-        verifyRoleCreate(ImmutableSet.of(), null);
+    public void userCannotCreateAnybody() {
+        verifyRoleCreate(ImmutableSet.of(), ImmutableSet.of());
+    }
+
+    @Test
+    public void workerCannotCreateAnybody() {
+        verifyRoleCreate(ImmutableSet.of(WORKER), ImmutableSet.of());
     }
     
     @Test
-    public void developerCanCreateDeveloperRole() {
-        verifyRoleCreate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
+    public void developerCannotCreateAnybody() {
+        verifyRoleCreate(ImmutableSet.of(DEVELOPER), ImmutableSet.of());
     }
     
     @Test
-    public void researcherCanCreateDeveloperOrResearcherRole() {
-        verifyRoleCreate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER, RESEARCHER));
+    public void researcherCanCreateDevelopers() {
+        verifyRoleCreate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER));
     }
     
     @Test
-    public void adminCanCreateAllRolesExceptSuperAdmin() {
-        verifyRoleCreate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void adminCanCreateDeveloperAndResearcher() {
+        verifyRoleCreate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER));
     }
     
     @Test
-    public void superadminCanCreateAdminResercherDeveloperOrWorker() {
-        verifyRoleCreate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(SUPERADMIN, DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void superadminCanCreateEverybody() {
+        verifyRoleCreate(ImmutableSet.of(SUPERADMIN), 
+                ImmutableSet.of(SUPERADMIN, ADMIN, DEVELOPER, RESEARCHER, WORKER));
     }
     
     @Test
-    public void userCannotUpdateAnyRoles() {
-        verifyRoleUpdate(ImmutableSet.of(), null);
+    public void workerCannotUpdateAnybody() {
+        verifyRoleUpdate(ImmutableSet.of(WORKER), ImmutableSet.of());
     }
     
     @Test
-    public void developerCanUpdateDeveloperRole() {
-        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
+    public void developerCannotUpdateAnybody() {
+        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of());
     }
     
     @Test
-    public void researcherCanUpdateDeveloperOrResearcherRole() {
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER, RESEARCHER));
+    public void researcherCanUpdateDevelopers() {
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER));
     }
     
     @Test
-    public void adminCanUpdateAllRolesExceptSuperadmin() {
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void adminCanUpdateDeveloperAndResearcher() {
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, RESEARCHER));
     }
     
     @Test
-    public void superadminCanUpdateAdminResercherDeveloperOrWorker() {
-        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(SUPERADMIN, DEVELOPER, RESEARCHER, ADMIN, WORKER));
+    public void superadminCanUpdateEverybody() {
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), 
+                ImmutableSet.of(SUPERADMIN, ADMIN, DEVELOPER, RESEARCHER, WORKER));
+    }
+
+    // Now, verify that roles cannot *remove* roles they don't have permissions to remove
+    
+    @Test
+    public void superadminCanRemoveSuperadmin() {
+        account.setRoles(ImmutableSet.of(SUPERADMIN));
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
     }
     
+    @Test
+    public void superadminCanRemoveAdmin() {
+        account.setRoles(ImmutableSet.of(ADMIN));
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }
+
+    @Test
+    public void superadminCanRemoveResearcher() {
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }
+
+    @Test
+    public void superadminCanRemoveDeveloper() {
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }
+    
+    @Test
+    public void superadminCanRemoveWorker() {
+        account.setRoles(ImmutableSet.of(WORKER));
+        verifyRoleUpdate(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }
+    
+    @Test
+    public void adminCannotRemoveSuperadmin() {
+        account.setRoles(ImmutableSet.of(SUPERADMIN));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(SUPERADMIN));
+    }
+    
+    @Test
+    public void adminCannotRemoveAdmin() {
+        account.setRoles(ImmutableSet.of(ADMIN));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(ADMIN));
+    }
+
+    @Test
+    public void adminCanRemoveResearcher() {
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }
+
+    @Test
+    public void adminCanRemoveDeveloper() {
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of());
+    }    
+    
+    @Test
+    public void adminCannotRemoveWorker() {
+        account.setRoles(ImmutableSet.of(WORKER));
+        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(), ImmutableSet.of(WORKER));
+    }
+    
+    @Test
+    public void researcherCannotRemoveSuperadmin() {
+        account.setRoles(ImmutableSet.of(SUPERADMIN));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(SUPERADMIN));
+    }
+    
+    @Test
+    public void researcherCannotRemoveAdmin() {
+        account.setRoles(ImmutableSet.of(ADMIN));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(ADMIN));
+    }
+
+    @Test
+    public void researcherCanRemoveResearcher() {
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(RESEARCHER));
+    }
+
+    @Test
+    public void researcherCanRemoveDeveloper() {
+        account.setRoles(ImmutableSet.of(DEVELOPER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of());
+    }
+    
+    @Test
+    public void researcherCanRemoveWorker() {
+        account.setRoles(ImmutableSet.of(WORKER));
+        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(), ImmutableSet.of(WORKER));
+    }
+    
+    @Test
+    public void developerCannotRemoveAnybody() {
+        account.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, SUPERADMIN, WORKER));
+        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(), 
+                ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN, SUPERADMIN, WORKER));
+    }     
+
     @Test
     public void getParticipantWithoutHistories() {
         mockHealthCodeAndAccountRetrieval();
@@ -1544,56 +1650,6 @@ public class ParticipantServiceTest extends Mockito {
         assertFalse(participant.isConsented());
     }
 
-    // Now, verify that roles cannot *remove* roles they don't have permissions to remove
-    
-    @Test
-    public void developerCannotDowngradeAdmin() {
-        account.setRoles(ImmutableSet.of(ADMIN));
-        
-        // developer can add the developer role, but they cannot remove the admin role
-        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(ADMIN, DEVELOPER));
-    }
-    
-    @Test
-    public void developerCannotDowngradeResearcher() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        
-        // developer can add the developer role, but they cannot remove the researcher role
-        verifyRoleUpdate(ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER, RESEARCHER));
-    }
-    
-    @Test
-    public void researcherCanDowngradeResearcher() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        
-        // researcher can change a researcher to a developer
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(DEVELOPER), ImmutableSet.of(DEVELOPER));
-    }
-    
-    @Test
-    public void adminCanChangeDeveloperToResearcher() {
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        
-        // admin can convert a developer to a researcher
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER));
-    }
-    
-    @Test
-    public void adminCanChangeResearcherToAdmin() {
-        account.setRoles(ImmutableSet.of(RESEARCHER));
-        
-        // admin can convert a researcher to an admin
-        verifyRoleUpdate(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN));
-    }
-    
-    @Test
-    public void researcherCanUpgradeDeveloperRole() {
-        account.setRoles(ImmutableSet.of(DEVELOPER));
-        
-        // researcher can convert a developer to a researcher
-        verifyRoleUpdate(ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER), ImmutableSet.of(RESEARCHER));
-    }
-    
     @Test
     public void getStudyParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
