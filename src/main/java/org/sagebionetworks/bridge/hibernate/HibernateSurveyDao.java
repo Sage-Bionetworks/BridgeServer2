@@ -13,10 +13,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementFactory;
 import org.sagebionetworks.bridge.models.surveys.SurveyId;
+import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -24,41 +26,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class HibernateSurveyDao implements SurveyDao {
     private static final String IDENTIFIER_PREFIX = "identifier:";
-    Integer OFFSET = 0;
-    Integer PAGESIZE = 1;
     
-    private static final String SELECT_TEMPLATE = "SELECT survey ";
-    private static final String SELECT_ELEMENT_TEMPLATE = "SELECT surveyElement ";
+    private static final String SELECT_TEMPLATE = "SELECT survey FROM HibernateSurvey as survey ";
     
-    private static final String GET_ALL = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND guid = :guid";
+    private static final String ORDER_BY_GUID_CREATED_ON = "ORDER BY guid, createdOn DESC";
     
-    private static final String GET_ALL_SURVEYS = "FROM HibernateSurvey as survey WHERE studyKey = :studyKey";
+    private static final String ORDER_BY_CREATED_ON = "ORDER BY createdOn DESC";
     
-    private static final String GET_ALL_ACTIVE_PUBLISH = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND deleted = 0 AND published = 1 ORDER BY createdOn DESC";
+    private static final String GET_ACTIVE = "WHERE studyKey = :studyKey AND guid = :guid AND deleted = 0 ";
     
-    private static final String GET_ACTIVE = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND guid = :guid AND deleted = 0 ORDER BY createdOn DESC";
-    
-    private static final String GET_ACTIVE_PUBLISH = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND guid = :guid AND deleted = 0 AND published = :published ORDER BY createdOn DESC";
-    
-    private static final String GET_ACTIVE_PUBLISH_WITH_IDENTIFIER = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND identifier = :identifier AND deleted = 0 AND published = :published ORDER BY createdOn DESC";
-    
-    private static final String GET_ACTIVE_WITH_IDENTIFIER = "FROM HibernateSurvey as survey " + 
-            "WHERE studyKey = :studyKey AND identifier = :identifier AND createdOn = :createdOn AND deleted = 0 ORDER BY createdOn DESC";
-    
-    private static final String GET_ELEMENTS = "FROM HibernateSurveyElement as surveyElement " + 
-            "WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn ORDER BY createdOn DESC";
-    
-    private static final String DELETE_SURVEY_ELEMENTS = "DELETE FROM HibernateSurveyElement WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn";
+    private static final String GET_ACTIVE_WITH_IDENTIFIER = "WHERE studyKey = :studyKey AND identifier = :identifier AND deleted = 0 ";
     
     private HibernateHelper hibernateHelper;
     
@@ -77,7 +60,6 @@ public class HibernateSurveyDao implements SurveyDao {
     
     @Override
     public Survey createSurvey(Survey survey) {
-        System.out.println("createSurvey");
         checkNotNull(survey.getStudyIdentifier(), "Survey study identifier is null");
         if (survey.getGuid() == null) {
             survey.setGuid(generateGuid());
@@ -89,38 +71,48 @@ public class HibernateSurveyDao implements SurveyDao {
         survey.setPublished(false);
         survey.setDeleted(false);
         survey.setVersion(null);
-        hibernateHelper.create(survey, null);
-        System.out.println("12");
-        return survey;
+        return saveSurvey(survey);
     }
 
     @Override
     public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
         Survey existingSurvey = getSurvey(studyIdentifier, survey, true);
         
-        if (existingSurvey != null) {
-            hibernateHelper.update(survey, null);
-            return survey;
-        } else {
-            return createSurvey(survey);
-        }
-    }
+        // copy over mutable fields
+        existingSurvey.setName(survey.getName());
+        existingSurvey.setElements(survey.getElements());
+        existingSurvey.setCopyrightNotice(survey.getCopyrightNotice());
+        existingSurvey.setDeleted(survey.isDeleted());
 
+        // copy over DDB version so we can handle concurrent modification exceptions
+        existingSurvey.setVersion(survey.getVersion());
+
+        // internal bookkeeping - update modified timestamp, clear schema revision from unpublished survey
+        existingSurvey.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
+        existingSurvey.setSchemaRevision(null);
+
+        return saveSurvey(existingSurvey);
+    }
+    
     @Override
     public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        Survey existingSurvey = getSurvey(studyIdentifier, keys, false);
-        System.out.println(existingSurvey);
+        HibernateSurvey existingSurvey = (HibernateSurvey) getSurvey(studyIdentifier, keys, true);
         HibernateSurvey copy = new HibernateSurvey(existingSurvey);
+        copy.setPublished(false);
+        copy.setDeleted(false);
+        copy.setVersion(null);
+        long time = DateUtils.getCurrentMillisFromEpoch();
+        copy.setCreatedOn(time);
+        copy.setModifiedOn(time);
         copy.setSchemaRevision(null);
         for (SurveyElement element : copy.getElements()) {
             element.setGuid(generateGuid());
         }
-        System.out.println("12");
-        return createSurvey(copy);
+        return saveSurvey(copy);
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier studyIdentifier, Survey survey, boolean newSchemaRev) {        
+    public Survey publishSurvey(StudyIdentifier studyIdentifier, Survey survey, boolean newSchemaRev) {
         if (!survey.isPublished()) {
             // update survey
             survey.setPublished(true);
@@ -130,15 +122,17 @@ public class HibernateSurveyDao implements SurveyDao {
                 UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(studyIdentifier, survey, newSchemaRev);
                 survey.setSchemaRevision(schema.getRevision());
             }
-            updateSurvey(studyIdentifier, survey);
+            hibernateHelper.update(survey, null);
         }
         return survey;
     }
-
+    
     @Override
     public void deleteSurvey(Survey survey) {
+        checkNotNull(survey);
+        
         survey.setDeleted(true);
-        hibernateHelper.update(survey, null);
+        saveSurvey(survey);
     }
     
     @Override
@@ -146,8 +140,6 @@ public class HibernateSurveyDao implements SurveyDao {
         Survey existing = getSurvey(studyIdentifier, keys, false);
         
         if (existing != null) {
-            deleteAllElements(existing.getGuid(), existing.getCreatedOn());
-            
             SurveyId surveyId = new SurveyId(keys);
             hibernateHelper.deleteById(HibernateSurvey.class, surveyId);
             
@@ -164,15 +156,15 @@ public class HibernateSurveyDao implements SurveyDao {
     @Override
     public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
         if (keys.getGuid().toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
+            
             ImmutableMap<String,Object> params = ImmutableMap.of(
                     "studyKey", studyIdentifier.getIdentifier(),
                     "identifier", keys.getGuid().substring(IDENTIFIER_PREFIX.length()),
                     "createdOn", keys.getCreatedOn());
             
-            String getQuery = SELECT_TEMPLATE + GET_ACTIVE_WITH_IDENTIFIER;
+            String getQuery = SELECT_TEMPLATE + GET_ACTIVE_WITH_IDENTIFIER + "AND createdOn = :createdOn " + ORDER_BY_CREATED_ON;
             
-            List<HibernateSurvey> results = hibernateHelper.queryGet(
-                    getQuery, params, OFFSET, PAGESIZE, HibernateSurvey.class);
+            List<HibernateSurvey> results = hibernateHelper.queryGet(getQuery, params, null, 1, HibernateSurvey.class);
             
             if (!results.isEmpty()) {
                 return results.get(0);
@@ -181,7 +173,7 @@ public class HibernateSurveyDao implements SurveyDao {
         }
         SurveyId surveyId = new SurveyId(keys);
         Survey ret = hibernateHelper.getById(HibernateSurvey.class, surveyId);
-        if (ret != null && includeElements) {
+        if (ret != null) {
             attachSurveyElements(ret);
         }
         return ret;
@@ -193,10 +185,9 @@ public class HibernateSurveyDao implements SurveyDao {
                 "studyKey", studyIdentifier.getIdentifier(),
                 "identifier", surveyId);
         
-        String getQuery = SELECT_TEMPLATE + GET_ACTIVE_WITH_IDENTIFIER;
+        String getQuery = SELECT_TEMPLATE + GET_ACTIVE_WITH_IDENTIFIER + ORDER_BY_CREATED_ON;
         
-        List<? extends HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, params, OFFSET, PAGESIZE, HibernateSurvey.class);
+        List<HibernateSurvey> results = hibernateHelper.queryGet(getQuery, params, null, 1, HibernateSurvey.class);
         if (!results.isEmpty()) {
             return results.get(0).getGuid();
         }
@@ -205,28 +196,48 @@ public class HibernateSurveyDao implements SurveyDao {
 
     @Override
     public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
-        ImmutableMap<String, Object> params = ImmutableMap.of(
-                "studyKey", studyIdentifier.getIdentifier(),
-                "guid", guid);
+        String getQuery = SELECT_TEMPLATE;
         
-        String getQuery = SELECT_TEMPLATE + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
+        Builder<String,Object> paramBuilder = ImmutableMap.<String, Object> builder();
+        paramBuilder.put("studyKey", studyIdentifier.getIdentifier());
         
+        if (guid.toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
+            paramBuilder.put("identifier", guid.substring(IDENTIFIER_PREFIX.length()));
+            
+            getQuery += ((!includeDeleted) ? GET_ACTIVE_WITH_IDENTIFIER : "WHERE studyKey = :studyKey AND identifier = :identifier ");
+        } else {
+            paramBuilder.put("guid", guid);
+            
+            getQuery += ((!includeDeleted) ? GET_ACTIVE : "WHERE studyKey = :studyKey AND guid = :guid ");
+        }
+        
+        getQuery += ORDER_BY_CREATED_ON;
         List<HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, params, OFFSET, 50, HibernateSurvey.class);
+                getQuery, paramBuilder.build(), null, null, HibernateSurvey.class);
         
         return ImmutableList.copyOf(results);
     }
 
     @Override
     public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
-        ImmutableMap<String, Object> params = ImmutableMap.of(
-                "studyKey", studyIdentifier.getIdentifier(),
-                "guid", guid);
+        String getQuery = SELECT_TEMPLATE;
         
-        String getQuery = SELECT_TEMPLATE + GET_ACTIVE;
+        Builder<String,Object> paramBuilder = ImmutableMap.<String, Object> builder();
+        paramBuilder.put("studyKey", studyIdentifier.getIdentifier());
         
+        if (guid.toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
+            paramBuilder.put("identifier", guid.substring(IDENTIFIER_PREFIX.length()));
+            
+            getQuery += GET_ACTIVE_WITH_IDENTIFIER;
+        } else {
+            paramBuilder.put("guid", guid);
+            
+            getQuery += GET_ACTIVE;
+        }
+        
+        getQuery += ORDER_BY_CREATED_ON;
         List<HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, params, OFFSET, 50, HibernateSurvey.class);
+                getQuery, paramBuilder.build(), null, 1, HibernateSurvey.class);
         if (!results.isEmpty()) {
             return results.get(0);
         }
@@ -236,48 +247,26 @@ public class HibernateSurveyDao implements SurveyDao {
     @Override
     public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid,
             boolean includeElements) {
+        String getQuery = SELECT_TEMPLATE + "WHERE studyKey = :studyKey AND deleted = 0 AND published = 1 ";
+        
+        Builder<String,Object> paramBuilder = ImmutableMap.<String, Object> builder();
+        paramBuilder.put("studyKey", studyIdentifier.getIdentifier());
+        
         if (guid.toLowerCase().startsWith(IDENTIFIER_PREFIX)) {
-            ImmutableMap<String, Object> params = ImmutableMap.of(
-                    "studyKey", studyIdentifier.getIdentifier(),
-                    "identifier", guid.substring(IDENTIFIER_PREFIX.length()),
-                    "published", 1);
+            paramBuilder.put("identifier", guid.substring(IDENTIFIER_PREFIX.length()));
             
-            String getQuery = SELECT_TEMPLATE + GET_ACTIVE_PUBLISH_WITH_IDENTIFIER;
-            List<HibernateSurvey> results = hibernateHelper.queryGet(
-                    getQuery, params, OFFSET, 50, HibernateSurvey.class);
-            if (!results.isEmpty()) {
-                ImmutableMap<String, Object> elementParams = ImmutableMap.of(
-                        "surveyGuid", results.get(0).getGuid(),
-                        "createdOn", results.get(0).getCreatedOn());
-                
-                String getElementQuery = SELECT_ELEMENT_TEMPLATE + GET_ELEMENTS;
-                
-                List<HibernateSurveyElement> elementResults = hibernateHelper.queryGet(
-                        getElementQuery, elementParams, OFFSET, 50, HibernateSurveyElement.class);
-//                results.get(0).setElements(elementResults);
-                return results.get(0);
-            }
+            getQuery += "AND identifier = :identifier ";
         } else {
-            ImmutableMap<String, Object> params = ImmutableMap.of(
-                    "studyKey", studyIdentifier.getIdentifier(),
-                    "guid", guid,
-                    "published", 1);
+            paramBuilder.put("guid", guid);
             
-            String getQuery = SELECT_TEMPLATE + GET_ACTIVE_PUBLISH;
-            List<HibernateSurvey> results = hibernateHelper.queryGet(
-                    getQuery, params, OFFSET, 50, HibernateSurvey.class);
-            if (!results.isEmpty()) {
-                ImmutableMap<String, Object> elementParams = ImmutableMap.of(
-                        "surveyGuid", guid,
-                        "createdOn", results.get(0).getCreatedOn());
-                
-                String getElementQuery = SELECT_ELEMENT_TEMPLATE + GET_ELEMENTS;
-                
-                List<HibernateSurveyElement> elementResults = hibernateHelper.queryGet(
-                        getElementQuery, elementParams, OFFSET, 50, HibernateSurveyElement.class);
-//                results.get(0).setElements(elementResults);
-                return results.get(0);
-            }
+            getQuery += "AND guid = :guid ";
+        }
+        getQuery += ORDER_BY_CREATED_ON;
+        
+        List<HibernateSurvey> results = hibernateHelper.queryGet(
+                getQuery, paramBuilder.build(), null, null, HibernateSurvey.class);
+        if (!results.isEmpty()) {
+            attachSurveyElements(results.get(0));
         }
         
         return null;
@@ -286,14 +275,15 @@ public class HibernateSurveyDao implements SurveyDao {
     @Override
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier,
             boolean includeDeleted) {
+        
         ImmutableMap<String, Object> params = ImmutableMap.of(
                 "studyKey", studyIdentifier.getIdentifier());
         
-//        String countQuery = SELECT_COUNT + GET_ACTIVE;
-        String getQuery = SELECT_TEMPLATE + GET_ALL_ACTIVE_PUBLISH;
+        String getQuery = SELECT_TEMPLATE + "WHERE studyKey = :studyKey AND published = 1 " + 
+                ((!includeDeleted) ? "AND deleted = 0 " : "") + ORDER_BY_GUID_CREATED_ON;
         
         List<HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, params, OFFSET, 50, HibernateSurvey.class);
+                getQuery, params, null, null, HibernateSurvey.class);
         
         return findMostRecentVersions(results);
     }
@@ -303,10 +293,11 @@ public class HibernateSurveyDao implements SurveyDao {
         ImmutableMap<String, Object> params = ImmutableMap.of(
                 "studyKey", studyIdentifier.getIdentifier());
         
-        String getQuery = SELECT_TEMPLATE + GET_ALL_SURVEYS;
+        String getQuery = SELECT_TEMPLATE + "WHERE studyKey = :studyKey " + 
+                ((!includeDeleted) ? "AND deleted = 0 " : "") + ORDER_BY_GUID_CREATED_ON;
         
         List<HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, params, OFFSET, 50, HibernateSurvey.class);
+                getQuery, params, null, null, HibernateSurvey.class);
         
         return findMostRecentVersions(results);
     }
@@ -341,7 +332,9 @@ public class HibernateSurveyDao implements SurveyDao {
                 "surveyGuid", surveyGuid, 
                 "createdOn", createdOn);
         
-        hibernateHelper.query(DELETE_SURVEY_ELEMENTS, params);
+        String getQuery = "DELETE FROM HibernateSurveyElement WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn";
+        
+        hibernateHelper.query(getQuery, params);
     }
     
     private void attachSurveyElements(Survey survey) {
@@ -349,17 +342,64 @@ public class HibernateSurveyDao implements SurveyDao {
                 "surveyGuid", survey.getGuid(),
                 "createdOn", survey.getCreatedOn());
         
-        String getElementQuery = SELECT_ELEMENT_TEMPLATE + GET_ELEMENTS;
+        String getElementQuery = "SELECT surveyElement FROM HibernateSurveyElement as surveyElement" + 
+                "WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn ORDER BY createdOn DESC";
         
         List<HibernateSurveyElement> elementResults = hibernateHelper.queryGet(
-                getElementQuery, elementParams, OFFSET, 50, HibernateSurveyElement.class);
+                getElementQuery, elementParams, null, null, HibernateSurveyElement.class);
         
         List<SurveyElement> elements = Lists.newArrayList();
         for (HibernateSurveyElement element : elementResults) {
             SurveyElement surveyElement = SurveyElementFactory.fromHibernateEntity(element);
-//            reconcileRules(surveyElement);
+            reconcileRules(surveyElement);
             elements.add((SurveyElement) surveyElement);
         }
         survey.setElements(elements);
+    }
+    
+    private Survey saveSurvey(Survey survey) {
+        deleteAllElements(survey.getGuid(), survey.getCreatedOn());
+        
+        List<HibernateSurveyElement> hibernateElements = Lists.newArrayList();
+        for (int i = 0; i < survey.getElements().size(); i++) {
+            SurveyElement element = survey.getElements().get(i);
+            element.setSurveyKeyComponents(survey.getGuid(), survey.getCreatedOn());
+            element.setOrder(i);
+            if (element.getGuid() == null) {
+                element.setGuid(generateGuid());
+            }
+            reconcileRules(element);
+            hibernateElements.add((HibernateSurveyElement) element);
+        }
+        
+//        List<FailedBatch> failures = surveyElementMapper.batchSave(dynamoElements);
+//        BridgeUtils.ifFailuresThrowException(failures);
+        
+        hibernateHelper.update(survey, null);
+        return survey;
+    }
+    
+    /**
+     * Rules began as part of constraints, but constraints are only applied to questions. To apply
+     * rules like "always end the survey after this screen," rules are being moved to be a property 
+     * of SurveyElement. In the interim, existing surveys copy constraint rules to the element if 
+     * the element's rules are empty. Once there are element rules, they take precedence over anything
+     * set in the constraints going forward.
+     */
+    private void reconcileRules(SurveyElement element) {
+        if (element instanceof SurveyQuestion) {
+            SurveyQuestion question = (SurveyQuestion)element;
+            
+            // If the constraints have rules but the element does not, copy them over. Always do 
+            // this: the constraints rules will always take precedence until they are removed. At
+            // that point they will either not be copied on top of element rules which exist, or both 
+            // element and constraint rules will be empty, so it makes no difference.
+            Constraints con = question.getConstraints();
+            if (BridgeUtils.isEmpty(question.getAfterRules())) {
+                question.setAfterRules( con.getRules() );
+            }
+            // question rules take precedence once they exist.
+            con.setRules(question.getAfterRules());
+        }
     }
 }
