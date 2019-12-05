@@ -91,6 +91,7 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
+import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 public class StudyServiceMockTest extends Mockito {
@@ -153,7 +154,7 @@ public class StudyServiceMockTest extends Mockito {
     TemplateService mockTemplateService;
     @Mock
     FileService mockFileService;
-    
+
     @Captor
     ArgumentCaptor<Project> projectCaptor;
     @Captor
@@ -191,6 +192,10 @@ public class StudyServiceMockTest extends Mockito {
         service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new StudyValidator());
+        
+        StudyAndUsersValidator studyAndUsersValidator = new StudyAndUsersValidator();
+        studyAndUsersValidator.setSynapseClient(mockSynapseClient);
+        service.setStudyAndUsersValidator(studyAndUsersValidator);
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         

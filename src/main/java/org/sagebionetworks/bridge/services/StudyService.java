@@ -116,6 +116,7 @@ public class StudyService {
     private UploadCertificateService uploadCertService;
     private StudyDao studyDao;
     private StudyValidator validator;
+    private StudyAndUsersValidator studyAndUsersValidator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
     private NotificationTopicService topicService;
@@ -175,6 +176,10 @@ public class StudyService {
     @Autowired
     final void setValidator(StudyValidator validator) {
         this.validator = validator;
+    }
+    @Autowired
+    final void setStudyAndUsersValidator(StudyAndUsersValidator studyAndUsersValidator) {
+        this.studyAndUsersValidator = studyAndUsersValidator;
     }
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
@@ -271,7 +276,7 @@ public class StudyService {
         Errors errors = Validate.getErrorsFor(studyAndUsers);
         
         // Validate StudyAndUsers
-        Validate.entity(new StudyAndUsersValidator(synapseClient), errors, studyAndUsers);
+        Validate.entity(studyAndUsersValidator, errors, studyAndUsers);
         Validate.throwException(errors, studyAndUsers);
         
         // Validate each StudyParticipant object

@@ -11,6 +11,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -22,11 +24,13 @@ import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 
+@Component
 public class StudyAndUsersValidator implements Validator {
 
-    private final SynapseClient synapseClient;
+    private SynapseClient synapseClient;
 
-    public StudyAndUsersValidator(SynapseClient synapseClient) {
+    @Autowired
+    public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }
     

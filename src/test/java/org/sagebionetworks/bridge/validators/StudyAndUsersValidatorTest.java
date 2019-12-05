@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.collections.Lists.newArrayList;
+
+import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -14,12 +18,14 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
+import org.sagebionetworks.repo.model.UserProfile;
 
 public class StudyAndUsersValidatorTest extends Mockito {
 
@@ -31,7 +37,30 @@ public class StudyAndUsersValidatorTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
-        validator = new StudyAndUsersValidator(mockSynapseClient);
+        validator = new StudyAndUsersValidator();
+        validator.setSynapseClient(mockSynapseClient);
+    }
+    
+    @Test
+    public void validStudyAndUsers() throws Exception {
+        // The synapse client as mocked, throws no exception that would make the IDs used
+        // here invalid.
+        
+        List<String> adminIds = ImmutableList.of("abc", "def", "ghi");
+        
+        Study study = Study.create();
+        study.setIdentifier("test-identifier");
+        study.setName("Test Name");
+        study.setSponsorName("Test Sponsor Name");
+        
+        StudyParticipant user1 = new StudyParticipant.Builder().withSynapseUserId("jkl")
+                .withRoles(ImmutableSet.of(DEVELOPER)).build();
+        StudyParticipant user2 = new StudyParticipant.Builder().withSynapseUserId("mno")
+                .withRoles(ImmutableSet.of(RESEARCHER)).build();
+        List<StudyParticipant> userIds = ImmutableList.of(user1, user2);
+        
+        StudyAndUsers model = new StudyAndUsers(adminIds, study, userIds);
+        Validate.entityThrowingException(validator, model);
     }
     
     @Test
