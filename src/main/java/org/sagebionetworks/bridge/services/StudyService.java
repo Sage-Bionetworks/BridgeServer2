@@ -2,11 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 
 import java.io.IOException;
@@ -25,6 +23,7 @@ import javax.annotation.Resource;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -35,14 +34,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
-import org.sagebionetworks.client.exceptions.SynapseServerException;
 import org.sagebionetworks.repo.model.ACCESS_TYPE;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.ResourceAccess;
 import org.sagebionetworks.repo.model.Team;
-import org.sagebionetworks.repo.model.auth.NewUser;
 import org.sagebionetworks.repo.model.table.EntityView;
 import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.slf4j.Logger;
@@ -52,6 +49,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -82,6 +80,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
+import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -265,73 +264,39 @@ public class StudyService {
 
     public Study createStudyAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
         checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "study and users");
-
-        List<String> adminIds = studyAndUsers.getAdminIds();
-        if (adminIds == null || adminIds.isEmpty()) {
-            throw new BadRequestException("Admin IDs are required.");
-        }
-        // validate if each admin id is a valid synapse id in synapse
-        for (String adminId : adminIds) {
-            try {
-                synapseClient.getUserProfile(adminId);
-            } catch (SynapseNotFoundException e) {
-                throw new BadRequestException("Admin ID is invalid.");
-            }
-        }
-
-        List<StudyParticipant> users = studyAndUsers.getUsers();
-        if (users == null || users.isEmpty()) {
-            throw new BadRequestException("User list is required.");
-        }
-        if (studyAndUsers.getStudy() == null) {
-            throw new BadRequestException("Study cannot be null.");
-        }
+        
         Study study = studyAndUsers.getStudy();
-        // prevent NPE in participant validation
-        if (study.getPasswordPolicy() == null) {
-            study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService, study, true);
+        
+        Errors errors = Validate.getErrorsFor(studyAndUsers);
+        
+        // Validate StudyAndUsers
+        Validate.entity(new StudyAndUsersValidator(synapseClient), errors, studyAndUsers);
+        Validate.throwException(errors, studyAndUsers);
+        
+        // Validate each StudyParticipant object
+        for (int i=0; i < studyAndUsers.getUsers().size(); i++) {
+            errors.pushNestedPath("users["+i+"]");
+            StudyParticipant participant = studyAndUsers.getUsers().get(i);
+            Validate.entity(val, errors, participant);
+            errors.popNestedPath();
         }
+        Validate.throwException(errors, studyAndUsers);
 
-        // validate participants first
-        for (StudyParticipant user : users) {
-            Validate.entityThrowingException(new StudyParticipantValidator(externalIdService, substudyService, study, true), user);
-        }
+        // Create study
+        study = createStudy(studyAndUsers.getStudy());
 
-        // validate roles for each user
-        for (StudyParticipant user: users) {
-            if (!Collections.disjoint(user.getRoles(), ImmutableSet.of(ADMIN, WORKER, SUPERADMIN))) {
-                throw new BadRequestException("User can only have roles developer and/or researcher.");
-            }
-            if (user.getRoles().isEmpty()) {
-                throw new BadRequestException("User should have at least one role.");
-            }
-        }
-
-        // then create and validate study
-        study = createStudy(study);
-
-        // then create users for that study
-        // send verification email from both Bridge and Synapse as well
-        for (StudyParticipant user: users) {
+        // Create users and send password reset email
+        for (StudyParticipant user: studyAndUsers.getUsers()) {
             IdentifierHolder identifierHolder = participantService.createParticipant(study, user, false);
-
-            NewUser synapseUser = new NewUser();
-            synapseUser.setEmail(user.getEmail());
-            try {
-                synapseClient.newAccountEmailValidation(synapseUser, SYNAPSE_REGISTER_END_POINT);
-            } catch (SynapseServerException e) {
-                if (!e.getMessage().contains("The email address provided is already used.")) {
-                    throw e;
-                } else {
-                    LOG.info("Email: " + user.getEmail() + " already exists in Synapse", e);
-                }
-            }
             // send resetting password email as well
             participantService.requestResetPassword(study, identifierHolder.getIdentifier());
         }
-
-        // finally create synapse project and team
-        createSynapseProjectTeam(studyAndUsers.getAdminIds(), study);
+        
+        // Add admins and users to the Synapse project and access teams. All IDs have been validated.
+        List<String> synapseUserIds = studyAndUsers.getUsers().stream()
+                .map(StudyParticipant::getSynapseUserId).collect(toList());
+        createSynapseProjectTeam(studyAndUsers.getAdminIds(), synapseUserIds, study);
 
         return study;
     }
@@ -398,11 +363,32 @@ public class StudyService {
         }
         return study;
     }
-
-    public Study createSynapseProjectTeam(List<String> synapseUserIds, Study study) throws SynapseException {
-        if (synapseUserIds == null || synapseUserIds.isEmpty()) {
-            throw new BadRequestException("Synapse User IDs are required.");
+    
+    /**
+     * Create a synapse project after creating a study. Administrator Synapse user IDs need to be verified, and 
+     * no users are added to the data access team that will be created.
+     */
+    public Study createSynapseProjectTeam(List<String> adminIds, Study study) throws SynapseException {
+        if (adminIds == null || adminIds.isEmpty()) {
+            throw new BadRequestException("adminIds are required");
         }
+        // then check if the user id exists
+        for (String userId : adminIds) {
+            try {
+                synapseClient.getUserProfile(userId);
+            } catch (SynapseNotFoundException e) {
+                throw new BadRequestException("Synapse User Id: " + userId + " is invalid.");
+            }
+        }
+        try {
+            BridgeUtils.toSynapseFriendlyName(study.getName());    
+        } catch(NullPointerException | IllegalArgumentException e) {
+            throw new BadRequestException("Study name is invalid Synapse name: " + study.getName());
+        }
+        return createSynapseProjectTeam(adminIds, ImmutableList.of(), study);
+    }
+
+    protected Study createSynapseProjectTeam(List<String> synapseUserIds, List<String> userIds, Study study) throws SynapseException {
         // first check if study already has project and team ids
         if (study.getSynapseDataAccessTeamId() != null){
             throw new EntityAlreadyExistsException(Study.class, "Study already has a team ID.",
@@ -415,33 +401,20 @@ public class StudyService {
                 .put("synapseProjectId", study.getSynapseProjectId()).build());
         }
 
-        // then check if the user id exists
-        for (String userId : synapseUserIds) {
-            try {
-                synapseClient.getUserProfile(userId);
-            } catch (SynapseNotFoundException e) {
-                throw new BadRequestException("Synapse User Id: " + userId + " is invalid.");
-            }
-        }
-
         // Name in Synapse are globally unique, so we add a random token to the name to ensure it 
         // doesn't conflict with an existing name. Also, Synapse names can only contain a certain 
-        // subset of characters.
+        // subset of characters. We've verified this name is acceptable for this transformation.
+        String synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());    
         String nameScopingToken = getNameScopingToken();
-        String synapseName;
-        try {
-            synapseName = BridgeUtils.toSynapseFriendlyName(study.getName());    
-        } catch(NullPointerException | IllegalArgumentException e) {
-            throw new BadRequestException("Study name is invalid Synapse name: " + study.getName());
-        }
+
         // create synapse project and team
         Team team = new Team();
-        team.setName(synapseName + " Access Team "+nameScopingToken);
-        Project project = new Project();
-        project.setName(synapseName + " Project "+nameScopingToken);
-
+        team.setName(synapseName + " Access Team " + nameScopingToken);
         Team newTeam = synapseClient.createTeam(team);
         String newTeamId = newTeam.getId();
+
+        Project project = new Project();
+        project.setName(synapseName + " Project " + nameScopingToken);
         Project newProject = synapseClient.createEntity(project);
         String newProjectId = newProject.getId();
 
@@ -467,6 +440,14 @@ public class StudyService {
             teamMemberInvitation.setTeamId(newTeamId);
             synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
             synapseClient.setTeamMemberPermissions(newTeamId, synapseUserId, true);
+        }
+        // Add users as non-admin members of the team
+        for (String userId : userIds) {
+            MembershipInvitation teamMemberInvitation = new MembershipInvitation();
+            teamMemberInvitation.setInviteeId(userId);
+            teamMemberInvitation.setTeamId(newTeamId);
+            synapseClient.createMembershipInvitation(teamMemberInvitation, null, null);
+            synapseClient.setTeamMemberPermissions(newTeamId, userId, false);
         }
 
         // finally, update study
