@@ -65,7 +65,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -82,6 +81,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -96,7 +96,7 @@ public class BaseControllerTest extends Mockito {
     private BridgeConfig mockBridgeConfig;
 
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
 
     @Mock
     private StudyService mockStudyService;
@@ -353,7 +353,7 @@ public class BaseControllerTest extends Mockito {
         
         controller.getLanguages(session);
         
-        verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
         verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -371,7 +371,7 @@ public class BaseControllerTest extends Mockito {
         List<String> returnedLangs = controller.getLanguages(session);
         assertEquals(returnedLangs, ImmutableList.of("fr"));
         
-        verify(mockAccountDao, never()).editAccount(any(), any(), any());
+        verify(mockAccountService, never()).editAccount(any(), any(), any());
         verify(mockSessionUpdateService, never()).updateLanguage(any(), any());
     }
 
@@ -648,7 +648,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Participant already has languages. Nothing to save.
-        verifyZeroInteractions(mockAccountDao);
+        verifyZeroInteractions(mockAccountService);
         verifyZeroInteractions(mockSessionUpdateService);
     }
     
@@ -659,7 +659,7 @@ public class BaseControllerTest extends Mockito {
             Consumer<Account> consumer = invocation.getArgument(2);
             consumer.accept(account);
             return null;
-        }).when(mockAccountDao).editAccount(any(), any(), any());
+        }).when(mockAccountService).editAccount(any(), any(), any());
         
         // Set up mocks.
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,fr");
@@ -673,7 +673,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
-        verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
         assertEquals(account.getLanguages(), LANGUAGES);
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
@@ -698,7 +698,7 @@ public class BaseControllerTest extends Mockito {
         assertTrue(languages.isEmpty());
 
         // No languages means nothing to save.
-        verifyZeroInteractions(mockAccountDao);
+        verifyZeroInteractions(mockAccountService);
         verifyZeroInteractions(mockSessionUpdateService);
     }
 

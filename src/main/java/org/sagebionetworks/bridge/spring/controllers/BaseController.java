@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -45,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -59,7 +59,7 @@ public abstract class BaseController {
     
     BridgeConfig bridgeConfig;
 
-    AccountDao accountDao;
+    AccountService accountService;
 
     StudyService studyService;
 
@@ -85,8 +85,8 @@ public abstract class BaseController {
     }
     
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -267,7 +267,7 @@ public abstract class BaseController {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
-            accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+            accountService.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder()

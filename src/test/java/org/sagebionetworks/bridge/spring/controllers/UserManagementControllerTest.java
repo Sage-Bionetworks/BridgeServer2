@@ -41,7 +41,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -51,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -87,7 +87,7 @@ public class UserManagementControllerTest extends Mockito {
     HttpServletResponse mockResponse;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Spy
     @InjectMocks
@@ -196,7 +196,7 @@ public class UserManagementControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
@@ -237,7 +237,7 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         // same study id as above test
         StatusMessage result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);

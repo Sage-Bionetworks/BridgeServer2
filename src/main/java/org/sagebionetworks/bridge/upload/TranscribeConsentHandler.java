@@ -16,22 +16,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class TranscribeConsentHandler implements UploadValidationHandler {
-    private AccountDao accountDao;
+    private AccountService accountService;
     private ParticipantService participantService;
 
     @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    public final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -44,7 +44,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
 
         AccountId accountId = AccountId.forHealthCode(context.getStudy().getIdentifier(), context.getHealthCode());
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account != null) {
             
             Set<String> externalIds = collectExternalIds(account);
