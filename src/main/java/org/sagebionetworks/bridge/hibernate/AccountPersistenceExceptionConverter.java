@@ -96,7 +96,7 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
     }
     
     private EntityAlreadyExistsException createEntityAlreadyExistsException(String credentialName, AccountId accountId) {
-        Account existingAccount = accountDao.getAccount(accountId);
+        Account existingAccount = accountDao.getAccount(accountId).orElse(null);
         if (existingAccount != null) {
             // Log to make conflicts easier to diagnose.
             LOG.info(credentialName + " has already been used by account " + existingAccount.getId());

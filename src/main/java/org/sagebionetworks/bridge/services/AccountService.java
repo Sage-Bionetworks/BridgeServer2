@@ -1,32 +1,73 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
+import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
+import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
+
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.dao.AccountSecretDao;
+import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class AccountService {
     
-    private AccountDao accountDao;
+    private static final Logger LOG = LoggerFactory.getLogger(AccountService.class);
+
+    static final int ROTATIONS = 3;
     
+    private AccountDao accountDao;
+    private AccountSecretDao accountSecretDao;
+
     @Autowired
     public final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
     
+    @Autowired
+    public final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
+        this.accountSecretDao = accountSecretDao;
+    }
+    
+    // Provided to override in tests
+    protected String generateGUID() {
+        return BridgeUtils.generateGuid();
+    }
     
     /**
      * Search for all accounts across studies that have the same Synapse user ID in common, 
@@ -42,7 +83,39 @@ public class AccountService {
      * Set the verified flag for the channel (email or phone) to true, and enable the account (if needed).
      */
     public void verifyChannel(AuthenticationService.ChannelType channelType, Account account) {
-        accountDao.verifyChannel(channelType, account);
+        checkNotNull(channelType);
+        checkNotNull(account);
+        
+        // Do not modify the account if it is disabled (all email verification workflows are 
+        // user triggered, and disabled means that a user cannot use or change an account).
+        if (account.getStatus() == DISABLED) {
+            return;
+        }
+        
+        // Avoid updating on every sign in by examining object state first.
+        boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
+        boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
+        boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
+        
+        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
+            AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
+            Account persistedAccount = accountDao.getAccount(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+            if (shouldUpdateEmailVerified) {
+                account.setEmailVerified(TRUE);
+                persistedAccount.setEmailVerified(TRUE);
+            }
+            if (shouldUpdatePhoneVerified) {
+                account.setPhoneVerified(TRUE);
+                persistedAccount.setPhoneVerified(TRUE);
+            }
+            if (shouldUpdateStatus) {
+                account.setStatus(ENABLED);
+                persistedAccount.setStatus(ENABLED);
+            }
+            persistedAccount.setModifiedOn(DateUtils.getCurrentDateTime());
+            accountDao.updateAccount(persistedAccount, null);    
+        }        
     }
     
     /**
@@ -51,7 +124,35 @@ public class AccountService {
      * of successfully resetting the password (sometimes there is no channel that is verified). 
      */
     public void changePassword(Account account, ChannelType channelType, String newPassword) {
-        accountDao.changePassword(account, channelType, newPassword);
+        AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
+        PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
+        
+        String passwordHash = hashCredential(passwordAlgorithm, "password", newPassword);
+
+        // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
+        Account persistedAccount = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        // Update
+        DateTime modifiedOn = DateUtils.getCurrentDateTime();
+        persistedAccount.setModifiedOn(modifiedOn);
+        persistedAccount.setPasswordAlgorithm(passwordAlgorithm);
+        persistedAccount.setPasswordHash(passwordHash);
+        persistedAccount.setPasswordModifiedOn(modifiedOn);
+        // One of these (the channel used to reset the password) is also verified by resetting the password.
+        if (channelType == EMAIL) {
+            persistedAccount.setStatus(ENABLED);
+            persistedAccount.setEmailVerified(true);    
+        } else if (channelType == PHONE) {
+            persistedAccount.setStatus(ENABLED);
+            persistedAccount.setPhoneVerified(true);    
+        } else if (channelType == null) {
+            // If there's no channel type, we're assuming a password-based sign-in using
+            // external ID (the third identifying credential that can be used), so here
+            // we will enable the account.
+            persistedAccount.setStatus(ENABLED);
+        }
+        accountDao.updateAccount(persistedAccount, null);
     }
     
     /**
@@ -59,7 +160,10 @@ public class AccountService {
      * if successful. 
      */
     public Account authenticate(Study study, SignIn signIn) {
-        return accountDao.authenticate(study, signIn);
+        Account persistedAccount = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        verifyPassword(persistedAccount, signIn.getPassword());
+        return authenticateInternal(study, persistedAccount, signIn);        
     }
 
     /**
@@ -68,14 +172,25 @@ public class AccountService {
      * for a password.
      */
     public Account reauthenticate(Study study, SignIn signIn) {
-        return accountDao.reauthenticate(study, signIn);
+        //return accountDao.reauthenticate(study, signIn);
+        if (!TRUE.equals(study.isReauthenticationEnabled())) {
+            throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
+        }
+        Account account = accountDao.getAccount(signIn.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        accountSecretDao.verifySecret(REAUTH, account.getId(), signIn.getReauthToken(), ROTATIONS)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        return authenticateInternal(study, account, signIn);        
     }
     
     /**
      * This clears the user's reauthentication token.
      */
     public void deleteReauthToken(AccountId accountId) {
-        accountDao.deleteReauthToken(accountId);
+        Optional<Account> opt = accountDao.getAccount(accountId);
+        if (opt.isPresent()) {
+            accountSecretDao.removeSecrets(REAUTH, opt.get().getId());
+        }
     }
     
     /**
@@ -84,6 +199,14 @@ public class AccountService {
      * is executed in a transaction, however).
      */
     public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
+        account.setStudyId(study.getIdentifier());
+        DateTime timestamp = DateUtils.getCurrentDateTime();
+        account.setCreatedOn(timestamp);
+        account.setModifiedOn(timestamp);
+        account.setPasswordModifiedOn(timestamp);
+        account.setMigrationVersion(MIGRATION_VERSION);
+
+        // Create account. We don't verify substudies because this is handled by validation
         accountDao.createAccount(study, account, afterPersistConsumer);
     }
     
@@ -94,30 +217,52 @@ public class AccountService {
      * the persist is executed in a transaction, however).
      */
     public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
-        accountDao.updateAccount(account, afterPersistConsumer);
+        AccountId accountId = AccountId.forId(account.getStudyId(),  account.getId());
+
+        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
+        Account persistedAccount = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        // None of these values should be changeable by the user.
+        account.setStudyId(persistedAccount.getStudyId());
+        account.setCreatedOn(persistedAccount.getCreatedOn());
+        account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
+        account.setPasswordHash(persistedAccount.getPasswordHash());
+        account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        // Update modifiedOn.
+        account.setModifiedOn(DateUtils.getCurrentDateTime());
+
+        // Update. We don't verify substudies because this is handled by validation
+        accountDao.updateAccount(account, afterPersistConsumer);         
     }
     
     /**
      * Load, and if it exists, edit and save an account. 
      */
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
-        accountDao.editAccount(studyId, healthCode, accountEdits);
+        AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
+        Account account = BridgeUtils.filterForSubstudy(getAccount(accountId));
+        if (account != null) {
+            accountEdits.accept(account);
+            updateAccount(account, null);
+        }        
     }
     
     /**
      * Get an account in the context of a study by the user's ID, email address, health code,
-     * or phone number. Returns null if there is no account, it is up to callers to translate 
-     * this into the appropriate exception, if any. 
+     * or phone number. Returns null if the account cannot be found.
      */
     public Account getAccount(AccountId accountId) {
-        return accountDao.getAccount(accountId);
+        return accountDao.getAccount(accountId).orElse(null);
     }
     
     /**
      * Delete an account along with the authentication credentials.
      */
     public void deleteAccount(AccountId accountId) {
-        accountDao.deleteAccount(accountId);
+        Optional<Account> opt = accountDao.getAccount(accountId);
+        if (opt.isPresent()) {
+            accountDao.deleteAccount(accountId);
+        }
     }
     
     /**
@@ -144,4 +289,47 @@ public class AccountService {
             return null;
         }
     }
+    
+    private Account authenticateInternal(Study study, Account account, SignIn signIn) {
+        // Auth successful, you can now leak further information about the account through other exceptions.
+        // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
+        // email verification for older studies that didn't have full external ID support).
+        if (account.getStatus() == UNVERIFIED) {
+            throw new UnauthorizedException("Email or phone number have not been verified");
+        } else if (account.getStatus() == DISABLED) {
+            throw new AccountDisabledException();
+        } else if (study.isVerifyChannelOnSignInEnabled()) {
+            if (signIn.getPhone() != null && !TRUE.equals(account.getPhoneVerified())) {
+                throw new UnauthorizedException("Phone number has not been verified");
+            } else if (study.isEmailVerificationEnabled() && 
+                    signIn.getEmail() != null && !TRUE.equals(account.getEmailVerified())) {
+                throw new UnauthorizedException("Email has not been verified");
+            }
+        }
+        return account;
+    }
+    
+    protected void verifyPassword(Account account, String plaintext) {
+        // Verify password
+        if (account.getPasswordAlgorithm() == null || StringUtils.isBlank(account.getPasswordHash())) {
+            LOG.warn("Account " + account.getId() + " is enabled but has no password.");
+            throw new EntityNotFoundException(Account.class);
+        }
+        try {
+            if (!account.getPasswordAlgorithm().checkHash(account.getPasswordHash(), plaintext)) {
+                // To prevent enumeration attacks, if the credential doesn't match, throw 404 account not found.
+                throw new EntityNotFoundException(Account.class);
+            }
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error validating password: " + ex.getMessage(), ex);
+        }        
+    }
+    
+    private String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
+        try {
+            return algorithm.generateHash(value);
+        } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {
+            throw new BridgeServiceException("Error creating "+type+": " + ex.getMessage(), ex);
+        }
+    }    
 }
