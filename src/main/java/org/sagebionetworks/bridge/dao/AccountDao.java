@@ -104,16 +104,4 @@ public interface AccountDao {
      *      paging parameters.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search);
-    
-    /**
-     * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
-     */
-    default String getHealthCodeForAccount(AccountId accountId) {
-        Account account = getAccount(accountId);
-        if (account != null) {
-            return account.getHealthCode();
-        } else {
-            return null;
-        }
-    }
-}
+}    

@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -162,6 +163,15 @@ public class AccountServiceTest extends Mockito {
         
         String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
         assertEquals(healthCode, HEALTH_CODE);
+        verify(mockAccountDao).getAccount(ACCOUNT_ID);
+    }
+    
+    @Test
+    public void getHealthCodeForAccountNoAccount() {
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
+        
+        String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
+        assertNull(healthCode);
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
 }
