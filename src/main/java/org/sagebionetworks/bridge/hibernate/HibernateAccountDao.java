@@ -88,47 +88,33 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Optional<Account> getAccount(AccountId accountId) {
-        Account hibernateAccount = getHibernateAccount(accountId);
-
-        if (hibernateAccount != null) {
-            if ( validateHealthCode(hibernateAccount) ) {
-                Account updated = hibernateHelper.update(hibernateAccount, null);
-                hibernateAccount.setVersion(updated.getVersion());
-            }
-            return Optional.of(hibernateAccount);
-        }
-        return Optional.empty();
-    }
-    
-    // Helper method to get a single account for a given study and id, email address, or phone number.
-    private Account getHibernateAccount(AccountId accountId) {
-        // This is the only method where accessing null values is not an error, since we're searching for 
-        // the value that was provided. There will be one.
-        HibernateAccount hibernateAccount = null;
+        HibernateAccount account = null;
         
+        // The fastest retrieval can be done with the ID if it has been provided.
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            // Now that we allow study switching, we must enforce study membership here in the getById()
-            // method as well as in the queries below.
-            Account account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-            if (account != null && !account.getStudyId().equals(accountId.getStudyId())) {
-                return null;
+            account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            // Enforce the study membership of the accountId
+            if (account == null || !account.getStudyId().equals(accountId.getStudyId())) {
+                return Optional.empty();
             }
-            return account;
+        } else {
+            QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
+            List<HibernateAccount> accountList = hibernateHelper.queryGet(
+                    builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
+            if (accountList.isEmpty()) {
+                return Optional.empty();
+            }
+            account = accountList.get(0);
+            if (accountList.size() > 1) {
+                LOG.warn("Multiple accounts found email/phone query; example accountId=" + account.getId());
+            }
         }
-        
-        QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
-        
-        List<HibernateAccount> accountList = hibernateHelper.queryGet(
-                builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
-        if (accountList.isEmpty()) {
-            return null;
+        if (validateHealthCode(account)) {
+            Account updated = hibernateHelper.update(account, null);
+            account.setVersion(updated.getVersion());
         }
-        hibernateAccount = accountList.get(0);
-        if (accountList.size() > 1) {
-            LOG.warn("Multiple accounts found email/phone query; example accountId=" + hibernateAccount.getId());
-        }
-        return hibernateAccount;
+        return Optional.of(account);
     }
     
     QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
@@ -188,11 +174,10 @@ public class HibernateAccountDao implements AccountDao {
         return builder;
     }
 
-
     /** {@inheritDoc} */
     @Override
-    public void deleteAccount(AccountId accountId) {
-        hibernateHelper.deleteById(HibernateAccount.class, accountId.getId());
+    public void deleteAccount(String userId) {
+        hibernateHelper.deleteById(HibernateAccount.class, userId);
     }
 
     /** {@inheritDoc} */

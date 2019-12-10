@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class AccountService {
-    
     private static final Logger LOG = LoggerFactory.getLogger(AccountService.class);
 
     static final int ROTATIONS = 3;
@@ -76,6 +75,7 @@ public class AccountService {
      * @return list of study identifiers
      */
     public List<String> getStudyIdsForUser(String synapseUserId) {
+        checkNotNull(synapseUserId);
         return accountDao.getStudyIdsForUser(synapseUserId);
     }
     
@@ -98,6 +98,9 @@ public class AccountService {
         boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
         
         if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
+            // NOTE: This is the current implementation but we do not need to load the account again
+            // like this, all call sites are just loading the account, checking it, and then calling
+            // this method.
             AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
             Account persistedAccount = accountDao.getAccount(accountId)
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -124,12 +127,15 @@ public class AccountService {
      * of successfully resetting the password (sometimes there is no channel that is verified). 
      */
     public void changePassword(Account account, ChannelType channelType, String newPassword) {
-        AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
+        checkNotNull(account);
+        
         PasswordAlgorithm passwordAlgorithm = DEFAULT_PASSWORD_ALGORITHM;
         
         String passwordHash = hashCredential(passwordAlgorithm, "password", newPassword);
 
         // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
+        // Again though, no caller appears to be modifying the account prior to the changePassword call.
+        AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
@@ -160,10 +166,13 @@ public class AccountService {
      * if successful. 
      */
     public Account authenticate(Study study, SignIn signIn) {
-        Account persistedAccount = accountDao.getAccount(signIn.getAccountId())
+        checkNotNull(study);
+        checkNotNull(signIn);
+        
+        Account account = accountDao.getAccount(signIn.getAccountId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        verifyPassword(persistedAccount, signIn.getPassword());
-        return authenticateInternal(study, persistedAccount, signIn);        
+        verifyPassword(account, signIn.getPassword());
+        return authenticateInternal(study, account, signIn);        
     }
 
     /**
@@ -172,7 +181,9 @@ public class AccountService {
      * for a password.
      */
     public Account reauthenticate(Study study, SignIn signIn) {
-        //return accountDao.reauthenticate(study, signIn);
+        checkNotNull(study);
+        checkNotNull(signIn);
+        
         if (!TRUE.equals(study.isReauthenticationEnabled())) {
             throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
         }
@@ -187,9 +198,11 @@ public class AccountService {
      * This clears the user's reauthentication token.
      */
     public void deleteReauthToken(AccountId accountId) {
-        Optional<Account> opt = accountDao.getAccount(accountId);
-        if (opt.isPresent()) {
-            accountSecretDao.removeSecrets(REAUTH, opt.get().getId());
+        checkNotNull(accountId);
+
+        Account account = getAccount(accountId);
+        if (account != null) {
+            accountSecretDao.removeSecrets(REAUTH, account.getId());
         }
     }
     
@@ -199,6 +212,9 @@ public class AccountService {
      * is executed in a transaction, however).
      */
     public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
+        checkNotNull(study);
+        checkNotNull(account);
+        
         account.setStudyId(study.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
@@ -217,6 +233,8 @@ public class AccountService {
      * the persist is executed in a transaction, however).
      */
     public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
+        checkNotNull(account);
+        
         AccountId accountId = AccountId.forId(account.getStudyId(),  account.getId());
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
@@ -239,11 +257,13 @@ public class AccountService {
      * Load, and if it exists, edit and save an account. 
      */
     public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
+        checkNotNull(studyId);
+        checkNotNull(healthCode);
+        
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
         Account account = BridgeUtils.filterForSubstudy(getAccount(accountId));
         if (account != null) {
-            accountEdits.accept(account);
-            updateAccount(account, null);
+            accountDao.updateAccount(account, accountEdits);
         }        
     }
     
@@ -252,16 +272,24 @@ public class AccountService {
      * or phone number. Returns null if the account cannot be found.
      */
     public Account getAccount(AccountId accountId) {
-        return accountDao.getAccount(accountId).orElse(null);
+        checkNotNull(accountId);
+
+        Optional<Account> optional = accountDao.getAccount(accountId);
+        if (optional.isPresent()) {
+            return BridgeUtils.filterForSubstudy(optional.get());
+        }
+        return null;
     }
     
     /**
      * Delete an account along with the authentication credentials.
      */
     public void deleteAccount(AccountId accountId) {
+        checkNotNull(accountId);
+        
         Optional<Account> opt = accountDao.getAccount(accountId);
         if (opt.isPresent()) {
-            accountDao.deleteAccount(accountId);
+            accountDao.deleteAccount(opt.get().getId());
         }
     }
     
@@ -275,6 +303,9 @@ public class AccountService {
      *      paging parameters.
      */
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
+        checkNotNull(study);
+        checkNotNull(search);
+        
         return accountDao.getPagedAccountSummaries(study, search);
     }
     
@@ -282,6 +313,8 @@ public class AccountService {
      * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
      */
     public String getHealthCodeForAccount(AccountId accountId) {
+        checkNotNull(accountId);
+        
         Account account = getAccount(accountId);
         if (account != null) {
             return account.getHealthCode();
@@ -290,7 +323,7 @@ public class AccountService {
         }
     }
     
-    private Account authenticateInternal(Study study, Account account, SignIn signIn) {
+    protected Account authenticateInternal(Study study, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older studies that didn't have full external ID support).
@@ -325,7 +358,7 @@ public class AccountService {
         }        
     }
     
-    private String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
+    protected String hashCredential(PasswordAlgorithm algorithm, String type, String value) {
         try {
             return algorithm.generateHash(value);
         } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException ex) {

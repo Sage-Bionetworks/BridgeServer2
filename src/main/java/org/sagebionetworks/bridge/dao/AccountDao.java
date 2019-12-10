@@ -13,9 +13,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
- * credentials. To work with users, use the ParticipantService, which orchestrates calls 
- * to the AccountDao in order to reduce the number of times we make calls to our external 
- * authentication service.
+ * credentials.
  */
 public interface AccountDao {
     
@@ -37,8 +35,7 @@ public interface AccountDao {
     void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer);
     
     /**
-     * Save account changes. Account should have been retrieved from the getAccount() method 
-     * (constructAccount() is not sufficient). If the optional consumer is passed to this method and 
+     * Save account changes. If the optional consumer is passed to this method and 
      * it throws an exception, the account will not be persisted (the consumer is executed after 
      * the persist is executed in a transaction, however).
      */
@@ -46,19 +43,17 @@ public interface AccountDao {
     
     /**
      * Get an account in the context of a study by the user's ID, email address, health code,
-     * or phone number. Returns null if there is no account, it is up to callers to translate 
-     * this into the appropriate exception, if any. 
+     * phone number, or Synapse user ID. 
      */
     Optional<Account> getAccount(AccountId accountId);
     
     /**
      * Delete an account along with the authentication credentials.
      */
-    void deleteAccount(AccountId accountId);
+    void deleteAccount(String userId);
     
     /**
-     * Get a page of lightweight account summaries (most importantly, the email addresses of 
-     * participants which are required for the rest of the participant APIs). 
+     * Get a page of lightweight account summaries. 
      * @param study
      *      retrieve participants in this study
      * @param search
