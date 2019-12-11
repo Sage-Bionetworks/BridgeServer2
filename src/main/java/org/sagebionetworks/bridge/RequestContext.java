@@ -63,10 +63,10 @@ public class RequestContext {
         return callerRoles;
     }
     public boolean isAdministrator() { 
-        return !callerRoles.isEmpty();
+        return callerRoles != null && !callerRoles.isEmpty();
     }
     public boolean isInRole(Roles role) {
-        return (role != null && (callerRoles.contains(SUPERADMIN) || callerRoles.contains(role)));
+        return role != null && callerRoles != null && (callerRoles.contains(SUPERADMIN) || callerRoles.contains(role));
     }
     public boolean isInRole(Set<Roles> roleSet) {
         return roleSet != null && roleSet.stream().anyMatch(role -> isInRole(role));

@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.collectSubstudyIds;
 import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
 import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -595,7 +594,7 @@ public class ParticipantService {
                 }
             }
             // Add substudy relationship
-            Set<String> existingSubstudyIds = collectSubstudyIds(account);
+            Set<String> existingSubstudyIds = BridgeUtils.collectSubstudyIds(account);
             for (String substudyId : participant.getSubstudyIds()) {
                 if (!existingSubstudyIds.contains(substudyId)) {
                     AccountSubstudy newSubstudy = AccountSubstudy.create(
@@ -639,7 +638,7 @@ public class ParticipantService {
         // If the caller is not in a substudy, any substudy tags are allowed. If there 
         // are any substudies assigned to the caller, then the participant must be assigned 
         // to one or more of those substudies, and only those substudies.
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
         if (!callerSubstudies.isEmpty()) {
             Set<String> accountSubstudies = BridgeUtils.collectSubstudyIds(account);
             if (accountSubstudies.isEmpty()) {
