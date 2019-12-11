@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
@@ -149,7 +150,9 @@ public class ParticipantReportController extends BaseController {
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
         Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
-
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         return reportService.getParticipantReport(studyId, reportId, account.getHealthCode(), startDate, endDate);
     }
 
@@ -183,7 +186,9 @@ public class ParticipantReportController extends BaseController {
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
         Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
-
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         return reportService.getParticipantReportV4(studyId, reportId, account.getHealthCode(), startTime, endTime,
                 offsetKey, pageSize);
     }
@@ -199,7 +204,9 @@ public class ParticipantReportController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
-        
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
@@ -245,7 +252,9 @@ public class ParticipantReportController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
-        
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
         return new StatusMessage("Report deleted.");
@@ -261,7 +270,9 @@ public class ParticipantReportController extends BaseController {
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
-        
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
         
         return new StatusMessage("Report record deleted.");

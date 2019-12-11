@@ -205,7 +205,7 @@ public class ParticipantService {
         checkNotNull(userId);
 
         // Account must have a verified phone number.
-        Account account = getAccountThrowingException(AccountId.forId(study.getIdentifier(), userId));
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
         if (!TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no verified phone number");
@@ -524,8 +524,7 @@ public class ParticipantService {
                 externalIdService, substudyService, study, false);
         Validate.entityThrowingException(validator, participant);
         
-        Account account = getAccountThrowingExceptionIfSubstudyMatches(
-                AccountId.forId(study.getIdentifier(), participant.getId()));
+        Account account = getAccountThrowingException(study.getIdentifier(), participant.getId());
         
         final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
         updateAccountAndRoles(study, account, participant, externalId, false);
@@ -672,7 +671,7 @@ public class ParticipantService {
         checkArgument(isNotBlank(activityGuid));
         checkArgument(isNotBlank(userId));
 
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnStart,
                 scheduledOnEnd, offsetKey, pageSize);
@@ -682,7 +681,7 @@ public class ParticipantService {
             ActivityType activityType, String referentGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd,
             String offsetKey, int pageSize) {
 
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityType, referentGuid,
                 scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
@@ -692,7 +691,7 @@ public class ParticipantService {
         checkNotNull(study);
         checkArgument(isNotBlank(userId));
 
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         activityDao.deleteActivitiesForUser(account.getHealthCode());
     }
@@ -780,7 +779,7 @@ public class ParticipantService {
         checkNotNull(study);
         checkNotNull(userId);
         
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         return uploadService.getUploads(account.getHealthCode(), startTime, endTime, pageSize, offsetKey);
     }
@@ -789,7 +788,7 @@ public class ParticipantService {
         checkNotNull(study);
         checkNotNull(userId);
 
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         return notificationsService.listRegistrations(account.getHealthCode());
     }
@@ -799,7 +798,7 @@ public class ParticipantService {
         checkNotNull(userId);
         checkNotNull(message);
 
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
         return notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
     }
@@ -816,7 +815,7 @@ public class ParticipantService {
         if (StringUtils.isBlank(template.getMessage())) {
             throw new BadRequestException("Message is required");
         }
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
         if (account.getPhone() == null || !TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Account does not have a verified phone number");
         }
@@ -838,7 +837,7 @@ public class ParticipantService {
     }
     
     public List<ActivityEvent> getActivityEvents(Study study, String userId) {
-        Account account = getAccountThrowingException(study, userId);
+        Account account = getAccountThrowingException(study.getIdentifier(), userId);
         
         return activityEventService.getActivityEventList(study.getIdentifier(), account.getHealthCode());
     }
@@ -1014,25 +1013,12 @@ public class ParticipantService {
         account.setRoles(newRoleSet);
     }
     
-    private Account getAccountThrowingExceptionIfSubstudyMatches(AccountId accountId) {
-        Account account = accountService.getAccount(accountId);
-        if (account != null) {
-            Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-            boolean anyMatch = account.getAccountSubstudies().stream()
-                    .anyMatch(as -> callerSubstudies.contains(as.getSubstudyId()));
-            if (callerSubstudies.isEmpty() || anyMatch) {
-                return account;
-            }
-        }
-        throw new EntityNotFoundException(Account.class);
-    }
-
-    private Account getAccountThrowingException(Study study, String id) {
-        return getAccountThrowingException(AccountId.forId(study.getIdentifier(), id));
+    private Account getAccountThrowingException(String studyId, String id) {
+        return getAccountThrowingException(AccountId.forId(studyId, id));
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
-        Account account = BridgeUtils.filterForSubstudy(accountService.getAccount(accountId));
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

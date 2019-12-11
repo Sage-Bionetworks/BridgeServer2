@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -43,6 +45,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -475,6 +478,60 @@ public class ParticipantReportControllerTest extends Mockito {
         // Execute and validate.
         controller.deleteParticipantReportIndex(REPORT_ID);
     }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantReportAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService); // return null
+
+        controller.getParticipantReport(USER_ID, TEST_STUDY_IDENTIFIER, START_DATE.toString(), END_DATE.toString());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantReportForWorkerAccountNotFound() {
+        reset(mockAccountService); // return null
+
+        controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, START_DATE.toString(),
+                END_DATE.toString());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantReportV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService); // return null
+
+        controller.getParticipantReportV4(USER_ID, TEST_STUDY_IDENTIFIER, START_DATE.toString(),
+                END_DATE.toString(), null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantReportForWorkerV4AccountNotFound() {
+        reset(mockAccountService); // return null
+
+        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, START_DATE.toString(),
+                END_DATE.toString(), null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void saveParticipantReportAccountNotFound() {
+        reset(mockAccountService); // return null
+
+        controller.saveParticipantReport(USER_ID, REPORT_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void deleteParticipantReportAccountNotFound() {
+        reset(mockAccountService); // return null
+         
+        controller.deleteParticipantReport(USER_ID, REPORT_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void deleteParticipantReportRecordAccountNotFound() {
+        reset(mockAccountService); // return null
+
+        controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, START_DATE.toString());
+    }    
     
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,
             DateRangeResourceList<? extends ReportData> result) throws Exception {

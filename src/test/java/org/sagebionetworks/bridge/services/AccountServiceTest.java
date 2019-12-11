@@ -143,7 +143,6 @@ public class AccountServiceTest extends Mockito {
         Account account = mockGetAccountById();
 
         service.verifyChannel(ChannelType.EMAIL, account);
-        verify(mockAccountDao).getAccount(ACCOUNT_ID);
         verify(mockAccountDao).updateAccount(account, null);
     }
 
@@ -152,7 +151,6 @@ public class AccountServiceTest extends Mockito {
         Account account = mockGetAccountById();
 
         service.changePassword(account, ChannelType.PHONE, "asdf");
-        verify(mockAccountDao).getAccount(ACCOUNT_ID);
         verify(mockAccountDao).updateAccount(account, null);
     }
 
@@ -307,54 +305,40 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void verifyEmailUsingToken() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(UNVERIFIED);
-        hibernateAccount.setEmailVerified(FALSE);
-
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setEmailVerified(FALSE);
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         service.verifyChannel(ChannelType.EMAIL, account);
 
-        assertEquals(hibernateAccount.getStatus(), ENABLED);
-        assertEquals(hibernateAccount.getEmailVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(hibernateAccount.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getEmailVerified(), TRUE);
-
-        verify(mockAccountDao).getAccount(ACCOUNT_ID);
+        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
+        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
+        assertEquals(account.getStatus(), ENABLED);
+        assertEquals(account.getEmailVerified(), TRUE);
     }
 
     @Test
     public void verifyEmailUsingAccount() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(UNVERIFIED);
-        hibernateAccount.setEmailVerified(FALSE);
-
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setEmailVerified(FALSE);
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         service.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
 
-        assertEquals(hibernateAccount.getStatus(), ENABLED);
-        assertEquals(hibernateAccount.getEmailVerified(), TRUE);
+        assertEquals(account.getStatus(), ENABLED);
+        assertEquals(account.getEmailVerified(), TRUE);
         // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(hibernateAccount.getModifiedOn().toString(), MOCK_DATETIME.withZone(DateTimeZone.UTC).toString());
+        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(DateTimeZone.UTC).toString());
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getEmailVerified(), TRUE);
 
-        verify(mockAccountDao).updateAccount(hibernateAccount, null);
+        verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
@@ -383,73 +367,41 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void verifyEmailFailsIfHibernateAccountNotFound() {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.setEmailVerified(null);
-
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
-        try {
-            service.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-            fail("Should have thrown an exception");
-        } catch (EntityNotFoundException e) {
-            // expected exception
-        }
-        verify(mockAccountDao, never()).updateAccount(any(), any());
-        assertEquals(account.getStatus(), UNVERIFIED);
-        assertNull(account.getEmailVerified());
-    }
-
-    @Test
     public void verifyPhoneUsingToken() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(UNVERIFIED);
-        hibernateAccount.setPhoneVerified(FALSE);
-
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setPhoneVerified(FALSE);
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         service.verifyChannel(ChannelType.PHONE, account);
 
-        assertEquals(hibernateAccount.getStatus(), ENABLED);
-        assertEquals(hibernateAccount.getPhoneVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(hibernateAccount.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getPhoneVerified(), TRUE);
-        verify(mockAccountDao).updateAccount(hibernateAccount, null);
+        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
+        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
+        assertEquals(account.getStatus(), ENABLED);
+        assertEquals(account.getPhoneVerified(), TRUE);
+        verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
     public void verifyPhoneUsingAccount() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(UNVERIFIED);
-        hibernateAccount.setPhoneVerified(FALSE);
-
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setPhoneVerified(FALSE);
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
 
-        assertEquals(hibernateAccount.getStatus(), ENABLED);
-        assertEquals(hibernateAccount.getPhoneVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(hibernateAccount.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getPhoneVerified(), TRUE);
-        verify(mockAccountDao).updateAccount(hibernateAccount, null);
+        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
+        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
+        assertEquals(account.getStatus(), ENABLED);
+        assertEquals(account.getPhoneVerified(), TRUE);
+        verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
@@ -475,26 +427,6 @@ public class AccountServiceTest extends Mockito {
         service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
         assertEquals(account.getStatus(), DISABLED);
-    }
-
-    @Test
-    public void verifyPhoneFailsIfHibernateAccountNotFound() {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.setPhoneVerified(null);
-
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
-        try {
-            service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
-            fail("Should have thrown an exception");
-        } catch (EntityNotFoundException e) {
-            // expected exception
-        }
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
-        assertEquals(account.getStatus(), UNVERIFIED);
-        assertNull(account.getPhoneVerified());
     }
 
     @Test
@@ -549,20 +481,6 @@ public class AccountServiceTest extends Mockito {
         assertNull(updatedAccount.getEmailVerified());
         assertTrue(updatedAccount.getPhoneVerified());
         assertEquals(updatedAccount.getStatus(), ENABLED);
-    }
-
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void changePasswordAccountNotFound() {
-        // mock hibernate
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
-
-        // Set up test account
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-
-        // execute
-        service.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
     }
 
     @Test
@@ -1045,6 +963,36 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
         BridgeUtils.setRequestContext(null);
     }
+    
+    @Test
+    public void getAccountMatchesSubstudies() throws Exception {
+        Account persistedAccount = makeValidAccount(true);
+        persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
+
+        Account account = service.getAccount(ACCOUNT_ID);
+        assertEquals(persistedAccount, account);
+        
+        BridgeUtils.setRequestContext(null);
+    }
+    
+    @Test
+    public void getAccountFiltersSubstudies() throws Exception {
+        Account persistedAccount = makeValidAccount(true);
+        persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_B)).build());
+
+        Account account = service.getAccount(ACCOUNT_ID);
+        assertNull(account);
+        
+        BridgeUtils.setRequestContext(null);
+    }    
 
     private Account mockGetAccountById() {
         Account account = Account.create();

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeUtils.filterForSubstudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -98,12 +99,7 @@ public class AccountService {
         boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
         
         if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
-            // NOTE: This is the current implementation but we do not need to load the account again
-            // like this, all call sites are just loading the account, checking it, and then calling
-            // this method.
-            AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
-            Account persistedAccount = accountDao.getAccount(accountId)
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+            Account persistedAccount = account;
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(TRUE);
                 persistedAccount.setEmailVerified(TRUE);
@@ -135,10 +131,12 @@ public class AccountService {
 
         // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
         // Again though, no caller appears to be modifying the account prior to the changePassword call.
+        /*
         AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
+         */
+        Account persistedAccount = account;
         // Update
         DateTime modifiedOn = DateUtils.getCurrentDateTime();
         persistedAccount.setModifiedOn(modifiedOn);
@@ -261,7 +259,8 @@ public class AccountService {
         checkNotNull(healthCode);
         
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
-        Account account = BridgeUtils.filterForSubstudy(getAccount(accountId));
+        // Account account = BridgeUtils.filterForSubstudy(getAccount(accountId));
+        Account account = getAccount(accountId);
         if (account != null) {
             accountDao.updateAccount(account, accountEdits);
         }        
@@ -269,14 +268,17 @@ public class AccountService {
     
     /**
      * Get an account in the context of a study by the user's ID, email address, health code,
-     * or phone number. Returns null if the account cannot be found.
+     * or phone number. Returns null if the account cannot be found, or the caller does not have 
+     * the correct substudy associations to access the account. (Other methods in this service 
+     * also make a check for substudy associations by relying on this method internally).
      */
     public Account getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
-            return BridgeUtils.filterForSubstudy(optional.get());
+            // filtering based on the substudy associations of the caller.
+            return filterForSubstudy(optional.get());
         }
         return null;
     }
