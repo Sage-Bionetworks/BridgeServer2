@@ -101,8 +101,7 @@ public class UserSession {
         return (role != null && (proles.contains(SUPERADMIN) || proles.contains(role)));
     }
     public boolean isInRole(Set<Roles> roleSet) {
-        Set<Roles> proles = participant.getRoles();
-        return roleSet != null && (proles.contains(SUPERADMIN) || roleSet.stream().anyMatch(role -> isInRole(role)));
+        return roleSet != null && roleSet.stream().anyMatch(role -> isInRole(role));
     }
     // These are accessed so frequently it is worth having convenience accessors
     @JsonIgnore

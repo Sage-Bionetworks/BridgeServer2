@@ -6,11 +6,11 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.collectSubstudyIds;
+import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
 import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -22,7 +22,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -533,8 +532,7 @@ public class ParticipantService {
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
-            Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
-            if (callerRoles.contains(ADMIN) || callerRoles.contains(WORKER) || callerRoles.contains(SUPERADMIN)) {
+            if (getRequestContext().isInRole(ImmutableSet.of(ADMIN, WORKER))) {
                 account.setStatus(participant.getStatus());
             }
         }
@@ -584,8 +582,7 @@ public class ParticipantService {
         // Only allow the setting of substudies on new accounts. Note that while administrators can change this 
         // after the account is created, for admin accounts, it can create some very strange security behavior 
         // for that account if it is signed in, so we MUST destroy the session. 
-        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
-        if (isNew || callerRoles.contains(ADMIN)) {
+        if (isNew || getRequestContext().isInRole(ADMIN)) {
             // Copy to prevent concurrent modification exceptions
             Set<AccountSubstudy> accountSubstudies = ImmutableSet.copyOf(account.getAccountSubstudies());
             
@@ -634,8 +631,9 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
-        if (callerIsAdmin(callerRoles)) {
-            updateRoles(callerRoles, participant, account);
+        RequestContext requestContext = getRequestContext();
+        if (requestContext.isInRole(ADMINISTRATIVE_ROLES)) {
+            updateRoles(requestContext, participant, account);
         }
         
         // If the caller is not in a substudy, any substudy tags are allowed. If there 
@@ -934,9 +932,8 @@ public class ParticipantService {
         if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
         }
-        Set<Roles> callerRoles = BridgeUtils.getRequestContext().getCallerRoles();
         Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
-        if (callerRoles.isEmpty() && substudies.contains(identifier.getSubstudyId())) {
+        if (!getRequestContext().isAdministrator() && substudies.contains(identifier.getSubstudyId())) {
             throw new ConstraintViolationException.Builder()
                 .withMessage("Account already associated to substudy.")
                 .withEntityKey("substudyId", identifier.getSubstudyId()).build();
@@ -953,20 +950,15 @@ public class ParticipantService {
      */
     private void updateRequestContext(ExternalIdentifier externalId) {
         if (externalId.getSubstudyId() != null) {
-            RequestContext currentContext = BridgeUtils.getRequestContext();
+            RequestContext currentContext = getRequestContext();
             
             Set<String> newSubstudies = new ImmutableSet.Builder<String>()
                     .addAll(currentContext.getCallerSubstudies())
                     .add(externalId.getSubstudyId()).build();
             
-            RequestContext newContext = new RequestContext.Builder()
-                    .withCallerRoles(currentContext.getCallerRoles())
-                    .withCallerStudyId(currentContext.getCallerStudyIdentifier())
-                    .withRequestId(currentContext.getId())
-                    .withCallerSubstudies(newSubstudies)
-                    .withCallerUserId(currentContext.getCallerUserId())
-                    .build();
-            BridgeUtils.setRequestContext(newContext);
+            RequestContext.Builder builder = currentContext.toBuilder();
+            builder.withCallerSubstudies(newSubstudies);
+            BridgeUtils.setRequestContext(builder.build());
         }
     }
      
@@ -985,30 +977,26 @@ public class ParticipantService {
             .withLanguages(participant.getLanguages()).build();
     }
 
-    private boolean callerIsAdmin(Set<Roles> callerRoles) {
-        return !Collections.disjoint(callerRoles, ADMINISTRATIVE_ROLES);
+    private boolean callerCanEditRole(RequestContext requestContext, Roles targetRole) {
+        return requestContext.isInRole(CAN_BE_EDITED_BY.get(targetRole));
     }
-
-    private boolean callerCanEditRole(Set<Roles> callerRoles, Roles targetRole) {
-        return !Collections.disjoint(callerRoles, CAN_BE_EDITED_BY.get(targetRole));
-    }
-
+    
     /**
      * For each role added, the caller must have the right to add the role. Then for every role currently assigned, we
      * check and if the caller doesn't have the right to remove that role, we'll add it back. Then we save those
      * results.
      */
-    private void updateRoles(Set<Roles> callerRoles, StudyParticipant participant, Account account) {
+    private void updateRoles(RequestContext requestContext, StudyParticipant participant, Account account) {
         Set<Roles> newRoleSet = Sets.newHashSet();
         // Caller can only add roles they have the rights to edit
         for (Roles role : participant.getRoles()) {
-            if (callerCanEditRole(callerRoles, role)) {
+            if (callerCanEditRole(requestContext, role)) {
                 newRoleSet.add(role);
             }
         }
         // Callers also can't remove roles they don't have the rights to edit
         for (Roles role : account.getRoles()) {
-            if (!callerCanEditRole(callerRoles, role)) {
+            if (!callerCanEditRole(requestContext, role)) {
                 newRoleSet.add(role);
             }
         }
@@ -1018,7 +1006,7 @@ public class ParticipantService {
     private Account getAccountThrowingExceptionIfSubstudyMatches(AccountId accountId) {
         Account account = accountDao.getAccount(accountId);
         if (account != null) {
-            Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+            Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
             boolean anyMatch = account.getAccountSubstudies().stream()
                     .anyMatch(as -> callerSubstudies.contains(as.getSubstudyId()));
             if (callerSubstudies.isEmpty() || anyMatch) {

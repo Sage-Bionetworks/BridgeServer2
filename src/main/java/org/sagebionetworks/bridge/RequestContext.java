@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 
 import java.util.List;
@@ -57,8 +58,18 @@ public class RequestContext {
     public Set<String> getCallerSubstudies() {
         return callerSubstudies;
     }
-    public Set<Roles> getCallerRoles() {
+    // Only accessible to tests to verify
+    Set<Roles> getCallerRoles() {
         return callerRoles;
+    }
+    public boolean isAdministrator() { 
+        return !callerRoles.isEmpty();
+    }
+    public boolean isInRole(Roles role) {
+        return (role != null && (callerRoles.contains(SUPERADMIN) || callerRoles.contains(role)));
+    }
+    public boolean isInRole(Set<Roles> roleSet) {
+        return roleSet != null && roleSet.stream().anyMatch(role -> isInRole(role));
     }
     public String getCallerUserId() { 
         return callerUserId;
@@ -96,7 +107,7 @@ public class RequestContext {
         private ClientInfo callerClientInfo;
         private List<String> callerLanguages;
         private String callerIpAddress;
-
+        
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
             return this;
