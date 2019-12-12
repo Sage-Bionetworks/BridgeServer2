@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
@@ -196,7 +197,7 @@ public class AuthenticationService {
         }
         cacheProvider.setUserSession(session);
         
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }        
         return session;
@@ -234,7 +235,7 @@ public class AuthenticationService {
         }
         cacheProvider.setUserSession(session);
 
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
         return session;
@@ -436,7 +437,7 @@ public class AuthenticationService {
             cacheProvider.setObject(sessionCacheKey, session.getSessionToken(), SIGNIN_GRACE_PERIOD_SECONDS);
         }
 
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
         return session;

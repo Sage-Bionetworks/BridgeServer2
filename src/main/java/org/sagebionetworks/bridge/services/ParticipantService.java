@@ -8,7 +8,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
 import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
@@ -631,7 +630,7 @@ public class ParticipantService {
             account.getAttributes().put(attribute, value);
         }
         RequestContext requestContext = getRequestContext();
-        if (requestContext.isInRole(ADMINISTRATIVE_ROLES)) {
+        if (requestContext.isAdministrator()) {
             updateRoles(requestContext, participant, account);
         }
         

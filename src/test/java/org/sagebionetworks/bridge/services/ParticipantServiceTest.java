@@ -1210,6 +1210,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         verify(externalIdService, never()).commitAssignExternalId(any());
     }
+    
     @Test
     public void updateParticipantTransfersSubstudyIdsForAdmins() {
         Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
@@ -1232,6 +1233,29 @@ public class ParticipantServiceTest extends Mockito {
         accountSubstudies.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
     }
+    
+    @Test
+    public void updateParticipantTransfersSubstudyIdsForSuperadmins() {
+        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
+        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies, SUPERADMIN).build();
+        
+        mockHealthCodeAndAccountRetrieval();
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyC", ID));
+        account.getAccountSubstudies().add(AccountSubstudy.create(STUDY.getIdentifier(), "substudyA", ID));
+        
+        participantService.updateParticipant(STUDY, participant);
+        
+        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        
+        Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
+        assertEquals(accountSubstudies.size(), 2);
+        
+        // get() throws exception if accountSubstudy not found
+        accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
+        accountSubstudies.stream()
+                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+    }    
     
     // The exception here results from the fact that the caller can't see the existance of the 
     // participant, because the substudy IDs don't overlap
@@ -1369,6 +1393,11 @@ public class ParticipantServiceTest extends Mockito {
         verifyStatusUpdate(EnumSet.of(ADMIN), true);
     }
 
+    @Test
+    public void superadminCanChangeStatusOnEdit() {
+        verifyStatusUpdate(EnumSet.of(SUPERADMIN), true);
+    }
+    
     @Test
     public void workerCanChangeStatusOnEdit() {
         verifyStatusUpdate(EnumSet.of(WORKER), true);
