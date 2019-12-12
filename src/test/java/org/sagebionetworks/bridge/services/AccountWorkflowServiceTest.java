@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
@@ -895,6 +896,12 @@ public class AccountWorkflowServiceTest extends Mockito {
         // We never send email nor SMS.
         verify(mockSendMailService, never()).sendEmail(any());
         verify(mockSmsService, never()).sendSmsMessage(any(), any());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void notifyAccountExistsNotFound() {
+        service.notifyAccountExists(study, ACCOUNT_ID);
     }
 
     @Test

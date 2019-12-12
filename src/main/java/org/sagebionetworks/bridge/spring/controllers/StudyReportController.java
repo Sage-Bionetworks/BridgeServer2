@@ -117,8 +117,8 @@ public class StudyReportController extends BaseController {
      */
     @GetMapping("/v4/reports/{identifier}")
     public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(@PathVariable String identifier,
-            @RequestParam(required = true) String startTime, @RequestParam(required = true) String endTime,
-            @RequestParam(required = true) String offsetKey, @RequestParam(required = true) String pageSize) {
+            @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession();
         
         DateTime startTimeObj = getDateTimeOrDefault(startTime, null);
@@ -128,26 +128,6 @@ public class StudyReportController extends BaseController {
         return reportService.getStudyReportV4(session.getStudyIdentifier(), identifier, startTimeObj, endTimeObj,
                 offsetKey, pageSizeInt);
     }
-    
-    /**
-     * Get a study report *if* it is marked public, as this call does not require the user to be authenticated.
-     */
-    /* Not referenced in the BridgePF routes file
-    public ForwardCursorPagedResourceList<ReportData> getPublicStudyReportV4(String studyIdString, String identifier, String startTimeString,
-            String endTimeString, String offsetKey, String pageSizeString) {
-        StudyIdentifier studyId = new StudyIdentifierImpl(studyIdString);
-
-        verifyIndexIsPublic(studyId, identifier);
-        // We do not want to inherit a user's session information, if a session token is being 
-        // passed to this method.
-        setRequestContext(NULL_INSTANCE);
-
-        DateTime startTime = getDateTimeOrDefault(startTimeString, null);
-        DateTime endTime = getDateTimeOrDefault(endTimeString, null);
-        int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
-        
-        return reportService.getStudyReportV4(studyId, identifier, startTime, endTime, offsetKey, pageSize);
-    }*/   
     
     /**
      * Report study data can be saved by developers or by worker processes.
