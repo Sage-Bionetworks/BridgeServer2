@@ -107,7 +107,7 @@ public class RequestContext {
         private ClientInfo callerClientInfo;
         private List<String> callerLanguages;
         private String callerIpAddress;
-        
+
         public Builder withMetrics(Metrics metrics) {
             this.metrics = metrics;
             return this;
