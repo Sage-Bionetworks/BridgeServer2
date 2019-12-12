@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -333,8 +332,8 @@ public class BridgeUtilsTest {
         assertNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyB")));
     }
     
-    private HibernateAccount getAccountWithSubstudy(String... substudyIds) {
-        HibernateAccount account = new HibernateAccount();
+    private Account getAccountWithSubstudy(String... substudyIds) {
+        Account account = Account.create();
         Set<AccountSubstudy> accountSubstudies = Arrays.asList(substudyIds)
                 .stream().map((id) -> {
             return AccountSubstudy.create("studyId", id, "accountId");

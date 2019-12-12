@@ -129,34 +129,26 @@ public class AccountService {
         
         String passwordHash = hashCredential(passwordAlgorithm, "password", newPassword);
 
-        // We have to load and update the whole account in order to use Hibernate's optimistic versioning.
-        // Again though, no caller appears to be modifying the account prior to the changePassword call.
-        /*
-        AccountId accountId = AccountId.forId(account.getStudyId(), account.getId());
-        Account persistedAccount = accountDao.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-         */
-        Account persistedAccount = account;
         // Update
         DateTime modifiedOn = DateUtils.getCurrentDateTime();
-        persistedAccount.setModifiedOn(modifiedOn);
-        persistedAccount.setPasswordAlgorithm(passwordAlgorithm);
-        persistedAccount.setPasswordHash(passwordHash);
-        persistedAccount.setPasswordModifiedOn(modifiedOn);
+        account.setModifiedOn(modifiedOn);
+        account.setPasswordAlgorithm(passwordAlgorithm);
+        account.setPasswordHash(passwordHash);
+        account.setPasswordModifiedOn(modifiedOn);
         // One of these (the channel used to reset the password) is also verified by resetting the password.
         if (channelType == EMAIL) {
-            persistedAccount.setStatus(ENABLED);
-            persistedAccount.setEmailVerified(true);    
+            account.setStatus(ENABLED);
+            account.setEmailVerified(true);    
         } else if (channelType == PHONE) {
-            persistedAccount.setStatus(ENABLED);
-            persistedAccount.setPhoneVerified(true);    
+            account.setStatus(ENABLED);
+            account.setPhoneVerified(true);    
         } else if (channelType == null) {
             // If there's no channel type, we're assuming a password-based sign-in using
             // external ID (the third identifying credential that can be used), so here
             // we will enable the account.
-            persistedAccount.setStatus(ENABLED);
+            account.setStatus(ENABLED);
         }
-        accountDao.updateAccount(persistedAccount, null);
+        accountDao.updateAccount(account, null);
     }
     
     /**
@@ -259,7 +251,6 @@ public class AccountService {
         checkNotNull(healthCode);
         
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
-        // Account account = BridgeUtils.filterForSubstudy(getAccount(accountId));
         Account account = getAccount(accountId);
         if (account != null) {
             accountDao.updateAccount(account, accountEdits);

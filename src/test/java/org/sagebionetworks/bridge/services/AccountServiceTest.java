@@ -139,25 +139,25 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void verifyChannel() {
-        Account account = mockGetAccountById();
+    public void verifyChannel() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         service.verifyChannel(ChannelType.EMAIL, account);
         verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
-    public void changePassword() {
-        Account account = mockGetAccountById();
+    public void changePassword() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         service.changePassword(account, ChannelType.PHONE, "asdf");
         verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
-    public void authenticate() {
+    public void authenticate() throws Exception {
         Study study = Study.create();
-        Account account = mockGetAccountById();
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
         doNothing().when(service).verifyPassword(any(), any());
 
@@ -167,11 +167,11 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void reauthenticate() {
+    public void reauthenticate() throws Exception {
         Study study = Study.create();
         study.setReauthenticationEnabled(true);
-        Account account = mockGetAccountById();
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
+        
+        Account account = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, "reauthToken", ROTATIONS))
                 .thenReturn(Optional.of(mockSecret));
 
@@ -181,8 +181,8 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteReauthToken() {
-        mockGetAccountById();
+    public void deleteReauthToken() throws Exception {
+        mockGetAccountById(ACCOUNT_ID, false);
 
         service.deleteReauthToken(ACCOUNT_ID);
         verify(mockAccountSecretDao).removeSecrets(REAUTH, USER_ID);
@@ -215,8 +215,8 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void updateAccount() {
-        Account account = mockGetAccountById();
+    public void updateAccount() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
         Consumer<Account> consumer = (oneAccount) -> {};
 
         service.updateAccount(account, consumer);
@@ -241,10 +241,9 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void editAccount() {
-        Account account = mockGetAccountById();
+    public void editAccount() throws Exception {
         AccountId accountId = AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, HEALTH_CODE);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+        Account account = mockGetAccountById(accountId, false);
 
         service.editAccount(TEST_STUDY, HEALTH_CODE, mockConsumer);
 
@@ -260,8 +259,8 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void getAccount() {
-        Account account = mockGetAccountById();
+    public void getAccount() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         Account returnVal = service.getAccount(ACCOUNT_ID);
         assertEquals(returnVal, account);
@@ -269,8 +268,8 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteAccount() {
-        mockGetAccountById();
+    public void deleteAccount() throws Exception {
+        mockGetAccountById(ACCOUNT_ID, false);
 
         service.deleteAccount(ACCOUNT_ID);
         verify(mockAccountDao).deleteAccount(USER_ID);
@@ -293,10 +292,9 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void getHealthCodeForAccount() {
-        Account account = Account.create();
+    public void getHealthCodeForAccount() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
         account.setHealthCode(HEALTH_CODE);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
         assertEquals(healthCode, HEALTH_CODE);
@@ -343,10 +341,6 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void verifyEmailUsingAccountNoChangeNecessary() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(ENABLED);
-        hibernateAccount.setEmailVerified(TRUE);
-
         Account account = Account.create();
         account.setId(USER_ID);
         account.setStatus(ENABLED);
@@ -406,10 +400,6 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void verifyPhoneUsingAccountNoChangeNecessary() {
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setStatus(ENABLED);
-        hibernateAccount.setPhoneVerified(TRUE);
-
         Account account = Account.create();
         account.setId(USER_ID);
         account.setStatus(ENABLED);
@@ -431,12 +421,6 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void changePasswordSuccess() throws Exception {
-        // mock hibernate
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setId(USER_ID);
-        hibernateAccount.setStatus(UNVERIFIED);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         // Set up test account
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
@@ -461,12 +445,6 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void changePasswordForPhone() throws Exception {
-        // mock hibernate
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setId(USER_ID);
-        hibernateAccount.setStatus(UNVERIFIED);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         // Set up test account
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
@@ -485,12 +463,6 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void changePasswordForExternalId() {
-        // mock hibernate
-        Account hibernateAccount = Account.create();
-        hibernateAccount.setId(USER_ID);
-        hibernateAccount.setStatus(UNVERIFIED);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(hibernateAccount));
-
         // Set up test account
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
@@ -509,8 +481,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void authenticateSuccessWithHealthCode() throws Exception {
-        Account hibernateAccount = makeValidAccount(true);
-        when(mockAccountDao.getAccount(PASSWORD_SIGNIN.getAccountId())).thenReturn(Optional.of(hibernateAccount));
+        mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true);
 
         Study study = Study.create();
 
@@ -530,8 +501,7 @@ public class AccountServiceTest extends Mockito {
         Study study = Study.create();
         study.setReauthenticationEnabled(false);
 
-        Account persistedAccount = makeValidAccount(true);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
 
         Account account = service.authenticate(study, PASSWORD_SIGNIN);
         // not incremented by reauthentication
@@ -554,9 +524,8 @@ public class AccountServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void authenticateAccountUnverified() throws Exception {
         // mock hibernate
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setStatus(UNVERIFIED);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
 
@@ -565,9 +534,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = AccountDisabledException.class)
     public void authenticateAccountDisabled() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setStatus(DISABLED);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
 
@@ -576,8 +544,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateAccountHasNoPassword() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
         Study study = Study.create();
 
@@ -587,9 +554,8 @@ public class AccountServiceTest extends Mockito {
     // branch coverage
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateAccountHasPasswordAlgorithmNoHash() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
         persistedAccount.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
 
@@ -598,8 +564,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateBadPassword() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
 
         Study study = Study.create();
 
@@ -609,8 +574,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void reauthenticateSuccess() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
         AccountSecret secret = AccountSecret.create();
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
@@ -677,9 +641,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void reauthenticateAccountUnverified() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
+        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
         persistedAccount.setStatus(UNVERIFIED);
-        when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.of(persistedAccount));
 
         AccountSecret secret = AccountSecret.create();
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
@@ -693,9 +656,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = AccountDisabledException.class)
     public void reauthenticateAccountDisabled() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
+        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
         persistedAccount.setStatus(DISABLED);
-        when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.of(persistedAccount));
 
         AccountSecret secret = AccountSecret.create();
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
@@ -709,9 +671,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void reauthenticateAccountHasNoReauthToken() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
+        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
         persistedAccount.setStatus(DISABLED);
-        when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.of(persistedAccount));
 
         // it has no record in the secrets table
 
@@ -725,9 +686,8 @@ public class AccountServiceTest extends Mockito {
     // doesn't change outcome of test)
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void failedSignInOfDisabledAccountDoesNotIndicateAccountExists() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
         persistedAccount.setStatus(DISABLED);
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
 
@@ -738,19 +698,18 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void reauthenticateBadReauthToken() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID, false);
 
         Study study = Study.create();
+        study.setReauthenticationEnabled(true);
 
-        service.authenticate(study, new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+        service.reauthenticate(study, new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
                 .withReauthToken("wrong reauth token").build());
     }
 
     @Test
     public void getByEmail() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
         Account account = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
 
@@ -759,8 +718,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void deleteReauthTokenWithEmail() throws Exception {
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
         service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
 
@@ -770,8 +728,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void deleteReauthTokenNoToken() throws Exception {
         // Return an account with no reauth token.
-        Account persistedAccount = makeValidAccount(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
+        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
         // Just quietly succeeds without doing any account update.
         service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
@@ -794,7 +751,7 @@ public class AccountServiceTest extends Mockito {
     public void createAccountSuccess() throws Exception {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
         // the account have a different study.
-        Account account = makeValidAccount(true);
+        Account account = mockGetAccountById(ACCOUNT_ID, true);
         account.setStudyId("wrong-study");
 
         Study study = Study.create();
@@ -804,14 +761,13 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(eq(study), accountCaptor.capture(), eq(null));
 
-        Account createdHibernateAccount = accountCaptor.getValue();
-        assertEquals(createdHibernateAccount.getId(), USER_ID);
-        assertEquals(createdHibernateAccount.getStudyId(), TEST_STUDY_IDENTIFIER);
-        assertEquals(createdHibernateAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdHibernateAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdHibernateAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdHibernateAccount.getStatus(), ENABLED);
-        assertEquals(createdHibernateAccount.getMigrationVersion(), MIGRATION_VERSION);
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getId(), USER_ID);
+        assertEquals(createdAccount.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
     }
 
     @Test
@@ -819,7 +775,6 @@ public class AccountServiceTest extends Mockito {
         // Some fields can't be modified. Create the persisted account and set the base fields so we can verify they
         // weren't modified.
         Account persistedAccount = Account.create();
-        persistedAccount.setStudyId("persisted-study");
         persistedAccount.setEmail("persisted@example.com");
         persistedAccount.setCreatedOn(new DateTime(1234L));
         persistedAccount.setPasswordModifiedOn(new DateTime(5678L));
@@ -832,7 +787,7 @@ public class AccountServiceTest extends Mockito {
 
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
 
-        Account account = makeValidAccount(true);
+        Account account = mockGetAccountById(ACCOUNT_ID, true);
         account.setEmail(OTHER_EMAIL);
         account.setPhone(OTHER_PHONE);
         account.setEmailVerified(Boolean.FALSE);
@@ -843,23 +798,17 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
 
-        Account updatedHibernateAccount = accountCaptor.getValue();
-        assertEquals(updatedHibernateAccount.getId(), USER_ID);
-        assertEquals(updatedHibernateAccount.getStudyId(), "persisted-study");
-        assertEquals(updatedHibernateAccount.getEmail(), OTHER_EMAIL);
-        assertEquals(updatedHibernateAccount.getPhone().getNationalFormat(), OTHER_PHONE.getNationalFormat());
-        assertEquals(updatedHibernateAccount.getEmailVerified(), Boolean.FALSE);
-        assertEquals(updatedHibernateAccount.getPhoneVerified(), Boolean.FALSE);
-        assertEquals(updatedHibernateAccount.getCreatedOn().getMillis(), 1234);
-        assertEquals(updatedHibernateAccount.getPasswordModifiedOn().getMillis(), 5678);
-        assertEquals(updatedHibernateAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        Account updatedAccount = accountCaptor.getValue();
+        assertEquals(updatedAccount.getId(), USER_ID);
+        assertEquals(updatedAccount.getEmail(), OTHER_EMAIL);
+        assertEquals(updatedAccount.getPhone().getNationalFormat(), OTHER_PHONE.getNationalFormat());
+        assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
     }
 
     @Test
     public void updateDoesNotChangePassword() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
-
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
@@ -880,9 +829,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void authenticateAccountUnverifiedEmailFails() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setEmailVerified(false);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
         study.setVerifyChannelOnSignInEnabled(true);
@@ -894,9 +842,8 @@ public class AccountServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void authenticateAccountUnverifiedPhoneFails() throws Exception {
         // mock hibernate
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_PHONE, true);
         persistedAccount.setPhoneVerified(null);
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
         study.setVerifyChannelOnSignInEnabled(true);
@@ -910,9 +857,8 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void authenticateAccountEmailUnverifiedWithoutEmailVerificationOK() throws Exception {
         // mock hibernate 
-        Account persistedAccount = makeValidAccount(true); 
+        Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
         persistedAccount.setEmailVerified(false);
-        when(mockAccountDao.getAccount(PASSWORD_SIGNIN.getAccountId())).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
         study.setEmailVerificationEnabled(false);
@@ -923,9 +869,8 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void authenticateAccountUnverifiedEmailSucceedsForLegacy() throws Exception {
         // mock hibernate 
-        Account persistedAccount = makeValidAccount(true); 
+        Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
         persistedAccount.setEmailVerified(false);
-        when(mockAccountDao.getAccount(PASSWORD_SIGNIN.getAccountId())).thenReturn(Optional.of(persistedAccount));
 
         Study study = Study.create();
         study.setVerifyChannelOnSignInEnabled(false);
@@ -939,9 +884,8 @@ public class AccountServiceTest extends Mockito {
                 .withPassword(DUMMY_PASSWORD).build();
 
         // mock hibernate
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(phoneSignIn.getAccountId(), true);
         persistedAccount.setPhoneVerified(null);
-        when(mockAccountDao.getAccount(phoneSignIn.getAccountId())).thenReturn(Optional.of(persistedAccount));
         
         Study study = Study.create();
         study.setVerifyChannelOnSignInEnabled(false);
@@ -954,7 +898,7 @@ public class AccountServiceTest extends Mockito {
     public void editAccountFailsAcrossSubstudies() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(CALLER_SUBSTUDIES).build());
 
-        Account persistedAccount = makeValidAccount(false);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
         persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
 
@@ -966,9 +910,8 @@ public class AccountServiceTest extends Mockito {
     
     @Test
     public void getAccountMatchesSubstudies() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
@@ -981,9 +924,8 @@ public class AccountServiceTest extends Mockito {
     
     @Test
     public void getAccountFiltersSubstudies() throws Exception {
-        Account persistedAccount = makeValidAccount(true);
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_B)).build());
@@ -994,33 +936,19 @@ public class AccountServiceTest extends Mockito {
         BridgeUtils.setRequestContext(null);
     }    
 
-    private Account mockGetAccountById() {
+    private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
-        return account;
-    }
-
-    // Create minimal Hibernate account for everything that will be used by HibernateAccountDao.
-    private static Account makeValidAccount(boolean generatePasswordHash) throws Exception {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-        account.setHealthCode(HEALTH_CODE);
-        account.setPhone(PHONE);
-        account.setPhoneVerified(true);
         account.setEmail(EMAIL);
-        account.setEmailVerified(true);
-        account.setStatus(ENABLED);
-        account.setMigrationVersion(MIGRATION_VERSION);
+        account.setHealthCode(HEALTH_CODE);
         account.setVersion(1);
-
         if (generatePasswordHash) {
             // Password hashes are expensive to generate. Only generate them if the test actually needs them.
             account.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
             account.setPasswordHash(DEFAULT_PASSWORD_ALGORITHM.generateHash(DUMMY_PASSWORD));
         }
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
         return account;
     }
 }
