@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import java.util.Map;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -97,11 +97,10 @@ public class UserSession {
         return ConsentStatus.isConsentCurrent(consentStatuses);
     }
     public boolean isInRole(Roles role) {
-        Set<Roles> proles = participant.getRoles();
-        return (role != null && (proles.contains(SUPERADMIN) || proles.contains(role)));
+        return BridgeUtils.isInRole(participant.getRoles(), role);
     }
     public boolean isInRole(Set<Roles> roleSet) {
-        return roleSet != null && roleSet.stream().anyMatch(role -> isInRole(role));
+        return BridgeUtils.isInRole(participant.getRoles(), roleSet);
     }
     // These are accessed so frequently it is worth having convenience accessors
     @JsonIgnore
