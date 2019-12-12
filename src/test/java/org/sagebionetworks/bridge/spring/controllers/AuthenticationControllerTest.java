@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -84,6 +83,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -126,7 +126,7 @@ public class AuthenticationControllerTest extends Mockito {
     AccountWorkflowService mockWorkflowService;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     StudyService mockStudyService;
@@ -1193,7 +1193,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         Account account = Account.create();
         AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
         Study newStudy = Study.create();
         newStudy.setIdentifier("my-new-study");
@@ -1240,7 +1240,7 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, TEST_ACCOUNT_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
         
         Study newStudy = Study.create();
         newStudy.setIdentifier("my-new-study");
@@ -1266,7 +1266,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID))
+        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_STUDY_IDENTIFIER));
         
         Study newStudy = Study.create();

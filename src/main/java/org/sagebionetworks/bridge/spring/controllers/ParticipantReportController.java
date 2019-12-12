@@ -148,7 +148,7 @@ public class ParticipantReportController extends BaseController {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
-        Account account = accountDao.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
 
         return reportService.getParticipantReport(studyId, reportId, account.getHealthCode(), startDate, endDate);
     }
@@ -182,7 +182,7 @@ public class ParticipantReportController extends BaseController {
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
-        Account account = accountDao.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
 
         return reportService.getParticipantReportV4(studyId, reportId, account.getHealthCode(), startTime, endTime,
                 offsetKey, pageSize);
@@ -198,7 +198,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
@@ -244,7 +244,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
@@ -260,7 +260,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         
         reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
         

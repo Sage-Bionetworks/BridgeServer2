@@ -133,7 +133,7 @@ public class UserProfileController extends BaseController {
         
         AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
                 session.getHealthCode());
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

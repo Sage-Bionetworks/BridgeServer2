@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -97,7 +96,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
-    private AccountDao accountDao;
+    private AccountService accountService;
 
     private SmsService smsService;
 
@@ -131,8 +130,8 @@ public class ParticipantService {
     }
     
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     /** SMS Service, used to send text messages to participants. */
@@ -359,7 +358,7 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new AccountSummarySearchValidator(study.getDataGroups()), search);
         
-        return accountDao.getPagedAccountSummaries(study, search);
+        return accountService.getPagedAccountSummaries(study, search);
     }
 
     /**
@@ -392,7 +391,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
-            accountDao.deleteReauthToken(accountId);
+            accountService.deleteReauthToken(accountId);
         }
         
         cacheProvider.removeSessionByUserId(account.getId());
@@ -467,7 +466,7 @@ public class ParticipantService {
         // within an account transaction, and roll back the account if the external ID save fails. If the 
         // account save fails, catch the exception and rollback the external ID save. 
         try {
-            accountDao.createAccount(study, account,
+            accountService.createAccount(study, account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
         } catch(Exception e) {
             if (externalId != null) {
@@ -541,7 +540,7 @@ public class ParticipantService {
         
         // Simple case, not trying to assign an external ID
         if (externalId == null) {
-            accountDao.updateAccount(account, null);
+            accountService.updateAccount(account, null);
             return;
         }
         
@@ -550,7 +549,7 @@ public class ParticipantService {
         // the account if the external ID save fails. If the account save fails, catch the exception and 
         // rollback the external ID save. 
         try {
-            accountDao.updateAccount(account,
+            accountService.updateAccount(account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
         } catch (Exception e) {
             externalIdService.unassignExternalId(account, externalId.getIdentifier());
@@ -859,9 +858,9 @@ public class ParticipantService {
         Account account;
         // These throw exceptions for not found, disabled, and not yet verified.
         if (update.getSignIn().getReauthToken() != null) {
-            account = accountDao.reauthenticate(study, update.getSignIn());
+            account = accountService.reauthenticate(study, update.getSignIn());
         } else {
-            account = accountDao.authenticate(study, update.getSignIn());
+            account = accountService.authenticate(study, update.getSignIn());
         }
         // Verify the account matches the current caller
         if (!account.getId().equals(context.getUserId())) {
@@ -897,7 +896,7 @@ public class ParticipantService {
             acctSubstudy.setExternalId(externalId.getIdentifier());
             account.getAccountSubstudies().add(acctSubstudy);
             try {
-                accountDao.updateAccount(account,
+                accountService.updateAccount(account,
                         (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
             } catch(Exception e) {
                 externalIdService.unassignExternalId(account, externalId.getIdentifier());    
@@ -905,7 +904,7 @@ public class ParticipantService {
             }
             updateRequestContext(externalId);
         } else if (accountUpdated) {
-            accountDao.updateAccount(account, null);
+            accountService.updateAccount(account, null);
         }
         if (sendEmailVerification && 
             study.isEmailVerificationEnabled() && 
@@ -1016,7 +1015,7 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingExceptionIfSubstudyMatches(AccountId accountId) {
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account != null) {
             Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
             boolean anyMatch = account.getAccountSubstudies().stream()
@@ -1033,7 +1032,7 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
-        Account account = BridgeUtils.filterForSubstudy(accountDao.getAccount(accountId));
+        Account account = BridgeUtils.filterForSubstudy(accountService.getAccount(accountId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

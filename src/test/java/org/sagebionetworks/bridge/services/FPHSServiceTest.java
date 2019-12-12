@@ -20,7 +20,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -43,7 +42,7 @@ public class FPHSServiceTest {
     @Mock
     private FPHSExternalIdentifierDao mockDao;
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
     @Mock
     private Account mockAccount;
     
@@ -55,7 +54,7 @@ public class FPHSServiceTest {
         externalId = ExternalIdentifier.create(TEST_STUDY, EXTERNAL_ID);
         service = new FPHSService();
         service.setFPHSExternalIdentifierDao(mockDao);
-        service.setAccountDao(mockAccountDao);
+        service.setAccountService(mockAccountService);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -83,7 +82,7 @@ public class FPHSServiceTest {
     
     @Test
     public void registerExternalIdentifier() throws Exception {
-        TestUtils.mockEditAccount(mockAccountDao, mockAccount);
+        TestUtils.mockEditAccount(mockAccountService, mockAccount);
         Set<String> dataGroups = Sets.newHashSet();
         Set<AccountSubstudy> accountSubstudies = Sets.newHashSet();
         when(mockAccount.getDataGroups()).thenReturn(dataGroups);
@@ -112,7 +111,7 @@ public class FPHSServiceTest {
             verify(mockDao).verifyExternalId(externalId);
             verify(mockDao).registerExternalId(externalId);
             verifyNoMoreInteractions(mockDao);
-            verifyNoMoreInteractions(mockAccountDao);
+            verifyNoMoreInteractions(mockAccountService);
         }
     }
     
@@ -125,7 +124,7 @@ public class FPHSServiceTest {
         } catch(RuntimeException e) {
             verify(mockDao).verifyExternalId(externalId);
             verifyNoMoreInteractions(mockDao);
-            verifyNoMoreInteractions(mockAccountDao);
+            verifyNoMoreInteractions(mockAccountService);
         }
     }
     

@@ -58,11 +58,11 @@ public class EmailController extends BaseController {
             
             // This should always return a healthCode under normal circumstances.
             AccountId accountId = AccountId.forEmail(study.getIdentifier(), email);
-            String healthCode = accountDao.getHealthCodeForAccount(accountId);
+            String healthCode = accountService.getHealthCodeForAccount(accountId);
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
             }
-            accountDao.editAccount(study.getStudyIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
+            accountService.editAccount(study.getStudyIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {

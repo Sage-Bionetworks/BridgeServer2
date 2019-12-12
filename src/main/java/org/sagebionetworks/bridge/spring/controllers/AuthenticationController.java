@@ -321,7 +321,7 @@ public class AuthenticationController extends BaseController {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
         }

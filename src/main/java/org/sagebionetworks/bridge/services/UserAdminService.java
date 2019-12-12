@@ -9,7 +9,6 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -35,7 +34,7 @@ public class UserAdminService {
     private AuthenticationService authenticationService;
     private NotificationsService notificationsService;
     private ParticipantService participantService;
-    private AccountDao accountDao;
+    private AccountService accountService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
     private ScheduledActivityService scheduledActivityService;
@@ -61,8 +60,8 @@ public class UserAdminService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     @Autowired
     final void setConsentService(ConsentService consentService) {
@@ -193,7 +192,7 @@ public class UserAdminService {
         checkArgument(StringUtils.isNotBlank(id));
         
         AccountId accountId = AccountId.forId(study.getIdentifier(), id);
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
@@ -211,7 +210,7 @@ public class UserAdminService {
             }
             // AccountSecret records and AccountsSubstudies records are are deleted on a 
             // cascading delete from Account
-            accountDao.deleteAccount(accountId);
+            accountService.deleteAccount(accountId);
         }
     }
 }

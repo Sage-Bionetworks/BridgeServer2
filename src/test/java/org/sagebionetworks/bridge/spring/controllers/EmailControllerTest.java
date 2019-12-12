@@ -21,10 +21,10 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class EmailControllerTest extends Mockito {
@@ -42,7 +42,7 @@ public class EmailControllerTest extends Mockito {
     StudyService mockStudyService;
 
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     Account mockAccount;
@@ -66,10 +66,10 @@ public class EmailControllerTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         when(mockConfig.getEmailUnsubscribeToken()).thenReturn(UNSUBSCRIBE_TOKEN);
-        when(mockAccountDao.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
+        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
-        mockEditAccount(mockAccountDao, mockAccount);
+        mockEditAccount(mockAccountService, mockAccount);
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
@@ -124,7 +124,7 @@ public class EmailControllerTest extends Mockito {
     @Test
     public void noAccountThrowsException() throws Exception {
         mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, TEST_STUDY_IDENTIFIER, TOKEN, UNSUBSCRIBE_TOKEN);
-        doReturn(null).when(mockAccountDao).getHealthCodeForAccount(ACCOUNT_ID);
+        doReturn(null).when(mockAccountService).getHealthCodeForAccount(ACCOUNT_ID);
 
         String result = controller.unsubscribeFromEmail();
         assertEquals(result, "Email not found.");

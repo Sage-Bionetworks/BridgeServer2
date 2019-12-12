@@ -25,12 +25,12 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.CacheAdminService;
 
 public class CacheAdminControllerTest extends Mockito {
@@ -45,7 +45,7 @@ public class CacheAdminControllerTest extends Mockito {
     private CacheAdminService mockCacheAdminService;
     
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
 
     @InjectMocks
     @Spy
@@ -81,7 +81,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void listItems() throws Exception {
         session.setStudyIdentifier(TEST_STUDY);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
@@ -108,7 +108,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void removeItem() throws Exception {
         session.setStudyIdentifier(TEST_STUDY);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         StatusMessage result = controller.removeItem("cacheKey");
         assertEquals("Item removed from cache.", result.getMessage());

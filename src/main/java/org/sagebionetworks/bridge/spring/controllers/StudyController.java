@@ -171,7 +171,7 @@ public class StudyController extends BaseController {
         if (session.getParticipant().getRoles().isEmpty()) {
             throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
         }
-        List<String> studyIds = accountDao.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
+        List<String> studyIds = accountService.getStudyIdsForUser(session.getParticipant().getSynapseUserId());
         
         Stream<Study> stream = null;
         // In our current study permissions model, an admin in the API study is a 
