@@ -648,11 +648,13 @@ public class BridgeUtils {
     }
     
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return (requiredRole != null && (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
+        return (callerRoles != null && requiredRole != null && 
+                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
     }
     
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return requiredRoles != null && requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+        return callerRoles != null && requiredRoles != null && 
+                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
 
 }
