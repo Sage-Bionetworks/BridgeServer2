@@ -1450,36 +1450,6 @@ public class HibernateAccountDaoTest {
     }
 
     @Test
-    public void getHealthCode() throws Exception {
-        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
-                + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "acct.email=:email GROUP BY acct.id";
-
-        // mock hibernate
-        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        hibernateAccount.setHealthCode(HEALTH_CODE);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
-                .thenReturn(ImmutableList.of(hibernateAccount));
-
-        // execute and validate
-        String healthCode = dao.getHealthCodeForAccount(ACCOUNT_ID_WITH_EMAIL);
-        assertEquals(healthCode, HEALTH_CODE);
-
-        // verify hibernate query
-        verify(mockHibernateHelper).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
-    }
-
-    @Test
-    public void getHealthCodeNoAccount() {
-        // mock hibernate
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any())).thenReturn(ImmutableList.of());
-
-        // execute and validate
-        String healthCode = dao.getHealthCodeForAccount(ACCOUNT_ID_WITH_EMAIL);
-        assertNull(healthCode);
-    }
-
-    @Test
     public void unmarshallAccountSummarySuccess() {
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
