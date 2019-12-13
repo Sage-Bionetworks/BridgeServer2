@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
@@ -851,6 +856,38 @@ public class BridgeUtilsTest {
     @Test
     public void sanitizeHTMLWithNull() {
         assertNull(BridgeUtils.sanitizeHTML(null));
+    }
+
+    @Test
+    public void isInRoleMethodsAreNullSafe() {
+        assertFalse(BridgeUtils.isInRole(null, (Roles)null));
+        assertFalse(BridgeUtils.isInRole(null, (Set<Roles>)null));
+    }
+    
+    @Test
+    public void isInRoleForSuperadminMatchesEverything() {
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), DEVELOPER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), RESEARCHER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ADMIN));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), WORKER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(RESEARCHER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(ADMIN)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(WORKER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
+    }
+    
+    @Test
+    public void isInRole() {
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), DEVELOPER));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), RESEARCHER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ADMIN));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), WORKER));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER)));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN)));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
     }
 
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

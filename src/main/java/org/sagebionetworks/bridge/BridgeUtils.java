@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -645,4 +646,15 @@ public class BridgeUtils {
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
         return clean.body().html();
     }
+    
+    public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
+        return (callerRoles != null && requiredRole != null && 
+                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
+    }
+    
+    public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
+        return callerRoles != null && requiredRoles != null && 
+                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+    }
+
 }

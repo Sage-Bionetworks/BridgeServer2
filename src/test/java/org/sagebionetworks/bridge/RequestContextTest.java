@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -9,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -114,5 +118,56 @@ public class RequestContextTest {
         assertEquals(copy.getCallerLanguages(), LANGUAGES);
         assertEquals(copy.getCallerClientInfo(), clientInfo);
         assertEquals(copy.getMetrics(), metrics);
+    }
+    
+    @Test
+    public void isInRoleMethodsAreNullSafe() {
+        RequestContext context = new RequestContext.Builder().build();
+        
+        assertFalse(context.isAdministrator());
+        assertFalse(context.isInRole((Roles)null));
+        assertFalse(context.isInRole((Set<Roles>)null));
+    }
+    
+    @Test
+    public void isAdministratorTrue() {
+        RequestContext context = new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build();
+        assertTrue(context.isAdministrator());
+    }
+    
+    @Test
+    public void isAdministratorFalse() {
+        RequestContext context = new RequestContext.Builder().withCallerRoles(ImmutableSet.of()).build();
+        assertFalse(context.isAdministrator());   
+    }
+    
+    @Test
+    public void isInRoleForSuperadminMatchesEverything() {
+        RequestContext context = new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build();
+        
+        assertTrue(context.isInRole(DEVELOPER));
+        assertTrue(context.isInRole(RESEARCHER));
+        assertTrue(context.isInRole(ADMIN));
+        assertTrue(context.isInRole(WORKER));
+        assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER)));
+        assertTrue(context.isInRole(ImmutableSet.of(RESEARCHER)));
+        assertTrue(context.isInRole(ImmutableSet.of(ADMIN)));
+        assertTrue(context.isInRole(ImmutableSet.of(WORKER)));
+        assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER, ADMIN)));
+    }
+    
+    @Test
+    public void isInRole() {
+        RequestContext context = new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build();
+
+        assertFalse(context.isInRole(DEVELOPER));
+        assertFalse(context.isInRole(RESEARCHER));
+        assertTrue(context.isInRole(ADMIN));
+        assertFalse(context.isInRole(WORKER));
+        assertFalse(context.isInRole(ImmutableSet.of(DEVELOPER)));
+        assertFalse(context.isInRole(ImmutableSet.of(RESEARCHER)));
+        assertTrue(context.isInRole(ImmutableSet.of(ADMIN)));
+        assertFalse(context.isInRole(ImmutableSet.of(WORKER)));
+        assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER, ADMIN)));
     }
 }
