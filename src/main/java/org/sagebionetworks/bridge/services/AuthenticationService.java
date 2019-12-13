@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
@@ -10,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -195,7 +195,7 @@ public class AuthenticationService {
         }
         cacheProvider.setUserSession(session);
         
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }        
         return session;
@@ -233,7 +233,7 @@ public class AuthenticationService {
         }
         cacheProvider.setUserSession(session);
 
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
         return session;
@@ -435,7 +435,7 @@ public class AuthenticationService {
             cacheProvider.setObject(sessionCacheKey, session.getSessionToken(), SIGNIN_GRACE_PERIOD_SECONDS);
         }
 
-        if (!session.doesConsent() && !session.isInRole(Roles.ADMINISTRATIVE_ROLES)) {
+        if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
         }
         return session;

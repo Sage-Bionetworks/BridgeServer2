@@ -114,7 +114,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
                 subpopCaptor.capture(), eq(false), eq(false));
         
         assertEquals(BridgeUtils.getRequestContext().getCallerStudyId(), BridgeConstants.API_STUDY_ID_STRING);
-        assertEquals(BridgeUtils.getRequestContext().getCallerRoles(), ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER));
+        assertTrue(BridgeUtils.getRequestContext().isInRole(SUPERADMIN));
         assertEquals(BridgeUtils.getRequestContext().getCallerUserId(), "DefaultStudyBootstrapper");
         
         assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(0));

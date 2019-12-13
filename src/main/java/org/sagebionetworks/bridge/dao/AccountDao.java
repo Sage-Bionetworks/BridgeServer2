@@ -61,4 +61,4 @@ public interface AccountDao {
      *      paging parameters.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search);
-}
+}    

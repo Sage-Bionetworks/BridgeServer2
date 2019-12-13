@@ -300,6 +300,15 @@ public class AccountServiceTest extends Mockito {
         assertEquals(healthCode, HEALTH_CODE);
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
+    
+    @Test
+    public void getHealthCodeForAccountNoAccount() {
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
+        
+        String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
+        assertNull(healthCode);
+        verify(mockAccountDao).getAccount(ACCOUNT_ID);
+    }    
 
     @Test
     public void verifyEmailUsingToken() {
@@ -951,4 +960,5 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
         return account;
     }
+
 }
