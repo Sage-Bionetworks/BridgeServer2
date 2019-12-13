@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -67,7 +66,7 @@ public class UserAdminServiceMockTest {
     private ConsentService consentService;
     
     @Mock
-    private AccountDao accountDao;
+    private AccountService accountService;
     
     @Mock
     private Account account;
@@ -297,7 +296,7 @@ public class UserAdminServiceMockTest {
         when(consentService.getConsentStatuses(any())).thenReturn(statuses);
         
         AccountId accountId = AccountId.forId(study.getIdentifier(), USER_ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         
         when(participantService.getParticipant(study, USER_ID, false))
                 .thenThrow(new IllegalStateException("System is unable to complete call"));        
@@ -306,7 +305,7 @@ public class UserAdminServiceMockTest {
             service.createUser(study, participant, null, true, true);    
             fail("Should have thrown exception");
         } catch(IllegalStateException e) {
-            verify(accountDao).deleteAccount(accountId);
+            verify(accountService).deleteAccount(accountId);
         }
     }
     
@@ -325,7 +324,7 @@ public class UserAdminServiceMockTest {
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
         doReturn(substudies).when(account).getAccountSubstudies();
-        doReturn(account).when(accountDao).getAccount(accountId);
+        doReturn(account).when(accountService).getAccount(accountId);
         
         service.deleteUser(study, "userId");
         
@@ -339,7 +338,7 @@ public class UserAdminServiceMockTest {
         verify(activityEventService).deleteActivityEvents("healthCode");
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subAextId"));
         verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subBextId"));
-        verify(accountDao).deleteAccount(accountId);
+        verify(accountService).deleteAccount(accountId);
         
         assertEquals(accountCaptor.getValue().getHealthCode(), "healthCode");
     }
@@ -359,6 +358,6 @@ public class UserAdminServiceMockTest {
         verify(scheduledActivityService, never()).deleteActivitiesForUser(any());
         verify(activityEventService, never()).deleteActivityEvents(any());
         verify(externalIdService, never()).unassignExternalId(any(), any());
-        verify(accountDao, never()).deleteAccount(any());
+        verify(accountService, never()).deleteAccount(any());
     }
 }

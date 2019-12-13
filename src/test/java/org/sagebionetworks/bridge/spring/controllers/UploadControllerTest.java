@@ -34,7 +34,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -53,6 +52,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UploadService;
@@ -76,7 +76,7 @@ public class UploadControllerTest extends Mockito {
     HealthCodeDao mockHealthCodeDao;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     RequestInfoService mockRequestInfoService;
@@ -385,7 +385,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(true).when(mockResearcherSession).isInRole(Roles.SUPERADMIN);
         
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setStudyId("some-other-study");

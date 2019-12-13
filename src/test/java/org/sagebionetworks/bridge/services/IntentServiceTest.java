@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -87,7 +86,7 @@ public class IntentServiceTest {
     Study mockStudy;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     TemplateService mockTemplateService;
@@ -270,7 +269,7 @@ public class IntentServiceTest {
         AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, intent.getPhone()); 
         
         Account account = Account.create();
-        when(mockAccountDao.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
         service.submitIntentToParticipate(intent);
         

@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -60,6 +59,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -80,7 +80,7 @@ public class ConsentControllerTest extends Mockito {
     ConsentService mockConsentService;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -166,7 +166,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(retrievedSession.getSessionToken(), ORIGINAL_SESSION_TOKEN);
         
-        verify(mockAccountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), accountConsumerCaptor.capture());
+        verify(mockAccountService).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), accountConsumerCaptor.capture());
         verify(mockSessionUpdateService).updateSharingScope(session, SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         // This works as a verification because the lambda carries a closure that includes the correct sharing 
@@ -386,7 +386,7 @@ public class ConsentControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     public void dataSharingSuspendedUpdatesSession() throws Exception {
         Account account = Mockito.mock(Account.class);
-        TestUtils.mockEditAccount(mockAccountDao, account);
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         doAnswer((InvocationOnMock invocation) -> {
             session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
@@ -401,14 +401,14 @@ public class ConsentControllerTest extends Mockito {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(mockAccountDao).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
     }
     
     @Test
     @SuppressWarnings("deprecation")
     public void dataSharingResumedUpdatesSession() throws Exception {
         Account account = Mockito.mock(Account.class);
-        TestUtils.mockEditAccount(mockAccountDao, account);
+        TestUtils.mockEditAccount(mockAccountService, account);
 
         doAnswer((InvocationOnMock invocation) -> {
             session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())

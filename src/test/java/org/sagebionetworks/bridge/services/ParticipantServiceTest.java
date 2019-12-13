@@ -55,7 +55,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -180,7 +179,7 @@ public class ParticipantServiceTest extends Mockito {
     private ParticipantService participantService;
     
     @Mock
-    private AccountDao accountDao;
+    private AccountService accountService;
     
     @Mock
     private ScheduledActivityDao activityDao;
@@ -271,7 +270,7 @@ public class ParticipantServiceTest extends Mockito {
                 accountConsumer.accept(account);    
             }
             return null;
-        }).when(accountDao).createAccount(any(), any(), any());
+        }).when(accountService).createAccount(any(), any(), any());
         doAnswer((InvocationOnMock invocation) -> {
             @SuppressWarnings("unchecked")
             Consumer<Account> accountConsumer = (Consumer<Account>) invocation.getArgument(1);
@@ -279,7 +278,7 @@ public class ParticipantServiceTest extends Mockito {
                 accountConsumer.accept(account);    
             }
             return null;
-        }).when(accountDao).updateAccount(any(), any());
+        }).when(accountService).updateAccount(any(), any());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
                 .withCallerSubstudies(CALLER_SUBS).build());
@@ -316,13 +315,13 @@ public class ParticipantServiceTest extends Mockito {
         account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
     }
     
     private void mockAccountNoEmail() {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
     }
     
     @Test
@@ -340,7 +339,7 @@ public class ParticipantServiceTest extends Mockito {
         verify(externalIdService).commitAssignExternalId(extId);
         
         // suppress email (true) == sendEmail (false)
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, EMAIL);
         
         Account account = accountCaptor.getValue();
@@ -382,7 +381,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(accountSubstudies.size(), 2);
@@ -411,8 +410,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.createParticipant(STUDY, participant, false);
         
         // The order of these calls matters.
-        InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
-        inOrder.verify(accountDao).createAccount(eq(STUDY), eq(account), any());
+        InOrder inOrder = Mockito.inOrder(accountService, externalIdService);
+        inOrder.verify(accountService).createAccount(eq(STUDY), eq(account), any());
         inOrder.verify(externalIdService).commitAssignExternalId(extId);
     }
 
@@ -428,7 +427,7 @@ public class ParticipantServiceTest extends Mockito {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
         }
-        verifyNoMoreInteractions(accountDao);
+        verifyNoMoreInteractions(accountService);
         verify(externalIdService, never()).commitAssignExternalId(any());
     }
     
@@ -810,7 +809,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.getPagedAccountSummaries(STUDY, search);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, search); 
+        verify(accountService).getPagedAccountSummaries(STUDY, search); 
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -846,7 +845,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.getPagedAccountSummaries(STUDY, search);
         
-        verify(accountDao).getPagedAccountSummaries(STUDY, search); 
+        verify(accountService).getPagedAccountSummaries(STUDY, search); 
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -878,7 +877,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         participantService.getParticipant(STUDY, ID, false);
     }
@@ -905,7 +904,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SubpopulationGuid.create("foo1"));
@@ -943,7 +942,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         
         StudyParticipant retrieved = participantService.getSelfParticipant(STUDY, CONTEXT, false);
@@ -962,7 +961,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyParticipant() {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
 
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
@@ -1097,7 +1096,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
@@ -1109,7 +1108,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
@@ -1121,7 +1120,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromAccountCreatedOn() {
         // Set up mocks.
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
         when(activityEventService.getActivityEventMap(STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
@@ -1141,15 +1140,15 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
         // Setup
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         account.setId(ID);
 
         // Execute
         participantService.signUserOut(STUDY, ID, false);
 
         // Verify
-        verify(accountDao).getAccount(accountId);
-        verify(accountDao, never()).deleteReauthToken(any());
+        verify(accountService).getAccount(accountId);
+        verify(accountService, never()).deleteReauthToken(any());
         verify(cacheProvider).removeSessionByUserId(ID);
     }
 
@@ -1159,15 +1158,15 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
         // Setup
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         account.setId(ID);
 
         // Execute
         participantService.signUserOut(STUDY, ID, true);
 
         // Verify
-        verify(accountDao).getAccount(accountId);
-        verify(accountDao).deleteReauthToken(accountIdCaptor.capture());
+        verify(accountService).getAccount(accountId);
+        verify(accountService).deleteReauthToken(accountIdCaptor.capture());
         verify(cacheProvider).removeSessionByUserId(ID);
 
         assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
@@ -1185,8 +1184,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, participant);
         
         // The order here is significant.
-        InOrder inOrder = Mockito.inOrder(accountDao, externalIdService);
-        inOrder.verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        InOrder inOrder = Mockito.inOrder(accountService, externalIdService);
+        inOrder.verify(accountService).updateAccount(accountCaptor.capture(), any());
         inOrder.verify(externalIdService).commitAssignExternalId(extId);
         
         Account account = accountCaptor.getValue();
@@ -1222,7 +1221,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(accountSubstudies.size(), 2);
@@ -1321,7 +1320,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
  
         // There's a long list of fields you cannot update, set them all: 
@@ -1363,13 +1362,13 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void updateParticipantWithNoAccount() {
-        doThrow(new EntityNotFoundException(Account.class)).when(accountDao).getAccount(ACCOUNT_ID);
+        doThrow(new EntityNotFoundException(Account.class)).when(accountService).getAccount(ACCOUNT_ID);
         try {
             participantService.updateParticipant(STUDY, PARTICIPANT);
             fail("Should have thrown exception.");
         } catch(EntityNotFoundException e) {
         }
-        verify(accountDao, never()).updateAccount(any(), any());
+        verify(accountService, never()).updateAccount(any(), any());
         verifyNoMoreInteractions(externalIdService);
     }
     
@@ -1414,7 +1413,7 @@ public class ParticipantServiceTest extends Mockito {
 
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         Account account = accountCaptor.getValue();
         assertEquals(account.getStatus(), AccountStatus.ENABLED);
     }
@@ -1589,12 +1588,12 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithHealthCode() {
         String id = "healthCode:" + ID;
         AccountId accountId = AccountId.forHealthCode(STUDY.getIdentifier(), ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, id, true);
         assertNotNull(participant);
         
-        verify(accountDao).getAccount(accountIdCaptor.capture());
+        verify(accountService).getAccount(accountIdCaptor.capture());
         assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getHealthCode(), ID);
     }
@@ -1603,12 +1602,12 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithExternalId() {
         String id = "externalId:" + ID;
         AccountId accountId = AccountId.forExternalId(STUDY.getIdentifier(), ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, id, true);
         assertNotNull(participant);
         
-        verify(accountDao).getAccount(accountIdCaptor.capture());
+        verify(accountService).getAccount(accountIdCaptor.capture());
         assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getExternalId(), ID);
     }
@@ -1616,12 +1615,12 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getParticipantWithStringId() {
         AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         
         StudyParticipant participant = participantService.getParticipant(STUDY, ID, true);
         assertNotNull(participant);
         
-        verify(accountDao).getAccount(accountIdCaptor.capture());
+        verify(accountService).getAccount(accountIdCaptor.capture());
         assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
@@ -1714,7 +1713,7 @@ public class ParticipantServiceTest extends Mockito {
     public void requestResetPasswordNoAccountIsSilent() {
         participantService.requestResetPassword(STUDY, ID);
         
-        verifyNoMoreInteractions(accountDao);
+        verifyNoMoreInteractions(accountService);
     }
     
     @Test
@@ -1896,7 +1895,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval();
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(9);
-        when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH))
+        when(accountService.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
@@ -1906,7 +1905,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededExactlyException() {
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(10);
-        when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         try {
             participantService.createParticipant(STUDY, PARTICIPANT, false);
@@ -1920,7 +1919,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededException() {
         STUDY.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(13);
-        when(accountDao.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(STUDY, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         participantService.createParticipant(STUDY, PARTICIPANT, false);
     }
@@ -1941,12 +1940,12 @@ public class ParticipantServiceTest extends Mockito {
         extId.setIdentifier("newExtId");
         when(externalIdService.getExternalId(TEST_STUDY, "newExtId")).thenReturn(Optional.of(extId));
         
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExtId", null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         verify(externalIdService).commitAssignExternalId(extId);
         
         assertEquals(accountCaptor.getValue().getAccountSubstudies().size(), 2);
@@ -1965,7 +1964,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setAccountSubstudies(Sets.newHashSet(as));
         account.setId(ID);
         
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_STUDY, "newExternalId");
         newExtId.setSubstudyId("substudyA");
@@ -1974,7 +1973,7 @@ public class ParticipantServiceTest extends Mockito {
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId", null);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
-        verify(accountDao).updateAccount(eq(account), any());
+        verify(accountService).updateAccount(eq(account), any());
         
         assertEquals(account.getAccountSubstudies().size(), 2);
         
@@ -1992,8 +1991,8 @@ public class ParticipantServiceTest extends Mockito {
         // Verifies email-based sign in, phone update, account update, and an updated 
         // participant is returned... the common happy path.
         mockHealthCodeAndAccountRetrieval();
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null, null);
         
@@ -2001,8 +2000,8 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getPhone(), TestConstants.PHONE);
         assertEquals(account.getPhoneVerified(), Boolean.FALSE);
-        verify(accountDao).authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN);
-        verify(accountDao).updateAccount(eq(account), eq(null));
+        verify(accountService).authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN);
+        verify(accountService).updateAccount(eq(account), eq(null));
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         assertEquals(returned.getId(), PARTICIPANT.getId());
     }
@@ -2012,8 +2011,8 @@ public class ParticipantServiceTest extends Mockito {
         // This flips the method of sign in to use a phone, and sends an email update. 
         // Also tests the common path of creating unverified email address with verification email sent
         mockAccountNoEmail();
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         STUDY.setEmailVerificationEnabled(true);
         STUDY.setAutoVerificationEmailSuppressed(false);
@@ -2024,8 +2023,8 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getEmail(), "email@email.com");
         assertEquals(account.getEmailVerified(), Boolean.FALSE);
-        verify(accountDao).authenticate(STUDY, PHONE_PASSWORD_SIGN_IN);
-        verify(accountDao).updateAccount(eq(account), eq(null));
+        verify(accountService).authenticate(STUDY, PHONE_PASSWORD_SIGN_IN);
+        verify(accountService).updateAccount(eq(account), eq(null));
         verify(accountWorkflowService).sendEmailVerificationToken(STUDY, ID, "email@email.com");
         assertEquals(PARTICIPANT.getId(), returned.getId());
     }
@@ -2057,20 +2056,20 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersUsingReauthentication() {
         mockHealthCodeAndAccountRetrieval();
-        when(accountDao.reauthenticate(STUDY, REAUTH_REQUEST)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.reauthenticate(STUDY, REAUTH_REQUEST)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null, null);
         
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
-        verify(accountDao).reauthenticate(STUDY, REAUTH_REQUEST);
+        verify(accountService).reauthenticate(STUDY, REAUTH_REQUEST);
     }
 
     @Test
     public void updateIdentifiersCreatesVerifiedEmailWithoutVerification() {
         mockAccountNoEmail();
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         STUDY.setEmailVerificationEnabled(false);
         STUDY.setAutoVerificationEmailSuppressed(false); // can be true or false, doesn't matter
@@ -2087,8 +2086,8 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
         mockAccountNoEmail();
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         STUDY.setEmailVerificationEnabled(true);
         STUDY.setAutoVerificationEmailSuppressed(true);
@@ -2105,8 +2104,8 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersAddsSynapseUserId() {
         mockAccountNoEmail();
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, null, SYNAPSE_USER_ID);
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
@@ -2120,7 +2119,7 @@ public class ParticipantServiceTest extends Mockito {
         differentExternalId.setSubstudyId(SUBSTUDY_ID);
         
         mockAccountNoEmail();
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(externalIdService.getExternalId(any(), eq("extid"))).thenReturn(Optional.of(differentExternalId));
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, null, null, "extid", null);
@@ -2134,7 +2133,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersAuthenticatingToAnotherAccountInvalid() {
         // This ID does not match the ID in the request's context, and that will fail
         account.setId("another-user-id");
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         
         IdentifierUpdate update = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN, "email@email.com", null, null, null);
         
@@ -2142,7 +2141,7 @@ public class ParticipantServiceTest extends Mockito {
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
-            verify(accountDao, never()).updateAccount(any(), any());
+            verify(accountService, never()).updateAccount(any(), any());
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
             verify(externalIdService, never()).commitAssignExternalId(any());
         }
@@ -2154,7 +2153,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setEmailVerified(TRUE);
         account.setPhoneVerified(TRUE);
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        when(accountDao.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Now that an external ID addition will simply add another external ID, the 
@@ -2170,7 +2169,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getPhone(), PHONE);
         assertEquals(account.getPhoneVerified(), TRUE);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
-        verify(accountDao, never()).updateAccount(any(), any());
+        verify(accountService, never()).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());
     }
@@ -2178,8 +2177,8 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         // Add phone
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
@@ -2187,7 +2186,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         // externalIdService not called
-        verify(accountDao).updateAccount(any(), eq(null));
+        verify(accountService).updateAccount(any(), eq(null));
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());
     }
@@ -2195,8 +2194,8 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersDoesNothingWhenExternalIdResubmitted() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
@@ -2205,7 +2204,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateIdentifiers(STUDY, CONTEXT, update);
         
         // Nothing is called. Nothing happens.
-        verify(accountDao, never()).updateAccount(any(), any());
+        verify(accountService, never()).updateAccount(any(), any());
         verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         verify(externalIdService, never()).commitAssignExternalId(any());        
     }
@@ -2255,7 +2254,7 @@ public class ParticipantServiceTest extends Mockito {
             participantService.createParticipant(STUDY, participant, false);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            verify(accountDao, never()).createAccount(any(), any(), any());
+            verify(accountService, never()).createAccount(any(), any(), any());
             verify(externalIdService, never()).commitAssignExternalId(any());
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
@@ -2274,7 +2273,7 @@ public class ParticipantServiceTest extends Mockito {
             participantService.createParticipant(STUDY, participant, false);
             fail("Should have thrown exception");
         } catch(EntityAlreadyExistsException e) {
-            verify(accountDao, never()).createAccount(any(), any(), any());
+            verify(accountService, never()).createAccount(any(), any(), any());
             verify(externalIdService, never()).commitAssignExternalId(any());
             verify(accountWorkflowService, never()).sendEmailVerificationToken(any(), any(), any());
         }
@@ -2439,7 +2438,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), eq(account), any());
+        verify(accountService).createAccount(eq(STUDY), eq(account), any());
         verify(externalIdService).commitAssignExternalId(null);
     }
     @Test
@@ -2452,7 +2451,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), eq(account), any());
+        verify(accountService).createAccount(eq(STUDY), eq(account), any());
         verify(externalIdService).commitAssignExternalId(extId);
     }
     @Test
@@ -2491,7 +2490,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, participant);
         
         verify(externalIdService, never()).commitAssignExternalId(any());
-        verify(accountDao).updateAccount(account, null);
+        verify(accountService).updateAccount(account, null);
         assertTrue(account.getAccountSubstudies().isEmpty());
     }
 
@@ -2505,7 +2504,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(eq(account), any());
+        verify(accountService).updateAccount(eq(account), any());
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
         verify(externalIdService).commitAssignExternalId(extId);
     }
@@ -2519,7 +2518,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, participant);
         
         verify(externalIdService, never()).commitAssignExternalId(any());
-        verify(accountDao).updateAccount(account, null);
+        verify(accountService).updateAccount(account, null);
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
     }
     @Test
@@ -2531,7 +2530,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, participant);
         
         verify(externalIdService, never()).commitAssignExternalId(any());
-        verify(accountDao).updateAccount(account, null);
+        verify(accountService).updateAccount(account, null);
         assertTrue(account.getAccountSubstudies().isEmpty());
     }
 
@@ -2544,7 +2543,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(eq(account), any());
+        verify(accountService).updateAccount(eq(account), any());
         assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getExternalId(), EXTERNAL_ID);
         verify(externalIdService).commitAssignExternalId(extId);
     }
@@ -2562,7 +2561,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(eq(account), any());
+        verify(accountService).updateAccount(eq(account), any());
         assertTrue(collectExternalIds(account).contains(EXTERNAL_ID));
         assertTrue(collectExternalIds(account).contains("newExternalId"));
         verify(externalIdService).commitAssignExternalId(nextExtId);
@@ -2576,14 +2575,14 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
         verify(externalIdService, never()).commitAssignExternalId(any());
-        verify(accountDao).updateAccount(account, null);
+        verify(accountService).updateAccount(account, null);
         assertEquals(account.getAccountSubstudies().size(), 1);
         assertTrue(collectExternalIds(account).contains(EXTERNAL_ID));
     }
     
     @Test
     public void sendSmsMessage() {
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         account.setHealthCode(HEALTH_CODE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
@@ -2602,7 +2601,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfNoPhone() { 
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         
         SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
         
@@ -2611,7 +2610,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfPhoneUnverified() { 
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
@@ -2645,7 +2644,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         assertEquals(Iterables.getFirst(accountCaptor.getValue().getAccountSubstudies(), null).getExternalId(),
                 EXTERNAL_ID);
     }
@@ -2676,7 +2675,7 @@ public class ParticipantServiceTest extends Mockito {
 
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         assertTrue(collectExternalIds(account).contains("newExternalId"));
         verify(externalIdService).commitAssignExternalId(newExtId);
@@ -2727,7 +2726,7 @@ public class ParticipantServiceTest extends Mockito {
         // Need to look this up by email, not account ID
         AccountId accountId = AccountId.forId(STUDY.getIdentifier(), ID);
         
-        when(accountDao.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(account);
         account.setId("userId");
 
         participantService.signUserOut(STUDY, ID, true);
@@ -2806,7 +2805,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void sendSmsMessageFiltersSubstudies() {
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
         account.setHealthCode(HEALTH_CODE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
@@ -2931,7 +2930,7 @@ public class ParticipantServiceTest extends Mockito {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
-        doThrow(new ConcurrentModificationException("")).when(accountDao).createAccount(eq(STUDY), eq(account), any());
+        doThrow(new ConcurrentModificationException("")).when(accountService).createAccount(eq(STUDY), eq(account), any());
         
         try {
             StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2945,9 +2944,9 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void rollbackUpdateParticipantWhenAccountUpdateFails() {
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
+        doThrow(new ConcurrentModificationException("")).when(accountService).updateAccount(eq(account), any());
         
         try {
             StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2962,12 +2961,12 @@ public class ParticipantServiceTest extends Mockito {
     public void rollbackUpdateIdentifiersWhenAccountUpdateFails() {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         account.setAccountSubstudies(new HashSet<>());
-        when(accountDao.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
+        when(accountService.authenticate(STUDY, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         extId.setSubstudyId("substudyA");
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
-        // Now... accountDao throws an exception
-        doThrow(new ConcurrentModificationException("")).when(accountDao).updateAccount(eq(account), any());
+        // Now... accountService throws an exception
+        doThrow(new ConcurrentModificationException("")).when(accountService).updateAccount(eq(account), any());
         try {
             IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, EXTERNAL_ID, null);
             participantService.updateIdentifiers(STUDY, CONTEXT, update);
@@ -3004,7 +3003,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3020,13 +3019,13 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3048,7 +3047,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3069,13 +3068,13 @@ public class ParticipantServiceTest extends Mockito {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3095,12 +3094,12 @@ public class ParticipantServiceTest extends Mockito {
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         account.setId(ID);
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         // participant does not have the substudy. It will be removed
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertTrue(captured.getAccountSubstudies().isEmpty());
@@ -3116,7 +3115,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3138,7 +3137,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3157,13 +3156,13 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertTrue(captured.getAccountSubstudies().isEmpty());
@@ -3174,13 +3173,13 @@ public class ParticipantServiceTest extends Mockito {
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3198,11 +3197,11 @@ public class ParticipantServiceTest extends Mockito {
     public void researcherCannotRemoveExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3214,12 +3213,12 @@ public class ParticipantServiceTest extends Mockito {
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         account.setId(ID);
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         // participant does not have the substudy. It will be removed
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertSame(captured.getAccountSubstudies(), account.getAccountSubstudies());
@@ -3237,7 +3236,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3261,7 +3260,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3284,13 +3283,13 @@ public class ParticipantServiceTest extends Mockito {
         when(substudyService.getSubstudy(TEST_STUDY, "secondSubstudyId", false)).thenReturn(Substudy.create());
         account.setId(ID);
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withSubstudyIds(ImmutableSet.of("secondSubstudyId")).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3304,7 +3303,7 @@ public class ParticipantServiceTest extends Mockito {
         when(externalIdService.getExternalId(TEST_STUDY, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         account.setAccountSubstudies(null);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setId(ID);
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
         
@@ -3312,7 +3311,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalId(EXTERNAL_ID).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3326,11 +3325,11 @@ public class ParticipantServiceTest extends Mockito {
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertSame(captured.getAccountSubstudies(), account.getAccountSubstudies());        
@@ -3343,12 +3342,12 @@ public class ParticipantServiceTest extends Mockito {
         when(substudyService.getSubstudy(TEST_STUDY, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
         account.setId(ID);
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         // participant does not have the substudy. It will be removed
         participantService.updateParticipant(STUDY, PARTICIPANT);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertSame(captured.getAccountSubstudies(), account.getAccountSubstudies());        
@@ -3369,7 +3368,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalId("otherExternalId").build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3397,7 +3396,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertTrue(captured.getAccountSubstudies().isEmpty());           
@@ -3413,7 +3412,7 @@ public class ParticipantServiceTest extends Mockito {
         when(externalIdService.getExternalId(TEST_STUDY, "otherExternalId")).thenReturn(Optional.of(extId));
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
         account.setId(ID);
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId("otherExternalId").build();
@@ -3427,7 +3426,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(substudyService.getSubstudy(TEST_STUDY, "someOtherSubstudy", false)).thenReturn(Substudy.create());
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
 
         // participant does not have the substudy. It will be removed
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
@@ -3438,7 +3437,7 @@ public class ParticipantServiceTest extends Mockito {
         // account).
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3451,12 +3450,12 @@ public class ParticipantServiceTest extends Mockito {
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getAccountSubstudies().add(AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, ID));
-        when(accountDao.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
 
         // participant does not have the substudy. This should throw an error
         participantService.updateParticipant(STUDY, PARTICIPANT);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), any());
+        verify(accountService).updateAccount(accountCaptor.capture(), any());
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getAccountSubstudies().size(), 1);
@@ -3477,7 +3476,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(STUDY, participant);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         Account account = accountCaptor.getValue();
 
         if (canSetStatus) {
@@ -3497,7 +3496,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createParticipant(STUDY, participant, false);
         
-        verify(accountDao).createAccount(eq(STUDY), accountCaptor.capture(), any());
+        verify(accountService).createAccount(eq(STUDY), accountCaptor.capture(), any());
         Account account = accountCaptor.getValue();
         
         if (rolesThatAreSet != null) {
@@ -3515,7 +3514,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withRoles(rolesThatAreSet).build();
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         Account account = accountCaptor.getValue();
         
         if (expected != null) {

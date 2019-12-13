@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -69,6 +68,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -119,7 +119,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     CacheProvider mockCacheProvider;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     RequestInfoService mockRequestInfoService;
@@ -220,7 +220,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void timeZoneCapturedFirstTime() throws Exception {
-        mockEditAccount(mockAccountDao, mockAccount);
+        mockEditAccount(mockAccountService, mockAccount);
         
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         controller.getScheduledActivities(null, "+03:00", "3", "5");
@@ -262,7 +262,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void getScheduledActivtiesAssemblesCorrectContext() throws Exception {
-        mockEditAccount(mockAccountDao, mockAccount);
+        mockEditAccount(mockAccountService, mockAccount);
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         List<ScheduledActivity> list = ImmutableList.of();
         when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
@@ -512,7 +512,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         DateTime startsOn = DateTime.now(zone).minusMinutes(1);
         DateTime endsOn = DateTime.now(zone).plusDays(7);
 
-        mockEditAccount(mockAccountDao, mockAccount);
+        mockEditAccount(mockAccountService, mockAccount);
         
         String result = controller.getScheduledActivitiesByDateRange(startsOn.toString(), endsOn.toString());
         

@@ -57,7 +57,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -80,6 +79,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
@@ -121,7 +121,7 @@ public class StudyControllerTest extends Mockito {
     UploadService mockUploadService;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     BridgeConfig mockBridgeConfig;
@@ -159,7 +159,7 @@ public class StudyControllerTest extends Mockito {
         study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         study.setActive(true);
      
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(study);
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(VERIFIED);
@@ -825,7 +825,7 @@ public class StudyControllerTest extends Mockito {
         mockStudy("Study A", "studyA", false);
         
         List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
@@ -855,7 +855,7 @@ public class StudyControllerTest extends Mockito {
         
         // This user is only associated to the API study, but they are an admin
         List<String> list = ImmutableList.of(TEST_STUDY_IDENTIFIER);
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");

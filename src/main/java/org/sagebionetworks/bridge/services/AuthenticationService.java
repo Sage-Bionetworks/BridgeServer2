@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
 import org.sagebionetworks.bridge.exceptions.AuthenticationFailedException;
@@ -66,7 +65,7 @@ public class AuthenticationService {
     private CacheProvider cacheProvider;
     private BridgeConfig config;
     private ConsentService consentService;
-    private AccountDao accountDao;
+    private AccountService accountService;
     private ParticipantService participantService;
     private StudyService studyService;
     private PasswordResetValidator passwordResetValidator;
@@ -89,8 +88,8 @@ public class AuthenticationService {
         this.consentService = consentService;
     }
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -170,7 +169,7 @@ public class AuthenticationService {
         checkNotNull(study);
         checkNotNull(context);
 
-        Account account = accountDao.getAccount(context.getAccountId());
+        Account account = accountService.getAccount(context.getAccountId());
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -184,7 +183,7 @@ public class AuthenticationService {
         
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
         
-        Account account = accountDao.authenticate(study, signIn);
+        Account account = accountService.authenticate(study, signIn);
         
         clearSession(study.getIdentifier(), account.getId());
         UserSession session = getSessionFromAccount(study, context, account);
@@ -192,7 +191,7 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
             AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
-            account = accountDao.getAccount(accountId);
+            account = accountService.getAccount(accountId);
             session = getSessionFromAccount(study, context, account);
         }
         cacheProvider.setUserSession(session);
@@ -222,7 +221,7 @@ public class AuthenticationService {
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
         LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
 
-        Account account = accountDao.reauthenticate(study, signIn);
+        Account account = accountService.reauthenticate(study, signIn);
         
         UserSession session = getSessionFromAccount(study, context, account);
         // If session exists, preserve the session token. Reauthenticating before the session times out will not
@@ -244,7 +243,7 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
-            accountDao.deleteReauthToken(accountId);
+            accountService.deleteReauthToken(accountId);
             // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
             // removed, but once the reauth token is removed from the user table, the reauth token will no 
             // longer work (and is short-lived in the cache).
@@ -289,7 +288,7 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(VerificationValidator.INSTANCE, verification);
         Account account = accountWorkflowService.verifyChannel(type, verification);
-        accountDao.verifyChannel(type, account);
+        accountService.verifyChannel(type, account);
     }
     
     public void resendVerification(ChannelType type, AccountId accountId) {
@@ -342,7 +341,7 @@ public class AuthenticationService {
         }
 
         AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         
         // The *target* must be associated to the substudy, if any
         boolean existsButWrongSubstudy = account != null && BridgeUtils.filterForSubstudy(account) == null;
@@ -366,7 +365,7 @@ public class AuthenticationService {
             userId = participantService.createParticipant(study, participant, false).getIdentifier();
         } else {
             // Account exists, so rotate the password
-            accountDao.changePassword(account, null, password);
+            accountService.changePassword(account, null, password);
             userId = account.getId();
         }
         // Return the password and the user ID in case the account was just created.
@@ -390,7 +389,7 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         // This should be unlikely, but if someone deleted the account while the token was outstanding
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
@@ -399,7 +398,7 @@ public class AuthenticationService {
             throw new AccountDisabledException();
         }
         // Update account state before we create the session, so it's accurate...
-        accountDao.verifyChannel(channelType, account);
+        accountService.verifyChannel(channelType, account);
 
         // Check if we have a cached session for this sign-in token.
         UserSession cachedSession = null;
@@ -422,7 +421,7 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
-                account = accountDao.getAccount(accountId);
+                account = accountService.getAccount(accountId);
                 session = getSessionFromAccount(study, context, account);
             }
             cacheProvider.setUserSession(session);
@@ -467,7 +466,7 @@ public class AuthenticationService {
                     .withLanguages(context.getLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
-            accountDao.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
+            accountService.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
@@ -510,7 +509,7 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -532,7 +531,7 @@ public class AuthenticationService {
     // also includes creating a new (valid) reauth token.
     private void clearSession(String studyId, String userId) {
         AccountId accountId = AccountId.forId(studyId, userId);
-        accountDao.deleteReauthToken(accountId);
+        accountService.deleteReauthToken(accountId);
         cacheProvider.removeSessionByUserId(userId);
     }
 
