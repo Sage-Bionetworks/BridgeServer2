@@ -1244,7 +1244,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(STUDY, participant);
         
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         
         Set<AccountSubstudy> accountSubstudies = accountCaptor.getValue().getAccountSubstudies();
         assertEquals(accountSubstudies.size(), 2);
