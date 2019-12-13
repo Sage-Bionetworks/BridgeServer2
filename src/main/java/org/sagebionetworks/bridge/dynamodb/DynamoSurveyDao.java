@@ -216,30 +216,6 @@ public class DynamoSurveyDao implements SurveyDao {
         }
     }
     
-    /**
-     * Rules began as part of constraints, but constraints are only applied to questions. To apply
-     * rules like "always end the survey after this screen," rules are being moved to be a property 
-     * of SurveyElement. In the interim, existing surveys copy constraint rules to the element if 
-     * the element's rules are empty. Once there are element rules, they take precedence over anything
-     * set in the constraints going forward.
-     */
-    private void reconcileRules(SurveyElement element) {
-        if (element instanceof SurveyQuestion) {
-            SurveyQuestion question = (SurveyQuestion)element;
-            
-            // If the constraints have rules but the element does not, copy them over. Always do 
-            // this: the constraints rules will always take precedence until they are removed. At
-            // that point they will either not be copied on top of element rules which exist, or both 
-            // element and constraint rules will be empty, so it makes no difference.
-            Constraints con = question.getConstraints();
-            if (BridgeUtils.isEmpty(question.getAfterRules())) {
-                question.setAfterRules( con.getRules() );
-            }
-            // question rules take precedence once they exist.
-            con.setRules(question.getAfterRules());
-        }
-    }
-
     private DynamoDBMapper surveyMapper;
     private DynamoDBMapper surveyElementMapper;
     private UploadSchemaService uploadSchemaService;

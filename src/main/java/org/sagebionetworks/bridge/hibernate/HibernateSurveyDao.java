@@ -167,16 +167,16 @@ public class HibernateSurveyDao implements SurveyDao {
             List<HibernateSurvey> results = hibernateHelper.queryGet(getQuery, params, null, 1, HibernateSurvey.class);
             
             if (!results.isEmpty()) {
-                return results.get(0);
+                return attachSurveyElements(results.get(0));
             }
             return null;
         }
         SurveyId surveyId = new SurveyId(keys);
         Survey ret = hibernateHelper.getById(HibernateSurvey.class, surveyId);
         if (ret != null) {
-            attachSurveyElements(ret);
+            return attachSurveyElements(ret);
         }
-        return ret;
+        return null;
     }
 
     @Override
@@ -264,9 +264,9 @@ public class HibernateSurveyDao implements SurveyDao {
         getQuery += ORDER_BY_CREATED_ON;
         
         List<HibernateSurvey> results = hibernateHelper.queryGet(
-                getQuery, paramBuilder.build(), null, null, HibernateSurvey.class);
+                getQuery, paramBuilder.build(), null, 1, HibernateSurvey.class);
         if (!results.isEmpty()) {
-            attachSurveyElements(results.get(0));
+            return attachSurveyElements(results.get(0));
         }
         
         return null;
@@ -337,13 +337,13 @@ public class HibernateSurveyDao implements SurveyDao {
         hibernateHelper.query(getQuery, params);
     }
     
-    private void attachSurveyElements(Survey survey) {
+    private Survey attachSurveyElements(Survey survey) {
         ImmutableMap<String, Object> elementParams = ImmutableMap.of(
                 "surveyGuid", survey.getGuid(),
                 "createdOn", survey.getCreatedOn());
         
-        String getElementQuery = "SELECT surveyElement FROM HibernateSurveyElement as surveyElement" + 
-                "WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn ORDER BY createdOn DESC";
+        String getElementQuery = "SELECT surveyElement FROM HibernateSurveyElement as surveyElement " + 
+                "WHERE surveyGuid = :surveyGuid AND createdOn = :createdOn ORDER BY order ASC";
         
         List<HibernateSurveyElement> elementResults = hibernateHelper.queryGet(
                 getElementQuery, elementParams, null, null, HibernateSurveyElement.class);
@@ -355,11 +355,11 @@ public class HibernateSurveyDao implements SurveyDao {
             elements.add((SurveyElement) surveyElement);
         }
         survey.setElements(elements);
+        return survey;
     }
     
     private Survey saveSurvey(Survey survey) {
         deleteAllElements(survey.getGuid(), survey.getCreatedOn());
-        
         List<HibernateSurveyElement> hibernateElements = Lists.newArrayList();
         for (int i = 0; i < survey.getElements().size(); i++) {
             SurveyElement element = survey.getElements().get(i);
@@ -372,34 +372,7 @@ public class HibernateSurveyDao implements SurveyDao {
             hibernateElements.add((HibernateSurveyElement) element);
         }
         
-//        List<FailedBatch> failures = surveyElementMapper.batchSave(dynamoElements);
-//        BridgeUtils.ifFailuresThrowException(failures);
-        
         hibernateHelper.update(survey, null);
         return survey;
-    }
-    
-    /**
-     * Rules began as part of constraints, but constraints are only applied to questions. To apply
-     * rules like "always end the survey after this screen," rules are being moved to be a property 
-     * of SurveyElement. In the interim, existing surveys copy constraint rules to the element if 
-     * the element's rules are empty. Once there are element rules, they take precedence over anything
-     * set in the constraints going forward.
-     */
-    private void reconcileRules(SurveyElement element) {
-        if (element instanceof SurveyQuestion) {
-            SurveyQuestion question = (SurveyQuestion)element;
-            
-            // If the constraints have rules but the element does not, copy them over. Always do 
-            // this: the constraints rules will always take precedence until they are removed. At
-            // that point they will either not be copied on top of element rules which exist, or both 
-            // element and constraint rules will be empty, so it makes no difference.
-            Constraints con = question.getConstraints();
-            if (BridgeUtils.isEmpty(question.getAfterRules())) {
-                question.setAfterRules( con.getRules() );
-            }
-            // question rules take precedence once they exist.
-            con.setRules(question.getAfterRules());
-        }
     }
 }

@@ -85,4 +85,10 @@ public class HibernateSurveyInfoScreen extends HibernateSurveyElement implements
         this.title = JsonUtils.asText(data, TITLE_PROPERTY);
         this.image = JsonUtils.asEntity(data, IMAGE_PROPERTY, Image.class);
     }
+    
+    @Override
+    public String toString() {
+        return String.format("HibernateSurveyInfoScreen [guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, prompt=%s, promptDetail=%s, title=%s, image=%s]", 
+            getGuid(), getIdentifier(), getType(), getOrder(), getBeforeRules(), getAfterRules(), prompt, promptDetail, title, image.toString());
+    }
 }

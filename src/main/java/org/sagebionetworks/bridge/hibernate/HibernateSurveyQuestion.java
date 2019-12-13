@@ -103,7 +103,7 @@ public class HibernateSurveyQuestion extends HibernateSurveyElement implements S
 
     @Override
     public String toString() {
-        return String.format("DynamoSurveyQuestion [guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, hint=%s, prompt=%s, promptDetail=%s, fireEvent=%s, constraints=%s]", 
+        return String.format("HibernateSurveyQuestion [guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, hint=%s, prompt=%s, promptDetail=%s, fireEvent=%s, constraints=%s]", 
             getGuid(), getIdentifier(), getType(), getOrder(), getBeforeRules(), getAfterRules(), hint, prompt, promptDetail, fireEvent, constraints);
     }
 }
