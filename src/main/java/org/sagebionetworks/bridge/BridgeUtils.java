@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -238,10 +239,16 @@ public class BridgeUtils {
     public static AccountId parseAccountId(String studyId, String identifier) {
         checkNotNull(studyId);
         checkNotNull(identifier);
-        if (identifier.toLowerCase().startsWith("externalid:")) {
+        
+        String id = identifier.toLowerCase();
+        if (id.startsWith("externalid:")) {
             return AccountId.forExternalId(studyId, identifier.substring(11));
-        } else if (identifier.toLowerCase().startsWith("healthcode:")) {
+        } else if (id.startsWith("healthcode:")) {
             return AccountId.forHealthCode(studyId, identifier.substring(11));
+        } else if (id.startsWith("synapseuserid:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(14));
+        } else if (id.startsWith("syn:")) {
+            return AccountId.forSynapseUserId(studyId, identifier.substring(4));
         }
         return AccountId.forId(studyId, identifier);
     }
@@ -639,4 +646,15 @@ public class BridgeUtils {
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
         return clean.body().html();
     }
+    
+    public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
+        return (callerRoles != null && requiredRole != null && 
+                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
+    }
+    
+    public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
+        return callerRoles != null && requiredRoles != null && 
+                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+    }
+
 }

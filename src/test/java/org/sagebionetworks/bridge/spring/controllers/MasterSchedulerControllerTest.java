@@ -9,7 +9,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -34,7 +34,6 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.DateTimeHolder;
@@ -43,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.MasterSchedulerService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -62,7 +62,7 @@ public class MasterSchedulerControllerTest extends Mockito {
     private StudyService mockStudyService;
     
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
     
     @Mock
     private HttpServletRequest mockRequest;
@@ -91,9 +91,9 @@ public class MasterSchedulerControllerTest extends Mockito {
         mockSession.setStudyIdentifier(TEST_STUDY);
         mockSession.setAuthenticated(true);
         mockSession.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         mockConfig = TestUtils.getMasterSchedulerConfig();
         

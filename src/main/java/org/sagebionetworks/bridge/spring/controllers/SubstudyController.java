@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class SubstudyController extends BaseController {
     @PostMapping("/v3/substudies")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createSubstudy() {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         Substudy substudy = parseJson(Substudy.class);
         return service.createSubstudy(session.getStudyIdentifier(), substudy);
@@ -57,14 +58,14 @@ public class SubstudyController extends BaseController {
 
     @GetMapping("/v3/substudies/{id}")
     public Substudy getSubstudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         return service.getSubstudy(session.getStudyIdentifier(), id, true);
     }
 
     @PostMapping("/v3/substudies/{id}")
     public VersionHolder updateSubstudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         Substudy substudy = parseJson(Substudy.class);
         return service.updateSubstudy(session.getStudyIdentifier(), substudy);
@@ -73,9 +74,9 @@ public class SubstudyController extends BaseController {
     @DeleteMapping("/v3/substudies/{id}")
     public StatusMessage deleteSubstudy(@PathVariable String id,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        if (physical && session.isInRole(ADMIN)) {
+        if (physical) {
             service.deleteSubstudyPermanently(session.getStudyIdentifier(), id);
         } else {
             service.deleteSubstudy(session.getStudyIdentifier(), id);

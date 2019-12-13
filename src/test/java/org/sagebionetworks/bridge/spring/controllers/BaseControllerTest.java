@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
@@ -66,7 +66,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -79,11 +78,11 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -98,7 +97,7 @@ public class BaseControllerTest extends Mockito {
     private BridgeConfig mockBridgeConfig;
 
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
 
     @Mock
     private StudyService mockStudyService;
@@ -355,7 +354,7 @@ public class BaseControllerTest extends Mockito {
         
         controller.getLanguages(session);
         
-        verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
         verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -373,7 +372,7 @@ public class BaseControllerTest extends Mockito {
         List<String> returnedLangs = controller.getLanguages(session);
         assertEquals(returnedLangs, ImmutableList.of("fr"));
         
-        verify(mockAccountDao, never()).editAccount(any(), any(), any());
+        verify(mockAccountService, never()).editAccount(any(), any(), any());
         verify(mockSessionUpdateService, never()).updateLanguage(any(), any());
     }
 
@@ -650,7 +649,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Participant already has languages. Nothing to save.
-        verifyZeroInteractions(mockAccountDao);
+        verifyZeroInteractions(mockAccountService);
         verifyZeroInteractions(mockSessionUpdateService);
     }
     
@@ -661,7 +660,7 @@ public class BaseControllerTest extends Mockito {
             Consumer<Account> consumer = invocation.getArgument(2);
             consumer.accept(account);
             return null;
-        }).when(mockAccountDao).editAccount(any(), any(), any());
+        }).when(mockAccountService).editAccount(any(), any(), any());
         
         // Set up mocks.
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,fr");
@@ -675,7 +674,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
-        verify(mockAccountDao).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
         assertEquals(account.getLanguages(), LANGUAGES);
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
@@ -700,7 +699,7 @@ public class BaseControllerTest extends Mockito {
         assertTrue(languages.isEmpty());
 
         // No languages means nothing to save.
-        verifyZeroInteractions(mockAccountDao);
+        verifyZeroInteractions(mockAccountService);
         verifyZeroInteractions(mockSessionUpdateService);
     }
 
@@ -797,10 +796,10 @@ public class BaseControllerTest extends Mockito {
         assertNotNull(context.getId());
         assertNull(context.getCallerStudyId());
         assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
-        assertEquals(ImmutableSet.of(), context.getCallerRoles());
+        assertFalse(context.isAdministrator());
         BridgeUtils.setRequestContext(context);
         
-        Set<Roles> roles = ImmutableSet.of(Roles.DEVELOPER);
+        Set<Roles> roles = ImmutableSet.of(DEVELOPER);
         
         StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withRoles(roles).withId(USER_ID).build();
@@ -817,7 +816,8 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerStudyId(), TEST_STUDY.getIdentifier());
         assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getCallerRoles(), roles);
+        assertTrue(context.isAdministrator());
+        assertTrue(context.isInRole(DEVELOPER));
         assertEquals(context.getCallerUserId(), USER_ID);
     }
 
@@ -933,21 +933,5 @@ public class BaseControllerTest extends Mockito {
         assertEquals(SESSION_TOKEN, token);
         
         verify(mockResponse, never()).addCookie(any());
-    }
-
-    @Test
-    public void verifyCrossStudyAdmin() {
-        AccountId accountId = AccountId.forId(API_STUDY_ID.getIdentifier(), USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
-        
-        controller.verifyCrossStudyAdmin(USER_ID, "An error message");
-        
-        verify(mockAccountDao).getAccount(accountId);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*An error message.*")
-    public void verifyCrossStudyAdminFails() {
-        controller.verifyCrossStudyAdmin(USER_ID, "An error message");
     }
 }

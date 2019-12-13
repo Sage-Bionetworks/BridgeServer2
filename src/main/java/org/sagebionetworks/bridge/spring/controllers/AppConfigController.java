@@ -122,8 +122,6 @@ public class AppConfigController extends BaseController {
     public StatusMessage deleteAppConfig(@PathVariable String guid, @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
-        // physical is set to true for backwards compatiblity, but only admins can delete permanently.
-        
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             appConfigService.deleteAppConfigPermanently(session.getStudyIdentifier(), guid);
         } else {

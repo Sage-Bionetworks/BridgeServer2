@@ -24,7 +24,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -72,7 +71,7 @@ public class ConsentService {
     
     protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig()
             .get("usersigned.consents.bucket");
-    private AccountDao accountDao;
+    private AccountService accountService;
     private SendMailService sendMailService;
     private SmsService smsService;
     private NotificationsService notificationsService;
@@ -89,8 +88,8 @@ public class ConsentService {
         this.xmlTemplateWithSignatureBlock = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
@@ -144,7 +143,7 @@ public class ConsentService {
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
         subpopService.getSubpopulation(study, subpopGuid);
         
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -183,7 +182,7 @@ public class ConsentService {
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new EntityAlreadyExistsException(ConsentSignature.class, null);
@@ -208,7 +207,7 @@ public class ConsentService {
             account.getAccountSubstudies().add(acctSubstudy);
         }
         
-        accountDao.updateAccount(account, null);
+        accountService.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -258,7 +257,7 @@ public class ConsentService {
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
         checkNotNull(context);
         
-        Account account = accountDao.getAccount(context.getAccountId());
+        Account account = accountService.getAccount(context.getAccountId());
         return getConsentStatuses(context, account);
     }
     
@@ -303,7 +302,7 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
         
         Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
-        Account account = accountDao.getAccount(context.getAccountId());
+        Account account = accountService.getAccount(context.getAccountId());
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
@@ -315,7 +314,7 @@ public class ConsentService {
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
-        accountDao.updateAccount(account, null);
+        accountService.updateAccount(account, null);
         
         sendWithdrawEmail(study, account, withdrawal, withdrewOn);
 
@@ -335,7 +334,7 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
 
         AccountId accountId = AccountId.forId(study.getIdentifier(), participant.getId());
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             if (withdrawSignatures(account, subpopGuid, withdrewOn)) {
@@ -357,7 +356,7 @@ public class ConsentService {
         account.setEmailVerified(false);
         account.setPhone(null);
         account.setPhoneVerified(false);
-        accountDao.updateAccount(account, null);
+        accountService.updateAccount(account, null);
 
         notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
     }

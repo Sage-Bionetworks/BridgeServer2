@@ -57,8 +57,18 @@ public class RequestContext {
     public Set<String> getCallerSubstudies() {
         return callerSubstudies;
     }
-    public Set<Roles> getCallerRoles() {
+    // Only accessible to tests to verify
+    Set<Roles> getCallerRoles() {
         return callerRoles;
+    }
+    public boolean isAdministrator() { 
+        return callerRoles != null && !callerRoles.isEmpty();
+    }
+    public boolean isInRole(Roles role) {
+        return BridgeUtils.isInRole(callerRoles, role);
+    }
+    public boolean isInRole(Set<Roles> roleSet) {
+        return BridgeUtils.isInRole(callerRoles, roleSet);
     }
     public String getCallerUserId() { 
         return callerUserId;

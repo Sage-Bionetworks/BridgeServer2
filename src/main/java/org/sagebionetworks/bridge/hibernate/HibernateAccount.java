@@ -51,6 +51,7 @@ public class HibernateAccount implements Account {
     private String id;
     private String studyId;
     private String email;
+    private String synapseUserId;
     private Phone phone;
     private Boolean emailVerified;
     private Boolean phoneVerified;
@@ -88,7 +89,7 @@ public class HibernateAccount implements Account {
      * specifying a constructor.
      */
     public HibernateAccount(DateTime createdOn, String studyId, String firstName, String lastName,
-            String email, Phone phone, String id, AccountStatus status) {
+            String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
         this.studyId = studyId;
         this.firstName = firstName;
@@ -97,6 +98,7 @@ public class HibernateAccount implements Account {
         this.phone = phone;
         this.id = id;
         this.status = status;
+        this.synapseUserId = synapseUserId;
     }
 
     /**
@@ -131,6 +133,16 @@ public class HibernateAccount implements Account {
     /** @see #getEmail */
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    /** Synapse user ID (for administrative users). */ 
+    public String getSynapseUserId() {
+        return synapseUserId;
+    }
+    
+    /** @see #getSynapseUserId */
+    public void setSynapseUserId(String synapseUserId) {
+        this.synapseUserId = synapseUserId;
     }
     
     /** Account phone number, as entered by the user. */

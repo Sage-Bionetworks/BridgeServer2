@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -58,8 +60,8 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
     
     static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status) "+
-            "FROM HibernateAccount AS acct";
+            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
+            "acct.synapseUserId) FROM HibernateAccount AS acct";
             
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     
@@ -84,6 +86,18 @@ public class HibernateAccountDao implements AccountDao {
     // Provided to override in tests
     protected String generateGUID() {
         return BridgeUtils.generateGuid();
+    }
+    
+    @Override
+    public List<String> getStudyIdsForUser(String synapseUserId) {
+        if (isBlank(synapseUserId)) {
+            return ImmutableList.of();
+        }
+        QueryBuilder query = new QueryBuilder();
+        query.append(
+            "SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
+            "synapseUserId", synapseUserId);
+        return hibernateHelper.queryGet(query.getQuery(), query.getParameters(), null, null, String.class);
     }
     
     /**
@@ -325,11 +339,17 @@ public class HibernateAccountDao implements AccountDao {
         
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            return hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            // Now that we allow study switching, we must enforce study membership here in the getById()
+            // method as well as in the queries below.
+            Account account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
+            if (account != null && !account.getStudyId().equals(accountId.getStudyId())) {
+                return null;
+            }
+            return account;
         }
         
         QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
-
+        
         List<HibernateAccount> accountList = hibernateHelper.queryGet(
                 builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
         if (accountList.isEmpty()) {
@@ -361,6 +381,8 @@ public class HibernateAccountDao implements AccountDao {
                 builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
+            } else if (unguarded.getSynapseUserId() != null) {
+                builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
                 builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
@@ -474,8 +496,8 @@ public class HibernateAccountDao implements AccountDao {
         }
         
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getPhone(), assoc.getExternalIdsVisibleToCaller(),
-                hibernateAccount.getId(), hibernateAccount.getCreatedOn(), hibernateAccount.getStatus(), studyId,
-                assoc.getSubstudyIdsVisibleToCaller());
+                hibernateAccount.getEmail(), hibernateAccount.getSynapseUserId(), hibernateAccount.getPhone(),
+                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
+                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
     }
 }

@@ -12,18 +12,21 @@ public final class SurveyQuestionOption {
     private final String detail;
     private final String value;
     private final Image image;
+    private final Boolean exclusive;
     
     @JsonCreator
     public SurveyQuestionOption(@JsonProperty("label") String label, @JsonProperty("detail") String detail,
-        @JsonProperty("value") String value, @JsonProperty("image") Image image) {
+            @JsonProperty("value") String value, @JsonProperty("image") Image image,
+            @JsonProperty("exclusive") Boolean exclusive) {
         this.label = label;
         this.detail = detail;
         this.value = value;
         this.image = image;
+        this.exclusive = exclusive;
     }
     
     public SurveyQuestionOption(String label) {
-        this(label, null, label, null);
+        this(label, null, label, null, null);
     }
     
     public String getLabel() {
@@ -38,16 +41,13 @@ public final class SurveyQuestionOption {
     public Image getImage() {
         return image;
     }
+    public Boolean isExclusive() { 
+        return exclusive;
+    }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + Objects.hashCode(image);
-        result = prime * result + Objects.hashCode(label);
-        result = prime * result + Objects.hashCode(detail);
-        result = prime * result + Objects.hashCode(value);
-        return result;
+        return Objects.hash(label, detail, value, image, exclusive);
     }
 
     @Override
@@ -57,15 +57,18 @@ public final class SurveyQuestionOption {
         } else if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        final SurveyQuestionOption that = (SurveyQuestionOption) obj;
-        return Objects.equals(image, that.image) && Objects.equals(label, that.label)
-                && Objects.equals(detail, that.detail) && Objects.equals(value, that.value);
+        final SurveyQuestionOption other = (SurveyQuestionOption) obj;
+        return Objects.equals(label, other.label) &&
+                Objects.equals(detail, other.detail) &&
+                Objects.equals(value, other.value) &&
+                Objects.equals(image, other.image) &&
+                Objects.equals(exclusive, other.exclusive);
     }
 
     @Override
     public String toString() {
-        return String.format("SurveyQuestionOption [label=%s, detail=%s, value=%s, image=%s]", 
-            label, detail, value, image);
+        return String.format("SurveyQuestionOption [label=%s, detail=%s, value=%s, image=%s, exclusive=%s]", 
+            label, detail, value, image, exclusive);
     }
     
 }

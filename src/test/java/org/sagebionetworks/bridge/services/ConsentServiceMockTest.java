@@ -40,7 +40,6 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -109,7 +108,7 @@ public class ConsentServiceMockTest {
     private Study study;
 
     @Mock
-    private AccountDao accountDao;
+    private AccountService accountService;
     @Mock
     private SendMailService sendMailService;
     @Mock
@@ -148,7 +147,7 @@ public class ConsentServiceMockTest {
         String documentString = IOUtils.toString(
                 new FileInputStream(new ClassPathResource("conf/study-defaults/consent-page.xhtml").getFile()));
 
-        consentService.setAccountDao(accountDao);
+        consentService.setAccountService(accountService);
         consentService.setSendMailService(sendMailService);
         consentService.setActivityEventService(activityEventService);
         consentService.setSmsService(smsService);
@@ -171,7 +170,7 @@ public class ConsentServiceMockTest {
         account = Account.create();
         account.setId(ID);
 
-        when(accountDao.getAccount(any(AccountId.class))).thenReturn(account);
+        when(accountService.getAccount(any(AccountId.class))).thenReturn(account);
 
         when(s3Helper.generatePresignedUrl(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), any(), any(),
                 eq(HttpMethod.GET))).thenReturn(new URL(LONG_URL));
@@ -225,7 +224,7 @@ public class ConsentServiceMockTest {
                 true);
 
         // verify consents were set on account properly
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
 
         Account updatedAccount = accountCaptor.getValue();
         List<ConsentSignature> updatedConsentList = updatedAccount.getConsentSignatureHistory(SUBPOP_GUID);
@@ -281,7 +280,7 @@ public class ConsentServiceMockTest {
             fail("Exception expected.");
         } catch (InvalidEntityException e) {
             verifyNoMoreInteractions(activityEventService);
-            verifyNoMoreInteractions(accountDao);
+            verifyNoMoreInteractions(accountService);
         }
     }
 
@@ -297,8 +296,8 @@ public class ConsentServiceMockTest {
             fail("Exception expected.");
         } catch (EntityAlreadyExistsException e) {
             verifyNoMoreInteractions(activityEventService);
-            verify(accountDao).getAccount(any());
-            verifyNoMoreInteractions(accountDao);
+            verify(accountService).getAccount(any());
+            verifyNoMoreInteractions(accountService);
         }
     }
 
@@ -310,8 +309,8 @@ public class ConsentServiceMockTest {
             fail("Exception expected.");
         } catch (Throwable e) {
             verifyNoMoreInteractions(activityEventService);
-            verify(accountDao).getAccount(any());
-            verifyNoMoreInteractions(accountDao);
+            verify(accountService).getAccount(any());
+            verifyNoMoreInteractions(accountService);
         }
     }
 
@@ -328,8 +327,8 @@ public class ConsentServiceMockTest {
         // Execute and validate.
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
-        verify(accountDao).getAccount(CONTEXT.getAccountId());
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).getAccount(CONTEXT.getAccountId());
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         Account account = accountCaptor.getValue();
@@ -369,7 +368,7 @@ public class ConsentServiceMockTest {
         account.setDataGroups(dataGroups);
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
@@ -383,7 +382,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest();
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(account, null);
+        verify(accountService).updateAccount(account, null);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
 
         // Contents of call are tested in prior test where participant is used
@@ -395,7 +394,7 @@ public class ConsentServiceMockTest {
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -440,7 +439,7 @@ public class ConsentServiceMockTest {
 
         consentService.withdrawFromStudy(study, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
 
@@ -465,7 +464,7 @@ public class ConsentServiceMockTest {
 
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
@@ -476,7 +475,7 @@ public class ConsentServiceMockTest {
 
     @Test
     public void accountFailureConsistent() {
-        when(accountDao.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
+        when(accountService.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         try {
             consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
             fail("Should have thrown an exception");
@@ -918,7 +917,7 @@ public class ConsentServiceMockTest {
         when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
 
         when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountDao.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);

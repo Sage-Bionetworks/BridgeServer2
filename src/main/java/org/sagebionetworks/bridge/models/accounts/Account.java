@@ -134,6 +134,9 @@ public interface Account extends BridgeEntity {
     Phone getPhone();
     void setPhone(Phone phone);
     
+    String getSynapseUserId();
+    void setSynapseUserId(String synapseUserId);
+    
     Boolean getEmailVerified();
     void setEmailVerified(Boolean emailVerified);
     

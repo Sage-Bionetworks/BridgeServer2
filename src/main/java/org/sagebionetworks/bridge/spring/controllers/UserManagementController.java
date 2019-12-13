@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -43,7 +44,7 @@ public class UserManagementController extends BaseController {
     }
     
     @PostMapping("/v3/auth/admin/signIn")
-    public JsonNode signInForAdmin() throws Exception {
+    public JsonNode signInForSuperAdmin() throws Exception {
         SignIn originSignIn = parseJson(SignIn.class);
         
         // Persist the requested study
@@ -59,9 +60,9 @@ public class UserManagementController extends BaseController {
         // We do not check consent, but do verify this is an administrator
         UserSession session = authenticationService.signIn(study, context, signIn);
 
-        if (!session.isInRole(ADMIN)) {
+        if (!session.isInRole(SUPERADMIN)) {
             authenticationService.signOut(session);
-            throw new UnauthorizedException("Not an admin account");
+            throw new UnauthorizedException("Not a superadmin account");
         }
         
         // Now act as if the user is in the study that was requested
@@ -71,11 +72,17 @@ public class UserManagementController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
+    /**
+     * This turned out to be useful... so useful we're opening it up to all administrative
+     * users.
+     * 
+     * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
+     * @throws Exception
+     */
+    @Deprecated
     @PostMapping("/v3/auth/admin/study")
     public JsonNode changeStudyForAdmin() throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
-        
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot change studies.");
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         // The only part of this payload we care about is the study property
         SignIn signIn = parseJson(SignIn.class);
@@ -114,11 +121,9 @@ public class UserManagementController extends BaseController {
     @PostMapping("/v3/studies/{studyId}/users")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createUserWithStudyId(@PathVariable String studyId) throws Exception {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        getAuthenticatedSession(SUPERADMIN);
         Study study = studyService.getStudy(studyId);
         
-        verifyCrossStudyAdmin(session.getId(), "Study admin cannot create user in arbitrary study.");
-
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
 

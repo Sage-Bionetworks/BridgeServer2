@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -18,7 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +30,6 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -43,12 +40,11 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -63,7 +59,7 @@ public abstract class BaseController {
     
     BridgeConfig bridgeConfig;
 
-    AccountDao accountDao;
+    AccountService accountService;
 
     StudyService studyService;
 
@@ -89,8 +85,8 @@ public abstract class BaseController {
     }
     
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -206,7 +202,7 @@ public abstract class BaseController {
 
         // if there are roles, they are required
         boolean rolesRequired = (roles != null && roles.length > 0); 
-        boolean isInRole = (rolesRequired) ? !Collections.disjoint(Sets.newHashSet(roles), userRoles) : false;
+        boolean isInRole = (rolesRequired) ? session.isInRole(ImmutableSet.copyOf(roles)) : false;
         
         if ((consentRequired && session.doesConsent()) || (rolesRequired && isInRole)) {
             return session;
@@ -257,17 +253,6 @@ public abstract class BaseController {
     }
 
     /**
-     * For admin calls, the admin should either be in the API study, or the current target study.
-     */
-    void verifyCrossStudyAdmin(String userId, String errorMessage) {
-        AccountId accountId = AccountId.forId(API_STUDY_ID.getIdentifier(), userId);
-        Account account = accountDao.getAccount(accountId);
-        if (account == null) {
-            throw new UnauthorizedException(errorMessage);
-        }
-    }
-
-    /**
      * Once we acquire a language for a user, we save it and use that language going forward. Changing their 
      * language in the host operating system will not change the language they are using (since changing the 
      * language might change their consent state). If they change their language by updating their UserProfile, 
@@ -282,7 +267,7 @@ public abstract class BaseController {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
-            accountDao.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+            accountService.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder()

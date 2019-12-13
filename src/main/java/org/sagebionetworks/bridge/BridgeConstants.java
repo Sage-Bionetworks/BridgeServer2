@@ -11,6 +11,13 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";
+    
+    public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
+    public static final String SYNAPSE_OAUTH_CLIENT_ID = "synapse.oauth.client.id";
+    public static final String SYNAPSE_OAUTH_URL = "synapse.oauth.url";
+    public static final int SYNAPSE_TIMEOUT = 10000;
+    
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";

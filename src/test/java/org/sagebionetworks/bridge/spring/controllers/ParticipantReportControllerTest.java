@@ -41,7 +41,6 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -60,6 +59,7 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -86,7 +86,7 @@ public class ParticipantReportControllerTest extends Mockito {
     StudyService mockStudyService;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     Account mockAccount;
@@ -122,7 +122,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        doReturn(mockOtherAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
+        doReturn(mockOtherAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
@@ -229,7 +229,7 @@ public class ParticipantReportControllerTest extends Mockito {
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
         
-        doReturn(mockAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
+        doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
                 .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
@@ -244,7 +244,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorkerV4_DefaultParams() throws Exception {
         // Mock dependencies
-        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, null,
                 BridgeConstants.API_DEFAULT_PAGE_SIZE);
@@ -265,7 +265,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorkerV4_OptionalParams() throws Exception {
         // Mock dependencies
-        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, OFFSET_KEY,
                 PAGE_SIZE_INT);
@@ -292,7 +292,7 @@ public class ParticipantReportControllerTest extends Mockito {
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         session.setParticipant(participant);
         
-        doReturn(mockAccount).when(mockAccountDao).getAccount(OTHER_ACCOUNT_ID);
+        doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
@@ -305,7 +305,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorker_DefaultParams() throws Exception {
         // Mock dependencies
-        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
         doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,
@@ -323,7 +323,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorker_OptionalParams() throws Exception {
         // Mock dependencies
-        when(mockAccountDao.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
         doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
@@ -79,7 +80,7 @@ public class StudyParticipantValidatorTest {
                 .withAttributes(attrs)
                 .withPassword("bad")
                 .build();
-        assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, or externalId is required");
+        assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, synapseUserId or externalId is required");
         assertValidatorMessage(validator, participant, "externalId", "is required");
         assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
         assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
@@ -133,12 +134,13 @@ public class StudyParticipantValidatorTest {
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
         Validate.entityThrowingException(validator, withDataGroup("bluebell"));
+        Validate.entityThrowingException(validator, withSynapseUserId(SYNAPSE_USER_ID));
     }
     
     @Test
-    public void emailPhoneOrExternalIdRequired() {
+    public void emailPhoneSynapseUserIdOrExternalIdRequired() {
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
-        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, or externalId is required");
+        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, synapseUserId or externalId is required");
     }
     
     @Test
@@ -171,9 +173,23 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
+    public void synapseUserIdOnlyOK() {
+        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
+
+        validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
+        Validate.entityThrowingException(validator, participant);
+    }
+    
+    @Test
     public void emptyStringPasswordRequired() {
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         assertValidatorMessage(validator, withPassword(""), "password", "is required");
+    }
+    
+    @Test
+    public void emptyStringUserSynapseIdRequired() {
+        validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
+        assertValidatorMessage(validator, withSynapseUserId(""), "synapseUserId", "cannot be blank");
     }
     
     @Test
@@ -341,6 +357,20 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "externalId", "cannot be blank");
     }
     @Test
+    public void emptySynapseUserIdOnCreate() {
+        StudyParticipant participant = withSynapseUserId(" ");
+        
+        validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
+        assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
+    }
+    @Test
+    public void emptySynapseUserIdOnUpdate() {
+        StudyParticipant participant = withSynapseUserId(" ");
+        
+        validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
+        assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
+    }
+    @Test
     public void substudyAllowedIfCallerHasNoSubstudies() {
         // In other words, you can "taint" a user with substudies, putting them in a limited security role.
         StudyParticipant participant = withSubstudies("substudyA", "substudyB");
@@ -395,6 +425,10 @@ public class StudyParticipantValidatorTest {
     
     private StudyParticipant withEmail(String email) {
         return new StudyParticipant.Builder().withEmail(email).withPassword("aAz1%_aAz1%").build();
+    }
+    
+    private StudyParticipant withSynapseUserId(String synapseUserId) {
+        return new StudyParticipant.Builder().withSynapseUserId(synapseUserId).build();
     }
     
     private StudyParticipant withEmailAndId(String email) {

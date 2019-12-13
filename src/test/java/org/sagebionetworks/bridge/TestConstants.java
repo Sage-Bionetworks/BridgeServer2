@@ -36,6 +36,7 @@ public class TestConstants {
     public static final String UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
     public static final String IP_ADDRESS = "2.3.4.5";
     public static final String USER_ID = "userId";
+    public static final String SYNAPSE_USER_ID = "12345";
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
 
     public static final String HEALTH_CODE = "oneHealthCode";

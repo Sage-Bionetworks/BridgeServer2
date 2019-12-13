@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
@@ -10,7 +12,6 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACC
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.WARNING;
 import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.services.StudyService.SYNAPSE_REGISTER_END_POINT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -41,10 +42,8 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.client.SynapseClient;
-import org.sagebionetworks.client.exceptions.SynapseClientException;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
-import org.sagebionetworks.client.exceptions.UnknownSynapseServerException;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.MembershipInvitation;
 import org.sagebionetworks.repo.model.Project;
@@ -92,6 +91,7 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
+import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
 public class StudyServiceMockTest extends Mockito {
@@ -110,6 +110,8 @@ public class StudyServiceMockTest extends Mockito {
 
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
+    private static final String TEST_USER_SYNAPSE_ID = "synapse-id-1";
+    private static final String TEST_USER_SYNAPSE_ID_2 = "synapse-id-2";
     private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
     private static final String TEST_USER_LAST_NAME = "test_user_last_name";
     private static final String TEST_USER_PASSWORD = "test_user_password12AB";
@@ -152,7 +154,7 @@ public class StudyServiceMockTest extends Mockito {
     TemplateService mockTemplateService;
     @Mock
     FileService mockFileService;
-    
+
     @Captor
     ArgumentCaptor<Project> projectCaptor;
     @Captor
@@ -190,6 +192,10 @@ public class StudyServiceMockTest extends Mockito {
         service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new StudyValidator());
+        
+        StudyAndUsersValidator studyAndUsersValidator = new StudyAndUsersValidator();
+        studyAndUsersValidator.setSynapseClient(mockSynapseClient);
+        service.setStudyAndUsersValidator(studyAndUsersValidator);
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -895,7 +901,7 @@ public class StudyServiceMockTest extends Mockito {
     }
 
     @Test
-    public void createStudyAndUser() throws SynapseException {
+    public void createStudyAndUsers() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -905,20 +911,22 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
                 .withPassword(TEST_USER_PASSWORD)
                 .build();
-
+        
         StudyParticipant mockUser2 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL_2)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER))
                 .withPassword(TEST_USER_PASSWORD)
                 .build();
-
+        
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
@@ -938,25 +946,23 @@ public class StudyServiceMockTest extends Mockito {
 
         // stub
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        doNothing().when(mockSynapseClient).newAccountEmailValidation(any(), any());
 
         // execute
         service.createStudyAndUsers(mockStudyAndUsers);
 
         // verify
-        verify(mockParticipantService, times(2)).createParticipant(any(), any(), anyBoolean());
         verify(mockParticipantService).createParticipant(study, mockUser1, false);
         verify(mockParticipantService).createParticipant(study, mockUser2, false);
         verify(mockParticipantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
-        verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
         verify(service).createStudy(study);
-        verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
+        verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS,
+                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), study);
         
         assertEquals(projectCaptor.getValue().getName(), TEST_PROJECT_NAME);
         assertEquals(teamCaptor.getValue().getName(), TEST_TEAM_NAME);
     }
     
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Admin ID is invalid.")
+    @Test(expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds\\[0\\] is invalid.*")
     public void createStudyAndUsersSynapseUserNotFound() throws SynapseException {
         when(mockSynapseClient.getUserProfile(any())).thenThrow(new SynapseNotFoundException());
         
@@ -972,7 +978,7 @@ public class StudyServiceMockTest extends Mockito {
         study.setSynapseDataAccessTeamId(null);
         study.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID).withRoles(ImmutableSet.of(DEVELOPER)).build());
 
         IdentifierHolder holder = new IdentifierHolder("user-id");
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(holder);
@@ -996,36 +1002,52 @@ public class StudyServiceMockTest extends Mockito {
         assertNotNull(studyCaptor.getValue().getPasswordPolicy());
     }
     
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "User can only have roles developer and/or researcher.")
-    public void createStudyAndUsersUserInWrongRole() throws SynapseException {
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*users\\[0\\].roles can only have roles developer and/or researcher.*")
+    public void createStudyAndUsersUserWithWorkerRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(WORKER));
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*users\\[0\\].roles can only have roles developer and/or researcher.*")
+    public void createStudyAndUsersUserWithSuperadminRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(SUPERADMIN));
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*users\\[0\\].roles can only have roles developer and/or researcher.*")
+    public void createStudyAndUsersUserWithAdminRole() throws SynapseException {
+        createStudyAndUserInWrongRole(ImmutableSet.of(ADMIN));
+    }
+    
+    private void createStudyAndUserInWrongRole(Set<Roles> roles) throws SynapseException {
         study.setExternalIdRequiredOnSignup(false);
         study.setSynapseDataAccessTeamId(null);
         study.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList.of(
-                new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL).withRoles(ImmutableSet.of(WORKER)).build());
+        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID).withEmail(TEST_USER_EMAIL).withRoles(roles).build());
         
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
 
         service.createStudyAndUsers(mockStudyAndUsers);
     }
     
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "User should have at least one role.")
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*users\\[0\\].roles should have at least one role.*")
     public void createStudyAndUsersUserHasNoRole() throws SynapseException {
         study.setExternalIdRequiredOnSignup(false);
         study.setSynapseDataAccessTeamId(null);
         study.setSynapseProjectId(null);
-        List<StudyParticipant> participants = ImmutableList
-                .of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL).build());
+        List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID).build());
         
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
 
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Admin IDs are required.")
-    public void createStudyAndUserWithNullAdmins() throws SynapseException {
+    @Test(expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
+    public void createStudyAndUsersWithNullAdmins() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1033,6 +1055,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
@@ -1041,6 +1064,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser2 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL_2)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER))
@@ -1054,8 +1078,8 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Admin IDs are required.")
-    public void createStudyAndUserWithEmptyRoles() throws SynapseException {
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
+    public void createStudyAndUsersWithEmptyRoles() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1063,6 +1087,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of())
@@ -1076,8 +1101,8 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Admin IDs are required.")
-    public void createStudyAndUserWithEmptyAdmins() throws SynapseException {
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
+    public void createStudyAndUsersWithEmptyAdmins() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1085,6 +1110,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
@@ -1093,6 +1119,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser2 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL_2)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER))
@@ -1106,8 +1133,8 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "User list is required.")
-    public void createStudyAndUserWithEmptyUser() throws SynapseException {
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*users are required.*")
+    public void createStudyAndUsersWithEmptyUser() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1120,8 +1147,8 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "User list is required.")
-    public void createStudyAndUserWithNullUser() throws SynapseException {
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*users are required.*")
+    public void createStudyAndUsersWithNullUser() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1133,8 +1160,8 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Study cannot be null.")
-    public void createStudyAndUserWithNullStudy() throws SynapseException {
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*study cannot be null.*")
+    public void createStudyAndUsersWithNullStudy() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseProjectId(null);
@@ -1142,6 +1169,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
@@ -1150,6 +1178,7 @@ public class StudyServiceMockTest extends Mockito {
 
         StudyParticipant mockUser2 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL_2)
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID_2)
                 .withFirstName(TEST_USER_FIRST_NAME)
                 .withLastName(TEST_USER_LAST_NAME)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER))
@@ -1164,7 +1193,7 @@ public class StudyServiceMockTest extends Mockito {
     }
 
     @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a project ID.")
-    public void createStudyAndUserSynapseProjectIdExists() throws SynapseException {
+    public void createStudyAndUsersProjectIdExists() throws SynapseException {
         // mock
         Study study = getTestStudy();
         study.setSynapseDataAccessTeamId(null);
@@ -1172,6 +1201,7 @@ public class StudyServiceMockTest extends Mockito {
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
                 .withEmail(TEST_USER_EMAIL)
                 .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
                 .build();
@@ -1185,142 +1215,6 @@ public class StudyServiceMockTest extends Mockito {
         service.createStudyAndUsers(mockStudyAndUsers);
     }    
     
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a team ID.")
-    public void createStudyAndUserSynapseAccessTeamIdExists() throws SynapseException {
-        // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .build();
-
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
-                .thenReturn(new IdentifierHolder("userId"));
-        
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, ImmutableList.of(mockUser1));
-
-        // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
-    }
-    
-    @Test(expectedExceptions = SynapseClientException.class)
-    public void createStudyAndUserThrowExceptionNotLogged() throws SynapseException {
-        // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
-
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
-
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
-        IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
-
-        // spy
-        doReturn(study).when(service).createStudy(any());
-
-        // stub
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        doThrow(SynapseClientException.class).when(mockSynapseClient).newAccountEmailValidation(any(), any());
-
-        // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
-    }
-
-    @Test(expectedExceptions = BadRequestException.class)
-    public void createStudyAndUserNullStudyName() throws Exception {
-        // mock
-        Study study = getTestStudy();
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setName(null); // This is not a good name...
-
-        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class)
-    public void createStudyAndUserBadStudyName() throws Exception {
-        // mock
-        Study study = getTestStudy();
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setName("# # "); // This is not a good name...
-
-        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
-    }
-    
-    @Test
-    public void createStudyAndUserThrowExceptionLogged() throws SynapseException {
-        // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-
-        StudyParticipant mockUser1 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
-
-        StudyParticipant mockUser2 = new StudyParticipant.Builder()
-                .withEmail(TEST_USER_EMAIL_2)
-                .withFirstName(TEST_USER_FIRST_NAME)
-                .withLastName(TEST_USER_LAST_NAME)
-                .withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .withPassword(TEST_USER_PASSWORD)
-                .build();
-
-        List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
-        IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
-
-        // spy
-        doReturn(study).when(service).createStudy(any());
-        doReturn(study).when(service).createSynapseProjectTeam(any(), any());
-
-        // stub
-        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
-        doThrow(new UnknownSynapseServerException(500, "The email address provided is already used.")).when(mockSynapseClient).newAccountEmailValidation(any(), any());
-
-        // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
-
-        // verify
-        verify(mockParticipantService, times(2)).createParticipant(any(), any(), anyBoolean());
-        verify(mockParticipantService).createParticipant(study, mockUser1, false);
-        verify(mockParticipantService).createParticipant(study, mockUser2, false);
-        verify(mockParticipantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
-        verify(mockSynapseClient, times(2)).newAccountEmailValidation(any(), eq(SYNAPSE_REGISTER_END_POINT));
-        verify(service).createStudy(study);
-        verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS, study);
-    }
-
     @Test
     public void createSynapseProjectTeam() throws SynapseException {
         Study study = getTestStudy();
@@ -1342,8 +1236,9 @@ public class StudyServiceMockTest extends Mockito {
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
         // execute
-        Study retStudy = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), study);
-
+        Study retStudy = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), 
+                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), study);
+        
         // verify
         // create project and team
         verify(mockSynapseClient).createTeam(any());
@@ -1386,10 +1281,12 @@ public class StudyServiceMockTest extends Mockito {
         assertEquals(view.getScopeIds().size(), 1);
         assertEquals(view.getScopeIds().get(0), "apseProjectId");
 
-        // invite user to team
-        verify(mockSynapseClient).createMembershipInvitation(eq(teamMemberInvitation), any(), any());
-        verify(mockSynapseClient).setTeamMemberPermissions(eq(TEST_TEAM_ID), eq(TEST_USER_ID.toString()), anyBoolean());
-
+        // invite users to team
+        verify(mockSynapseClient, times(3)).createMembershipInvitation(any(), eq(null), eq(null));
+        verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, Long.toString(TEST_USER_ID), true);
+        verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, TEST_USER_SYNAPSE_ID, false);
+        verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, TEST_USER_SYNAPSE_ID_2, false);
+        
         // update study
         assertNotNull(retStudy);
         assertEquals(retStudy.getIdentifier(), study.getIdentifier());
@@ -1397,6 +1294,54 @@ public class StudyServiceMockTest extends Mockito {
         assertEquals(retStudy.getSynapseProjectId(), TEST_PROJECT_ID);
         assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
     }
+
+    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a team ID.")
+    public void createSynapseProjectTeamAccessTeamIdExists() throws SynapseException {
+        // mock
+        Study study = getTestStudy();
+        study.setSynapseProjectId(null);
+        study.setExternalIdRequiredOnSignup(false);
+        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+
+        StudyParticipant mockUser1 = new StudyParticipant.Builder()
+                .withSynapseUserId(TEST_USER_SYNAPSE_ID)
+                .withEmail(TEST_USER_EMAIL)
+                .withRoles(ImmutableSet.of(Roles.RESEARCHER, Roles.DEVELOPER))
+                .build();
+
+        when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
+                .thenReturn(new IdentifierHolder("userId"));
+        
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, ImmutableList.of(mockUser1));
+
+        // execute
+        service.createStudyAndUsers(mockStudyAndUsers);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void createSynapseProjectTeamNullStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setName(null); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void createSynapseProjectTeamBadStudyName() throws Exception {
+        // mock
+        Study study = getTestStudy();
+        study.setExternalIdRequiredOnSignup(false);
+        study.setSynapseProjectId(null);
+        study.setSynapseDataAccessTeamId(null);
+        study.setName("# # "); // This is not a good name...
+
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+    }
+
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamNonExistUserID() throws SynapseException {

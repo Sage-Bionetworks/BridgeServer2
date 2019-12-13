@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -147,7 +146,7 @@ public class AccountWorkflowService {
     private SmsService smsService;
     private StudyService studyService;
     private SendMailService sendMailService;
-    private AccountDao accountDao;
+    private AccountService accountService;
     private CacheProvider cacheProvider;
     private TemplateService templateService;
 
@@ -175,8 +174,8 @@ public class AccountWorkflowService {
     }
 
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountDao(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -276,7 +275,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         
         Study study = studyService.getStudy(accountId.getStudyId());
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account != null) {
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(study, account.getId(), account.getEmail());
@@ -301,7 +300,7 @@ public class AccountWorkflowService {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         Study study = studyService.getStudy(data.getStudyId());
-        Account account = accountDao.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
+        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -326,7 +325,7 @@ public class AccountWorkflowService {
         checkNotNull(study);
         checkNotNull(accountId);
 
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         
         boolean verifiedEmail = account.getEmail() != null && Boolean.TRUE.equals(account.getEmailVerified());
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
@@ -354,7 +353,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
         
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
@@ -474,11 +473,11 @@ public class AccountWorkflowService {
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        accountDao.changePassword(account, channelType, passwordReset.getPassword());
+        accountService.changePassword(account, channelType, passwordReset.getPassword());
     }
     
     /**
@@ -561,7 +560,7 @@ public class AccountWorkflowService {
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
-        Account account = accountDao.getAccount(signIn.getAccountId());
+        Account account = accountService.getAccount(signIn.getAccountId());
         if (account == null) {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 

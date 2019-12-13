@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.io.IOException;
@@ -21,8 +23,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
@@ -168,7 +168,7 @@ public class UploadController extends BaseController {
     
     @GetMapping("/v3/uploads/{uploadId}")
     public UploadView getUpload(@PathVariable String uploadId) {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN, Roles.WORKER);
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
@@ -178,12 +178,9 @@ public class UploadController extends BaseController {
             if (record == null) {
                 throw new EntityNotFoundException(HealthDataRecord.class);
             }
-
-            AccountId accountId = AccountId.forId(API_STUDY_ID.getIdentifier(), session.getId());
-            Account account = accountDao.getAccount(accountId);
-            boolean hasAccess = account != null || 
-                    session.getStudyIdentifier().getIdentifier().equals(record.getStudyId());
-            if (!hasAccess) {
+            
+            if (!session.isInRole(SUPERADMIN) && 
+                !session.getStudyIdentifier().getIdentifier().equals(record.getStudyId())) {
                 throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
             }
             uploadId = record.getUploadId();

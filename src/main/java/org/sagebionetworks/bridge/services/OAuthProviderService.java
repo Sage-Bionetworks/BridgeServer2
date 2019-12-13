@@ -2,9 +2,18 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.Charset.defaultCharset;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -28,24 +37,34 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 /**
  * Service that specifically works for Fitbit API. We may eventually choose an OAuth library if the 
@@ -74,11 +93,34 @@ class OAuthProviderService {
     private static final Pattern SCOPE_PAIR_SPLIT_PATTERN = Pattern.compile("\\s*[{},]\\s*");
     private static final String SCOPE_PROP_NAME = "scope";
     private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
+    private static final String SYNAPSE_VENDOR_ID = "synapse";
     static final String TOKEN_PROP_NAME = "token";
     private static final String PROVIDER_USER_ID = "user_id";
-    private static final Set<String> INVALID_OR_EXPIRED_ERRORS = Sets.newHashSet("invalid_token", "expired_token", "invalid_grant");
-    private static final Set<String> INVALID_CLIENT_ERRORS = Sets.newHashSet("invalid_client");
+    private static final Set<String> INVALID_OR_EXPIRED_ERRORS = ImmutableSet.of("invalid_token", "expired_token", "invalid_grant");
+    private static final Set<String> INVALID_CLIENT_ERRORS = ImmutableSet.of("invalid_client");
+    static final String SYNAPSE_USERID_KEY = "userid";
+    private static final String SYNAPSE_ID_TOKEN_KEY = "id_token";
+    private static final String SYNAPSE_ERROR_KEY = "reason";
+    private static final BigInteger MODULUS = new BigInteger("238499454829654749051455172686433749207979434713239851759657441457377"+
+            "1656597474337243022411171242737524732939908302581624575831937041782355615027727710820665290995695103877971991185257319"+
+            "7057021578055098390526471329800633323810194331080461575761929434803674679324161848934212115408664545557149085782355814"+
+            "2203009343325468419362811405260745578631362098820497061936813369203864883181658617346770893793830626123962885974940082"+
+            "6219064421262331213358876970410749141172687535654897753523188343873412905059109968922576374393735637734252722397997640"+
+            "7213258598569748635314939347146403284906522122994148568855913460554935920381");
+    private static final BigInteger EXPONENT = new BigInteger("65537");
+    private static final RSAPublicKeySpec KEY_SPEC = new RSAPublicKeySpec(MODULUS, EXPONENT);
+    
+    private String synapseOauthURL;
+    private String synapseClientID;
+    private String synapseClientSecret;
 
+    @Autowired
+    final void setBridgeConfig(BridgeConfig config) {
+        this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
+        this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
+        this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
+    }
+    
     /**
      * Simple container for the response, parsed before closing the stream.
      */
@@ -136,6 +178,80 @@ class OAuthProviderService {
         }
     }
 
+    /**
+     * Authenticate a Bridge user via an external OAuth server that supports Open Connect ID (identified by the supplied
+     * vendor ID; currently the only supported external authentication server is Synapse, but the same requirements are
+     * fulfilled by Google, Facebook, etc.). This is the second contact of the OAuth server, after a client has sent a
+     * user to authenticate on the OAuth server's web site and the OAuth server has redirected back to the Bridge client
+     * with an authentication code. We now exchange it for an authentication token as well as the additional OCID
+     * information to verify the identity of the caller (currently we ask for the user's Synapse ID from Synapse, but we
+     * could also use email or phone number).
+     * 
+     * @param authToken
+     *         that was passed from the OAuth server back to the authenticating client
+     * @return accountId if the exchange is successful, the accountId will contain an identifying credential that should
+     *         be usable to retrieve an account
+     * 
+     * @throws BadRequestException
+     */
+    public AccountId oauthSignIn(OAuthAuthorizationToken authToken) {
+        checkNotNull(authToken);
+        
+        if (authToken.getVendorId() == null) {
+            throw new BadRequestException("Vendor ID required");
+        } else if (!SYNAPSE_VENDOR_ID.equals(authToken.getVendorId())) {
+            throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
+        }
+        if (authToken.getStudyId() == null) {
+            throw new BadRequestException("Study ID required");
+        }
+        if (authToken.getAuthToken() == null) {
+            throw new BadRequestException("Authorization token required");
+        }
+        
+        // Synapse configuration, not stored in the table that's accessible to end users.
+        OAuthProvider provider = new OAuthProvider(this.synapseClientID, this.synapseClientSecret, 
+                this.synapseOauthURL, authToken.getCallbackUrl(), null);
+        HttpPost client = createOAuthProviderPost(provider, provider.getEndpoint());
+        
+        List<NameValuePair> pairs = new ArrayList<>();
+        pairs.add(new BasicNameValuePair(GRANT_TYPE_PROP_NAME, AUTHORIZATION_CODE_VALUE));
+        pairs.add(new BasicNameValuePair(CODE_PROP_NAME, authToken.getAuthToken()));
+        pairs.add(new BasicNameValuePair(REDIRECT_URI_PROP_NAME, authToken.getCallbackUrl()));
+        client.setEntity(formEntity(pairs));
+        
+        Response response = executeGrantRequest(client);
+        if (response.getStatusCode() < 200 || response.getStatusCode() > 299) {
+            throw new BadRequestException(response.getBody().get(SYNAPSE_ERROR_KEY).textValue());
+        }
+        JwtParser parser = getJwtParser();
+        parser.setSigningKey(getRSAPublicKey());
+        parser.setAllowedClockSkewSeconds(5);
+        
+        String idTokenBlock = response.getBody().get(SYNAPSE_ID_TOKEN_KEY).textValue();
+        Jws<Claims> jwt = parser.parseClaimsJws(idTokenBlock);
+        String synapseUserId = jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
+        
+        if (synapseUserId != null) {
+            return AccountId.forSynapseUserId(authToken.getStudyId(), synapseUserId);
+        }
+        return null;
+    }
+    
+    // isolating static accessor for mocking
+    JwtParser getJwtParser() {
+        return Jwts.parser();
+    }
+    
+    private RSAPublicKey getRSAPublicKey() {
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return (RSAPublicKey)kf.generatePublic(KEY_SPEC);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        } 
+    }    
+    
     /**
      * Request an access grant token.
      */

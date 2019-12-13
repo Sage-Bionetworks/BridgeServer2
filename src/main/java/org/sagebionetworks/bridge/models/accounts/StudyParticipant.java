@@ -59,6 +59,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final Boolean emailVerified;
     private final Boolean phoneVerified;
     private final String externalId;
+    private final String synapseUserId;
     private final String password;
     private final SharingScope sharingScope;
     private final Boolean notifyByEmail;
@@ -78,11 +79,11 @@ public final class StudyParticipant implements BridgeEntity {
     private final Map<String,String> externalIds;
     
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
-            Boolean phoneVerified, String externalId, String password, SharingScope sharingScope, Boolean notifyByEmail,
-            Set<String> dataGroups, String healthCode, Map<String, String> attributes,
+            Boolean phoneVerified, String externalId, String synapseUserId, String password, SharingScope sharingScope,
+            Boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String, String> attributes,
             Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
             List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
-            JsonNode clientData, Set<String> substudyIds, Map<String,String> externalIds) {
+            JsonNode clientData, Set<String> substudyIds, Map<String, String> externalIds) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -101,6 +102,7 @@ public final class StudyParticipant implements BridgeEntity {
         this.emailVerified = emailVerified;
         this.phoneVerified = phoneVerified;
         this.externalId = externalId;
+        this.synapseUserId = synapseUserId;
         this.password = password;
         this.sharingScope = sharingScope;
         this.notifyByEmail = notifyByEmail;
@@ -147,6 +149,9 @@ public final class StudyParticipant implements BridgeEntity {
             return Iterables.getFirst(externalIds.values(), null);    
         }
         return externalId;
+    }
+    public String getSynapseUserId() {
+        return synapseUserId;
     }
     public String getPassword() {
         return password;
@@ -213,8 +218,8 @@ public final class StudyParticipant implements BridgeEntity {
     @Override
     public int hashCode() {
         return Objects.hash(attributes, consentHistories, consented, createdOn, dataGroups, email, phone, emailVerified,
-                phoneVerified, externalId, firstName, healthCode, id, languages, lastName, notifyByEmail, password,
-                roles, sharingScope, status, timeZone, clientData, substudyIds, externalIds);
+                phoneVerified, externalId, synapseUserId, firstName, healthCode, id, languages, lastName, notifyByEmail,
+                password, roles, sharingScope, status, timeZone, clientData, substudyIds, externalIds);
     }
 
     @Override
@@ -230,6 +235,7 @@ public final class StudyParticipant implements BridgeEntity {
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(emailVerified, other.emailVerified) && Objects.equals(phoneVerified, other.phoneVerified)
                 && Objects.equals(externalId, other.externalId)
+                && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(firstName, other.firstName) && Objects.equals(healthCode, other.healthCode)
                 && Objects.equals(id, other.id) && Objects.equals(languages, other.languages)
                 && Objects.equals(lastName, other.lastName) && Objects.equals(notifyByEmail, other.notifyByEmail)
@@ -249,6 +255,7 @@ public final class StudyParticipant implements BridgeEntity {
         private Boolean emailVerified;
         private Boolean phoneVerified;
         private String externalId;
+        private String synapseUserId;
         private String password;
         private SharingScope sharingScope;
         private Boolean notifyByEmail;
@@ -275,6 +282,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.emailVerified = participant.getEmailVerified();
             this.phoneVerified = participant.getPhoneVerified();
             this.externalId = participant.getExternalId();
+            this.synapseUserId = participant.getSynapseUserId();
             this.password = participant.getPassword();
             this.sharingScope = participant.getSharingScope();
             this.notifyByEmail = participant.isNotifyByEmail();
@@ -315,6 +323,9 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("externalId")) {
                 withExternalId(participant.getExternalId());    
+            }
+            if (fieldNames.contains("synapseUserId")) {
+                withSynapseUserId(participant.getSynapseUserId());
             }
             if (fieldNames.contains("password")) {
                 withPassword(participant.getPassword());    
@@ -395,6 +406,10 @@ public final class StudyParticipant implements BridgeEntity {
         }
         public Builder withExternalId(String externalId) {
             this.externalId = externalId;
+            return this;
+        }
+        public Builder withSynapseUserId(String synapseUserId) {
+            this.synapseUserId = synapseUserId;
             return this;
         }
         public Builder withPassword(String password) {
@@ -493,8 +508,9 @@ public final class StudyParticipant implements BridgeEntity {
                 languages = ImmutableList.copyOf(Sets.newLinkedHashSet(languages));
             }
             return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
-                    password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes, consentHistories, consented, roles,
-                    languages, status, createdOn, id, timeZone, clientData, substudyIds, externalIds);
+                    synapseUserId, password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes,
+                    consentHistories, consented, roles, languages, status, createdOn, id, timeZone, clientData,
+                    substudyIds, externalIds);
         }
     }
 

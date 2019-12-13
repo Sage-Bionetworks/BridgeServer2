@@ -1,12 +1,16 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -53,7 +57,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -76,6 +79,7 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
@@ -117,7 +121,7 @@ public class StudyControllerTest extends Mockito {
     UploadService mockUploadService;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     BridgeConfig mockBridgeConfig;
@@ -155,7 +159,7 @@ public class StudyControllerTest extends Mockito {
         study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         study.setActive(true);
      
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(study);
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(VERIFIED);
@@ -169,7 +173,7 @@ public class StudyControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(StudyController.class);
         assertGet(StudyController.class, "getCurrentStudy");
-        assertPost(StudyController.class, "updateStudyForDeveloper");
+        assertPost(StudyController.class, "updateStudyForDeveloperOrAdmin");
         assertPost(StudyController.class, "updateStudy");
         assertGet(StudyController.class, "getStudy");
         assertGet(StudyController.class, "getAllStudies");
@@ -184,6 +188,7 @@ public class StudyControllerTest extends Mockito {
         assertPost(StudyController.class, "verifySenderEmail");
         assertGet(StudyController.class, "getUploads");
         assertGet(StudyController.class, "getUploadsForStudy");
+        assertGet(StudyController.class, "getStudyMemberships");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -216,8 +221,8 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void canDeactivateForAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    public void canDeactivateForSuperAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         controller.deleteStudy("not-protected", false);
 
@@ -226,8 +231,8 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void canDeleteForAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    public void canDeleteForSuperAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         controller.deleteStudy("not-protected", true);
 
@@ -247,7 +252,7 @@ public class StudyControllerTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deactivateStudyThrowsGoodException() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         doThrow(new EntityNotFoundException(Study.class)).when(mockStudyService).deleteStudy("not-protected",
                 false);
 
@@ -285,7 +290,7 @@ public class StudyControllerTest extends Mockito {
         TestUtils.mockRequestBody(mockRequest, mockStudyAndUsers);
 
         // stub
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         ArgumentCaptor<StudyAndUsers> argumentCaptor = ArgumentCaptor.forClass(StudyAndUsers.class);
         when(mockStudyService.createStudyAndUsers(argumentCaptor.capture())).thenReturn(study);
 
@@ -579,7 +584,7 @@ public class StudyControllerTest extends Mockito {
         List<Study> studies = ImmutableList.of(new DynamoStudy());
         doReturn(studies).when(mockStudyService).getStudies();
         
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         String result = controller.getAllStudies(null, "false");
         ResourceList<Study> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<Study>>() {});
@@ -591,7 +596,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void updateStudy() throws Exception {
         when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         Study created = Study.create();
         created.setVersion(3L);
@@ -610,8 +615,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateStudyRejectsStudyAdmin() throws Exception {
-        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().
+                withRoles(ImmutableSet.of(ADMIN)).build());
+        doReturn(mockSession).when(controller).getSessionIfItExists();
         
         controller.updateStudy("some-study");
     }
@@ -620,27 +627,28 @@ public class StudyControllerTest extends Mockito {
     public void getStudy() throws Exception {
         Study retrieved = Study.create();
         when(mockStudyService.getStudy("some-study", true)).thenReturn(retrieved);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN, WORKER);
         
         Study result = controller.getStudy("some-study");
         assertSame(result, retrieved);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getStudyRejectsStudyAdmin() throws Exception { 
-        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
-        when(mockSession.isInRole(WORKER)).thenReturn(false);
-        when(mockSession.getId()).thenReturn("not-an-id-that-fetches-an-account-in-this-study");
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+    public void getStudyRejectsNonSuperAdmin() throws Exception { 
+        when(mockSession.isInRole(DEVELOPER)).thenReturn(false);
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
+        doReturn(mockSession).when(controller).getSessionIfItExists();
         
         controller.getStudy("some-study");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getAllStudiesFullStudyRejectsStudyAdmin() throws Exception {
-        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
-        when(mockSession.getId()).thenReturn("other-id");
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getSessionIfItExists();
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
         controller.getAllStudies(null, null);
     }
@@ -672,7 +680,7 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void getAllStudies() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         // Two active and one deleted study
         Study study1 = Study.create();
         study1.setName("study1");
@@ -699,17 +707,18 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createStudyRejectsStudyAdmin() throws Exception {
-        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
-        when(mockSession.getId()).thenReturn("other-id");
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    public void createStudyRejectsNonSuperAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getSessionIfItExists();
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
         controller.createStudy();
     }
     
     @Test
     public void createStudy() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         Study created = Study.create();
         created.setVersion(3L);
@@ -726,17 +735,18 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createStudyAndUsersRejectsStudyAdmin() throws Exception {
-        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
-        when(mockSession.getId()).thenReturn("other-id");
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    public void createStudyAndUsersRejectsNoneSuperAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getSessionIfItExists();
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
         controller.createStudyAndUsers();
     }
     
     @Test
-    public void createStudyAndusers() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    public void createStudyAndUsers() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         Study created = Study.create();
         created.setVersion(3L);
@@ -761,12 +771,12 @@ public class StudyControllerTest extends Mockito {
         assertEquals(captured.getStudy(), newStudy);
     }
         
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Study admins cannot delete studies.*")
-    public void deleteStudyRejectsStudyAdmin() throws Exception {
-        when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
-        when(mockSession.getId()).thenReturn("other-id");
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteStudyRejectsNonSuperAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getSessionIfItExists();
+        when(mockSession.isAuthenticated()).thenReturn(true);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
         controller.deleteStudy("other-study", true);
     }
@@ -776,7 +786,7 @@ public class StudyControllerTest extends Mockito {
     public void deleteStudyRejectsCallerInStudy() throws Exception {
         // API is protected by the whitelist so this test must target some other study
         when(mockSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("other-study"));
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         controller.deleteStudy("other-study", true);
     }
@@ -784,7 +794,7 @@ public class StudyControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = ".*other-study is protected by whitelist.*")
     public void deleteStudyRejectsWhitelistedStudy() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         when(controller.getStudyWhitelist()).thenReturn(ImmutableSet.of("other-study"));
         controller.deleteStudy("other-study", true);
@@ -792,11 +802,93 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void deleteStudy() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         controller.deleteStudy("delete-study", true);
         
         verify(mockStudyService).deleteStudy("delete-study", Boolean.TRUE);
+    }
+    
+    @Test
+    public void getStudyMemberships() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withRoles(ImmutableSet.of(DEVELOPER))
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        mockStudy("Study D", "studyD", true);
+        mockStudy("Study C", "studyC", true);
+        mockStudy("Study B", "studyB", true);
+        mockStudy("Study A", "studyA", false);
+        
+        List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
+        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+        
+        assertEquals(node.size(), 2);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+    }
+    
+    @Test
+    public void getStudyMembershipsForCrossStudyAdmin() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
+                .withRoles(ImmutableSet.of(ADMIN)).withEmailVerified(true)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(true);
+        
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        Study studyD = mockStudy("Study D", "studyD", true);
+        Study studyC = mockStudy("Study C", "studyC", true);
+        Study studyB = mockStudy("Study B", "studyB", true);
+        Study studyA = mockStudy("Study A", "studyA", false);
+        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
+        
+        // This user is only associated to the API study, but they are an admin
+        List<String> list = ImmutableList.of(TEST_STUDY_IDENTIFIER);
+        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        
+        String jsonString = controller.getStudyMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+
+        assertEquals(node.size(), 3);
+        assertEquals(node.get(0).get("name").textValue(), "Study B");
+        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
+        assertEquals(node.get(1).get("name").textValue(), "Study C");
+        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+        assertEquals(node.get(2).get("name").textValue(), "Study D");
+        assertEquals(node.get(2).get("identifier").textValue(), "studyD");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
+    public void getStudyMembershipsForNonAdminUsers() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        controller.getStudyMemberships();
+    }
+    
+    private Study mockStudy(String name, String identifier, boolean active) {
+        Study study = Study.create();
+        study.setName(name);
+        study.setIdentifier(identifier);
+        study.setActive(active);
+        when(mockStudyService.getStudy(identifier)).thenReturn(study);
+        return study;
     }
     
     private void testRoleAccessToCurrentStudy(Roles role) throws Exception {

@@ -53,7 +53,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -85,6 +84,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -251,20 +251,20 @@ public class TestUtils {
     /**
      * Mocks this DAO method behavior so that you can verify that AccountDao.editAccount() was called, and
      * that your mock account was correctly edited.
-     * @param mockAccountDao
-     *      A mocked version of the AccountDao interface
+     * @param mockAccountService
+     *      A mocked version of the AccountService interface
      * @param mockAccount
      *      A mocked version of the Account interface
      */
     @SuppressWarnings("unchecked")
-    public static void mockEditAccount(AccountDao mockAccountDao, Account mockAccount) {
-        Mockito.mockingDetails(mockAccountDao).isMock();
+    public static void mockEditAccount(AccountService mockAccountService, Account mockAccount) {
+        Mockito.mockingDetails(mockAccountService).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
             Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(2);
             accountEdits.accept(mockAccount);
             return null;
-        }).when(mockAccountDao).editAccount(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any());
+        }).when(mockAccountService).editAccount(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any());
     }
 
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {

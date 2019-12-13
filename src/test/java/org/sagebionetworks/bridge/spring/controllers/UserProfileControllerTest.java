@@ -48,7 +48,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -62,6 +61,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -75,7 +75,7 @@ public class UserProfileControllerTest extends Mockito {
     private static final Set<String> TEST_STUDY_ATTRIBUTES = Sets.newHashSet("foo","bar"); 
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Mock
     ConsentService mockConsentService;
@@ -335,7 +335,7 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     public void canGetDataGroups() throws Exception {
         when(mockAccount.getDataGroups()).thenReturn(ImmutableSet.of("group1","group2"));
-        when(mockAccountDao.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
         
         JsonNode result = controller.getDataGroups();
         

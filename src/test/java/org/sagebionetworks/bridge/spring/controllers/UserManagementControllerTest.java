@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
@@ -40,7 +41,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -50,7 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -87,7 +87,7 @@ public class UserManagementControllerTest extends Mockito {
     HttpServletResponse mockResponse;
     
     @Mock
-    AccountDao mockAccountDao;
+    AccountService mockAccountService;
     
     @Spy
     @InjectMocks
@@ -108,7 +108,7 @@ public class UserManagementControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
 
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withId(USER_ID).withRoles(ImmutableSet.of(ADMIN)).withEmail(EMAIL).build();
+                .withId(USER_ID).withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
 
         session = new UserSession(participant);
         session.setStudyIdentifier(TEST_STUDY);
@@ -133,7 +133,7 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(UserManagementController.class);
-        assertPost(UserManagementController.class, "signInForAdmin");
+        assertPost(UserManagementController.class, "signInForSuperAdmin");
         assertPost(UserManagementController.class, "changeStudyForAdmin");
         assertCreate(UserManagementController.class, "createUser");
         assertCreate(UserManagementController.class, "createUserWithStudyId");
@@ -141,7 +141,7 @@ public class UserManagementControllerTest extends Mockito {
     }
 
     @Test
-    public void signInForAdmin() throws Exception {
+    public void signInForSuperadmin() throws Exception {
         // Set environment to local in order to test that cookies are set
         when(mockBridgeConfig.getEnvironment()).thenReturn(LOCAL);
         when(mockBridgeConfig.get("domain")).thenReturn("localhost");
@@ -153,7 +153,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockAuthService.signIn(eq(mockStudy), any(CriteriaContext.class), signInCaptor.capture()))
                 .thenReturn(session);
 
-        JsonNode result = controller.signInForAdmin();
+        JsonNode result = controller.signInForSuperAdmin();
         assertEquals(result.get("email").textValue(), EMAIL); // it's the session
 
         // This isn't in the session that is returned to the user, but verify it has been changed
@@ -173,7 +173,7 @@ public class UserManagementControllerTest extends Mockito {
     }
 
     @Test
-    public void signInForAdminNotAnAdmin() throws Exception {
+    public void signInForAdminNotASuperAdmin() throws Exception {
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
                 .withPassword("password").build();
         mockRequestBody(mockRequest, signIn);
@@ -184,7 +184,7 @@ public class UserManagementControllerTest extends Mockito {
                 .thenReturn(session);
 
         try {
-            controller.signInForAdmin();
+            controller.signInForSuperAdmin();
             fail("Should have thrown exception");
         } catch (UnauthorizedException e) {
         }
@@ -193,10 +193,10 @@ public class UserManagementControllerTest extends Mockito {
 
     @Test
     public void changeStudyForAdmin() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
@@ -212,9 +212,9 @@ public class UserManagementControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void changeStudyRejectsStudyAdmin() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-
-        session.setStudyIdentifier(new StudyIdentifierImpl("some-other-study"));
+        doReturn(session).when(controller).getSessionIfItExists();
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(ADMIN)).build());
         
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
@@ -237,7 +237,7 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         // same study id as above test
         StatusMessage result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
@@ -246,7 +246,9 @@ public class UserManagementControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createUserWithStudyIdRejectsStudyAdmin() throws Exception {
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
+        doReturn(session).when(controller).getSessionIfItExists();
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(ADMIN)).build());
         
         controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
     }

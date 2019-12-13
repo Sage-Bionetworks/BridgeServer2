@@ -34,7 +34,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
@@ -55,6 +54,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.s3.S3Helper;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
@@ -283,14 +283,14 @@ public class UploadHandlersEndToEndTest {
         account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
 
-        AccountDao mockAccountDao = mock(AccountDao.class);
-        when(mockAccountDao.getAccount(any())).thenReturn(account);
+        AccountService mockAccountService = mock(AccountService.class);
+        when(mockAccountService.getAccount(any())).thenReturn(account);
 
         ParticipantService mockParticipantService = mock(ParticipantService.class);
         when(mockParticipantService.getStudyStartTime(any())).thenReturn(STUDY_START_TIME);
 
         TranscribeConsentHandler transcribeConsentHandler = new TranscribeConsentHandler();
-        transcribeConsentHandler.setAccountDao(mockAccountDao);
+        transcribeConsentHandler.setAccountService(mockAccountService);
         transcribeConsentHandler.setParticipantService(mockParticipantService);
 
         // Set up UploadRawZipHandler.

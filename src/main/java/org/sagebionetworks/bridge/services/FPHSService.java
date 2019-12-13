@@ -6,7 +6,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
@@ -21,15 +20,15 @@ import org.springframework.stereotype.Component;
 public class FPHSService {
     
     private FPHSExternalIdentifierDao fphsDao;
-    private AccountDao accountDao;
+    private AccountService accountService;
 
     @Autowired
     final void setFPHSExternalIdentifierDao(FPHSExternalIdentifierDao dao) {
         this.fphsDao = dao;
     }
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     
     public void verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
@@ -53,7 +52,7 @@ public class FPHSService {
         
         fphsDao.registerExternalId(externalId);
 
-        accountDao.editAccount(studyId, healthCode, account -> {
+        accountService.editAccount(studyId, healthCode, account -> {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(studyId.getIdentifier(), "harvard", account.getId());
             acctSubstudy.setExternalId(externalId.getIdentifier());
             account.getDataGroups().add("football_player");

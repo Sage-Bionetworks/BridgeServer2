@@ -8,7 +8,6 @@ import java.util.Map;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -50,7 +49,7 @@ public class IntentService {
     
     private CacheProvider cacheProvider;
 
-    private AccountDao accountDao;
+    private AccountService accountService;
     
     private ParticipantService participantService;
     
@@ -88,8 +87,8 @@ public class IntentService {
     }
 
     @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     
     @Autowired
@@ -112,7 +111,7 @@ public class IntentService {
         } else {
             accountId = AccountId.forEmail(intent.getStudyId(), intent.getEmail());
         }
-        Account account = accountDao.getAccount(accountId);
+        Account account = accountService.getAccount(accountId);
         if (account != null) {
             return;
         }

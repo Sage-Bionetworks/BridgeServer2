@@ -23,12 +23,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 public class TranscribeConsentHandlerTest {
@@ -40,7 +40,7 @@ public class TranscribeConsentHandlerTest {
             HEALTH_CODE);
 
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
     
     @Mock
     private Account mockAccount;
@@ -69,7 +69,7 @@ public class TranscribeConsentHandlerTest {
         MockitoAnnotations.initMocks(this);
 
         // Set up mocks.
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(mockAccount);
         when(participantService.getStudyStartTime(ACCOUNT_ID)).thenReturn(STUDY_START_TIME);
 
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
@@ -112,7 +112,7 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void testNoParticipantOptions() {
         // account is null
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(null);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();

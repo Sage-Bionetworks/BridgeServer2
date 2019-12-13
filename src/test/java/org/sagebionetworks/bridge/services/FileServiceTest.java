@@ -35,7 +35,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.dao.FileRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;

@@ -254,6 +254,21 @@ MODIFY COLUMN `uploadURL` VARCHAR(1024) DEFAULT NULL;
 
 -- changeset bridge:10
 
+ALTER TABLE `Accounts`
+ADD COLUMN `synapseUserId` varchar(255) DEFAULT NULL,
+ADD UNIQUE KEY `Accounts-StudyId-SynapseUserId-Index` (`studyId`,`synapseUserId`);
+
+-- changeset bridge:11
+
+CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);
+
+-- changeset bridge:12
+
+ALTER TABLE `AccountRoles`
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','TEST_USERS','WORKER','SUPERADMIN') NOT NULL;
+
+-- changeset bridge:13
+
 CREATE TABLE `Surveys` (
   `studyKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `guid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,

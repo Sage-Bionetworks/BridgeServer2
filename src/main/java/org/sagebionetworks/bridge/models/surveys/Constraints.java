@@ -32,6 +32,7 @@ public class Constraints {
     private EnumSet<UIHint> hints;
     private List<SurveyRule> rules = Lists.newArrayList();
     private DataType dataType;
+    private boolean required;
 
     @JsonIgnore
     public EnumSet<UIHint> getSupportedHints() {
@@ -52,6 +53,20 @@ public class Constraints {
     public void setRules(List<SurveyRule> rules) {
         this.rules = rules;
     }
+    /**
+     * Is the question required? By default questions can be skipped: they are optional and there
+     * doesn't need to be an answer in the submitted answer set. Note that this might be different 
+     * from a question that requires an explicit choice to avoid answering (a no answer entry is 
+     * submitted as part of the data set). This is probably better to model as one of a number 
+     * of options in a MultiValueConstraint. 
+     */
+    public boolean isRequired() {
+        return required;
+    }
+    public void setRequired(boolean required) {
+        this.required = required;
+    }
+    
     // NOTE: This shouldn't be necessary as I understand it. When we serialize this,
     // we use the BridgeObjectMapper which adds the "type" property to all objects,
     // or it's supposed to. But SurveyControllerTest says otherwise.

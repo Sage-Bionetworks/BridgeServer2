@@ -1,5 +1,13 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -15,9 +23,6 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -110,13 +115,13 @@ public class HibernateAccountTest {
         HibernateAccount account = new HibernateAccount();
 
         // Can set and get.
-        account.setRoles(EnumSet.of(Roles.ADMIN));
+        account.setRoles(EnumSet.of(ADMIN));
         Set<Roles> gettedRoleSet1 = account.getRoles();
-        assertEquals(gettedRoleSet1, EnumSet.of(Roles.ADMIN));
+        assertEquals(gettedRoleSet1, EnumSet.of(ADMIN));
 
         // Putting values in the set reflect through to the account object.
-        gettedRoleSet1.add(Roles.DEVELOPER);
-        assertEquals(account.getRoles(), EnumSet.of(Roles.ADMIN, Roles.DEVELOPER));
+        gettedRoleSet1.add(DEVELOPER);
+        assertEquals(account.getRoles(), EnumSet.of(ADMIN, DEVELOPER));
 
         // Setting to null clears the set. Getting again initializes a new empty set.
         account.setRoles(null);
@@ -124,23 +129,24 @@ public class HibernateAccountTest {
         assertTrue(gettedRoleSet2.isEmpty());
 
         // Similarly, putting values to the set reflect through.
-        gettedRoleSet2.add(Roles.RESEARCHER);
-        assertEquals(account.getRoles(), EnumSet.of(Roles.RESEARCHER));
+        gettedRoleSet2.add(RESEARCHER);
+        assertEquals(account.getRoles(), EnumSet.of(RESEARCHER));
     }
     
     @Test
     public void accountSummaryConstructor() {
-        HibernateAccount account = new HibernateAccount(new DateTime(123L), TestConstants.TEST_STUDY_IDENTIFIER, "firstName",
-                "lastName", "email", TestConstants.PHONE, "id", AccountStatus.UNVERIFIED);
+        HibernateAccount account = new HibernateAccount(new DateTime(123L), TEST_STUDY_IDENTIFIER, "firstName",
+                "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID);
 
         assertEquals(account.getCreatedOn().getMillis(), 123L);
-        assertEquals(account.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(account.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(account.getFirstName(), "firstName");
         assertEquals(account.getLastName(), "lastName");
         assertEquals(account.getEmail(), "email");
-        assertEquals(account.getPhone(), TestConstants.PHONE);
+        assertEquals(account.getPhone(), PHONE);
         assertEquals(account.getId(), "id");
-        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
+        assertEquals(account.getStatus(), UNVERIFIED);
+        assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
     }
     
     @Test
@@ -183,7 +189,7 @@ public class HibernateAccountTest {
     @Test
     public void sharingDefaultsToNoSharing() {
         HibernateAccount account = new HibernateAccount();
-        assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
+        assertEquals(account.getSharingScope(), NO_SHARING);
     }
     
     @Test

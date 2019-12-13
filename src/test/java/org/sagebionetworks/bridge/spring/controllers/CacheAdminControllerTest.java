@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -24,12 +25,12 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.CacheAdminService;
 
 public class CacheAdminControllerTest extends Mockito {
@@ -44,7 +45,7 @@ public class CacheAdminControllerTest extends Mockito {
     private CacheAdminService mockCacheAdminService;
     
     @Mock
-    private AccountDao mockAccountDao;
+    private AccountService mockAccountService;
 
     @InjectMocks
     @Spy
@@ -57,8 +58,14 @@ public class CacheAdminControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(SUPERADMIN)).withId(USER_ID).build());
+        doAnswer(answer -> {
+            if (session.isInRole(SUPERADMIN)) {
+                return session;
+            }
+            throw new UnauthorizedException("Nope");
+        }).when(controller).getAuthenticatedSession(any());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -74,7 +81,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void listItems() throws Exception {
         session.setStudyIdentifier(TEST_STUDY);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
@@ -88,6 +95,9 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void listItemsRejectsStudyAdmin() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+        
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
         
@@ -98,7 +108,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void removeItem() throws Exception {
         session.setStudyIdentifier(TEST_STUDY);
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         StatusMessage result = controller.removeItem("cacheKey");
         assertEquals("Item removed from cache.", result.getMessage());
@@ -108,6 +118,9 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void removeItemRejectsStudyAdmin() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+        
         controller.removeItem("cacheKey");
     }    
 }
