@@ -327,7 +327,7 @@ public class AccountWorkflowService {
 
         Account account = accountService.getAccount(accountId);
         if (account == null) {
-            throw new EntityNotFoundException(Account.class);
+            return;
         }
         boolean verifiedEmail = account.getEmail() != null && Boolean.TRUE.equals(account.getEmailVerified());
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());

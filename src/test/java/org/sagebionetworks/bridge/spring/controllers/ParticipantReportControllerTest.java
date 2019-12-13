@@ -521,6 +521,22 @@ public class ParticipantReportControllerTest extends Mockito {
         controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, null);
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService);
+        controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportForWorkerV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        reset(mockAccountService);
+        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null, null, null);
+    }
+    
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,
             DateRangeResourceList<? extends ReportData> result) throws Exception {
 

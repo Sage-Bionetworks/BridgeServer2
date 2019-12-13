@@ -898,10 +898,13 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class,
-            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    @Test
     public void notifyAccountExistsNotFound() {
         service.notifyAccountExists(study, ACCOUNT_ID);
+        
+        verify(mockTemplateService, never()).getRevisionForUser(any(), any());
+        verify(mockSendMailService, never()).sendEmail(any());
+        verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }
 
     @Test
