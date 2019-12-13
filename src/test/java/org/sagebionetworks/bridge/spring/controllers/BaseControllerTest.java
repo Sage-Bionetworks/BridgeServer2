@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_I
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
@@ -795,10 +796,10 @@ public class BaseControllerTest extends Mockito {
         assertNotNull(context.getId());
         assertNull(context.getCallerStudyId());
         assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
-        assertEquals(ImmutableSet.of(), context.getCallerRoles());
+        assertFalse(context.isAdministrator());
         BridgeUtils.setRequestContext(context);
         
-        Set<Roles> roles = ImmutableSet.of(Roles.DEVELOPER);
+        Set<Roles> roles = ImmutableSet.of(DEVELOPER);
         
         StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withRoles(roles).withId(USER_ID).build();
@@ -815,7 +816,8 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerStudyId(), TEST_STUDY.getIdentifier());
         assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getCallerRoles(), roles);
+        assertTrue(context.isAdministrator());
+        assertTrue(context.isInRole(DEVELOPER));
         assertEquals(context.getCallerUserId(), USER_ID);
     }
 
