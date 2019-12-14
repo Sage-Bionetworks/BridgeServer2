@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -207,5 +208,17 @@ public class BridgeExceptionHandlerTest extends Mockito {
             assertEquals(response.getStatusCodeValue(), 400);
             assertEquals(node.get("statusCode").intValue(), 400);
         }
+    }
+    
+    @Test
+    public void convertsMissingServletRequestParameterException() throws Throwable {
+        MissingServletRequestParameterException ex = new MissingServletRequestParameterException("myParam", "String");
+        
+        ResponseEntity<String> response = handler.handleException(mockRequest, ex);
+        JsonNode node = new ObjectMapper().readTree(response.getBody());
+        
+        assertEquals(node.get("statusCode").intValue(), 400);
+        assertEquals(node.get("message").textValue(), "Required request parameter 'myParam' is missing");
+        assertEquals(node.get("type").textValue(), "BadRequestException");
     }
 }
