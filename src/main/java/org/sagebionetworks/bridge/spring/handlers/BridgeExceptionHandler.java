@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.spring.util.HttpUtil;
 
 /** Exception handler to convert exceptions into JSON instead of a generic HTML error page. */
 @ControllerAdvice
@@ -87,7 +86,7 @@ public class BridgeExceptionHandler {
         node.remove(UNEXPOSED_FIELD_NAMES);
         
         return ResponseEntity.status(status)
-                .header(HttpUtil.CONTENT_TYPE_HEADER, HttpUtil.CONTENT_TYPE_JSON)
+                .header(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON)
                 .body(node.toString());
     }
     
