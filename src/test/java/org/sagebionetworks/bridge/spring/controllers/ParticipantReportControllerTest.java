@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -43,6 +47,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -474,6 +479,62 @@ public class ParticipantReportControllerTest extends Mockito {
 
         // Execute and validate.
         controller.deleteParticipantReportIndex(REPORT_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService);
+        controller.getParticipantReport(USER_ID, REPORT_ID, null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportForWorkerAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        reset(mockAccountService);
+        controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void saveParticipantReportAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        reset(mockAccountService);
+        controller.saveParticipantReport(USER_ID, REPORT_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void deleteParticipantReportAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
+        reset(mockAccountService);
+        controller.deleteParticipantReport(USER_ID, REPORT_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void deleteParticipantReportRecordAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
+        reset(mockAccountService);
+        controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService);
+        controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportForWorkerV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        reset(mockAccountService);
+        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null, null, null);
     }
     
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,

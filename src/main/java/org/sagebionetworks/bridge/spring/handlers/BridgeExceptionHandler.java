@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.spring.handlers;
 
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
+import static org.sagebionetworks.bridge.spring.util.HttpUtil.CONTENT_TYPE_HEADER;
+import static org.sagebionetworks.bridge.spring.util.HttpUtil.CONTENT_TYPE_JSON;
 
 import java.util.Set;
 
@@ -17,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -25,7 +29,6 @@ import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.NoStackTraceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.spring.util.HttpUtil;
 
 /** Exception handler to convert exceptions into JSON instead of a generic HTML error page. */
 @ControllerAdvice
@@ -41,6 +44,7 @@ public class BridgeExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(HttpServletRequest request, Exception ex) throws JsonProcessingException {
         logException(request, ex);
+        
         return getResult(ex);
     }
 
@@ -62,8 +66,14 @@ public class BridgeExceptionHandler {
             
             JsonNode info = UserSessionInfo.toJSON(cre.getUserSession());
             return ResponseEntity.status(cre.getStatusCode())
-                    .header(HttpUtil.CONTENT_TYPE_HEADER, HttpUtil.CONTENT_TYPE_JSON)
+                    .header(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON)
                     .body(info.toString());
+        } else if (throwable instanceof MissingServletRequestParameterException) {
+            // This otherwise returns a 500 exception, which we don't consider to be correct
+            String paramName = ((MissingServletRequestParameterException)throwable).getParameterName();
+            String payload = String.format("{\"statusCode\":400,\"message\":\"Required request parameter "+
+                    "'%s' is missing\",\"type\":\"BadRequestException\"}", paramName);
+            return ResponseEntity.status(SC_BAD_REQUEST).header(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON).body(payload);
         }
         ObjectNode node = BridgeObjectMapper.get().valueToTree(throwable);
         final int status = getStatusCode(throwable);
@@ -76,7 +86,7 @@ public class BridgeExceptionHandler {
         node.remove(UNEXPOSED_FIELD_NAMES);
         
         return ResponseEntity.status(status)
-                .header(HttpUtil.CONTENT_TYPE_HEADER, HttpUtil.CONTENT_TYPE_JSON)
+                .header(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON)
                 .body(node.toString());
     }
     

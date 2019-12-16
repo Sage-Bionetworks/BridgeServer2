@@ -326,7 +326,9 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
 
         Account account = accountService.getAccount(accountId);
-        
+        if (account == null) {
+            return;
+        }
         boolean verifiedEmail = account.getEmail() != null && Boolean.TRUE.equals(account.getEmailVerified());
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
         boolean sendEmail = study.isEmailVerificationEnabled() && !study.isAutoVerificationEmailSuppressed();
