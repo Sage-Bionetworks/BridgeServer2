@@ -99,21 +99,17 @@ public class AccountService {
         boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
         
         if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
-            Account persistedAccount = account;
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(TRUE);
-                persistedAccount.setEmailVerified(TRUE);
             }
             if (shouldUpdatePhoneVerified) {
                 account.setPhoneVerified(TRUE);
-                persistedAccount.setPhoneVerified(TRUE);
             }
             if (shouldUpdateStatus) {
                 account.setStatus(ENABLED);
-                persistedAccount.setStatus(ENABLED);
             }
-            persistedAccount.setModifiedOn(DateUtils.getCurrentDateTime());
-            accountDao.updateAccount(persistedAccount, null);    
+            account.setModifiedOn(DateUtils.getCurrentDateTime());
+            accountDao.updateAccount(account, null);    
         }        
     }
     
@@ -253,7 +249,8 @@ public class AccountService {
         AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
         Account account = getAccount(accountId);
         if (account != null) {
-            accountDao.updateAccount(account, accountEdits);
+            accountEdits.accept(account);
+            accountDao.updateAccount(account, null);
         }        
     }
     

@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAU
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
 import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -34,9 +35,9 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -149,7 +150,8 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void changePassword() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
-
+        account.setStatus(UNVERIFIED);
+        
         service.changePassword(account, ChannelType.PHONE, "asdf");
         verify(mockAccountDao).updateAccount(account, null);
     }
@@ -220,6 +222,7 @@ public class AccountServiceTest extends Mockito {
         Consumer<Account> consumer = (oneAccount) -> {};
 
         service.updateAccount(account, consumer);
+        
         verify(mockAccountDao).updateAccount(account, consumer);
     }
     
@@ -247,7 +250,9 @@ public class AccountServiceTest extends Mockito {
 
         service.editAccount(TEST_STUDY, HEALTH_CODE, mockConsumer);
 
-        verify(mockAccountDao).updateAccount(account, mockConsumer);
+        InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
+        inOrder.verify(mockConsumer).accept(account);
+        inOrder.verify(mockAccountDao).updateAccount(account, null);
     }
 
     @Test
@@ -320,6 +325,7 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.EMAIL, account);
 
+        verify(mockAccountDao).updateAccount(account, null);
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getEmailVerified(), TRUE);
         // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
@@ -329,33 +335,14 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void verifyEmailUsingAccount() {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.setEmailVerified(FALSE);
-
-        service.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getEmailVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(DateTimeZone.UTC).toString());
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getEmailVerified(), TRUE);
-
-        verify(mockAccountDao).updateAccount(account, null);
-    }
-
-    @Test
     public void verifyEmailUsingAccountNoChangeNecessary() {
         Account account = Account.create();
         account.setId(USER_ID);
         account.setStatus(ENABLED);
         account.setEmailVerified(TRUE);
 
-        service.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        service.verifyChannel(ChannelType.EMAIL, account);
+        
         verify(mockAccountDao, never()).updateAccount(any(), any());
     }
 
@@ -364,7 +351,8 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setStatus(DISABLED);
 
-        service.verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
+        service.verifyChannel(ChannelType.EMAIL, account);
+        
         verify(mockAccountDao, never()).updateAccount(any(), any());
         assertEquals(account.getStatus(), DISABLED);
     }
@@ -379,25 +367,7 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.PHONE, account);
 
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getPhoneVerified(), TRUE);
-        // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
-        assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
-        assertEquals(account.getStatus(), ENABLED);
-        assertEquals(account.getPhoneVerified(), TRUE);
         verify(mockAccountDao).updateAccount(account, null);
-    }
-
-    @Test
-    public void verifyPhoneUsingAccount() {
-        Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
-        account.setId(USER_ID);
-        account.setStatus(UNVERIFIED);
-        account.setPhoneVerified(FALSE);
-
-        service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
-
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getPhoneVerified(), TRUE);
         // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
@@ -414,7 +384,7 @@ public class AccountServiceTest extends Mockito {
         account.setStatus(ENABLED);
         account.setPhoneVerified(TRUE);
 
-        service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
+        service.verifyChannel(ChannelType.PHONE, account);
         verify(mockAccountDao, never()).updateAccount(any(), any());
     }
 
@@ -423,7 +393,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setStatus(DISABLED);
 
-        service.verifyChannel(AuthenticationService.ChannelType.PHONE, account);
+        service.verifyChannel(ChannelType.PHONE, account);
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
         assertEquals(account.getStatus(), DISABLED);
     }
@@ -434,6 +404,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
+        account.setStatus(UNVERIFIED);
 
         // execute and verify
         service.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
@@ -458,6 +429,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
+        account.setStatus(UNVERIFIED);
 
         // execute and verify
         service.changePassword(account, ChannelType.PHONE, DUMMY_PASSWORD);
@@ -476,6 +448,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         account.setId(USER_ID);
+        account.setStatus(UNVERIFIED);
 
         // execute and verify
         service.changePassword(account, null, DUMMY_PASSWORD);
@@ -523,7 +496,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateAccountNotFound() throws Exception {
-        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenThrow(new EntityNotFoundException(Account.class));
+        when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
 
         Study study = Study.create();
 
@@ -784,33 +757,54 @@ public class AccountServiceTest extends Mockito {
         // Some fields can't be modified. Create the persisted account and set the base fields so we can verify they
         // weren't modified.
         Account persistedAccount = Account.create();
-        persistedAccount.setEmail("persisted@example.com");
-        persistedAccount.setCreatedOn(new DateTime(1234L));
-        persistedAccount.setPasswordModifiedOn(new DateTime(5678L));
+        persistedAccount.setId(USER_ID);
+        persistedAccount.setStudyId(TEST_STUDY_IDENTIFIER);
+        persistedAccount.setCreatedOn(MOCK_DATETIME);
+        persistedAccount.setEmailVerified(TRUE);
+        persistedAccount.setPhoneVerified(TRUE);
+        persistedAccount.setPasswordModifiedOn(MOCK_DATETIME);
+        persistedAccount.setModifiedOn(MOCK_DATETIME);
+        persistedAccount.setEmail(EMAIL);
         persistedAccount.setPhone(PHONE);
         persistedAccount.setEmailVerified(TRUE);
         persistedAccount.setPhoneVerified(TRUE);
-
-        // Set a dummy modifiedOn to make sure we're overwriting it.
-        persistedAccount.setModifiedOn(new DateTime(5678L));
-
+        persistedAccount.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
+        persistedAccount.setPasswordHash(DEFAULT_PASSWORD_ALGORITHM.generateHash(DUMMY_PASSWORD));
+        persistedAccount.setPasswordModifiedOn(MOCK_DATETIME);
+        
+        // This is costly to recompute, just get a reference to check against later. 
+        String hash = persistedAccount.getPasswordHash();
+        
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
 
-        Account account = mockGetAccountById(ACCOUNT_ID, true);
+        Account account = Account.create();
+        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        account.setId(USER_ID);
+        account.setCreatedOn(MOCK_DATETIME.plusDays(4));
         account.setEmail(OTHER_EMAIL);
         account.setPhone(OTHER_PHONE);
-        account.setEmailVerified(Boolean.FALSE);
-        account.setPhoneVerified(Boolean.FALSE);
+        account.setEmailVerified(FALSE);
+        account.setPhoneVerified(FALSE);
+        account.setPasswordAlgorithm(STORMPATH_HMAC_SHA_256);
+        account.setPasswordHash("a-hash");
+        account.setPasswordModifiedOn(MOCK_DATETIME.plusDays(4));
+        account.setModifiedOn(MOCK_DATETIME.plusDays(4));        
 
         // Execute. Identifiers not allows to change.
         service.updateAccount(account, null);
 
         verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
-
         Account updatedAccount = accountCaptor.getValue();
+        assertEquals(updatedAccount.getStudyId(), "api");
         assertEquals(updatedAccount.getId(), USER_ID);
+        assertEquals(updatedAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getEmail(), OTHER_EMAIL);
-        assertEquals(updatedAccount.getPhone().getNationalFormat(), OTHER_PHONE.getNationalFormat());
+        assertEquals(updatedAccount.getPhone(), OTHER_PHONE);
+        assertFalse(updatedAccount.getEmailVerified());
+        assertFalse(updatedAccount.getPhoneVerified());
+        assertEquals(updatedAccount.getPasswordAlgorithm(), DEFAULT_PASSWORD_ALGORITHM);
+        assertEquals(updatedAccount.getPasswordHash(), hash);
+        assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
     }
 
