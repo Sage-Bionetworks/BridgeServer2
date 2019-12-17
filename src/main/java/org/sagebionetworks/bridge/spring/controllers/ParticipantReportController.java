@@ -187,7 +187,7 @@ public class ParticipantReportController extends BaseController {
 
         Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
         if (account == null) {
-            throw new EntityNotFoundException(Account.class);    
+            throw new EntityNotFoundException(Account.class);
         }
         return reportService.getParticipantReportV4(studyId, reportId, account.getHealthCode(), startTime, endTime,
                 offsetKey, pageSize);
@@ -205,7 +205,7 @@ public class ParticipantReportController extends BaseController {
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
-            throw new EntityNotFoundException(Account.class);    
+            throw new EntityNotFoundException(Account.class);
         }
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
@@ -271,7 +271,7 @@ public class ParticipantReportController extends BaseController {
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
-            throw new EntityNotFoundException(Account.class);    
+            throw new EntityNotFoundException(Account.class);
         }
         reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
         

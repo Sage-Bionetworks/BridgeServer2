@@ -8,6 +8,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+
+import java.util.Optional;
+
 import static org.mockito.Mockito.verify;
 
 import javax.persistence.OptimisticLockException;
@@ -70,7 +73,7 @@ public class AccountPersistenceExceptionConverterTest {
         existing.setEmail(EMAIL);
         
         when(accountDao.getAccount(AccountId.forEmail(TEST_STUDY_IDENTIFIER, EMAIL)))
-                .thenReturn(existing);
+                .thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-"+EMAIL+"' for key 'Accounts-StudyId-Email-Index'", null, null);
@@ -94,7 +97,7 @@ public class AccountPersistenceExceptionConverterTest {
         existing.setPhone(PHONE);
         
         when(accountDao.getAccount(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE)))
-                .thenReturn(existing);
+                .thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-"+PHONE.getNationalFormat()+"' for key 'Accounts-StudyId-Phone-Index'", null, null);
@@ -120,7 +123,7 @@ public class AccountPersistenceExceptionConverterTest {
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         existing.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
         
-        when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "ext"))).thenReturn(existing);
+        when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "ext"))).thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -148,7 +151,8 @@ public class AccountPersistenceExceptionConverterTest {
         existing.setId(USER_ID);
         existing.setStudyId(TEST_STUDY_IDENTIFIER);
         
-        when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdB"))).thenReturn(existing);
+        when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdB")))
+                .thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -181,7 +185,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         // Accept anything here, but verify that it is externalIdB still (the first that would match
         when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdB")))
-                .thenReturn(existing);
+                .thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -213,7 +217,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         // Accept anything here, but verify that it is externalIdA (which won't match user calling method)
         when(accountDao.getAccount(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "externalIdA")))
-                .thenReturn(existing);
+                .thenReturn(Optional.of(existing));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -255,13 +259,13 @@ public class AccountPersistenceExceptionConverterTest {
     
     @Test
     public void entityAlreadyExistsForSynapseUserId() {
-        HibernateAccount account = new HibernateAccount();
+        Account account = Account.create();
         account.setSynapseUserId(SYNAPSE_USER_ID);
         account.setId(USER_ID);
         account.setStudyId(TEST_STUDY_IDENTIFIER);
         
         when(accountDao.getAccount(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)))
-                .thenReturn(account);
+                .thenReturn(Optional.of(account));
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'tim.powers' for key 'Accounts-StudyId-SynapseUserId-Index'", null, null);
