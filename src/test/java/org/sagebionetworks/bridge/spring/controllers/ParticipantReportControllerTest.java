@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -39,9 +43,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -123,7 +124,7 @@ public class ParticipantReportControllerTest extends Mockito {
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
+                .withRoles(Sets.newHashSet(DEVELOPER)).build();
         
         doReturn(mockOtherAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
@@ -142,7 +143,7 @@ public class ParticipantReportControllerTest extends Mockito {
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
         doReturn(session).when(controller).getAuthenticatedSession();
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.WORKER);
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier("fofo");
@@ -229,7 +230,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportDataV4() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+                .withRoles(Sets.newHashSet(RESEARCHER)).build();
         session.setParticipant(participant);
         
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
@@ -250,19 +251,19 @@ public class ParticipantReportControllerTest extends Mockito {
         when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, null,
-                BridgeConstants.API_DEFAULT_PAGE_SIZE);
+                API_DEFAULT_PAGE_SIZE);
         when(mockReportService.getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
-                null, null, BridgeConstants.API_DEFAULT_PAGE_SIZE)).thenReturn(expectedPage);
+                null, null, API_DEFAULT_PAGE_SIZE)).thenReturn(expectedPage);
 
         // Execute and validate.
         ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportForWorkerV4(
                 TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID, REPORT_ID, null, null, null, null);
 
-        assertReportDataPage(START_TIME, END_TIME, null, BridgeConstants.API_DEFAULT_PAGE_SIZE, result);
+        assertReportDataPage(START_TIME, END_TIME, null, API_DEFAULT_PAGE_SIZE, result);
 
         // Verify dependent service call.
         verify(mockReportService).getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
-                null, null, BridgeConstants.API_DEFAULT_PAGE_SIZE);
+                null, null, API_DEFAULT_PAGE_SIZE);
     }
 
     @Test
@@ -292,7 +293,7 @@ public class ParticipantReportControllerTest extends Mockito {
         // No consents so user is not consented, but is a researcher and can also see these reports
         session.setConsentStatuses(Maps.newHashMap());
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
+                .withRoles(Sets.newHashSet(RESEARCHER)).build();
         session.setParticipant(participant);
         
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
@@ -416,7 +417,7 @@ public class ParticipantReportControllerTest extends Mockito {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(REPORT_ID);
         index.setPublic(true);
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setSubstudyIds(USER_SUBSTUDY_IDS);
         
         when(mockReportService.getReportIndex(any())).thenReturn(index);
         
@@ -452,7 +453,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteParticipantRecordDataRecordDeveloper() {
         StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
-            .withRoles(Sets.newHashSet(Roles.ADMIN)).build();
+            .withRoles(Sets.newHashSet(ADMIN)).build();
         session.setParticipant(regularUser);
         
         controller.deleteParticipantReportRecord(REPORT_ID, "bar", "2014-05-10");
@@ -461,7 +462,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void adminCanDeleteParticipantIndex() throws Exception {
         // Mock getAuthenticatedSession().
-        doReturn(session).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
 
         // Execute and validate.
         StatusMessage result = controller.deleteParticipantReportIndex(REPORT_ID);
@@ -473,65 +474,67 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void nonAdminCannotDeleteParticipantIndex() {
         // Mock getAuthenticatedSession().
-        doThrow(UnauthorizedException.class).when(controller).getAuthenticatedSession(Roles.ADMIN);
+        doThrow(UnauthorizedException.class).when(controller).getAuthenticatedSession(ADMIN);
 
         // Execute and validate.
         controller.deleteParticipantReportIndex(REPORT_ID);
     }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
+        
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
-        reset(mockAccountService); // return null
-
-        controller.getParticipantReport(USER_ID, TEST_STUDY_IDENTIFIER, START_DATE.toString(), END_DATE.toString());
+        reset(mockAccountService);
+        controller.getParticipantReport(USER_ID, REPORT_ID, null, null);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportForWorkerAccountNotFound() {
-        reset(mockAccountService); // return null
-
-        controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, START_DATE.toString(),
-                END_DATE.toString());
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        reset(mockAccountService);
+        controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticipantReportV4AccountNotFound() {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
-        reset(mockAccountService); // return null
-
-        controller.getParticipantReportV4(USER_ID, TEST_STUDY_IDENTIFIER, START_DATE.toString(),
-                END_DATE.toString(), null, null);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticipantReportForWorkerV4AccountNotFound() {
-        reset(mockAccountService); // return null
-
-        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, START_DATE.toString(),
-                END_DATE.toString(), null, null);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
     public void saveParticipantReportAccountNotFound() {
-        reset(mockAccountService); // return null
-
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        reset(mockAccountService);
         controller.saveParticipantReport(USER_ID, REPORT_ID);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
     public void deleteParticipantReportAccountNotFound() {
-        reset(mockAccountService); // return null
-         
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
+        reset(mockAccountService);
         controller.deleteParticipantReport(USER_ID, REPORT_ID);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
     public void deleteParticipantReportRecordAccountNotFound() {
-        reset(mockAccountService); // return null
-
-        controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, START_DATE.toString());
-    }    
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
+        reset(mockAccountService);
+        controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        reset(mockAccountService);
+        controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void getParticipantReportForWorkerV4AccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        reset(mockAccountService);
+        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null, null, null);
+    }
     
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,
             DateRangeResourceList<? extends ReportData> result) throws Exception {

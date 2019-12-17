@@ -137,8 +137,8 @@ public class ParticipantReportController extends BaseController {
     /** Worker API to get reports for the given user in the given study by date. */
     @GetMapping("/v3/studies/{studyId}/participants/{userId}/reports/{reportId}")
     public DateRangeResourceList<? extends ReportData> getParticipantReportForWorker(@PathVariable String studyId,
-            @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = true) String startDate,
-            @RequestParam(required = true) String endDate) {
+            @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
         return getParticipantReportInternal(new StudyIdentifierImpl(studyId), userId, reportId, startDate,
                 endDate);
@@ -253,7 +253,7 @@ public class ParticipantReportController extends BaseController {
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
-            throw new EntityNotFoundException(Account.class);
+            throw new EntityNotFoundException(Account.class);    
         }
         reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
         
