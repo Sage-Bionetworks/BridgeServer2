@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
+import static org.sagebionetworks.bridge.models.schedules.ScheduleType.RECURRING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -11,6 +12,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,9 +30,12 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
+import org.sagebionetworks.bridge.models.RangeTuple;
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -44,6 +49,7 @@ public class ActivitySchedulerTest {
     private static final DateTime ENROLLMENT = DateTime.parse("2015-03-23T10:00:00Z");
     private static final DateTime NOW = DateTime.parse("2015-03-26T14:40:00-07:00");
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
+    private static final DateTimeZone IST = DateTimeZone.forOffsetHoursMinutes(5, 30);
     
     private List<ScheduledActivity> scheduledActivities;
     private Map<String,DateTime> events;
@@ -452,6 +458,35 @@ public class ActivitySchedulerTest {
         
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, minContext);
         assertTrue(scheduledActivities.size() > 1);
+    }
+    
+    @Test
+    public void getScheduleWindowsBasedOnEventsAdjustsTimeZonesForAllSequences() {
+        Map<String,DateTime> events = ImmutableMap.of(
+                "enrollment", NOW, 
+                "enrollment2", NOW.plusWeeks(2)); // both in -07:00 timezone
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                // not the enrollment time zone, and not the request timezone
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-4)) 
+                .withStartsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
+                .withEndsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
+                .withEvents(events).build();
+        
+        assertEquals(context.getRequestTimeZone(), IST);
+        
+        Schedule schedule = new Schedule();
+        schedule.setEventId("enrollment,enrollment2");
+        // Need a recurring schedule with a sequence to generate an end time and multiple windows
+        schedule.setSequencePeriod("P1W");
+        schedule.setScheduleType(RECURRING);
+        
+        List<RangeTuple<DateTime>> tuple = new IntervalActivityScheduler(schedule).getScheduleWindowsBasedOnEvents(context);
+        assertEquals(tuple.get(0).getStart().getZone(), IST);
+        assertEquals(tuple.get(0).getEnd().getZone(), IST);
+        assertEquals(tuple.get(1).getStart().getZone(), IST);
+        assertEquals(tuple.get(1).getEnd().getZone(), IST);
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
