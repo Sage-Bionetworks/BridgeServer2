@@ -469,7 +469,7 @@ public class ActivitySchedulerTest {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withStudyIdentifier(TEST_STUDY)
                 // not the enrollment time zone, and not the request timezone
-                .withInitialTimeZone(DateTimeZone.forOffsetHours(-4)) 
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-4))
                 .withStartsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
                 .withEndsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
                 .withEvents(events).build();
@@ -481,12 +481,42 @@ public class ActivitySchedulerTest {
         // Need a recurring schedule with a sequence to generate an end time and multiple windows
         schedule.setSequencePeriod("P1W");
         schedule.setScheduleType(RECURRING);
+        schedule.setDelay("P2D");
         
-        List<RangeTuple<DateTime>> tuple = new IntervalActivityScheduler(schedule).getScheduleWindowsBasedOnEvents(context);
-        assertEquals(tuple.get(0).getStart().getZone(), IST);
-        assertEquals(tuple.get(0).getEnd().getZone(), IST);
-        assertEquals(tuple.get(1).getStart().getZone(), IST);
-        assertEquals(tuple.get(1).getEnd().getZone(), IST);
+        List<RangeTuple<DateTime>> tuples = new IntervalActivityScheduler(schedule).getScheduleWindowsBasedOnEvents(context);
+        assertEquals(tuples.get(0).getStart().getZone(), IST);
+        assertEquals(tuples.get(0).getEnd().getZone(), IST);
+        assertEquals(tuples.get(1).getStart().getZone(), IST);
+        assertEquals(tuples.get(1).getEnd().getZone(), IST);
+    }
+    
+    @Test
+    public void getEventDateTimesAdjustsTimeZones() {
+        Map<String,DateTime> events = ImmutableMap.of(
+                "enrollment", NOW, 
+                "enrollment2", NOW.plusWeeks(2).withZone(DateTimeZone.UTC)); // -07:00 and UTC timezones, not IST
+        
+        ScheduleContext context = new ScheduleContext.Builder()
+                .withStudyIdentifier(TEST_STUDY)
+                // not the enrollment time zone, and not the request timezone
+                .withInitialTimeZone(DateTimeZone.forOffsetHours(-4))
+                .withStartsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
+                .withEndsOn(DateTime.parse("2015-03-26T14:40:00+05:30"))
+                .withEvents(events).build();
+        
+        assertEquals(context.getRequestTimeZone(), IST);
+        
+        Schedule schedule = new Schedule();
+        schedule.setEventId("enrollment,enrollment2");
+        // Need a recurring schedule with a sequence to generate an end time and multiple windows
+        schedule.setSequencePeriod("P1W");
+        schedule.setScheduleType(RECURRING);
+        schedule.setDelay("P2D");
+        
+        List<DateTime> dates = new IntervalActivityScheduler(schedule).getEventDateTimes(context,
+                "enrollment,enrollment2", true);
+        assertEquals(dates.get(0).getZone(), IST);
+        assertEquals(dates.get(1).getZone(), IST);
     }
     
     private ScheduleContext getContext(DateTime endsOn) {
