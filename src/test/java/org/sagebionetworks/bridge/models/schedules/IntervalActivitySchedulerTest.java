@@ -79,7 +79,6 @@ public class IntervalActivitySchedulerTest {
         assertEquals(scheduledActivities.get(0).getExpiresOn().toString(), "2019-12-18T08:00:00.000+05:30");
         assertEquals(scheduledActivities.get(1).getScheduledOn().toString(), "2019-12-18T08:00:00.000+05:30");
         assertEquals(scheduledActivities.get(1).getExpiresOn().toString(), "2019-12-19T08:00:00.000+05:30");
-        DateTimeUtils.setCurrentMillisSystem();
     }
     
     @Test
