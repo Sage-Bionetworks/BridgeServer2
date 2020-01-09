@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -72,11 +73,11 @@ public class AccountService {
     /**
      * Search for all accounts across studies that have the same Synapse user ID in common, 
      * and return a list of the study IDs where these accounts are found.
-     * @param synapseUserId
-     * @return list of study identifiers
      */
     public List<String> getStudyIdsForUser(String synapseUserId) {
-        checkNotNull(synapseUserId);
+        if (StringUtils.isBlank(synapseUserId)) {
+            throw new BadRequestException("Account does not have a Synapse user");
+        }
         return accountDao.getStudyIdsForUser(synapseUserId);
     }
     

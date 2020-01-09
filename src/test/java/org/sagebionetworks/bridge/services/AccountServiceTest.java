@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -137,6 +138,24 @@ public class AccountServiceTest extends Mockito {
         List<String> returnVal = service.getStudyIdsForUser(SYNAPSE_USER_ID);
         assertEquals(returnVal, studies);
         verify(mockAccountDao).getStudyIdsForUser(SYNAPSE_USER_ID);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getStudyIdsForUser_NullSynapseUserId() {
+        service.getStudyIdsForUser(null);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getStudyIdsForUser_EmptySynapseUserId() {
+        service.getStudyIdsForUser("");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Account does not have a Synapse user")
+    public void getStudyIdsForUser_BlankSynapseUserId() {
+        service.getStudyIdsForUser("   ");
     }
 
     @Test

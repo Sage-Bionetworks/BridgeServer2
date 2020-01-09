@@ -33,13 +33,17 @@ import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 /** Exception handler to convert exceptions into JSON instead of a generic HTML error page. */
 @ControllerAdvice
 public class BridgeExceptionHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(BridgeExceptionHandler.class);
-    
-    // We serialize exceptions to JSON, but do not want any of the root properties of Throwable 
+    // We serialize exceptions to JSON, but do not want any of the root properties of Throwable
     // to be exposed, so these are removed;
     public static final Set<String> UNEXPOSED_FIELD_NAMES = ImmutableSet.of("stackTrace", "localizedMessage",
             "suppressed", "cause", "errorType", "errorMessage", "retryable", "requestId", "serviceName", "httpHeaders",
             "errorCode", "rawResponse", "rawResponseContent");
+
+    // Member instance to enable mocking for tests.
+    private Logger log = LoggerFactory.getLogger(BridgeExceptionHandler.class);
+    void setLogger(Logger log) {
+        this.log = log;
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(HttpServletRequest request, Exception ex) throws JsonProcessingException {
@@ -52,10 +56,20 @@ public class BridgeExceptionHandler {
         final String requestId = request.getHeader(X_REQUEST_ID_HEADER);
         final String msg = "request: " + requestId + " " + throwable.getMessage();
         if (throwable.getClass().isAnnotationPresent(NoStackTraceException.class)) {
-            LOG.info(msg);
+            log.info(msg);
             return;
         }
-        LOG.error(msg, throwable);
+
+        if (throwable instanceof AmazonServiceException &&
+                !(throwable instanceof ProvisionedThroughputExceededException)) {
+            AmazonServiceException ase = (AmazonServiceException)throwable;
+            if (ase.getStatusCode() >= 400 && ase.getStatusCode() < 500) {
+                log.warn(msg, throwable);
+                return;
+            }
+        }
+
+        log.error(msg, throwable);
     }
 
     private ResponseEntity<String> getResult(Throwable throwable) throws JsonProcessingException {
