@@ -85,6 +85,10 @@ public final class ScheduleContext {
         return startsOn;
     }
     
+    public DateTimeZone getRequestTimeZone() { 
+        return startsOn.getZone();
+    }
+    
     public int getMinimumPerSchedule() {
         return minimumPerSchedule;
     }
