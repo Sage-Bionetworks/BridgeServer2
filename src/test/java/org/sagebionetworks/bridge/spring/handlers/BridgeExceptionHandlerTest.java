@@ -10,6 +10,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.AmazonServiceException.ErrorType;
 import com.amazonaws.services.dynamodbv2.model.AmazonDynamoDBException;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
@@ -22,10 +23,13 @@ import com.google.common.collect.Maps;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.hibernate.QueryParameterException;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -48,27 +52,39 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class BridgeExceptionHandlerTest extends Mockito {
+    private static final String REQUEST_ID = "ABC-DEF";
     
     @Mock
     private HttpServletRequest mockRequest;
-    
+
+    @Spy
+    private Logger logger;
+
     @InjectMocks
     private BridgeExceptionHandler handler = new BridgeExceptionHandler();
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+        handler.setLogger(logger);
     }
     
     @Test
     public void test() throws Exception {
-        when(mockRequest.getHeader(BridgeConstants.X_REQUEST_ID_HEADER)).thenReturn("ABC-DEF");
+        when(mockRequest.getHeader(BridgeConstants.X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
         
         String message = "dummy error message";
         Exception ex = new IllegalArgumentException(message);
         ResponseEntity<String> response = handler.handleException(mockRequest, ex);
         HttpUtilTest.assertErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR,
                 "IllegalArgumentException", message);
+
+        // Verify log.
+        ArgumentCaptor<String> errorMessageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(logger).error(errorMessageCaptor.capture(), same(ex));
+        String errorMessage = errorMessageCaptor.getValue();
+        assertTrue(errorMessage.contains(REQUEST_ID));
+        assertTrue(errorMessage.contains(message));
     }
     
     @Test
@@ -153,6 +169,28 @@ public class BridgeExceptionHandlerTest extends Mockito {
 
         assertEquals(response.getStatusCodeValue(), 400);
         assertEquals(node.get("statusCode").intValue(), 400);
+
+        // Verify log.
+        verify(logger).warn(contains(exc.getMessage()), same(exc));
+    }
+
+    @Test
+    public void amazon500CorrectlyReported() throws Exception {
+        AmazonServiceException ex = new AmazonServiceException("test message");
+        ex.setStatusCode(500);
+
+        handler.handleException(mockRequest, ex);
+        verify(logger).error(contains(ex.getMessage()), same(ex));
+    }
+
+    // This shouldn't be possible, but test it for branch coverage.
+    @Test
+    public void amazon300CorrectlyReported() throws Exception {
+        AmazonServiceException ex = new AmazonServiceException("test message");
+        ex.setStatusCode(300);
+
+        handler.handleException(mockRequest, ex);
+        verify(logger).error(contains(ex.getMessage()), same(ex));
     }
 
     @Test
@@ -169,6 +207,9 @@ public class BridgeExceptionHandlerTest extends Mockito {
 
         assertEquals(response.getStatusCodeValue(), 500);
         assertEquals(node.get("statusCode").intValue(), 500);
+
+        // Verify log.
+        verify(logger).error(contains(ex.getMessage()), same(ex));
     }
     
     // If you do not wrap a RuntimeException in BridgeServiceException, it's still reported as a 500 response, 
@@ -207,6 +248,9 @@ public class BridgeExceptionHandlerTest extends Mockito {
 
             assertEquals(response.getStatusCodeValue(), 400);
             assertEquals(node.get("statusCode").intValue(), 400);
+
+            // Verify log.
+            verify(logger).info(contains(e.getMessage()));
         }
     }
     
