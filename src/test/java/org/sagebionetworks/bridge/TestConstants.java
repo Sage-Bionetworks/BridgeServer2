@@ -45,8 +45,8 @@ public class TestConstants {
     
     public static final String DUMMY_IMAGE_DATA = "VGhpcyBpc24ndCBhIHJlYWwgaW1hZ2Uu";
 
-    public static final byte[] MOCK_MD5 = { 29, -23, 101, -93, -27, -88, -82, 87, 126 };
-    public static final String MOCK_MD5_BASE64_ENCODED = "Hello+World+";
+    public static final byte[] MOCK_MD5 = { -104, 10, -30, -37, 25, -113, 92, -9, 69, -118, -46, -87, 11, -14, 38, -61 };
+    public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
