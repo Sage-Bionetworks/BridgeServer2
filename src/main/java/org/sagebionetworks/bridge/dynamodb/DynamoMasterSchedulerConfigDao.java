@@ -47,7 +47,7 @@ public class DynamoMasterSchedulerConfigDao implements MasterSchedulerConfigDao 
 
     @Override
     public List<MasterSchedulerConfig> getAllSchedulerConfig() {
-        DynamoDBScanExpression scan = new DynamoDBScanExpression();
+        DynamoDBScanExpression scan = new DynamoDBScanExpression().withConsistentRead(true);
         
         List<DynamoMasterSchedulerConfig> mappings = mapper.scan(DynamoMasterSchedulerConfig.class, scan);
         

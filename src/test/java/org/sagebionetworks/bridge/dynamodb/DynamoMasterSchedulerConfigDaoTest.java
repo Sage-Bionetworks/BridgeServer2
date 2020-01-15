@@ -45,9 +45,6 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
     private ArgumentCaptor<DynamoMasterSchedulerConfig> configCaptor;
     
     @Captor
-    ArgumentCaptor<DynamoMasterSchedulerConfig> scanCaptor;
-    
-    @Captor
     private ArgumentCaptor<DynamoDBSaveExpression> saveExpressionCaptor;
     
     @InjectMocks
@@ -73,7 +70,10 @@ public class DynamoMasterSchedulerConfigDaoTest extends Mockito {
         assertEquals(result.size(), 2);
         assertEquals(result, configList);
 
-        verify(mockMapper).scan(eq(DynamoMasterSchedulerConfig.class), any(DynamoDBScanExpression.class));
+        ArgumentCaptor<DynamoDBScanExpression> scanCaptor = ArgumentCaptor.forClass(DynamoDBScanExpression.class);
+        verify(mockMapper).scan(eq(DynamoMasterSchedulerConfig.class), scanCaptor.capture());
+        DynamoDBScanExpression scan = scanCaptor.getValue();
+        assertTrue(scan.isConsistentRead());
     }
     
     @Test
