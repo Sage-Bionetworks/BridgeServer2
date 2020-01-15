@@ -63,7 +63,6 @@ public abstract class ActivityScheduler {
             // Construct the range tuple.
             scheduleWindowList.add(new RangeTuple<>(startTime, endTime));
         }
-        
         return scheduleWindowList;
     }
     
@@ -161,7 +160,7 @@ public abstract class ActivityScheduler {
             Iterable<String> eventIds = Schedule.EVENT_ID_SPLITTER.split(eventIdsString.trim());
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
-                    eventDateTimeList.add(context.getEvent(thisEventId).withZone(context.getRequestTimeZone()));
+                    eventDateTimeList.add(context.getEvent(thisEventId));
 
                     if (!getAll) {
                         // We only wanted one event, and we found it, so break.
