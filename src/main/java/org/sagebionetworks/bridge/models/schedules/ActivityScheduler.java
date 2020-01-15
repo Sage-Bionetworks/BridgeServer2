@@ -51,8 +51,9 @@ public abstract class ActivityScheduler {
             // Start time is event time, with added delay if it's present.
             DateTime startTime = oneEventTime;
             if (schedule.getDelay() != null) {
-                startTime = startTime.plus(schedule.getDelay());
+                startTime = oneEventTime.plus(schedule.getDelay());
             }
+
             // End time is only present if a sequence period is specified.
             // Sequence period is measured from the first timestamp plus the delay, to the end of the period.
             DateTime endTime = null;
@@ -161,7 +162,7 @@ public abstract class ActivityScheduler {
             Iterable<String> eventIds = Schedule.EVENT_ID_SPLITTER.split(eventIdsString.trim());
             for (String thisEventId : eventIds) {
                 if (context.getEvent(thisEventId) != null) {
-                    eventDateTimeList.add(context.getEvent(thisEventId).withZone(context.getRequestTimeZone()));
+                    eventDateTimeList.add(context.getEvent(thisEventId));
 
                     if (!getAll) {
                         // We only wanted one event, and we found it, so break.
