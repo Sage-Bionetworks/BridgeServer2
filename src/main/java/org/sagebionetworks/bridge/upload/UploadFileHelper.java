@@ -12,7 +12,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.base.Charsets;
-import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,29 +242,29 @@ public class UploadFileHelper {
 
     /** Upload bytes to the attachment bucket and apply the correct metadata. */
     public void uploadBytesAsAttachment(String filename, byte[] bytes) throws IOException {
-        // Calculate MD5 (base64-encoded).
+        // Calculate MD5 (hex-encoded).
         byte[] md5 = md5DigestUtils.digest(bytes);
-        String md5Base64Encoded = Base64.encodeBase64String(md5);
+        String md5HexEncoded = Hex.encodeHexString(md5);
 
         // S3 Metadata must include encryption and MD5. Note that for some reason setContentMD5() doesn't work, so we
         // have to use addUserMetadata().
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.addUserMetadata(KEY_CUSTOM_CONTENT_MD5, md5Base64Encoded);
+        metadata.addUserMetadata(KEY_CUSTOM_CONTENT_MD5, md5HexEncoded);
         metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         s3Helper.writeBytesToS3(ATTACHMENT_BUCKET, filename, bytes, metadata);
     }
 
     /** Upload a file to the attachment bucket and apply the correct metadata. */
     public void uploadFileAsAttachment(String filename, File file) throws IOException {
-        // Calculate MD5 (base64-encoded).
+        // Calculate MD5 (hex-encoded).
         byte[] md5 = md5DigestUtils.digest(file);
-        String md5Base64Encoded = Base64.encodeBase64String(md5);
+        String md5HexEncoded = Hex.encodeHexString(md5);
 
         // S3 Metadata must include encryption and MD5. Note that for some reason setContentMD5() doesn't work, so we
         // have to use addUserMetadata().
         ObjectMetadata metadata = new ObjectMetadata();
-        LOG.info("Writing MD5 for attachment " + filename + ": " + md5Base64Encoded);
-        metadata.addUserMetadata(KEY_CUSTOM_CONTENT_MD5, md5Base64Encoded);
+        LOG.info("Writing MD5 for attachment " + filename + ": " + md5HexEncoded);
+        metadata.addUserMetadata(KEY_CUSTOM_CONTENT_MD5, md5HexEncoded);
         metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         s3Helper.writeFileToS3(ATTACHMENT_BUCKET, filename, file, metadata);
     }

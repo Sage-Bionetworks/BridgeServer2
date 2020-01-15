@@ -85,7 +85,7 @@ public class UploadFileHelperFindValueTest {
 
         ObjectMetadata metadata = metadataCaptor.getValue();
         assertEquals(metadata.getUserMetaDataOf(UploadFileHelper.KEY_CUSTOM_CONTENT_MD5),
-                TestConstants.MOCK_MD5_BASE64_ENCODED);
+                TestConstants.MOCK_MD5_HEX_ENCODED);
         assertEquals(metadata.getSSEAlgorithm(), ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
     }
 
@@ -189,7 +189,7 @@ public class UploadFileHelperFindValueTest {
                 eq("\"record-value\"".getBytes(Charsets.UTF_8)), metadataCaptor.capture());
 
         ObjectMetadata metadata = metadataCaptor.getValue();
-        assertEquals(TestConstants.MOCK_MD5_BASE64_ENCODED, metadata.getUserMetaDataOf(
+        assertEquals(TestConstants.MOCK_MD5_HEX_ENCODED, metadata.getUserMetaDataOf(
                 UploadFileHelper.KEY_CUSTOM_CONTENT_MD5));
         assertEquals(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION, metadata.getSSEAlgorithm());
     }
