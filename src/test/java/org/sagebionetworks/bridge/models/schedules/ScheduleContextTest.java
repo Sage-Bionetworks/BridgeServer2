@@ -146,21 +146,4 @@ public class ScheduleContextTest {
         assertEquals(context2.getAccountCreatedOn().toString(), "2010-10-10T07:10:10.010Z");
     }
     
-    @Test
-    public void getRequestTimeZoneFromStartsOn() {
-        ScheduleContext context = new ScheduleContext.Builder()
-                .withStartsOn(DateTime.parse("2010-10-10T10:10:10.010+03:00"))
-                .withStudyIdentifier(TEST_STUDY).build();
-        assertEquals(context.getRequestTimeZone().toString(), "+03:00");
-    }
-
-    @Test
-    public void getRequestTimeZoneNull() {
-        // The startsOn field will be set by the builder, so it's never entirely null. In this
-        // case it matches the initial time zone of the user
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .withInitialTimeZone(DateTimeZone.forOffsetHoursMinutes(5, 30)).build();
-
-        assertEquals(context.getRequestTimeZone().toString(), "+05:30");
-    }
 }
