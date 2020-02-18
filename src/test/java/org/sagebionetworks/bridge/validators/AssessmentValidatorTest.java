@@ -5,8 +5,6 @@ import static org.sagebionetworks.bridge.validators.AssessmentValidator.CANNOT_B
 
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableSet;
-
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
