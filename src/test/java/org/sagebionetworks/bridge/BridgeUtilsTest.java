@@ -18,6 +18,7 @@ import static org.testng.Assert.assertTrue;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,18 @@ public class BridgeUtilsTest {
     @AfterMethod
     public void after() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+    }
+    
+    @Test
+    public void generateUUID() {
+        // create 20 UUIDs, they should all be unique.
+        Set<String> uuids = new HashSet<>();
+        for (int i=0; i < 20; i++) {
+            String uuid = BridgeUtils.generateGuid();
+            assertEquals(uuid.length(), 24);
+            uuids.add( uuid );
+        }
+        assertEquals(uuids.size(), 20);
     }
     
     @Test
