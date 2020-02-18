@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -16,13 +17,13 @@ import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -37,12 +38,14 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
+import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -92,7 +95,6 @@ public class BridgeUtils {
     private static final int ONE_HOUR = 60*60;
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
-    
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
@@ -629,13 +631,17 @@ public class BridgeUtils {
     } 
     
     public static String sanitizeHTML(String documentContent) {
-        if (StringUtils.isBlank(documentContent)) {
+        return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
+    }
+    
+    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
+        if (isBlank(documentContent)) {
             return documentContent;
         }
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(BridgeConstants.CKEDITOR_WHITELIST);
+        Cleaner cleaner = new Cleaner(whitelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // brimg is not a valid attribute, it marks our one template image.
@@ -644,7 +650,7 @@ public class BridgeUtils {
         }
         clean.outputSettings().escapeMode(EscapeMode.xhtml)
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
-        return clean.body().html();
+        return clean.body().html();        
     }
     
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
@@ -657,4 +663,27 @@ public class BridgeUtils {
                 requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
 
+    public static <T> boolean setsAreEqual(Set<T> set1, Set<T> set2) {
+        if (set1 == null || set2 == null) {
+            return false;
+        }
+        if (set1.size() != set2.size()) {
+            return false;
+        }
+        return set1.containsAll(set2);
+    }
+    
+    public static Set<Tag> toTagSet(Set<String> tags, String category) {
+        if (isEmpty(tags)) {
+            return ImmutableSet.of();
+        }
+        return tags.stream().map(s -> new Tag(s, category)).collect(toSet());
+    }
+    
+    public static Set<String> toStringSet(Set<Tag> tags) {
+        if (isEmpty(tags)) {
+            return ImmutableSet.of();
+        }
+        return tags.stream().map(t -> t.getValue()).collect(toSet());
+    }
 }

@@ -4,8 +4,6 @@ import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -13,7 +11,7 @@ public class HibernateAccountSubstudyTest {
 
     @Test
     public void hashCodeEquals() {
-        EqualsVerifier.forClass(DynamoExternalIdentifier.class).allFieldsShouldBeUsed()
+        EqualsVerifier.forClass(HibernateAccountSubstudy.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS).verify();
     }
     

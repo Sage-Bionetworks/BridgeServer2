@@ -22,7 +22,8 @@ public class OperatingSystem {
      * to our two canonical platforms, "iPhone OS" and "Android". 
      */
     public static final Map<String, String> SYNONYMS = new ImmutableMap.Builder<String, String>()
-            .put("iOS", "iPhone OS").build();
+            .put("iOS", "iPhone OS")
+            .put("Both", "Universal").build();
     
     public static final Set<String> ALL_OS_SYSTEMS = new ImmutableSet.Builder<String>()
             .add(IOS).add(ANDROID).build();

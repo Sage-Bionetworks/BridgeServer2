@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.jsoup.safety.Whitelist;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -855,6 +856,13 @@ public class BridgeUtilsTest {
     @Test
     public void sanitizeHTMLWithNull() {
         assertNull(BridgeUtils.sanitizeHTML(null));
+    }
+    
+    @Test
+    public void sanitizeHTMLWithWhitelist() {
+        String content = "<p id=remove-me>Test<script>This should be removed</script><img onerror=''>";
+        String result = BridgeUtils.sanitizeHTML(Whitelist.none(), content);
+        assertEquals(result, "Test");
     }
 
     @Test
