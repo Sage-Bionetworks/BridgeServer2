@@ -1,39 +1,30 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.BridgeUtils.toTagSet;
+import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
+import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Tag;
 
 public class AssessmentDtoTest {
-
-    public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
-    public static final Set<String> STRING_CATEGORIES = ImmutableSet.of("cat1", "cat2");
-    public static final Set<Tag> TAGS = toTagSet(STRING_TAGS,  "tag");
-    public static final Set<Tag> CATEGORIES = toTagSet(STRING_CATEGORIES, "category");
-    public static final DateTime CREATED_ON = TIMESTAMP;
-    public static final DateTime MODIFIED_ON = CREATED_ON.plusHours(1);
-    public static final Map<String, Set<String>> CUSTOMIZATION_FIELDS = ImmutableMap.of("node1",
-            ImmutableSet.of("field1", "field2"));
-
     @Test
     public void revisionDefaultsToOne() {
         AssessmentDto dto = new AssessmentDto();
@@ -51,9 +42,9 @@ public class AssessmentDtoTest {
         Assessment assessment = new Assessment();
         assessment.setAppId(TEST_STUDY_IDENTIFIER);
         assessment.setGuid(GUID);
-        assessment.setIdentifier("identifier");
+        assessment.setIdentifier(IDENTIFIER);
         assessment.setRevision(5);
-        assessment.setOwnerId("ownerId");
+        assessment.setOwnerId(OWNER_ID);
         assessment.setTitle("title");
         assessment.setSummary("summary");
         assessment.setOsName(ANDROID);
@@ -79,9 +70,9 @@ public class AssessmentDtoTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
         assertEquals(node.size(), 18);
         assertEquals(node.get("guid").textValue(), GUID);
-        assertEquals(node.get("identifier").textValue(), "identifier");
+        assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
-        assertEquals(node.get("ownerId").textValue(), "ownerId");
+        assertEquals(node.get("ownerId").textValue(), OWNER_ID);
         assertEquals(node.get("title").textValue(), "title");
         assertEquals(node.get("summary").textValue(), "summary");
         assertEquals(node.get("osName").textValue(), ANDROID);
@@ -117,9 +108,9 @@ public class AssessmentDtoTest {
     public static AssessmentDto createAssessmentDto() {
         AssessmentDto dto = new AssessmentDto();
         dto.setGuid(GUID);
-        dto.setIdentifier("identifier");
+        dto.setIdentifier(IDENTIFIER);
         dto.setRevision(5);
-        dto.setOwnerId("ownerId");
+        dto.setOwnerId(OWNER_ID);
         dto.setTitle("title");
         dto.setSummary("summary");
         dto.setOsName(ANDROID);
@@ -138,9 +129,9 @@ public class AssessmentDtoTest {
     
     private void assertAssessmentDto(AssessmentDto assessment) {
         assertEquals(assessment.getGuid(), GUID);
-        assertEquals(assessment.getIdentifier(), "identifier");
+        assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getRevision(), 5);
-        assertEquals(assessment.getOwnerId(), "ownerId");
+        assertEquals(assessment.getOwnerId(), OWNER_ID);
         assertEquals(assessment.getTitle(), "title");
         assertEquals(assessment.getSummary(), "summary");
         assertEquals(assessment.getOsName(), ANDROID);

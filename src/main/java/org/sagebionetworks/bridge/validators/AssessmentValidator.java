@@ -54,11 +54,9 @@ public class AssessmentValidator implements Validator {
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }
-        // Every pathway through the code verifies that the owner GUID, if it exists, is valid. So
-        // in fact it should not be possible to get to this point where ownerId is null, but we check 
-        // it anyway. ownerId == substudyId except in the shared assessments study, where it must include
-        // the study as a namespace prefix, e.g. "studyId:substudyId". Substudy IDs are not globally
-        // unique across all apps.
+        // ownerId == substudyId except in the shared assessments study, where it must include
+        // the study as a namespace prefix, e.g. "studyId:substudyId". Assessments are always 
+        // owned by some organization.
         if (isBlank(assessment.getOwnerId())) {
             errors.rejectValue("ownerId", CANNOT_BE_BLANK);
         }

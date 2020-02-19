@@ -13,7 +13,7 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "Tags")
-public class Tag {
+public final class Tag {
     @Id
     private String value;
     
@@ -26,9 +26,6 @@ public class Tag {
         this.category = category;
     }
     
-    public Tag(String value) {
-        this.value = value;
-    }
     public String getValue() {
         return value;
     }
@@ -47,7 +44,6 @@ public class Tag {
     public int hashCode() {
         return Objects.hash(category, value);
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

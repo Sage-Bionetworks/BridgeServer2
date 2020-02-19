@@ -9,24 +9,44 @@ import java.util.Set;
 
 import javax.persistence.PersistenceException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class StringToStringSetMapConverterTest {
+public class StringToStringSetMapConverterTest extends Mockito {
 
-    private static final StringToStringSetMapConverter CONVERTER = new StringToStringSetMapConverter();
     private static final String SER_VALUE = "{\"key1\":[\"A\",\"B\",\"C\"],\"key2\":[\"D\",\"E\",\"F\"],\"key3\":[]}";
+    
+    @Spy
+    private StringToStringSetMapConverter converter;
+    
+    @Mock
+    ObjectMapper mockMapper;
+    
+    @Mock
+    JsonProcessingException mockJsonException;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
+    }
     
     @Test
     public void serializeNull() {
-        String ser = CONVERTER.convertToDatabaseColumn(null);
+        String ser = converter.convertToDatabaseColumn(null);
         assertNull(ser);
     }
     
     @Test
     public void serializeEmpty() {
-        String ser = CONVERTER.convertToDatabaseColumn(new HashMap<>());
+        String ser = converter.convertToDatabaseColumn(new HashMap<>());
         assertEquals(ser, "{}");
     }
     
@@ -43,19 +63,28 @@ public class StringToStringSetMapConverterTest {
         map.put("key3", set3);
         map.put("key4", set4);
         
-        String ser = CONVERTER.convertToDatabaseColumn(map);
+        String ser = converter.convertToDatabaseColumn(map);
         assertEquals(ser, SER_VALUE);
+    }
+    
+    @Test(expectedExceptions = PersistenceException.class)
+    public void serializeInvalidValue() throws Exception {
+        when(mockMapper.writeValueAsString(any())).thenThrow(mockJsonException);
+        when(converter.getObjectMapper()).thenReturn(mockMapper);
+        
+        Map<String,Set<String>> map = new HashMap<>();
+        converter.convertToDatabaseColumn(map);
     }
     
     @Test
     public void deserializeNull() {
-        Map<String, Set<String>> map = CONVERTER.convertToEntityAttribute(null);
+        Map<String, Set<String>> map = converter.convertToEntityAttribute(null);
         assertNull(map);
     }
     
     @Test
     public void deserialize() {
-        Map<String, Set<String>> map = CONVERTER.convertToEntityAttribute(SER_VALUE);
+        Map<String, Set<String>> map = converter.convertToEntityAttribute(SER_VALUE);
         
         assertEquals(map.size(), 3);
         Set<String> set1 = map.get("key1");
@@ -70,6 +99,6 @@ public class StringToStringSetMapConverterTest {
     
     @Test(expectedExceptions = PersistenceException.class)
     public void deserializeInvalidValue() {
-        CONVERTER.convertToEntityAttribute("{");
+        converter.convertToEntityAttribute("{");
     }
 }

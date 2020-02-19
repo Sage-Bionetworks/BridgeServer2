@@ -682,14 +682,4 @@ public class TestUtils {
         String rndPart = TestUtils.randomName(cls);
         return String.format("bridge-testing+%s-%s@sagebase.org", devPart, rndPart);
     }
-    
-    public static boolean setsAreEqual(Set<String> set1, Set<String> set2) {
-        if (set1 == null || set2 == null) {
-            return false;
-        }
-        if (set1.size() != set2.size()) {
-            return false;
-        }
-        return set1.containsAll(set2);
-    }
 }

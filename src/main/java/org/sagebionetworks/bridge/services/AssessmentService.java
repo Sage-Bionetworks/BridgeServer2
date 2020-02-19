@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
+import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
@@ -47,6 +48,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
+    static final String IDENTIFIER_REQUIRED = "identifier required";
+    static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
     private AssessmentDao dao;
     
@@ -77,7 +80,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
-            throw new BadRequestException("offsetBy cannot be negative");
+            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -138,6 +141,33 @@ public class AssessmentService {
         }
         checkOwnership(substudyService, appId, existing.getOwnerId());
         
+        return updateAssessmentInternal(appId, assessment, existing);
+    }
+    
+    public Assessment updateSharedAssessment(String callerAppId, Assessment assessment) {
+        checkArgument(isNotBlank(callerAppId));
+        checkNotNull(assessment);
+        
+        Assessment existing = dao.getAssessment(SHARED_STUDY_ID_STRING, assessment.getGuid())
+                .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
+        if (existing.isDeleted() && assessment.isDeleted()) {
+            throw new EntityNotFoundException(Assessment.class);
+        }
+
+        // We need to verify that the caller has permission to operate on this shared object.
+        String[] parts = existing.getOwnerId().split(":");
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        if (!callerAppId.equals(originAppId) || !callerSubstudies.contains(originOrgId)) {
+            throw new UnauthorizedException();
+            
+        }
+        return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
+    }
+    
+    private Assessment updateAssessmentInternal(String appId, Assessment assessment, Assessment existing) {
         assessment.setAppId(appId);
         assessment.setIdentifier(existing.getIdentifier());
         assessment.setOwnerId(existing.getOwnerId());
@@ -150,29 +180,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(Optional.empty());
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.updateAssessment(assessment);
-    }
-    
-    public Assessment updateSharedAssessment(String callerAppId, Assessment assessment) {
-        checkArgument(isNotBlank(callerAppId));
-        checkNotNull(assessment);
-        
-        assessment.setAppId(SHARED_STUDY_ID_STRING);
-        
-        Assessment existing = dao.getAssessment(SHARED_STUDY_ID_STRING, assessment.getGuid())
-                .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
-        
-        // We need to verify that the caller has permission to operate on this shared object.
-        String[] parts = existing.getOwnerId().split(":");
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (!callerAppId.equals(originAppId) || !callerSubstudies.contains(originOrgId)) {
-            throw new UnauthorizedException();
-            
-        }
-        return updateAssessment(SHARED_STUDY_ID_STRING, assessment);
+        return dao.updateAssessment(assessment);        
     }
         
     public Assessment getAssessmentByGuid(String appId, String guid) {
@@ -207,17 +215,18 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         
         if (isBlank(identifier)) {
-            throw new BadRequestException("identifier required");
+            throw new BadRequestException(IDENTIFIER_REQUIRED);
         }
         if (offsetBy < 0) {
-            throw new BadRequestException("offsetBy cannot be negative");
+            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         PagedResourceList<Assessment> page = dao.getAssessmentRevisions(
                 appId, identifier, offsetBy, pageSize, includeDeleted);
-        if (page.getItems().isEmpty()) {
+        // You must test both or a bad offsetBy value returns an ENFE which is not correct.
+        if (page.getTotal() == 0) {
             throw new EntityNotFoundException(Assessment.class);
         }
         return page.withRequestParam(IDENTIFIER, identifier)
@@ -232,7 +241,7 @@ public class AssessmentService {
             
        Assessment assessment = getAssessmentByGuid(appId, guid);
        return getAssessmentRevisionsById(appId, assessment.getIdentifier(), 
-               offsetBy, pageSize, includeDeleted);
+               offsetBy, pageSize, includeDeleted).withRequestParam(GUID, guid);
     }
 
     /**
@@ -260,13 +269,14 @@ public class AssessmentService {
         assessmentToPublish.setVersion(0L);
         
         // Neither of these assessments should be in an attached state because both are loaded in 
-        // separate transactions that are closed in the DAO.
+        // separate transactions that are closed in the DAO. However, the tag collections have been
+        // proxied by Hibernate, and an error is thrown if you don't make copies: "Found shared 
+        // references to a collection." I think this could be fixed by using transaction annotations 
+        // that could be put on service methods so they can call multiple DAO calls in a session, 
+        // but we'd also have to change HibernateHelper to use the existing transaction rather
+        // than opening a new transaction.
         Assessment original = getAssessmentByGuid(appId, guid);
         original.setOriginGuid(assessmentToPublish.getGuid());
-        // These collections have been proxied by Hibernate and it doesn't like it when you share 
-        // to entities (Tag) in two collections. All of this is weird because we're not using Spring Boot's 
-        // JPA support, including its support for transactions at the DAO or service layer. I may 
-        // go back and work on this. Lots of code is coming with similar issues.
         if (original.getCategories() != null) {
             assessmentToPublish.setCategories(ImmutableSet.copyOf(original.getCategories()));    
         }

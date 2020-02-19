@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.BridgeUtils.toStringSet;
+import static org.sagebionetworks.bridge.models.TagUtils.toStringSet;
 
 import java.util.Map;
 import java.util.Set;

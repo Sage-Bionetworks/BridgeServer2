@@ -27,12 +27,12 @@ public class QueryBuilderTest {
         builder.dataGroups(ImmutableSet.of("A", "B"), "IN");
         builder.dataGroups(ImmutableSet.of("C", "D"), "NOT IN");
         
-        assertEquals(builder.getQuery(), "AND (:inacctdatagroups1 IN elements(acct.dataGroups) AND "+
-                ":inacctdatagroups2 IN elements(acct.dataGroups)) AND (:notinacctdatagroups1 NOT IN "+
-                "elements(acct.dataGroups) AND :notinacctdatagroups2 NOT IN elements(acct.dataGroups))");
-        assertEquals(builder.getParameters().get("inacctdatagroups1"), "A");
-        assertEquals(builder.getParameters().get("inacctdatagroups2"), "B");
-        assertEquals(builder.getParameters().get("notinacctdatagroups1"), "C");
-        assertEquals(builder.getParameters().get("notinacctdatagroups2"), "D");
+        assertEquals(builder.getQuery(), "AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN " + 
+                "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "+
+                ":NOTIN2 NOT IN elements(acct.dataGroups))");
+        assertEquals(builder.getParameters().get("IN1"), "A");
+        assertEquals(builder.getParameters().get("IN2"), "B");
+        assertEquals(builder.getParameters().get("NOTIN1"), "C");
+        assertEquals(builder.getParameters().get("NOTIN2"), "D");
     }
 }

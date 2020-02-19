@@ -1,11 +1,21 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static com.google.common.collect.Sets.symmetricDifference;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
-import static org.sagebionetworks.bridge.BridgeUtils.setsAreEqual;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
+import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -17,6 +27,7 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.spring.controllers.AssessmentController.SHARED_ASSESSMENTS_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -39,21 +50,17 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentDto;
-import org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
 public class AssessmentControllerTest extends Mockito {
-
-    private static final ImmutableSet<String> TAG_SET = ImmutableSet.of("tag1", "tag2");
-    private static final ImmutableSet<String> CATEGORY_SET = ImmutableSet.of("cat1", "cat2");
-    private static final String IDENTIFIER = "identifier";
-
+    
     @Mock
     AssessmentService mockService;
 
@@ -115,21 +122,21 @@ public class AssessmentControllerTest extends Mockito {
                 .withRequestParam(OFFSET_BY, 100)
                 .withRequestParam(PAGE_SIZE, 25)
                 .withRequestParam(INCLUDE_DELETED, true)
-                .withRequestParam(PagedResourceList.CATEGORIES, CATEGORY_SET)
-                .withRequestParam(PagedResourceList.TAGS, TAG_SET);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, CATEGORY_SET,
-                TAG_SET, true)).thenReturn(page);
+                .withRequestParam(PagedResourceList.CATEGORIES, STRING_CATEGORIES)
+                .withRequestParam(PagedResourceList.TAGS, STRING_TAGS);
+        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, STRING_CATEGORIES,
+                STRING_TAGS, true)).thenReturn(page);
         
         PagedResourceList<AssessmentDto> retValue = controller.getAssessments("100", "25",
-                CATEGORY_SET, TAG_SET, "true");
+                STRING_CATEGORIES, STRING_TAGS, "true");
 
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(100));
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(25));
         assertEquals(retValue.getRequestParams().get("includeDeleted"), TRUE);
-        assertEquals(retValue.getRequestParams().get("categories"), CATEGORY_SET);
-        assertEquals(retValue.getRequestParams().get("tags"), TAG_SET);
+        assertEquals(retValue.getRequestParams().get("categories"), STRING_CATEGORIES);
+        assertEquals(retValue.getRequestParams().get("tags"), STRING_TAGS);
     }
 
     @Test
@@ -144,6 +151,15 @@ public class AssessmentControllerTest extends Mockito {
         verify(mockService).getAssessments(API_STUDY_ID_STRING, 100, 25, null, null, true);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentsRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessments(null, null, null, null, null);
+    }
+    
     @Test
     public void createAssessment() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -160,26 +176,35 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getAppId(), API_STUDY_ID_STRING);
-        assertEquals(captured.getIdentifier(), "identifier");
+        assertEquals(captured.getIdentifier(), IDENTIFIER);
         assertEquals(captured.getTitle(), "title");
         assertEquals(captured.getSummary(), "summary");
         assertEquals(captured.getValidationStatus(), "validationStatus");
         assertEquals(captured.getNormingStatus(), "normingStatus");
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
-        assertEquals(captured.getOwnerId(), "ownerId");
-        assertEquals(captured.getCategories(), AssessmentDtoTest.CATEGORIES);
-        assertEquals(captured.getTags(), AssessmentDtoTest.TAGS);
-        assertEquals(captured.getCustomizationFields(), AssessmentDtoTest.CUSTOMIZATION_FIELDS);
-        assertEquals(captured.getCreatedOn(), AssessmentDtoTest.CREATED_ON);
-        assertEquals(captured.getModifiedOn(), AssessmentDtoTest.MODIFIED_ON);
+        assertEquals(captured.getOwnerId(), OWNER_ID);
+        assertEquals(captured.getCategories(), CATEGORIES);
+        assertEquals(captured.getTags(), TAGS);
+        assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getModifiedOn(), MODIFIED_ON);
         assertTrue(captured.isDeleted());
         assertEquals(captured.getRevision(), 5);
         assertEquals(captured.getVersion(), 8L);
         
         assertEquals(retValue.getVersion(), 100);
     }
-
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void createAssessmentRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.createAssessment();
+    }
+    
     @Test
     public void updateAssessment() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -198,6 +223,15 @@ public class AssessmentControllerTest extends Mockito {
         
         assertEquals(captured.getGuid(), GUID);
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void updateAssessmentRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.updateAssessmentByGuid(GUID);
+    }
 
     @Test
     public void getAssessmentByGuid() {
@@ -207,24 +241,33 @@ public class AssessmentControllerTest extends Mockito {
         
         AssessmentDto dto = controller.getAssessmentByGuid(GUID);
 
-        assertEquals(dto.getIdentifier(), "identifier");
+        assertEquals(dto.getIdentifier(), IDENTIFIER);
         assertEquals(dto.getTitle(), "title");
         assertEquals(dto.getSummary(), "summary");
         assertEquals(dto.getValidationStatus(), "validationStatus");
         assertEquals(dto.getNormingStatus(), "normingStatus");
         assertEquals(dto.getOsName(), ANDROID);
         assertEquals(dto.getOriginGuid(), "originGuid");
-        assertEquals(dto.getOwnerId(), "ownerId");
-        assertTrue(setsAreEqual(dto.getCategories(), AssessmentDtoTest.STRING_CATEGORIES));
-        assertTrue(setsAreEqual(dto.getTags(), AssessmentDtoTest.STRING_TAGS));
-        assertEquals(dto.getCustomizationFields(), AssessmentDtoTest.CUSTOMIZATION_FIELDS);
-        assertEquals(dto.getCreatedOn(), AssessmentDtoTest.CREATED_ON);
-        assertEquals(dto.getModifiedOn(), AssessmentDtoTest.MODIFIED_ON);
+        assertEquals(dto.getOwnerId(), OWNER_ID);
+        assertTrue(symmetricDifference(dto.getCategories(), STRING_CATEGORIES).isEmpty());
+        assertTrue(symmetricDifference(dto.getTags(), STRING_TAGS).isEmpty());
+        assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(dto.getCreatedOn(), CREATED_ON);
+        assertEquals(dto.getModifiedOn(), MODIFIED_ON);
         assertTrue(dto.isDeleted());
         assertEquals(dto.getRevision(), 5);
         assertEquals(dto.getVersion(), 8L);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentByGuidRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentByGuid(GUID);
+    }
+    
     @Test
     public void getAssessmentById() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -233,24 +276,33 @@ public class AssessmentControllerTest extends Mockito {
         
         AssessmentDto dto = controller.getAssessmentById(IDENTIFIER, "10");
         
-        assertEquals(dto.getIdentifier(), "identifier");
+        assertEquals(dto.getIdentifier(), IDENTIFIER);
         assertEquals(dto.getTitle(), "title");
         assertEquals(dto.getSummary(), "summary");
         assertEquals(dto.getValidationStatus(), "validationStatus");
         assertEquals(dto.getNormingStatus(), "normingStatus");
         assertEquals(dto.getOsName(), ANDROID);
         assertEquals(dto.getOriginGuid(), "originGuid");
-        assertEquals(dto.getOwnerId(), "ownerId");
-        assertTrue(setsAreEqual(dto.getCategories(), AssessmentDtoTest.STRING_CATEGORIES));
-        assertTrue(setsAreEqual(dto.getTags(), AssessmentDtoTest.STRING_TAGS));
-        assertEquals(dto.getCustomizationFields(), AssessmentDtoTest.CUSTOMIZATION_FIELDS);
-        assertEquals(dto.getCreatedOn(), AssessmentDtoTest.CREATED_ON);
-        assertEquals(dto.getModifiedOn(), AssessmentDtoTest.MODIFIED_ON);
+        assertEquals(dto.getOwnerId(), OWNER_ID);
+        assertTrue(symmetricDifference(dto.getCategories(), STRING_CATEGORIES).isEmpty());
+        assertTrue(symmetricDifference(dto.getTags(), STRING_TAGS).isEmpty());
+        assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(dto.getCreatedOn(), CREATED_ON);
+        assertEquals(dto.getModifiedOn(), MODIFIED_ON);
         assertTrue(dto.isDeleted());
         assertEquals(dto.getRevision(), 5);
         assertEquals(dto.getVersion(), 8L);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentByIdRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentById(IDENTIFIER, "3");
+    }
+    
     @Test
     public void getLatestAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -261,8 +313,17 @@ public class AssessmentControllerTest extends Mockito {
         assertNotNull(dto);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getLatestAssessmentRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getLatestAssessment(IDENTIFIER);
+    }    
+    
     @Test
-    public void getAssessmentRevisions() {
+    public void getAssessmentRevisionsById() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
@@ -274,6 +335,85 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(retValue.getTotal(), Integer.valueOf(10));
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentRevisionsByIdRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentRevisionsById(IDENTIFIER, null, null, null);
+    }
+    
+    @Test
+    public void getAssessmentRevisionsByGuid() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        Assessment assessment = AssessmentTest.createAssessment();
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
+        when(mockService.getAssessmentRevisionsByGuid(
+                API_STUDY_ID_STRING, GUID, 20, 5, true)).thenReturn(page);
+        
+        PagedResourceList<AssessmentDto> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
+        assertEquals(retValue.getItems().get(0).getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentRevisionsByGuidRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentRevisionsByGuid(GUID, null, null, null);
+    }
+    
+    @Test
+    public void createAssessmentRevision() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        AssessmentDto body = AssessmentDto.create(AssessmentTest.createAssessment());
+        body.setGuid("this is a bad guid that will be replaced");
+        mockRequestBody(mockRequest, body);
+        
+        Assessment updated = AssessmentTest.createAssessment();
+        updated.setVersion(100);
+        when(mockService.createAssessmentRevision(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
+        
+        AssessmentDto retValue = controller.createAssessmentRevision(GUID);
+
+        verify(mockService).createAssessmentRevision(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
+        
+        Assessment captured = assessmentCaptor.getValue();
+        assertEquals(captured.getAppId(), API_STUDY_ID_STRING);
+        assertEquals(captured.getGuid(), GUID);
+        assertEquals(captured.getIdentifier(), IDENTIFIER);
+        assertEquals(captured.getTitle(), "title");
+        assertEquals(captured.getSummary(), "summary");
+        assertEquals(captured.getValidationStatus(), "validationStatus");
+        assertEquals(captured.getNormingStatus(), "normingStatus");
+        assertEquals(captured.getOsName(), ANDROID);
+        assertEquals(captured.getOriginGuid(), "originGuid");
+        assertEquals(captured.getOwnerId(), OWNER_ID);
+        assertEquals(captured.getCategories(), CATEGORIES);
+        assertEquals(captured.getTags(), TAGS);
+        assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getModifiedOn(), MODIFIED_ON);
+        assertTrue(captured.isDeleted());
+        assertEquals(captured.getRevision(), 5);
+        assertEquals(captured.getVersion(), 8L);
+        
+        assertEquals(retValue.getVersion(), 100);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void createAssessmentRevisionRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.createAssessmentRevision(GUID);
+    }
+    
     @Test
     public void publishAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -284,6 +424,15 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(dto.getIdentifier(), IDENTIFIER);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void publishAssessmentRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.publishAssessment(GUID);
+    }
+    
     @Test
     public void developerCanLogicallyDelete() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
@@ -318,5 +467,14 @@ public class AssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "true");
         verify(mockService).deleteAssessmentPermanently(API_STUDY_ID_STRING, GUID);        
-    }    
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void deleteAssessmentRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        controller.deleteAssessment(GUID, null);
+    }
 }

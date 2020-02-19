@@ -80,6 +80,26 @@ public class HibernateHelper {
         }
     }
 
+    public int nativeQueryCount(String queryString, Map<String,Object> parameters) {
+        // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
+        // reasons.
+        Long count = executeWithExceptionHandling(null, session -> {
+            Query<Long> query = session.createNativeQuery(queryString, Long.class);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return query.uniqueResult();
+        });
+        if (count != null) {
+            return count.intValue();
+        } else {
+            // This is unusual, but to protect from NPEs, return 0.
+            return 0;
+        }
+    }    
+    
     /**
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
@@ -102,6 +122,24 @@ public class HibernateHelper {
         });
     }
 
+    public <T> List<T> nativeQueryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
+        return executeWithExceptionHandling(null, session -> {
+            Query<T> query = session.createNativeQuery(queryString, clazz);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            if (offset != null) {
+                query.setFirstResult(offset);
+            }
+            if (limit != null) {
+                query.setMaxResults(limit);
+            }
+            return query.list();
+        });
+    }    
+    
     /**
      * Executes the given query as an update. Can either be an UPDATE query or a DELETE query. Returns the number of
      * rows affected by this query.
@@ -158,7 +196,7 @@ public class HibernateHelper {
     }
 
     // Helper function, which handles opening and closing sessions and transactions.
-    // Package-scoped to facilitate unit tests.
+    // Protected to facilitate unit tests.
     <T> T execute(Function<Session, T> function) {
         T retval;
         try (Session session = hibernateSessionFactory.openSession()) {

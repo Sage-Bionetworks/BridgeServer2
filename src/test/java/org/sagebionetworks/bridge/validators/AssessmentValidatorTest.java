@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.AssessmentValidator.CANNOT_BE_BLANK;
 
@@ -88,8 +89,23 @@ public class AssessmentValidatorTest {
         assertValidatorMessage(validator, assessment, "identifier", "already exists in revision 5");
     }
     @Test
+    public void identifierInvalid() {
+        assessment.setIdentifier("spaces are not allowed");
+        assertValidatorMessage(validator, assessment, "identifier", BRIDGE_EVENT_ID_ERROR);
+    }
+    @Test
     public void revisionNegative() {
         assessment.setRevision(-3);
         assertValidatorMessage(validator, assessment, "revision", "cannot be negative");
+    }
+    @Test
+    public void ownerIdNull() {
+        assessment.setOwnerId(null);
+        assertValidatorMessage(validator, assessment, "ownerId", CANNOT_BE_BLANK);
+    }
+    @Test
+    public void ownerIdEmpty() {
+        assessment.setOwnerId("\t");
+        assertValidatorMessage(validator, assessment, "ownerId", CANNOT_BE_BLANK);
     }
 }

@@ -4,8 +4,14 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
+import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
+import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -35,7 +41,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -52,12 +57,7 @@ import org.sagebionetworks.bridge.models.substudies.Substudy;
 public class AssessmentServiceTest extends Mockito {
     private static final String APP_ID_VALUE = "appId";
     private static final StudyIdentifierImpl APP_AS_STUDY_ID = new StudyIdentifierImpl(APP_ID_VALUE);
-    private static final String GUID_VALUE = TestConstants.GUID;
-    private static final String ID_VALUE = "identifier";
-    private static final String OWNER_ID = "ownerId";
     private static final int REVISION_VALUE = 3;
-    private static final Set<String> CATEGORIES = ImmutableSet.of("A", "B");
-    private static final Set<String> TAGS = ImmutableSet.of("C", "D");
     private static final PagedResourceList<Assessment> EMPTY_LIST = new PagedResourceList<>(ImmutableList.of(), 0);
 
     @Mock
@@ -96,9 +96,10 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void getAssessments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);
-        when(mockDao.getAssessments(APP_ID_VALUE, 10, 26, CATEGORIES, TAGS, true)).thenReturn(page);
+        when(mockDao.getAssessments(APP_ID_VALUE, 10, 26, STRING_CATEGORIES, STRING_TAGS, true)).thenReturn(page);
         
-        PagedResourceList<Assessment> retValue = service.getAssessments(APP_ID_VALUE, 10, 26, CATEGORIES, TAGS, true);
+        PagedResourceList<Assessment> retValue = service.getAssessments(
+                APP_ID_VALUE, 10, 26, STRING_CATEGORIES, STRING_TAGS, true);
         
         assertEquals(retValue.getItems().get(0), mockAssessment);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
@@ -106,8 +107,8 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(retValue.getRequestParams().get("offsetBy"), 10);
         assertEquals(retValue.getRequestParams().get("pageSize"), 26);
         assertTrue((Boolean)retValue.getRequestParams().get("includeDeleted"));
-        assertEquals(retValue.getRequestParams().get("categories"), CATEGORIES);
-        assertEquals(retValue.getRequestParams().get("tags"), TAGS);
+        assertEquals(retValue.getRequestParams().get("categories"), STRING_CATEGORIES);
+        assertEquals(retValue.getRequestParams().get("tags"), STRING_TAGS);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -205,12 +206,12 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateAssessment() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, "ownerId", false)).thenReturn(mockSubstudy);
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
         // Fill out only the fields needed to pass validation, leaving the rest to be
         // filled in by the existing assessment
         Assessment assessment = new Assessment();
-        assessment.setGuid(GUID_VALUE); // this always gets set in the controller
+        assessment.setGuid(GUID); // this always gets set in the controller
         assessment.setTitle("title");
         assessment.setOsName(ANDROID);
         when(mockDao.updateAssessment(assessment)).thenReturn(assessment);
@@ -223,8 +224,8 @@ public class AssessmentServiceTest extends Mockito {
         assertSame(retValue, assessment);
         
         assertEquals(assessment.getAppId(), APP_ID_VALUE);
-        assertEquals(assessment.getIdentifier(), ID_VALUE);
-        assertEquals(assessment.getOwnerId(), "ownerId");
+        assertEquals(assessment.getIdentifier(), IDENTIFIER);
+        assertEquals(assessment.getOwnerId(), OWNER_ID);
         assertEquals(assessment.getOriginGuid(), "originGuid");
         assertEquals(assessment.getCreatedOn(), TIMESTAMP);
         assertEquals(assessment.getModifiedOn(), TIMESTAMP);
@@ -244,7 +245,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentCanDelete() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, "ownerId", false)).thenReturn(mockSubstudy);
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(true);
@@ -261,7 +262,7 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateAssessmentCanUndelete() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, "ownerId", false)).thenReturn(mockSubstudy);
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(false);
@@ -292,7 +293,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentScrubsMarkup() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, "ownerId", false)).thenReturn(mockSubstudy);
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(false);
@@ -307,39 +308,108 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test
+    public void updateSharedAssessment() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId(APP_ID_VALUE + ":" + OWNER_ID);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+        
+        verify(mockDao).updateAssessment(assessment);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedAssessmentUnauthorizedApp() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId("wrong-app:" + OWNER_ID);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedAssessmentUnauthorizedOrg() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId(APP_ID_VALUE + ":wrong-org");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateSharedAssessmentDeletedEntityNotFound() {
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.empty());
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateSharedAssessmentLogicallyDeletedEntityNotFound() {
+        Assessment existing = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test
     public void getAssessmentByGuid() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE))
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
             .thenReturn(Optional.of(mockAssessment));        
-        Assessment retValue = service.getAssessmentByGuid(APP_ID_VALUE, GUID_VALUE);
+        Assessment retValue = service.getAssessmentByGuid(APP_ID_VALUE, GUID);
         assertSame(retValue, mockAssessment);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAssessmentByGuidEntityNotFound() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE))
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
             .thenReturn(Optional.empty());        
-        service.getAssessmentByGuid(APP_ID_VALUE, GUID_VALUE);
+        service.getAssessmentByGuid(APP_ID_VALUE, GUID);
     }
         
     @Test
     public void getAssessmentByIdentifier() {
-        when(mockDao.getAssessment(APP_ID_VALUE, ID_VALUE, REVISION_VALUE))
+        when(mockDao.getAssessment(APP_ID_VALUE, IDENTIFIER, REVISION_VALUE))
             .thenReturn(Optional.of(mockAssessment));        
-        Assessment retValue = service.getAssessmentById(APP_ID_VALUE, ID_VALUE, REVISION_VALUE);
+        Assessment retValue = service.getAssessmentById(APP_ID_VALUE, IDENTIFIER, REVISION_VALUE);
         assertSame(retValue, mockAssessment);
     }
         
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAssessmentByIdentifierEntityNotFound() {
-        when(mockDao.getAssessment(APP_ID_VALUE, ID_VALUE, REVISION_VALUE))
+        when(mockDao.getAssessment(APP_ID_VALUE, IDENTIFIER, REVISION_VALUE))
             .thenReturn(Optional.empty());        
-        service.getAssessmentById(APP_ID_VALUE, ID_VALUE, REVISION_VALUE);
+        service.getAssessmentById(APP_ID_VALUE, IDENTIFIER, REVISION_VALUE);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = "offsetBy must be positive integer")
     public void getAssessmentByIdentifierBadRevision() {
-        service.getAssessmentById(APP_ID_VALUE, ID_VALUE, -2);
+        service.getAssessmentById(APP_ID_VALUE, IDENTIFIER, -2);
     }
     
     @Test
@@ -348,17 +418,17 @@ public class AssessmentServiceTest extends Mockito {
         rev.setRevision(2);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(rev), 2);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(page);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(page);
         
-        Assessment retValue = service.getLatestAssessment(APP_ID_VALUE, ID_VALUE);
+        Assessment retValue = service.getLatestAssessment(APP_ID_VALUE, IDENTIFIER);
         assertSame(retValue, rev);
     }
         
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getLatestAssessmentEntityNotFound() {
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
         
-        service.getLatestAssessment(APP_ID_VALUE, ID_VALUE);
+        service.getLatestAssessment(APP_ID_VALUE, IDENTIFIER);
     }
     
     @Test
@@ -368,13 +438,14 @@ public class AssessmentServiceTest extends Mockito {
         Assessment rev3 = AssessmentTest.createAssessment();
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(rev3, rev2, rev1), 10);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 10, 25, true)).thenReturn(page);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 10, 25, true)).thenReturn(page);
         
-        PagedResourceList<Assessment> retValue = service.getAssessmentRevisionsById(APP_ID_VALUE, ID_VALUE, 10, 25, true);
+        PagedResourceList<Assessment> retValue = service.getAssessmentRevisionsById(
+                APP_ID_VALUE, IDENTIFIER, 10, 25, true);
         
         assertEquals(retValue.getTotal(), Integer.valueOf(10));
         assertEquals(retValue.getItems().size(), 3);
-        assertEquals(retValue.getRequestParams().get("identifier"), ID_VALUE);
+        assertEquals(retValue.getRequestParams().get("identifier"), IDENTIFIER);
         assertEquals(retValue.getRequestParams().get("offsetBy"), 10);
         assertEquals(retValue.getRequestParams().get("pageSize"), 25);
         assertTrue((Boolean)retValue.getRequestParams().get("includeDeleted"));
@@ -382,33 +453,104 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAssessmentRevisionsEntityNotFound() {
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 10, 25, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 10, 25, true)).thenReturn(EMPTY_LIST);
         
-        service.getAssessmentRevisionsById(APP_ID_VALUE, ID_VALUE, 10, 25, true);
+        service.getAssessmentRevisionsById(APP_ID_VALUE, IDENTIFIER, 10, 25, true);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "identifier required")
+            expectedExceptionsMessageRegExp = IDENTIFIER_REQUIRED)
     public void getAssessmentRevisionsNoIdentifier() {
         service.getAssessmentRevisionsById(APP_ID_VALUE, null, 10, 25, true);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "offsetBy cannot be negative")
+            expectedExceptionsMessageRegExp = OFFSET_BY_CANNOT_BE_NEGATIVE)
     public void getAssessmentRevisionsNegativeOffsetBy() {
-        service.getAssessmentRevisionsById(APP_ID_VALUE, ID_VALUE, -10, 25, true);
+        service.getAssessmentRevisionsById(APP_ID_VALUE, IDENTIFIER, -10, 25, true);
     }
         
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getAssessmentRevisionsPageSizeUnderMin() {
-        service.getAssessmentRevisionsById(APP_ID_VALUE, ID_VALUE, 10, 1, true);
+        service.getAssessmentRevisionsById(APP_ID_VALUE, IDENTIFIER, 10, 1, true);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getAssessmentRevisionsPageSizeOverMax() {
-        service.getAssessmentRevisionsById(APP_ID_VALUE, ID_VALUE, 10, 10000, true);
+        service.getAssessmentRevisionsById(APP_ID_VALUE, IDENTIFIER, 10, 10000, true);
+    }
+
+    @Test
+    public void getAssessmentRevisionsByGuid() {
+        Assessment rev1 = AssessmentTest.createAssessment();
+        Assessment rev2 = AssessmentTest.createAssessment();
+        Assessment rev3 = AssessmentTest.createAssessment();
+        
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(rev3, rev2, rev1), 10);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 10, 25, true)).thenReturn(page);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        // identifier is the correct identifier already
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
+        
+        PagedResourceList<Assessment> retValue = service.getAssessmentRevisionsByGuid(
+                APP_ID_VALUE, GUID, 10, 25, true);
+        
+        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+        assertEquals(retValue.getItems().size(), 3);
+        assertEquals(retValue.getRequestParams().get("guid"), GUID);
+        assertEquals(retValue.getRequestParams().get("offsetBy"), 10);
+        assertEquals(retValue.getRequestParams().get("pageSize"), 25);
+        assertTrue((Boolean)retValue.getRequestParams().get("includeDeleted"));
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getAssessmentRevisionsByGuidEntityNotFound() {
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.empty());
+        
+        service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, 10, 25, true);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getAssessmentRevisionsByGuidRevisionsNotFound() {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 10, 25, true)).thenReturn(page);
+
+        // This exists, but there are no revisions... this is pathological.
+        Assessment assessment = AssessmentTest.createAssessment();
+        // identifier is the correct identifier already
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
+        
+        service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, 10, 25, true);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = OFFSET_BY_CANNOT_BE_NEGATIVE)
+    public void getAssessmentRevisionsByGuidNegativeOffsetBy() {
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
+        
+        service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, -10, 25, true);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getAssessmentRevisionsByGuidPageSizeUnderMin() {
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
+        
+        service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, 10, 1, true);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getAssessmentRevisionsByGuidPageSizeOverMax() {
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
+        
+        service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, 10, 10000, true);
     }
     
     @SuppressWarnings("unchecked")
@@ -420,14 +562,14 @@ public class AssessmentServiceTest extends Mockito {
         Optional<Assessment> first = Optional.of(AssessmentTest.createAssessment());
         Optional<Assessment> second = Optional.of(AssessmentTest.createAssessment());
         // We load this object twice, persisting in two different app contexts.
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(first, second);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(first, second);
         
         when(mockDao.publishAssessment(any(), any())).thenReturn(mockAssessment);
         
         // Assume no published versions
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, ID_VALUE, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
         
-        Assessment retValue = service.publishAssessment(APP_ID_VALUE, GUID_VALUE);
+        Assessment retValue = service.publishAssessment(APP_ID_VALUE, GUID);
         assertSame(retValue, mockAssessment);
         
         verify(mockDao).publishAssessment(assessmentCaptor.capture(), assessmentCaptor.capture());
@@ -441,23 +583,23 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessmentToPublish.getRevision(), 1);
         assertNull(assessmentToPublish.getOriginGuid());
         assertEquals(assessmentToPublish.getAppId(), SHARED_STUDY_ID_STRING);
-        assertEquals(assessmentToPublish.getOwnerId(), APP_ID_VALUE + ":ownerId");
+        assertEquals(assessmentToPublish.getOwnerId(), APP_ID_VALUE + ":" + OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentCallerUnauthorized() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(Optional.of(assessment));
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("notTheOwnerId")).build());
         
-        service.publishAssessment(APP_ID_VALUE, GUID_VALUE);
+        service.publishAssessment(APP_ID_VALUE, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void publishAssessmentEntityNotFound() {
-        service.publishAssessment(APP_ID_VALUE, GUID_VALUE);
+        service.publishAssessment(APP_ID_VALUE, GUID);
     }
     
     @SuppressWarnings("unchecked")
@@ -473,9 +615,9 @@ public class AssessmentServiceTest extends Mockito {
         Assessment revision = AssessmentTest.createAssessment();
         revision.setRevision(10);
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, ID_VALUE, 0, 1, true)).thenReturn(page, page);        
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page, page);        
         
-        service.publishAssessment(APP_ID_VALUE, GUID_VALUE);
+        service.publishAssessment(APP_ID_VALUE, GUID);
         
         verify(mockDao).publishAssessment(assessmentCaptor.capture(), assessmentCaptor.capture());
         
@@ -486,30 +628,30 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessment() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID_VALUE)).thenReturn(Optional.of(sharedAssessment));
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(2);
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
         
         when(mockDao.createAssessment(sharedAssessment)).thenReturn(sharedAssessment);
         
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
         
-        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID_VALUE);
+        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
         assertEquals(retValue.getRevision(), 3); // next higher than 2
-        assertEquals(retValue.getOriginGuid(), GUID_VALUE);
+        assertEquals(retValue.getOriginGuid(), GUID);
         assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")
     public void importAssessmentOwnerGuidMissing() {
-        service.importAssessment(APP_ID_VALUE, "  ", GUID_VALUE);   
+        service.importAssessment(APP_ID_VALUE, "  ", GUID);   
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -517,44 +659,44 @@ public class AssessmentServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("notTheOwnerId")).build());
 
-        service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID_VALUE);
+        service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void importAssessmentNotFoundException() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID_VALUE);
+        service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
     }
     
     @Test
     public void importAssessmentPriorImportedVersion() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID_VALUE)).thenReturn(Optional.of(sharedAssessment));
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.createAssessment(sharedAssessment)).thenReturn(sharedAssessment);
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(3);
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(localAssessment), 1);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(page);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(page);
         
-        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID_VALUE);
+        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
         assertEquals(retValue.getRevision(), 4);
-        assertEquals(retValue.getOriginGuid(), GUID_VALUE);
+        assertEquals(retValue.getOriginGuid(), GUID);
         assertEquals(retValue.getOwnerId(), OWNER_ID);        
     }
         
     @Test
     public void deleteAssessment() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(Optional.of(mockAssessment));
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(mockAssessment));
         
-        service.deleteAssessment(APP_ID_VALUE, GUID_VALUE);
+        service.deleteAssessment(APP_ID_VALUE, GUID);
         
         verify(mockDao).updateAssessment(mockAssessment);
         verify(mockAssessment).setDeleted(true);
@@ -563,10 +705,23 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void deleteAssessmentEntityNotFound() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(Optional.empty());
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.empty());
         
         try {
-            service.deleteAssessment(APP_ID_VALUE, GUID_VALUE);
+            service.deleteAssessment(APP_ID_VALUE, GUID);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockDao, never()).updateAssessment(any());
+    }
+    
+    @Test
+    public void deleteAssessmentEntityNotFoundOnLogicalAssessment() {
+        when(mockAssessment.isDeleted()).thenReturn(true);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(mockAssessment));
+        
+        try {
+            service.deleteAssessment(APP_ID_VALUE, GUID);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
@@ -575,17 +730,17 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void deleteAssessmentPermanently() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(Optional.of(mockAssessment));
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(mockAssessment));
         
-        service.deleteAssessmentPermanently(APP_ID_VALUE, GUID_VALUE);
+        service.deleteAssessmentPermanently(APP_ID_VALUE, GUID);
         
         verify(mockDao).deleteAssessment(mockAssessment);
     }
     
     @Test
     public void deleteAssessmentPermanentlyEntityNotFoundIsQuite() {
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID_VALUE)).thenReturn(Optional.empty());
-        service.deleteAssessmentPermanently(APP_ID_VALUE, GUID_VALUE);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.empty());
+        service.deleteAssessmentPermanently(APP_ID_VALUE, GUID);
         verify(mockDao, never()).deleteAssessment(any());
     }
     
@@ -598,7 +753,7 @@ public class AssessmentServiceTest extends Mockito {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
         BridgeUtils.setRequestContext(NULL_INSTANCE); // no substudies
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         
@@ -611,7 +766,7 @@ public class AssessmentServiceTest extends Mockito {
     public void globalUserCreateWithInvalidOwnerId() {
         // There is no successful lookup of the stubstudy
         BridgeUtils.setRequestContext(NULL_INSTANCE); // no substudies
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         
@@ -622,7 +777,7 @@ public class AssessmentServiceTest extends Mockito {
     public void scopedUserCanCreateWithOwnerId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("app2");
@@ -640,7 +795,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(null);
         
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(EMPTY_LIST);
         
         service.createAssessment(APP_ID_VALUE, assessment);
@@ -651,7 +806,7 @@ public class AssessmentServiceTest extends Mockito {
     public void scopedUserCannotCreateWithInvalidOwnerId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("app3");
@@ -669,7 +824,7 @@ public class AssessmentServiceTest extends Mockito {
 
         Assessment assessment = AssessmentTest.createAssessment();
         
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.createAssessmentRevision(APP_ID_VALUE, assessment);
@@ -681,7 +836,7 @@ public class AssessmentServiceTest extends Mockito {
     public void globalUserCreateRevisionWithInvalidOwnerId() {
         // There is no successful lookup of the stubstudy
         BridgeUtils.setRequestContext(NULL_INSTANCE); // no substudies
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         
@@ -696,7 +851,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("app2");
         
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.createAssessmentRevision(APP_ID_VALUE, assessment);
@@ -713,7 +868,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(null);
         
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.createAssessmentRevision(APP_ID_VALUE, assessment);
@@ -724,7 +879,7 @@ public class AssessmentServiceTest extends Mockito {
     public void scopedUserCannotCreateRevisionWithInvalidOwnerId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("app3");
@@ -746,13 +901,13 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.publishAssessment(APP_ID_VALUE, GUID);
         
         verify(mockDao).publishAssessment(any(), assessmentCaptor.capture());
-        assertEquals(assessmentCaptor.getValue().getOwnerId(), "appId:ownerId");
+        assertEquals(assessmentCaptor.getValue().getOwnerId(), APP_ID_VALUE + ":" + OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -764,7 +919,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false))
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.publishAssessment(APP_ID_VALUE, GUID);
@@ -781,7 +936,7 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setOwnerId("app1");
         
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.publishAssessment(APP_ID_VALUE, GUID);
@@ -795,12 +950,12 @@ public class AssessmentServiceTest extends Mockito {
     public void scopedUserCannotPublishWithInvalidOwnerId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 1, false)).thenReturn(EMPTY_LIST);
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("app3");
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, ID_VALUE, 0, 1, true))
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
         
         service.publishAssessment(APP_ID_VALUE, GUID);

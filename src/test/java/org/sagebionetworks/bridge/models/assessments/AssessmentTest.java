@@ -1,13 +1,15 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.BridgeUtils.setsAreEqual;
+import static com.google.common.collect.Sets.symmetricDifference;
+import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
-import static org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest.CATEGORIES;
-import static org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest.CREATED_ON;
-import static org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest.CUSTOMIZATION_FIELDS;
-import static org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest.MODIFIED_ON;
-import static org.sagebionetworks.bridge.models.assessments.AssessmentDtoTest.TAGS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -38,7 +40,7 @@ public class AssessmentTest {
         Assessment assessment = new Assessment();
         assessment.setGuid(GUID);
         assessment.setAppId("appId");
-        assessment.setIdentifier("identifier");
+        assessment.setIdentifier(IDENTIFIER);
         assessment.setTitle("title");
         assessment.setCategories(CATEGORIES);
         assessment.setSummary("summary");
@@ -46,7 +48,7 @@ public class AssessmentTest {
         assessment.setNormingStatus("normingStatus");
         assessment.setOsName(ANDROID);
         assessment.setOriginGuid("originGuid");
-        assessment.setOwnerId("ownerId");
+        assessment.setOwnerId(OWNER_ID);
         assessment.setTags(TAGS);
         assessment.setCustomizationFields(CUSTOMIZATION_FIELDS);
         assessment.setCreatedOn(CREATED_ON);
@@ -60,16 +62,16 @@ public class AssessmentTest {
     private void assertAssessment(Assessment assessment) {
         assertEquals(assessment.getGuid(), GUID);
         assertEquals(assessment.getAppId(), "appId");
-        assertEquals(assessment.getIdentifier(), "identifier");
+        assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getTitle(), "title");
-        assertTrue(setsAreEqual(assessment.getCategories(), CATEGORIES));
+        assertTrue(symmetricDifference(assessment.getCategories(), CATEGORIES).isEmpty());
         assertEquals(assessment.getSummary(), "summary");
         assertEquals(assessment.getValidationStatus(), "validationStatus");
         assertEquals(assessment.getNormingStatus(), "normingStatus");
         assertEquals(assessment.getOsName(), ANDROID);
         assertEquals(assessment.getOriginGuid(), "originGuid");
-        assertEquals(assessment.getOwnerId(), "ownerId");
-        assertTrue(setsAreEqual(assessment.getTags(), TAGS));
+        assertEquals(assessment.getOwnerId(), OWNER_ID);
+        assertTrue(symmetricDifference(assessment.getTags(), TAGS).isEmpty());
         assertEquals(assessment.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);

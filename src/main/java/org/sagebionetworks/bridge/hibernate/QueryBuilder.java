@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.Query;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 
 import com.google.common.base.Joiner;
@@ -33,27 +31,19 @@ class QueryBuilder {
         params.put(key2, value2);
     }
     public void dataGroups(Set<String> dataGroups, String operator) {
-        tags(dataGroups, operator, "acct.dataGroups");
-    }
-    public void tags(Set<String> tags, String operator, String field) {
-        if (!BridgeUtils.isEmpty(tags)) {
+        if (!BridgeUtils.isEmpty(dataGroups)) {
             int i = 0;
             List<String> clauses = new ArrayList<>();
-            for (String oneTag : tags) {
-                String varName = (operator+field).toLowerCase().replaceAll("[.\\s]", "") + (++i);
-                clauses.add(":"+varName+" "+operator+" elements(" + field + ")");
-                params.put(varName, oneTag);
+            for (String oneDataGroup : dataGroups) {
+                String varName = operator.replace(" ", "") + (++i);
+                clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
+                params.put(varName, oneDataGroup);
             }
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
-        }        
+        }
     }
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
-    }
-    public void setParamsOnQuery(Query query) {
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            query.setParameter(entry.getKey(), entry.getValue());
-        }    
     }
     public Map<String,Object> getParameters() {
         return params;

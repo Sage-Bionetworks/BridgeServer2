@@ -9,6 +9,8 @@ import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.TagUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -50,6 +52,10 @@ public class TestConstants {
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
+    
+    public static final String SHARED_STUDY_IDENTIFIER = "shared";
+    public static final StudyIdentifier SHARED_STUDY = new StudyIdentifierImpl(SHARED_STUDY_IDENTIFIER);
+    
     public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
             .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
@@ -148,4 +154,14 @@ public class TestConstants {
     public static final Activity ACTIVITY_3 = new Activity.Builder().withLabel("Activity3").withGuid("AAA")
             .withTask("tapTest").build();
 
+    public static final String OWNER_ID = "oneOwnerId";
+    public static final String IDENTIFIER = "oneIdentifier";
+    public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
+    public static final Set<String> STRING_CATEGORIES = ImmutableSet.of("cat1", "cat2");
+    public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS,  "tag");
+    public static final Set<Tag> CATEGORIES = TagUtils.toTagSet(STRING_CATEGORIES, "category");
+    public static final DateTime CREATED_ON = TIMESTAMP;
+    public static final DateTime MODIFIED_ON = CREATED_ON.plusHours(1);
+    public static final Map<String, Set<String>> CUSTOMIZATION_FIELDS = ImmutableMap.of("node1",
+            ImmutableSet.of("field1", "field2"));    
 }

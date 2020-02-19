@@ -534,16 +534,16 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
                 + "acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND acct.email LIKE "
                 + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
-                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:inacctdatagroups1 IN elements(acct.dataGroups) "
-                + "AND :inacctdatagroups2 IN elements(acct.dataGroups)) AND (:notinacctdatagroups1 NOT IN elements(acct.dataGroups) AND "
-                + ":notinacctdatagroups2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
+                + ":NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE "
                 + "acct.studyId = :studyId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND "
                 + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND :language IN "
-                + "ELEMENTS(acct.languages) AND (:inacctdatagroups1 IN elements(acct.dataGroups) AND :inacctdatagroups2 IN "
-                + "elements(acct.dataGroups)) AND (:notinacctdatagroups1 NOT IN elements(acct.dataGroups) AND :notinacctdatagroups2 NOT "
+                + "ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
+                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT "
                 + "IN elements(acct.dataGroups))";
 
         // Setup start and end dates.
@@ -601,10 +601,10 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(capturedParams.get("number"), "%" + phoneString + "%");
         assertEquals(capturedParams.get("startTime"), startDate);
         assertEquals(capturedParams.get("endTime"), endDate);
-        assertEquals(capturedParams.get("inacctdatagroups1"), "a");
-        assertEquals(capturedParams.get("inacctdatagroups2"), "b");
-        assertEquals(capturedParams.get("notinacctdatagroups1"), "d");
-        assertEquals(capturedParams.get("notinacctdatagroups2"), "c");
+        assertEquals(capturedParams.get("IN1"), "a");
+        assertEquals(capturedParams.get("IN2"), "b");
+        assertEquals(capturedParams.get("NOTIN1"), "d");
+        assertEquals(capturedParams.get("NOTIN2"), "c");
         assertEquals(capturedParams.get("language"), "de");
 
         capturedParams = paramCaptor.getAllValues().get(1);
@@ -613,10 +613,10 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(capturedParams.get("number"), "%" + phoneString + "%");
         assertEquals(capturedParams.get("startTime"), startDate);
         assertEquals(capturedParams.get("endTime"), endDate);
-        assertEquals(capturedParams.get("inacctdatagroups1"), "a");
-        assertEquals(capturedParams.get("inacctdatagroups2"), "b");
-        assertEquals(capturedParams.get("notinacctdatagroups1"), "d");
-        assertEquals(capturedParams.get("notinacctdatagroups2"), "c");
+        assertEquals(capturedParams.get("IN1"), "a");
+        assertEquals(capturedParams.get("IN2"), "b");
+        assertEquals(capturedParams.get("NOTIN1"), "d");
+        assertEquals(capturedParams.get("NOTIN2"), "c");
         assertEquals(capturedParams.get("language"), "de");
     }
 
@@ -845,12 +845,12 @@ public class HibernateAccountDaoTest extends Mockito {
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
                 + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "(:inacctdatagroups1 IN elements(acct.dataGroups)) AND (:notinacctdatagroups1 NOT IN "
-                + "elements(acct.dataGroups)) GROUP BY acct.id";
+                + "(:IN1 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups)) "
+                + "GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("notinacctdatagroups1"), "sdk-int-1");
-        assertEquals(builder.getParameters().get("inacctdatagroups1"), "group1");
+        assertEquals(builder.getParameters().get("NOTIN1"), "sdk-int-1");
+        assertEquals(builder.getParameters().get("IN1"), "group1");
         assertEquals(builder.getParameters().get("studyId"), "api");
     }
 
@@ -863,11 +863,11 @@ public class HibernateAccountDaoTest extends Mockito {
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
-                + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId "
-                + "AND (:inacctdatagroups1 IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
+                + "(:IN1 IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("inacctdatagroups1"), "group1");
+        assertEquals(builder.getParameters().get("IN1"), "group1");
         assertEquals(builder.getParameters().get("studyId"), "api");
     }
 
@@ -881,12 +881,11 @@ public class HibernateAccountDaoTest extends Mockito {
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
                 + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "(:inacctdatagroups1 IN elements(acct.dataGroups) AND :inacctdatagroups2 IN "
-                + "elements(acct.dataGroups)) GROUP BY acct.id";
+                + "(:IN1 IN elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("inacctdatagroups1"), "sdk-int-1");
-        assertEquals(builder.getParameters().get("inacctdatagroups2"), "group1");
+        assertEquals(builder.getParameters().get("IN1"), "sdk-int-1");
+        assertEquals(builder.getParameters().get("IN2"), "group1");
         assertEquals(builder.getParameters().get("studyId"), "api");
     }
 
@@ -900,10 +899,10 @@ public class HibernateAccountDaoTest extends Mockito {
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
                 + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "(:notinacctdatagroups1 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "(:NOTIN1 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("notinacctdatagroups1"), "group1");
+        assertEquals(builder.getParameters().get("NOTIN1"), "group1");
         assertEquals(builder.getParameters().get("studyId"), "api");
     }
 
@@ -917,12 +916,12 @@ public class HibernateAccountDaoTest extends Mockito {
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
                 + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.studyId = :studyId AND "
-                + "(:notinacctdatagroups1 NOT IN elements(acct.dataGroups) AND :notinacctdatagroups2 NOT "
-                + "IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "(:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups)) "
+                + "GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("notinacctdatagroups1"), "sdk-int-1");
-        assertEquals(builder.getParameters().get("notinacctdatagroups2"), "group1");
+        assertEquals(builder.getParameters().get("NOTIN1"), "sdk-int-1");
+        assertEquals(builder.getParameters().get("NOTIN2"), "group1");
         assertEquals(builder.getParameters().get("studyId"), "api");
     }
 

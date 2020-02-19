@@ -67,7 +67,8 @@ public class PagedResourceList<T> extends ResourceList<T> {
         super.withRequestParam(key, value);
         return this;
     }
-    public PagedResourceList<T> withAllRequestParams(Map<String,Object> map) {
+    public PagedResourceList<T> withAllRequestParams(Map<String, Object> map) {
+        checkNotNull(map);
         for(Map.Entry<String, Object> entry : map.entrySet()) {
             super.withRequestParam(entry.getKey(), entry.getValue());    
         }

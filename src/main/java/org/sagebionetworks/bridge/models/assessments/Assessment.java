@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.assessments;
 import static javax.persistence.CascadeType.MERGE;
 import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.EAGER;
-import static org.sagebionetworks.bridge.BridgeUtils.toTagSet;
+import static org.sagebionetworks.bridge.models.TagUtils.toTagSet;
 
 import java.util.Map;
 import java.util.Set;

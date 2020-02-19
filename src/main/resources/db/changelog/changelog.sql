@@ -292,8 +292,10 @@ CREATE TABLE `Assessments` (
   CONSTRAINT FOREIGN KEY (`originGuid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+CREATE INDEX `Assessments-AppId` ON `Assessments`(`appId`);
 CREATE INDEX `Assessments-AppId-Guid` ON `Assessments`(`appId`, `guid`);
 CREATE INDEX `Assessments-AppId-Identifier` ON `Assessments`(`appId`, `identifier`);
+-- the appId-identifier-revision combo is indexed by UNIQUE KEY
 
 CREATE TABLE `Tags` (
   `value` varchar(255) NOT NULL,

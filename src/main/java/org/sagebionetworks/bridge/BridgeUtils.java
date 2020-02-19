@@ -45,7 +45,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -635,6 +634,8 @@ public class BridgeUtils {
     }
     
     public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
+        checkNotNull(whitelist);
+        
         if (isBlank(documentContent)) {
             return documentContent;
         }
@@ -644,13 +645,13 @@ public class BridgeUtils {
         Cleaner cleaner = new Cleaner(whitelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
-        // brimg is not a valid attribute, it marks our one template image.
+        // "brimg" is not a valid attribute, it marks our one template image.
         for (Element el : clean.select("img[brimg]")) {
             el.attr("src", "cid:consentSignature");
         }
         clean.outputSettings().escapeMode(EscapeMode.xhtml)
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
-        return clean.body().html();        
+        return clean.body().html();
     }
     
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
@@ -663,27 +664,4 @@ public class BridgeUtils {
                 requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
 
-    public static <T> boolean setsAreEqual(Set<T> set1, Set<T> set2) {
-        if (set1 == null || set2 == null) {
-            return false;
-        }
-        if (set1.size() != set2.size()) {
-            return false;
-        }
-        return set1.containsAll(set2);
-    }
-    
-    public static Set<Tag> toTagSet(Set<String> tags, String category) {
-        if (isEmpty(tags)) {
-            return ImmutableSet.of();
-        }
-        return tags.stream().map(s -> new Tag(s, category)).collect(toSet());
-    }
-    
-    public static Set<String> toStringSet(Set<Tag> tags) {
-        if (isEmpty(tags)) {
-            return ImmutableSet.of();
-        }
-        return tags.stream().map(t -> t.getValue()).collect(toSet());
-    }
 }

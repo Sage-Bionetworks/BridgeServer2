@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.services.AssessmentService;
 @CrossOrigin
 @RestController
 public class AssessmentController extends BaseController {
-    private static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
+    static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
     
     private AssessmentService service;
     
@@ -146,7 +146,7 @@ public class AssessmentController extends BaseController {
     
     @PostMapping("/v1/assessments/{guid}/revisions")
     @ResponseStatus(HttpStatus.CREATED)
-    public AssessmentDto createAssessmentRevision() {
+    public AssessmentDto createAssessmentRevision(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -157,6 +157,7 @@ public class AssessmentController extends BaseController {
         AssessmentDto dto = parseJson(AssessmentDto.class);
         Assessment assessment = Assessment.create(dto, appId);
         assessment.setAppId(appId);
+        assessment.setGuid(guid);
         
         Assessment retValue = service.createAssessmentRevision(appId, assessment);
         return AssessmentDto.create(retValue);        

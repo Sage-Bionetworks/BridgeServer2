@@ -5,6 +5,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -14,7 +18,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -34,10 +37,6 @@ import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
 public class SharedAssessmentControllerTest extends Mockito {
-    private static final ImmutableSet<String> TAG_SET = ImmutableSet.of("tag1", "tag2");
-    private static final ImmutableSet<String> CATEGORY_SET = ImmutableSet.of("cat1", "cat2");
-    private static final String IDENTIFIER = "identifier";
-
     @Mock
     AssessmentService mockService;
 
@@ -67,20 +66,31 @@ public class SharedAssessmentControllerTest extends Mockito {
     
     @Test
     public void importAssessment() {
+        UserSession session = new UserSession();
+        session.setStudyIdentifier(TEST_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockService.importAssessment(TEST_STUDY_IDENTIFIER, OWNER_ID, GUID)).thenReturn(assessment);
+        
+        AssessmentDto retValue = controller.importAssessment(GUID, OWNER_ID);
+        assertEquals(retValue.getGuid(), assessment.getGuid());
+        
+        verify(mockService).importAssessment(TEST_STUDY_IDENTIFIER, OWNER_ID, GUID);
     }
     
     @Test
     public void getSharedAssessments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);
         when(mockService.getAssessments(
-                SHARED_STUDY_ID_STRING, 10, 25, CATEGORY_SET, TAG_SET, true)).thenReturn(page);
+                SHARED_STUDY_ID_STRING, 10, 25, STRING_CATEGORIES, STRING_TAGS, true)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments("10", "25", CATEGORY_SET, TAG_SET, "true");
+        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments("10", "25", STRING_CATEGORIES, STRING_TAGS, "true");
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         
         verify(mockService).getAssessments(
-                SHARED_STUDY_ID_STRING, 10, 25, CATEGORY_SET, TAG_SET, true);
+                SHARED_STUDY_ID_STRING, 10, 25, STRING_CATEGORIES, STRING_TAGS, true);
     }
     
     @Test
