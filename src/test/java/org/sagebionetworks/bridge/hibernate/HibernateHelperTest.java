@@ -30,6 +30,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -544,4 +545,17 @@ public class HibernateHelperTest {
         }
     }
  
+    @Test
+    public void nativeQueryGetSuccess() {
+        // mock query
+        List<Object> hibernateOutputList = ImmutableList.of();
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockQuery.list()).thenReturn(hibernateOutputList);
+
+        when(mockSession.createNativeQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        List<Object> helperOutputList = helper.nativeQueryGet(QUERY, null, null, null, Object.class);
+        assertSame(helperOutputList, hibernateOutputList);
+    }
 }

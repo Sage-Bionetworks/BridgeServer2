@@ -225,7 +225,7 @@ public class AssessmentService {
         }
         PagedResourceList<Assessment> page = dao.getAssessmentRevisions(
                 appId, identifier, offsetBy, pageSize, includeDeleted);
-        // You must test both or a bad offsetBy value returns an ENFE which is not correct.
+        // If there are no matches, this identifier is bogus.
         if (page.getTotal() == 0) {
             throw new EntityNotFoundException(Assessment.class);
         }

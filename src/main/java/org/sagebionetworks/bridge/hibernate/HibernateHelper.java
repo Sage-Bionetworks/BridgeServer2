@@ -196,7 +196,7 @@ public class HibernateHelper {
     }
 
     // Helper function, which handles opening and closing sessions and transactions.
-    // Protected to facilitate unit tests.
+    // Package-scoped to facilitate unit tests.
     <T> T execute(Function<Session, T> function) {
         T retval;
         try (Session session = hibernateSessionFactory.openSession()) {
