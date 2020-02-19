@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
+import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
@@ -8,11 +12,9 @@ import static org.testng.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.hibernate.Session;
 import org.mockito.ArgumentCaptor;
@@ -26,7 +28,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.TagUtils;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 
 public class HibernateAssessmentDaoTest extends Mockito {
@@ -92,17 +93,15 @@ public class HibernateAssessmentDaoTest extends Mockito {
 
     @Test
     public void getAssessmentsExcludeDeleted() {
-        Set<String> cats = ImmutableSet.of("A", "B");
-        Set<String> tags = ImmutableSet.of("C", "D");
-        when(mockAssessment2.getCategories()).thenReturn(TagUtils.toTagSet(cats, "category"));
-        when(mockAssessment2.getTags()).thenReturn(TagUtils.toTagSet(tags, "tag"));
+        when(mockAssessment2.getCategories()).thenReturn(CATEGORIES);
+        when(mockAssessment2.getTags()).thenReturn(TAGS);
         
         List<Assessment> list = ImmutableList.of(mockAssessment1, mockAssessment2, mockAssessment1, mockAssessment2,
                 mockAssessment2);
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(Assessment.class)))
                 .thenReturn(list);
         
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 0, 20, cats, tags, false);
+        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 0, 20, STRING_CATEGORIES, STRING_TAGS, false);
         assertEquals(queryCaptor.getValue(), QUERY_SQL_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();

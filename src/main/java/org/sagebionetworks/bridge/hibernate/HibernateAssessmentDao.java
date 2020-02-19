@@ -64,8 +64,8 @@ class HibernateAssessmentDao implements AssessmentDao {
         List<Assessment> assessments = hibernateHelper.nativeQueryGet(
                 builder.getQuery(), builder.getParameters(), offsetBy, pageSize, Assessment.class);
         
-        Set<Tag> catTags = toTagSet(categories, "category");
-        Set<Tag> tagTags = toTagSet(tags, "tag");
+        Set<Tag> catTags = toTagSet(categories, "assessment.category");
+        Set<Tag> tagTags = toTagSet(tags, "assessment.tag");
         List<Assessment> filtered = assessments.stream()
             .filter(a -> a.getCategories().containsAll(catTags) && a.getTags().containsAll(tagTags))
             .collect(toImmutableList());
