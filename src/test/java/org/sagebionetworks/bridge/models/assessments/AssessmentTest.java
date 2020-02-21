@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static com.google.common.collect.Sets.symmetricDifference;
-import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -42,7 +40,6 @@ public class AssessmentTest {
         assessment.setAppId("appId");
         assessment.setIdentifier(IDENTIFIER);
         assessment.setTitle("title");
-        assessment.setCategories(CATEGORIES);
         assessment.setSummary("summary");
         assessment.setValidationStatus("validationStatus");
         assessment.setNormingStatus("normingStatus");
@@ -64,14 +61,13 @@ public class AssessmentTest {
         assertEquals(assessment.getAppId(), "appId");
         assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getTitle(), "title");
-        assertTrue(symmetricDifference(assessment.getCategories(), CATEGORIES).isEmpty());
         assertEquals(assessment.getSummary(), "summary");
         assertEquals(assessment.getValidationStatus(), "validationStatus");
         assertEquals(assessment.getNormingStatus(), "normingStatus");
         assertEquals(assessment.getOsName(), ANDROID);
         assertEquals(assessment.getOriginGuid(), "originGuid");
         assertEquals(assessment.getOwnerId(), OWNER_ID);
-        assertTrue(symmetricDifference(assessment.getTags(), TAGS).isEmpty());
+        assertEquals(assessment.getTags(), TAGS);
         assertEquals(assessment.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);

@@ -6,6 +6,8 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.NaturalId;
+
 /**
  * Generic tag implementation for tagged entities. Each field that implements a set of 
  * tags should set a different category on the tag so they can be stored in the same 
@@ -15,34 +17,23 @@ import javax.persistence.Table;
 @Table(name = "Tags")
 public final class Tag {
     @Id
+    @NaturalId
     private String value;
-    
-    private String category;
     
     public Tag() {}
     
-    public Tag(String value, String category) {
+    public Tag(String value) {
         this.value = value;
-        this.category = category;
     }
-    
     public String getValue() {
         return value;
     }
     public void setValue(String value) {
         this.value = value;
     }
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
     @Override
     public int hashCode() {
-        return Objects.hash(category, value);
+        return Objects.hash(value);
     }
     @Override
     public boolean equals(Object obj) {
@@ -51,7 +42,6 @@ public final class Tag {
         if (obj == null || getClass() != obj.getClass())
             return false;
         Tag other = (Tag) obj;
-        return Objects.equals(category, other.category) &&
-                Objects.equals(value, other.value);
+        return Objects.equals(value, other.value);
     }
 }

@@ -1,13 +1,8 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
-import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
-import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
-import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -32,16 +27,16 @@ import org.sagebionetworks.bridge.models.assessments.Assessment;
 
 public class HibernateAssessmentDaoTest extends Mockito {
     
-    private static final String QUERY_SQL_EXC_DELETED = "SELECT * FROM (SELECT DISTINCT "
-            +"identifier as id, MAX(revision) AS rev FROM Assessments WHERE appId = "
-            +":appId AND deleted = 0 GROUP BY identifier) AS latest_assessments INNER JOIN "
-            +"Assessments a ON a.identifier = latest_assessments.id AND a.revision = "
-            +"latest_assessments.rev ORDER BY createdOn DESC";
+    private static final String QUERY_SQL_EXC_DELETED = "FROM (   SELECT DISTINCT "
+            +"identifier as id, MAX(revision) AS rev FROM Assessments   WHERE appId = "
+            +":appId GROUP BY identifier ) AS latest_assessments INNER JOIN "
+            +"Assessments AS a ON a.identifier = latest_assessments.id AND a.revision = "
+            +"latest_assessments.rev WHERE a.deleted = 0 ORDER BY createdOn DESC";
 
-    private static final String QUERY_SQL_INC_DELETED = "SELECT * FROM (SELECT DISTINCT "
-            +"identifier as id, MAX(revision) AS rev FROM Assessments WHERE appId = "
-            +":appId GROUP BY identifier) AS latest_assessments INNER JOIN "
-            +"Assessments a ON a.identifier = latest_assessments.id AND a.revision = "
+    private static final String QUERY_SQL_INC_DELETED = "FROM (   SELECT DISTINCT "
+            +"identifier as id, MAX(revision) AS rev FROM Assessments   WHERE appId = "
+            +":appId GROUP BY identifier ) AS latest_assessments INNER JOIN "
+            +"Assessments AS a ON a.identifier = latest_assessments.id AND a.revision = "
             +"latest_assessments.rev ORDER BY createdOn DESC";
     
     private static final String QUERY_GET_REVISIONS_EXC_DELETED = "FROM Assessment WHERE "
@@ -55,16 +50,11 @@ public class HibernateAssessmentDaoTest extends Mockito {
     private static final String ID_VALUE = "identifier";
     private static final String GUID_VALUE = "guid";
     private static final int REV_VALUE = 3;
+    private static final Assessment ASSESSMENT = new Assessment();
     
     @Mock
     HibernateHelper mockHelper;
 
-    @Mock
-    Assessment mockAssessment1;
-    
-    @Mock
-    Assessment mockAssessment2;
-    
     @Captor
     ArgumentCaptor<String> queryCaptor;
     
@@ -93,49 +83,39 @@ public class HibernateAssessmentDaoTest extends Mockito {
 
     @Test
     public void getAssessmentsExcludeDeleted() {
-        when(mockAssessment2.getCategories()).thenReturn(CATEGORIES);
-        when(mockAssessment2.getTags()).thenReturn(TAGS);
-        
-        List<Assessment> list = ImmutableList.of(mockAssessment1, mockAssessment2, mockAssessment1, mockAssessment2,
-                mockAssessment2);
+        List<Assessment> list = ImmutableList.of(ASSESSMENT, ASSESSMENT, ASSESSMENT, ASSESSMENT,
+                ASSESSMENT);
+        when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(5);
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(Assessment.class)))
                 .thenReturn(list);
         
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 0, 20, STRING_CATEGORIES, STRING_TAGS, false);
-        assertEquals(queryCaptor.getValue(), QUERY_SQL_EXC_DELETED);
+        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 0, 20, null, false);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_EXC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
         assertEquals(params.get("appId"), APP_ID_VALUE);
-        // Tags are only matched on mockAssessment2 which occurs 3 times in the mock list
-        assertEquals(page.getItems().size(), 3);
-        assertEquals(page.getTotal(), Integer.valueOf(3));
+        assertEquals(page.getItems().size(), 5);
+        assertEquals(page.getTotal(), Integer.valueOf(5));
     }
     
     @Test
     public void getAssessmentsIncludeDeleted() {
+        when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(0);
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(Assessment.class)))
                 .thenReturn(ImmutableList.of());
         
-        dao.getAssessments(APP_ID_VALUE, 0, 20, null, null, true);
-        assertEquals(queryCaptor.getValue(), QUERY_SQL_INC_DELETED);
+        dao.getAssessments(APP_ID_VALUE, 0, 20, null, true);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_INC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_INC_DELETED);
     }
     
-    @Test
-    public void getAssessmentsOffsetDoesNotExceedSubListSize() {
-        when(mockHelper.nativeQueryGet(any(), any(), eq(3), eq(20), eq(Assessment.class)))
-            .thenReturn(ImmutableList.of(mockAssessment1, mockAssessment2));
-        
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 3, 20, null, null, true);
-        assertTrue(page.getItems().isEmpty());
-        assertEquals(page.getTotal(), Integer.valueOf(2));
-    }
-
     @Test
     public void getAssessmentRevisionsIncludeDeleted() {
         when(mockHelper.queryCount(queryCaptor.capture(), paramsCaptor.capture()))
             .thenReturn(100);
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(Assessment.class)))
-            .thenReturn(ImmutableList.of(mockAssessment1, mockAssessment1, mockAssessment1));
+            .thenReturn(ImmutableList.of(ASSESSMENT, ASSESSMENT, ASSESSMENT));
         
         PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 20, true);
         assertEquals(page.getItems().size(), 3);
@@ -160,10 +140,10 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void getAssessmentByGuid() {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(Assessment.class)))
-            .thenReturn(ImmutableList.of(mockAssessment1));
+            .thenReturn(ImmutableList.of(ASSESSMENT));
         
         Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, GUID_VALUE);
-        assertSame(retValue.get(), mockAssessment1);
+        assertSame(retValue.get(), ASSESSMENT);
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_GUID);
         
@@ -185,10 +165,10 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void getAssessmentByIdAndRevision() {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(Assessment.class)))
-            .thenReturn(ImmutableList.of(mockAssessment1));
+            .thenReturn(ImmutableList.of(ASSESSMENT));
         
         Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, ID_VALUE, REV_VALUE);
-        assertSame(retValue.get(), mockAssessment1);
+        assertSame(retValue.get(), ASSESSMENT);
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_IDENTIFIER);
         
@@ -208,30 +188,20 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }
 
     @Test
-    public void createAssessment() throws Exception {
-        when(mockSession.merge(any())).thenReturn(mockAssessment1);
+    public void createOrUpdateAssessment() throws Exception {
+        when(mockSession.merge(any())).thenReturn(ASSESSMENT);
         
-        Assessment returnValue = dao.createAssessment(mockAssessment1);
-        assertSame(returnValue, mockAssessment1);
+        Assessment returnValue = dao.saveAssessment(ASSESSMENT);
+        assertSame(returnValue, ASSESSMENT);
         
-        verify(mockSession).merge(mockAssessment1);
-    }
-
-    @Test
-    public void updateAssessment() throws Exception {
-        when(mockSession.merge(mockAssessment1)).thenReturn(mockAssessment1);
-        
-        Assessment returnValue = dao.updateAssessment(mockAssessment1);
-        assertEquals(returnValue, mockAssessment1);
-        
-        verify(mockSession).merge(mockAssessment1);
+        verify(mockSession).merge(ASSESSMENT);
     }
 
     @Test
     public void deleteAssessment() throws Exception {
-        dao.deleteAssessment(mockAssessment1);
+        dao.deleteAssessment(ASSESSMENT);
         
-        verify(mockSession).remove(mockAssessment1);
+        verify(mockSession).remove(ASSESSMENT);
     }  
     
     @Test

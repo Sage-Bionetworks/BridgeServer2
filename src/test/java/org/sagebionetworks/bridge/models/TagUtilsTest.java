@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
-import static com.google.common.collect.Sets.symmetricDifference;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -16,19 +14,19 @@ public class TagUtilsTest {
 
     @Test
     public void toTagSetStringSetNull() {
-        Set<Tag> retValue = TagUtils.toTagSet(null, "cat");
+        Set<Tag> retValue = TagUtils.toTagSet(null);
         assertEquals(retValue.size(), 0);
     }
     
     @Test
     public void toTagSetStringSetEmpty() {
-        Set<Tag> retValue = TagUtils.toTagSet(new HashSet<>(), "cat");
+        Set<Tag> retValue = TagUtils.toTagSet(new HashSet<>());
         assertEquals(retValue.size(), 0);
     }
     
     @Test
     public void toTagSet() {
-        Set<Tag> retValue = TagUtils.toTagSet(ImmutableSet.of("A", "B", "C"), "cat");
+        Set<Tag> retValue = TagUtils.toTagSet(ImmutableSet.of("A", "B", "C"));
         assertEquals(retValue.size(), 3);
         
         Optional<Tag> tagA = retValue.stream().filter(tag -> tag.getValue().equals("A")).findFirst();
@@ -36,11 +34,8 @@ public class TagUtilsTest {
         Optional<Tag> tagC = retValue.stream().filter(tag -> tag.getValue().equals("C")).findFirst();
         
         assertEquals(tagA.get().getValue(), "A");
-        assertEquals(tagA.get().getCategory(), "cat");
         assertEquals(tagB.get().getValue(), "B");
-        assertEquals(tagB.get().getCategory(), "cat");
         assertEquals(tagC.get().getValue(), "C");
-        assertEquals(tagC.get().getCategory(), "cat");
     }
     
     @Test
@@ -57,8 +52,8 @@ public class TagUtilsTest {
     
     @Test
     public void toStringSet() {
-        Set<Tag> tags = ImmutableSet.of(new Tag("A", "tag"), new Tag("B", "tag"), new Tag("C", "tag"));
+        Set<Tag> tags = ImmutableSet.of(new Tag("A"), new Tag("B"), new Tag("C"));
         Set<String> retValue = TagUtils.toStringSet(tags);
-        assertTrue(symmetricDifference(retValue, ImmutableSet.of("A", "B", "C")).isEmpty());
+        assertEquals(retValue, ImmutableSet.of("A", "B", "C"));
     }    
 }

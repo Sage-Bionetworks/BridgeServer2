@@ -299,7 +299,6 @@ CREATE INDEX `Assessments-AppId-Identifier` ON `Assessments`(`appId`, `identifie
 
 CREATE TABLE `Tags` (
   `value` varchar(255) NOT NULL,
-  `category` varchar(255),
   PRIMARY KEY (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 

@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
-import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -83,28 +82,28 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void getSharedAssessments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);
         when(mockService.getAssessments(
-                SHARED_STUDY_ID_STRING, 10, 25, STRING_CATEGORIES, STRING_TAGS, true)).thenReturn(page);
+                SHARED_STUDY_ID_STRING, 10, 25, STRING_TAGS, true)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments("10", "25", STRING_CATEGORIES, STRING_TAGS, "true");
+        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments("10", "25", STRING_TAGS, "true");
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         
         verify(mockService).getAssessments(
-                SHARED_STUDY_ID_STRING, 10, 25, STRING_CATEGORIES, STRING_TAGS, true);
+                SHARED_STUDY_ID_STRING, 10, 25, STRING_TAGS, true);
     }
     
     @Test
     public void getSharedAssessmentsNoArguments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockService.getAssessments(
-                SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, null, false)).thenReturn(page);
+                SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, false)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments(null, null, null, null, "false");
+        PagedResourceList<AssessmentDto> retValue = controller.getSharedAssessments(null, null, null, "false");
         // Just verify this was returned
         assertEquals(retValue.getTotal(), Integer.valueOf(0));
         
         verify(mockService).getAssessments(
-                SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, null, false);
+                SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, false);
     }
     
     @Test

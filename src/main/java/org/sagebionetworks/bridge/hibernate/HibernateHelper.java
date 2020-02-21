@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -11,6 +12,7 @@ import javax.persistence.PersistenceException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
@@ -80,17 +82,19 @@ public class HibernateHelper {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public int nativeQueryCount(String queryString, Map<String,Object> parameters) {
-        // Hibernate returns a long for a count. However, we never expect more than 2 billion rows, for obvious
-        // reasons.
-        Long count = executeWithExceptionHandling(null, session -> {
-            Query<Long> query = session.createNativeQuery(queryString, Long.class);
+        // This does not accept the typed parameter with something like a Long value, it
+        // throws an "unknown entity" exception. So we use the untyped API for this. Also,
+        // it returns BigInteger(?!).
+        BigInteger count = executeWithExceptionHandling(null, session -> {
+            NativeQuery query = session.createNativeQuery(queryString);
             if (parameters != null) {
                 for (Map.Entry<String, Object> entry : parameters.entrySet()) {
                     query.setParameter(entry.getKey(), entry.getValue());
                 }
             }
-            return query.uniqueResult();
+            return (BigInteger)query.uniqueResult();
         });
         if (count != null) {
             return count.intValue();

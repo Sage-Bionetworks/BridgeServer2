@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static com.google.common.collect.Sets.symmetricDifference;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -13,7 +11,6 @@ import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
@@ -122,20 +119,17 @@ public class AssessmentControllerTest extends Mockito {
                 .withRequestParam(OFFSET_BY, 100)
                 .withRequestParam(PAGE_SIZE, 25)
                 .withRequestParam(INCLUDE_DELETED, true)
-                .withRequestParam(PagedResourceList.CATEGORIES, STRING_CATEGORIES)
                 .withRequestParam(PagedResourceList.TAGS, STRING_TAGS);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, STRING_CATEGORIES,
-                STRING_TAGS, true)).thenReturn(page);
+        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, STRING_TAGS, true)).thenReturn(page);
         
         PagedResourceList<AssessmentDto> retValue = controller.getAssessments("100", "25",
-                STRING_CATEGORIES, STRING_TAGS, "true");
+                STRING_TAGS, "true");
 
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(100));
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(25));
         assertEquals(retValue.getRequestParams().get("includeDeleted"), TRUE);
-        assertEquals(retValue.getRequestParams().get("categories"), STRING_CATEGORIES);
         assertEquals(retValue.getRequestParams().get("tags"), STRING_TAGS);
     }
 
@@ -144,11 +138,11 @@ public class AssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, null, null, true)).thenReturn(page);
+        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, null, true)).thenReturn(page);
         
-        controller.getAssessments("100", "25", null, null, "true");
+        controller.getAssessments("100", "25", null, "true");
         
-        verify(mockService).getAssessments(API_STUDY_ID_STRING, 100, 25, null, null, true);
+        verify(mockService).getAssessments(API_STUDY_ID_STRING, 100, 25, null, true);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -157,7 +151,7 @@ public class AssessmentControllerTest extends Mockito {
         session.setStudyIdentifier(SHARED_STUDY);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        controller.getAssessments(null, null, null, null, null);
+        controller.getAssessments(null, null, null, null);
     }
     
     @Test
@@ -184,7 +178,6 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
         assertEquals(captured.getOwnerId(), OWNER_ID);
-        assertEquals(captured.getCategories(), CATEGORIES);
         assertEquals(captured.getTags(), TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
@@ -249,8 +242,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(dto.getOsName(), ANDROID);
         assertEquals(dto.getOriginGuid(), "originGuid");
         assertEquals(dto.getOwnerId(), OWNER_ID);
-        assertTrue(symmetricDifference(dto.getCategories(), STRING_CATEGORIES).isEmpty());
-        assertTrue(symmetricDifference(dto.getTags(), STRING_TAGS).isEmpty());
+        assertEquals(dto.getTags(), STRING_TAGS);
         assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(dto.getCreatedOn(), CREATED_ON);
         assertEquals(dto.getModifiedOn(), MODIFIED_ON);
@@ -284,8 +276,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(dto.getOsName(), ANDROID);
         assertEquals(dto.getOriginGuid(), "originGuid");
         assertEquals(dto.getOwnerId(), OWNER_ID);
-        assertTrue(symmetricDifference(dto.getCategories(), STRING_CATEGORIES).isEmpty());
-        assertTrue(symmetricDifference(dto.getTags(), STRING_TAGS).isEmpty());
+        assertEquals(dto.getTags(), STRING_TAGS);
         assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(dto.getCreatedOn(), CREATED_ON);
         assertEquals(dto.getModifiedOn(), MODIFIED_ON);
@@ -393,7 +384,6 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
         assertEquals(captured.getOwnerId(), OWNER_ID);
-        assertEquals(captured.getCategories(), CATEGORIES);
         assertEquals(captured.getTags(), TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);

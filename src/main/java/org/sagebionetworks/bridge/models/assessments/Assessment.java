@@ -17,7 +17,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
-import org.hibernate.annotations.Where;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
@@ -46,8 +45,7 @@ public class Assessment implements BridgeEntity {
         assessment.setOsName(dto.getOsName());
         assessment.setOriginGuid(dto.getOriginGuid());
         assessment.setOwnerId(dto.getOwnerId());
-        assessment.setTags(toTagSet(dto.getTags(), "assessment.tag"));
-        assessment.setCategories(toTagSet(dto.getCategories(), "assessment.category"));
+        assessment.setTags(toTagSet(dto.getTags()));
         assessment.setCustomizationFields(dto.getCustomizationFields());
         assessment.setCreatedOn(dto.getCreatedOn());
         assessment.setModifiedOn(dto.getModifiedOn());
@@ -85,16 +83,7 @@ public class Assessment implements BridgeEntity {
         joinColumns = { @JoinColumn(name = "assessmentGuid") }, 
         inverseJoinColumns = { @JoinColumn(name = "tagValue")}
     )
-    @Where(clause = "category = 'assessment.tag'")
     private Set<Tag> tags;
-    
-    @ManyToMany(cascade = { MERGE, PERSIST }, fetch = EAGER)
-    @JoinTable(name = "AssessmentTags",
-        joinColumns = { @JoinColumn(name = "assessmentGuid") }, 
-        inverseJoinColumns = { @JoinColumn(name = "tagValue")}
-    )
-    @Where(clause = "category = 'assessment.category'")
-    private Set<Tag> categories;
     
     @Convert(converter = StringToStringSetMapConverter.class)
     private Map<String,Set<String>> customizationFields;
@@ -133,12 +122,6 @@ public class Assessment implements BridgeEntity {
     }
     public void setTitle(String title) {
         this.title = title;
-    }
-    public Set<Tag> getCategories() {
-        return categories;
-    }
-    public void setCategories(Set<Tag> categories) {
-        this.categories = categories;
     }
     public String getSummary() {
         return summary;

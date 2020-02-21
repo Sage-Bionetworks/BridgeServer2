@@ -11,7 +11,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
-import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
@@ -71,12 +70,16 @@ public class AssessmentService {
     }
 
     // accessor to mock for tests
-    DateTime getTimestamp() {
+    DateTime getCreatedOn() {
+        return DateTime.now();
+    }
+    
+    DateTime getModifiedOn() {
         return DateTime.now();
     }
     
     public PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, int pageSize,
-            Set<String> categories, Set<String> tags, boolean includeDeleted) {
+            Set<String> tags, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
@@ -85,11 +88,10 @@ public class AssessmentService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return dao.getAssessments(appId, offsetBy, pageSize, categories, tags, includeDeleted)
+        return dao.getAssessments(appId, offsetBy, pageSize, tags, includeDeleted)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(INCLUDE_DELETED, includeDeleted)
-                .withRequestParam(CATEGORIES, categories)
                 .withRequestParam(TAGS, tags);
     }
     
@@ -123,9 +125,11 @@ public class AssessmentService {
         
         checkOwnership(substudyService, appId, assessment.getOwnerId());
         
-        // This will throw an exception if there's no assessment under this revision
-        getLatestAssessment(appId, assessment.getIdentifier());
-        
+        // This will throw an exception if there's no assessment under this revision.
+        // Allow missing identifier to throw a validation exception.
+        if (assessment.getIdentifier() != null) {
+            getLatestAssessment(appId, assessment.getIdentifier());    
+        }
         return createAssessmentInternal(appId, assessment);
     }
         
@@ -160,9 +164,10 @@ public class AssessmentService {
         String originOrgId = parts[1];
         
         Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (!callerAppId.equals(originAppId) || !callerSubstudies.contains(originOrgId)) {
+        boolean scopedUser = !callerSubstudies.isEmpty();
+        boolean orgMember = callerSubstudies.contains(originOrgId);
+        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
             throw new UnauthorizedException();
-            
         }
         return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
     }
@@ -173,14 +178,14 @@ public class AssessmentService {
         assessment.setOwnerId(existing.getOwnerId());
         assessment.setOriginGuid(existing.getOriginGuid());
         assessment.setCreatedOn(existing.getCreatedOn());
-        DateTime timestamp = getTimestamp();
+        DateTime timestamp = getModifiedOn();
         assessment.setModifiedOn(timestamp);
         sanitizeAssessment(assessment);
        
         AssessmentValidator validator = new AssessmentValidator(Optional.empty());
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.updateAssessment(assessment);        
+        return dao.saveAssessment(assessment);        
     }
         
     public Assessment getAssessmentByGuid(String appId, String guid) {
@@ -277,9 +282,6 @@ public class AssessmentService {
         // than opening a new transaction.
         Assessment original = getAssessmentByGuid(appId, guid);
         original.setOriginGuid(assessmentToPublish.getGuid());
-        if (original.getCategories() != null) {
-            assessmentToPublish.setCategories(ImmutableSet.copyOf(original.getCategories()));    
-        }
         if (original.getTags() != null) {
             assessmentToPublish.setTags(ImmutableSet.copyOf(original.getTags()));    
         }
@@ -323,8 +325,8 @@ public class AssessmentService {
         checkOwnership(substudyService, appId, assessment.getOwnerId());
         
         assessment.setDeleted(true);
-        assessment.setModifiedOn(getTimestamp());
-        dao.updateAssessment(assessment);
+        assessment.setModifiedOn(getModifiedOn());
+        dao.saveAssessment(assessment);
     }
         
     public void deleteAssessmentPermanently(String appId, String guid) {
@@ -343,7 +345,7 @@ public class AssessmentService {
         
         assessment.setGuid(generateGuid());
         assessment.setAppId(appId);
-        DateTime timestamp = getTimestamp();
+        DateTime timestamp = getCreatedOn();
         assessment.setCreatedOn(timestamp);
         assessment.setModifiedOn(timestamp);
         assessment.setDeleted(false);
@@ -354,7 +356,7 @@ public class AssessmentService {
         
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.createAssessment(assessment);
+        return dao.saveAssessment(assessment);
     }
     
     private Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
@@ -389,7 +391,6 @@ public class AssessmentService {
         } else if (callerSubstudies.contains(ownerId)) {
             return;
         }
-        // This throws a very strange exception, maybe fix this.
         throw new UnauthorizedException("Assessment must be associated to one of the caller’s organizations.");
     }
     
@@ -413,18 +414,11 @@ public class AssessmentService {
         assessment.setSummary(sanitizeHTML(simpleText(), assessment.getSummary()));
         assessment.setValidationStatus(sanitizeHTML(simpleText(), assessment.getValidationStatus()));
         assessment.setNormingStatus(sanitizeHTML(simpleText(), assessment.getNormingStatus()));
-        if (assessment.getCategories() != null) {
-            assessment.setCategories( 
-                assessment.getCategories().stream()
-                    .map((tag) -> new Tag(sanitizeHTML(none(), tag.getValue()), tag.getCategory()))
-                    .collect(toImmutableSet())
-            );
-        }
         if (assessment.getTags() != null) {
             assessment.setTags( 
                 // Tag categories are never input by users and don't need to be sanitized.
                 assessment.getTags().stream()
-                    .map(tag -> new Tag(sanitizeHTML(none(), tag.getValue()), tag.getCategory()))
+                    .map(tag -> new Tag(sanitizeHTML(none(), tag.getValue())))
                     .collect(toImmutableSet())
             );
         }

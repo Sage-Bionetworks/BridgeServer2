@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.TestConstants.CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
-import static org.sagebionetworks.bridge.TestConstants.STRING_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
@@ -51,7 +49,6 @@ public class AssessmentDtoTest {
         assessment.setOriginGuid("originGuid");
         assessment.setValidationStatus("validationStatus");
         assessment.setNormingStatus("normingStatus");
-        assessment.setCategories(CATEGORIES);
         assessment.setTags(TAGS);
         assessment.setCustomizationFields(CUSTOMIZATION_FIELDS);
         assessment.setCreatedOn(CREATED_ON);
@@ -68,7 +65,7 @@ public class AssessmentDtoTest {
         AssessmentDto dto = createAssessmentDto();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 18);
+        assertEquals(node.size(), 17);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -84,11 +81,6 @@ public class AssessmentDtoTest {
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").longValue(), 8L);
         assertEquals(node.get("type").textValue(), "Assessment");
-        
-        ArrayNode categories = (ArrayNode)node.get("categories");
-        assertEquals(categories.size(), 2);
-        assertEquals(categories.get(0).textValue(), "cat1");
-        assertEquals(categories.get(1).textValue(), "cat2");
         
         ArrayNode tags = (ArrayNode)node.get("tags");
         assertEquals(tags.size(), 2);
@@ -117,7 +109,6 @@ public class AssessmentDtoTest {
         dto.setOriginGuid("originGuid");
         dto.setValidationStatus("validationStatus");
         dto.setNormingStatus("normingStatus");
-        dto.setCategories(STRING_CATEGORIES);
         dto.setTags(STRING_TAGS);
         dto.setCustomizationFields(CUSTOMIZATION_FIELDS);
         dto.setCreatedOn(CREATED_ON);
@@ -138,7 +129,6 @@ public class AssessmentDtoTest {
         assertEquals(assessment.getOriginGuid(), "originGuid");
         assertEquals(assessment.getValidationStatus(), "validationStatus");
         assertEquals(assessment.getNormingStatus(), "normingStatus");
-        assertEquals(assessment.getCategories(), ImmutableSet.of("cat1", "cat2"));
         assertEquals(assessment.getTags(), ImmutableSet.of("tag1", "tag2"));
         assertEquals(assessment.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(assessment.getCreatedOn(), CREATED_ON);

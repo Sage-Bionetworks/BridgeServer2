@@ -54,7 +54,6 @@ public class SharedAssessmentController extends BaseController {
     public PagedResourceList<AssessmentDto> getSharedAssessments(
             @RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
-            @RequestParam(required = false, name = "cat") Set<String> categories,
             @RequestParam(required = false, name = "tag") Set<String> tags,
             @RequestParam(required = false) String includeDeleted) {
         
@@ -63,7 +62,7 @@ public class SharedAssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         PagedResourceList<Assessment> page = service.getAssessments(
-                SHARED_STUDY_ID_STRING, offsetByInt, pageSizeInt, categories, tags, incDeletedBool);
+                SHARED_STUDY_ID_STRING, offsetByInt, pageSizeInt, tags, incDeletedBool);
         
         List<AssessmentDto> dtos = page.getItems().stream()
                 .map(assessment -> AssessmentDto.create(assessment))

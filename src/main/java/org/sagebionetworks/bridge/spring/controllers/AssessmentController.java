@@ -45,7 +45,6 @@ public class AssessmentController extends BaseController {
     @GetMapping("/v1/assessments")
     public PagedResourceList<AssessmentDto> getAssessments(@RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
-            @RequestParam(name = "cat", required = false) Set<String> categories,
             @RequestParam(name = "tag", required = false) Set<String> tags,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -60,7 +59,7 @@ public class AssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         PagedResourceList<Assessment> page = service.getAssessments(
-                appId, offsetByInt, pageSizeInt, categories, tags, incDeletedBool);
+                appId, offsetByInt, pageSizeInt, tags, incDeletedBool);
         
         List<AssessmentDto> dtos = page.getItems().stream()
                 .map(assessment -> AssessmentDto.create(assessment))

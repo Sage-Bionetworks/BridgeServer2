@@ -19,13 +19,10 @@ public class TagTest {
     @Test
     public void test() { 
         Tag tag = new Tag();
-        tag.setCategory("cat");
         tag.setValue("value");
-        assertEquals(tag.getCategory(), "cat");
         assertEquals(tag.getValue(), "value");
         
-        tag = new Tag("value", "cat");
-        assertEquals(tag.getCategory(), "cat");
+        tag = new Tag("value");
         assertEquals(tag.getValue(), "value");
     }
 }

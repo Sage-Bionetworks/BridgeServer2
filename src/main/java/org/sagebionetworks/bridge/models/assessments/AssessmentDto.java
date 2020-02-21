@@ -28,7 +28,6 @@ public class AssessmentDto {
         dto.setOriginGuid(assessment.getOriginGuid());
         dto.setOwnerId(assessment.getOwnerId());
         dto.setTags(toStringSet(assessment.getTags()));    
-        dto.setCategories(toStringSet(assessment.getCategories()));
         dto.setCustomizationFields(assessment.getCustomizationFields());
         dto.setCreatedOn(assessment.getCreatedOn());
         dto.setModifiedOn(assessment.getModifiedOn());
@@ -47,7 +46,6 @@ public class AssessmentDto {
     private String originGuid;
     private String validationStatus;
     private String normingStatus;
-    private Set<String> categories;
     private Set<String> tags;
     private Map<String, Set<String>> customizationFields;
     private DateTime createdOn;
@@ -115,12 +113,6 @@ public class AssessmentDto {
     public void setNormingStatus(String normingStatus) {
         this.normingStatus = normingStatus;
     }    
-    public Set<String> getCategories() {
-        return categories;
-    }
-    public void setCategories(Set<String> categories) {
-        this.categories = categories;
-    }
     public Set<String> getTags() {
         return tags;
     }

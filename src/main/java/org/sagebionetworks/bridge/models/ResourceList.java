@@ -22,7 +22,6 @@ public class ResourceList<T> {
     
     public static final String ALL_OF_GROUPS = "allOfGroups";
     public static final String ASSIGNMENT_FILTER = "assignmentFilter";
-    public static final String CATEGORIES = "categories";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";

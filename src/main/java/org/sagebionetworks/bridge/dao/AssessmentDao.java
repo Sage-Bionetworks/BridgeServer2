@@ -12,7 +12,7 @@ public interface AssessmentDao {
      * and the total number of records. Request parameters should be added by the service.
      */
     PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, 
-            int pageSize, Set<String> categories, Set<String> tags, boolean includeDeleted);
+            int pageSize, Set<String> tags, boolean includeDeleted);
 
     /**
      * The paged resource list returned from the DAO contains only the current page of results
@@ -25,9 +25,11 @@ public interface AssessmentDao {
     
     Optional<Assessment> getAssessment(String appId, String identifier, int revision);
     
-    Assessment createAssessment(Assessment assessment);
-    
-    Assessment updateAssessment(Assessment assessment);
+    /**
+     * This performs a merge of the assessment with persisted objects, including tags. 
+     * It can be called to create or update an assessment.
+     */
+    Assessment saveAssessment(Assessment assessment);
     
     /**
      * Publication changes two objects at the same time and requires a transaction. Method returns 
