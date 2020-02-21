@@ -38,7 +38,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -173,7 +172,6 @@ public class AssessmentService {
     }
     
     private Assessment updateAssessmentInternal(String appId, Assessment assessment, Assessment existing) {
-        assessment.setAppId(appId);
         assessment.setIdentifier(existing.getIdentifier());
         assessment.setOwnerId(existing.getOwnerId());
         assessment.setOriginGuid(existing.getOriginGuid());
@@ -185,7 +183,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(Optional.empty());
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.saveAssessment(assessment);        
+        return dao.saveAssessment(appId, assessment);        
     }
         
     public Assessment getAssessmentByGuid(String appId, String guid) {
@@ -269,7 +267,6 @@ public class AssessmentService {
         assessmentToPublish.setGuid(generateGuid());
         assessmentToPublish.setRevision(revision);
         assessmentToPublish.setOriginGuid(null);
-        assessmentToPublish.setAppId(SHARED_STUDY_ID_STRING);
         assessmentToPublish.setOwnerId(appId + ":" + assessmentToPublish.getOwnerId());
         assessmentToPublish.setVersion(0L);
         
@@ -285,7 +282,7 @@ public class AssessmentService {
         if (original.getTags() != null) {
             assessmentToPublish.setTags(ImmutableSet.copyOf(original.getTags()));    
         }
-        return dao.publishAssessment(original, assessmentToPublish);
+        return dao.publishAssessment(appId, original, assessmentToPublish);
     }
     
     /**
@@ -326,7 +323,7 @@ public class AssessmentService {
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
-        dao.saveAssessment(assessment);
+        dao.saveAssessment(appId, assessment);
     }
         
     public void deleteAssessmentPermanently(String appId, String guid) {
@@ -335,7 +332,7 @@ public class AssessmentService {
         
         Optional<Assessment> opt = dao.getAssessment(appId, guid);
         if (opt.isPresent()) {
-            dao.deleteAssessment(opt.get());    
+            dao.deleteAssessment(appId, opt.get());    
         }
     }
 
@@ -344,7 +341,6 @@ public class AssessmentService {
         checkNotNull(assessment);
         
         assessment.setGuid(generateGuid());
-        assessment.setAppId(appId);
         DateTime timestamp = getCreatedOn();
         assessment.setCreatedOn(timestamp);
         assessment.setModifiedOn(timestamp);
@@ -356,7 +352,7 @@ public class AssessmentService {
         
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.saveAssessment(assessment);
+        return dao.saveAssessment(appId, assessment);
     }
     
     private Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
@@ -416,9 +412,8 @@ public class AssessmentService {
         assessment.setNormingStatus(sanitizeHTML(simpleText(), assessment.getNormingStatus()));
         if (assessment.getTags() != null) {
             assessment.setTags( 
-                // Tag categories are never input by users and don't need to be sanitized.
                 assessment.getTags().stream()
-                    .map(tag -> new Tag(sanitizeHTML(none(), tag.getValue())))
+                    .map(string -> sanitizeHTML(none(), string))
                     .collect(toImmutableSet())
             );
         }

@@ -95,23 +95,4 @@ public class PagedResourceListTest {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         new PagedResourceList<AccountSummary>(accounts, null);
     }
-    
-    @Test
-    public void withAllRequestParams() {
-        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-
-        DateTime timestamp = DateTime.parse("2016-02-03T10:10:10.000-08:00");
-        Map<String,Object> map = ImmutableMap.of(
-                "param1", timestamp,
-                "param2", 3,
-                "param3", false,
-                "param4", "value");
-        PagedResourceList<AccountSummary> list = new PagedResourceList<>(accounts, 10)
-            .withAllRequestParams(map);
-        
-        assertEquals(list.getRequestParams().get("param1").toString(), timestamp.toString());
-        assertEquals(list.getRequestParams().get("param2"), 3);
-        assertEquals(list.getRequestParams().get("param3"), false);
-        assertEquals(list.getRequestParams().get("param4"), "value");
-    }
 }

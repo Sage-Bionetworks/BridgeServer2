@@ -39,16 +39,6 @@ public class AssessmentValidatorTest {
         assertValidatorMessage(validator, assessment, "guid", CANNOT_BE_BLANK);
     }
     @Test
-    public void appIdNull() {
-        assessment.setAppId(null);
-        assertValidatorMessage(validator, assessment, "appId", CANNOT_BE_BLANK);
-    }
-    @Test
-    public void appIdEmpty() {
-        assessment.setAppId("\t");
-        assertValidatorMessage(validator, assessment, "appId", CANNOT_BE_BLANK);
-    }
-    @Test
     public void titleNull() {
         assessment.setTitle(null);
         assertValidatorMessage(validator, assessment, "title", CANNOT_BE_BLANK);

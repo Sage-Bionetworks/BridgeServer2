@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Map;
 
 import org.joda.time.DateTime;
 
@@ -65,13 +64,6 @@ public class PagedResourceList<T> extends ResourceList<T> {
     }
     public PagedResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);
-        return this;
-    }
-    public PagedResourceList<T> withAllRequestParams(Map<String, Object> map) {
-        checkNotNull(map);
-        for(Map.Entry<String, Object> entry : map.entrySet()) {
-            super.withRequestParam(entry.getKey(), entry.getValue());    
-        }
         return this;
     }
 }

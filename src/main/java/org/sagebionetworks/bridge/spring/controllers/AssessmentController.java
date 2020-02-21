@@ -1,14 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,7 +24,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentDto;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
 @CrossOrigin
@@ -43,7 +39,7 @@ public class AssessmentController extends BaseController {
     }
     
     @GetMapping("/v1/assessments")
-    public PagedResourceList<AssessmentDto> getAssessments(@RequestParam(required = false) String offsetBy,
+    public PagedResourceList<Assessment> getAssessments(@RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
             @RequestParam(name = "tag", required = false) Set<String> tags,
             @RequestParam(required = false) String includeDeleted) {
@@ -58,20 +54,12 @@ public class AssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        PagedResourceList<Assessment> page = service.getAssessments(
-                appId, offsetByInt, pageSizeInt, tags, incDeletedBool);
-        
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
+        return service.getAssessments(appId, offsetByInt, pageSizeInt, tags, incDeletedBool);
     }
     
     @PostMapping("/v1/assessments")
     @ResponseStatus(HttpStatus.CREATED)
-    public AssessmentDto createAssessment() {
+    public Assessment createAssessment() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -79,29 +67,23 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         
-        AssessmentDto dto = parseJson(AssessmentDto.class);
-        Assessment assessment = Assessment.create(dto, appId);
-        assessment.setAppId(appId);
-        
-        Assessment retValue = service.createAssessment(appId, assessment);
-        return AssessmentDto.create(retValue);        
+        Assessment assessment = parseJson(Assessment.class);
+        return service.createAssessment(appId, assessment);
     }   
 
     @GetMapping("/v1/assessments/{guid}")
-    public AssessmentDto getAssessmentByGuid(@PathVariable String guid) {
+    public Assessment getAssessmentByGuid(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
-
-        Assessment retValue = service.getAssessmentByGuid(appId, guid);
-        return AssessmentDto.create(retValue);        
+        return service.getAssessmentByGuid(appId, guid);
     }
     
     @PostMapping("/v1/assessments/{guid}")
-    public AssessmentDto updateAssessmentByGuid(@PathVariable String guid) {
+    public Assessment updateAssessmentByGuid(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -109,16 +91,13 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        AssessmentDto dto = parseJson(AssessmentDto.class);
-        Assessment assessment = Assessment.create(dto, appId);
-        assessment.setGuid(guid);
+        Assessment assessment = parseJson(Assessment.class);
         
-        Assessment retValue = service.updateAssessment(appId, assessment);
-        return AssessmentDto.create(retValue);
+        return service.updateAssessment(appId, assessment);
     }
     
     @GetMapping("/v1/assessments/{guid}/revisions")
-    public PagedResourceList<AssessmentDto> getAssessmentRevisionsByGuid(@PathVariable String guid,
+    public PagedResourceList<Assessment> getAssessmentRevisionsByGuid(@PathVariable String guid,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -132,20 +111,13 @@ public class AssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
 
-        PagedResourceList<Assessment> page = service.getAssessmentRevisionsByGuid(
+        return service.getAssessmentRevisionsByGuid(
                 appId, guid, offsetByInt, pageSizeInt, incDeletedBool);
-        
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
     }
     
     @PostMapping("/v1/assessments/{guid}/revisions")
     @ResponseStatus(HttpStatus.CREATED)
-    public AssessmentDto createAssessmentRevision(@PathVariable String guid) {
+    public Assessment createAssessmentRevision(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -153,18 +125,15 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        AssessmentDto dto = parseJson(AssessmentDto.class);
-        Assessment assessment = Assessment.create(dto, appId);
-        assessment.setAppId(appId);
+        Assessment assessment = parseJson(Assessment.class);
         assessment.setGuid(guid);
         
-        Assessment retValue = service.createAssessmentRevision(appId, assessment);
-        return AssessmentDto.create(retValue);        
+        return service.createAssessmentRevision(appId, assessment);
     }
     
     @PostMapping("/v1/assessments/{guid}/publish")
     @ResponseStatus(HttpStatus.CREATED)
-    public AssessmentDto publishAssessment(@PathVariable String guid) {
+    public Assessment publishAssessment(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -172,8 +141,7 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        Assessment retValue = service.publishAssessment(appId, guid);
-        return AssessmentDto.create(retValue);
+        return service.publishAssessment(appId, guid);
     }
         
     @DeleteMapping("/v1/assessments/{guid}")
@@ -196,7 +164,7 @@ public class AssessmentController extends BaseController {
     /* === Methods for working with an identifier, not a GUID === */
         
     @GetMapping("/v1/assessments/identifier:{identifier}")
-    public AssessmentDto getLatestAssessment(@PathVariable String identifier) {
+    public Assessment getLatestAssessment(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -204,12 +172,11 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        Assessment retValue = service.getLatestAssessment(appId, identifier);
-        return AssessmentDto.create(retValue);
+        return service.getLatestAssessment(appId, identifier);
     }
     
     @GetMapping("/v1/assessments/identifier:{identifier}/revisions")
-    public PagedResourceList<AssessmentDto> getAssessmentRevisionsById(@PathVariable String identifier,
+    public PagedResourceList<Assessment> getAssessmentRevisionsById(@PathVariable String identifier,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -223,19 +190,12 @@ public class AssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        PagedResourceList<Assessment> page = service.getAssessmentRevisionsById(
+        return service.getAssessmentRevisionsById(
                 appId, identifier, offsetByInt, pageSizeInt, incDeletedBool);
-
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(Collectors.toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
     }
     
     @GetMapping("/v1/assessments/identifier:{identifier}/revisions/{revision}")
-    public AssessmentDto getAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
+    public Assessment getAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier().getIdentifier();
@@ -246,8 +206,6 @@ public class AssessmentController extends BaseController {
         // 0 is not a valid value, on purpose, will throw BadRequestException
         int revisionInt = BridgeUtils.getIntOrDefault(revision, 0);
         
-        Assessment assessment = service.getAssessmentById(appId, identifier, revisionInt);
-        
-        return AssessmentDto.create(assessment);
+        return service.getAssessmentById(appId, identifier, revisionInt);
     }
 }

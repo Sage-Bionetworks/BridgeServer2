@@ -1,14 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,7 +23,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentDto;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
 @CrossOrigin
@@ -42,16 +38,15 @@ public class SharedAssessmentController extends BaseController {
     
     @PostMapping("/v1/sharedassessments/{guid}/import")
     @ResponseStatus(HttpStatus.CREATED)
-    public AssessmentDto importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId) {
+    public Assessment importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
-        Assessment assessment = service.importAssessment(appId, ownerId, guid);
-        return AssessmentDto.create(assessment);
+        return service.importAssessment(appId, ownerId, guid);
     }
     
     @GetMapping("/v1/sharedassessments")
-    public PagedResourceList<AssessmentDto> getSharedAssessments(
+    public PagedResourceList<Assessment> getSharedAssessments(
             @RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
             @RequestParam(required = false, name = "tag") Set<String> tags,
@@ -61,40 +56,30 @@ public class SharedAssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        PagedResourceList<Assessment> page = service.getAssessments(
+        return service.getAssessments(
                 SHARED_STUDY_ID_STRING, offsetByInt, pageSizeInt, tags, incDeletedBool);
-        
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
     }
     
     @GetMapping("/v1/sharedassessments/{guid}")
-    public AssessmentDto getSharedAssessmentByGuid(@PathVariable String guid) {
-        Assessment retValue = service.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
-        return AssessmentDto.create(retValue);        
+    public Assessment getSharedAssessmentByGuid(@PathVariable String guid) {
+        return service.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
     }
     
     @GetMapping("/v1/sharedassessments/identifier:{identifier}")
-    public AssessmentDto getLatestSharedAssessment(@PathVariable String identifier) {
-        Assessment retValue = service.getLatestAssessment(SHARED_STUDY_ID_STRING, identifier);
-        return AssessmentDto.create(retValue);
+    public Assessment getLatestSharedAssessment(@PathVariable String identifier) {
+        return service.getLatestAssessment(SHARED_STUDY_ID_STRING, identifier);
     }
 
     @GetMapping("/v1/sharedassessments/identifier:{identifier}/revisions/{revision}")
-    public AssessmentDto getSharedAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
+    public Assessment getSharedAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
         // 0 is not a valid value, on purpose, will throw BadRequestException
         int revisionInt = BridgeUtils.getIntOrDefault(revision, 0);
         
-        Assessment retValue = service.getAssessmentById(SHARED_STUDY_ID_STRING, identifier, revisionInt);
-        return AssessmentDto.create(retValue);
+        return service.getAssessmentById(SHARED_STUDY_ID_STRING, identifier, revisionInt);
     }
 
     @GetMapping("/v1/sharedassessments/{guid}/revisions")
-    public PagedResourceList<AssessmentDto> getSharedAssessmentRevisionsByGuid(
+    public PagedResourceList<Assessment> getSharedAssessmentRevisionsByGuid(
             @PathVariable String guid,
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,
@@ -104,19 +89,12 @@ public class SharedAssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        PagedResourceList<Assessment> page = service.getAssessmentRevisionsByGuid(
+        return service.getAssessmentRevisionsByGuid(
                 SHARED_STUDY_ID_STRING, guid, offsetByInt, pageSizeInt, incDeletedBool);
-
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(Collectors.toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
     }
 
     @GetMapping("/v1/sharedassessments/identifier:{identifier}/revisions")
-    public PagedResourceList<AssessmentDto> getSharedAssessmentRevisionsById(
+    public PagedResourceList<Assessment> getSharedAssessmentRevisionsById(
             @PathVariable String identifier,
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,
@@ -126,30 +104,20 @@ public class SharedAssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        PagedResourceList<Assessment> page = service.getAssessmentRevisionsById(
+        return service.getAssessmentRevisionsById(
                 SHARED_STUDY_ID_STRING, identifier, offsetByInt, pageSizeInt, incDeletedBool);
-
-        List<AssessmentDto> dtos = page.getItems().stream()
-                .map(assessment -> AssessmentDto.create(assessment))
-                .collect(Collectors.toList());
-        
-        return new PagedResourceList<>(dtos, page.getTotal())
-                .withAllRequestParams(page.getRequestParams());
     }
 
     @PostMapping("/v1/sharedassessments/{guid}")
-    public AssessmentDto updateSharedAssessment(@PathVariable String guid) {
+    public Assessment updateSharedAssessment(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
-        AssessmentDto dto = parseJson(AssessmentDto.class);
-        Assessment assessment = Assessment.create(dto, SHARED_STUDY_ID_STRING);
+        Assessment assessment = parseJson(Assessment.class);
         
         // Note that we are passing in the appId of the caller, and the assessment is in the 
         // shared app, which is the opposite of all the other shared calls
-        Assessment retValue = service.updateSharedAssessment(appId, assessment);
-        
-        return AssessmentDto.create(retValue);
+        return service.updateSharedAssessment(appId, assessment);
     }
     
     @DeleteMapping("/v1/sharedassessments/{guid}")

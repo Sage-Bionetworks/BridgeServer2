@@ -33,9 +33,6 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);   
         }
-        if (isBlank(assessment.getAppId())) {
-            errors.rejectValue("appId", CANNOT_BE_BLANK);   
-        }
         if (isBlank(assessment.getTitle())) {
             errors.rejectValue("title", CANNOT_BE_BLANK);   
         }

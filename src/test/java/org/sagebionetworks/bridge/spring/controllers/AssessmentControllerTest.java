@@ -12,7 +12,6 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
-import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -52,7 +51,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentDto;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
@@ -122,7 +120,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withRequestParam(PagedResourceList.TAGS, STRING_TAGS);
         when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, STRING_TAGS, true)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getAssessments("100", "25",
+        PagedResourceList<Assessment> retValue = controller.getAssessments("100", "25",
                 STRING_TAGS, "true");
 
         assertEquals(retValue.getItems().size(), 1);
@@ -158,18 +156,17 @@ public class AssessmentControllerTest extends Mockito {
     public void createAssessment() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        mockRequestBody(mockRequest, AssessmentDto.create(AssessmentTest.createAssessment()));
+        mockRequestBody(mockRequest, AssessmentTest.createAssessment());
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
         when(mockService.createAssessment(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
         
-        AssessmentDto retValue = controller.createAssessment();
+        Assessment retValue = controller.createAssessment();
 
         verify(mockService).createAssessment(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
-        assertEquals(captured.getAppId(), API_STUDY_ID_STRING);
         assertEquals(captured.getIdentifier(), IDENTIFIER);
         assertEquals(captured.getTitle(), "title");
         assertEquals(captured.getSummary(), "summary");
@@ -178,7 +175,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
         assertEquals(captured.getOwnerId(), OWNER_ID);
-        assertEquals(captured.getTags(), TAGS);
+        assertEquals(captured.getTags(), STRING_TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
@@ -202,13 +199,13 @@ public class AssessmentControllerTest extends Mockito {
     public void updateAssessment() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        mockRequestBody(mockRequest, AssessmentDto.create(AssessmentTest.createAssessment()));
+        mockRequestBody(mockRequest, AssessmentTest.createAssessment());
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
         when(mockService.updateAssessment(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
         
-        AssessmentDto retValue = controller.updateAssessmentByGuid(GUID);
+        Assessment retValue = controller.updateAssessmentByGuid(GUID);
         assertNotNull(retValue);
 
         verify(mockService).updateAssessment(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
@@ -232,7 +229,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentByGuid(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
         
-        AssessmentDto dto = controller.getAssessmentByGuid(GUID);
+        Assessment dto = controller.getAssessmentByGuid(GUID);
 
         assertEquals(dto.getIdentifier(), IDENTIFIER);
         assertEquals(dto.getTitle(), "title");
@@ -266,7 +263,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentById(API_STUDY_ID_STRING, IDENTIFIER, 10)).thenReturn(assessment);
         
-        AssessmentDto dto = controller.getAssessmentById(IDENTIFIER, "10");
+        Assessment dto = controller.getAssessmentById(IDENTIFIER, "10");
         
         assertEquals(dto.getIdentifier(), IDENTIFIER);
         assertEquals(dto.getTitle(), "title");
@@ -300,7 +297,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getLatestAssessment(API_STUDY_ID_STRING, IDENTIFIER)).thenReturn(assessment);
 
-        AssessmentDto dto = controller.getLatestAssessment(IDENTIFIER);
+        Assessment dto = controller.getLatestAssessment(IDENTIFIER);
         assertNotNull(dto);
     }
 
@@ -321,7 +318,7 @@ public class AssessmentControllerTest extends Mockito {
         when(mockService.getAssessmentRevisionsById(
                 API_STUDY_ID_STRING, IDENTIFIER, 20, 5, true)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, "20", "5", "true");
+        PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, "20", "5", "true");
         assertEquals(retValue.getItems().get(0).getIdentifier(), IDENTIFIER);
         assertEquals(retValue.getTotal(), Integer.valueOf(10));
     }
@@ -343,7 +340,7 @@ public class AssessmentControllerTest extends Mockito {
         when(mockService.getAssessmentRevisionsByGuid(
                 API_STUDY_ID_STRING, GUID, 20, 5, true)).thenReturn(page);
         
-        PagedResourceList<AssessmentDto> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
+        PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
         assertEquals(retValue.getItems().get(0).getIdentifier(), IDENTIFIER);
         assertEquals(retValue.getTotal(), Integer.valueOf(10));
     }
@@ -361,7 +358,7 @@ public class AssessmentControllerTest extends Mockito {
     public void createAssessmentRevision() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        AssessmentDto body = AssessmentDto.create(AssessmentTest.createAssessment());
+        Assessment body = AssessmentTest.createAssessment();
         body.setGuid("this is a bad guid that will be replaced");
         mockRequestBody(mockRequest, body);
         
@@ -369,12 +366,11 @@ public class AssessmentControllerTest extends Mockito {
         updated.setVersion(100);
         when(mockService.createAssessmentRevision(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
         
-        AssessmentDto retValue = controller.createAssessmentRevision(GUID);
+        Assessment retValue = controller.createAssessmentRevision(GUID);
 
         verify(mockService).createAssessmentRevision(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
-        assertEquals(captured.getAppId(), API_STUDY_ID_STRING);
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getIdentifier(), IDENTIFIER);
         assertEquals(captured.getTitle(), "title");
@@ -384,7 +380,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
         assertEquals(captured.getOwnerId(), OWNER_ID);
-        assertEquals(captured.getTags(), TAGS);
+        assertEquals(captured.getTags(), STRING_TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
@@ -410,7 +406,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.publishAssessment(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
         
-        AssessmentDto dto = controller.publishAssessment(GUID);
+        Assessment dto = controller.publishAssessment(GUID);
         assertEquals(dto.getIdentifier(), IDENTIFIER);
     }
 

@@ -29,16 +29,16 @@ public interface AssessmentDao {
      * This performs a merge of the assessment with persisted objects, including tags. 
      * It can be called to create or update an assessment.
      */
-    Assessment saveAssessment(Assessment assessment);
+    Assessment saveAssessment(String appId, Assessment assessment);
     
     /**
      * Publication changes two objects at the same time and requires a transaction. Method returns 
      * the original assessment updated to reflect that it is now derived from the shared assessment.
      */
-    Assessment publishAssessment(Assessment original, Assessment assessmentToPublish);
+    Assessment publishAssessment(String originalAppId, Assessment original, Assessment assessmentToPublish);
     
     /**
      * This is an actual delete from the database.
      */
-    void deleteAssessment(Assessment assessment);
+    void deleteAssessment(String appId, Assessment assessment);
 }

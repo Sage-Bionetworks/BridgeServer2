@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.util.stream.Collectors.toList;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
@@ -25,11 +28,11 @@ class HibernateAssessmentDao implements AssessmentDao {
         
     static final String SELECT_COUNT = "SELECT COUNT(*)";
     static final String SELECT_ALL = "SELECT *";
-    static final String GET_BY_IDENTIFIER = "FROM Assessment WHERE appId=:appId "+
+    static final String GET_BY_IDENTIFIER = "FROM HibernateAssessment WHERE appId=:appId "+
             "AND identifier=:identifier AND revision=:revision";
-    static final String GET_BY_GUID = "FROM Assessment WHERE appId=:appId AND guid=:guid";
+    static final String GET_BY_GUID = "FROM HibernateAssessment WHERE appId=:appId AND guid=:guid";
 
-    static final String GET_REVISIONS = "FROM Assessment WHERE appId = :appId AND "
+    static final String GET_REVISIONS = "FROM HibernateAssessment WHERE appId = :appId AND "
             +"identifier = :identifier";
     static final String GET_REVISIONS2 = "ORDER BY revision DESC";
     static final String EXCLUDE_DELETED = "AND deleted = 0";
@@ -74,10 +77,12 @@ class HibernateAssessmentDao implements AssessmentDao {
         
         int count = hibernateHelper.nativeQueryCount(
                 "SELECT count(*) " + builder.getQuery(), builder.getParameters());
-        List<Assessment> assessments = hibernateHelper.nativeQueryGet(
+        List<HibernateAssessment> assessments = hibernateHelper.nativeQueryGet(
                 "SELECT * " + builder.getQuery(), builder.getParameters(), 
-                offsetBy, pageSize, Assessment.class);
-        return new PagedResourceList<Assessment>(assessments, count);
+                offsetBy, pageSize, HibernateAssessment.class);
+        
+        List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
+        return new PagedResourceList<Assessment>(dtos, count);
     }
     
     public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String identifier, 
@@ -92,52 +97,61 @@ class HibernateAssessmentDao implements AssessmentDao {
         
         int count = hibernateHelper.queryCount(SELECT_COUNT + builder.getQuery(), builder.getParameters());
         
-        List<Assessment> assessments = hibernateHelper.queryGet(
-                builder.getQuery(), builder.getParameters(), offsetBy, pageSize, Assessment.class);
+        List<HibernateAssessment> assessments = hibernateHelper.queryGet(
+                builder.getQuery(), builder.getParameters(), offsetBy, pageSize, HibernateAssessment.class);
         
-        return new PagedResourceList<Assessment>(assessments, count);
+        List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
+        return new PagedResourceList<Assessment>(dtos, count);
     }
     
     @Override
     public Optional<Assessment> getAssessment(String appId, String guid) {
-        List<Assessment> results = hibernateHelper.queryGet(
-                GET_BY_GUID, ImmutableMap.of(APP_ID, appId, GUID, guid), null, null, Assessment.class);
+        List<HibernateAssessment> results = hibernateHelper.queryGet(
+                GET_BY_GUID, ImmutableMap.of(APP_ID, appId, GUID, guid), null, null, HibernateAssessment.class);
         if (results.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(results.get(0));
+        return Optional.of(Assessment.create(results.get(0)));
     }
 
     @Override
     public Optional<Assessment> getAssessment(String appId, String identifier, int revision) {
-        List<Assessment> results = hibernateHelper.queryGet(
+        List<HibernateAssessment> results = hibernateHelper.queryGet(
                 GET_BY_IDENTIFIER, ImmutableMap.of(APP_ID, appId, IDENTIFIER, identifier, REVISION, revision), 
-                null, null, Assessment.class);
+                null, null, HibernateAssessment.class);
         if (results.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(results.get(0));
+        return Optional.of(Assessment.create(results.get(0)));
     }
     
     @Override
-    public Assessment saveAssessment(Assessment assessment) {
-        return hibernateHelper.executeWithExceptionHandling(assessment, 
-                (session) -> (Assessment)session.merge(assessment));
+    public Assessment saveAssessment(String appId, Assessment assessment) {
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
+                (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
+        return Assessment.create(retValue);
     }
 
     @Override
-    public void deleteAssessment(Assessment assessment) {
-        hibernateHelper.executeWithExceptionHandling(assessment, (session) -> {
-            session.remove(assessment);
+    public void deleteAssessment(String appId, Assessment assessment) {
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
+            session.remove(hibernateAssessment);
             return null;
         });
     }
     
     @Override
-    public Assessment publishAssessment(Assessment original, Assessment assessmentToPublish) {
-        return hibernateHelper.executeWithExceptionHandling(original, (session) -> {
-            session.saveOrUpdate(assessmentToPublish);
-            return (Assessment)session.merge(original);
+    public Assessment publishAssessment(String originalAppId, Assessment original, Assessment assessmentToPublish) {
+        HibernateAssessment hibernateOriginal = HibernateAssessment.create(original, originalAppId);
+        HibernateAssessment hibernateToPublish = HibernateAssessment.create(assessmentToPublish,
+                SHARED_STUDY_ID_STRING);
+        
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOriginal, (session) -> {
+            session.saveOrUpdate(hibernateToPublish);
+            return (HibernateAssessment)session.merge(hibernateOriginal);
         });
+        return Assessment.create(retValue);
     }
 }
