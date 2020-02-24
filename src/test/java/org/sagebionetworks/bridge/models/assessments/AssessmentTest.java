@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,7 +34,7 @@ public class AssessmentTest {
     @Test
     public void testFields() {
         Assessment dto = createAssessment();
-        assertAssessmentDto(dto);
+        assertAssessment(dto);
     }
     
     @Test
@@ -57,9 +59,19 @@ public class AssessmentTest {
         assessment.setVersion(8L);
         
         Assessment dto = Assessment.create(assessment);
-        assertAssessmentDto(dto);
+        assertAssessment(dto);
     }
     
+    @Test
+    public void copyFactoryMethod() {
+        Assessment assessment = createAssessment();
+        Assessment copy = Assessment.copy(assessment);
+
+        assertNotSame(copy, assessment);
+        assessment.setTags(null);
+        assertNotNull(copy.getTags());
+    }
+
     @Test
     public void serializeRountrip() throws Exception {
         Assessment dto = createAssessment();
@@ -94,7 +106,7 @@ public class AssessmentTest {
         assertEquals(node1.get(1).textValue(), "field2");
         
         Assessment deser = BridgeObjectMapper.get().readValue(node.toString(), Assessment.class);
-        assertAssessmentDto(deser);
+        assertAssessment(deser);
     }
 
     public static Assessment createAssessment() {
@@ -118,7 +130,7 @@ public class AssessmentTest {
         return dto;
     }
     
-    private void assertAssessmentDto(Assessment assessment) {
+    private void assertAssessment(Assessment assessment) {
         assertEquals(assessment.getGuid(), GUID);
         assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getRevision(), 5);

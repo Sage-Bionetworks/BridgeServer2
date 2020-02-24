@@ -1,32 +1,60 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.AssessmentValidator.CANNOT_BE_BLANK;
 
-import java.util.Optional;
+import com.google.common.collect.ImmutableList;
 
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
+import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.services.SubstudyService;
 
-public class AssessmentValidatorTest {
+public class AssessmentValidatorTest extends Mockito {
 
+    @Mock
+    AssessmentDao mockAssessmentDao;
+    
+    @Mock
+    SubstudyService mockSubstudyService;
+    
     AssessmentValidator validator;
     
     Assessment assessment;
 
     @BeforeMethod
     public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
         assessment = AssessmentTest.createAssessment();
-        validator = new AssessmentValidator(Optional.empty());
+        
+        when(mockAssessmentDao.getAssessmentRevisions(API_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
+            .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
+        
+        validator = new AssessmentValidator(mockSubstudyService, API_STUDY_ID_STRING);
     }
     
     @Test
     public void validAssessment() {
+        when(mockSubstudyService.getSubstudy(TEST_STUDY, assessment.getOwnerId(), false))
+            .thenReturn(Substudy.create());
+        
         Validate.entityThrowingException(validator, assessment);
+    }
+    @Test
+    public void ownerIdInvalid() {
+        assertValidatorMessage(validator, assessment, "ownerId", "is not a valid organization ID");
     }
     @Test
     public void guidNull() {
@@ -72,11 +100,6 @@ public class AssessmentValidatorTest {
     public void identifierEmpty() {
         assessment.setIdentifier("   ");
         assertValidatorMessage(validator, assessment, "identifier", CANNOT_BE_BLANK);
-    }
-    @Test
-    public void identifierAlreadyUsed() {
-        validator = new AssessmentValidator(Optional.of(new Assessment()));
-        assertValidatorMessage(validator, assessment, "identifier", "already exists in revision 5");
     }
     @Test
     public void identifierInvalid() {

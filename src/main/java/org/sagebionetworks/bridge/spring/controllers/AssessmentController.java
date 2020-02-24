@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -90,8 +92,8 @@ public class AssessmentController extends BaseController {
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
-
         Assessment assessment = parseJson(Assessment.class);
+        assessment.setGuid(guid);
         
         return service.updateAssessment(appId, assessment);
     }
@@ -203,9 +205,10 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        // 0 is not a valid value, on purpose, will throw BadRequestException
         int revisionInt = BridgeUtils.getIntOrDefault(revision, 0);
-        
+        if (revisionInt < 1) {
+            throw new BadRequestException(OFFSET_NOT_POSITIVE);
+        }
         return service.getAssessmentById(appId, identifier, revisionInt);
     }
 }

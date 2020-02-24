@@ -41,11 +41,11 @@ public class HibernateAssessmentDaoTest extends Mockito {
             +"Assessments AS a ON a.identifier = latest_assessments.id AND a.revision = "
             +"latest_assessments.rev ORDER BY createdOn DESC";
     
-    private static final String QUERY_GET_REVISIONS_EXC_DELETED = "FROM Assessment WHERE "
+    private static final String QUERY_GET_REVISIONS_EXC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier AND deleted = 0 ORDER BY "
             +"revision DESC";
 
-    private static final String QUERY_GET_REVISIONS_INC_DELETED = "FROM Assessment WHERE "
+    private static final String QUERY_GET_REVISIONS_INC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier ORDER BY revision DESC";
     
     private static final String APP_ID_VALUE = "appId";

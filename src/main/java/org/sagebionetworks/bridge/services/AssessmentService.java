@@ -28,6 +28,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +40,17 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
+    private static final Logger LOG = LoggerFactory.getLogger(AssessmentService.class);
+    
+    public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
+    static final String CALLER_NOT_MEMBER = "Assessment must be associated to one of the caller’s organizations.";
     static final String IDENTIFIER_REQUIRED = "identifier required";
     static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
@@ -98,7 +103,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
-        checkOwnership(substudyService, appId, assessment.getOwnerId());
+        checkOwnership(appId, assessment.getOwnerId());
         
         // If the identifier is missing, it will be a validation error.
         if (assessment.getIdentifier() != null) {
@@ -122,7 +127,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
-        checkOwnership(substudyService, appId, assessment.getOwnerId());
+        checkOwnership(appId, assessment.getOwnerId());
         
         // This will throw an exception if there's no assessment under this revision.
         // Allow missing identifier to throw a validation exception.
@@ -142,7 +147,7 @@ public class AssessmentService {
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOwnership(substudyService, appId, existing.getOwnerId());
+        checkOwnership(appId, existing.getOwnerId());
         
         return updateAssessmentInternal(appId, assessment, existing);
     }
@@ -157,15 +162,12 @@ public class AssessmentService {
             throw new EntityNotFoundException(Assessment.class);
         }
 
-        // We need to verify that the caller has permission to operate on this shared object.
-        String[] parts = existing.getOwnerId().split(":");
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
+        Tuple<String> parts = parseOwnerId(existing.getGuid(), existing.getOwnerId());
         
         Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
         boolean scopedUser = !callerSubstudies.isEmpty();
-        boolean orgMember = callerSubstudies.contains(originOrgId);
-        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
+        boolean orgMember = callerSubstudies.contains(parts.getRight());
+        if (!callerAppId.equals(parts.getLeft()) || (scopedUser && !orgMember)) {
             throw new UnauthorizedException();
         }
         return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
@@ -180,9 +182,9 @@ public class AssessmentService {
         assessment.setModifiedOn(timestamp);
         sanitizeAssessment(assessment);
        
-        AssessmentValidator validator = new AssessmentValidator(Optional.empty());
+        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
-        
+
         return dao.saveAssessment(appId, assessment);        
     }
         
@@ -199,7 +201,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(identifier));
         
         if (revision < 1) {
-            throw new BadRequestException("offsetBy must be positive integer");
+            throw new BadRequestException(OFFSET_NOT_POSITIVE);
         }
         return dao.getAssessment(appId, identifier, revision)
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
@@ -260,8 +262,9 @@ public class AssessmentService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessmentToPublish = getAssessmentByGuid(appId, guid);
+        Assessment original = Assessment.copy(assessmentToPublish);
         
-        checkOwnership(substudyService, appId, assessmentToPublish.getOwnerId());
+        checkOwnership(appId, assessmentToPublish.getOwnerId());
         
         int revision = nextRevisionNumber(SHARED_STUDY_ID_STRING, assessmentToPublish.getIdentifier());
         assessmentToPublish.setGuid(generateGuid());
@@ -269,7 +272,6 @@ public class AssessmentService {
         assessmentToPublish.setOriginGuid(null);
         assessmentToPublish.setOwnerId(appId + ":" + assessmentToPublish.getOwnerId());
         assessmentToPublish.setVersion(0L);
-        
         // Neither of these assessments should be in an attached state because both are loaded in 
         // separate transactions that are closed in the DAO. However, the tag collections have been
         // proxied by Hibernate, and an error is thrown if you don't make copies: "Found shared 
@@ -277,11 +279,11 @@ public class AssessmentService {
         // that could be put on service methods so they can call multiple DAO calls in a session, 
         // but we'd also have to change HibernateHelper to use the existing transaction rather
         // than opening a new transaction.
-        Assessment original = getAssessmentByGuid(appId, guid);
-        original.setOriginGuid(assessmentToPublish.getGuid());
         if (original.getTags() != null) {
             assessmentToPublish.setTags(ImmutableSet.copyOf(original.getTags()));    
         }
+        original.setOriginGuid(assessmentToPublish.getGuid());
+        
         return dao.publishAssessment(appId, original, assessmentToPublish);
     }
     
@@ -298,7 +300,7 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        checkOwnership(substudyService, appId, ownerId);
+        checkOwnership(appId, ownerId);
 
         Assessment assessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
         
@@ -319,7 +321,7 @@ public class AssessmentService {
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOwnership(substudyService, appId, assessment.getOwnerId());
+        checkOwnership(appId, assessment.getOwnerId());
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
@@ -335,6 +337,22 @@ public class AssessmentService {
             dao.deleteAssessment(appId, opt.get());    
         }
     }
+    
+    private Tuple<String> parseOwnerId(String guid, String ownerId) {
+        if (ownerId == null) {
+            LOG.error("Owner ID is null, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException();
+        }
+        String[] parts = ownerId.split(":");
+        // This happens in tests, we expect it to never happens in production. So log if it does.
+        if (parts.length != 2) {
+            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException();
+        }
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        return new Tuple<>(originAppId, originOrgId);
+    }
 
     private Assessment createAssessmentInternal(String appId, Assessment assessment) {
         checkArgument(isNotBlank(appId));
@@ -347,9 +365,7 @@ public class AssessmentService {
         assessment.setDeleted(false);
         sanitizeAssessment(assessment);
 
-        Optional<Assessment> opt = dao.getAssessment(appId, assessment.getIdentifier(), assessment.getRevision());
-        AssessmentValidator validator = new AssessmentValidator(opt);
-        
+        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
         
         return dao.saveAssessment(appId, assessment);
@@ -374,20 +390,15 @@ public class AssessmentService {
      * to validate the org ID since it was validated when it was set as an organizational relationship
      * on the account. 
      */
-    static void checkOwnership(SubstudyService subService, String appId, String ownerId) {
+    void checkOwnership(String appId, String ownerId) {
         if (isBlank(ownerId)) {
-            return; // this will be prevented as a of validation error; the field is required.
+            throw new UnauthorizedException(CALLER_NOT_MEMBER);
         }
         Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (callerSubstudies.isEmpty()) {
-            StudyIdentifier app = new StudyIdentifierImpl(appId);
-            if (subService.getSubstudy(app, ownerId, false) != null) {
-                return;
-            }
-        } else if (callerSubstudies.contains(ownerId)) {
+        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
             return;
         }
-        throw new UnauthorizedException("Assessment must be associated to one of the caller’s organizations.");
+        throw new UnauthorizedException(CALLER_NOT_MEMBER);
     }
     
     /**

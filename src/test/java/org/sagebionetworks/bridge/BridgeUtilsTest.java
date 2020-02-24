@@ -642,9 +642,8 @@ public class BridgeUtilsTest {
         assertEquals(BridgeUtils.getIntOrDefault("1", 3), 1);
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
-    public void parseIntegerOrDefaultThrowsException() {
-        BridgeUtils.getIntOrDefault("asdf", 3);
+    public void parseIntegerOrDefaultReturnsDefault() {
+        assertEquals(BridgeUtils.getIntOrDefault("asdf", 3), 3);
     }
 
     @Test(expectedExceptions = NullPointerException.class)

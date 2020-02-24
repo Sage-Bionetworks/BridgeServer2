@@ -274,7 +274,7 @@ CREATE TABLE `Assessments` (
   `appId` varchar(255) NOT NULL,
   `identifier` varchar(255) NOT NULL,
   `revision` int(10) unsigned NOT NULL,
-  `ownerId` varchar(255),
+  `ownerId` varchar(255) NOT NULL,
   `title` varchar(255) NOT NULL,
   `summary` text,
   `validationStatus` text,

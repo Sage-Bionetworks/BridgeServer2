@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
+import static org.sagebionetworks.bridge.services.AssessmentService.CALLER_NOT_MEMBER;
 import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
@@ -149,8 +150,9 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentUnauthorized() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("not the owner id");
         service.createAssessment(APP_ID_VALUE, assessment);
     }
     
@@ -222,8 +224,9 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionUnauthorized() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("not the owner id");
         service.createAssessmentRevision(APP_ID_VALUE, assessment);
     }
 
@@ -289,13 +292,13 @@ public class AssessmentServiceTest extends Mockito {
         Assessment retValue = service.updateAssessment(APP_ID_VALUE, assessment);
         assertSame(retValue, assessment);
         
-        assertEquals(assessment.getIdentifier(), IDENTIFIER);
-        assertEquals(assessment.getOwnerId(), OWNER_ID);
-        assertEquals(assessment.getOriginGuid(), "originGuid");
-        assertEquals(assessment.getCreatedOn(), CREATED_ON);
-        assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
+        assertEquals(retValue.getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getOriginGuid(), "originGuid");
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
         
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
+        verify(mockDao).saveAssessment(APP_ID_VALUE, retValue);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -371,56 +374,18 @@ public class AssessmentServiceTest extends Mockito {
         
         assertMarkupRemoved(assessment);
     }
-
-    @Test
-    public void globalUserCanUpdateAssessmentWithOwnerId() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setDeleted(false);
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        
-        service.updateAssessment(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    @Test
-    public void scopedUserCanUpdateAssessmentWithOwnerId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setDeleted(false);
-        assessment.setOwnerId("app2");
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        
-        service.updateAssessment(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void scopedUserCannotUpdateAssessmentInvalidOwnerId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setDeleted(false);
-        assessment.setOwnerId("app3");
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        
-        service.updateAssessment(APP_ID_VALUE, assessment);
-    }
-    
+   
     @Test
     public void updateSharedAssessment() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(APP_AS_STUDY_ID)
                 .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
         
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(Substudy.create());
+        
         Assessment existing = AssessmentTest.createAssessment();
+        existing.setOriginGuid("unusualGuid");
         existing.setDeleted(false);
         existing.setOwnerId(APP_ID_VALUE + ":" + OWNER_ID);
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
@@ -430,6 +395,12 @@ public class AssessmentServiceTest extends Mockito {
         service.updateSharedAssessment(APP_ID_VALUE, assessment);
         
         verify(mockDao).saveAssessment(SHARED_STUDY_ID_STRING, assessment);
+        
+        assertEquals(assessment.getIdentifier(), IDENTIFIER);
+        assertEquals(APP_ID_VALUE + ":" + OWNER_ID, assessment.getOwnerId());
+        assertEquals(assessment.getOriginGuid(), "unusualGuid");
+        assertEquals(assessment.getCreatedOn(), CREATED_ON);
+        assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -698,23 +669,27 @@ public class AssessmentServiceTest extends Mockito {
         service.getAssessmentRevisionsByGuid(APP_ID_VALUE, GUID, 10, 10000, true);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void publishAssessment() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
         
-        Optional<Assessment> first = Optional.of(AssessmentTest.createAssessment());
-        Optional<Assessment> second = Optional.of(AssessmentTest.createAssessment());
-        // We load this object twice, persisting in two different app contexts.
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(first, second);
+        Assessment existing =  AssessmentTest.createAssessment();
+        // Change some of these values from what they should be set to on the published object.
+        existing.setGuid("oldGuid");
+        existing.setRevision(-1);
+        existing.setOriginGuid(null);
+        existing.setOwnerId(OWNER_ID);
+        existing.setVersion(-1L);        
+        
+        when(mockDao.getAssessment(APP_ID_VALUE, "oldGuid")).thenReturn(Optional.of(existing));
         
         when(mockDao.publishAssessment(any(), any(), any())).thenReturn(ASSESSMENT);
         
         // Assume no published versions
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
         
-        Assessment retValue = service.publishAssessment(APP_ID_VALUE, GUID);
+        Assessment retValue = service.publishAssessment(APP_ID_VALUE, "oldGuid");
         assertSame(retValue, ASSESSMENT);
         
         verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), assessmentCaptor.capture());
@@ -724,10 +699,14 @@ public class AssessmentServiceTest extends Mockito {
         
         assertEquals(original.getOriginGuid(), assessmentToPublish.getGuid());
         assertNull(assessmentToPublish.getOriginGuid());
-        assertEquals(assessmentToPublish.getGuid(), GUID);
+        assertEquals(assessmentToPublish.getGuid(), GUID); // has been reset
         assertEquals(assessmentToPublish.getRevision(), 1);
         assertNull(assessmentToPublish.getOriginGuid());
         assertEquals(assessmentToPublish.getOwnerId(), APP_ID_VALUE + ":" + OWNER_ID);
+        assertEquals(assessmentToPublish.getVersion(), 0);
+        // verify that a fuller copy also occurred
+        assertEquals(assessmentToPublish.getTitle(), existing.getTitle());
+        assertEquals(assessmentToPublish.getTags(), existing.getTags());
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -772,7 +751,8 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessment() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
+        sharedAssessment.setGuid("sharedGuid");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(2);
@@ -785,10 +765,11 @@ public class AssessmentServiceTest extends Mockito {
         
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
         
-        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
+        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, "sharedGuid");
         assertSame(retValue, sharedAssessment);
+        assertEquals(retValue.getGuid(), GUID);
         assertEquals(retValue.getRevision(), 3); // next higher than 2
-        assertEquals(retValue.getOriginGuid(), GUID);
+        assertEquals(retValue.getOriginGuid(), "sharedGuid");
         assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
     
@@ -838,7 +819,11 @@ public class AssessmentServiceTest extends Mockito {
         
     @Test
     public void deleteAssessment() {
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(Substudy.create());
+        
         Assessment assessment = new Assessment();
+        assessment.setOwnerId(OWNER_ID);
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
         
         service.deleteAssessment(APP_ID_VALUE, GUID);
@@ -890,223 +875,139 @@ public class AssessmentServiceTest extends Mockito {
         verify(mockDao, never()).deleteAssessment(any(), any());
     }
     
-    // Ownership tests
+    // OWNERSHIP VERIFICATION
+    // There are also failure case tests for each service method that should verify ownership
     
-    // ---- CREATE
-    
-    @Test
-    public void globalUserCanCreateWithOwnerId() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
-        BridgeUtils.setRequestContext(NULL_INSTANCE); // no substudies
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        
-        service.createAssessment(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void globalUserCreateWithInvalidOwnerId() {
-        // There is no successful lookup of the stubstudy
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        
-        service.createAssessment(APP_ID_VALUE, assessment);
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void ownershipOwnerIdIsBlank() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        service.checkOwnership(APP_ID_VALUE, null);
     }
     
     @Test
-    public void scopedUserCanCreateWithOwnerId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app2");
+    public void ownershipGlobalUser() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
-        service.createAssessment(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*ownerId cannot be missing, null, or blank.*")
-    public void scopedUserCannotCreateWithoutOwnerId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(null);
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
-            .thenReturn(EMPTY_LIST);
-        
-        service.createAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void scopedUserCannotCreateWithInvalidOwnerId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app3");
-        
-        service.createAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    // ---- CREATE REVISION
-    
-    @Test
-    public void globalUserCanCreateRevisionWithOwnerId() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
-        
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void globalUserCreateRevisionWithInvalidOwnerId() {
-        // There is no successful lookup of the stubstudy
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
     }
     
     @Test
-    public void scopedUserCanCreateRevisionWithOwnerId() {
+    public void ownershipScopedUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app2");
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
-        
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
-        verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*ownerId cannot be missing, null, or blank.*")
-    public void scopedUserCannotCreateRevisionWithoutOwnerId() {
-        // This really has no impact on anything because ownerId is null.
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void ownershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(null);
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
-        
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void scopedUserCannotCreateRevisionWithInvalidOwnerId() {
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void createAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app3");
-        
+        service.createAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void createAssessmentRevisionChecksOwnership() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
+        Assessment assessment = AssessmentTest.createAssessment();
         service.createAssessmentRevision(APP_ID_VALUE, assessment);
     }
-    
-    // ---- PUBLISH
-    // Publication uses a saved object so it should always have an owner id. We're only
-    // checking that a global user can publish anything, and a scoped user can only 
-    // publish what they control (no tests that the value itself is null).
-    
-    @Test
-    public void globalUserCanPublishWithOwnerId() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
 
+    @Test(expectedExceptions = UnauthorizedException.class,
+        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void updateAssessmentChecksOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(assessment.getOwnerId())).build());
         
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId("differentId");
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(existing));
         
-        service.publishAssessment(APP_ID_VALUE, GUID);
-        
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), any(), assessmentCaptor.capture());
-        assertEquals(assessmentCaptor.getValue().getOwnerId(), APP_ID_VALUE + ":" + OWNER_ID);
+        service.updateAssessment(APP_ID_VALUE, assessment);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void globalUserPublishWithInvalidOwnerId() {
-        // There is no successful lookup of the stubstudy
-        
-        Assessment assessment = AssessmentTest.createAssessment();
-        
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void publishAssessmentChecksOwnership() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(existing));
         
         service.publishAssessment(APP_ID_VALUE, GUID);
     }
-
-    @Test
-    public void scopedUserCanPublishWithOwnerId() {
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void importAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app1");
-        
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
-        
-        service.publishAssessment(APP_ID_VALUE, GUID);
-        
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), any(), assessmentCaptor.capture());
-        assertEquals(assessmentCaptor.getValue().getOwnerId(), "appId:app1");
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
+        service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Assessment must be associated to one of the caller’s organizations.")
-    public void scopedUserCannotPublishWithInvalidOwnerId() {
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+    public void deleteAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("app1", "app2")).build());
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("app3");
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(assessment));
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
+                .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(existing));
         
-        service.publishAssessment(APP_ID_VALUE, GUID);
+        service.deleteAssessment(APP_ID_VALUE, GUID);
+    }
+        
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedAssessmentChecksOwnership() {
+        Assessment sharedAssessment = AssessmentTest.createAssessment();
+        sharedAssessment.setDeleted(false);
+        sharedAssessment.setOwnerId("wrongApp:wrongsubstudy");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
+        
+        service.updateSharedAssessment(APP_ID_VALUE, sharedAssessment);
     }
 
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedAssessmentChecksOwnershipWhenMissing() {
+        Assessment sharedAssessment = AssessmentTest.createAssessment();
+        sharedAssessment.setDeleted(false);
+        sharedAssessment.setOwnerId(null);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
+        
+        service.updateSharedAssessment(APP_ID_VALUE, sharedAssessment);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedAssessmentChecksOwnershipWhenFormattedIncorrectly() {
+        Assessment sharedAssessment = AssessmentTest.createAssessment();
+        sharedAssessment.setDeleted(false);
+        sharedAssessment.setOwnerId("A:B:C");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
+        
+        service.updateSharedAssessment(APP_ID_VALUE, sharedAssessment);
+    }
+    
     private void addMarkupToSensitiveFields(Assessment assessment) {
         assessment.setTitle("<object>ᚷᛁᚠ᛫ᚻᛖ᛫ᚹᛁᛚᛖ᛫ᚠᚩᚱ᛫ᛞᚱᛁᚻᛏᚾᛖ᛫ᛞᚩᛗᛖᛋ᛫ᚻᛚᛇᛏᚪᚾ᛬");
         assessment.setSummary("<script></script>");
         assessment.setValidationStatus("some text</script>");
-        assessment.setNormingStatus("However this is <b>acceptable</b>.");        
+        assessment.setNormingStatus("Markup can be <b>bold</b>.");        
         assessment.setTags(ImmutableSet.of("<scriopt>Мон ярсан суликадо</script>"));
         Map<String, Set<String>> fields = new HashMap<>();
         fields.put("<b>This</b>", ImmutableSet.of("<tag>Not right at all</tag>"));
@@ -1117,7 +1018,7 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessment.getTitle(), "ᚷᛁᚠ᛫ᚻᛖ᛫ᚹᛁᛚᛖ᛫ᚠᚩᚱ᛫ᛞᚱᛁᚻᛏᚾᛖ᛫ᛞᚩᛗᛖᛋ᛫ᚻᛚᛇᛏᚪᚾ᛬");
         assertEquals(assessment.getSummary(), "");
         assertEquals(assessment.getValidationStatus(), "some text");
-        assertEquals(assessment.getNormingStatus(), "However this is <b>acceptable</b>.");
+        assertEquals(assessment.getNormingStatus(), "Markup can be <b>bold</b>.");
         assertEquals(Iterables.getFirst(assessment.getTags(), null), "Мон ярсан суликадо");
         Map.Entry<String, Set<String>> entry = Iterables.getFirst(assessment.getCustomizationFields().entrySet(), null);
         String key = entry.getKey();

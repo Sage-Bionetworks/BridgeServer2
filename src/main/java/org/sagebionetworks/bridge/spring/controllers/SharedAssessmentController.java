@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 
 import java.util.Set;
 
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -72,9 +74,10 @@ public class SharedAssessmentController extends BaseController {
 
     @GetMapping("/v1/sharedassessments/identifier:{identifier}/revisions/{revision}")
     public Assessment getSharedAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
-        // 0 is not a valid value, on purpose, will throw BadRequestException
         int revisionInt = BridgeUtils.getIntOrDefault(revision, 0);
-        
+        if (revisionInt < 1) {
+            throw new BadRequestException(OFFSET_NOT_POSITIVE);
+        }
         return service.getAssessmentById(SHARED_STUDY_ID_STRING, identifier, revisionInt);
     }
 
@@ -114,6 +117,7 @@ public class SharedAssessmentController extends BaseController {
         String appId = session.getStudyIdentifier().getIdentifier();
         
         Assessment assessment = parseJson(Assessment.class);
+        assessment.setGuid(guid);
         
         // Note that we are passing in the appId of the caller, and the assessment is in the 
         // shared app, which is the opposite of all the other shared calls

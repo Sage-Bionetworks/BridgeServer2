@@ -11,7 +11,9 @@ import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,6 +30,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
@@ -43,9 +46,6 @@ public class SharedAssessmentControllerTest extends Mockito {
 
     @Mock
     HttpServletResponse mockResponse;
-    
-    @Mock
-    Assessment mockAssessment;
     
     @Captor
     ArgumentCaptor<Assessment> assessmentCaptor;
@@ -72,23 +72,21 @@ public class SharedAssessmentControllerTest extends Mockito {
         when(mockService.importAssessment(TEST_STUDY_IDENTIFIER, OWNER_ID, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.importAssessment(GUID, OWNER_ID);
-        assertEquals(retValue.getGuid(), assessment.getGuid());
+        assertSame(retValue, assessment);
         
         verify(mockService).importAssessment(TEST_STUDY_IDENTIFIER, OWNER_ID, GUID);
     }
     
     @Test
     public void getSharedAssessments() {
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
         when(mockService.getAssessments(
                 SHARED_STUDY_ID_STRING, 10, 25, STRING_TAGS, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getSharedAssessments("10", "25", STRING_TAGS, "true");
-        assertEquals(retValue.getItems().size(), 1);
-        assertEquals(retValue.getTotal(), Integer.valueOf(100));
+        assertSame(retValue, page);
         
-        verify(mockService).getAssessments(
-                SHARED_STUDY_ID_STRING, 10, 25, STRING_TAGS, true);
+        verify(mockService).getAssessments(SHARED_STUDY_ID_STRING, 10, 25, STRING_TAGS, true);
     }
     
     @Test
@@ -97,9 +95,8 @@ public class SharedAssessmentControllerTest extends Mockito {
         when(mockService.getAssessments(
                 SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, false)).thenReturn(page);
         
-        PagedResourceList<Assessment> retValue = controller.getSharedAssessments(null, null, null, "false");
-        // Just verify this was returned
-        assertEquals(retValue.getTotal(), Integer.valueOf(0));
+        PagedResourceList<Assessment> retValue = controller.getSharedAssessments(null, null, null, null);
+        assertSame(retValue, page);
         
         verify(mockService).getAssessments(
                 SHARED_STUDY_ID_STRING, 0, API_DEFAULT_PAGE_SIZE, null, false);
@@ -110,8 +107,8 @@ public class SharedAssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentByGuid(SHARED_STUDY_ID_STRING, GUID)).thenReturn(assessment);
         
-        Assessment dto = controller.getSharedAssessmentByGuid(GUID);
-        assertEquals(dto.getGuid(), GUID);
+        Assessment retValue = controller.getSharedAssessmentByGuid(GUID);
+        assertSame(retValue, assessment);
     }
     
     @Test
@@ -119,8 +116,8 @@ public class SharedAssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getLatestAssessment(SHARED_STUDY_ID_STRING, IDENTIFIER)).thenReturn(assessment);
         
-        Assessment dto = controller.getLatestSharedAssessment(IDENTIFIER);
-        assertEquals(dto.getIdentifier(), IDENTIFIER);
+        Assessment retValue = controller.getLatestSharedAssessment(IDENTIFIER);
+        assertSame(retValue, assessment);
     }
 
     @Test
@@ -128,30 +125,56 @@ public class SharedAssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentById(SHARED_STUDY_ID_STRING, IDENTIFIER, 10)).thenReturn(assessment);
         
-        Assessment dto = controller.getSharedAssessmentById(IDENTIFIER, "10");
-        assertEquals(dto.getGuid(), GUID);
+        Assessment retValue = controller.getSharedAssessmentById(IDENTIFIER, "10");
+        assertSame(retValue, assessment);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = OFFSET_NOT_POSITIVE)
+    public void getSharedAssessmentByIdWithBadOffset() {
+        controller.getSharedAssessmentById(IDENTIFIER, "0");
     }
 
     @Test
     public void getSharedAssessmentRevisionsByGuid() {
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
         when(mockService.getAssessmentRevisionsByGuid(
                 SHARED_STUDY_ID_STRING, GUID, 10, 25, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsByGuid(GUID, "10", "25", "true");
-        assertEquals(retValue.getItems().size(), 1);
+        assertSame(retValue, page);
+    }
+    
+    @Test
+    public void getSharedAssessmentRevisionsByGuidWithNullParameters() {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
+        when(mockService.getAssessmentRevisionsByGuid(SHARED_STUDY_ID_STRING, GUID, 0, 50, false)).thenReturn(page);
+        
+        PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsByGuid(GUID, null, null, null);
+        assertSame(retValue, page);
     }
 
     @Test
     public void getSharedAssessmentRevisionsById() {
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100);        
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);        
+        when(mockService.getAssessmentRevisionsById(
+                SHARED_STUDY_ID_STRING, IDENTIFIER, 5, 25, false)).thenReturn(page);
+        
+        PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsById(IDENTIFIER, "5", "25",
+                "false");
+        assertSame(retValue, page);
+    }
+
+    @Test
+    public void getSharedAssessmentRevisionsByIdWithNullParameters() {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);        
         when(mockService.getAssessmentRevisionsById(
                 SHARED_STUDY_ID_STRING, IDENTIFIER, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(page);
         
-        PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsById(IDENTIFIER, null, null, "false");
-        assertEquals(retValue.getItems().size(), 1);
+        PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsById(IDENTIFIER, null, null,
+                null);
+        assertSame(retValue, page);
     }
-
+    
     @Test
     public void updateSharedAssessment() throws Exception {
         // You do need a session for this call
@@ -160,18 +183,19 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.updateSharedAssessment(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(assessment);
+        assessment.setGuid("notCorrectGuid");
+        
+        when(mockService.updateSharedAssessment(eq(TEST_STUDY_IDENTIFIER), any())).thenAnswer(invoke -> invoke.getArgument(1));
         
         mockRequestBody(mockRequest, assessment);
 
         Assessment retValue = controller.updateSharedAssessment(GUID);
-        assertEquals(retValue.getIdentifier(), assessment.getIdentifier());
-        assertEquals(retValue.getGuid(), assessment.getGuid());
+        assertEquals(retValue.getGuid(), GUID);
         
         verify(mockService).updateSharedAssessment(eq(TEST_STUDY_IDENTIFIER), assessmentCaptor.capture());
         Assessment captured = assessmentCaptor.getValue();
-        assertEquals(captured.getIdentifier(), assessment.getIdentifier());
-        assertEquals(captured.getGuid(), assessment.getGuid());
+        assertEquals(captured.getIdentifier(), IDENTIFIER);
+        assertEquals(captured.getGuid(), GUID);
     }
 
     @Test

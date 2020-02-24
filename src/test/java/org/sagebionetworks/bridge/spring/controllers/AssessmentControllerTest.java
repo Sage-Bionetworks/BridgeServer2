@@ -23,9 +23,11 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 import static org.sagebionetworks.bridge.spring.controllers.AssessmentController.SHARED_ASSESSMENTS_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +48,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -64,9 +67,6 @@ public class AssessmentControllerTest extends Mockito {
 
     @Mock
     HttpServletResponse mockResponse;
-    
-    @Mock
-    Assessment mockAssessment;
     
     @Captor
     ArgumentCaptor<Assessment> assessmentCaptor;
@@ -113,7 +113,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getAssessments() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(mockAssessment), 100)
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100)
                 .withRequestParam(OFFSET_BY, 100)
                 .withRequestParam(PAGE_SIZE, 25)
                 .withRequestParam(INCLUDE_DELETED, true)
@@ -132,15 +132,15 @@ public class AssessmentControllerTest extends Mockito {
     }
 
     @Test
-    public void getAssessmentsNullTags() {
+    public void getAssessmentsNullArguments() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, null, true)).thenReturn(page);
+        when(mockService.getAssessments(API_STUDY_ID_STRING, 0, 50, null, false)).thenReturn(page);
         
-        controller.getAssessments("100", "25", null, "true");
+        controller.getAssessments(null, null, null, null);
         
-        verify(mockService).getAssessments(API_STUDY_ID_STRING, 100, 25, null, true);
+        verify(mockService).getAssessments(API_STUDY_ID_STRING, 0, 50, null, false);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -199,7 +199,9 @@ public class AssessmentControllerTest extends Mockito {
     public void updateAssessment() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        mockRequestBody(mockRequest, AssessmentTest.createAssessment());
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setGuid("thisGuidWillBeReplaced");
+        mockRequestBody(mockRequest, assessment);
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
@@ -229,23 +231,24 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentByGuid(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
         
-        Assessment dto = controller.getAssessmentByGuid(GUID);
+        Assessment retValue = controller.getAssessmentByGuid(GUID);
+        assertSame(retValue, assessment);
 
-        assertEquals(dto.getIdentifier(), IDENTIFIER);
-        assertEquals(dto.getTitle(), "title");
-        assertEquals(dto.getSummary(), "summary");
-        assertEquals(dto.getValidationStatus(), "validationStatus");
-        assertEquals(dto.getNormingStatus(), "normingStatus");
-        assertEquals(dto.getOsName(), ANDROID);
-        assertEquals(dto.getOriginGuid(), "originGuid");
-        assertEquals(dto.getOwnerId(), OWNER_ID);
-        assertEquals(dto.getTags(), STRING_TAGS);
-        assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
-        assertEquals(dto.getCreatedOn(), CREATED_ON);
-        assertEquals(dto.getModifiedOn(), MODIFIED_ON);
-        assertTrue(dto.isDeleted());
-        assertEquals(dto.getRevision(), 5);
-        assertEquals(dto.getVersion(), 8L);
+        assertEquals(retValue.getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getTitle(), "title");
+        assertEquals(retValue.getSummary(), "summary");
+        assertEquals(retValue.getValidationStatus(), "validationStatus");
+        assertEquals(retValue.getNormingStatus(), "normingStatus");
+        assertEquals(retValue.getOsName(), ANDROID);
+        assertEquals(retValue.getOriginGuid(), "originGuid");
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getTags(), STRING_TAGS);
+        assertEquals(retValue.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
+        assertTrue(retValue.isDeleted());
+        assertEquals(retValue.getRevision(), 5);
+        assertEquals(retValue.getVersion(), 8L);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -263,23 +266,43 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentById(API_STUDY_ID_STRING, IDENTIFIER, 10)).thenReturn(assessment);
         
-        Assessment dto = controller.getAssessmentById(IDENTIFIER, "10");
+        Assessment retValue = controller.getAssessmentById(IDENTIFIER, "10");
+        assertSame(retValue, assessment);
         
-        assertEquals(dto.getIdentifier(), IDENTIFIER);
-        assertEquals(dto.getTitle(), "title");
-        assertEquals(dto.getSummary(), "summary");
-        assertEquals(dto.getValidationStatus(), "validationStatus");
-        assertEquals(dto.getNormingStatus(), "normingStatus");
-        assertEquals(dto.getOsName(), ANDROID);
-        assertEquals(dto.getOriginGuid(), "originGuid");
-        assertEquals(dto.getOwnerId(), OWNER_ID);
-        assertEquals(dto.getTags(), STRING_TAGS);
-        assertEquals(dto.getCustomizationFields(), CUSTOMIZATION_FIELDS);
-        assertEquals(dto.getCreatedOn(), CREATED_ON);
-        assertEquals(dto.getModifiedOn(), MODIFIED_ON);
-        assertTrue(dto.isDeleted());
-        assertEquals(dto.getRevision(), 5);
-        assertEquals(dto.getVersion(), 8L);
+        assertEquals(retValue.getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getTitle(), "title");
+        assertEquals(retValue.getSummary(), "summary");
+        assertEquals(retValue.getValidationStatus(), "validationStatus");
+        assertEquals(retValue.getNormingStatus(), "normingStatus");
+        assertEquals(retValue.getOsName(), ANDROID);
+        assertEquals(retValue.getOriginGuid(), "originGuid");
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getTags(), STRING_TAGS);
+        assertEquals(retValue.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
+        assertTrue(retValue.isDeleted());
+        assertEquals(retValue.getRevision(), 5);
+        assertEquals(retValue.getVersion(), 8L);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = OFFSET_NOT_POSITIVE)
+    public void getAssessmentByIdZeroRevision() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.getAssessmentById(IDENTIFIER, "0");
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = OFFSET_NOT_POSITIVE)
+    public void getAssessmentByIdNegativeRevision() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.getAssessmentById(IDENTIFIER, "-1");
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "nonsense is not an integer")
+    public void getAssessmentByIdNonsenseRevision() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        controller.getAssessmentById(IDENTIFIER, "nonsense");
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -297,8 +320,8 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getLatestAssessment(API_STUDY_ID_STRING, IDENTIFIER)).thenReturn(assessment);
 
-        Assessment dto = controller.getLatestAssessment(IDENTIFIER);
-        assertNotNull(dto);
+        Assessment retValue = controller.getLatestAssessment(IDENTIFIER);
+        assertSame(retValue, assessment);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -319,10 +342,21 @@ public class AssessmentControllerTest extends Mockito {
                 API_STUDY_ID_STRING, IDENTIFIER, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, "20", "5", "true");
-        assertEquals(retValue.getItems().get(0).getIdentifier(), IDENTIFIER);
-        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+        assertSame(retValue, page);
     }
 
+    @Test
+    public void getAssessmentRevisionsByIdWithNullParameters() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        Assessment assessment = AssessmentTest.createAssessment();
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
+        when(mockService.getAssessmentRevisionsById(
+                API_STUDY_ID_STRING, IDENTIFIER, 0, 50, false)).thenReturn(page);
+        
+        PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, null, null, null);
+        assertSame(retValue, page);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentRevisionsByIdRejectsSharedAppContext() {
@@ -341,8 +375,19 @@ public class AssessmentControllerTest extends Mockito {
                 API_STUDY_ID_STRING, GUID, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
-        assertEquals(retValue.getItems().get(0).getIdentifier(), IDENTIFIER);
-        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+        assertSame(retValue, page);
+    }
+    
+    @Test
+    public void getAssessmentRevisionsByGuidWithNullParameters() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        Assessment assessment = AssessmentTest.createAssessment();
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
+        when(mockService.getAssessmentRevisionsByGuid(
+                API_STUDY_ID_STRING, GUID, 0, 50, false)).thenReturn(page);
+        
+        PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, null, null, null);
+        assertSame(retValue, page);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -406,8 +451,8 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.publishAssessment(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
         
-        Assessment dto = controller.publishAssessment(GUID);
-        assertEquals(dto.getIdentifier(), IDENTIFIER);
+        Assessment retValue = controller.publishAssessment(GUID);
+        assertSame(retValue, assessment);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
