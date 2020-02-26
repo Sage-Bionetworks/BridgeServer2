@@ -282,7 +282,6 @@ CREATE TABLE `Assessments` (
   `osName` varchar(255) NOT NULL,
   `originGuid` varchar(255),
   `customizationFields` text,
-  `links` text,
   `createdOn` bigint(20) unsigned DEFAULT NULL,
   `modifiedOn` bigint(20) unsigned DEFAULT NULL,
   `deleted` tinyint(1) DEFAULT '0',

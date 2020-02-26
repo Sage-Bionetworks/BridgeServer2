@@ -31,13 +31,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
     
     private static final String QUERY_SQL_EXC_DELETED = "FROM (   SELECT DISTINCT "
             +"identifier as id, MAX(revision) AS rev FROM Assessments   GROUP BY "
-            +"identifier ) AS latest_assessments INNER JOIN Assessments AS a ON "
+            +"identifier) AS latest_assessments INNER JOIN Assessments AS a ON "
             +"a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
             +"WHERE appId = :appId AND a.deleted = 0 ORDER BY createdOn DESC";
 
     private static final String QUERY_SQL_INC_DELETED = "FROM (   SELECT DISTINCT "
             +"identifier as id, MAX(revision) AS rev FROM Assessments   GROUP BY "
-            +"identifier ) AS latest_assessments INNER JOIN Assessments AS a ON "+
+            +"identifier) AS latest_assessments INNER JOIN Assessments AS a ON "+
             "a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
             +"WHERE appId = :appId ORDER BY createdOn DESC";
     

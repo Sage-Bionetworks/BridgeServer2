@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeUtils.AND_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,26 +56,22 @@ class HibernateAssessmentDao implements AssessmentDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
         builder.append("  SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments"); 
-        builder.append("  GROUP BY identifier", APP_ID, appId);
-        builder.append(") AS latest_assessments");
+        builder.append("  GROUP BY identifier) AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
         if (includeTags) {
-            builder.append("INNER JOIN AssessmentTags AS atag ON a.guid = atag.assessmentGuid");    
+            builder.append("INNER JOIN AssessmentTags AS atag ON a.guid = atag.assessmentGuid");
         }
-        builder.append("WHERE appId = :appId", "appId", appId); 
-        if (includeTags || !includeDeleted) {
-            builder.append("AND");
-            if (includeTags) {
-                builder.append("atag.tagValue IN :tags", "tags", tags);    
-            }
-            if (includeTags && !includeDeleted) {
-                builder.append("AND");
-            }
-            if (!includeDeleted) {
-                builder.append("a.deleted = 0");    
-            }
+        List<String> clauses = new ArrayList<>();
+        clauses.add("WHERE appId = :appId");
+        if (includeTags) {
+            clauses.add("atag.tagValue IN :tags");
+            builder.getParameters().put("tags", tags);
         }
+        if (!includeDeleted) {
+            clauses.add("a.deleted = 0");    
+        }
+        builder.append(AND_JOINER.join(clauses), "appId", appId);
         builder.append("ORDER BY createdOn DESC");
         
         int count = hibernateHelper.nativeQueryCount(
