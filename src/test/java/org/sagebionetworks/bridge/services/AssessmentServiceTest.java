@@ -203,14 +203,14 @@ public class AssessmentServiceTest extends Mockito {
     public void createAssessmentRevision() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
                 .thenReturn(mockSubstudy);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(new Assessment()), 1));
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
+            .thenReturn(Optional.of(AssessmentTest.createAssessment()));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setGuid(null);
         assessment.setDeleted(true); // can't do this, it's reset
         
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
         
         verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
         
@@ -227,7 +227,7 @@ public class AssessmentServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -241,7 +241,7 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessmentRevisions(any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
     
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class,
@@ -249,26 +249,27 @@ public class AssessmentServiceTest extends Mockito {
     public void createAssessmentRevisionInvalid() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(new Assessment()), 1));
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
+            .thenReturn(Optional.of(new Assessment()));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setIdentifier(null);
         
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
     }
 
     @Test
     public void createAssessmentRevisionScrubsMarkup() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(new Assessment()), 1));
+        Assessment existing = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
+            .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
         addMarkupToSensitiveFields(assessment);
 
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
         
         assertMarkupRemoved(assessment);
     }
@@ -923,7 +924,7 @@ public class AssessmentServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
-        service.createAssessmentRevision(APP_ID_VALUE, assessment);
+        service.createAssessmentRevision(APP_ID_VALUE, GUID, assessment);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,

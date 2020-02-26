@@ -123,17 +123,17 @@ public class AssessmentService {
         return createAssessmentInternal(appId, assessment);
     }
     
-    public Assessment createAssessmentRevision(String appId, Assessment assessment) {
+    public Assessment createAssessmentRevision(String appId, String guid, Assessment assessment) {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
         checkOwnership(appId, assessment.getOwnerId());
         
-        // This will throw an exception if there's no assessment under this revision.
-        // Allow missing identifier to throw a validation exception.
-        if (assessment.getIdentifier() != null) {
-            getLatestAssessment(appId, assessment.getIdentifier());    
-        }
+        // Verify this is an existing assessment, and that we're trying to add a revision
+        // with the same identifier.
+        Assessment existing = getAssessmentByGuid(appId, guid);
+        assessment.setIdentifier(existing.getIdentifier());
+
         return createAssessmentInternal(appId, assessment);
     }
         

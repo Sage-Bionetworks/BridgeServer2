@@ -403,17 +403,15 @@ public class AssessmentControllerTest extends Mockito {
     public void createAssessmentRevision() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        Assessment body = AssessmentTest.createAssessment();
-        body.setGuid("this is a bad guid that will be replaced");
-        mockRequestBody(mockRequest, body);
+        mockRequestBody(mockRequest, AssessmentTest.createAssessment());
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.createAssessmentRevision(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
+        when(mockService.createAssessmentRevision(eq(API_STUDY_ID_STRING), eq(GUID), any())).thenReturn(updated);
         
         Assessment retValue = controller.createAssessmentRevision(GUID);
 
-        verify(mockService).createAssessmentRevision(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
+        verify(mockService).createAssessmentRevision(eq(API_STUDY_ID_STRING), eq(GUID), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);

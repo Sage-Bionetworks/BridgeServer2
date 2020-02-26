@@ -8,10 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;

@@ -128,9 +128,13 @@ public class AssessmentController extends BaseController {
         }
 
         Assessment assessment = parseJson(Assessment.class);
-        assessment.setGuid(guid);
+        // do not set the GUID, it's the GUID of another revision, not
+        // the one we're about to create... the GUID is used in the
+        // service to ensure this assessment is associated to the GUID
+        // in the URL, which always takes precedence over what is in 
+        // the JSON in the body of a request.
         
-        return service.createAssessmentRevision(appId, assessment);
+        return service.createAssessmentRevision(appId, guid, assessment);
     }
     
     @PostMapping("/v1/assessments/{guid}/publish")

@@ -30,16 +30,16 @@ import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 public class HibernateAssessmentDaoTest extends Mockito {
     
     private static final String QUERY_SQL_EXC_DELETED = "FROM (   SELECT DISTINCT "
-            +"identifier as id, MAX(revision) AS rev FROM Assessments   WHERE appId = "
-            +":appId GROUP BY identifier ) AS latest_assessments INNER JOIN "
-            +"Assessments AS a ON a.identifier = latest_assessments.id AND a.revision = "
-            +"latest_assessments.rev WHERE a.deleted = 0 ORDER BY createdOn DESC";
+            +"identifier as id, MAX(revision) AS rev FROM Assessments   GROUP BY "
+            +"identifier ) AS latest_assessments INNER JOIN Assessments AS a ON "
+            +"a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
+            +"WHERE appId = :appId AND a.deleted = 0 ORDER BY createdOn DESC";
 
     private static final String QUERY_SQL_INC_DELETED = "FROM (   SELECT DISTINCT "
-            +"identifier as id, MAX(revision) AS rev FROM Assessments   WHERE appId = "
-            +":appId GROUP BY identifier ) AS latest_assessments INNER JOIN "
-            +"Assessments AS a ON a.identifier = latest_assessments.id AND a.revision = "
-            +"latest_assessments.rev ORDER BY createdOn DESC";
+            +"identifier as id, MAX(revision) AS rev FROM Assessments   GROUP BY "
+            +"identifier ) AS latest_assessments INNER JOIN Assessments AS a ON "+
+            "a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
+            +"WHERE appId = :appId ORDER BY createdOn DESC";
     
     private static final String QUERY_GET_REVISIONS_EXC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier AND deleted = 0 ORDER BY "

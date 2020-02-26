@@ -54,15 +54,16 @@ class HibernateAssessmentDao implements AssessmentDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
         builder.append("  SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments"); 
-        builder.append("  WHERE appId = :appId GROUP BY identifier", APP_ID, appId);
+        builder.append("  GROUP BY identifier", APP_ID, appId);
         builder.append(") AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
         if (includeTags) {
             builder.append("INNER JOIN AssessmentTags AS atag ON a.guid = atag.assessmentGuid");    
         }
+        builder.append("WHERE appId = :appId", "appId", appId); 
         if (includeTags || !includeDeleted) {
-            builder.append("WHERE");
+            builder.append("AND");
             if (includeTags) {
                 builder.append("atag.tagValue IN :tags", "tags", tags);    
             }
