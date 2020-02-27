@@ -49,6 +49,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -207,6 +208,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(AssessmentTest.createAssessment()));
         
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setIdentifier(null);
         assessment.setGuid(null);
         assessment.setDeleted(true); // can't do this, it's reset
         
@@ -215,6 +217,7 @@ public class AssessmentServiceTest extends Mockito {
         verify(mockDao).saveAssessment(APP_ID_VALUE, assessment);
         
         assertEquals(assessment.getGuid(), GUID);
+        assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getOwnerId(), OWNER_ID);
         // same timestamp on creation
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
@@ -300,6 +303,40 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
         
         verify(mockDao).saveAssessment(APP_ID_VALUE, retValue);
+    }
+    
+    @Test
+    public void updateAssessmentSomeFieldsImmutable() {
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID))
+            .thenReturn(Optional.of(existing));
+        when(mockDao.saveAssessment(eq(APP_ID_VALUE), any()))
+            .thenReturn(existing);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setIdentifier("junk");
+        assessment.setOwnerId("junk");
+        assessment.setOriginGuid("junk");
+        assessment.setCreatedOn(CREATED_ON.minusDays(1));
+        assessment.setModifiedOn(MODIFIED_ON.minusDays(1));
+        assessment.setDeleted(false);
+        
+        Assessment retValue = service.updateAssessment(APP_ID_VALUE, assessment);
+        assertEquals(retValue.getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getOriginGuid(), "originGuid");
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
+        
+        verify(mockDao).saveAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture());
+        Assessment saved = assessmentCaptor.getValue();
+        assertEquals(saved.getIdentifier(), IDENTIFIER);
+        assertEquals(saved.getOwnerId(), OWNER_ID);
+        assertEquals(saved.getOriginGuid(), "originGuid");
+        assertEquals(saved.getCreatedOn(), CREATED_ON);
+        assertEquals(saved.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -404,6 +441,49 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
     }
     
+    @Test
+    public void updateSharedAssessmentSomeFieldsImmutable() {
+        String ownerIdInShared = APP_ID_VALUE + ":" + OWNER_ID;
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(Substudy.create());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setOwnerId(ownerIdInShared);
+        existing.setDeleted(false);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        when(mockDao.saveAssessment(eq(SHARED_STUDY_ID_STRING), any()))
+                .thenReturn(existing);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setIdentifier("junk");
+        assessment.setOwnerId("junk");
+        assessment.setOriginGuid("junk");
+        assessment.setCreatedOn(CREATED_ON.minusDays(1));
+        assessment.setModifiedOn(MODIFIED_ON.minusDays(1));
+        assessment.setDeleted(false);
+        
+        Assessment retValue = service.updateSharedAssessment(APP_ID_VALUE, assessment);
+        assertEquals(retValue.getIdentifier(), IDENTIFIER);
+        assertEquals(retValue.getOwnerId(), ownerIdInShared);
+        assertEquals(retValue.getOriginGuid(), "originGuid");
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
+        
+        verify(mockDao).saveAssessment(eq(SHARED_STUDY_ID_STRING), assessmentCaptor.capture());
+        Assessment saved = assessmentCaptor.getValue();
+        assertEquals(saved.getIdentifier(), IDENTIFIER);
+        assertEquals(saved.getOwnerId(), ownerIdInShared);
+        assertEquals(saved.getOriginGuid(), "originGuid");
+        assertEquals(saved.getCreatedOn(), CREATED_ON);
+        assertEquals(saved.getModifiedOn(), MODIFIED_ON);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedAssessmentUnauthorizedApp() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -434,6 +514,26 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         service.updateSharedAssessment(APP_ID_VALUE, assessment);
+    }
+    
+    @Test
+    public void updateSharedAssessmentSucceedsForGlobalUser() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of()).build());
+        when(mockSubstudyService.getSubstudy(
+                APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(Substudy.create());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId(APP_ID_VALUE + ":" + OWNER_ID);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+        
+        verify(mockDao).saveAssessment(SHARED_STUDY_ID_STRING, assessment);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -897,6 +997,23 @@ public class AssessmentServiceTest extends Mockito {
         verify(mockDao, never()).deleteAssessment(any(), any());
     }
     
+    @Test
+    public void parseOwnerId() {
+        Tuple<String> tuple = service.parseOwnerId(GUID, "app:owner:owner");
+        assertEquals(tuple.getLeft(), "app");
+        assertEquals(tuple.getRight(), "owner:owner");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void parseOwnerIdNullOwnerId() {
+        service.parseOwnerId(GUID, null);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void parseOwnerIdBadOwnerId() {
+        service.parseOwnerId(GUID, "owner");
+    }
+    
     // OWNERSHIP VERIFICATION
     // There are also failure case tests for each service method that should verify ownership
     
@@ -1029,7 +1146,7 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setTitle("<object>ᚷᛁᚠ᛫ᚻᛖ᛫ᚹᛁᛚᛖ᛫ᚠᚩᚱ᛫ᛞᚱᛁᚻᛏᚾᛖ᛫ᛞᚩᛗᛖᛋ᛫ᚻᛚᛇᛏᚪᚾ᛬");
         assessment.setSummary("<script></script>");
         assessment.setValidationStatus("some text</script>");
-        assessment.setNormingStatus("Markup can be <b>bold</b>.");        
+        assessment.setNormingStatus("Markup <object></object>can be <b>bold</b>.");        
         assessment.setTags(ImmutableSet.of("<scriopt>Мон ярсан суликадо</script>"));
         Map<String, Set<String>> fields = new HashMap<>();
         fields.put("<b>This</b>", ImmutableSet.of("<tag>Not right at all</tag>"));

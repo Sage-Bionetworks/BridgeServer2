@@ -349,12 +349,12 @@ public class AssessmentService {
         }
     }
     
-    private Tuple<String> parseOwnerId(String guid, String ownerId) {
+    Tuple<String> parseOwnerId(String guid, String ownerId) {
         if (ownerId == null) {
             LOG.error("Owner ID is null, guid=" + guid + ", ownerId=" + ownerId);
             throw new UnauthorizedException();
         }
-        String[] parts = ownerId.split(":");
+        String[] parts = ownerId.split(":", 2);
         // This happens in tests, we expect it to never happens in production. So log if it does.
         if (parts.length != 2) {
             LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);

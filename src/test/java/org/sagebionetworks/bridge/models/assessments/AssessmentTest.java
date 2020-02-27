@@ -70,6 +70,7 @@ public class AssessmentTest {
         assertNotSame(copy, assessment);
         assessment.setTags(null);
         assertNotNull(copy.getTags());
+        assertAssessment(copy);
     }
 
     @Test

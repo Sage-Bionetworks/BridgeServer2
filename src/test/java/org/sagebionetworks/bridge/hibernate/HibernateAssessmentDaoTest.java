@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.hibernate.Session;
 import org.mockito.ArgumentCaptor;
@@ -40,6 +41,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
             +"identifier) AS latest_assessments INNER JOIN Assessments AS a ON "+
             "a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
             +"WHERE appId = :appId ORDER BY createdOn DESC";
+    
+    private static final String QUERY_SQL_WITH_TAGS = "FROM (   SELECT DISTINCT "
+            +"identifier as id, MAX(revision) AS rev FROM Assessments   GROUP BY "
+            +"identifier) AS latest_assessments INNER JOIN Assessments AS a ON "
+            +"a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
+            +"INNER JOIN AssessmentTags AS atag ON a.guid = atag.assessmentGuid WHERE "
+            +"appId = :appId AND atag.tagValue IN :tags AND a.deleted = 0 ORDER BY createdOn DESC";
     
     private static final String QUERY_GET_REVISIONS_EXC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier AND deleted = 0 ORDER BY "
@@ -110,6 +118,17 @@ public class HibernateAssessmentDaoTest extends Mockito {
         dao.getAssessments(APP_ID_VALUE, 0, 20, null, true);
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_INC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_INC_DELETED);
+    }
+    
+    @Test
+    public void getAssessmentsWithTags() {
+        when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(0);
+        when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
+                .thenReturn(ImmutableList.of());
+        
+        dao.getAssessments(APP_ID_VALUE, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_WITH_TAGS);
+        assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_TAGS);
     }
     
     @Test

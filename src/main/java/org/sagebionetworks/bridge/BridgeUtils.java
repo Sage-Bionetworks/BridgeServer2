@@ -17,6 +17,7 @@ import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -94,6 +95,8 @@ public class BridgeUtils {
     private static final int ONE_HOUR = 60*60;
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
+    
+    private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
@@ -319,7 +322,11 @@ public class BridgeUtils {
     }
     
     public static String generateGuid() {
-        return UUID.randomUUID().toString();
+        // Increases size from 16 to 18 bytes over UUID.randomUUID() while 
+        // still being shorter than the prior implementation. 
+        byte[] buffer = new byte[18];
+        SECURE_RANDOM.nextBytes(buffer);
+            return ENCODER.encodeToString(buffer);
     }
     
     /** Generate a random 16-byte salt, using a {@link SecureRandom}. */
