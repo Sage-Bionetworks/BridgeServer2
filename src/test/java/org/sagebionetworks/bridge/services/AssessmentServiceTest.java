@@ -284,7 +284,6 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setGuid(GUID); // this always gets set in the controller
         assessment.setTitle("title");
         assessment.setOsName(ANDROID);
-        assessment.setIdentifier(IDENTIFIER);
         when(mockDao.saveAssessment(APP_ID_VALUE, assessment)).thenReturn(assessment);
         
         Assessment existing = AssessmentTest.createAssessment();
@@ -727,7 +726,6 @@ public class AssessmentServiceTest extends Mockito {
         service.publishAssessment(APP_ID_VALUE, GUID);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void publishAssessmentPriorPublishedVersion() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))

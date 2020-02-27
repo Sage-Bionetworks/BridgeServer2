@@ -174,13 +174,14 @@ public class AssessmentService {
     }
     
     private Assessment updateAssessmentInternal(String appId, Assessment assessment, Assessment existing) {
+        assessment.setIdentifier(existing.getIdentifier());
         assessment.setOwnerId(existing.getOwnerId());
         assessment.setOriginGuid(existing.getOriginGuid());
         assessment.setCreatedOn(existing.getCreatedOn());
         DateTime timestamp = getModifiedOn();
         assessment.setModifiedOn(timestamp);
         sanitizeAssessment(assessment);
-       
+        
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
 
