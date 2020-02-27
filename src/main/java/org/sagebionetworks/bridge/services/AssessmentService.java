@@ -266,11 +266,22 @@ public class AssessmentService {
         
         checkOwnership(appId, assessmentToPublish.getOwnerId());
         
-        int revision = nextRevisionNumber(SHARED_STUDY_ID_STRING, assessmentToPublish.getIdentifier());
+        // Only the original owning organization can publish new revisions of an assessment to 
+        // the shared repository, so check for this as well.
+        String ownerId = appId + ":" + assessmentToPublish.getOwnerId();
+        String identifier = assessmentToPublish.getIdentifier();
+        Assessment existing = getLatestInternal(
+                SHARED_STUDY_ID_STRING, identifier, true).orElse(null);
+        if (existing != null && !existing.getOwnerId().equals(ownerId)) {
+            throw new UnauthorizedException("Assessment exists in shared library under a different " 
+                    +"owner (identifier = " + identifier + ")");
+        }
+        int revision = (existing == null) ? 1 : (existing.getRevision()+1);
+        
         assessmentToPublish.setGuid(generateGuid());
         assessmentToPublish.setRevision(revision);
         assessmentToPublish.setOriginGuid(null);
-        assessmentToPublish.setOwnerId(appId + ":" + assessmentToPublish.getOwnerId());
+        assessmentToPublish.setOwnerId(ownerId);
         assessmentToPublish.setVersion(0L);
         // Neither of these assessments should be in an attached state because both are loaded in 
         // separate transactions that are closed in the DAO. However, the tag collections have been

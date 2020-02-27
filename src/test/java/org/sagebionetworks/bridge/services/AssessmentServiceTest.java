@@ -731,15 +731,17 @@ public class AssessmentServiceTest extends Mockito {
     public void publishAssessmentPriorPublishedVersion() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
             .thenReturn(mockSubstudy);
-        Assessment existing = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(existing));
-
+        
+        Assessment local = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(local));
+        
         // Same as the happy path version, but this time there is a revision in the
         // shared library
         Assessment revision = AssessmentTest.createAssessment();
         revision.setRevision(10);
+        revision.setOwnerId(APP_ID_VALUE + ":" + OWNER_ID);
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
-        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page, page);        
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page);        
         
         service.publishAssessment(APP_ID_VALUE, GUID);
         
@@ -747,6 +749,26 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
         assertEquals(assessmentToPublish.getRevision(), 11);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = ".*Assessment exists in shared library.*")
+    public void publishAssessmentPriorPublishedVersionDifferentOwner() {
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(mockSubstudy);
+        
+        Assessment local = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(local));
+        
+        // Same as the happy path version, but this time there is a revision in the
+        // shared library
+        Assessment revision = AssessmentTest.createAssessment();
+        revision.setRevision(10);
+        revision.setOwnerId("otherStudy:" + OWNER_ID);
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
+        when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page);        
+        
+        service.publishAssessment(APP_ID_VALUE, GUID);
     }
         
     @Test
