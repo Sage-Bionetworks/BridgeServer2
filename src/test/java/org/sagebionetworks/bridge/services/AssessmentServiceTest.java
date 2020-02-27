@@ -284,6 +284,7 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setGuid(GUID); // this always gets set in the controller
         assessment.setTitle("title");
         assessment.setOsName(ANDROID);
+        assessment.setIdentifier(IDENTIFIER);
         when(mockDao.saveAssessment(APP_ID_VALUE, assessment)).thenReturn(assessment);
         
         Assessment existing = AssessmentTest.createAssessment();

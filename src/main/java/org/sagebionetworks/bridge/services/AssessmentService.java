@@ -174,7 +174,6 @@ public class AssessmentService {
     }
     
     private Assessment updateAssessmentInternal(String appId, Assessment assessment, Assessment existing) {
-        assessment.setIdentifier(existing.getIdentifier());
         assessment.setOwnerId(existing.getOwnerId());
         assessment.setOriginGuid(existing.getOriginGuid());
         assessment.setCreatedOn(existing.getCreatedOn());
