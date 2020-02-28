@@ -17,8 +17,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;

@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 import org.sagebionetworks.bridge.validators.ScheduleValidator;
 import org.springframework.validation.Errors;

@@ -64,12 +64,12 @@ class HibernateAssessmentDao implements AssessmentDao {
         clauses.add("WHERE appId = :appId");
         if (includeTags) {
             clauses.add("guid IN (SELECT DISTINCT assessmentGuid FROM AssessmentTags WHERE tagValue IN :tags)");
-            //builder.getParameters().put("tags", tags);
+            builder.getParameters().put("tags", tags);
         }
         if (!includeDeleted) {
             clauses.add("deleted = 0");
         }
-        builder.append(AND_JOINER.join(clauses), "appId", appId, "tags", tags);
+        builder.append(AND_JOINER.join(clauses), "appId", appId);
         builder.append("ORDER BY createdOn DESC");
         
         int count = hibernateHelper.nativeQueryCount(
