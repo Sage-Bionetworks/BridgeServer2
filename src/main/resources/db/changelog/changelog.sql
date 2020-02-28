@@ -308,3 +308,5 @@ CREATE TABLE `AssessmentTags` (
   CONSTRAINT FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`),
   CONSTRAINT FOREIGN KEY (`tagValue`) REFERENCES `Tags` (`value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);

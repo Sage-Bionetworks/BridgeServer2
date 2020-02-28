@@ -55,23 +55,21 @@ class HibernateAssessmentDao implements AssessmentDao {
         // Not sure pulling this out into constants is any easier to understand...
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
-        builder.append("  SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments"); 
-        builder.append("  GROUP BY identifier) AS latest_assessments");
+        builder.append("SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments");
+        builder.append("GROUP BY identifier) AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
-        if (includeTags) {
-            builder.append("INNER JOIN AssessmentTags AS atag ON a.guid = atag.assessmentGuid");
-        }
+        
         List<String> clauses = new ArrayList<>();
         clauses.add("WHERE appId = :appId");
         if (includeTags) {
-            clauses.add("atag.tagValue IN :tags");
-            builder.getParameters().put("tags", tags);
+            clauses.add("guid IN (SELECT DISTINCT assessmentGuid FROM AssessmentTags WHERE tagValue IN :tags)");
+            //builder.getParameters().put("tags", tags);
         }
         if (!includeDeleted) {
-            clauses.add("a.deleted = 0");    
+            clauses.add("deleted = 0");
         }
-        builder.append(AND_JOINER.join(clauses), "appId", appId);
+        builder.append(AND_JOINER.join(clauses), "appId", appId, "tags", tags);
         builder.append("ORDER BY createdOn DESC");
         
         int count = hibernateHelper.nativeQueryCount(
