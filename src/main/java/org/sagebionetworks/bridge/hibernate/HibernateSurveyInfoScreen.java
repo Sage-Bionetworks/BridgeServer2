@@ -1,31 +1,25 @@
-package org.sagebionetworks.bridge.dynamodb;
+package org.sagebionetworks.bridge.hibernate;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.surveys.Image;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements SurveyInfoScreen {
-    
+public class HibernateSurveyInfoScreen extends HibernateSurveyElement implements SurveyInfoScreen {
     private String prompt;
     private String promptDetail;
     private String title;
     private Image image;
     
-    public DynamoSurveyInfoScreen() {
+    public HibernateSurveyInfoScreen() {
         setType("SurveyInfoScreen");
     }
     
-    public DynamoSurveyInfoScreen(SurveyElement entry) {
-        setSurveyCompoundKey(entry.getSurveyCompoundKey());
+    public HibernateSurveyInfoScreen(SurveyElement entry) {
         setType(entry.getType());
         setIdentifier(entry.getIdentifier());
         setGuid(entry.getGuid());
@@ -35,7 +29,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
 
     @Override
-    @DynamoDBIgnore
     public String getTitle() {
         return title;
     }
@@ -46,7 +39,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
 
     @Override
-    @DynamoDBIgnore
     public String getPrompt() {
         return prompt;
     }
@@ -57,7 +49,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
 
     @Override
-    @DynamoDBIgnore
     public String getPromptDetail() {
         return promptDetail;
     }
@@ -68,7 +59,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
     
     @Override
-    @DynamoDBIgnore
     public Image getImage() {
         return image;
     }
@@ -79,9 +69,6 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     }
     
     @Override
-    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
-    @DynamoDBAttribute
-    @JsonIgnore
     public JsonNode getData() {
         ObjectNode data = JsonNodeFactory.instance.objectNode();
         data.put(PROMPT_PROPERTY, prompt);
@@ -101,7 +88,7 @@ public class DynamoSurveyInfoScreen extends DynamoSurveyElement implements Surve
     
     @Override
     public String toString() {
-        return String.format("DynamoSurveyInfoScreen [surveyCompoundKey=%s, guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, prompt=%s, promptDetail=%s, title=%s, image=%s]", 
-            getSurveyCompoundKey(), getGuid(), getIdentifier(), getType(), getOrder(), getBeforeRules(), getAfterRules(), prompt, promptDetail, title, image);
+        return String.format("HibernateSurveyInfoScreen [guid=%s, identifier=%s, type=%s, order=%s, beforeRules=%s, afterRules=%s, prompt=%s, promptDetail=%s, title=%s, image=%s]", 
+            getGuid(), getIdentifier(), getType(), getOrder(), getBeforeRules(), getAfterRules(), prompt, promptDetail, title, image.toString());
     }
 }

@@ -267,3 +267,37 @@ CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);
 ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','TEST_USERS','WORKER','SUPERADMIN') NOT NULL;
 
+-- changeset bridge:13
+
+CREATE TABLE `Surveys` (
+  `studyKey` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `guid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `createdOn` bigint(20) NOT NULL,
+  `modifiedOn` bigint(20) NOT NULL,
+  `copyrightNotice` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `moduleId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `moduleVersion` int(10) unsigned DEFAULT NULL,
+  `version` int(10) unsigned DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `identifier` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `published` tinyint(1) DEFAULT '0',
+  `deleted` tinyint(1) DEFAULT '0',
+  `schemaRevision` int(10) DEFAULT NULL,
+  PRIMARY KEY (`guid`,`createdOn`),
+  KEY `studyKey-identifier-createdOn-index` (`studyKey`,`identifier`,`createdOn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `SurveyElements` (
+  `guid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `createdOn` bigint(20) NOT NULL,
+  `order` int(10) NOT NULL,
+  `surveyGuid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `identifier` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `beforeRules` mediumtext COLLATE utf8_unicode_ci,
+  `afterRules` mediumtext COLLATE utf8_unicode_ci,
+  `data` mediumtext COLLATE utf8_unicode_ci,
+  `type` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `surveyGuid-createdOn-order` (`surveyGuid`,`createdOn`,`order`),
+  CONSTRAINT `SurveyElements-SurveyGuid-CreatedOn-Constraint` FOREIGN KEY (`surveyGuid`, `createdOn`) REFERENCES `Surveys` (`guid`, `createdOn`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

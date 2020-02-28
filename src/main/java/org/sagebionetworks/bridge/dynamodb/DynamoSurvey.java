@@ -256,11 +256,6 @@ public class DynamoSurvey implements Survey {
     }
 
     @Override
-    public boolean keysEqual(GuidCreatedOnVersionHolder keys) {
-        return (keys != null && keys.getGuid().equals(guid) && keys.getCreatedOn() == createdOn);
-    }
-
-    @Override
     public final int hashCode() {
         return Objects.hash(studyKey, guid, createdOn, modifiedOn, copyrightNotice, moduleId, moduleVersion, version,
                 name, identifier,

@@ -3,11 +3,13 @@ package org.sagebionetworks.bridge.models.surveys;
 import java.util.List;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
+import org.sagebionetworks.bridge.hibernate.HibernateSurvey;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 
 @JsonDeserialize(as=DynamoSurvey.class)
 @BridgeTypeName("Survey")
@@ -16,7 +18,7 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     static Survey create() {
         return new DynamoSurvey();
     }
-
+    
     String getStudyIdentifier();
     void setStudyIdentifier(String studyIdentifier);
     
@@ -71,6 +73,17 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
     List<SurveyElement> getElements();
     void setElements(List<SurveyElement> elements);
     
-    List<SurveyQuestion> getUnmodifiableQuestionList();
+    default List<SurveyQuestion> getUnmodifiableQuestionList() {
+        ImmutableList.Builder<SurveyQuestion> builder = new ImmutableList.Builder<>();
+        for (SurveyElement element : getElements()) {
+            if (SurveyElementConstants.SURVEY_QUESTION_TYPE.equals(element.getType())) {
+                builder.add((SurveyQuestion) element);
+            }
+        }
+        return builder.build();
+    }
     
+    default boolean keysEqual(GuidCreatedOnVersionHolder keys) {
+        return (keys != null && keys.getGuid().equals(getGuid()) && keys.getCreatedOn() == getCreatedOn());
+    }
 }
