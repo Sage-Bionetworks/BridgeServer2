@@ -351,7 +351,7 @@ public class AssessmentService {
     
     Tuple<String> parseOwnerId(String guid, String ownerId) {
         if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid + ", ownerId=" + ownerId);
+            LOG.error("Owner ID is null, guid=" + guid);
             throw new UnauthorizedException();
         }
         String[] parts = ownerId.split(":", 2);
