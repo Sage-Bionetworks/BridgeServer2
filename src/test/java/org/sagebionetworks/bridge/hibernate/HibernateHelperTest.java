@@ -14,6 +14,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -30,6 +31,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -544,4 +546,90 @@ public class HibernateHelperTest {
         }
     }
  
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void nativeQueryCountSuccess() {
+        Object object = new Object();
+        NativeQuery mockQuery = mock(NativeQuery.class);
+        Map<String,Object> params = ImmutableMap.of("param", object);
+        
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        when(mockQuery.uniqueResult()).thenReturn(BigInteger.valueOf(50L));
+        
+        int retValue = helper.nativeQueryCount(QUERY, params);
+        assertEquals(retValue, 50);
+        
+        verify(mockQuery).setParameter("param", object);        
+    }
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void nativeQueryCountNoParams() {
+        NativeQuery mockQuery = mock(NativeQuery.class);
+        
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        when(mockQuery.uniqueResult()).thenReturn(BigInteger.valueOf(50L));
+        
+        int retValue = helper.nativeQueryCount(QUERY, ImmutableMap.of());
+        assertEquals(retValue, 50);
+        
+        verify(mockQuery, never()).setParameter(Mockito.anyString(), any());        
+    }
+
+    
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void nativeQueryCountFailure() {
+        NativeQuery mockQuery = mock(NativeQuery.class);
+        
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        
+        int retValue = helper.nativeQueryCount(QUERY, null);
+        assertEquals(retValue, 0);
+    }    
+    
+    @Test
+    public void nativeQueryGetSuccess() {
+        // mock query
+        List<Object> hibernateOutputList = ImmutableList.of();
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockQuery.list()).thenReturn(hibernateOutputList);
+
+        when(mockSession.createNativeQuery(QUERY, Object.class)).thenReturn(mockQuery);
+
+        // execute and validate
+        List<Object> helperOutputList = helper.nativeQueryGet(QUERY, null, null, null, Object.class);
+        assertSame(helperOutputList, hibernateOutputList);
+        
+        verify(mockQuery, never()).setFirstResult(Mockito.anyInt());
+        verify(mockQuery, never()).setMaxResults(Mockito.anyInt());
+        verify(mockQuery, never()).setParameter(Mockito.anyString(), any());
+    }
+
+    @Test
+    public void nativeQueryGetSetsParameters() {
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockSession.createNativeQuery(QUERY, Object.class)).thenReturn(mockQuery);
+        
+        Object object = new Object();
+        Map<String, Object> params = ImmutableMap.of("param", object);
+
+        // execute and validate
+        helper.nativeQueryGet(QUERY, params, null, null, Object.class);
+        
+        verify(mockQuery).setParameter("param", object);
+    }
+    
+    @Test
+    public void nativeQueryGetSetsOffsetAndLimit() {
+        // mock query
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockSession.createNativeQuery(QUERY, Object.class)).thenReturn(mockQuery);
+        
+        // execute and validate
+        helper.nativeQueryGet(QUERY, ImmutableMap.of(), 100, 25, Object.class);
+        
+        verify(mockQuery).setFirstResult(100);
+        verify(mockQuery).setMaxResults(25);
+    }    
 }

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -11,6 +12,7 @@ import javax.persistence.PersistenceException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 
@@ -80,6 +82,28 @@ public class HibernateHelper {
         }
     }
 
+    @SuppressWarnings("rawtypes")
+    public int nativeQueryCount(String queryString, Map<String,Object> parameters) {
+        // This does not accept the typed parameter with something like a Long value, it
+        // throws an "unknown entity" exception. So we use the untyped API for this. Also,
+        // it returns BigInteger(?!).
+        BigInteger count = executeWithExceptionHandling(null, session -> {
+            NativeQuery query = session.createNativeQuery(queryString);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return (BigInteger)query.uniqueResult();
+        });
+        if (count != null) {
+            return count.intValue();
+        } else {
+            // This is unusual, but to protect from NPEs, return 0.
+            return 0;
+        }
+    }    
+    
     /**
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
@@ -102,6 +126,24 @@ public class HibernateHelper {
         });
     }
 
+    public <T> List<T> nativeQueryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
+        return executeWithExceptionHandling(null, session -> {
+            Query<T> query = session.createNativeQuery(queryString, clazz);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            if (offset != null) {
+                query.setFirstResult(offset);
+            }
+            if (limit != null) {
+                query.setMaxResults(limit);
+            }
+            return query.list();
+        });
+    }    
+    
     /**
      * Executes the given query as an update. Can either be an UPDATE query or a DELETE query. Returns the number of
      * rows affected by this query.

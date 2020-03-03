@@ -7,9 +7,9 @@ import java.io.IOException;
 import javax.persistence.AttributeConverter;
 import javax.persistence.PersistenceException;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMappingException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
@@ -26,15 +26,18 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
  * @param <X> the type of the field being persisted (should be the same as the Java type of the 
  *  field on the object being persisted).
  */
-public abstract class BaseJsonAttributeConverter<X> implements AttributeConverter<X,String> {
+public abstract class BaseJsonAttributeConverter<X> implements AttributeConverter<X, String> {
+    protected ObjectMapper getObjectMapper() {
+        return BridgeObjectMapper.get();
+    }
     protected String serialize(X object) {
         if (object == null) {
             return null;
         }
         try {
-            return BridgeObjectMapper.get().writeValueAsString(object);
+            return getObjectMapper().writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            throw new DynamoDBMappingException(e);
+            throw new PersistenceException(e);
         }
     }
     public X deserialize(String ser, TypeReference<X> typeRef) {
@@ -42,7 +45,7 @@ public abstract class BaseJsonAttributeConverter<X> implements AttributeConverte
             return null;
         }
         try {
-            return BridgeObjectMapper.get().readValue(ser, typeRef);
+            return getObjectMapper().readValue(ser, typeRef);
         } catch (IOException e) {
             throw new PersistenceException(e);
         }

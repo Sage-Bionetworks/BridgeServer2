@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -37,6 +38,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
+import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -317,13 +319,13 @@ public class BridgeUtils {
         }
         return template;
     }
-
+    
     public static String generateGuid() {
         // Increases size from 16 to 18 bytes over UUID.randomUUID() while 
         // still being shorter than the prior implementation. 
         byte[] buffer = new byte[18];
         SECURE_RANDOM.nextBytes(buffer);
-        return ENCODER.encodeToString(buffer);
+            return ENCODER.encodeToString(buffer);
     }
     
     /** Generate a random 16-byte salt, using a {@link SecureRandom}. */
@@ -634,16 +636,22 @@ public class BridgeUtils {
     } 
     
     public static String sanitizeHTML(String documentContent) {
-        if (StringUtils.isBlank(documentContent)) {
+        return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
+    }
+    
+    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
+        checkNotNull(whitelist);
+        
+        if (isBlank(documentContent)) {
             return documentContent;
         }
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(BridgeConstants.CKEDITOR_WHITELIST);
+        Cleaner cleaner = new Cleaner(whitelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
-        // brimg is not a valid attribute, it marks our one template image.
+        // "brimg" is not a valid attribute, it marks our one template image.
         for (Element el : clean.select("img[brimg]")) {
             el.attr("src", "cid:consentSignature");
         }

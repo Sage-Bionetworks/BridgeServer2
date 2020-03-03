@@ -681,5 +681,5 @@ public class TestUtils {
         String devPart = BridgeConfigFactory.getConfig().getUser();
         String rndPart = TestUtils.randomName(cls);
         return String.format("bridge-testing+%s-%s@sagebase.org", devPart, rndPart);
-    }    
+    }
 }

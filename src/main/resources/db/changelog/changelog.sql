@@ -267,3 +267,46 @@ CREATE INDEX `Accounts-SynapseUserId-Index` ON `Accounts`(`synapseUserId`);
 ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','TEST_USERS','WORKER','SUPERADMIN') NOT NULL;
 
+-- changeset bridge:13
+
+CREATE TABLE `Assessments` (
+  `guid` varchar(255) NOT NULL,
+  `appId` varchar(255) NOT NULL,
+  `identifier` varchar(255) NOT NULL,
+  `revision` int(10) unsigned NOT NULL,
+  `ownerId` varchar(255) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `summary` text,
+  `validationStatus` text,
+  `normingStatus` text,
+  `osName` varchar(255) NOT NULL,
+  `originGuid` varchar(255),
+  `customizationFields` text,
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `deleted` tinyint(1) DEFAULT '0',
+  `version` bigint(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY (`appId`, `identifier`, `revision`),
+  CONSTRAINT FOREIGN KEY (`originGuid`) REFERENCES `Assessments` (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE INDEX `Assessments-AppId` ON `Assessments`(`appId`);
+CREATE INDEX `Assessments-AppId-Guid` ON `Assessments`(`appId`, `guid`);
+CREATE INDEX `Assessments-AppId-Identifier` ON `Assessments`(`appId`, `identifier`);
+-- the appId-identifier-revision combo is indexed by UNIQUE KEY
+
+CREATE TABLE `Tags` (
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `AssessmentTags` (
+  `assessmentGuid` varchar(255) NOT NULL,
+  `tagValue` varchar(255) NOT NULL,
+  PRIMARY KEY (`assessmentGuid`, `tagValue`),
+  CONSTRAINT FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`),
+  CONSTRAINT FOREIGN KEY (`tagValue`) REFERENCES `Tags` (`value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);

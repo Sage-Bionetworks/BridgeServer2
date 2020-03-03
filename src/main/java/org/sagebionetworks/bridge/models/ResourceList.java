@@ -25,7 +25,9 @@ public class ResourceList<T> {
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
+    public static final String GUID = "guid";
     public static final String ID_FILTER = "idFilter";
+    public static final String IDENTIFIER = "identifier";
     public static final String INCLUDE_DELETED = "includeDeleted";
     public static final String LANGUAGE = "language";
     public static final String NEXT_PAGE_OFFSET_KEY = "nextPageOffsetKey";
@@ -39,6 +41,7 @@ public class ResourceList<T> {
     public static final String SCHEDULED_ON_START = "scheduledOnStart";
     public static final String START_DATE = "startDate";
     public static final String START_TIME = "startTime";
+    public static final String TAGS = "tags";
     public static final String TOTAL = "total";
     public static final String TYPE = "type";
     public static final String TEMPLATE_TYPE = "templateType";
