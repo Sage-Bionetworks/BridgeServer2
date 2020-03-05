@@ -1,11 +1,17 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
+import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
@@ -38,10 +44,12 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -908,6 +916,52 @@ public class BridgeUtilsTest {
         assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN)));
         assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
         assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void ownershipOwnerIdIsBlank() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        BridgeUtils.checkOwnership(APP_ID, null);
+    }
+    
+    @Test
+    public void ownershipGlobalUser() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+    }
+    
+    @Test
+    public void ownershipScopedUser() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void ownershipScopedUserOrgIdIsMissing() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+    }
+    
+    @Test
+    public void getEnumOrDefault() {
+        ResourceCategory value = BridgeUtils.getEnumOrDefault("publication", ResourceCategory.class, LICENSE);
+        assertEquals(value, PUBLICATION);
+    }
+    
+    @Test
+    public void getEnumOrDefaultReturnsDefault() {
+        ResourceCategory value = BridgeUtils.getEnumOrDefault(null, ResourceCategory.class, LICENSE);
+        assertEquals(value, LICENSE);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*nada is not a valid ResourceCategory.*")
+    public void getEnumOrDefaultInvalidEnum() {
+        BridgeUtils.getEnumOrDefault("nada", ResourceCategory.class, LICENSE);
     }
 
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
