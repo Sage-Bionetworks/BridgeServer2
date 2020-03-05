@@ -10,10 +10,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import javax.persistence.OptimisticLockException;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -24,6 +27,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
@@ -70,9 +74,6 @@ public class HibernateAssessmentDaoTest extends Mockito {
     
     @Captor
     ArgumentCaptor<Map<String,Object>> paramsCaptor;
-    
-    @Captor
-    ArgumentCaptor<Function<Session, HibernateAssessment>> functionCaptor;
     
     @Mock
     Session mockSession;
@@ -216,6 +217,22 @@ public class HibernateAssessmentDaoTest extends Mockito {
         assertNotNull(returnValue);
         
         verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+    
+    // I discovered a ClassCastException because we're not converting and returning
+    // a BridgeEntity within the lambda. Test verifies this is fixed.
+    @Test(expectedExceptions = ConcurrentModificationException.class)
+    public void createOrUpdateOptimisticLockException() throws Exception {
+        SessionFactory mockSessionFactory = mock(SessionFactory.class);
+        PersistenceExceptionConverter exceptionConverter = new BasicPersistenceExceptionConverter();
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        
+        HibernateHelper helper = new HibernateHelper(mockSessionFactory, exceptionConverter);
+        dao.setHibernateHelper(helper);
+        
+        when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
+        
+        dao.saveAssessment(APP_ID_VALUE, new Assessment());
     }
 
     @Test

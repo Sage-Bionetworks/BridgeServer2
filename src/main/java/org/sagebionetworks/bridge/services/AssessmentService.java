@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
+import static org.sagebionetworks.bridge.SecurityUtils.checkOwnership;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
@@ -50,7 +51,6 @@ public class AssessmentService {
     private static final Logger LOG = LoggerFactory.getLogger(AssessmentService.class);
     
     public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
-    static final String CALLER_NOT_MEMBER = "Assessment must be associated to one of the caller’s organizations.";
     static final String IDENTIFIER_REQUIRED = "identifier required";
     static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
@@ -391,25 +391,6 @@ public class AssessmentService {
             return Optional.empty();
         }
         return Optional.of(page.getItems().get(0));
-    }
-
-    /**
-     * If the caller has no organizational membership, then they can set any organization (however they 
-     * must set one, unlike the implementation of substudy relationships to user accounts). In this 
-     * case we check the org ID to ensure it's valid. If the caller has organizational memberships, 
-     * then the caller must be a member of the organization being cited. At that point we do not need 
-     * to validate the org ID since it was validated when it was set as an organizational relationship
-     * on the account. 
-     */
-    void checkOwnership(String appId, String ownerId) {
-        if (isBlank(ownerId)) {
-            throw new UnauthorizedException(CALLER_NOT_MEMBER);
-        }
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
-            return;
-        }
-        throw new UnauthorizedException(CALLER_NOT_MEMBER);
     }
     
     /**

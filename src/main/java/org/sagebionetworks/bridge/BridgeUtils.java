@@ -4,10 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -48,7 +46,6 @@ import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -71,21 +68,6 @@ import com.google.common.collect.Maps;
 
 public class BridgeUtils {
     
-    public static class SubstudyAssociations {
-        private final Set<String> substudyIdsVisibleToCaller;
-        private final Map<String, String> externalIdsVisibleToCaller;
-        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
-            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
-            this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
-        }
-        public Set<String> getSubstudyIdsVisibleToCaller() {
-            return substudyIdsVisibleToCaller;
-        }
-        public Map<String, String> getExternalIdsVisibleToCaller() {
-            return externalIdsVisibleToCaller;
-        }
-    }
-
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
@@ -97,8 +79,6 @@ public class BridgeUtils {
     
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
-            ImmutableMap.of());
 
     // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
     // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
@@ -158,65 +138,7 @@ public class BridgeUtils {
     public static void setRequestContext(RequestContext context) {
         REQUEST_CONTEXT_THREAD_LOCAL.set(context);
     }
-    
-    public static Account filterForSubstudy(Account account) {
-        if (account != null) {
-            RequestContext context = getRequestContext();
-            Set<String> callerSubstudies = context.getCallerSubstudies();
-            if (BridgeUtils.isEmpty(callerSubstudies)) {
-                return account;
-            }
-            Set<AccountSubstudy> matched = account.getAccountSubstudies().stream()
-                    .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
-                    .collect(toSet());
-            
-            if (!matched.isEmpty()) {
-                // Hibernate managed objects use a collection implementation that tracks changes,
-                // and shouldn't be set with a Java library collection. Here it is okay because 
-                // we're filtering an object to return through the API, and it won't be persisted.
-                account.setAccountSubstudies(matched);
-                return account;
-            }
-        }
-        return null;
-    }
-    
-    /**
-     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
-     * substudy memberships (then they are global and see everything).
-     */
-    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
-        if (accountSubstudies == null || accountSubstudies.isEmpty()) {
-            return NO_ASSOCIATIONS;
-        }
-        ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
-        ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        for (AccountSubstudy acctSubstudy : accountSubstudies) {
-            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
-                substudyIds.add(acctSubstudy.getSubstudyId());
-                if (acctSubstudy.getExternalId() != null) {
-                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
-                }
-            }
-        }
-        return new SubstudyAssociations(substudyIds.build(), externalIds.build()); 
-    }
-    
-    public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {
-        if (externalId != null) {
-            RequestContext context = getRequestContext();
-            Set<String> callerSubstudies = context.getCallerSubstudies();
-            if (BridgeUtils.isEmpty(callerSubstudies)) {
-                return externalId;
-            }
-            if (callerSubstudies.contains(externalId.getSubstudyId())) {
-                return externalId;
-            }
-        }
-        return null;
-    }
-    
+
     /**
      * Convert expiration measures in seconds to an English language explanation of
      * the expiration time. This is not intended to cover odd cases--our expirations 
@@ -488,6 +410,19 @@ public class BridgeUtils {
         }
     }
     
+    public static <T extends Enum<T>> T getEnumOrDefault(String value, Class<T> enumType, T defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return Enum.valueOf(enumType, value.toUpperCase());
+        } catch(IllegalArgumentException e) {
+            Object[] enums = enumType.getEnumConstants();
+            throw new BadRequestException(value + " is not a valid " + enumType.getSimpleName() + " (use: "
+                    + COMMA_SPACE_JOINER.join(enums).toLowerCase() + ")");
+        }
+    }
+    
     /**
      * Parse the string as a DateTime value, or return the defaultValue if it is null. 
      * If the value is provided but not a parseable DateTime, thrown a BadRequestException.
@@ -659,15 +594,4 @@ public class BridgeUtils {
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
         return clean.body().html();
     }
-    
-    public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return (callerRoles != null && requiredRole != null && 
-                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
-    }
-    
-    public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return callerRoles != null && requiredRoles != null && 
-                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
-    }
-
 }

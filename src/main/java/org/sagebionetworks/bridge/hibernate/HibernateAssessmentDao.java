@@ -125,9 +125,11 @@ class HibernateAssessmentDao implements AssessmentDao {
     @Override
     public Assessment saveAssessment(String appId, Assessment assessment) {
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
-        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
-                (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
-        return Assessment.create(retValue);
+        
+        return hibernateHelper.executeWithExceptionHandling(assessment, (session) -> {
+            HibernateAssessment retValue = (HibernateAssessment)session.merge(hibernateAssessment);
+            return Assessment.create(retValue);
+        });
     }
 
     @Override

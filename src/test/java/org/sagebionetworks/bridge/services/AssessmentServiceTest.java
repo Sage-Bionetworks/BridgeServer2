@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -10,7 +11,6 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
-import static org.sagebionetworks.bridge.services.AssessmentService.CALLER_NOT_MEMBER;
 import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
@@ -1015,40 +1015,10 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     // OWNERSHIP VERIFICATION
-    // There are also failure case tests for each service method that should verify ownership
+    // These are failure cases to verify we are calling SecurityUtils.checkOwnership(...)
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
-    public void ownershipOwnerIdIsBlank() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        service.checkOwnership(APP_ID_VALUE, null);
-    }
-    
-    @Test
-    public void ownershipGlobalUser() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
-        
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
-    
-    @Test
-    public void ownershipScopedUser() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
-    public void ownershipScopedUserOrgIdIsMissing() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1057,7 +1027,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentRevisionChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1066,7 +1036,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void updateAssessmentChecksOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -1081,7 +1051,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void publishAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1093,7 +1063,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void importAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1101,7 +1071,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void deleteAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());

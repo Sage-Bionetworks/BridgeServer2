@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -16,7 +17,6 @@ import org.sagebionetworks.bridge.services.SubstudyService;
 
 public class AssessmentValidator implements Validator {
 
-    static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
     private final SubstudyService substudyService;
     private final String appId;
     

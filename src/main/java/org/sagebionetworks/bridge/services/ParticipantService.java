@@ -6,10 +6,10 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
-import static org.sagebionetworks.bridge.BridgeUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.SecurityUtils.substudyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -36,9 +36,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.SecurityUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -254,7 +254,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId); // already filters for substudy
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        SecurityUtils.SubstudyAssociations assoc = SecurityUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
@@ -277,12 +277,12 @@ public class ParticipantService {
             LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
             throw new EntityNotFoundException(Account.class);
         }
-        if (BridgeUtils.filterForSubstudy(account) == null) {
+        if (SecurityUtils.filterForSubstudy(account) == null) {
             throw new EntityNotFoundException(Account.class);
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        SubstudyAssociations assoc = substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        SecurityUtils.SubstudyAssociations assoc = substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
@@ -304,8 +304,8 @@ public class ParticipantService {
         return builder.build();
     }
     
-    private StudyParticipant.Builder copyAccountToParticipant(StudyParticipant.Builder builder, SubstudyAssociations assoc,
-            Account account) {
+    private StudyParticipant.Builder copyAccountToParticipant(StudyParticipant.Builder builder, 
+            SecurityUtils.SubstudyAssociations assoc, Account account) {
         builder.withSharingScope(account.getSharingScope());
         builder.withNotifyByEmail(account.getNotifyByEmail());
         builder.withDataGroups(account.getDataGroups());

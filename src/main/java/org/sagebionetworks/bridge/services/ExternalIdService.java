@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.SecurityUtils;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -108,7 +109,7 @@ public class ExternalIdService {
         
         ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
-        if (BridgeUtils.filterForSubstudy(existing) == null) {
+        if (SecurityUtils.filterForSubstudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         externalIdDao.deleteExternalId(externalId);

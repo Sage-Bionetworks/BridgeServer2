@@ -21,6 +21,7 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
 
     // Study ID for the test study, used in local tests and most integ tests.
     public static final String API_STUDY_ID_STRING = "api";

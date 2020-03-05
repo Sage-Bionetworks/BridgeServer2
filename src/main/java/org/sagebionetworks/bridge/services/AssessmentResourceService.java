@@ -1,0 +1,204 @@
+package org.sagebionetworks.bridge.services;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.jsoup.safety.Whitelist.simpleText;
+import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
+import static org.sagebionetworks.bridge.SecurityUtils.checkOwnership;
+import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
+import static org.sagebionetworks.bridge.models.ResourceList.MAX_REVISION;
+import static org.sagebionetworks.bridge.models.ResourceList.MIN_REVISION;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.INSTANCE;
+
+import java.util.Optional;
+import java.util.Set;
+
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
+import org.sagebionetworks.bridge.validators.Validate;
+
+@Component
+public class AssessmentResourceService {
+    
+    private AssessmentResourceDao dao;
+    
+    private AssessmentService assessmentService;
+    
+    @Autowired
+    final void setAssessmentResourceDao(AssessmentResourceDao dao) {
+        this.dao = dao;
+    }
+    
+    @Autowired
+    final void setAssessmentService(AssessmentService assessmentService) {
+        this.assessmentService = assessmentService;
+    }
+
+    DateTime getCreatedOn() {
+        return DateTime.now();
+    }
+    
+    DateTime getModifiedOn() {
+        return DateTime.now();
+    }
+    
+    String generateGuid() {
+        return BridgeUtils.generateGuid();
+    }
+    
+    public PagedResourceList<AssessmentResource> getResources(String appId, String assessmentId, Integer offsetBy,
+            Integer pageSize, Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision,
+            boolean includeDeleted) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        
+        if (minRevision != null && maxRevision != null && maxRevision < minRevision) {
+            throw new BadRequestException("maxRevision cannot be greater than minRevision");
+        }
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+
+        PagedResourceList<AssessmentResource> page = dao.getResources(assessmentId, offsetBy, pageSize, categories, minRevision, maxRevision, includeDeleted);
+        
+        for (AssessmentResource resource : page.getItems()) {
+            resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
+        }
+        return page.withRequestParam(OFFSET_BY, offsetBy)
+                .withRequestParam(PAGE_SIZE, pageSize)
+                .withRequestParam(CATEGORIES, categories)
+                .withRequestParam(MIN_REVISION, minRevision)
+                .withRequestParam(MAX_REVISION, maxRevision)
+                .withRequestParam(INCLUDE_DELETED, includeDeleted);
+    }
+
+    public AssessmentResource getResource(String appId, String assessmentId, String guid) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        checkArgument(isNotBlank(guid));
+        
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        AssessmentResource resource = dao.getResource(assessmentId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
+        resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
+        return resource;
+    }
+    
+    public AssessmentResource createResource(String appId, String assessmentId, AssessmentResource resource) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        checkNotNull(resource);
+        
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        checkOwnership(appId, assessment.getOwnerId());
+        
+        DateTime timestamp = getCreatedOn();
+        resource.setGuid(generateGuid());
+        resource.setCreatedOn(timestamp);
+        resource.setModifiedOn(timestamp);
+        resource.setDeleted(false);
+        resource.setCreatedAtRevision(assessment.getRevision());
+        sanitizeResource(resource);
+        
+        // validate
+        Validate.entityThrowingException(INSTANCE, resource);
+        
+        AssessmentResource retValue = dao.saveResource(assessmentId, resource);
+        retValue.setUpToDate(true);
+        return retValue;
+    }
+    
+    public AssessmentResource updateResource(String appId, String assessmentId, AssessmentResource resource) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        checkNotNull(resource);
+        
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        checkOwnership(appId, assessment.getOwnerId());
+        
+        // Don't call getResource(), you'll just load the assessment twice
+        AssessmentResource existing = dao.getResource(assessmentId, resource.getGuid())
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
+        if (resource.isDeleted() && existing.isDeleted()) {
+            throw new EntityNotFoundException(AssessmentResource.class);
+        }
+        resource.setCreatedAtRevision(assessment.getRevision());
+        resource.setModifiedOn(getModifiedOn());
+        sanitizeResource(resource);
+        
+        // validate
+        Validate.entityThrowingException(INSTANCE, resource);
+        
+        AssessmentResource retValue = dao.saveResource(assessmentId, resource);
+        retValue.setUpToDate(true);
+        return retValue;
+    }
+    
+    public void deleteResource(String appId, String assessmentId, String guid) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        checkArgument(isNotBlank(guid));
+        
+        // Verify access to this.
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        checkOwnership(appId, assessment.getOwnerId());
+        
+        AssessmentResource resource = dao.getResource(assessmentId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
+        resource.setDeleted(true);
+        resource.setModifiedOn(getModifiedOn());
+        
+        dao.saveResource(assessmentId, resource);
+    }
+    
+    // Only admins can call this.
+    public void deleteResourcePermanently(String appId, String assessmentId, String guid) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        checkArgument(isNotBlank(guid));
+        
+        Optional<AssessmentResource> opt = dao.getResource(assessmentId, guid);
+        if (opt.isPresent()) {
+            dao.deleteResource(assessmentId, opt.get());
+        }
+    }
+    
+    static void sanitizeResource(AssessmentResource resource) {
+        resource.setTitle(sanitizeHTML(simpleText(), resource.getTitle()));
+        resource.setUrl(sanitizeHTML(simpleText(), resource.getUrl()));
+        resource.setFormat(sanitizeHTML(simpleText(), resource.getFormat()));
+        resource.setDate(sanitizeHTML(simpleText(), resource.getDate()));
+        resource.setDescription(sanitizeHTML(simpleText(), resource.getDescription()));
+        resource.setLanguage(sanitizeHTML(simpleText(), resource.getLanguage()));
+        if (resource.getContributors() != null) {
+            resource.setContributors(resource.getContributors().stream()
+                    .map(AssessmentResourceService::sanitize).collect(toList())); 
+        }
+        if (resource.getCreators() != null) {
+            resource.setCreators(resource.getCreators().stream()
+                    .map(AssessmentResourceService::sanitize).collect(toList())); 
+        }
+        if (resource.getPublishers() != null) {
+            resource.setPublishers(resource.getPublishers().stream()
+                    .map(AssessmentResourceService::sanitize).collect(toList())); 
+        }
+    }
+    
+    // for some reason, stream map() can't call this directly
+    static String sanitize(String value) {
+        return sanitizeHTML(simpleText(), value);
+    }
+}

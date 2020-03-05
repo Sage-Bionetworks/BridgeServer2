@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeUtils.filterForSubstudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -27,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.SecurityUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
@@ -267,7 +267,7 @@ public class AccountService {
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
             // filtering based on the substudy associations of the caller.
-            return filterForSubstudy(optional.get());
+            return SecurityUtils.filterForSubstudy(optional.get());
         }
         return null;
     }
