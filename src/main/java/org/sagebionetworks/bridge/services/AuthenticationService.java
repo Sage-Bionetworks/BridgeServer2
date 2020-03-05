@@ -12,7 +12,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
-import org.sagebionetworks.bridge.SecurityUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -336,7 +335,7 @@ public class AuthenticationService {
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
         // The *caller* must be associated to the external IDs substudy, if any
-        if (SecurityUtils.filterForSubstudy(externalIdObj) == null) {
+        if (BridgeUtils.filterForSubstudy(externalIdObj) == null) {
             throw new EntityNotFoundException(Account.class);
         }
 
@@ -344,7 +343,7 @@ public class AuthenticationService {
         Account account = accountService.getAccount(accountId);
         
         // The *target* must be associated to the substudy, if any
-        boolean existsButWrongSubstudy = account != null && SecurityUtils.filterForSubstudy(account) == null;
+        boolean existsButWrongSubstudy = account != null && BridgeUtils.filterForSubstudy(account) == null;
         if (existsButWrongSubstudy) {
             throw new EntityNotFoundException(Account.class);
         }

@@ -65,10 +65,10 @@ public class RequestContext {
         return callerRoles != null && !callerRoles.isEmpty();
     }
     public boolean isInRole(Roles role) {
-        return SecurityUtils.isInRole(callerRoles, role);
+        return BridgeUtils.isInRole(callerRoles, role);
     }
     public boolean isInRole(Set<Roles> roleSet) {
-        return SecurityUtils.isInRole(callerRoles, roleSet);
+        return BridgeUtils.isInRole(callerRoles, roleSet);
     }
     public String getCallerUserId() { 
         return callerUserId;

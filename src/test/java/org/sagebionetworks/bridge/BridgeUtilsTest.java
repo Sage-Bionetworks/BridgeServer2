@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
-import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
@@ -13,6 +16,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,6 +26,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -35,13 +40,14 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.util.BridgeCollectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -118,6 +124,114 @@ public class BridgeUtilsTest {
     }
 
     @Test
+    public void substudyIdsVisibleToCallerFilters() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getSubstudyIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableSet.of("substudyA", "substudyB"));
+    }
+    
+    @Test
+    public void substudyIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getSubstudyIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableSet.of("substudyA", "substudyB", "substudyC"));
+    }
+    
+    @Test
+    public void substudyIdsVisibleToCallerEmpty() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(ImmutableSet.of())
+                .getSubstudyIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableSet.of());
+    }    
+    
+    @Test
+    public void substudyIdsVisibleToCallerNull() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(null)
+                .getSubstudyIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableSet.of());
+    }
+    
+    @Test
+    public void externalIdsVisibleToCaller() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        asA.setExternalId("extA");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        asB.setExternalId("extB");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        asC.setExternalId("extC");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getExternalIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableMap.of("substudyA", "extA", "substudyB", "extB"));
+    }
+    
+    @Test
+    public void externalIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
+        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        asA.setExternalId("extA");
+        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        asB.setExternalId("extB");
+        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        asC.setExternalId("extC");
+        Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
+        
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
+                .getExternalIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableMap.of("substudyA", "extA", "substudyB", "extB", "substudyC", "extC"));
+    }    
+
+    @Test
+    public void externalIdsVisibleToCallerEmpty() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(ImmutableSet.of())
+                .getExternalIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableMap.of());
+    }      
+    
+    @Test
+    public void externalIdsVisibleToCallerNull() {
+        Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
+        
+        Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(null)
+                .getExternalIdsVisibleToCaller();
+        
+        assertEquals(visibles, ImmutableMap.of());
+    }
+    
+    @Test
     public void collectExternalIds() {
         Account account = Account.create();
         AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
@@ -153,6 +267,104 @@ public class BridgeUtilsTest {
     public void collectSubstudyIdsNullsAreIgnored() {
         Set<String> externalIds = BridgeUtils.collectSubstudyIds(Account.create());
         assertEquals(externalIds, ImmutableSet.of());
+    }
+    
+    @Test
+    public void filterForSubstudyAccountRemovesUnsharedSubstudyIds() {
+        Set<String> substudies = ImmutableSet.of("substudyA");
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(substudies).build());
+        
+        Account account = BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyB", "substudyA"));
+        assertEquals(account.getAccountSubstudies().size(), 1);
+        assertEquals(Iterables.getFirst(account.getAccountSubstudies(), null).getSubstudyId(), "substudyA");
+        
+        BridgeUtils.setRequestContext(null);
+    }
+    
+    @Test
+    public void filterForSubstudyAccountReturnsAllUnsharedSubstudyIdsForNonSubstudyCaller() {
+        Account account = BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyB", "substudyA"));
+        assertEquals(account.getAccountSubstudies().size(), 2);
+    }
+    
+    @Test
+    public void filterForSubstudyAccountNullReturnsNull() {
+        assertNull(BridgeUtils.filterForSubstudy((Account)null));
+    }
+    
+    @Test
+    public void filterForSubstudyAccountNoContextReturnsNormalAccount() {
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+    }
+    
+    @Test
+    public void filterForSubstudyAccountNoContextReturnsSubstudyAccount() {
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyAccountWithSubstudiesHidesNormalAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy()));
+        BridgeUtils.setRequestContext(null);
+    }
+
+    @Test
+    public void filterForSubstudyAccountWithMatchingSubstudiesReturnsSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNotNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyAccountWithMismatchedSubstudiesHidesSubstudyAccount() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("notSubstudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getAccountWithSubstudy("substudyA")));
+    }
+
+    @Test
+    public void filterForSubstudyExtIdNullReturnsNull() {
+        assertNull(BridgeUtils.filterForSubstudy((ExternalIdentifier)null));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdNoContextReturnsExtId() {
+        assertNotNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdWithSubstudiesHidesNormalExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy(null)));
+        BridgeUtils.setRequestContext(null);
+    }
+
+    @Test
+    public void filterForSubstudyExtIdWithMatchingSubstudiesReturnsExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNotNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyA")));
+    }
+    
+    @Test
+    public void filterForSubstudyExtIdWithMismatchedSubstudiesHidesExtId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        assertNull(BridgeUtils.filterForSubstudy(getExternalIdentifierWithSubstudy("substudyB")));
+    }
+    
+    private Account getAccountWithSubstudy(String... substudyIds) {
+        Account account = Account.create();
+        Set<AccountSubstudy> accountSubstudies = Arrays.asList(substudyIds)
+                .stream().map((id) -> {
+            return AccountSubstudy.create("studyId", id, "accountId");
+        }).collect(BridgeCollectors.toImmutableSet());
+        account.setAccountSubstudies(accountSubstudies);
+        return account;
+    }
+    
+    private ExternalIdentifier getExternalIdentifierWithSubstudy(String substudyId) {
+        ExternalIdentifier id = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
+        id.setSubstudyId(substudyId);
+        return id;
     }
     
     @Test
@@ -619,24 +831,6 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void getEnumOrDefault() {
-        ResourceCategory value = BridgeUtils.getEnumOrDefault("publication", ResourceCategory.class, LICENSE);
-        assertEquals(value, PUBLICATION);
-    }
-    
-    @Test
-    public void getEnumOrDefaultReturnsDefault() {
-        ResourceCategory value = BridgeUtils.getEnumOrDefault(null, ResourceCategory.class, LICENSE);
-        assertEquals(value, LICENSE);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*nada is not a valid ResourceCategory.*")
-    public void getEnumOrDefaultInvalidEnum() {
-        BridgeUtils.getEnumOrDefault("nada", ResourceCategory.class, LICENSE);
-    }
-    
-    @Test
     public void toSynapseFriendlyName() {
         assertEquals(BridgeUtils.toSynapseFriendlyName("This (is a).-_ synapse Friendly Name3 "),
                 "This is a .-_ synapse Friendly Name3");
@@ -682,6 +876,38 @@ public class BridgeUtilsTest {
         String content = "<p id=remove-me>Test<script>This should be removed</script><img onerror=''>";
         String result = BridgeUtils.sanitizeHTML(Whitelist.none(), content);
         assertEquals(result, "Test");
+    }
+
+    @Test
+    public void isInRoleMethodsAreNullSafe() {
+        assertFalse(BridgeUtils.isInRole(null, (Roles)null));
+        assertFalse(BridgeUtils.isInRole(null, (Set<Roles>)null));
+    }
+    
+    @Test
+    public void isInRoleForSuperadminMatchesEverything() {
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), DEVELOPER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), RESEARCHER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ADMIN));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), WORKER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(RESEARCHER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(ADMIN)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(WORKER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
+    }
+    
+    @Test
+    public void isInRole() {
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), DEVELOPER));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), RESEARCHER));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ADMIN));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), WORKER));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER)));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN)));
+        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
+        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
     }
 
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
