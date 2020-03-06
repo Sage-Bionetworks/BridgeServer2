@@ -21,6 +21,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -43,6 +44,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -51,6 +53,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
@@ -66,6 +69,9 @@ public class AssessmentServiceTest extends Mockito {
     AssessmentDao mockDao;
     
     @Mock
+    AssessmentResourceDao mockResourceDao;
+    
+    @Mock
     SubstudyService mockSubstudyService;
     
     @Mock
@@ -73,6 +79,9 @@ public class AssessmentServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<Assessment> assessmentCaptor;
+    
+    @Captor
+    ArgumentCaptor<List<AssessmentResource>> resourcesCaptor;
     
     @InjectMocks
     @Spy
@@ -84,6 +93,7 @@ public class AssessmentServiceTest extends Mockito {
         when(service.generateGuid()).thenReturn(GUID);
         when(service.getCreatedOn()).thenReturn(CREATED_ON);
         when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
+        when(service.getPageSize()).thenReturn(5);
     }
     
     @AfterMethod
@@ -785,7 +795,10 @@ public class AssessmentServiceTest extends Mockito {
         
         when(mockDao.getAssessment(APP_ID_VALUE, "oldGuid")).thenReturn(Optional.of(existing));
         
-        when(mockDao.publishAssessment(any(), any(), any())).thenReturn(ASSESSMENT);
+        when(mockResourceDao.getResources(APP_ID_VALUE, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
+                .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        
+        when(mockDao.publishAssessment(any(), any(), any(), any())).thenReturn(ASSESSMENT);
         
         // Assume no published versions
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
@@ -793,7 +806,8 @@ public class AssessmentServiceTest extends Mockito {
         Assessment retValue = service.publishAssessment(APP_ID_VALUE, "oldGuid");
         assertSame(retValue, ASSESSMENT);
         
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), assessmentCaptor.capture());
+        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
+                assessmentCaptor.capture(), resourcesCaptor.capture());
         
         Assessment original = assessmentCaptor.getAllValues().get(0);
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
@@ -842,9 +856,14 @@ public class AssessmentServiceTest extends Mockito {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page);        
         
+        when(mockResourceDao.getResources(APP_ID_VALUE, IDENTIFIER, 
+            0, service.getPageSize(), null, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        
         service.publishAssessment(APP_ID_VALUE, GUID);
         
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), assessmentCaptor.capture());
+        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
+                assessmentCaptor.capture(), resourcesCaptor.capture());
         
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
         assertEquals(assessmentToPublish.getRevision(), 11);
@@ -876,21 +895,16 @@ public class AssessmentServiceTest extends Mockito {
         sharedAssessment.setGuid("sharedGuid");
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
-        Assessment localAssessment = AssessmentTest.createAssessment();
-        localAssessment.setRevision(2);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockResourceDao.getResources(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment), any())).thenReturn(sharedAssessment);
         
-        when(mockDao.saveAssessment(APP_ID_VALUE, sharedAssessment)).thenReturn(sharedAssessment);
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-        
-        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, "sharedGuid");
+        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
-        assertEquals(retValue.getGuid(), GUID);
-        assertEquals(retValue.getRevision(), 3); // next higher than 2
+        assertEquals(retValue.getRevision(), 1);
         assertEquals(retValue.getOriginGuid(), "sharedGuid");
         assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
@@ -919,24 +933,24 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentPriorImportedVersion() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
-        when(mockDao.saveAssessment(APP_ID_VALUE, sharedAssessment)).thenReturn(sharedAssessment);
+        sharedAssessment.setGuid("sharedGuid");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(3);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
+        
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
-        
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(localAssessment), 1);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(page);
+        when(mockResourceDao.getResources(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment), any())).thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
-        assertEquals(retValue.getRevision(), 4);
-        assertEquals(retValue.getOriginGuid(), GUID);
-        assertEquals(retValue.getOwnerId(), OWNER_ID);        
+        assertEquals(retValue.getRevision(), 4); // 1 higher than 3
+        assertEquals(retValue.getOriginGuid(), "sharedGuid");
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
         
     @Test

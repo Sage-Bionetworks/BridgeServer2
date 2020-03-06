@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.BATCH_LOGICAL_DELETE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -17,6 +18,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -77,6 +79,9 @@ public class HibernateAssessmentDaoTest extends Mockito {
     
     @Mock
     Session mockSession;
+    
+    @Mock
+    NativeQuery<?> mockNativeQuery;
     
     @InjectMocks
     @Spy
@@ -243,12 +248,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }  
     
     @Test
-    public void publishAssessment() throws Exception {
+    public void publishAssessmentNoResources() throws Exception {
         Assessment original = new Assessment();
         Assessment assessmentToPublish = new Assessment();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
+        when(mockSession.createNativeQuery(BATCH_LOGICAL_DELETE)).thenReturn(mockNativeQuery);
         
-        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish);
+        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, ImmutableList.of());
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());

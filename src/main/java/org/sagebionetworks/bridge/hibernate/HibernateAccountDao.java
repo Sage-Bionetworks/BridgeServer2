@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -233,7 +234,7 @@ public class HibernateAccountDao implements AccountDao {
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.
-        BridgeUtils.SubstudyAssociations assoc = null;
+        SubstudyAssociations assoc = null;
         if (hibernateAccount.getId() != null) {
             List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
                     "FROM HibernateAccountSubstudy WHERE accountId=:accountId",

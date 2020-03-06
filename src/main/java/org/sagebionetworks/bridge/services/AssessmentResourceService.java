@@ -72,7 +72,7 @@ public class AssessmentResourceService {
         }
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
 
-        PagedResourceList<AssessmentResource> page = dao.getResources(assessmentId, offsetBy, pageSize, categories, minRevision, maxRevision, includeDeleted);
+        PagedResourceList<AssessmentResource> page = dao.getResources(appId, assessmentId, offsetBy, pageSize, categories, minRevision, maxRevision, includeDeleted);
         
         for (AssessmentResource resource : page.getItems()) {
             resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
@@ -91,7 +91,7 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        AssessmentResource resource = dao.getResource(assessmentId, guid)
+        AssessmentResource resource = dao.getResource(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
         return resource;
@@ -116,7 +116,7 @@ public class AssessmentResourceService {
         // validate
         Validate.entityThrowingException(INSTANCE, resource);
         
-        AssessmentResource retValue = dao.saveResource(assessmentId, resource);
+        AssessmentResource retValue = dao.saveResource(appId, assessmentId, resource);
         retValue.setUpToDate(true);
         return retValue;
     }
@@ -130,7 +130,7 @@ public class AssessmentResourceService {
         checkOwnership(appId, assessment.getOwnerId());
         
         // Don't call getResource(), you'll just load the assessment twice
-        AssessmentResource existing = dao.getResource(assessmentId, resource.getGuid())
+        AssessmentResource existing = dao.getResource(resource.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         if (resource.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AssessmentResource.class);
@@ -142,7 +142,7 @@ public class AssessmentResourceService {
         // validate
         Validate.entityThrowingException(INSTANCE, resource);
         
-        AssessmentResource retValue = dao.saveResource(assessmentId, resource);
+        AssessmentResource retValue = dao.saveResource(appId, assessmentId, resource);
         retValue.setUpToDate(true);
         return retValue;
     }
@@ -156,12 +156,12 @@ public class AssessmentResourceService {
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         checkOwnership(appId, assessment.getOwnerId());
         
-        AssessmentResource resource = dao.getResource(assessmentId, guid)
+        AssessmentResource resource = dao.getResource(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         resource.setDeleted(true);
         resource.setModifiedOn(getModifiedOn());
         
-        dao.saveResource(assessmentId, resource);
+        dao.saveResource(appId, assessmentId, resource);
     }
     
     // Only admins can call this.
@@ -170,9 +170,9 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         checkArgument(isNotBlank(guid));
         
-        Optional<AssessmentResource> opt = dao.getResource(assessmentId, guid);
+        Optional<AssessmentResource> opt = dao.getResource(guid);
         if (opt.isPresent()) {
-            dao.deleteResource(assessmentId, opt.get());
+            dao.deleteResource(opt.get());
         }
     }
     

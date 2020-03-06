@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 
 public interface AssessmentDao {
     /**
@@ -35,7 +37,14 @@ public interface AssessmentDao {
      * Publication changes two objects at the same time and requires a transaction. Method returns 
      * the original assessment updated to reflect that it is now derived from the shared assessment.
      */
-    Assessment publishAssessment(String originalAppId, Assessment original, Assessment assessmentToPublish);
+    Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest,
+            List<AssessmentResource> destResources);
+
+    /**
+     * Import does not change the shared assessment. It creates the resources in the destination app space
+     * and returns the newly created assessment in the destination app context.
+     */
+    Assessment importAssessment(String destAppId, Assessment dest, List<AssessmentResource> destResources);
     
     /**
      * This is an actual delete from the database.

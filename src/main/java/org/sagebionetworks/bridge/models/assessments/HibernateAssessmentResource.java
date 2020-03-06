@@ -28,10 +28,11 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @Table(name = "ExternalResources")
 public class HibernateAssessmentResource implements BridgeEntity {
     
-    public static HibernateAssessmentResource create(AssessmentResource resource, String assessmentId) {
+    public static HibernateAssessmentResource create(AssessmentResource resource, String appId, String assessmentId) {
         HibernateAssessmentResource model = new HibernateAssessmentResource();
         model.setAssessmentId(assessmentId);
         model.setGuid(resource.getGuid());
+        model.setAppId(appId);
         model.setTitle(resource.getTitle());
         model.setCategory(resource.getCategory());
         model.setUrl(resource.getUrl());
@@ -60,6 +61,7 @@ public class HibernateAssessmentResource implements BridgeEntity {
     
     @Id
     private String guid;
+    private String appId;
     private String assessmentId;
     private String title;
     @Enumerated(EnumType.STRING)
@@ -91,6 +93,12 @@ public class HibernateAssessmentResource implements BridgeEntity {
     }
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+    public String getAppId() {
+        return appId;
+    }
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     public String getAssessmentId() {
         return assessmentId;

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.assessments;
 
 import static org.sagebionetworks.bridge.TestConstants.APPLICATION_JSON;
+import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.CONTRIBUTORS;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CREATORS;
@@ -26,13 +27,13 @@ public class HibernateAssessmentResourceTest {
     public void testFactoryMethod() {
         AssessmentResource dto = AssessmentResourceTest.createAssessmentResource();
         
-        HibernateAssessmentResource resource = HibernateAssessmentResource.create(dto, "assessmentId");
+        HibernateAssessmentResource resource = HibernateAssessmentResource.create(dto, APP_ID, "assessmentId");
         assertHibernateAssessmentResource(resource);
     }
     
     @Test
     public void testFactoryMethodWithNulls() {
-        HibernateAssessmentResource resource = HibernateAssessmentResource.create(new AssessmentResource(), null);
+        HibernateAssessmentResource resource = HibernateAssessmentResource.create(new AssessmentResource(), APP_ID, null);
         assertNull(resource.getGuid());
         assertNull(resource.getAssessmentId());
         assertNull(resource.getTitle());

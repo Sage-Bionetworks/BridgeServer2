@@ -160,12 +160,14 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        resource.setGuid(null); // verify we set this from the path
         mockRequestBody(mockRequest, resource);
         
         controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
         
         verify(mockService).updateResource(eq(APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
         assertEquals(resourceCaptor.getValue().getTitle(), resource.getTitle());
+        assertEquals(resourceCaptor.getValue().getGuid(), GUID);
     }
 
     @Test

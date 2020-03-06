@@ -315,6 +315,7 @@ CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);
 
 CREATE TABLE `ExternalResources` (
   `guid` varchar(255) NOT NULL,
+  `appId` varchar(255) NOT NULL,
   `assessmentId` varchar(255),
   `title` varchar(255) NOT NULL,
   `url` text NOT NULL,
@@ -340,4 +341,5 @@ CREATE TABLE `ExternalResources` (
   PRIMARY KEY (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+CREATE INDEX `ExternalResources-AppId` ON `ExternalResources`(`appId`);
 CREATE INDEX `ExternalResources-Assessment-Identifier` ON `ExternalResources`(`assessmentId`);

@@ -9,17 +9,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.hibernate.query.NativeQuery;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
@@ -38,6 +42,9 @@ class HibernateAssessmentDao implements AssessmentDao {
             +"identifier = :identifier";
     static final String GET_REVISIONS2 = "ORDER BY revision DESC";
     static final String EXCLUDE_DELETED = "AND deleted = 0";
+
+    static final String BATCH_LOGICAL_DELETE = "UPDATE ExternalResources SET deleted = 1, version = "
+            +"(version+1) WHERE appId = :appId AND assessmentId = :assessmentId AND deleted = 0";
     
     private HibernateHelper hibernateHelper;
     
@@ -125,11 +132,15 @@ class HibernateAssessmentDao implements AssessmentDao {
     @Override
     public Assessment saveAssessment(String appId, Assessment assessment) {
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
-        
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
+                (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
+        return Assessment.create(retValue);
+        /*
         return hibernateHelper.executeWithExceptionHandling(assessment, (session) -> {
-            HibernateAssessment retValue = (HibernateAssessment)session.merge(hibernateAssessment);
-            return Assessment.create(retValue);
+            HibernateAssessment a = (HibernateAssessment)session.merge(hibernateAssessment);
+            return Assessment.create(a);
         });
+        */
     }
 
     @Override
@@ -140,16 +151,57 @@ class HibernateAssessmentDao implements AssessmentDao {
             return null;
         });
     }
-    
+
     @Override
-    public Assessment publishAssessment(String originalAppId, Assessment original, Assessment assessmentToPublish) {
-        HibernateAssessment hibernateOriginal = HibernateAssessment.create(original, originalAppId);
-        HibernateAssessment hibernateToPublish = HibernateAssessment.create(assessmentToPublish,
-                SHARED_STUDY_ID_STRING);
+    public Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest,
+            List<AssessmentResource> destResources) {
+        String assessmentId = dest.getIdentifier();
         
-        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOriginal, (session) -> {
-            session.saveOrUpdate(hibernateToPublish);
-            return (HibernateAssessment)session.merge(hibernateOriginal);
+        HibernateAssessment hibernateOrigin = HibernateAssessment.create(origin, originAppId);
+        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, SHARED_STUDY_ID_STRING);
+        List<HibernateAssessmentResource> hibernateDestResources = destResources.stream()
+                .map((resource) -> HibernateAssessmentResource.create(resource, SHARED_STUDY_ID_STRING, assessmentId))
+                .collect(Collectors.toList());
+
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOrigin, (session) -> {
+            // logically delete any existing resources in destination app context 
+            NativeQuery<?> query = session.createNativeQuery(BATCH_LOGICAL_DELETE);
+            query.setParameter("appId", SHARED_STUDY_ID_STRING);
+            query.setParameter("assessmentId", assessmentId);
+            query.executeUpdate();
+            
+            // And persist all of the resources
+            for (HibernateAssessmentResource resource : hibernateDestResources) {
+                session.persist(resource);
+            }
+            session.saveOrUpdate(hibernateDest);
+            return (HibernateAssessment)session.merge(hibernateOrigin);
+        });
+        return Assessment.create(retValue);
+    }
+
+    @Override
+    public Assessment importAssessment(String destAppId, Assessment dest, List<AssessmentResource> destResources) {
+        String assessmentId = dest.getIdentifier();
+        
+        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, destAppId);
+        List<HibernateAssessmentResource> hibernateDestResources = destResources.stream()
+                .map((resource) -> HibernateAssessmentResource.create(resource, destAppId, assessmentId))
+                .collect(Collectors.toList());
+
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateDest, (session) -> {
+            // logically delete any existing resources in destination app context 
+            NativeQuery<?> query = session.createNativeQuery(BATCH_LOGICAL_DELETE);
+            query.setParameter("appId", destAppId);
+            query.setParameter("assessmentId", assessmentId);
+            query.executeUpdate();
+            
+            // And persist all of the resources
+            for (HibernateAssessmentResource resource : hibernateDestResources) {
+                session.persist(resource);
+            }
+            session.merge(hibernateDest);
+            return hibernateDest;
         });
         return Assessment.create(retValue);
     }

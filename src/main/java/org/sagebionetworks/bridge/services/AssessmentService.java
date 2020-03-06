@@ -20,7 +20,9 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TAGS;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -43,6 +46,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -56,11 +60,18 @@ public class AssessmentService {
 
     private AssessmentDao dao;
     
+    private AssessmentResourceDao resourceDao;
+    
     private SubstudyService substudyService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
         this.dao = assessmentDao;
+    }
+    
+    @Autowired
+    final void sestAssessmentResourceDao(AssessmentResourceDao resourceDao) {
+        this.resourceDao = resourceDao;
     }
     
     @Autowired
@@ -78,8 +89,14 @@ public class AssessmentService {
         return DateTime.now();
     }
     
+    // accessor to mock for tests
     DateTime getModifiedOn() {
         return DateTime.now();
+    }
+    
+    // accessor to mock for tests
+    int getPageSize() {
+        return API_MAXIMUM_PAGE_SIZE;
     }
     
     public PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, int pageSize,
@@ -278,11 +295,6 @@ public class AssessmentService {
         }
         int revision = (existing == null) ? 1 : (existing.getRevision()+1);
         
-        assessmentToPublish.setGuid(generateGuid());
-        assessmentToPublish.setRevision(revision);
-        assessmentToPublish.setOriginGuid(null);
-        assessmentToPublish.setOwnerId(ownerId);
-        assessmentToPublish.setVersion(0L);
         // Neither of these assessments should be in an attached state because both are loaded in 
         // separate transactions that are closed in the DAO. However, the tag collections have been
         // proxied by Hibernate, and an error is thrown if you don't make copies: "Found shared 
@@ -293,9 +305,19 @@ public class AssessmentService {
         if (original.getTags() != null) {
             assessmentToPublish.setTags(ImmutableSet.copyOf(original.getTags()));    
         }
+        
+        assessmentToPublish.setGuid(generateGuid());
+        assessmentToPublish.setRevision(revision);
+        assessmentToPublish.setOriginGuid(null);
+        assessmentToPublish.setOwnerId(ownerId);
+        assessmentToPublish.setVersion(0L);
+        
         original.setOriginGuid(assessmentToPublish.getGuid());
         
-        return dao.publishAssessment(appId, original, assessmentToPublish);
+        List<AssessmentResource> resourcesToPublish = loadResourcesForAssessment(
+                appId, assessmentToPublish.getIdentifier(), assessmentToPublish.getRevision());
+        
+        return dao.publishAssessment(appId, original, assessmentToPublish, resourcesToPublish);
     }
     
     /**
@@ -313,15 +335,19 @@ public class AssessmentService {
         }
         checkOwnership(appId, ownerId);
 
-        Assessment assessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
         
         // Figure out what revision this should be in the new app context if the identifier already exists
-        int revision = nextRevisionNumber(appId, assessment.getIdentifier());
-        assessment.setRevision(revision);
-        assessment.setOriginGuid(assessment.getGuid());
-        assessment.setOwnerId(ownerId);
+        int revision = nextRevisionNumber(appId, sharedAssessment.getIdentifier());
+        sharedAssessment.setOriginGuid(sharedAssessment.getGuid());
+        sharedAssessment.setGuid(generateGuid());
+        sharedAssessment.setRevision(revision);
+        sharedAssessment.setOwnerId(ownerId);
         
-        return createAssessmentInternal(appId, assessment);
+        List<AssessmentResource> sharedResources = loadResourcesForAssessment(
+                SHARED_STUDY_ID_STRING, sharedAssessment.getIdentifier(), sharedAssessment.getRevision());
+        
+        return dao.importAssessment(appId, sharedAssessment, sharedResources);
     }
         
     public void deleteAssessment(String appId, String guid) {
@@ -401,6 +427,31 @@ public class AssessmentService {
     private int nextRevisionNumber(String appId, String identifier) {
         Optional<Assessment> opt = getLatestInternal(appId, identifier, true);
         return opt.isPresent() ? (opt.get().getRevision()+1) : 1;
+    }
+    
+    private List<AssessmentResource> loadResourcesForAssessment(String appId, String assessmentId, int assessmentRev) {
+        List<AssessmentResource> resourcesToPublish = new ArrayList<>();
+        PagedResourceList<AssessmentResource> page = null;
+        int offset = 0;
+        do {
+            page = resourceDao.getResources(appId, assessmentId, 
+                    offset, getPageSize(), null, null, null, false);
+            
+            for (AssessmentResource oneResource : page.getItems()) {
+                DateTime timestamp = getCreatedOn();
+                oneResource.setGuid(generateGuid());
+                oneResource.setCreatedOn(timestamp);
+                oneResource.setModifiedOn(timestamp);
+                oneResource.setDeleted(false);
+                oneResource.setCreatedAtRevision(assessmentRev);
+                oneResource.setVersion(0);
+                resourcesToPublish.add(oneResource);
+                
+                offset += getPageSize();
+            }
+        } while(page.getItems().size() == getPageSize());
+        
+        return resourcesToPublish;
     }
     
     /**

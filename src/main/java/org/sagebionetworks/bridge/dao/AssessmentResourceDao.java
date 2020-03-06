@@ -9,12 +9,13 @@ import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 
 public interface AssessmentResourceDao {
 
-    PagedResourceList<AssessmentResource> getResources(String assessmentId, Integer offsetBy, Integer pageSize,
-            Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision, boolean includeDeleted);
+    PagedResourceList<AssessmentResource> getResources(String appId, String assessmentId, Integer offsetBy,
+            Integer pageSize, Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision,
+            boolean includeDeleted);
     
-    Optional<AssessmentResource> getResource(String assessmentId, String guid);
+    Optional<AssessmentResource> getResource(String guid);
 
-    AssessmentResource saveResource(String assessmentId, AssessmentResource resource);
+    AssessmentResource saveResource(String appId, String assessmentId, AssessmentResource resource);
 
-    void deleteResource(String assessmentId, AssessmentResource resource);
+    void deleteResource(AssessmentResource resource);
 }

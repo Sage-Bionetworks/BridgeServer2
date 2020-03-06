@@ -304,8 +304,8 @@ public class ParticipantService {
         return builder.build();
     }
     
-    private StudyParticipant.Builder copyAccountToParticipant(StudyParticipant.Builder builder, 
-            SubstudyAssociations assoc, Account account) {
+    private StudyParticipant.Builder copyAccountToParticipant(StudyParticipant.Builder builder, SubstudyAssociations assoc,
+            Account account) {
         builder.withSharingScope(account.getSharingScope());
         builder.withNotifyByEmail(account.getNotifyByEmail());
         builder.withDataGroups(account.getDataGroups());

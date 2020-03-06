@@ -10,6 +10,7 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.hibernate.query.NativeQuery;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
@@ -20,6 +21,7 @@ import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 
 @Component
 public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
+    static final String DELETE_QUERY = "DELETE FROM ExternalResources WHERE guid = :guid";
     
     private HibernateHelper hibernateHelper;
     
@@ -29,14 +31,16 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     }
 
     @Override
-    public PagedResourceList<AssessmentResource> getResources(String assessmentId, Integer offsetBy, Integer pageSize,
-            Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision, boolean includeDeleted) {
+    public PagedResourceList<AssessmentResource> getResources(String appId, String assessmentId, Integer offsetBy,
+            Integer pageSize, Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision,
+            boolean includeDeleted) {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append("from HibernateAssessmentResource");
         List<String> clauses = new ArrayList<>();
-        clauses.add("WHERE assessmentId = :assessmentId");
+        clauses.add("WHERE appId = :appId AND assessmentId = :assessmentId");
         builder.getParameters().put("assessmentId", assessmentId);
+        builder.getParameters().put("appId", appId);
         if (minRevision != null) {
             clauses.add("createdAtRevision >= :minRevision");
             builder.getParameters().put("minRevision", minRevision);
@@ -65,20 +69,14 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     }
     
     @Override
-    public Optional<AssessmentResource> getResource(String assessmentId, String guid) {
-        QueryBuilder query = new QueryBuilder();
-        query.append("from HibernateAssessmentResource");
-        query.append("WHERE assessmentId = :assessmentId AND guid = :guid", 
-                "assessmentId", assessmentId, "guid", guid);
-        
-        List<HibernateAssessmentResource> page = hibernateHelper.queryGet(
-                query.getQuery(), query.getParameters(), 0, 1, HibernateAssessmentResource.class);
-        return (page.isEmpty()) ? Optional.empty() : Optional.of(AssessmentResource.create(page.get(0)));
+    public Optional<AssessmentResource> getResource(String guid) {
+        HibernateAssessmentResource resource = hibernateHelper.getById(HibernateAssessmentResource.class, guid);
+        return (resource == null) ? Optional.empty() : Optional.of(AssessmentResource.create(resource));
     }
 
     @Override
-    public AssessmentResource saveResource(String assessmentId, AssessmentResource resource) {
-        HibernateAssessmentResource hibernateResource = HibernateAssessmentResource.create(resource, assessmentId);
+    public AssessmentResource saveResource(String appId, String assessmentId, AssessmentResource resource) {
+        HibernateAssessmentResource hibernateResource = HibernateAssessmentResource.create(resource, appId, assessmentId);
         return hibernateHelper.executeWithExceptionHandling(resource, (session) -> {
             HibernateAssessmentResource retValue = (HibernateAssessmentResource)session.merge(hibernateResource);
             return AssessmentResource.create(retValue);
@@ -86,10 +84,11 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     }
 
     @Override
-    public void deleteResource(String assessmentId, AssessmentResource resource) {
-        HibernateAssessmentResource hibernateResource = HibernateAssessmentResource.create(resource, assessmentId);
+    public void deleteResource(AssessmentResource resource) {
         hibernateHelper.executeWithExceptionHandling(resource, (session) -> {
-            session.remove(hibernateResource);
+            NativeQuery<?> query = session.createNativeQuery(DELETE_QUERY);
+            query.setParameter("guid", resource.getGuid());
+            query.executeUpdate();
             return null;
         });
     }

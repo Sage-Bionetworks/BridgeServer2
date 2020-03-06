@@ -11,6 +11,8 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
+
     public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";
     
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";

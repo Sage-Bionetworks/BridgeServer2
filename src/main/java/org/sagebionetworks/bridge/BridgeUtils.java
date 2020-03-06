@@ -703,4 +703,15 @@ public class BridgeUtils {
         }
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
     }
+    
+    public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return parseInt(value);
+        } catch(NumberFormatException e) {
+            throw new BadRequestException(value + " is not an integer");
+        }
+    }
 }
