@@ -15,6 +15,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 import java.net.URL;
+import java.util.EnumSet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -383,7 +384,7 @@ public class UploadControllerTest extends Mockito {
     @Test
     public void getUploadByRecordIdWorksForFullAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
-        doReturn(true).when(mockResearcherSession).isInRole(Roles.SUPERADMIN);
+        doReturn(true).when(mockResearcherSession).isInRole(EnumSet.of(Roles.SUPERADMIN, Roles.WORKER));
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
 

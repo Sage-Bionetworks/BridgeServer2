@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.io.IOException;
+import java.util.EnumSet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -179,7 +180,7 @@ public class UploadController extends BaseController {
                 throw new EntityNotFoundException(HealthDataRecord.class);
             }
             
-            if (!session.isInRole(SUPERADMIN) && 
+            if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
                 !session.getStudyIdentifier().getIdentifier().equals(record.getStudyId())) {
                 throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
             }
