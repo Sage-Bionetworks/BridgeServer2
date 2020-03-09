@@ -54,6 +54,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
@@ -1114,6 +1115,50 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         
         service.updateSharedAssessment(APP_ID_VALUE, sharedAssessment);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void loadResourcesForAssessment() {
+        when(service.getPageSize()).thenReturn(2);
+        AssessmentResource res = AssessmentResourceTest.createAssessmentResource();
+        
+        PagedResourceList<AssessmentResource> page1 = new PagedResourceList<>(ImmutableList.of(res, res), 5);
+        PagedResourceList<AssessmentResource> page2 = new PagedResourceList<>(ImmutableList.of(res, res), 5);
+        PagedResourceList<AssessmentResource> page3 = new PagedResourceList<>(ImmutableList.of(res), 5);
+        
+        when(mockResourceDao.getResources(eq(APP_ID_VALUE), eq(IDENTIFIER), anyInt(), eq(2), eq(null), eq(null),
+                eq(null), eq(false))).thenReturn(page1, page2, page3);
+        
+        List<AssessmentResource> retValue = service.loadResourcesForAssessment(APP_ID_VALUE, IDENTIFIER, 5);
+        assertEquals(retValue.size(), 5);
+        
+        for (AssessmentResource resource : retValue) {
+            assertEquals(resource.getGuid(), GUID);
+            assertEquals(resource.getCreatedOn(), CREATED_ON);
+            assertEquals(resource.getModifiedOn(), CREATED_ON);
+            assertFalse(resource.isDeleted());
+            assertEquals(resource.getCreatedAtRevision(), 5);
+            assertEquals(resource.getVersion(), 0);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void loadResourcesForAssessmentOnExactPageCount() {
+        when(service.getPageSize()).thenReturn(2);
+        AssessmentResource res = AssessmentResourceTest.createAssessmentResource();
+        
+        PagedResourceList<AssessmentResource> page1 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
+        PagedResourceList<AssessmentResource> page2 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
+        PagedResourceList<AssessmentResource> page3 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
+        PagedResourceList<AssessmentResource> page4 = new PagedResourceList<>(ImmutableList.of(), 6);
+        
+        when(mockResourceDao.getResources(eq(APP_ID_VALUE), eq(IDENTIFIER), anyInt(), eq(2), eq(null), eq(null),
+                eq(null), eq(false))).thenReturn(page1, page2, page3, page4);
+        
+        List<AssessmentResource> retValue = service.loadResourcesForAssessment(APP_ID_VALUE, IDENTIFIER, 5);
+        assertEquals(retValue.size(), 6);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)

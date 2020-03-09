@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentResourceDao.DELETE_QUERY;
@@ -33,7 +34,6 @@ import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 
 public class HibernateAssessmentResourceDaoTest extends Mockito {
-    private static final String ASSESSMENT_ID = "oneAssessmentId";
     private static final HibernateAssessmentResource ASSESSMENT_RESOURCE = createHibernateAssessmentResource();
     
     private static String FULL_PAGE_QUERY = "from HibernateAssessmentResource WHERE appId = :appId "

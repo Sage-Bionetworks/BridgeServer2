@@ -135,12 +135,6 @@ class HibernateAssessmentDao implements AssessmentDao {
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
                 (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
         return Assessment.create(retValue);
-        /*
-        return hibernateHelper.executeWithExceptionHandling(assessment, (session) -> {
-            HibernateAssessment a = (HibernateAssessment)session.merge(hibernateAssessment);
-            return Assessment.create(a);
-        });
-        */
     }
 
     @Override

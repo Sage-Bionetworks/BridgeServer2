@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.services.AssessmentResourceService;
@@ -69,25 +68,23 @@ public class SharedAssessmentResourceController extends BaseController {
 
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        getAuthenticatedSession(DEVELOPER);
         
         AssessmentResource resource = parseJson(AssessmentResource.class);
         resource.setGuid(guid);
         
-        return service.updateResource(appId, assessmentId, resource);
+        return service.updateResource(SHARED_STUDY_ID_STRING, assessmentId, resource);
     }
 
     @DeleteMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public StatusMessage deleteAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid,
             @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        getAuthenticatedSession(SUPERADMIN);
         
         if ("true".equals(physical)) {
-            service.deleteResourcePermanently(appId, assessmentId, guid);
+            service.deleteResourcePermanently(SHARED_STUDY_ID_STRING, assessmentId, guid);
         } else {
-            service.deleteResource(appId, assessmentId, guid);
+            service.deleteResource(SHARED_STUDY_ID_STRING, assessmentId, guid);
         }
         return new StatusMessage("Assessment resource deleted.");        
     }

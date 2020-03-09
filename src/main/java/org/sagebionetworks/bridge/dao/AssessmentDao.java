@@ -34,15 +34,18 @@ public interface AssessmentDao {
     Assessment saveAssessment(String appId, Assessment assessment);
     
     /**
-     * Publication changes two objects at the same time and requires a transaction. Method returns 
-     * the original assessment updated to reflect that it is now derived from the shared assessment.
+     * Publish an assessment in an origin app context into the shared app context. All the resources 
+     * associated to the assessment's ID will be logically deleted and replaced with the resources in 
+     * the local context as well. If the assessment already exists under the same identifiers, the 
+     * caller of this method must be a member of the owning organization of the published assessment.
      */
     Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest,
             List<AssessmentResource> destResources);
 
     /**
-     * Import does not change the shared assessment. It creates the resources in the destination app space
-     * and returns the newly created assessment in the destination app context.
+     * Copy an assessment from the shared context to a local context so it can be used. If the 
+     * assessment already exists in the local context, any resources associated to it will be logically
+     * deleted and replaced with the resources from the shared context.
      */
     Assessment importAssessment(String destAppId, Assessment dest, List<AssessmentResource> destResources);
     

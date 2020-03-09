@@ -963,7 +963,22 @@ public class BridgeUtilsTest {
     public void getEnumOrDefaultInvalidEnum() {
         BridgeUtils.getEnumOrDefault("nada", ResourceCategory.class, LICENSE);
     }
+    
+    @Test
+    public void getIntegerOrDefault() {
+        assertEquals(BridgeUtils.getIntegerOrDefault("3", null), Integer.valueOf(3));
+    }
 
+    @Test
+    public void getIntegerOrDefaultReturnsDefault() {
+        assertEquals(BridgeUtils.getIntegerOrDefault(null, Integer.valueOf(3)), Integer.valueOf(3));
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getIntegerOrDefaultThrowsBadRequest() {
+        BridgeUtils.getIntegerOrDefault("asdf", null);
+    }
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(second.size(), first.size());

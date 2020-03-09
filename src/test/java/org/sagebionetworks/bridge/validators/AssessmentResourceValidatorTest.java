@@ -80,4 +80,16 @@ public class AssessmentResourceValidatorTest {
         resource.setContributors(Lists.newArrayList("oneContributor", "  "));
         assertValidatorMessage(INSTANCE, resource, "contributors[1]", CANNOT_BE_BLANK);
     }
+
+    @Test
+    public void publisherNull() {
+        resource.setPublishers(Lists.newArrayList("onePublisher", null));
+        assertValidatorMessage(INSTANCE, resource, "publishers[1]", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void publisherBlank() {
+        resource.setPublishers(Lists.newArrayList("onePublisher", "  "));
+        assertValidatorMessage(INSTANCE, resource, "publishers[1]", CANNOT_BE_BLANK);
+    }
 }

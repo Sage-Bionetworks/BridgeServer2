@@ -79,6 +79,10 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
 
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+
         AssessmentResource resource = parseJson(AssessmentResource.class);
         return service.createResource(appId, assessmentId, resource);
     }
@@ -88,6 +92,10 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+
         return service.getResource(appId, assessmentId, guid);
     }
 
@@ -96,6 +104,10 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+
         AssessmentResource resource = parseJson(AssessmentResource.class);
         resource.setGuid(guid);
         
@@ -108,6 +120,10 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         String appId = session.getStudyIdentifier().getIdentifier();
         
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteResourcePermanently(appId, assessmentId, guid);
         } else {

@@ -123,6 +123,8 @@ public class TestConstants {
     
     public static final String GUID = "oneGuid";
 
+    public static final String ASSESSMENT_ID = "oneAssessmentId";
+    
     public static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1","group2");
 
     public static final Set<String> USER_SUBSTUDY_IDS = ImmutableSet.of("substudyA","substudyB");

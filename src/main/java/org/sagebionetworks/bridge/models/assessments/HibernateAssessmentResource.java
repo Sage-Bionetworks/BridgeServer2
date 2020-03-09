@@ -20,9 +20,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
  * The table name here is generic because we can add an additional FK column and use it for another 
  * model that has documentation links. Eventually, that might include protocols, for example, 
  * if they are commonly shared in an app with multiple studies.
- * 
- * TODO: The exception handlers expect our Hibernate models to implement BridgeEntity. We either need
- * to change ConcurrentModificationException or they all have to implement it.
  */
 @Entity
 @Table(name = "ExternalResources")

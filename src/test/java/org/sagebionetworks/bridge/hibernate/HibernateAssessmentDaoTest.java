@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.BATCH_LOGICAL_DELETE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -32,6 +34,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
+import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 
 public class HibernateAssessmentDaoTest extends Mockito {
@@ -245,20 +250,82 @@ public class HibernateAssessmentDaoTest extends Mockito {
         dao.deleteAssessment(APP_ID_VALUE, new Assessment());
         
         verify(mockSession).remove(any());
-    }  
+    }
+    
+    @Test
+    public void publishAssessment() throws Exception {
+        Assessment original = new Assessment();
+        Assessment assessmentToPublish = AssessmentTest.createAssessment();
+        when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
+        when(mockSession.createNativeQuery(BATCH_LOGICAL_DELETE)).thenReturn(mockNativeQuery);
+        
+        List<AssessmentResource> resources = ImmutableList.of(AssessmentResourceTest.createAssessmentResource(),
+                AssessmentResourceTest.createAssessmentResource());
+
+        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, resources);
+        assertNotNull(retValue);
+        
+        verify(mockNativeQuery).setParameter("appId", SHARED_STUDY_ID_STRING);
+        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockNativeQuery).executeUpdate();
+        verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession, times(2)).persist(any());
+        verify(mockSession).saveOrUpdate(any(HibernateAssessment.class));
+        verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+    
     
     @Test
     public void publishAssessmentNoResources() throws Exception {
         Assessment original = new Assessment();
-        Assessment assessmentToPublish = new Assessment();
+        Assessment assessmentToPublish = AssessmentTest.createAssessment();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
         when(mockSession.createNativeQuery(BATCH_LOGICAL_DELETE)).thenReturn(mockNativeQuery);
         
         Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, ImmutableList.of());
         assertNotNull(retValue);
         
+        verify(mockNativeQuery).setParameter("appId", SHARED_STUDY_ID_STRING);
+        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockNativeQuery).executeUpdate();
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession, never()).persist(any());
         verify(mockSession).saveOrUpdate(any(HibernateAssessment.class));
+        verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+    
+    @Test
+    public void importAssessment() throws Exception {
+        Assessment assessmentToImport = AssessmentTest.createAssessment();
+        when(mockSession.createNativeQuery(BATCH_LOGICAL_DELETE)).thenReturn(mockNativeQuery);
+        
+        List<AssessmentResource> resources = ImmutableList.of(AssessmentResourceTest.createAssessmentResource(),
+                AssessmentResourceTest.createAssessmentResource());
+
+        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport, resources);
+        assertNotNull(retValue);
+        
+        verify(mockNativeQuery).setParameter("appId", APP_ID_VALUE);
+        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockNativeQuery).executeUpdate();
+        verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession, times(2)).persist(any());
+        verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+    
+    @Test
+    public void importAssessmentNoResources() throws Exception {
+        Assessment assessmentToImport = AssessmentTest.createAssessment();
+        when(mockSession.createNativeQuery(BATCH_LOGICAL_DELETE)).thenReturn(mockNativeQuery);
+        
+        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport, ImmutableList.of());
+        assertNotNull(retValue);
+        
+        verify(mockNativeQuery).setParameter("appId", APP_ID_VALUE);
+        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockNativeQuery).executeUpdate();
+        verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession, never()).persist(any());
         verify(mockSession).merge(any(HibernateAssessment.class));
     }
 }

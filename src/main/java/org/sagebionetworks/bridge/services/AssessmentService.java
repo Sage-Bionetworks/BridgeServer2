@@ -429,7 +429,7 @@ public class AssessmentService {
         return opt.isPresent() ? (opt.get().getRevision()+1) : 1;
     }
     
-    private List<AssessmentResource> loadResourcesForAssessment(String appId, String assessmentId, int assessmentRev) {
+    List<AssessmentResource> loadResourcesForAssessment(String appId, String assessmentId, int assessmentRev) {
         List<AssessmentResource> resourcesToPublish = new ArrayList<>();
         PagedResourceList<AssessmentResource> page = null;
         int offset = 0;

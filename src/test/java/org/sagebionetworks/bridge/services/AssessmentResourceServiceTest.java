@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -47,7 +48,6 @@ import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 
 public class AssessmentResourceServiceTest extends Mockito {
-    private static final String ASSESSMENT_ID = "oneAssessmentId";
     private static final String UNSANITIZED_STRING = "bad string<script>removeme</script>";
     private static final String SANITIZED_STRING = "bad string";
     

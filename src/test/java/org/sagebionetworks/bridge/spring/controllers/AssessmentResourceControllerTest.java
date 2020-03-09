@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -33,6 +36,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -42,8 +46,6 @@ import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AssessmentResourceService;
 
 public class AssessmentResourceControllerTest extends Mockito {
-    private static String ASSESSMENT_ID = "oneAssessmentId";
-    
     @Mock
     HttpServletRequest mockRequest;
 
@@ -202,5 +204,50 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "false");
         verify(mockService).deleteResource(APP_ID, ASSESSMENT_ID, GUID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentResourcesRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, null, null, null);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void createAssessmentResourceRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.createAssessmentResource(ASSESSMENT_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void getAssessmentResourceRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.getAssessmentResource(ASSESSMENT_ID, GUID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void updateAssessmentResourceRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void deleteAssessmentResourceRejectsSharedAppContext() {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
     }
 }

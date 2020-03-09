@@ -129,7 +129,7 @@ public class AssessmentResourceService {
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         checkOwnership(appId, assessment.getOwnerId());
         
-        // Don't call getResource(), you'll just load the assessment twice
+        // Don't call this.getResource(), you'll just load the assessment twice
         AssessmentResource existing = dao.getResource(resource.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         if (resource.isDeleted() && existing.isDeleted()) {
@@ -139,7 +139,6 @@ public class AssessmentResourceService {
         resource.setModifiedOn(getModifiedOn());
         sanitizeResource(resource);
         
-        // validate
         Validate.entityThrowingException(INSTANCE, resource);
         
         AssessmentResource retValue = dao.saveResource(appId, assessmentId, resource);
