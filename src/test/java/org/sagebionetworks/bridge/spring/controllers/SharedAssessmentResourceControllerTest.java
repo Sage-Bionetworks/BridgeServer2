@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -66,6 +68,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
+        session.setStudyIdentifier(TEST_STUDY);
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
     }
@@ -126,12 +129,14 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         resource.setGuid("junkGuid");
         mockRequestBody(mockRequest, resource);
         
-        when(mockService.updateResource(eq(SHARED_STUDY_ID_STRING), eq(ASSESSMENT_ID), any())).thenReturn(resource);
+        when(mockService.updateSharedResource(eq(TEST_STUDY_IDENTIFIER), eq(ASSESSMENT_ID), any()))
+                .thenReturn(resource);
         
         AssessmentResource retValue = controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
         assertSame(retValue, resource);
         
-        verify(mockService).updateResource(eq(SHARED_STUDY_ID_STRING), eq(ASSESSMENT_ID), resourceCaptor.capture());
+        verify(mockService).updateSharedResource(eq(TEST_STUDY_IDENTIFIER), eq(ASSESSMENT_ID),
+                resourceCaptor.capture());
         AssessmentResource captured = resourceCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);
     }

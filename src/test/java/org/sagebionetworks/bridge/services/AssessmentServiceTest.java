@@ -51,7 +51,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
@@ -1011,24 +1010,7 @@ public class AssessmentServiceTest extends Mockito {
         service.deleteAssessmentPermanently(APP_ID_VALUE, GUID);
         verify(mockDao, never()).deleteAssessment(any(), any());
     }
-    
-    @Test
-    public void parseOwnerId() {
-        Tuple<String> tuple = service.parseOwnerId(GUID, "app:owner:owner");
-        assertEquals(tuple.getLeft(), "app");
-        assertEquals(tuple.getRight(), "owner:owner");
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void parseOwnerIdNullOwnerId() {
-        service.parseOwnerId(GUID, null);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void parseOwnerIdBadOwnerId() {
-        service.parseOwnerId(GUID, "owner");
-    }
-    
+        
     // OWNERSHIP VERIFICATION
     // These are failure cases to verify we are calling SecurityUtils.checkOwnership(...)
     

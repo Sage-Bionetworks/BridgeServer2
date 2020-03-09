@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
@@ -64,6 +65,7 @@ import com.google.common.collect.Sets;
 public class BridgeUtilsTest {
     
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    private static final String SHARED_OWNER_ID = "api:" + OWNER_ID;
     
     @AfterMethod
     public void after() {
@@ -920,19 +922,19 @@ public class BridgeUtilsTest {
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
-    public void ownershipOwnerIdIsBlank() {
+    public void checkOwnershipOwnerIdIsBlank() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
         BridgeUtils.checkOwnership(APP_ID, null);
     }
     
     @Test
-    public void ownershipGlobalUser() {
+    public void checkOwnershipGlobalUser() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
         BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
     }
     
     @Test
-    public void ownershipScopedUser() {
+    public void checkOwnershipScopedUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
         BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
@@ -940,10 +942,45 @@ public class BridgeUtilsTest {
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
-    public void ownershipScopedUserOrgIdIsMissing() {
+    public void checkOwnershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
         BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipOwnerIdIsBlank() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, null);
+    }
+    
+    @Test
+    public void checkSharedOwnershipGlobalUser() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipAgainstNonGlobalOwnerId() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, OWNER_ID);
+    }
+    
+    @Test
+    public void sharedOwnershipScopedUser() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipScopedUserOrgIdIsMissing() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
     }
     
     @Test

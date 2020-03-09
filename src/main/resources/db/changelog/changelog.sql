@@ -341,5 +341,4 @@ CREATE TABLE `ExternalResources` (
   PRIMARY KEY (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE INDEX `ExternalResources-AppId` ON `ExternalResources`(`appId`);
-CREATE INDEX `ExternalResources-Assessment-Identifier` ON `ExternalResources`(`assessmentId`);
+CREATE INDEX `ExternalResources-AppId-AssessmentId` ON `ExternalResources`(`appId`, `assessmentId`);

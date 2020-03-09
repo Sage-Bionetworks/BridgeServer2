@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
+import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
@@ -31,8 +32,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +43,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
@@ -52,8 +50,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
-    private static final Logger LOG = LoggerFactory.getLogger(AssessmentService.class);
-    
     public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
     static final String IDENTIFIER_REQUIRED = "identifier required";
     static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
@@ -179,14 +175,8 @@ public class AssessmentService {
             throw new EntityNotFoundException(Assessment.class);
         }
 
-        Tuple<String> parts = parseOwnerId(existing.getGuid(), existing.getOwnerId());
+        checkSharedOwnership(callerAppId, existing.getGuid(), existing.getOwnerId());
         
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        boolean scopedUser = !callerSubstudies.isEmpty();
-        boolean orgMember = callerSubstudies.contains(parts.getRight());
-        if (!callerAppId.equals(parts.getLeft()) || (scopedUser && !orgMember)) {
-            throw new UnauthorizedException();
-        }
         return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
     }
     
@@ -373,22 +363,6 @@ public class AssessmentService {
         if (opt.isPresent()) {
             dao.deleteAssessment(appId, opt.get());    
         }
-    }
-    
-    Tuple<String> parseOwnerId(String guid, String ownerId) {
-        if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid);
-            throw new UnauthorizedException();
-        }
-        String[] parts = ownerId.split(":", 2);
-        // This happens in tests, we expect it to never happens in production. So log if it does.
-        if (parts.length != 2) {
-            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException();
-        }
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        return new Tuple<>(originAppId, originOrgId);
     }
 
     private Assessment createAssessmentInternal(String appId, Assessment assessment) {

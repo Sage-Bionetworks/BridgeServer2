@@ -5,7 +5,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jsoup.safety.Whitelist.simpleText;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
+import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
@@ -127,8 +129,28 @@ public class AssessmentResourceService {
         checkNotNull(resource);
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        
         checkOwnership(appId, assessment.getOwnerId());
         
+        return updateResourceInternal(appId, assessmentId, assessment, resource);
+    }
+
+    
+    public AssessmentResource updateSharedResource(String callerAppId, String assessmentId, AssessmentResource resource) {
+        checkArgument(isNotBlank(callerAppId));
+        checkArgument(isNotBlank(assessmentId));
+        checkNotNull(resource);
+        
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, assessmentId);
+        
+        checkSharedOwnership(callerAppId, assessment.getGuid(), assessment.getOwnerId());
+        
+        return updateResourceInternal(SHARED_STUDY_ID_STRING, assessmentId, assessment, resource);
+    }
+    
+    
+    private AssessmentResource updateResourceInternal(String appId, String assessmentId, Assessment assessment,
+            AssessmentResource resource) {
         // Don't call this.getResource(), you'll just load the assessment twice
         AssessmentResource existing = dao.getResource(resource.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));

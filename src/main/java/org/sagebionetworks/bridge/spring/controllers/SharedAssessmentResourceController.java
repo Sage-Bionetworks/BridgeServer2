@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.services.AssessmentResourceService;
@@ -68,12 +69,13 @@ public class SharedAssessmentResourceController extends BaseController {
 
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        String appId = session.getStudyIdentifier().getIdentifier();
         
         AssessmentResource resource = parseJson(AssessmentResource.class);
         resource.setGuid(guid);
         
-        return service.updateResource(SHARED_STUDY_ID_STRING, assessmentId, resource);
+        return service.updateSharedResource(appId, assessmentId, resource);
     }
 
     @DeleteMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")

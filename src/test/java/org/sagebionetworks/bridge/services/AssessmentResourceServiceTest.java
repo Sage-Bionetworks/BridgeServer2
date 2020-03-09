@@ -1,12 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.MAX_REVISION;
@@ -319,6 +323,41 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setDeleted(true);
         
         service.updateResource(APP_ID, ASSESSMENT_ID, resource);
+    }
+    
+    @Test
+    public void updateSharedResource() { 
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(APP_ID + ":" + OWNER_ID);
+        when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_IDENTIFIER, ASSESSMENT_ID)).thenReturn(assessment);
+        
+        AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
+        existing.setModifiedOn(null);
+        existing.setDeleted(false);
+        when(mockDao.getResource(GUID)).thenReturn(Optional.of(existing));
+        
+        AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        resource.setModifiedOn(null);
+        when(mockDao.saveResource(eq(SHARED_STUDY_IDENTIFIER), eq(ASSESSMENT_ID), any())).thenReturn(resource);
+        
+        AssessmentResource retValue = service.updateSharedResource(APP_ID, ASSESSMENT_ID, resource);
+        assertSame(retValue, resource);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
+        assertEquals(retValue.getCreatedAtRevision(), 5);
+        assertTrue(retValue.isUpToDate());
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateSharedResourceFails() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(USER_SUBSTUDY_IDS).build());
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(APP_ID + ":anotherOrg");
+        when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, ASSESSMENT_ID)).thenReturn(assessment);
+
+        AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        
+        service.updateSharedResource(APP_ID, ASSESSMENT_ID, resource);
     }
     
     @Test

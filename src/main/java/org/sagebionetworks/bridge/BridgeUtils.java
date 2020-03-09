@@ -40,6 +40,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -72,7 +74,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(BridgeUtils.class);
+
     public static class SubstudyAssociations {
         private final Set<String> substudyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
@@ -704,6 +707,27 @@ public class BridgeUtils {
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
     }
     
+    public static void checkSharedOwnership(String callerAppId, String guid, String ownerId) {
+        if (ownerId == null) {
+            LOG.error("Owner ID is null, guid=" + guid);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String[] parts = ownerId.split(":", 2);
+        // This happens in tests, we expect it to never happens in production. So log if it does.
+        if (parts.length != 2) {
+            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        boolean scopedUser = !callerSubstudies.isEmpty();
+        boolean orgMember = callerSubstudies.contains(originOrgId);
+        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+    }
+    
     public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
         if (isBlank(value)) {
             return defaultValue;
@@ -714,4 +738,21 @@ public class BridgeUtils {
             throw new BadRequestException(value + " is not an integer");
         }
     }
+    /*
+    public static Tuple<String> parseOwnerId(String guid, String ownerId) {
+        if (ownerId == null) {
+            LOG.error("Owner ID is null, guid=" + guid);
+            throw new UnauthorizedException();
+        }
+        String[] parts = ownerId.split(":", 2);
+        // This happens in tests, we expect it to never happens in production. So log if it does.
+        if (parts.length != 2) {
+            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException();
+        }
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        return new Tuple<>(originAppId, originOrgId);
+    }
+    */
 }
