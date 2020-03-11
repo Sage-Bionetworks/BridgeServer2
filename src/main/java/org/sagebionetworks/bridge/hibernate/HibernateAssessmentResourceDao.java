@@ -42,11 +42,11 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
         builder.getParameters().put("assessmentId", assessmentId);
         builder.getParameters().put("appId", appId);
         if (minRevision != null) {
-            clauses.add("createdAtRevision >= :minRevision");
+            clauses.add("(minRevision is null OR minRevision >= :minRevision)");
             builder.getParameters().put("minRevision", minRevision);
         }
         if (maxRevision != null) {
-            clauses.add("createdAtRevision <= :maxRevision");
+            clauses.add("(maxRevision is null OR maxRevision <= :maxRevision)");
             builder.getParameters().put("maxRevision", maxRevision);
         }
         if (!includeDeleted) {
@@ -76,11 +76,13 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
 
     @Override
     public AssessmentResource saveResource(String appId, String assessmentId, AssessmentResource resource) {
+        // If you do not receive back the managed object from the executeWithExceptionHandling() method, and THEN
+        // convert it to a non-managed object, the version will not be updated. It appears that the update of the 
+        // Java object happens as part of the transaction commit, or something like that.
         HibernateAssessmentResource hibernateResource = HibernateAssessmentResource.create(resource, appId, assessmentId);
-        return hibernateHelper.executeWithExceptionHandling(resource, (session) -> {
-            HibernateAssessmentResource retValue = (HibernateAssessmentResource)session.merge(hibernateResource);
-            return AssessmentResource.create(retValue);
-        });
+        HibernateAssessmentResource retValue = hibernateHelper.executeWithExceptionHandling(hibernateResource, 
+                (session) -> (HibernateAssessmentResource)session.merge(hibernateResource));
+        return AssessmentResource.create(retValue);
     }
 
     @Override

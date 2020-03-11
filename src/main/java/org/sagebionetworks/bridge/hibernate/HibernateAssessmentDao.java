@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
+    static final String DELETE_RESOURCES_SQL = "DELETE FROM ExternalResources where appId = :appId AND assessmentId = :assessmentId";
     static final String APP_ID = "appId";
     static final String IDENTIFIER = "identifier";
     static final String REVISION = "revision";
@@ -43,7 +44,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     static final String GET_REVISIONS2 = "ORDER BY revision DESC";
     static final String EXCLUDE_DELETED = "AND deleted = 0";
 
-    static final String BATCH_LOGICAL_DELETE = "UPDATE ExternalResources SET deleted = 1, version = "
+    static final String LOGICAL_DELETE_SQL = "UPDATE ExternalResources SET deleted = 1, version = "
             +"(version+1) WHERE appId = :appId AND assessmentId = :assessmentId AND deleted = 0";
     
     private HibernateHelper hibernateHelper;
@@ -131,6 +132,9 @@ class HibernateAssessmentDao implements AssessmentDao {
     
     @Override
     public Assessment saveAssessment(String appId, Assessment assessment) {
+        // If you do not receive back the managed object from the executeWithExceptionHandling() method, and THEN
+        // convert it to a non-managed object, the version will not be updated. It appears that the update of the 
+        // Java object happens as part of the transaction commit, or something like that.
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
                 (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
@@ -141,6 +145,12 @@ class HibernateAssessmentDao implements AssessmentDao {
     public void deleteAssessment(String appId, Assessment assessment) {
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
         hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
+            String assessmentId = hibernateAssessment.getIdentifier();
+            NativeQuery<?> query = session.createNativeQuery(DELETE_RESOURCES_SQL);
+            query.setParameter("appId", appId);
+            query.setParameter("assessmentId", assessmentId);
+            query.executeUpdate();
+
             session.remove(hibernateAssessment);
             return null;
         });
@@ -159,7 +169,7 @@ class HibernateAssessmentDao implements AssessmentDao {
 
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOrigin, (session) -> {
             // logically delete any existing resources in destination app context 
-            NativeQuery<?> query = session.createNativeQuery(BATCH_LOGICAL_DELETE);
+            NativeQuery<?> query = session.createNativeQuery(LOGICAL_DELETE_SQL);
             query.setParameter("appId", SHARED_STUDY_ID_STRING);
             query.setParameter("assessmentId", assessmentId);
             query.executeUpdate();
@@ -185,7 +195,7 @@ class HibernateAssessmentDao implements AssessmentDao {
 
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateDest, (session) -> {
             // logically delete any existing resources in destination app context 
-            NativeQuery<?> query = session.createNativeQuery(BATCH_LOGICAL_DELETE);
+            NativeQuery<?> query = session.createNativeQuery(LOGICAL_DELETE_SQL);
             query.setParameter("appId", destAppId);
             query.setParameter("assessmentId", assessmentId);
             query.executeUpdate();

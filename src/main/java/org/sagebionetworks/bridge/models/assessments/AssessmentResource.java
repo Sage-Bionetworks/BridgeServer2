@@ -56,7 +56,7 @@ public class AssessmentResource implements BridgeEntity {
     private DateTime createdOn;
     private DateTime modifiedOn;
     private boolean deleted;
-    private int version;
+    private long version;
     boolean upToDate;
     
     public String getGuid() {
@@ -161,10 +161,10 @@ public class AssessmentResource implements BridgeEntity {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
-    public int getVersion() {
+    public long getVersion() {
         return version;
     }
-    public void setVersion(int version) {
+    public void setVersion(long version) {
         this.version = version;
     }
     public boolean isUpToDate() {

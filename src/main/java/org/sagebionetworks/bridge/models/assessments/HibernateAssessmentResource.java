@@ -14,7 +14,6 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.StringListConverter;
-import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
  * The table name here is generic because we can add an additional FK column and use it for another 
@@ -23,7 +22,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
  */
 @Entity
 @Table(name = "ExternalResources")
-public class HibernateAssessmentResource implements BridgeEntity {
+public class HibernateAssessmentResource {
     
     public static HibernateAssessmentResource create(AssessmentResource resource, String appId, String assessmentId) {
         HibernateAssessmentResource model = new HibernateAssessmentResource();
@@ -83,7 +82,7 @@ public class HibernateAssessmentResource implements BridgeEntity {
     private DateTime modifiedOn;
     private boolean deleted;
     @Version
-    private int version;
+    private long version;
     
     public String getGuid() {
         return guid;
@@ -199,10 +198,10 @@ public class HibernateAssessmentResource implements BridgeEntity {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }    
-    public int getVersion() {
+    public long getVersion() {
         return version;
     }
-    public void setVersion(int version) {
+    public void setVersion(long version) {
         this.version = version;
     }
 }
