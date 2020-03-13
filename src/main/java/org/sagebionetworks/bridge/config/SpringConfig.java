@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.config;
 
 import static com.amazonaws.regions.Regions.US_EAST_1;
+import static org.hibernate.event.spi.EventType.DELETE;
+import static org.hibernate.event.spi.EventType.MERGE;
+import static org.hibernate.event.spi.EventType.SAVE_UPDATE;
 
 import java.io.IOException;
 import java.net.URI;
@@ -44,6 +47,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.event.service.internal.EventListenerRegistryImpl;
+import org.hibernate.event.service.spi.EventListenerRegistry;
+import org.hibernate.event.spi.EventType;
+import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -102,6 +110,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -598,7 +607,8 @@ public class SpringConfig {
     }
 
     @Bean
-    public SessionFactory hibernateSessionFactory() {
+    @Autowired
+    public SessionFactory hibernateSessionFactory(TagEventListener listener) {
         ClassLoader classLoader = getClass().getClassLoader();
 
         // Need to set env vars to find the truststore so we can validate Amazon's RDS SSL certificate. Note that
@@ -639,7 +649,7 @@ public class SpringConfig {
         props.put("hibernate.connection.url", databaseURL());
 
         StandardServiceRegistry reg = new StandardServiceRegistryBuilder().applySettings(props).build();
-
+        
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(HibernateAccount.class);
@@ -655,7 +665,16 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAssessment.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
-        return metadataSources.buildMetadata().buildSessionFactory();
+        SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
+        
+        // I could not find a more elegant way to register this listener that was picked up by Hibernate
+        ServiceRegistryImplementor serviceImpl = ((SessionFactoryImplementor)factory).getServiceRegistry();
+        EventListenerRegistry eventRegistry = serviceImpl.getService(EventListenerRegistry.class);
+        eventRegistry.appendListeners(SAVE_UPDATE, listener);
+        eventRegistry.appendListeners(DELETE, listener);
+        eventRegistry.appendListeners(MERGE, listener);
+        
+        return factory;
     }
     
     @Bean
