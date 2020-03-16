@@ -11,6 +11,7 @@ public enum ResourceCategory {
     SAMPLE_APP,
     SAMPLE_DATA,
     SCREENSHOT,
+    VIDEO_PREVIEW,
     SEE_ALSO,
     USED_IN_STUDY,
     WEBSITE,

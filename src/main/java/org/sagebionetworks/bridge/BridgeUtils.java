@@ -723,6 +723,9 @@ public class BridgeUtils {
         Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
         boolean scopedUser = !callerSubstudies.isEmpty();
         boolean orgMember = callerSubstudies.contains(originOrgId);
+        
+        System.out.println("callerAppId=" + callerAppId + ", originAppId=" + originAppId +
+                ", scopedUser=" + scopedUser + ", orgMember=" + orgMember);
         if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
             throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
         }
@@ -738,21 +741,4 @@ public class BridgeUtils {
             throw new BadRequestException(value + " is not an integer");
         }
     }
-    /*
-    public static Tuple<String> parseOwnerId(String guid, String ownerId) {
-        if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid);
-            throw new UnauthorizedException();
-        }
-        String[] parts = ownerId.split(":", 2);
-        // This happens in tests, we expect it to never happens in production. So log if it does.
-        if (parts.length != 2) {
-            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException();
-        }
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        return new Tuple<>(originAppId, originOrgId);
-    }
-    */
 }

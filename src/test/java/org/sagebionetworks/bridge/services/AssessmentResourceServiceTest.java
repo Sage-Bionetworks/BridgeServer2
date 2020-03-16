@@ -164,6 +164,9 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(mockAssessmentService.getLatestAssessment(APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        resource.setGuid(null);
+        resource.setCreatedOn(null);
+        resource.setModifiedOn(null);
         resource.setDeleted(true);
         when(mockDao.saveResource(eq(APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
@@ -174,6 +177,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assertEquals(resource.getModifiedOn(), CREATED_ON);
         assertFalse(resource.isDeleted());
         assertEquals(resource.getCreatedAtRevision(), 5);
+        assertTrue(resource.isUpToDate());
         
         verify(mockDao).saveResource(APP_ID, ASSESSMENT_ID, resource);
     }

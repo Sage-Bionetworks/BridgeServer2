@@ -983,6 +983,23 @@ public class BridgeUtilsTest {
         BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipWrongAppId() { 
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(TEST_STUDY_IDENTIFIER)).build());
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, "other:"+OWNER_ID);        
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipGlobalUserWrongAppId() { 
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        // still doesn't pass because the appId must always match (global users must call 
+        // this API after associating to the right app context):
+        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, "other:"+OWNER_ID);        
+    }
+    
     @Test
     public void getEnumOrDefault() {
         ResourceCategory value = BridgeUtils.getEnumOrDefault("publication", ResourceCategory.class, LICENSE);

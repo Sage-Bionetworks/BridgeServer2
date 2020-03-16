@@ -403,28 +403,24 @@ public class AssessmentService {
         return opt.isPresent() ? (opt.get().getRevision()+1) : 1;
     }
     
+    /**
+     * Loads and initializes all the resources for an assessment so they can be copied as part of an import or publish
+     * operation.
+     */
     List<AssessmentResource> loadResourcesForAssessment(String appId, String assessmentId, int assessmentRev) {
-        List<AssessmentResource> resourcesToPublish = new ArrayList<>();
-        PagedResourceList<AssessmentResource> page = null;
-        int offset = 0;
-        do {
-            page = resourceDao.getResources(appId, assessmentId, 
-                    offset, getPageSize(), null, null, null, false);
-            
-            for (AssessmentResource oneResource : page.getItems()) {
-                DateTime timestamp = getCreatedOn();
-                oneResource.setGuid(generateGuid());
-                oneResource.setCreatedOn(timestamp);
-                oneResource.setModifiedOn(timestamp);
-                oneResource.setDeleted(false);
-                oneResource.setCreatedAtRevision(assessmentRev);
-                oneResource.setVersion(0);
-                resourcesToPublish.add(oneResource);
-                
-                offset += getPageSize();
-            }
-        } while(page.getItems().size() == getPageSize());
+        List<AssessmentResource> page = resourceDao.getAllResources(appId, assessmentId);
         
+        List<AssessmentResource> resourcesToPublish = new ArrayList<>();
+        for (AssessmentResource oneResource : page) {
+            DateTime timestamp = getCreatedOn();
+            oneResource.setGuid(generateGuid());
+            oneResource.setCreatedOn(timestamp);
+            oneResource.setModifiedOn(timestamp);
+            oneResource.setDeleted(false);
+            oneResource.setCreatedAtRevision(assessmentRev);
+            oneResource.setVersion(0);
+            resourcesToPublish.add(oneResource);
+        }
         return resourcesToPublish;
     }
     

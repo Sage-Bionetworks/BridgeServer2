@@ -336,7 +336,7 @@ CREATE TABLE `ExternalResources` (
   `createdAtRevision` int(10) NOT NULL,
   `createdOn` bigint(20) unsigned DEFAULT NULL,
   `modifiedOn` bigint(20) unsigned DEFAULT NULL,
-  `deleted` tinyint(1) DEFAULT '0',
+  `deleted` tinyint(1) DEFAULT '0' NOT NULL,
   `version` bigint(10) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

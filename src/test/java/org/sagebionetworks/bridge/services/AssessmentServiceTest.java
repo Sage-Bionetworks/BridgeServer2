@@ -795,8 +795,9 @@ public class AssessmentServiceTest extends Mockito {
         
         when(mockDao.getAssessment(APP_ID_VALUE, "oldGuid")).thenReturn(Optional.of(existing));
         
-        when(mockResourceDao.getResources(APP_ID_VALUE, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
-                .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        List<AssessmentResource> resources = ImmutableList.of(resource, resource, resource);
+        when(mockResourceDao.getAllResources(APP_ID_VALUE, IDENTIFIER)).thenReturn(resources);
         
         when(mockDao.publishAssessment(any(), any(), any(), any())).thenReturn(ASSESSMENT);
         
@@ -822,6 +823,8 @@ public class AssessmentServiceTest extends Mockito {
         // verify that a fuller copy also occurred
         assertEquals(assessmentToPublish.getTitle(), existing.getTitle());
         assertEquals(assessmentToPublish.getTags(), existing.getTags());
+        
+        assertSame(resourcesCaptor.getValue().size(), 3);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -856,9 +859,7 @@ public class AssessmentServiceTest extends Mockito {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(page);        
         
-        when(mockResourceDao.getResources(APP_ID_VALUE, IDENTIFIER, 
-            0, service.getPageSize(), null, null, null, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockResourceDao.getAllResources(APP_ID_VALUE, IDENTIFIER)).thenReturn(ImmutableList.of());
         
         service.publishAssessment(APP_ID_VALUE, GUID);
         
@@ -898,8 +899,11 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
-        when(mockResourceDao.getResources(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+
+        AssessmentResource sharedResource = AssessmentResourceTest.createAssessmentResource();
+        List<AssessmentResource> resources = ImmutableList.of(sharedResource, sharedResource, sharedResource);
+        when(mockResourceDao.getAllResources(SHARED_STUDY_ID_STRING, IDENTIFIER)).thenReturn(resources);
+        
         when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment), any())).thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
@@ -907,6 +911,9 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(retValue.getRevision(), 1);
         assertEquals(retValue.getOriginGuid(), "sharedGuid");
         assertEquals(retValue.getOwnerId(), OWNER_ID);
+        
+        verify(mockDao).importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment), resourcesCaptor.capture());
+        assertEquals(resourcesCaptor.getValue().size(), 3);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -942,8 +949,9 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
-        when(mockResourceDao.getResources(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, service.getPageSize(), null, null, null, false))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        
+        when(mockResourceDao.getAllResources(SHARED_STUDY_ID_STRING, IDENTIFIER)).thenReturn(ImmutableList.of());
+        
         when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment), any())).thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
@@ -1099,18 +1107,18 @@ public class AssessmentServiceTest extends Mockito {
         service.updateSharedAssessment(APP_ID_VALUE, sharedAssessment);
     }
     
-    @SuppressWarnings("unchecked")
     @Test
     public void loadResourcesForAssessment() {
         when(service.getPageSize()).thenReturn(2);
         AssessmentResource res = AssessmentResourceTest.createAssessmentResource();
-        
-        PagedResourceList<AssessmentResource> page1 = new PagedResourceList<>(ImmutableList.of(res, res), 5);
-        PagedResourceList<AssessmentResource> page2 = new PagedResourceList<>(ImmutableList.of(res, res), 5);
-        PagedResourceList<AssessmentResource> page3 = new PagedResourceList<>(ImmutableList.of(res), 5);
-        
-        when(mockResourceDao.getResources(eq(APP_ID_VALUE), eq(IDENTIFIER), anyInt(), eq(2), eq(null), eq(null),
-                eq(null), eq(false))).thenReturn(page1, page2, page3);
+        res.setGuid(null);
+        res.setCreatedOn(null);
+        res.setModifiedOn(null);
+        res.setCreatedAtRevision(-1);
+        res.setVersion(-1);
+
+        List<AssessmentResource> resources = ImmutableList.of(res, res, res, res, res);
+        when(mockResourceDao.getAllResources(APP_ID_VALUE, IDENTIFIER)).thenReturn(resources);
         
         List<AssessmentResource> retValue = service.loadResourcesForAssessment(APP_ID_VALUE, IDENTIFIER, 5);
         assertEquals(retValue.size(), 5);
@@ -1125,19 +1133,13 @@ public class AssessmentServiceTest extends Mockito {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void loadResourcesForAssessmentOnExactPageCount() {
         when(service.getPageSize()).thenReturn(2);
         AssessmentResource res = AssessmentResourceTest.createAssessmentResource();
         
-        PagedResourceList<AssessmentResource> page1 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
-        PagedResourceList<AssessmentResource> page2 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
-        PagedResourceList<AssessmentResource> page3 = new PagedResourceList<>(ImmutableList.of(res, res), 6);
-        PagedResourceList<AssessmentResource> page4 = new PagedResourceList<>(ImmutableList.of(), 6);
-        
-        when(mockResourceDao.getResources(eq(APP_ID_VALUE), eq(IDENTIFIER), anyInt(), eq(2), eq(null), eq(null),
-                eq(null), eq(false))).thenReturn(page1, page2, page3, page4);
+        List<AssessmentResource> resources = ImmutableList.of(res, res, res, res, res, res);
+        when(mockResourceDao.getAllResources(APP_ID_VALUE, IDENTIFIER)).thenReturn(resources);
         
         List<AssessmentResource> retValue = service.loadResourcesForAssessment(APP_ID_VALUE, IDENTIFIER, 5);
         assertEquals(retValue.size(), 6);
