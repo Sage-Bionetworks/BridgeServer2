@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.hibernate.StringListConverter;
  */
 @Entity
 @Table(name = "ExternalResources")
+@IdClass(AssessmentResourceId.class)
 public class HibernateAssessmentResource {
     
     public static HibernateAssessmentResource create(AssessmentResource resource, String appId, String assessmentId) {
@@ -56,8 +58,9 @@ public class HibernateAssessmentResource {
     }
     
     @Id
-    private String guid;
     private String appId;
+    @Id
+    private String guid;
     private String assessmentId;
     private String title;
     @Enumerated(EnumType.STRING)

@@ -8,9 +8,12 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final TypeReference<List<String>> STRING_LIST_TYPEREF = new TypeReference<List<String>>() {};
+
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
 
     public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";

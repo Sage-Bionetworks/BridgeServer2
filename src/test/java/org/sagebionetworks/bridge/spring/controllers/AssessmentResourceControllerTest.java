@@ -18,6 +18,8 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -250,4 +252,25 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
     }
+    
+    @Test
+    public void publishAssessmentResource() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        mockRequestBody(mockRequest, guids);
+        
+        controller.publishAssessmentResource(ASSESSMENT_ID);
+        
+        verify(mockService).publishAssessmentResources(APP_ID, ASSESSMENT_ID, guids);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
+    public void publishAssessmentResourceRejectsSharedAppContext() throws Exception {
+        session.setStudyIdentifier(SHARED_STUDY);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        
+        controller.publishAssessmentResource(ASSESSMENT_ID);
+    }    
 }

@@ -314,8 +314,8 @@ CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);
 -- changeset bridge:14
 
 CREATE TABLE `ExternalResources` (
-  `guid` varchar(255) NOT NULL,
   `appId` varchar(255) NOT NULL,
+  `guid` varchar(255) NOT NULL,
   `assessmentId` varchar(255),
   `title` varchar(255) NOT NULL,
   `url` text NOT NULL,
@@ -338,7 +338,7 @@ CREATE TABLE `ExternalResources` (
   `modifiedOn` bigint(20) unsigned DEFAULT NULL,
   `deleted` tinyint(1) DEFAULT '0' NOT NULL,
   `version` bigint(10) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`guid`)
+  PRIMARY KEY (`appId`, `guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE INDEX `ExternalResources-AppId-AssessmentId` ON `ExternalResources`(`appId`, `assessmentId`);

@@ -14,11 +14,12 @@ public interface AssessmentResourceDao {
             Integer pageSize, Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision,
             boolean includeDeleted);
 
-    List<AssessmentResource> getAllResources(String appId, String assessmentId);
-
-    Optional<AssessmentResource> getResource(String guid);
+    Optional<AssessmentResource> getResource(String appId, String guid);
 
     AssessmentResource saveResource(String appId, String assessmentId, AssessmentResource resource);
 
-    void deleteResource(AssessmentResource resource);
+    List<AssessmentResource> saveResources(String appId, String assessmentId, List<AssessmentResource> resources);
+    
+    void deleteResource(String appId, AssessmentResource resource);
+
 }

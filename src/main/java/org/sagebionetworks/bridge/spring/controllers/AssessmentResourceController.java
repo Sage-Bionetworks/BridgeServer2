@@ -4,10 +4,12 @@ import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STRING_LIST_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
@@ -130,5 +133,19 @@ public class AssessmentResourceController extends BaseController {
             service.deleteResource(appId, assessmentId, guid);
         }
         return new StatusMessage("Assessment resource deleted.");        
+    }
+    
+    @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/publish")
+    public ResourceList<AssessmentResource> publishAssessmentResource(@PathVariable String assessmentId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        String appId = session.getStudyIdentifier().getIdentifier();
+
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
+        List<String> resourceGuids = parseJson(STRING_LIST_TYPEREF);
+        
+        List<AssessmentResource> resources = service.publishAssessmentResources(appId, assessmentId, resourceGuids);
+        return new ResourceList<AssessmentResource>(resources);
     }
 }

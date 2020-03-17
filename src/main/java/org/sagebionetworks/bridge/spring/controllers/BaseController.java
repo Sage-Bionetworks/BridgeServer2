@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
@@ -307,6 +308,17 @@ public abstract class BaseController {
             .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
             .withStudyIdentifier(session.getStudyIdentifier())
             .build();
+    }
+    
+    protected @Nonnull <T> T parseJson(TypeReference<? extends T> clazz) {
+        try {
+            return MAPPER.readValue(request().getInputStream(), clazz);
+        } catch (Throwable ex) {
+            if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
+                throw (InvalidEntityException)Throwables.getRootCause(ex);
+            }
+            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());    
+        }
     }
 
     protected @Nonnull <T> T parseJson(Class<? extends T> clazz) {

@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.STRING_LIST_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
@@ -89,5 +92,16 @@ public class SharedAssessmentResourceController extends BaseController {
             service.deleteResource(SHARED_STUDY_ID_STRING, assessmentId, guid);
         }
         return new StatusMessage("Assessment resource deleted.");        
+    }
+    
+    @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/import")
+    public ResourceList<AssessmentResource> importAssessmentResources(@PathVariable String assessmentId) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        String appId = session.getStudyIdentifier().getIdentifier();
+
+        List<String> resourceGuids = parseJson(STRING_LIST_TYPEREF);
+        
+        List<AssessmentResource> resources = service.importAssessmentResources(appId, assessmentId, resourceGuids);
+        return new ResourceList<AssessmentResource>(resources);
     }
 }

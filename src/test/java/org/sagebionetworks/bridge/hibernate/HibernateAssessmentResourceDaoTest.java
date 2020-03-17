@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
-import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentResourceDao.ALL_RESOURCES_QUERY;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentResourceDao.DELETE_QUERY;
 import static org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResourceTest.createHibernateAssessmentResource;
 import static org.testng.Assert.assertEquals;
@@ -31,6 +30,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResourceId;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 
@@ -143,24 +143,15 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
     }
     
     @Test
-    public void getAllResources() {
-        dao.getAllResources(APP_ID, ASSESSMENT_ID);
-        
-        verify(mockHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null),
-                eq(HibernateAssessmentResource.class));
-        assertEquals(queryCaptor.getValue(), ALL_RESOURCES_QUERY);
-        assertEquals(paramsCaptor.getValue().get("appId"), APP_ID);
-        assertEquals(paramsCaptor.getValue().get("assessmentId"), ASSESSMENT_ID);
-    }
-    
-    @Test
     public void getResource() {
-        when(mockHelper.getById(HibernateAssessmentResource.class, GUID)).thenReturn(new HibernateAssessmentResource());
+        AssessmentResourceId id = new AssessmentResourceId(APP_ID, GUID);
+        when(mockHelper.getById(HibernateAssessmentResource.class, id))
+            .thenReturn(new HibernateAssessmentResource());
         
-        Optional<AssessmentResource> optional = dao.getResource(GUID);
+        Optional<AssessmentResource> optional = dao.getResource(APP_ID, GUID);
         assertTrue(optional.isPresent());
         
-        verify(mockHelper).getById(HibernateAssessmentResource.class, GUID);
+        verify(mockHelper).getById(HibernateAssessmentResource.class, id);
     }
     
     @Test
@@ -169,7 +160,7 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
         when(mockHelper.queryGet(any(), any(), eq(0), eq(1), eq(HibernateAssessmentResource.class)))
                 .thenReturn(resources);
         
-        Optional<AssessmentResource> optional = dao.getResource(GUID);
+        Optional<AssessmentResource> optional = dao.getResource(APP_ID, GUID);
         assertFalse(optional.isPresent());
     }
 
@@ -190,9 +181,35 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
         when(mockSession.createNativeQuery(DELETE_QUERY)).thenReturn(mockNativeQuery);
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         
-        dao.deleteResource(resource);
+        dao.deleteResource(APP_ID, resource);
         
         verify(mockNativeQuery).setParameter("guid", GUID);
         verify(mockNativeQuery).executeUpdate();
-    }    
+    }
+    
+    @Test
+    public void saveResources() {
+        AssessmentResource ar1 = AssessmentResourceTest.createAssessmentResource();
+        AssessmentResource ar2 = AssessmentResourceTest.createAssessmentResource();
+        AssessmentResource ar3 = AssessmentResourceTest.createAssessmentResource();
+        ar1.setGuid(GUID+"1");
+        ar2.setGuid(GUID+"2");
+        ar3.setGuid(GUID+"3");
+        List<AssessmentResource> resources = ImmutableList.of(ar1, ar2, ar3);
+        
+        when(mockSession.merge(any())).thenReturn(
+            HibernateAssessmentResource.create(ar1, APP_ID, ASSESSMENT_ID),
+            HibernateAssessmentResource.create(ar2, APP_ID, ASSESSMENT_ID),
+            HibernateAssessmentResource.create(ar3, APP_ID, ASSESSMENT_ID)
+        );
+        
+        dao.saveResources(APP_ID, ASSESSMENT_ID, resources);
+        
+        verify(mockSession, times(3)).merge(hibernateResourceCaptor.capture());
+        
+        List<HibernateAssessmentResource> retValue = hibernateResourceCaptor.getAllValues();
+        assertEquals(retValue.get(0).getGuid(), GUID+"1");
+        assertEquals(retValue.get(1).getGuid(), GUID+"2");
+        assertEquals(retValue.get(2).getGuid(), GUID+"3");
+    }
 }

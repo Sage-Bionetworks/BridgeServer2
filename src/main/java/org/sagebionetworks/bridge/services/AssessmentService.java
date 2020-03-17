@@ -21,9 +21,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TAGS;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,14 +35,12 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
-import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -56,18 +52,11 @@ public class AssessmentService {
 
     private AssessmentDao dao;
     
-    private AssessmentResourceDao resourceDao;
-    
     private SubstudyService substudyService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
         this.dao = assessmentDao;
-    }
-    
-    @Autowired
-    final void sestAssessmentResourceDao(AssessmentResourceDao resourceDao) {
-        this.resourceDao = resourceDao;
     }
     
     @Autowired
@@ -304,10 +293,7 @@ public class AssessmentService {
         
         original.setOriginGuid(assessmentToPublish.getGuid());
         
-        List<AssessmentResource> resourcesToPublish = loadResourcesForAssessment(
-                appId, assessmentToPublish.getIdentifier(), assessmentToPublish.getRevision());
-        
-        return dao.publishAssessment(appId, original, assessmentToPublish, resourcesToPublish);
+        return dao.publishAssessment(appId, original, assessmentToPublish);
     }
     
     /**
@@ -334,10 +320,7 @@ public class AssessmentService {
         sharedAssessment.setRevision(revision);
         sharedAssessment.setOwnerId(ownerId);
         
-        List<AssessmentResource> sharedResources = loadResourcesForAssessment(
-                SHARED_STUDY_ID_STRING, sharedAssessment.getIdentifier(), sharedAssessment.getRevision());
-        
-        return dao.importAssessment(appId, sharedAssessment, sharedResources);
+        return dao.importAssessment(appId, sharedAssessment);
     }
         
     public void deleteAssessment(String appId, String guid) {
@@ -382,7 +365,7 @@ public class AssessmentService {
         return dao.saveAssessment(appId, assessment);
     }
     
-    private Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
+    Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
@@ -401,27 +384,6 @@ public class AssessmentService {
     private int nextRevisionNumber(String appId, String identifier) {
         Optional<Assessment> opt = getLatestInternal(appId, identifier, true);
         return opt.isPresent() ? (opt.get().getRevision()+1) : 1;
-    }
-    
-    /**
-     * Loads and initializes all the resources for an assessment so they can be copied as part of an import or publish
-     * operation.
-     */
-    List<AssessmentResource> loadResourcesForAssessment(String appId, String assessmentId, int assessmentRev) {
-        List<AssessmentResource> page = resourceDao.getAllResources(appId, assessmentId);
-        
-        List<AssessmentResource> resourcesToPublish = new ArrayList<>();
-        for (AssessmentResource oneResource : page) {
-            DateTime timestamp = getCreatedOn();
-            oneResource.setGuid(generateGuid());
-            oneResource.setCreatedOn(timestamp);
-            oneResource.setModifiedOn(timestamp);
-            oneResource.setDeleted(false);
-            oneResource.setCreatedAtRevision(assessmentRev);
-            oneResource.setVersion(0);
-            resourcesToPublish.add(oneResource);
-        }
-        return resourcesToPublish;
     }
     
     /**

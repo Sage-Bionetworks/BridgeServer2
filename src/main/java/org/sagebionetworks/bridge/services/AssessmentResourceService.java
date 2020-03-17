@@ -17,6 +17,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.INSTANCE;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -93,7 +95,7 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        AssessmentResource resource = dao.getResource(guid)
+        AssessmentResource resource = dao.getResource(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
         return resource;
@@ -152,7 +154,7 @@ public class AssessmentResourceService {
     private AssessmentResource updateResourceInternal(String appId, String assessmentId, Assessment assessment,
             AssessmentResource resource) {
         // Don't call this.getResource(), you'll just load the assessment twice
-        AssessmentResource existing = dao.getResource(resource.getGuid())
+        AssessmentResource existing = dao.getResource(appId, resource.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         if (resource.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AssessmentResource.class);
@@ -177,7 +179,7 @@ public class AssessmentResourceService {
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         checkOwnership(appId, assessment.getOwnerId());
         
-        AssessmentResource resource = dao.getResource(guid)
+        AssessmentResource resource = dao.getResource(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         resource.setDeleted(true);
         resource.setModifiedOn(getModifiedOn());
@@ -191,10 +193,61 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         checkArgument(isNotBlank(guid));
         
-        Optional<AssessmentResource> opt = dao.getResource(guid);
+        Optional<AssessmentResource> opt = dao.getResource(appId, guid);
         if (opt.isPresent()) {
-            dao.deleteResource(opt.get());
+            dao.deleteResource(appId, opt.get());
         }
+    }
+    
+    public List<AssessmentResource> importAssessmentResources(String appId, String assessmentId, List<String> guids) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        
+        // Must have imported the assessment already before you move resources
+        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        // Cannot import a resource unless you are member of the org that owns the assessment
+        checkOwnership(appId, assessment.getOwnerId());
+        return copyResources(SHARED_STUDY_ID_STRING, appId, assessment, guids);
+    }
+    
+    public List<AssessmentResource> publishAssessmentResources(String appId, String assessmentId, List<String> guids) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(assessmentId));
+        
+        // Must have published the assessment already before you move resources
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, assessmentId);
+        // Cannot publish a resource unless you are member of the org that owns the shared assessment
+        checkSharedOwnership(appId, assessment.getGuid(), assessment.getOwnerId());
+        return copyResources(appId, SHARED_STUDY_ID_STRING, assessment, guids);
+    }
+    
+    List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, List<String> guids) {
+        checkArgument(isNotBlank(originId));
+        checkArgument(isNotBlank(targetId));
+        
+        if (guids == null || guids.isEmpty()) {
+            throw new BadRequestException("Must specify one or more resource GUIDs");
+        }
+        DateTime timestamp = getCreatedOn();
+        
+        List<AssessmentResource> resources = new ArrayList<>();
+        for (String oneGuid : guids) {
+            AssessmentResource origin = dao.getResource(originId, oneGuid)
+                    .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
+            
+            AssessmentResource target = dao.getResource(targetId, oneGuid).orElse(null);
+            
+            origin.setModifiedOn(timestamp);
+            origin.setDeleted(false); // if you copy a deleted resource, it probably should not be deleted
+            // resource is new in the target repository. Set more fields in this case.
+            if (target == null) {
+                origin.setCreatedOn(timestamp);
+                origin.setCreatedAtRevision(assessment.getRevision());
+                origin.setVersion(0);
+            }
+            resources.add(origin);
+        }
+        return dao.saveResources(targetId, assessment.getIdentifier(), resources);
     }
     
     static void sanitizeResource(AssessmentResource resource) {

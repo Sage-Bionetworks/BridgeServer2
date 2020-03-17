@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -16,12 +17,13 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.AssessmentResourceId;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 
 @Component
 public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
-    static final String DELETE_QUERY = "DELETE FROM ExternalResources WHERE guid = :guid";
+    static final String DELETE_QUERY = "DELETE FROM ExternalResources WHERE appId = :appId AND guid = :guid";
     static final String ALL_RESOURCES_QUERY = "from HibernateAssessmentResource WHERE appId = :appId " + 
             "AND assessmentId = :assessmentId AND deleted = 0";
     private HibernateHelper hibernateHelper;
@@ -70,18 +72,9 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     }
     
     @Override
-    public List<AssessmentResource> getAllResources(String appId, String assessmentId) {
-        QueryBuilder builder = new QueryBuilder();
-        builder.append(ALL_RESOURCES_QUERY, "appId", appId, "assessmentId", assessmentId);
-        
-        List<HibernateAssessmentResource> resources = hibernateHelper.queryGet(builder.getQuery(), 
-                builder.getParameters(), null, null, HibernateAssessmentResource.class);
-        return resources.stream().map(AssessmentResource::create).collect(toList());
-    }
-    
-    @Override
-    public Optional<AssessmentResource> getResource(String guid) {
-        HibernateAssessmentResource resource = hibernateHelper.getById(HibernateAssessmentResource.class, guid);
+    public Optional<AssessmentResource> getResource(String appId, String guid) {
+        AssessmentResourceId id = new AssessmentResourceId(appId, guid);
+        HibernateAssessmentResource resource = hibernateHelper.getById(HibernateAssessmentResource.class, id);
         return (resource == null) ? Optional.empty() : Optional.of(AssessmentResource.create(resource));
     }
 
@@ -95,11 +88,29 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
                 (session) -> (HibernateAssessmentResource)session.merge(hibernateResource));
         return AssessmentResource.create(retValue);
     }
+    
+    @Override
+    public List<AssessmentResource> saveResources(String appId, String assessmentId, List<AssessmentResource> resources) {
+        List<HibernateAssessmentResource> hibernateResources = resources.stream()
+                .map(res -> HibernateAssessmentResource.create(res, appId, assessmentId))
+                .collect(Collectors.toList());
+                
+        List<HibernateAssessmentResource> savedResources = hibernateHelper
+                .executeWithExceptionHandling(hibernateResources, (session) -> {
+            return hibernateResources.stream()
+                    .map(hr -> (HibernateAssessmentResource)session.merge(hr))
+                    .collect(toList());
+        });
+        return savedResources.stream()
+                .map(res -> AssessmentResource.create(res))
+                .collect(toList());
+    }
 
     @Override
-    public void deleteResource(AssessmentResource resource) {
+    public void deleteResource(String appId, AssessmentResource resource) {
         hibernateHelper.executeWithExceptionHandling(resource, (session) -> {
             NativeQuery<?> query = session.createNativeQuery(DELETE_QUERY);
+            query.setParameter("appId", appId);
             query.setParameter("guid", resource.getGuid());
             query.executeUpdate();
             return null;

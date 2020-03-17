@@ -724,8 +724,6 @@ public class BridgeUtils {
         boolean scopedUser = !callerSubstudies.isEmpty();
         boolean orgMember = callerSubstudies.contains(originOrgId);
         
-        System.out.println("callerAppId=" + callerAppId + ", originAppId=" + originAppId +
-                ", scopedUser=" + scopedUser + ", orgMember=" + orgMember);
         if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
             throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
         }
