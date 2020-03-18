@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
@@ -12,7 +13,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
-    public static final TypeReference<List<String>> STRING_LIST_TYPEREF = new TypeReference<List<String>>() {};
+    public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
 
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
 

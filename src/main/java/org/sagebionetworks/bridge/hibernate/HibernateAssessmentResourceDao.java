@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -84,8 +83,11 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
         // convert it to a non-managed object, the version will not be updated. It appears that the update of the 
         // Java object happens as part of the transaction commit, or something like that.
         HibernateAssessmentResource hibernateResource = HibernateAssessmentResource.create(resource, appId, assessmentId);
-        HibernateAssessmentResource retValue = hibernateHelper.executeWithExceptionHandling(hibernateResource, 
-                (session) -> (HibernateAssessmentResource)session.merge(hibernateResource));
+        HibernateAssessmentResource retValue = hibernateHelper.executeWithExceptionHandling(hibernateResource,
+                (session) -> {
+                    session.saveOrUpdate(hibernateResource);
+                    return hibernateResource;
+                });
         return AssessmentResource.create(retValue);
     }
     
@@ -93,14 +95,12 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     public List<AssessmentResource> saveResources(String appId, String assessmentId, List<AssessmentResource> resources) {
         List<HibernateAssessmentResource> hibernateResources = resources.stream()
                 .map(res -> HibernateAssessmentResource.create(res, appId, assessmentId))
-                .collect(Collectors.toList());
+                .collect(toList());
                 
-        List<HibernateAssessmentResource> savedResources = hibernateHelper
-                .executeWithExceptionHandling(hibernateResources, (session) -> {
-            return hibernateResources.stream()
-                    .map(hr -> (HibernateAssessmentResource)session.merge(hr))
-                    .collect(toList());
-        });
+        List<HibernateAssessmentResource> savedResources = hibernateHelper.executeWithExceptionHandling(hibernateResources, 
+            (session) -> hibernateResources.stream()
+                        .map(hr -> (HibernateAssessmentResource)session.merge(hr))
+                        .collect(toList()));
         return savedResources.stream()
                 .map(res -> AssessmentResource.create(res))
                 .collect(toList());

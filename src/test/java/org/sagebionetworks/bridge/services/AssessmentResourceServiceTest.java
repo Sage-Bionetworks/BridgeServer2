@@ -26,9 +26,10 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -245,11 +246,13 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(mockDao.getResource(APP_ID, GUID)).thenReturn(Optional.of(existing));
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        resource.setCreatedOn(null);
         resource.setModifiedOn(null);
         when(mockDao.saveResource(eq(APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
         AssessmentResource retValue = service.updateResource(APP_ID, ASSESSMENT_ID, resource);
         assertSame(retValue, resource);
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
         assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
         assertEquals(retValue.getCreatedAtRevision(), 5);
         assertTrue(retValue.isUpToDate());
@@ -353,11 +356,13 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(mockDao.getResource(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(existing));
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
+        resource.setCreatedOn(null);
         resource.setModifiedOn(null);
         when(mockDao.saveResource(eq(SHARED_STUDY_IDENTIFIER), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
         AssessmentResource retValue = service.updateSharedResource(APP_ID, ASSESSMENT_ID, resource);
         assertSame(retValue, resource);
+        assertEquals(retValue.getCreatedOn(), CREATED_ON);
         assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
         assertEquals(retValue.getCreatedAtRevision(), 5);
         assertTrue(retValue.isUpToDate());
@@ -443,7 +448,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setRevision(100);
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         List<AssessmentResource> resources = ImmutableList.of();
         when(mockDao.saveResources(eq("targetId"), eq(IDENTIFIER), any())).thenReturn(resources);
@@ -488,7 +493,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setRevision(100);
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         List<AssessmentResource> resources = ImmutableList.of();
         when(mockDao.saveResources(eq("targetId"), eq(IDENTIFIER), any())).thenReturn(resources);
@@ -509,19 +514,19 @@ public class AssessmentResourceServiceTest extends Mockito {
         AssessmentResource ar1 = resourceListCaptor.getValue().get(0);
         assertEquals(ar1.getCreatedOn().toString(), CREATED_ON.toString());
         assertEquals(ar1.getModifiedOn().toString(), TIMESTAMP.toString());
-        assertEquals(ar1.getCreatedAtRevision(), 3);
+        assertEquals(ar1.getCreatedAtRevision(), 100);
         assertEquals(ar1.getVersion(), 10);        
         
         AssessmentResource ar2 = resourceListCaptor.getValue().get(1);
         assertEquals(ar2.getCreatedOn().toString(), CREATED_ON.toString());
         assertEquals(ar2.getModifiedOn().toString(), TIMESTAMP.toString());
-        assertEquals(ar2.getCreatedAtRevision(), 3);
+        assertEquals(ar2.getCreatedAtRevision(), 100);
         assertEquals(ar2.getVersion(), 10);        
         
         AssessmentResource ar3 = resourceListCaptor.getValue().get(2);
         assertEquals(ar3.getCreatedOn().toString(), CREATED_ON.toString());
         assertEquals(ar3.getModifiedOn().toString(), TIMESTAMP.toString());
-        assertEquals(ar3.getCreatedAtRevision(), 3);
+        assertEquals(ar3.getCreatedAtRevision(), 100);
         assertEquals(ar3.getVersion(), 10);        
     }
 
@@ -529,7 +534,7 @@ public class AssessmentResourceServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Must specify one or more resource GUIDs")
     public void copyResourcesGuidsEmpty() {
         Assessment assessment = createAssessment();
-        service.copyResources("originId", "targetId", assessment, new ArrayList<>());
+        service.copyResources("originId", "targetId", assessment, new HashSet<>());
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -545,7 +550,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setRevision(100);
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         when(mockDao.getResource("originId", "guid1")).thenReturn(Optional.empty());
         
@@ -562,7 +567,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockAssessmentService.getLatestAssessment(APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         List<AssessmentResource> resources = ImmutableList.of();
         // We test this separately so we can mock it here.
@@ -582,7 +587,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockAssessmentService.getLatestAssessment(APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         doReturn(ImmutableList.of()).when(service).copyResources(SHARED_STUDY_ID_STRING, APP_ID, assessment, guids);
         
@@ -599,7 +604,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockAssessmentService.getLatestAssessment(APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         service.importAssessmentResources(APP_ID, ASSESSMENT_ID, guids);
     }
     
@@ -609,7 +614,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assessment.setOwnerId("api:"+OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         List<AssessmentResource> resources = ImmutableList.of();
         // We test this separately so we can mock it here.
@@ -630,7 +635,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assessment.setOwnerId("api:"+OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         List<AssessmentResource> resources = ImmutableList.of();
         // We test this separately so we can mock it here.
@@ -650,7 +655,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assessment.setOwnerId("api:"+OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         service.publishAssessmentResources(APP_ID, ASSESSMENT_ID, guids);
     }
@@ -664,7 +669,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assessment.setOwnerId("api:"+OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, ASSESSMENT_ID)).thenReturn(assessment);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         service.publishAssessmentResources("otherAppContext", ASSESSMENT_ID, guids);
     }

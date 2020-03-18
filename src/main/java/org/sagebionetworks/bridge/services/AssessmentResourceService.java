@@ -160,6 +160,7 @@ public class AssessmentResourceService {
             throw new EntityNotFoundException(AssessmentResource.class);
         }
         resource.setCreatedAtRevision(assessment.getRevision());
+        resource.setCreatedOn(existing.getCreatedOn());
         resource.setModifiedOn(getModifiedOn());
         sanitizeResource(resource);
         
@@ -199,7 +200,7 @@ public class AssessmentResourceService {
         }
     }
     
-    public List<AssessmentResource> importAssessmentResources(String appId, String assessmentId, List<String> guids) {
+    public List<AssessmentResource> importAssessmentResources(String appId, String assessmentId, Set<String> guids) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         
@@ -210,7 +211,7 @@ public class AssessmentResourceService {
         return copyResources(SHARED_STUDY_ID_STRING, appId, assessment, guids);
     }
     
-    public List<AssessmentResource> publishAssessmentResources(String appId, String assessmentId, List<String> guids) {
+    public List<AssessmentResource> publishAssessmentResources(String appId, String assessmentId, Set<String> guids) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         
@@ -221,7 +222,7 @@ public class AssessmentResourceService {
         return copyResources(appId, SHARED_STUDY_ID_STRING, assessment, guids);
     }
     
-    List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, List<String> guids) {
+    List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, Set<String> guids) {
         checkArgument(isNotBlank(originId));
         checkArgument(isNotBlank(targetId));
         
@@ -238,12 +239,13 @@ public class AssessmentResourceService {
             AssessmentResource target = dao.getResource(targetId, oneGuid).orElse(null);
             
             origin.setModifiedOn(timestamp);
-            origin.setDeleted(false); // if you copy a deleted resource, it probably should not be deleted
-            // resource is new in the target repository. Set more fields in this case.
+            origin.setDeleted(false);
+            origin.setCreatedAtRevision(assessment.getRevision());
             if (target == null) {
                 origin.setCreatedOn(timestamp);
-                origin.setCreatedAtRevision(assessment.getRevision());
-                origin.setVersion(0);
+                origin.setVersion(0L);
+            } else {
+                origin.setVersion(target.getVersion());
             }
             resources.add(origin);
         }

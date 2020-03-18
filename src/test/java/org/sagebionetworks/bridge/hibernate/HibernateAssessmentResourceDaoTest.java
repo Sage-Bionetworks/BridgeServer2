@@ -172,7 +172,7 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
         AssessmentResource retValue = dao.saveResource(APP_ID, ASSESSMENT_ID, resource);
         assertEquals(retValue.getGuid(), GUID);
         
-        verify(mockSession).merge(hibernateResourceCaptor.capture());
+        verify(mockSession).saveOrUpdate(hibernateResourceCaptor.capture());
         assertEquals(hibernateResourceCaptor.getValue().getGuid(), GUID);
     }
 

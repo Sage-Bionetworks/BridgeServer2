@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
-import static org.sagebionetworks.bridge.BridgeConstants.STRING_LIST_TYPEREF;
+import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -99,7 +99,7 @@ public class SharedAssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
 
-        List<String> resourceGuids = parseJson(STRING_LIST_TYPEREF);
+        Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         
         List<AssessmentResource> resources = service.importAssessmentResources(appId, assessmentId, resourceGuids);
         return new ResourceList<AssessmentResource>(resources);

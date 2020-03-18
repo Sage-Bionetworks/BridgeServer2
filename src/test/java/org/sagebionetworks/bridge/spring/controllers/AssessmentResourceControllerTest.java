@@ -18,7 +18,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -257,7 +257,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     public void publishAssessmentResource() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        List<String> guids = ImmutableList.of("guid1", "guid2", "guid3");
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         mockRequestBody(mockRequest, guids);
         
         controller.publishAssessmentResource(ASSESSMENT_ID);

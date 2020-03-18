@@ -4,7 +4,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
-import static org.sagebionetworks.bridge.BridgeConstants.STRING_LIST_TYPEREF;
+import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -143,7 +143,7 @@ public class AssessmentResourceController extends BaseController {
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
-        List<String> resourceGuids = parseJson(STRING_LIST_TYPEREF);
+        Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         
         List<AssessmentResource> resources = service.publishAssessmentResources(appId, assessmentId, resourceGuids);
         return new ResourceList<AssessmentResource>(resources);
