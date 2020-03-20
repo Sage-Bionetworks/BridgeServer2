@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
+import static org.sagebionetworks.bridge.models.OperatingSystem.SYNONYMS;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
@@ -181,7 +182,11 @@ public class AssessmentService {
         DateTime timestamp = getModifiedOn();
         assessment.setModifiedOn(timestamp);
         sanitizeAssessment(assessment);
-        
+
+        String osName = assessment.getOsName();
+        if (SYNONYMS.get(osName) != null) {
+            assessment.setOsName(SYNONYMS.get(osName));
+        }
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
 
@@ -376,6 +381,10 @@ public class AssessmentService {
         assessment.setDeleted(false);
         sanitizeAssessment(assessment);
 
+        String osName = assessment.getOsName();
+        if (SYNONYMS.get(osName) != null) {
+            assessment.setOsName(SYNONYMS.get(osName));
+        }
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
         
