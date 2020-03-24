@@ -16,6 +16,9 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.util.List;
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,6 +38,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
@@ -166,5 +170,22 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "false");
         verify(mockService).deleteResource(SHARED_STUDY_ID_STRING, ASSESSMENT_ID, GUID);
+    }
+    
+    @Test
+    public void importAssessmentResources() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
+        mockRequestBody(mockRequest, guids);
+
+        List<AssessmentResource> list = ImmutableList.of(AssessmentResourceTest.createAssessmentResource(),
+                AssessmentResourceTest.createAssessmentResource(), AssessmentResourceTest.createAssessmentResource());
+        when(mockService.importAssessmentResources(eq(TEST_STUDY_IDENTIFIER), eq(ASSESSMENT_ID), any())) 
+            .thenReturn(list);
+        
+        ResourceList<AssessmentResource> retValue = controller.importAssessmentResources(ASSESSMENT_ID);
+        assertSame(retValue.getItems(), list);
+        
+        verify(mockService).importAssessmentResources(TEST_STUDY_IDENTIFIER, ASSESSMENT_ID, guids);
     }
 }

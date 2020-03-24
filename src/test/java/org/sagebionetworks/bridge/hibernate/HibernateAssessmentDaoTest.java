@@ -243,7 +243,23 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }
 
     @Test
-    public void deleteAssessment() throws Exception {
+    public void deleteAssessmentLeaveResources() throws Exception {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        
+        dao.deleteAssessment(APP_ID_VALUE, assessment);
+        
+        verify(mockNativeQuery, never()).executeUpdate();
+        verify(mockSession).remove(any());
+    }
+
+    @Test
+    public void deleteAssessmentWithResources() throws Exception {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 1);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
+        
         when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockNativeQuery);
         Assessment assessment = AssessmentTest.createAssessment();
         

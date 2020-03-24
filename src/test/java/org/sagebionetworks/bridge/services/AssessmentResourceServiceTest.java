@@ -471,6 +471,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assertEquals(ar1.getGuid(), "guid1");
         assertEquals(ar1.getCreatedAtRevision(), 100);
         assertEquals(ar1.getVersion(), 0);
+        assertFalse(ar1.isDeleted());
         
         AssessmentResource ar2 = resourceListCaptor.getValue().get(1);
         assertEquals(ar2.getCreatedOn().toString(), TIMESTAMP.toString());
@@ -478,6 +479,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assertEquals(ar2.getGuid(), "guid2");
         assertEquals(ar2.getCreatedAtRevision(), 100);
         assertEquals(ar2.getVersion(), 0);
+        assertFalse(ar2.isDeleted());
         
         AssessmentResource ar3 = resourceListCaptor.getValue().get(2);
         assertEquals(ar3.getCreatedOn().toString(), TIMESTAMP.toString());
@@ -485,6 +487,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         assertEquals(ar3.getGuid(), "guid3");
         assertEquals(ar3.getCreatedAtRevision(), 100);
         assertEquals(ar3.getVersion(), 0);
+        assertFalse(ar3.isDeleted());
     }
     
     @Test

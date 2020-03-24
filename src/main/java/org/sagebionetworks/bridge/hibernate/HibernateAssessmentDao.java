@@ -137,14 +137,18 @@ class HibernateAssessmentDao implements AssessmentDao {
 
     @Override
     public void deleteAssessment(String appId, Assessment assessment) {
+        // If this is the last revision (logically deleted or not), also delete the resources.
+        int count = getAssessmentRevisions(appId, assessment.getIdentifier(), 0, 1, true).getTotal();
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        
         hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
             String assessmentId = hibernateAssessment.getIdentifier();
-            NativeQuery<?> query = session.createNativeQuery(DELETE_RESOURCES_SQL);
-            query.setParameter("appId", appId);
-            query.setParameter("assessmentId", assessmentId);
-            query.executeUpdate();
-
+            if (count == 1) {
+                NativeQuery<?> query = session.createNativeQuery(DELETE_RESOURCES_SQL);
+                query.setParameter("appId", appId);
+                query.setParameter("assessmentId", assessmentId);
+                query.executeUpdate();
+            }
             session.remove(hibernateAssessment);
             return null;
         });
