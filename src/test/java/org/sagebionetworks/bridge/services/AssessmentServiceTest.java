@@ -895,6 +895,40 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
     
+    @Test
+    public void importAssessmentWithDefaultedOwnerId() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        Assessment sharedAssessment = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
+
+        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(mockSubstudy);
+        
+        service.importAssessment(APP_ID_VALUE, null, GUID);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "ownerId parameter is required")
+    public void importAssessmentWithFailsToDefaultIfMultipleOrganizations() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID, "anotherOrganization")).build());
+        
+        service.importAssessment(APP_ID_VALUE, null, GUID);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "ownerId parameter is required")
+    public void importAssessmentWithFailsToDefaultIfNoOrganizations() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of()).build());
+        
+        service.importAssessment(APP_ID_VALUE, null, GUID);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")
     public void importAssessmentOwnerGuidMissing() {

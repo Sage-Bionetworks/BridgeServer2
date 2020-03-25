@@ -26,6 +26,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -307,7 +308,14 @@ public class AssessmentService {
     public Assessment importAssessment(String appId, String ownerId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
-        
+
+        // If the caller did not provide an ownerId, but they only have one ownerId, use 
+        // that ownerId. It's possible there are client apps where the organizational 
+        // memberships are not exposed to the calling user.
+        Set<String> ownerIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        if (ownerId == null && ownerIds.size() == 1) {
+            ownerId = Iterables.getFirst(ownerIds, null);
+        }
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
