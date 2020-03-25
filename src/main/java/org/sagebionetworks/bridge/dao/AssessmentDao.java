@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 
 public interface AssessmentDao {
     /**
@@ -24,12 +25,14 @@ public interface AssessmentDao {
     Optional<Assessment> getAssessment(String appId, String guid);
     
     Optional<Assessment> getAssessment(String appId, String identifier, int revision);
+
+    Assessment createAssessment(String appId, Assessment assessment, AssessmentConfig config);
     
     /**
      * This performs a merge of the assessment with persisted objects, including tags. 
      * It can be called to create or update an assessment.
      */
-    Assessment saveAssessment(String appId, Assessment assessment);
+    Assessment updateAssessment(String appId, Assessment assessment);
     
     /**
      * Publication changes two objects at the same time and requires a transaction. Method returns 

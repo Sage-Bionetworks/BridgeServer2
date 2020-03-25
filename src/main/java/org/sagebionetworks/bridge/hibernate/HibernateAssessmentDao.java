@@ -12,6 +12,7 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 
 import org.springframework.stereotype.Component;
@@ -19,7 +20,9 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentConfig;
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
@@ -123,7 +126,20 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
     
     @Override
-    public Assessment saveAssessment(String appId, Assessment assessment) {
+    public Assessment createAssessment(String appId, Assessment assessment, AssessmentConfig config) {
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessmentConfig hibernateConfig = HibernateAssessmentConfig.create(assessment.getGuid(), config);
+        
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
+            session.persist(hibernateConfig);
+            return (HibernateAssessment)session.merge(hibernateAssessment);
+        });
+        return Assessment.create(retValue);
+    }
+
+    
+    @Override
+    public Assessment updateAssessment(String appId, Assessment assessment) {
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
                 (session) -> (HibernateAssessment)session.merge(hibernateAssessment));

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -185,7 +187,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
 
-        return dao.saveAssessment(appId, assessment);        
+        return dao.updateAssessment(appId, assessment);        
     }
         
     public Assessment getAssessmentByGuid(String appId, String guid) {
@@ -336,7 +338,7 @@ public class AssessmentService {
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
-        dao.saveAssessment(appId, assessment);
+        dao.updateAssessment(appId, assessment);
     }
         
     public void deleteAssessmentPermanently(String appId, String guid) {
@@ -379,7 +381,12 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.saveAssessment(appId, assessment);
+        AssessmentConfig config = new AssessmentConfig();
+        config.setCreatedOn(timestamp);
+        config.setModifiedOn(timestamp);
+        config.setConfig(JsonNodeFactory.instance.objectNode());
+        
+        return dao.createAssessment(appId, assessment, config);
     }
     
     private Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {

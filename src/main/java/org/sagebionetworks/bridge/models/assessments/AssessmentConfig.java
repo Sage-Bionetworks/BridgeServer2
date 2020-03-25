@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
 
-public class AssessmentConfig {
+import org.sagebionetworks.bridge.models.BridgeEntity;
+
+public class AssessmentConfig implements BridgeEntity {
 
     public static final AssessmentConfig create(HibernateAssessmentConfig config) {
         AssessmentConfig c = new AssessmentConfig();

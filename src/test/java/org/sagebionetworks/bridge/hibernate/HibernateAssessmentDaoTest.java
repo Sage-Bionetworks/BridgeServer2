@@ -212,7 +212,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
     public void createOrUpdateAssessment() throws Exception {
         when(mockSession.merge(any())).thenReturn(HIBERNATE_ASSESSMENT);
         
-        Assessment returnValue = dao.saveAssessment(APP_ID_VALUE, new Assessment());
+        Assessment returnValue = dao.updateAssessment(APP_ID_VALUE, new Assessment());
         assertNotNull(returnValue);
         
         verify(mockSession).merge(any(HibernateAssessment.class));
