@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_RESOURCES_SQL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -10,10 +12,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import javax.persistence.OptimisticLockException;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -24,8 +30,10 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 
 public class HibernateAssessmentDaoTest extends Mockito {
@@ -71,11 +79,11 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Captor
     ArgumentCaptor<Map<String,Object>> paramsCaptor;
     
-    @Captor
-    ArgumentCaptor<Function<Session, HibernateAssessment>> functionCaptor;
-    
     @Mock
     Session mockSession;
+    
+    @Mock
+    NativeQuery<?> mockNativeQuery;
     
     @InjectMocks
     @Spy
@@ -217,25 +225,74 @@ public class HibernateAssessmentDaoTest extends Mockito {
         
         verify(mockSession).merge(any(HibernateAssessment.class));
     }
+    
+    // I discovered a ClassCastException because we're not converting and returning
+    // a BridgeEntity within the lambda. Test verifies this is fixed.
+    @Test(expectedExceptions = ConcurrentModificationException.class)
+    public void createOrUpdateOptimisticLockException() throws Exception {
+        SessionFactory mockSessionFactory = mock(SessionFactory.class);
+        PersistenceExceptionConverter exceptionConverter = new BasicPersistenceExceptionConverter();
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        
+        HibernateHelper helper = new HibernateHelper(mockSessionFactory, exceptionConverter);
+        dao.setHibernateHelper(helper);
+        
+        when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
+        
+        dao.saveAssessment(APP_ID_VALUE, new Assessment());
+    }
 
     @Test
-    public void deleteAssessment() throws Exception {
-        dao.deleteAssessment(APP_ID_VALUE, new Assessment());
+    public void deleteAssessmentLeaveResources() throws Exception {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
         
+        Assessment assessment = AssessmentTest.createAssessment();
+        
+        dao.deleteAssessment(APP_ID_VALUE, assessment);
+        
+        verify(mockNativeQuery, never()).executeUpdate();
         verify(mockSession).remove(any());
-    }  
+    }
+
+    @Test
+    public void deleteAssessmentWithResources() throws Exception {
+        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 1);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
+        
+        when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockNativeQuery);
+        Assessment assessment = AssessmentTest.createAssessment();
+        
+        dao.deleteAssessment(APP_ID_VALUE, assessment);
+        
+        verify(mockNativeQuery).setParameter("appId", APP_ID_VALUE);
+        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockNativeQuery).executeUpdate();
+
+        verify(mockSession).remove(any());
+    }
     
     @Test
     public void publishAssessment() throws Exception {
         Assessment original = new Assessment();
-        Assessment assessmentToPublish = new Assessment();
+        Assessment assessmentToPublish = AssessmentTest.createAssessment();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
         
         Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
-        verify(mockSession).saveOrUpdate(any(HibernateAssessment.class));
+        verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+    
+    @Test
+    public void importAssessment() throws Exception {
+        Assessment assessmentToImport = AssessmentTest.createAssessment();
+        
+        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport);
+        assertNotNull(retValue);
+        
+        verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
         verify(mockSession).merge(any(HibernateAssessment.class));
     }
 }

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -10,7 +11,6 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
-import static org.sagebionetworks.bridge.services.AssessmentService.CALLER_NOT_MEMBER;
 import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
@@ -43,13 +43,13 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
@@ -64,6 +64,9 @@ public class AssessmentServiceTest extends Mockito {
     
     @Mock
     AssessmentDao mockDao;
+    
+    @Mock
+    AssessmentResourceDao mockResourceDao;
     
     @Mock
     SubstudyService mockSubstudyService;
@@ -84,6 +87,7 @@ public class AssessmentServiceTest extends Mockito {
         when(service.generateGuid()).thenReturn(GUID);
         when(service.getCreatedOn()).thenReturn(CREATED_ON);
         when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
+        when(service.getPageSize()).thenReturn(5);
     }
     
     @AfterMethod
@@ -793,7 +797,8 @@ public class AssessmentServiceTest extends Mockito {
         Assessment retValue = service.publishAssessment(APP_ID_VALUE, "oldGuid");
         assertSame(retValue, ASSESSMENT);
         
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), assessmentCaptor.capture());
+        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
+                assessmentCaptor.capture());
         
         Assessment original = assessmentCaptor.getAllValues().get(0);
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
@@ -844,7 +849,8 @@ public class AssessmentServiceTest extends Mockito {
         
         service.publishAssessment(APP_ID_VALUE, GUID);
         
-        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), assessmentCaptor.capture());
+        verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
+                assessmentCaptor.capture());
         
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
         assertEquals(assessmentToPublish.getRevision(), 11);
@@ -876,23 +882,19 @@ public class AssessmentServiceTest extends Mockito {
         sharedAssessment.setGuid("sharedGuid");
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
-        Assessment localAssessment = AssessmentTest.createAssessment();
-        localAssessment.setRevision(2);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
-            .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+
+        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment))).thenReturn(sharedAssessment);
         
-        when(mockDao.saveAssessment(APP_ID_VALUE, sharedAssessment)).thenReturn(sharedAssessment);
-        
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
-        
-        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, "sharedGuid");
+        Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
-        assertEquals(retValue.getGuid(), GUID);
-        assertEquals(retValue.getRevision(), 3); // next higher than 2
+        assertEquals(retValue.getRevision(), 1);
         assertEquals(retValue.getOriginGuid(), "sharedGuid");
         assertEquals(retValue.getOwnerId(), OWNER_ID);
+        
+        verify(mockDao).importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment));
     }
     
     @Test
@@ -953,24 +955,23 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentPriorImportedVersion() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
-        when(mockDao.saveAssessment(APP_ID_VALUE, sharedAssessment)).thenReturn(sharedAssessment);
+        sharedAssessment.setGuid("sharedGuid");
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(3);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
-            .thenReturn(mockSubstudy);
+        
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
         
-        PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(localAssessment), 1);
-        when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, false)).thenReturn(page);
+        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment))).thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
-        assertEquals(retValue.getRevision(), 4);
-        assertEquals(retValue.getOriginGuid(), GUID);
-        assertEquals(retValue.getOwnerId(), OWNER_ID);        
+        assertEquals(retValue.getRevision(), 4); // 1 higher than 3
+        assertEquals(retValue.getOriginGuid(), "sharedGuid");
+        assertEquals(retValue.getOwnerId(), OWNER_ID);
     }
         
     @Test
@@ -1030,59 +1031,12 @@ public class AssessmentServiceTest extends Mockito {
         service.deleteAssessmentPermanently(APP_ID_VALUE, GUID);
         verify(mockDao, never()).deleteAssessment(any(), any());
     }
-    
-    @Test
-    public void parseOwnerId() {
-        Tuple<String> tuple = service.parseOwnerId(GUID, "app:owner:owner");
-        assertEquals(tuple.getLeft(), "app");
-        assertEquals(tuple.getRight(), "owner:owner");
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void parseOwnerIdNullOwnerId() {
-        service.parseOwnerId(GUID, null);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void parseOwnerIdBadOwnerId() {
-        service.parseOwnerId(GUID, "owner");
-    }
-    
-    // OWNERSHIP VERIFICATION
-    // There are also failure case tests for each service method that should verify ownership
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
-    public void ownershipOwnerIdIsBlank() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        service.checkOwnership(APP_ID_VALUE, null);
-    }
-    
-    @Test
-    public void ownershipGlobalUser() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
-    
-    @Test
-    public void ownershipScopedUser() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
+    // OWNERSHIP VERIFICATION
+    // These are failure cases to verify we are calling SecurityUtils.checkOwnership(...)
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
-    public void ownershipScopedUserOrgIdIsMissing() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
-        service.checkOwnership(APP_ID_VALUE, OWNER_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1091,7 +1045,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentRevisionChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1100,7 +1054,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void updateAssessmentChecksOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -1115,7 +1069,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void publishAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1127,7 +1081,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void importAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());
@@ -1135,7 +1089,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER)
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void deleteAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyD")).build());

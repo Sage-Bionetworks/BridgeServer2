@@ -126,12 +126,20 @@ public class Validate {
         if (error.getArguments() != null) {
             String base = (error.getCode() != null) ? error.getCode() : error.getDefaultMessage();
             String message = (base == null) ? "" : String.format(base, error.getArguments());
-            return message;
+            return formatIfNecessary(name, message);
         } else if (error.getCode() != null){
-            return name + " " + error.getCode();
+            return formatIfNecessary(name, error.getCode());
         } else if (error.getDefaultMessage() != null) {
-            return name + " " + error.getDefaultMessage();
+            return formatIfNecessary(name, error.getDefaultMessage());
         }
         return "<ERROR>";
+    }
+    private static String formatIfNecessary(String name, String errorMessage) {
+        if (errorMessage.contains("%s")) {
+            return String.format(errorMessage, name).trim();
+        } else if (errorMessage.startsWith(" ")) {
+            return (name + errorMessage).trim();    
+        }
+        return (name + " " + errorMessage).trim();
     }
 }

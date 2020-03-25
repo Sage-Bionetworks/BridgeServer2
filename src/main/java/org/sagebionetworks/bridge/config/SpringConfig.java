@@ -107,6 +107,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.redis.JedisOps;
@@ -653,6 +654,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(FileMetadata.class);
         metadataSources.addAnnotatedClass(FileRevision.class);
         metadataSources.addAnnotatedClass(HibernateAssessment.class);
+        metadataSources.addAnnotatedClass(HibernateAssessmentResource.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
         return metadataSources.buildMetadata().buildSessionFactory();

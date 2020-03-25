@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
+import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +18,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -52,6 +56,7 @@ public class TestConstants {
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
     public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
+    public static final String APP_ID = "api";
     
     public static final String SHARED_STUDY_IDENTIFIER = "shared";
     public static final StudyIdentifier SHARED_STUDY = new StudyIdentifierImpl(SHARED_STUDY_IDENTIFIER);
@@ -118,11 +123,15 @@ public class TestConstants {
     
     public static final String GUID = "oneGuid";
 
+    public static final String ASSESSMENT_ID = "oneAssessmentId";
+    
     public static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1","group2");
 
     public static final Set<String> USER_SUBSTUDY_IDS = ImmutableSet.of("substudyA","substudyB");
     
     public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
+    
+    public static final Set<ResourceCategory> RESOURCE_CATEGORIES = ImmutableSet.of(LICENSE, PUBLICATION);
     
     public static final Phone PHONE = new Phone("9712486796", "US");
     
@@ -159,7 +168,11 @@ public class TestConstants {
     public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
     public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS);
     public static final DateTime CREATED_ON = TIMESTAMP.minusHours(1);
-    public static final DateTime MODIFIED_ON = CREATED_ON.plusHours(1);
+    public static final DateTime MODIFIED_ON = TIMESTAMP.plusHours(1);
     public static final Map<String, Set<String>> CUSTOMIZATION_FIELDS = ImmutableMap.of("node1",
-            ImmutableSet.of("field1", "field2"));    
+            ImmutableSet.of("field1", "field2")); 
+    
+    public static final ImmutableList<String> PUBLISHERS = ImmutableList.of("pub1", "pub2");
+    public static final ImmutableList<String> CREATORS = ImmutableList.of("creator1", "creator2");
+    public static final ImmutableList<String> CONTRIBUTORS = ImmutableList.of("contrib1", "contrib2");
 }
