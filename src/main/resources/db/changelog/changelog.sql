@@ -310,3 +310,14 @@ CREATE TABLE `AssessmentTags` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);
+
+-- changeset bridge:14
+
+CREATE TABLE `AssessmentConfigs` (
+  `guid` varchar(255) NOT NULL,
+  `config` text,
+  `createdOn` bigint(20) unsigned NOT NULL,
+  `modifiedOn` bigint(20) unsigned NOT NULL,
+  `version` int(10) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
