@@ -34,7 +34,7 @@ public class TagEventListener implements DeleteEventListener, SaveOrUpdateEventL
     // issue tracker, and that is a work item to remove the Serializable interface from this
     // hierarchy of listeners. It should be safe for this to be transient but I've added a 
     // NP check with logging in case it occurs.
-    volatile CacheProvider cacheProvider;
+    transient CacheProvider cacheProvider;
     
     @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
