@@ -28,6 +28,11 @@ public class CacheKeyTest {
     }
     
     @Test
+    public void tagList() { 
+        assertEquals(CacheKey.tagList().toString(), "TagList");
+    }
+    
+    @Test
     public void reauthTokenLookupKey() {
         assertEquals(CacheKey.reauthTokenLookupKey("ABC", TestConstants.TEST_STUDY).toString(), "ABC:api:ReauthToken");
     }
