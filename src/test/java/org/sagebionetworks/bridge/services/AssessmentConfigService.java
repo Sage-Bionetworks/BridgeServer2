@@ -70,7 +70,7 @@ public class AssessmentConfigService {
         checkNotNull(config);
         
         Assessment assessment = assessmentService.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
-        checkSharedOwnership(appId, guid, assessment.getOwnerId());
+        checkOwnership(appId, assessment.getOwnerId());
         
         AssessmentConfig existing = getAssessmentConfig(appId, guid);
         existing.setModifiedOn(getModifiedOn());
