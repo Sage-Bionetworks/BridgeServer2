@@ -9,7 +9,7 @@ public interface AssessmentConfigDao {
 
     Optional<AssessmentConfig> getAssessmentConfig(String guid);
     
-    AssessmentConfig updateAssessmentConfig(String guid, Assessment assessment, AssessmentConfig config);
+    AssessmentConfig updateAssessmentConfig(String appId, Assessment assessment, String guid, AssessmentConfig config);
     
     AssessmentConfig customizeAssessmentConfig(String guid, AssessmentConfig config);
     

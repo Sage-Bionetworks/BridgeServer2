@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.UPDATES_TYPEREF;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.services.AssessmentConfigService;
@@ -20,7 +23,7 @@ import org.sagebionetworks.bridge.services.AssessmentConfigService;
 @CrossOrigin
 @RestController
 public class AssessmentConfigController extends BaseController {
-
+    
     private AssessmentConfigService service;
     
     final void setAssessmentConfigService(AssessmentConfigService service) {
@@ -40,18 +43,23 @@ public class AssessmentConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
         AssessmentConfig config = parseJson(AssessmentConfig.class);
         
         return service.updateAssessmentConfig(appId, guid, config);
     }
     
     @PostMapping("/v1/assessments/{guid}/config/customize")
-    public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) {
+    public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
+        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
+        }
         Map<String, Map<String, JsonNode>> updates = parseJson(UPDATES_TYPEREF);
-        
         return service.customizeAssessmentConfig(appId, guid, updates);
     }
     

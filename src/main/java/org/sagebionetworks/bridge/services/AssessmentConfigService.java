@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
@@ -69,7 +70,7 @@ public class AssessmentConfigService {
         checkArgument(isNotBlank(guid));
         checkNotNull(config);
         
-        Assessment assessment = assessmentService.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
         checkOwnership(appId, assessment.getOwnerId());
         
         AssessmentConfig existing = getAssessmentConfig(appId, guid);
@@ -82,12 +83,15 @@ public class AssessmentConfigService {
         // This is no longer a copy of a shared assessment because the config has been edited.
         assessment.setOriginGuid(null);
         
-        return dao.updateAssessmentConfig(guid, assessment, existing);
+        return dao.updateAssessmentConfig(appId, assessment, guid, existing);
     }
     
     public AssessmentConfig customizeAssessmentConfig(String appId, String guid,
             Map<String, Map<String, JsonNode>> updates) {        
         
+        if (updates == null) {
+            throw new BadRequestException("Updates to configuration are missing");
+        }
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
         checkOwnership(appId, assessment.getOwnerId());
         

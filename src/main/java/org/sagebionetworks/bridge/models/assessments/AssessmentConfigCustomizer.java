@@ -41,10 +41,13 @@ public class AssessmentConfigCustomizer implements BiConsumer<String, JsonNode> 
                     Set<PropertyInfo> infos = fields.get(identifier);
                     for (PropertyInfo info : infos) {
                         // Does this property actually have an update?
-                        JsonNode propUpdate = nodeUpdates.get(info.getPropName());
-                        if (propUpdate != null) {
-                            // update the property
-                            object.set(info.getPropName(), propUpdate);
+                        if (nodeUpdates.containsKey(info.getPropName())) {
+                            JsonNode propUpdate = nodeUpdates.get(info.getPropName());
+                            if (propUpdate == null || propUpdate.isNull()) {
+                                object.remove(info.getPropName());
+                            } else {
+                                object.set(info.getPropName(), propUpdate);
+                            }
                             updated = true;
                         }
                     }

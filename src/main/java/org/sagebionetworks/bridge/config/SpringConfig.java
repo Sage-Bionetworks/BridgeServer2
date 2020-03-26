@@ -48,9 +48,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.event.service.internal.EventListenerRegistryImpl;
 import org.hibernate.event.service.spi.EventListenerRegistry;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
@@ -116,6 +114,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
@@ -665,6 +664,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(FileRevision.class);
         metadataSources.addAnnotatedClass(HibernateAssessment.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentResource.class);
+        metadataSources.addAnnotatedClass(HibernateAssessmentConfig.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();

@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.dao.AssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentConfig;
 
 public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
@@ -21,15 +22,18 @@ public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
     @Override
     public Optional<AssessmentConfig> getAssessmentConfig(String guid) {
         HibernateAssessmentConfig config = hibernateHelper.getById(HibernateAssessmentConfig.class, guid);
-        
-        return Optional.ofNullable(AssessmentConfig.create(config));
+        if (config == null) {
+            return Optional.empty();
+        }
+        return Optional.of(AssessmentConfig.create(config));
     }
 
     @Override
-    public AssessmentConfig updateAssessmentConfig(String guid, Assessment assessment, AssessmentConfig config) {
+    public AssessmentConfig updateAssessmentConfig(String appId, Assessment assessment, String guid, AssessmentConfig config) {
+        HibernateAssessment hibAssessment = HibernateAssessment.create(assessment, appId);
         HibernateAssessmentConfig hibConfig = HibernateAssessmentConfig.create(guid, config);
         HibernateAssessmentConfig retValue = hibernateHelper.executeWithExceptionHandling(hibConfig, (session) -> {
-            session.persist(assessment);
+            session.persist(hibAssessment);
             session.persist(hibConfig);
             return hibConfig;
         });

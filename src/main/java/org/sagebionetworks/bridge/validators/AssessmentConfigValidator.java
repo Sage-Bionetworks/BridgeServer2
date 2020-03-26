@@ -3,9 +3,11 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -19,9 +21,11 @@ public class AssessmentConfigValidator implements Validator {
 
     static class ConfigVisitor implements BiConsumer<String, JsonNode> {
         private Errors errors;
+        private Map<String, Validator> validators;
         
-        ConfigVisitor(Errors errors) {
+        ConfigVisitor(Errors errors, Map<String, Validator> validators) {
             this.errors = errors;
+            this.validators = (validators == null) ? ImmutableMap.of() : validators;
         }
         @Override
         public void accept(String fieldPath, JsonNode node) {
@@ -31,9 +35,20 @@ public class AssessmentConfigValidator implements Validator {
             }
             if (!node.has(TYPE_FIELD_NAME)) {
                 errors.rejectValue(TYPE_FIELD_NAME, "is missing");
+            } else {
+                Validator validator = validators.get(node.get(TYPE_FIELD_NAME).textValue());
+                if (validator != null) {
+                    validator.validate(node, errors);    
+                }
             }
             errors.popNestedPath();
         }
+    }
+    
+    private Map<String, Validator> validators;
+    
+    void setValidators(Map<String, Validator> validators) {
+        this.validators = validators;
     }
     
     @Override
@@ -48,7 +63,7 @@ public class AssessmentConfigValidator implements Validator {
         if (assessmentConfig.getConfig() == null) {
             errors.rejectValue("config", "is required");
         } else {
-            ConfigVisitor visitor = new ConfigVisitor(errors);
+            ConfigVisitor visitor = new ConfigVisitor(errors, validators);
             BridgeUtils.walk(assessmentConfig.getConfig(), visitor);
         }
     }
