@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.hibernate;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Transient;
+
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -12,6 +14,8 @@ import org.hibernate.event.spi.PersistEvent;
 import org.hibernate.event.spi.PersistEventListener;
 import org.hibernate.event.spi.SaveOrUpdateEvent;
 import org.hibernate.event.spi.SaveOrUpdateEventListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +30,13 @@ import org.sagebionetworks.bridge.models.Tag;
 @Component
 public class TagEventListener implements DeleteEventListener, SaveOrUpdateEventListener, 
     MergeEventListener, PersistEventListener {
+    private static final Logger LOG = LoggerFactory.getLogger(TagEventListener.class);
     
+    // I only see one mention of the fact that these listeners are serializable in Hibernate's
+    // issue tracker, and that is a work item to remove the Serializable interface from this
+    // hierarchy of listeners. It should be safe for this to be transient but I've added a 
+    // NP check with logging in case it occurs.
+    @Transient
     CacheProvider cacheProvider;
     
     @Autowired
@@ -74,7 +84,12 @@ public class TagEventListener implements DeleteEventListener, SaveOrUpdateEventL
     
     private void clearProvider(Object object) {
         if (object instanceof Tag) {
-            cacheProvider.removeObject(CacheKey.tagList());    
+            if (cacheProvider != null) {
+                cacheProvider.removeObject(CacheKey.tagList());    
+            } else {
+                LOG.error("TagEventListener has lost reference to cacheProvider, "
+                        +"suggesting the listener was serialized by Hibernate");
+            }
         }
     }
 }
