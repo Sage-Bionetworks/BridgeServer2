@@ -2,4 +2,5 @@
     <!-- Getting false positives on Iterables.getFirst(iter, null), where the second argument
         is marked @Nullable -->
     <Bug pattern="NP_NONNULL_PARAM_VIOLATION" />
+    <Bug pattern="SE_NO_SERIALVERSIONID" />
 </FindBugsFilter>

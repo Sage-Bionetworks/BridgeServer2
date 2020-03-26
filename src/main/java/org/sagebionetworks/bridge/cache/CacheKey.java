@@ -30,6 +30,10 @@ public final class CacheKey {
         }
         return false;
     }
+    
+    public static final CacheKey tagList() {
+        return new CacheKey("TagList");
+    }
 
     public static final CacheKey reauthTokenLookupKey(String userId, StudyIdentifier studyId) {
         return new CacheKey(userId, studyId.getIdentifier(), "ReauthToken");
