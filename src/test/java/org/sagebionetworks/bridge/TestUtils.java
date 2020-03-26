@@ -306,15 +306,18 @@ public class TestUtils {
      * the object value that is invalid, and the correct error message.
      */
     public static void assertValidatorMessage(Validator validator, Object object, String fieldName, String error) {
-        String fieldNameAsLabel = fieldName;
-        if (!error.startsWith(" ")) {
-            error = " " + error;
+        if (error.contains("%s")) {
+            error = String.format(error, fieldName);
+        } else if (!error.startsWith(" ")) {
+            error = fieldName + " " + error;
+        } else {
+            error = fieldName + error;
         }
         try {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
-            if (e.getErrors().get(fieldName).contains(fieldNameAsLabel+error)) {
+            if (e.getErrors().get(fieldName).contains(error)) {
                 return;
             }
             fail("Did not find error message in errors object");

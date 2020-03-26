@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
+import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
@@ -27,10 +29,9 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,18 +42,15 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.PropertyInfo;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
-    private static final Logger LOG = LoggerFactory.getLogger(AssessmentService.class);
-    
     public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
-    static final String CALLER_NOT_MEMBER = "Assessment must be associated to one of the caller’s organizations.";
     static final String IDENTIFIER_REQUIRED = "identifier required";
     static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
@@ -80,8 +78,14 @@ public class AssessmentService {
         return DateTime.now();
     }
     
+    // accessor to mock for tests
     DateTime getModifiedOn() {
         return DateTime.now();
+    }
+    
+    // accessor to mock for tests
+    int getPageSize() {
+        return API_MAXIMUM_PAGE_SIZE;
     }
     
     public PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, int pageSize,
@@ -164,14 +168,8 @@ public class AssessmentService {
             throw new EntityNotFoundException(Assessment.class);
         }
 
-        Tuple<String> parts = parseOwnerId(existing.getGuid(), existing.getOwnerId());
+        checkSharedOwnership(callerAppId, existing.getGuid(), existing.getOwnerId());
         
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        boolean scopedUser = !callerSubstudies.isEmpty();
-        boolean orgMember = callerSubstudies.contains(parts.getRight());
-        if (!callerAppId.equals(parts.getLeft()) || (scopedUser && !orgMember)) {
-            throw new UnauthorizedException();
-        }
         return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
     }
     
@@ -280,11 +278,6 @@ public class AssessmentService {
         }
         int revision = (existing == null) ? 1 : (existing.getRevision()+1);
         
-        assessmentToPublish.setGuid(generateGuid());
-        assessmentToPublish.setRevision(revision);
-        assessmentToPublish.setOriginGuid(null);
-        assessmentToPublish.setOwnerId(ownerId);
-        assessmentToPublish.setVersion(0L);
         // Neither of these assessments should be in an attached state because both are loaded in 
         // separate transactions that are closed in the DAO. However, the tag collections have been
         // proxied by Hibernate, and an error is thrown if you don't make copies: "Found shared 
@@ -295,6 +288,13 @@ public class AssessmentService {
         if (original.getTags() != null) {
             assessmentToPublish.setTags(ImmutableSet.copyOf(original.getTags()));    
         }
+        
+        assessmentToPublish.setGuid(generateGuid());
+        assessmentToPublish.setRevision(revision);
+        assessmentToPublish.setOriginGuid(null);
+        assessmentToPublish.setOwnerId(ownerId);
+        assessmentToPublish.setVersion(0L);
+        
         original.setOriginGuid(assessmentToPublish.getGuid());
         
         return dao.publishAssessment(appId, original, assessmentToPublish);
@@ -309,21 +309,29 @@ public class AssessmentService {
     public Assessment importAssessment(String appId, String ownerId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
-        
+
+        // If the caller did not provide an ownerId, but they only have one ownerId, use 
+        // that ownerId. It's possible there are client apps where the organizational 
+        // memberships are not exposed to the calling user.
+        Set<String> ownerIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        if (ownerId == null && ownerIds.size() == 1) {
+            ownerId = Iterables.getFirst(ownerIds, null);
+        }
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
         checkOwnership(appId, ownerId);
 
-        Assessment assessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
         
         // Figure out what revision this should be in the new app context if the identifier already exists
-        int revision = nextRevisionNumber(appId, assessment.getIdentifier());
-        assessment.setRevision(revision);
-        assessment.setOriginGuid(assessment.getGuid());
-        assessment.setOwnerId(ownerId);
+        int revision = nextRevisionNumber(appId, sharedAssessment.getIdentifier());
+        sharedAssessment.setOriginGuid(sharedAssessment.getGuid());
+        sharedAssessment.setGuid(generateGuid());
+        sharedAssessment.setRevision(revision);
+        sharedAssessment.setOwnerId(ownerId);
         
-        return createAssessmentInternal(appId, assessment);
+        return dao.importAssessment(appId, sharedAssessment);
     }
         
     public void deleteAssessment(String appId, String guid) {
@@ -347,24 +355,8 @@ public class AssessmentService {
         
         Optional<Assessment> opt = dao.getAssessment(appId, guid);
         if (opt.isPresent()) {
-            dao.deleteAssessment(appId, opt.get());    
+            dao.deleteAssessment(appId, opt.get());
         }
-    }
-    
-    Tuple<String> parseOwnerId(String guid, String ownerId) {
-        if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid);
-            throw new UnauthorizedException();
-        }
-        String[] parts = ownerId.split(":", 2);
-        // This happens in tests, we expect it to never happens in production. So log if it does.
-        if (parts.length != 2) {
-            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException();
-        }
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        return new Tuple<>(originAppId, originOrgId);
     }
 
     private Assessment createAssessmentInternal(String appId, Assessment assessment) {
@@ -389,7 +381,7 @@ public class AssessmentService {
         return dao.createAssessment(appId, assessment, config);
     }
     
-    private Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
+    Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
@@ -398,25 +390,6 @@ public class AssessmentService {
             return Optional.empty();
         }
         return Optional.of(page.getItems().get(0));
-    }
-
-    /**
-     * If the caller has no organizational membership, then they can set any organization (however they 
-     * must set one, unlike the implementation of substudy relationships to user accounts). In this 
-     * case we check the org ID to ensure it's valid. If the caller has organizational memberships, 
-     * then the caller must be a member of the organization being cited. At that point we do not need 
-     * to validate the org ID since it was validated when it was set as an organizational relationship
-     * on the account. 
-     */
-    void checkOwnership(String appId, String ownerId) {
-        if (isBlank(ownerId)) {
-            throw new UnauthorizedException(CALLER_NOT_MEMBER);
-        }
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
-            return;
-        }
-        throw new UnauthorizedException(CALLER_NOT_MEMBER);
     }
     
     /**
@@ -447,12 +420,17 @@ public class AssessmentService {
             );
         }
         if (assessment.getCustomizationFields() != null) {
-            Map<String, Set<String>> map = new HashMap<>();
-            for (Map.Entry<String, Set<String>> entry : assessment.getCustomizationFields().entrySet()) {                
+            Map<String, Set<PropertyInfo>> map = new HashMap<>();
+            for (Map.Entry<String, Set<PropertyInfo>> entry : assessment.getCustomizationFields().entrySet()) {                
                 String key = sanitizeHTML(none(), entry.getKey());
-                Set<String> values = entry.getValue().stream()
-                        .map(string -> sanitizeHTML(none(), string))
-                        .collect(toImmutableSet());
+                Set<PropertyInfo> values = entry.getValue().stream().map(prop -> {
+                        return new PropertyInfo.Builder()
+                                .withPropName(sanitizeHTML(none(), prop.getPropName()))
+                                .withLabel(sanitizeHTML(none(), prop.getLabel()))
+                                .withDescription(sanitizeHTML(none(), prop.getDescription()))
+                                .withPropType(sanitizeHTML(none(), prop.getPropType()))
+                                .build();
+                    }).collect(toImmutableSet());
                 map.put(key, values);
             }
             assessment.setCustomizationFields(map);

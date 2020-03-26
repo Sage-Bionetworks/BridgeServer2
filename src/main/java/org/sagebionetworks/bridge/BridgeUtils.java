@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -19,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -39,10 +42,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
@@ -60,6 +66,7 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -70,7 +77,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(BridgeUtils.class);
+
     public static class SubstudyAssociations {
         private final Set<String> substudyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
@@ -669,5 +677,100 @@ public class BridgeUtils {
         return callerRoles != null && requiredRoles != null && 
                 requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
-
+    
+    public static <T extends Enum<T>> T getEnumOrDefault(String value, Class<T> enumType, T defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return Enum.valueOf(enumType, value.toUpperCase());
+        } catch(IllegalArgumentException e) {
+            Object[] enums = enumType.getEnumConstants();
+            throw new BadRequestException(value + " is not a valid " + enumType.getSimpleName() + " (use: "
+                    + COMMA_SPACE_JOINER.join(enums).toLowerCase() + ")");
+        }
+    }
+    
+    /**
+     * If the caller has no organizational membership, then they can set any organization (however they 
+     * must set one, unlike the implementation of substudy relationships to user accounts). In this 
+     * case we check the org ID to ensure it's valid. If the caller has organizational memberships, 
+     * then the caller must be a member of the organization being cited. At that point we do not need 
+     * to validate the org ID since it was validated when it was set as an organizational relationship
+     * on the account. 
+     */
+    public static void checkOwnership(String appId, String ownerId) {
+        if (isBlank(ownerId)) {
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
+            return;
+        }
+        throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+    }
+    
+    public static void checkSharedOwnership(String callerAppId, String guid, String ownerId) {
+        if (ownerId == null) {
+            LOG.error("Owner ID is null, guid=" + guid);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String[] parts = ownerId.split(":", 2);
+        // This happens in tests, we expect it to never happens in production. So log if it does.
+        if (parts.length != 2) {
+            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        boolean scopedUser = !callerSubstudies.isEmpty();
+        boolean orgMember = callerSubstudies.contains(originOrgId);
+        
+        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+    }
+    
+    public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return parseInt(value);
+        } catch(NumberFormatException e) {
+            throw new BadRequestException(value + " is not an integer");
+        }
+    }
+    
+    /**
+     * Walk a JSON node tree and call a BiConsumer with each object node or array 
+     * element in the tree. This implements the visitor pattern over a JsonNode 
+     * tree. The consumer is passed the path of the current node, and the node itself. 
+     * The path can be used for error reporting, looging, etc.
+     */
+    public static void walk(JsonNode node, BiConsumer<String, JsonNode> consumer) {
+        walk(node, "", consumer);
+    }
+    
+    private static void walk(JsonNode node, String fieldPath, BiConsumer<String, JsonNode> consumer) {
+        if (node.isObject()) {
+            consumer.accept(fieldPath, node);
+            for (Iterator<Map.Entry<String, JsonNode>> i = node.fields(); i.hasNext(); ) {
+                Map.Entry<String, JsonNode> entry = i.next();
+                walk(entry.getValue(), appendPath(fieldPath, entry.getKey()), consumer);
+            }
+        } else if (node.isArray()) {
+            int i = 0;
+            for (Iterator<JsonNode> iter = node.elements(); iter.hasNext(); ) {
+                JsonNode element = iter.next();
+                walk(element, fieldPath + "["+i+"]", consumer);
+                i++;
+            }
+        }
+    }
+    
+    private static String appendPath(String existingPath, String newElement) {
+        return (existingPath.length() == 0) ? newElement : (existingPath + "." + newElement);
+    }
 }

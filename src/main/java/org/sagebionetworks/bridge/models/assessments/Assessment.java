@@ -47,7 +47,7 @@ public class Assessment implements BridgeEntity {
     private String validationStatus;
     private String normingStatus;
     private Set<String> tags;
-    private Map<String, Set<String>> customizationFields;
+    private Map<String, Set<PropertyInfo>> customizationFields;
     private DateTime createdOn;
     private DateTime modifiedOn;
     private boolean deleted;
@@ -119,10 +119,10 @@ public class Assessment implements BridgeEntity {
     public void setTags(Set<String> tags) {
         this.tags = tags;
     }
-    public Map<String, Set<String>> getCustomizationFields() {
+    public Map<String, Set<PropertyInfo>> getCustomizationFields() {
         return customizationFields;
     }
-    public void setCustomizationFields(Map<String, Set<String>> customizationFields) {
+    public void setCustomizationFields(Map<String, Set<PropertyInfo>> customizationFields) {
         this.customizationFields = customizationFields;
     }
     public DateTime getCreatedOn() {
