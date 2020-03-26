@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.Transient;
-
 import org.hibernate.HibernateException;
 import org.hibernate.event.spi.DeleteEvent;
 import org.hibernate.event.spi.DeleteEventListener;
@@ -36,8 +34,7 @@ public class TagEventListener implements DeleteEventListener, SaveOrUpdateEventL
     // issue tracker, and that is a work item to remove the Serializable interface from this
     // hierarchy of listeners. It should be safe for this to be transient but I've added a 
     // NP check with logging in case it occurs.
-    @Transient
-    CacheProvider cacheProvider;
+    volatile CacheProvider cacheProvider;
     
     @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
