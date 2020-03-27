@@ -67,6 +67,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -747,7 +748,7 @@ public class BridgeUtils {
      * Walk a JSON node tree and call a BiConsumer with each object node or array 
      * element in the tree. This implements the visitor pattern over a JsonNode 
      * tree. The consumer is passed the path of the current node, and the node itself. 
-     * The path can be used for error reporting, looging, etc.
+     * The path can be used for error reporting, logging, etc.
      */
     public static void walk(JsonNode node, BiConsumer<String, JsonNode> consumer) {
         walk(node, "", consumer);
@@ -755,7 +756,7 @@ public class BridgeUtils {
     
     private static void walk(JsonNode node, String fieldPath, BiConsumer<String, JsonNode> consumer) {
         if (node.isObject()) {
-            consumer.accept(fieldPath, node);
+            consumer.accept(fieldPath, (ObjectNode)node);
             for (Iterator<Map.Entry<String, JsonNode>> i = node.fields(); i.hasNext(); ) {
                 Map.Entry<String, JsonNode> entry = i.next();
                 walk(entry.getValue(), appendPath(fieldPath, entry.getKey()), consumer);

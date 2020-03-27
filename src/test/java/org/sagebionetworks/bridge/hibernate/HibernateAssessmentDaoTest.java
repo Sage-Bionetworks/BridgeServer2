@@ -35,9 +35,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 
 public class HibernateAssessmentDaoTest extends Mockito {
     

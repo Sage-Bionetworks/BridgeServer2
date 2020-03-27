@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
-import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {

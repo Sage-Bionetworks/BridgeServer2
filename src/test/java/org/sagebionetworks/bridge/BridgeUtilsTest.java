@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -51,6 +54,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidatorTest;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -1031,6 +1035,19 @@ public class BridgeUtilsTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void getIntegerOrDefaultThrowsBadRequest() {
         BridgeUtils.getIntegerOrDefault("asdf", null);
+    }
+    
+    @Test
+    public void walkWorks() throws Exception {
+        JsonNode node = new ObjectMapper().readTree(AssessmentConfigValidatorTest.TEST_JSON);
+        
+        BridgeUtils.walk(node, 
+                (fieldPath, visited) -> ((ObjectNode)visited).put("_test", fieldPath));
+        
+        assertEquals(node.get("_test").textValue(), "");
+        JsonNode el = node.get("elements").get(0);
+        assertEquals(el.get("_test").textValue(), "elements[0]");
+        assertEquals(el.get("beforeRules").get(0).get("_test").textValue(), "elements[0].beforeRules[0]");
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

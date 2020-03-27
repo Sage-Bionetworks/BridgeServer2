@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.dao;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 
 public interface AssessmentConfigDao {
 

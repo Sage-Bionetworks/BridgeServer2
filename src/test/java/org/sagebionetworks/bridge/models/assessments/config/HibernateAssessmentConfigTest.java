@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.assessments;
+package org.sagebionetworks.bridge.models.assessments.config;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class HibernateAssessmentConfigTest {
     @Test

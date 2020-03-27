@@ -21,10 +21,10 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfigCustomizer;
-import org.sagebionetworks.bridge.models.assessments.PropertyInfo;
-import org.sagebionetworks.bridge.validators.AssessmentConfigValidator;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigCustomizer;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component

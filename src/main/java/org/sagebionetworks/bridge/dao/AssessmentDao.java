@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 
 public interface AssessmentDao {
     /**

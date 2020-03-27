@@ -6,9 +6,9 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.AssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
-import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
     

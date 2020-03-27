@@ -37,7 +37,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.CustomServletInputStream;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.assessments.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.sagebionetworks.bridge.services.AssessmentConfigService;
 
 public class AssessmentConfigControllerTest extends Mockito {

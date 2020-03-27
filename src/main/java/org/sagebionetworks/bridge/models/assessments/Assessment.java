@@ -8,6 +8,7 @@ import java.util.Set;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 public class Assessment implements BridgeEntity {
     

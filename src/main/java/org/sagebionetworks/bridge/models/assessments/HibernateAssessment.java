@@ -22,6 +22,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 

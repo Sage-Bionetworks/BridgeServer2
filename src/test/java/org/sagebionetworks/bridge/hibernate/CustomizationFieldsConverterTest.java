@@ -25,7 +25,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.assessments.PropertyInfo;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 public class CustomizationFieldsConverterTest extends Mockito {
     

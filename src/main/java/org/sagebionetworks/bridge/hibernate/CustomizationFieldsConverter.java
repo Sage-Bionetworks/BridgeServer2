@@ -7,7 +7,7 @@ import javax.persistence.Converter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import org.sagebionetworks.bridge.models.assessments.PropertyInfo;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 @Converter
 public class CustomizationFieldsConverter extends BaseJsonAttributeConverter<Map<String,Set<PropertyInfo>>> {
