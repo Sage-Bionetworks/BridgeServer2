@@ -56,11 +56,18 @@ public class AssessmentService {
 
     private AssessmentDao dao;
     
+    private AssessmentConfigService configService;
+    
     private SubstudyService substudyService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
         this.dao = assessmentDao;
+    }
+    
+    @Autowired
+    final void setAssessmentConfigService(AssessmentConfigService configService) {
+        this.configService = configService;
     }
     
     @Autowired
@@ -262,6 +269,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessmentToPublish = getAssessmentByGuid(appId, guid);
+        AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
         checkOwnership(appId, assessmentToPublish.getOwnerId());
@@ -297,7 +305,7 @@ public class AssessmentService {
         
         original.setOriginGuid(assessmentToPublish.getGuid());
         
-        return dao.publishAssessment(appId, original, assessmentToPublish);
+        return dao.publishAssessment(appId, original, assessmentToPublish, configToPublish);
     }
     
     /**
@@ -323,6 +331,7 @@ public class AssessmentService {
         checkOwnership(appId, ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, guid);
         
         // Figure out what revision this should be in the new app context if the identifier already exists
         int revision = nextRevisionNumber(appId, sharedAssessment.getIdentifier());
@@ -331,7 +340,7 @@ public class AssessmentService {
         sharedAssessment.setRevision(revision);
         sharedAssessment.setOwnerId(ownerId);
         
-        return dao.importAssessment(appId, sharedAssessment);
+        return dao.importAssessment(appId, sharedAssessment, sharedConfig);
     }
         
     public void deleteAssessment(String appId, String guid) {

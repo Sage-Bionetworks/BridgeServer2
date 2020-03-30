@@ -3,9 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
-import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 
 import java.util.Map;
 import java.util.Set;
@@ -60,9 +58,6 @@ public class AssessmentConfigService {
     public AssessmentConfig getSharedAssessmentConfig(String callerAppId, String guid) {
         checkArgument(isNotBlank(guid));
         
-        Assessment assessment = assessmentService.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
-        checkSharedOwnership(callerAppId, guid, assessment.getOwnerId());
-        
         return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
     }
     
@@ -74,16 +69,15 @@ public class AssessmentConfigService {
         checkOwnership(appId, assessment.getOwnerId());
         
         AssessmentConfig existing = getAssessmentConfig(appId, guid);
-        existing.setModifiedOn(getModifiedOn());
-        existing.setConfig(config.getConfig());
-        existing.setVersion(config.getVersion());
+        config.setCreatedOn(existing.getCreatedOn());
+        config.setModifiedOn(getModifiedOn());
         
-        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, existing);
+        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, config);
         
         // This is no longer a copy of a shared assessment because the config has been edited.
         assessment.setOriginGuid(null);
         
-        return dao.updateAssessmentConfig(appId, assessment, guid, existing);
+        return dao.updateAssessmentConfig(appId, assessment, guid, config);
     }
     
     public AssessmentConfig customizeAssessmentConfig(String appId, String guid,
@@ -99,7 +93,8 @@ public class AssessmentConfigService {
         
         AssessmentConfigCustomizer customizer = new AssessmentConfigCustomizer(fields, updates);
         
-        AssessmentConfig existing = getAssessmentConfig(appId, guid);
+        AssessmentConfig existing = dao.getAssessmentConfig(guid)
+            .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
         BridgeUtils.walk(existing.getConfig(), customizer);
         
         if (!customizer.hasUpdated()) {

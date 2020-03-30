@@ -55,8 +55,14 @@ public class AssessmentConfigValidatorTest {
         config.setConfig(BridgeObjectMapper.get().readTree(TEST_JSON));
         
         assertValidatorMessage(INSTANCE, config, 
-                "elements[0].beforeRules[0].identifier", "is missing");
-        assertValidatorMessage(INSTANCE, config, "type", "is missing");
+                "config.elements[0].beforeRules[0].identifier", "is missing");
+        assertValidatorMessage(INSTANCE, config, "config.type", "is missing");
+    }
+    
+    @Test
+    public void testNullConfig() throws Exception {
+        AssessmentConfig config = new AssessmentConfig();
+        assertValidatorMessage(INSTANCE, config, "config", "is required");
     }
     
     @Test
@@ -74,6 +80,6 @@ public class AssessmentConfigValidatorTest {
         AssessmentConfigValidator validator = new AssessmentConfigValidator.Builder()
                 .addValidator("SurveyRule", val).build();
         
-        assertValidatorMessage(validator, config, "elements[0].beforeRules[0].foo", "is missing");
+        assertValidatorMessage(validator, config, "config.elements[0].beforeRules[0].foo", "is missing");
     }
 }

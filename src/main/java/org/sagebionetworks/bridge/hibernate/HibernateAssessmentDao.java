@@ -129,7 +129,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     
     @Override
     public Assessment createAssessment(String appId, Assessment assessment, AssessmentConfig config) {
-        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(appId, assessment);
         HibernateAssessmentConfig hibernateConfig = HibernateAssessmentConfig.create(assessment.getGuid(), config);
         
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
@@ -145,7 +145,7 @@ class HibernateAssessmentDao implements AssessmentDao {
         // If you do not receive back the managed object from the executeWithExceptionHandling() method, and THEN
         // convert it to a non-managed object, the version will not be updated. It appears that the update of the 
         // Java object happens as part of the transaction commit, or something like that.
-        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(appId, assessment);
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
                 (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
         return Assessment.create(retValue);
@@ -155,7 +155,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     public void deleteAssessment(String appId, Assessment assessment) {
         // If this is the last revision (logically deleted or not), also delete the resources.
         int count = getAssessmentRevisions(appId, assessment.getIdentifier(), 0, 1, true).getTotal();
-        HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessment hibernateAssessment = HibernateAssessment.create(appId, assessment);
         
         hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
             String assessmentId = hibernateAssessment.getIdentifier();
@@ -175,12 +175,15 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
 
     @Override
-    public Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest) {
-        HibernateAssessment hibernateOrigin = HibernateAssessment.create(origin, originAppId);
-        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, SHARED_STUDY_ID_STRING);
+    public Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest,
+            AssessmentConfig destConfig) {
+        HibernateAssessment hibernateOrigin = HibernateAssessment.create(originAppId, origin);
+        HibernateAssessment hibernateDest = HibernateAssessment.create(SHARED_STUDY_ID_STRING, dest);
+        HibernateAssessmentConfig hibernateDestConfig = HibernateAssessmentConfig.create(dest.getGuid(), destConfig);
 
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOrigin, (session) -> {
             // And persist all of the resources
+            session.saveOrUpdate(hibernateDestConfig);
             session.saveOrUpdate(hibernateDest);
             return (HibernateAssessment)session.merge(hibernateOrigin);
         });
@@ -188,10 +191,12 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
 
     @Override
-    public Assessment importAssessment(String destAppId, Assessment dest) {
-        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, destAppId);
-
+    public Assessment importAssessment(String destAppId, Assessment dest, AssessmentConfig destConfig) {
+        HibernateAssessment hibernateDest = HibernateAssessment.create(destAppId, dest);
+        HibernateAssessmentConfig hibernateConfig = HibernateAssessmentConfig.create(dest.getGuid(), destConfig);
+        
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateDest, (session) -> {
+            session.saveOrUpdate(hibernateConfig);
             session.merge(hibernateDest);
             return hibernateDest;
         });

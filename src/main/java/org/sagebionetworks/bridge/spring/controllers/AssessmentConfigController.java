@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +27,7 @@ public class AssessmentConfigController extends BaseController {
     
     private AssessmentConfigService service;
     
+    @Autowired
     final void setAssessmentConfigService(AssessmentConfigService service) {
         this.service = service;
     }

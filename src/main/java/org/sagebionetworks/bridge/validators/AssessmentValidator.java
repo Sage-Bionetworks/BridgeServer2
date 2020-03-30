@@ -6,11 +6,15 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SubstudyService;
@@ -53,6 +57,25 @@ public class AssessmentValidator implements Validator {
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }
+        if (assessment.getCustomizationFields() != null && !assessment.getCustomizationFields().isEmpty()) {
+            for (Map.Entry<String, Set<PropertyInfo>> entry : assessment.getCustomizationFields().entrySet()) {
+                String key = entry.getKey();
+                
+                int i=0;
+                for (PropertyInfo info : entry.getValue()) {
+                    errors.pushNestedPath("customizationFields["+key+"][" + i + "]");
+                    if (isBlank(info.getPropName())) {
+                        errors.rejectValue("propName", CANNOT_BE_BLANK);    
+                    }
+                    if (isBlank(info.getLabel())) {
+                        errors.rejectValue("label", CANNOT_BE_BLANK);
+                    }
+                    errors.popNestedPath();
+                    i++;
+                }
+            }
+        }
+        
         // ownerId == substudyId except in the shared assessments study, where it must include
         // the study as a namespace prefix, e.g. "studyId:substudyId". Assessments are always 
         // owned by some organization.

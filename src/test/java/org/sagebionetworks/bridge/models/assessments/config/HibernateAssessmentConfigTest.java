@@ -25,6 +25,7 @@ public class HibernateAssessmentConfigTest {
         config.setVersion(2L);
 
         HibernateAssessmentConfig hibConfig = HibernateAssessmentConfig.create(GUID, config);
+        assertEquals(hibConfig.getGuid(), GUID);
         assertEquals(hibConfig.getConfig().toString(), data.toString());
         assertEquals(hibConfig.getCreatedOn(), CREATED_ON);
         assertEquals(hibConfig.getModifiedOn(), MODIFIED_ON);

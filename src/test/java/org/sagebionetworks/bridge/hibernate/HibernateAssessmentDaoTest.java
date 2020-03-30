@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class HibernateAssessmentDaoTest extends Mockito {
     
@@ -304,23 +305,27 @@ public class HibernateAssessmentDaoTest extends Mockito {
     public void publishAssessment() throws Exception {
         Assessment original = new Assessment();
         Assessment assessmentToPublish = AssessmentTest.createAssessment();
+        AssessmentConfig originConfig = new AssessmentConfig();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
         
-        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish);
+        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, originConfig);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
-        verify(mockSession).merge(any(HibernateAssessment.class));
+        verify(mockSession).saveOrUpdate(any(HibernateAssessmentConfig.class));
+        verify(mockSession).saveOrUpdate(any(HibernateAssessment.class));
     }
     
     @Test
     public void importAssessment() throws Exception {
         Assessment assessmentToImport = AssessmentTest.createAssessment();
+        AssessmentConfig configToImport = new AssessmentConfig();
         
-        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport);
+        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport, configToImport);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession).saveOrUpdate(any(HibernateAssessmentConfig.class));
         verify(mockSession).merge(any(HibernateAssessment.class));
     }
 }

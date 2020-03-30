@@ -7,14 +7,14 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.validators.AbstractValidator;
 
 /**
  * This validator can be constructed with additional validators that will validate JsonNodes of a
- * specific declared type. Currently it only allows one validator per such type. Client developers 
- * are currently defining these types in their configuration system.
- *
+ * specific declared type. Currently it only allows one validator per type. Client developers 
+ * will define these types in their configuration system.
  */
-public class AssessmentConfigValidator implements Validator {
+public class AssessmentConfigValidator extends AbstractValidator {
     
     public static final AssessmentConfigValidator INSTANCE = new AssessmentConfigValidator.Builder().build();
 
@@ -25,19 +25,16 @@ public class AssessmentConfigValidator implements Validator {
     }
     
     @Override
-    public boolean supports(Class<?> clazz) {
-        return AssessmentConfig.class.isAssignableFrom(clazz);
-    }
-
-    @Override
     public void validate(Object target, Errors errors) {
         AssessmentConfig assessmentConfig = (AssessmentConfig)target;
         
         if (assessmentConfig.getConfig() == null) {
             errors.rejectValue("config", "is required");
         } else {
+            errors.pushNestedPath("config");
             ConfigVisitor visitor = new ConfigVisitor(validators, errors);
             BridgeUtils.walk(assessmentConfig.getConfig(), visitor);
+            errors.popNestedPath();
         }
     }
     

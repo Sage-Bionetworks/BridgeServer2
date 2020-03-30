@@ -67,7 +67,6 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -756,7 +755,7 @@ public class BridgeUtils {
     
     private static void walk(JsonNode node, String fieldPath, BiConsumer<String, JsonNode> consumer) {
         if (node.isObject()) {
-            consumer.accept(fieldPath, (ObjectNode)node);
+            consumer.accept(fieldPath, node);
             for (Iterator<Map.Entry<String, JsonNode>> i = node.fields(); i.hasNext(); ) {
                 Map.Entry<String, JsonNode> entry = i.next();
                 walk(entry.getValue(), appendPath(fieldPath, entry.getKey()), consumer);

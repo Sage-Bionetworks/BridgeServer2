@@ -34,7 +34,7 @@ public class Assessment implements BridgeEntity {
     }
     
     public static Assessment copy(Assessment assessment) {
-        return create(HibernateAssessment.create(assessment, null));
+        return create(HibernateAssessment.create(null, assessment));
     }
     
     private String guid;

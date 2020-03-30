@@ -4,12 +4,15 @@ import java.util.Optional;
 
 import javax.annotation.Resource;
 
+import org.springframework.stereotype.Component;
+
 import org.sagebionetworks.bridge.dao.AssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
+@Component
 public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
     
     private HibernateHelper hibernateHelper;
@@ -30,11 +33,11 @@ public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
 
     @Override
     public AssessmentConfig updateAssessmentConfig(String appId, Assessment assessment, String guid, AssessmentConfig config) {
-        HibernateAssessment hibAssessment = HibernateAssessment.create(assessment, appId);
+        HibernateAssessment hibAssessment = HibernateAssessment.create(appId, assessment);
         HibernateAssessmentConfig hibConfig = HibernateAssessmentConfig.create(guid, config);
         HibernateAssessmentConfig retValue = hibernateHelper.executeWithExceptionHandling(hibConfig, (session) -> {
-            session.persist(hibAssessment);
-            session.persist(hibConfig);
+            session.merge(hibAssessment);
+            session.merge(hibConfig);
             return hibConfig;
         });
         return AssessmentConfig.create(retValue);
@@ -44,7 +47,7 @@ public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
     public AssessmentConfig customizeAssessmentConfig(String guid, AssessmentConfig config) {
         HibernateAssessmentConfig hibConfig = HibernateAssessmentConfig.create(guid, config);
         HibernateAssessmentConfig retValue = hibernateHelper.executeWithExceptionHandling(hibConfig, (session) -> {
-            session.persist(hibConfig);
+            session.merge(hibConfig);
             return hibConfig;
         });
         return AssessmentConfig.create(retValue);

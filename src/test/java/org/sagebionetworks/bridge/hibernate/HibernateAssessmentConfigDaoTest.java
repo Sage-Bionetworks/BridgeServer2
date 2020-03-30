@@ -85,7 +85,7 @@ public class HibernateAssessmentConfigDaoTest extends Mockito {
         
         dao.updateAssessmentConfig(APP_ID, assessment, GUID, config);
         
-        verify(mockSession, times(2)).persist(argCaptor.capture());
+        verify(mockSession, times(2)).merge(argCaptor.capture());
         
         HibernateAssessment hibAssessment = (HibernateAssessment)argCaptor.getAllValues().get(0);
         assertEquals(hibAssessment.getGuid(), GUID);
@@ -100,7 +100,7 @@ public class HibernateAssessmentConfigDaoTest extends Mockito {
         
         dao.customizeAssessmentConfig(GUID, config);
         
-        verify(mockSession).persist(configCaptor.capture());
+        verify(mockSession).merge(configCaptor.capture());
         
         HibernateAssessmentConfig hibConfig = configCaptor.getAllValues().get(0);
         assertEquals(hibConfig.getVersion(), 3L);

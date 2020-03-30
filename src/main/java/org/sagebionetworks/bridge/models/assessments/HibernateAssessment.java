@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 @Table(name = "Assessments")
 public class HibernateAssessment {
     
-    public static HibernateAssessment create(Assessment dto, String appId) {
+    public static HibernateAssessment create(String appId, Assessment dto) {
         HibernateAssessment assessment = new HibernateAssessment();
         assessment.setGuid(dto.getGuid());
         assessment.setAppId(appId);

@@ -39,13 +39,13 @@ public interface AssessmentDao {
      * already exists under the same identifiers, the caller of this method must be a member of the 
      * owning organization of the published assessment.
      */
-    Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest);
+    Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest, AssessmentConfig originConfig);
 
     /**
      * Copy an assessment from the shared context to a local context so it can be used. If the 
      * assessment already exists in the local context.
      */
-    Assessment importAssessment(String destAppId, Assessment dest);
+    Assessment importAssessment(String destAppId, Assessment dest, AssessmentConfig destConfig);
     
     /**
      * This is an actual delete from the database.

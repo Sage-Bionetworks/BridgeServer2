@@ -30,7 +30,7 @@ public class HibernateAssessmentTest {
     @Test
     public void createFactoryMethod() {
         Assessment dto = AssessmentTest.createAssessment();
-        HibernateAssessment assessment = HibernateAssessment.create(dto, "appId");
+        HibernateAssessment assessment = HibernateAssessment.create("appId", dto);
         assertAssessment(assessment);
     }
     

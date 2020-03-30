@@ -73,6 +73,9 @@ public class AssessmentServiceTest extends Mockito {
     AssessmentResourceDao mockResourceDao;
     
     @Mock
+    AssessmentConfigService mockConfigService;
+    
+    @Mock
     SubstudyService mockSubstudyService;
     
     @Mock
@@ -805,17 +808,17 @@ public class AssessmentServiceTest extends Mockito {
         existing.setVersion(-1L);        
         
         when(mockDao.getAssessment(APP_ID_VALUE, "oldGuid")).thenReturn(Optional.of(existing));
-        
-        when(mockDao.publishAssessment(any(), any(), any())).thenReturn(ASSESSMENT);
+        when(mockDao.publishAssessment(any(), any(), any(), any())).thenReturn(ASSESSMENT);
         
         // Assume no published versions
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
+        when(mockConfigService.getAssessmentConfig(APP_ID_VALUE, "oldGuid")).thenReturn(new AssessmentConfig());
         
         Assessment retValue = service.publishAssessment(APP_ID_VALUE, "oldGuid");
         assertSame(retValue, ASSESSMENT);
-        
+
         verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
-                assessmentCaptor.capture());
+                assessmentCaptor.capture(), any(AssessmentConfig.class));
         
         Assessment original = assessmentCaptor.getAllValues().get(0);
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
@@ -842,12 +845,12 @@ public class AssessmentServiceTest extends Mockito {
         
         service.publishAssessment(APP_ID_VALUE, GUID);
     }
-    
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void publishAssessmentEntityNotFound() {
         service.publishAssessment(APP_ID_VALUE, GUID);
     }
-    
+
     @Test
     public void publishAssessmentPriorPublishedVersion() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
@@ -855,6 +858,7 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment local = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(local));
+        when(mockConfigService.getAssessmentConfig(APP_ID_VALUE, GUID)).thenReturn(new AssessmentConfig());
         
         // Same as the happy path version, but this time there is a revision in the
         // shared library
@@ -867,12 +871,12 @@ public class AssessmentServiceTest extends Mockito {
         service.publishAssessment(APP_ID_VALUE, GUID);
         
         verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
-                assessmentCaptor.capture());
+                assessmentCaptor.capture(), configCaptor.capture());
         
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
         assertEquals(assessmentToPublish.getRevision(), 11);
     }
-    
+
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = ".*Assessment exists in shared library.*")
     public void publishAssessmentPriorPublishedVersionDifferentOwner() {
@@ -892,18 +896,22 @@ public class AssessmentServiceTest extends Mockito {
         
         service.publishAssessment(APP_ID_VALUE, GUID);
     }
-        
+
     @Test
     public void importAssessment() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
         sharedAssessment.setGuid("sharedGuid");
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
         
+        AssessmentConfig sharedConfig = new AssessmentConfig();
+        when(mockConfigService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, GUID)).thenReturn(sharedConfig);
+        
         when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID)).thenReturn(Optional.of(sharedAssessment));
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
 
-        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment))).thenReturn(sharedAssessment);
+        when(mockDao.importAssessment(APP_ID_VALUE, sharedAssessment, sharedConfig))
+            .thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
@@ -911,9 +919,9 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(retValue.getOriginGuid(), "sharedGuid");
         assertEquals(retValue.getOwnerId(), OWNER_ID);
         
-        verify(mockDao).importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment));
+        verify(mockDao).importAssessment(APP_ID_VALUE, sharedAssessment, sharedConfig);
     }
-    
+
     @Test
     public void importAssessmentWithDefaultedOwnerId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -929,7 +937,7 @@ public class AssessmentServiceTest extends Mockito {
         
         service.importAssessment(APP_ID_VALUE, null, GUID);
     }
-    
+
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")
     public void importAssessmentWithFailsToDefaultIfMultipleOrganizations() {
@@ -973,7 +981,12 @@ public class AssessmentServiceTest extends Mockito {
     public void importAssessmentPriorImportedVersion() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
         sharedAssessment.setGuid("sharedGuid");
-        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid")).thenReturn(Optional.of(sharedAssessment));
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, "sharedGuid"))
+            .thenReturn(Optional.of(sharedAssessment));
+        
+        AssessmentConfig sharedConfig = new AssessmentConfig();
+        when(mockConfigService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(sharedConfig);
         
         Assessment localAssessment = AssessmentTest.createAssessment();
         localAssessment.setRevision(3);
@@ -982,7 +995,7 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(localAssessment), 1));
         
-        when(mockDao.importAssessment(eq(APP_ID_VALUE), eq(sharedAssessment))).thenReturn(sharedAssessment);
+        when(mockDao.importAssessment(APP_ID_VALUE, sharedAssessment, sharedConfig)).thenReturn(sharedAssessment);
         
         Assessment retValue = service.importAssessment(APP_ID_VALUE, OWNER_ID, GUID);
         assertSame(retValue, sharedAssessment);
