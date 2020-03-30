@@ -66,6 +66,7 @@ public class Validate {
     public static void entityThrowingException(Validator validator, Object object) throws InvalidEntityException {
         checkNotNull(validator);
         checkArgument(object instanceof BridgeEntity);
+        checkArgument(validator.supports(object.getClass()), "Invalid validator");
         checkNotNull(object);
         
         Errors errors = getErrorsFor(object);

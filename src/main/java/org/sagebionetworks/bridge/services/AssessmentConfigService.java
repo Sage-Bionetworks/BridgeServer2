@@ -75,6 +75,7 @@ public class AssessmentConfigService {
         Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, config);
         
         // This is no longer a copy of a shared assessment because the config has been edited.
+        // It also needs to be updated to reflect this.
         assessment.setOriginGuid(null);
         
         return dao.updateAssessmentConfig(appId, assessment, guid, config);
