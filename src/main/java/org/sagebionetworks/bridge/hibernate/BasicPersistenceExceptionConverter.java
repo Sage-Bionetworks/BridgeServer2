@@ -5,16 +5,18 @@ import javax.persistence.PersistenceException;
 
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
-import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @Component
 public class BasicPersistenceExceptionConverter implements PersistenceExceptionConverter {
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
         if (exception instanceof OptimisticLockException) {
-            return new ConcurrentModificationException((BridgeEntity)entity);
+            return new ConcurrentModificationException(
+                    BridgeUtils.getTypeName(entity.getClass()) + 
+                    " has the wrong version number; it may have been saved in the background.");
         }
         Throwable throwable = exception.getCause();
         if (throwable instanceof org.hibernate.exception.ConstraintViolationException) {

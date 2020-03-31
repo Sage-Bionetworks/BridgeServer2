@@ -310,3 +310,35 @@ CREATE TABLE `AssessmentTags` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE INDEX `AssessmentTags-TagValue` ON `AssessmentTags`(`tagValue`);
+
+-- changeset bridge:14
+
+CREATE TABLE `ExternalResources` (
+  `appId` varchar(255) NOT NULL,
+  `guid` varchar(255) NOT NULL,
+  `assessmentId` varchar(255),
+  `title` varchar(255) NOT NULL,
+  `url` text NOT NULL,
+  `format` varchar(255),
+  `date` varchar(255),
+  `description` text,
+  `language` varchar(255),
+  `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY', 
+    'SCIENCE_DOCUMENTATION', 'DEVELOPER_DOCUMENTATION', 'LICENSE', 
+    'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
+    'SCREENSHOT', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
+    'OTHER') NOT NULL,
+  `contributors` text,
+  `creators` text,
+  `publishers` text,
+  `minRevision` int(10),
+  `maxRevision` int(10),
+  `createdAtRevision` int(10) NOT NULL,
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `deleted` tinyint(1) DEFAULT '0' NOT NULL,
+  `version` bigint(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`appId`, `guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE INDEX `ExternalResources-AppId-AssessmentId` ON `ExternalResources`(`appId`, `assessmentId`);

@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -39,10 +40,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
@@ -70,7 +74,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(BridgeUtils.class);
+
     public static class SubstudyAssociations {
         private final Set<String> substudyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
@@ -669,5 +674,69 @@ public class BridgeUtils {
         return callerRoles != null && requiredRoles != null && 
                 requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
-
+    
+    public static <T extends Enum<T>> T getEnumOrDefault(String value, Class<T> enumType, T defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return Enum.valueOf(enumType, value.toUpperCase());
+        } catch(IllegalArgumentException e) {
+            Object[] enums = enumType.getEnumConstants();
+            throw new BadRequestException(value + " is not a valid " + enumType.getSimpleName() + " (use: "
+                    + COMMA_SPACE_JOINER.join(enums).toLowerCase() + ")");
+        }
+    }
+    
+    /**
+     * If the caller has no organizational membership, then they can set any organization (however they 
+     * must set one, unlike the implementation of substudy relationships to user accounts). In this 
+     * case we check the org ID to ensure it's valid. If the caller has organizational memberships, 
+     * then the caller must be a member of the organization being cited. At that point we do not need 
+     * to validate the org ID since it was validated when it was set as an organizational relationship
+     * on the account. 
+     */
+    public static void checkOwnership(String appId, String ownerId) {
+        if (isBlank(ownerId)) {
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
+            return;
+        }
+        throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+    }
+    
+    public static void checkSharedOwnership(String callerAppId, String guid, String ownerId) {
+        if (ownerId == null) {
+            LOG.error("Owner ID is null, guid=" + guid);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String[] parts = ownerId.split(":", 2);
+        // This happens in tests, we expect it to never happens in production. So log if it does.
+        if (parts.length != 2) {
+            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+        String originAppId = parts[0];
+        String originOrgId = parts[1];
+        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        boolean scopedUser = !callerSubstudies.isEmpty();
+        boolean orgMember = callerSubstudies.contains(originOrgId);
+        
+        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
+            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        }
+    }
+    
+    public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
+        if (isBlank(value)) {
+            return defaultValue;
+        }
+        try {
+            return parseInt(value);
+        } catch(NumberFormatException e) {
+            throw new BadRequestException(value + " is not an integer");
+        }
+    }
 }

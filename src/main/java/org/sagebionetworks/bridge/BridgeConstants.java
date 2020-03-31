@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
@@ -8,9 +9,14 @@ import org.jsoup.safety.Whitelist;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
+
+    public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
+
     public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";
     
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
@@ -21,6 +27,7 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
 
     // Study ID for the test study, used in local tests and most integ tests.
     public static final String API_STUDY_ID_STRING = "api";

@@ -123,15 +123,25 @@ public class Validate {
         return String.format("%s is invalid: %s", errors.getObjectName(), Joiner.on("; ").join(messages));
     }
     private static String errorToString(String name, ObjectError error) {
+        String errorCode = error.getCode();
+        String defMessage = error.getDefaultMessage();
         if (error.getArguments() != null) {
             String base = (error.getCode() != null) ? error.getCode() : error.getDefaultMessage();
             String message = (base == null) ? "" : String.format(base, error.getArguments());
-            return message;
-        } else if (error.getCode() != null){
-            return name + " " + error.getCode();
-        } else if (error.getDefaultMessage() != null) {
-            return name + " " + error.getDefaultMessage();
+            return formatIfNecessary(name, message);
+        } else if (errorCode != null){
+            return formatIfNecessary(name, errorCode);
+        } else if (defMessage != null) {
+            return formatIfNecessary(name, defMessage);
         }
         return "<ERROR>";
+    }
+    private static String formatIfNecessary(String name, String errorMessage) {
+        if (errorMessage.contains("%s")) {
+            return String.format(errorMessage, name).trim();
+        } else if (errorMessage.startsWith(" ")) {
+            return (name + errorMessage).trim();    
+        }
+        return (name + " " + errorMessage).trim();
     }
 }

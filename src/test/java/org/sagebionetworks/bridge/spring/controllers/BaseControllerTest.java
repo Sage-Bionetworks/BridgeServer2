@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -437,6 +438,24 @@ public class BaseControllerTest extends Mockito {
         doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
         
         controller.parseJson(DateRange.class);
+    }
+    
+    @Test
+    public void parseJsonWithTypeReference() throws Exception { 
+        String json = TestUtils.createJson("['A', 'B', 'C']");
+        doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
+        
+        Set<String> set = controller.parseJson(STRING_SET_TYPEREF);
+        
+        assertEquals(set, ImmutableSet.of("A", "B", "C"));
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void parseJsonWithTypeReferenceFails() throws Exception {
+        String json = TestUtils.createJson("{'A', 'B', 'C'}"); // not JSON
+        doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
+        
+        controller.parseJson(STRING_SET_TYPEREF);
     }
     
     @Test

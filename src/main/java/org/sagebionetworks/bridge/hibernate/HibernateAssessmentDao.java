@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.hibernate.query.NativeQuery;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AssessmentDao;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
+    static final String DELETE_RESOURCES_SQL = "DELETE FROM ExternalResources where appId = :appId AND assessmentId = :assessmentId";
     static final String APP_ID = "appId";
     static final String IDENTIFIER = "identifier";
     static final String REVISION = "revision";
@@ -38,7 +40,7 @@ class HibernateAssessmentDao implements AssessmentDao {
             +"identifier = :identifier";
     static final String GET_REVISIONS2 = "ORDER BY revision DESC";
     static final String EXCLUDE_DELETED = "AND deleted = 0";
-    
+
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "basicHibernateHelper")
@@ -124,6 +126,9 @@ class HibernateAssessmentDao implements AssessmentDao {
     
     @Override
     public Assessment saveAssessment(String appId, Assessment assessment) {
+        // If you do not receive back the managed object from the executeWithExceptionHandling() method, and THEN
+        // convert it to a non-managed object, the version will not be updated. It appears that the update of the 
+        // Java object happens as part of the transaction commit, or something like that.
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateAssessment, 
                 (session) -> (HibernateAssessment)session.merge(hibernateAssessment));
@@ -132,22 +137,43 @@ class HibernateAssessmentDao implements AssessmentDao {
 
     @Override
     public void deleteAssessment(String appId, Assessment assessment) {
+        // If this is the last revision (logically deleted or not), also delete the resources.
+        int count = getAssessmentRevisions(appId, assessment.getIdentifier(), 0, 1, true).getTotal();
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(assessment, appId);
+        
         hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
+            String assessmentId = hibernateAssessment.getIdentifier();
+            if (count == 1) {
+                NativeQuery<?> query = session.createNativeQuery(DELETE_RESOURCES_SQL);
+                query.setParameter("appId", appId);
+                query.setParameter("assessmentId", assessmentId);
+                query.executeUpdate();
+            }
             session.remove(hibernateAssessment);
             return null;
         });
     }
-    
+
     @Override
-    public Assessment publishAssessment(String originalAppId, Assessment original, Assessment assessmentToPublish) {
-        HibernateAssessment hibernateOriginal = HibernateAssessment.create(original, originalAppId);
-        HibernateAssessment hibernateToPublish = HibernateAssessment.create(assessmentToPublish,
-                SHARED_STUDY_ID_STRING);
-        
-        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOriginal, (session) -> {
-            session.saveOrUpdate(hibernateToPublish);
-            return (HibernateAssessment)session.merge(hibernateOriginal);
+    public Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest) {
+        HibernateAssessment hibernateOrigin = HibernateAssessment.create(origin, originAppId);
+        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, SHARED_STUDY_ID_STRING);
+
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOrigin, (session) -> {
+            // And persist all of the resources
+            session.saveOrUpdate(hibernateDest);
+            return (HibernateAssessment)session.merge(hibernateOrigin);
+        });
+        return Assessment.create(retValue);
+    }
+
+    @Override
+    public Assessment importAssessment(String destAppId, Assessment dest) {
+        HibernateAssessment hibernateDest = HibernateAssessment.create(dest, destAppId);
+
+        HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateDest, (session) -> {
+            session.merge(hibernateDest);
+            return hibernateDest;
         });
         return Assessment.create(retValue);
     }
