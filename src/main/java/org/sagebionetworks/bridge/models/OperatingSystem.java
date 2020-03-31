@@ -27,4 +27,7 @@ public class OperatingSystem {
     
     public static final Set<String> ALL_OS_SYSTEMS = new ImmutableSet.Builder<String>()
             .add(IOS).add(ANDROID).build();
+    // This matix would explode if there were more mobile operating systems, but there aren't.
+    public static final Set<String> ALL_OS_SUPPORT_OPTIONS = new ImmutableSet.Builder<String>()
+            .add(IOS).add(ANDROID).add(UNIVERSAL).build();
 }
