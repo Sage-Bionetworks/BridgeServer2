@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
-import java.io.IOException;
 import java.util.EnumSet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
