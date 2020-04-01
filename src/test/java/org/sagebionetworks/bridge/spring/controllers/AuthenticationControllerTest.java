@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
@@ -440,6 +441,14 @@ public class AuthenticationControllerTest extends Mockito {
         UserSession retVal = controller.getAuthenticatedSession();
         assertSame(session, retVal);
         verifyMetrics();
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+    public void signUpBadJson() throws Exception {
+        mockRequestBody(mockRequest, "{\"phone\":\"+1234567890\"}");
+        
+        controller.signUp();
     }
     
     @Test

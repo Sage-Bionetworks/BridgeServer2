@@ -130,7 +130,7 @@ public class AuthenticationController extends BaseController {
     }
     
     @PostMapping("/v4/auth/signIn")
-    public JsonNode signIn() throws Exception {
+    public JsonNode signIn() {
         SignIn signIn = parseJson(SignIn.class);
         getMetrics().setStudy(signIn.getStudyId());
 
@@ -152,7 +152,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/v3/auth/reauth")
-    public JsonNode reauthenticate() throws Exception {
+    public JsonNode reauthenticate() {
         SignIn signInRequest = parseJson(SignIn.class);
 
         if (isBlank(signInRequest.getStudyId())) {
@@ -179,7 +179,7 @@ public class AuthenticationController extends BaseController {
 
     @Deprecated
     @PostMapping({"/v3/auth/signIn", "/api/v1/auth/signIn"})
-    public JsonNode signInV3() throws Exception {
+    public JsonNode signInV3() {
         // Email based sign in with throw UnauthorizedException if email-only sign in is disabled.
         // This maintains backwards compatibility for older clients.
         try {
@@ -191,7 +191,7 @@ public class AuthenticationController extends BaseController {
 
     @Deprecated
     @PostMapping("/v3/auth/signOut")
-    public StatusMessage signOut() throws Exception {
+    public StatusMessage signOut() {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         if (session != null) {
@@ -205,12 +205,12 @@ public class AuthenticationController extends BaseController {
 
     @Deprecated
     @GetMapping("/api/v1/auth/signOut")
-    public StatusMessage signOutGet() throws Exception {
+    public StatusMessage signOutGet() {
         return signOut();
     }
     
     @PostMapping("/v4/auth/signOut")
-    public StatusMessage signOutV4() throws Exception {
+    public StatusMessage signOutV4() {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         Cookie cookie = makeSessionCookie("", 0);
@@ -226,9 +226,9 @@ public class AuthenticationController extends BaseController {
     
     @PostMapping({"/v3/auth/signUp", "/api/v1/auth/signUp"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage signUp() throws Exception {
+    public StatusMessage signUp() {
         JsonNode node = parseJson(JsonNode.class);
-        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant participant = parseJson(node, StudyParticipant.class);
         
         String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
         getMetrics().setStudy(studyId);
@@ -238,7 +238,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping({"/v3/auth/verifyEmail", "/api/v1/auth/verifyEmail"})
-    public StatusMessage verifyEmail() throws Exception {
+    public StatusMessage verifyEmail() {
         Verification verification = parseJson(Verification.class);
 
         authenticationService.verifyChannel(ChannelType.EMAIL, verification);
@@ -256,7 +256,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/v3/auth/verifyPhone")
-    public StatusMessage verifyPhone() throws Exception {
+    public StatusMessage verifyPhone() {
         Verification verification = parseJson(Verification.class);
 
         authenticationService.verifyChannel(ChannelType.PHONE, verification);
@@ -265,7 +265,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/v3/auth/resendPhoneVerification")
-    public StatusMessage resendPhoneVerification() throws Exception {
+    public StatusMessage resendPhoneVerification() {
         AccountId accountId = parseJson(AccountId.class);
         
         // Must be here to get the correct exception if study property is missing
@@ -276,7 +276,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping({"/v3/auth/requestResetPassword", "/api/v1/auth/requestResetPassword"})
-    public StatusMessage requestResetPassword() throws Exception {
+    public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
         Study study = studyService.getStudy(signIn.getStudyId());
@@ -288,7 +288,7 @@ public class AuthenticationController extends BaseController {
     }
     
     @PostMapping({"/v3/auth/resetPassword", "/api/v1/auth/resetPassword"})
-    public StatusMessage resetPassword() throws Exception {
+    public StatusMessage resetPassword() {
         PasswordReset passwordReset = parseJson(PasswordReset.class);
         getStudyOrThrowException(passwordReset.getStudyIdentifier());
         authenticationService.resetPassword(passwordReset);
@@ -296,7 +296,7 @@ public class AuthenticationController extends BaseController {
     }
     
     @PostMapping("/v3/auth/study")
-    public JsonNode changeStudy() throws Exception {
+    public JsonNode changeStudy() {
         UserSession session = getAuthenticatedSession();
         
         // To switch studies, the account must be an administrative account with a Synapse User ID

@@ -26,6 +26,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
@@ -84,6 +85,14 @@ public class IntentControllerTest extends Mockito {
         assertEquals(captured.getPhone().getNumber(), PHONE.getNumber());
         assertEquals(captured.getConsentSignature().getName(), "Gladlight Stonewell");
         assertEquals(captured.getScope(), ALL_QUALIFIED_RESEARCHERS);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+    public void intentToParticipanteBadJson() throws Exception {
+        mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
+        
+        controller.submitIntentToParticipate();
     }
     
     private IntentToParticipate createIntentToParticipate() {

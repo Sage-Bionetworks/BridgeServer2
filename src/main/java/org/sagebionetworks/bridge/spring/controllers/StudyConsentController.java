@@ -48,7 +48,7 @@ public class StudyConsentController extends BaseController {
     // V1 API: consents directly associated to a study
     @Deprecated
     @GetMapping("/v3/consents")
-    public ResourceList<StudyConsent> getAllConsents() throws Exception {
+    public ResourceList<StudyConsent> getAllConsents() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         return getAllConsentsV2(session.getStudyIdentifier().getIdentifier());
@@ -56,21 +56,21 @@ public class StudyConsentController extends BaseController {
 
     @Deprecated
     @GetMapping("/v3/consents/published")
-    public StudyConsentView getActiveConsent() throws Exception {
+    public StudyConsentView getActiveConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         return getActiveConsentV2(session.getStudyIdentifier().getIdentifier());
     }
     
     @Deprecated
     @GetMapping("/v3/consents/recent")
-    public StudyConsentView getMostRecentConsent() throws Exception {
+    public StudyConsentView getMostRecentConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         return getMostRecentConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     @GetMapping("/v3/consents/{createdOn}")
-    public StudyConsentView getConsent(@PathVariable String createdOn) throws Exception {
+    public StudyConsentView getConsent(@PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         return getConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
@@ -78,14 +78,14 @@ public class StudyConsentController extends BaseController {
     @Deprecated
     @PostMapping("/v3/consents")
     @ResponseStatus(HttpStatus.CREATED)
-    public StudyConsentView addConsent() throws Exception {
+    public StudyConsentView addConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         return addConsentV2(session.getStudyIdentifier().getIdentifier());
     }
 
     @Deprecated
     @PostMapping("/v3/consents/{createdOn}/publish")
-    public StatusMessage publishConsent(@PathVariable String createdOn) throws Exception {
+    public StatusMessage publishConsent(@PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         return publishConsentV2(session.getStudyIdentifier().getIdentifier(), createdOn);
     }
@@ -93,7 +93,7 @@ public class StudyConsentController extends BaseController {
     // V2: consents associated to a subpopulation
     
     @GetMapping("/v3/subpopulations/{guid}/consents")
-    public ResourceList<StudyConsent> getAllConsentsV2(@PathVariable String guid) throws Exception {
+    public ResourceList<StudyConsent> getAllConsentsV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -106,7 +106,7 @@ public class StudyConsentController extends BaseController {
     }
 
     @GetMapping("/v3/subpopulations/{guid}/consents/published")
-    public StudyConsentView getActiveConsentV2(@PathVariable String guid) throws Exception {
+    public StudyConsentView getActiveConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -118,7 +118,7 @@ public class StudyConsentController extends BaseController {
     }
     
     @GetMapping("/v3/subpopulations/{guid}/consents/recent")
-    public StudyConsentView getMostRecentConsentV2(@PathVariable String guid) throws Exception {
+    public StudyConsentView getMostRecentConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -130,7 +130,7 @@ public class StudyConsentController extends BaseController {
     }
 
     @GetMapping("/v3/subpopulations/{guid}/consents/{createdOn}")
-    public StudyConsentView getConsentV2(@PathVariable String guid, @PathVariable String createdOn) throws Exception {
+    public StudyConsentView getConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -144,7 +144,7 @@ public class StudyConsentController extends BaseController {
     
     @PostMapping("/v3/subpopulations/{guid}/consents")
     @ResponseStatus(HttpStatus.CREATED)
-    public StudyConsentView addConsentV2(@PathVariable String guid) throws Exception {
+    public StudyConsentView addConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -157,7 +157,7 @@ public class StudyConsentController extends BaseController {
     }
     
     @PostMapping("/v3/subpopulations/{guid}/consents/{createdOn}/publish")
-    public StatusMessage publishConsentV2(@PathVariable String guid, @PathVariable String createdOn) throws Exception {
+    public StatusMessage publishConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);

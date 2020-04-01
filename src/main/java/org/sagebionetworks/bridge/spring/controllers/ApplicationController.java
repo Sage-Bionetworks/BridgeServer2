@@ -68,7 +68,7 @@ public class ApplicationController extends BaseController {
     }
     
     @GetMapping({"/", "/index.html"})
-    public String loadApp(Model model) throws Exception {
+    public String loadApp(Model model) {
         return "index";
     }
     

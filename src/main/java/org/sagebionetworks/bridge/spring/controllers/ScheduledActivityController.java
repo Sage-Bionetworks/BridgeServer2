@@ -64,8 +64,7 @@ public class ScheduledActivityController extends BaseController {
     @Deprecated
     @GetMapping("/v3/tasks")
     public JsonNode getTasks(@RequestParam(required = false) String until,
-            @RequestParam(required = false) String offset, @RequestParam(required = false) String daysAhead)
-            throws Exception {
+            @RequestParam(required = false) String offset, @RequestParam(required = false) String daysAhead) {
         List<ScheduledActivity> scheduledActivities = getScheduledActivitiesInternalV3(until, offset, daysAhead, null);
         
         return okResultAsTasks(scheduledActivities);
@@ -158,10 +157,10 @@ public class ScheduledActivityController extends BaseController {
     }
 
     @PostMapping({"/v4/activities", "/v3/tasks", "/v3/activities"})
-    public StatusMessage updateScheduledActivities() throws Exception {
+    public StatusMessage updateScheduledActivities() {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        List<ScheduledActivity> scheduledActivities = MAPPER.readValue(request().getInputStream(), SCHEDULED_ACTIVITY_TYPE_REF);
+        List<ScheduledActivity> scheduledActivities = parseJson(SCHEDULED_ACTIVITY_TYPE_REF);
                 
         scheduledActivityService.updateScheduledActivities(session.getHealthCode(), scheduledActivities);
 
@@ -197,7 +196,7 @@ public class ScheduledActivityController extends BaseController {
     }
     
     private List<ScheduledActivity> getScheduledActivitiesInternalV3(String untilString, String offset,
-            String daysAhead, String minimumPerScheduleString) throws Exception {
+            String daysAhead, String minimumPerScheduleString) {
         UserSession session = getAuthenticatedAndConsentedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         

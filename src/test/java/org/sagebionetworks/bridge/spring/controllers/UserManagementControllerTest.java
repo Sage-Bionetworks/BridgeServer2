@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -252,7 +253,25 @@ public class UserManagementControllerTest extends Mockito {
         
         controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
     }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+    public void createUserBadJson() throws Exception {
+        doReturn(session).when(controller).getSessionIfItExists();
+        mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
+        
+        controller.createUser();
+    }
 
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+    public void createUserWithStudyIdBadJson() throws Exception {
+        doReturn(session).when(controller).getSessionIfItExists();
+        mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
+        
+        controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
+    }
+    
     @Test
     public void deleteUser() throws Exception {
         mockRequestBody(mockRequest, "{}");
