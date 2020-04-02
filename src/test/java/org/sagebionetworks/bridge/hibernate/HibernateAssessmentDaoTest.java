@@ -83,6 +83,12 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Captor
     ArgumentCaptor<Map<String,Object>> paramsCaptor;
     
+    @Captor
+    ArgumentCaptor<HibernateAssessment> assessmentCaptor;
+    
+    @Captor
+    ArgumentCaptor<HibernateAssessmentConfig> configCaptor;
+    
     @Mock
     Session mockSession;
     
@@ -222,9 +228,27 @@ public class HibernateAssessmentDaoTest extends Mockito {
         Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, ID_VALUE, REV_VALUE);
         assertFalse(retValue.isPresent());
     }
+    
+    @Test
+    public void createAssessment() throws Exception {
+        Assessment assessment = AssessmentTest.createAssessment();
+        AssessmentConfig config = new AssessmentConfig();
+        
+        when(mockSession.merge(any())).thenReturn(
+                HibernateAssessment.create(APP_ID_VALUE, assessment));
+        
+        Assessment retValue = dao.createAssessment(APP_ID_VALUE, assessment, config);
+        assertEquals(retValue.getGuid(), GUID);
+        
+        verify(mockSession).persist(configCaptor.capture());
+        assertEquals(configCaptor.getValue().getGuid(), GUID);
+        
+        verify(mockSession).merge(assessmentCaptor.capture());
+        assertEquals(assessmentCaptor.getValue().getGuid(), GUID);
+    }
 
     @Test
-    public void createOrUpdateAssessment() throws Exception {
+    public void updateAssessment() throws Exception {
         when(mockSession.merge(any())).thenReturn(HIBERNATE_ASSESSMENT);
         
         Assessment returnValue = dao.updateAssessment(APP_ID_VALUE, new Assessment());

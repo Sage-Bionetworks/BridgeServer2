@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.assessments;
+package org.sagebionetworks.bridge.models.assessments.config;
 
 import static org.testng.Assert.assertEquals;
 

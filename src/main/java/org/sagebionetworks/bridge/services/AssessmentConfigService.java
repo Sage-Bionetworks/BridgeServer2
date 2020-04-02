@@ -68,7 +68,8 @@ public class AssessmentConfigService {
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
         checkOwnership(appId, assessment.getOwnerId());
         
-        AssessmentConfig existing = getAssessmentConfig(appId, guid);
+        AssessmentConfig existing = dao.getAssessmentConfig(guid)
+                .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
         config.setCreatedOn(existing.getCreatedOn());
         config.setModifiedOn(getModifiedOn());
         

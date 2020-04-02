@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -40,6 +41,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
@@ -113,14 +115,6 @@ public class AssessmentConfigServiceTest extends Mockito {
     
     @Test
     public void getSharedAssessmentConfig() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
-        
-        Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("api:substudyA");
-        when(mockAssessmentService.getAssessmentByGuid(SHARED_STUDY_IDENTIFIER, GUID))
-            .thenReturn(assessment);
-        
         AssessmentConfig existing = new AssessmentConfig();
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
@@ -299,5 +293,48 @@ public class AssessmentConfigServiceTest extends Mockito {
         configNode.put(ID_FIELD_NAME, "anIdentifier");
         configNode.put(TYPE_FIELD_NAME, "ObjectNode");
         return configNode;
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void getAssessmentConfigCheckOwnership() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId("substudyB");
+        when(mockAssessmentService.getAssessmentByGuid(TEST_STUDY_IDENTIFIER, GUID))
+            .thenReturn(assessment);
+        
+        service.getAssessmentConfig(TEST_STUDY_IDENTIFIER, GUID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void updateAssessmentConfigCheckOwnership() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId("substudyB");
+        when(mockAssessmentService.getAssessmentByGuid(TEST_STUDY_IDENTIFIER, GUID))
+            .thenReturn(assessment);
+        
+        AssessmentConfig config = new AssessmentConfig();
+        service.updateAssessmentConfig(TEST_STUDY_IDENTIFIER, GUID, config);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void customizeAssessmentConfigCheckOwnership() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId("substudyB");
+        when(mockAssessmentService.getAssessmentByGuid(TEST_STUDY_IDENTIFIER, GUID))
+            .thenReturn(assessment);
+        
+        service.customizeAssessmentConfig(TEST_STUDY_IDENTIFIER, GUID, new HashMap<>());
     }
 }

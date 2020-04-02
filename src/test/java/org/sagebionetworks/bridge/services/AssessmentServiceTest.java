@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.INFO1;
@@ -28,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -858,7 +858,9 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment local = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(local));
-        when(mockConfigService.getAssessmentConfig(APP_ID_VALUE, GUID)).thenReturn(new AssessmentConfig());
+        
+        AssessmentConfig localConfig = new AssessmentConfig();
+        when(mockConfigService.getAssessmentConfig(APP_ID_VALUE, GUID)).thenReturn(localConfig);
         
         // Same as the happy path version, but this time there is a revision in the
         // shared library
@@ -875,6 +877,8 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
         assertEquals(assessmentToPublish.getRevision(), 11);
+        
+        assertSame(localConfig, configCaptor.getValue());
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -1166,7 +1170,13 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setValidationStatus("some text</script>");
         assessment.setNormingStatus("Markup <object></object>can be <b>bold</b>.");        
         assessment.setTags(ImmutableSet.of("<scriopt>Мон ярсан суликадо</script>"));
-        assessment.setCustomizationFields(CUSTOMIZATION_FIELDS);
+        
+        PropertyInfo info = new PropertyInfo.Builder().withPropName("foo<script></script>")
+                .withLabel("foo label<script></script>").withDescription("a description<script></script>")
+                .withPropType("string<script></script>").build();
+        Map<String, Set<PropertyInfo>> customizationFields = ImmutableMap.of("guid1<script></script>",
+                ImmutableSet.of(info));
+        assessment.setCustomizationFields(customizationFields);
     }
 
     private void assertMarkupRemoved(Assessment assessment) {
@@ -1179,6 +1189,9 @@ public class AssessmentServiceTest extends Mockito {
         String key = entry.getKey();
         PropertyInfo value = Iterables.getFirst(entry.getValue(), null);
         assertEquals(key, "guid1");
-        assertEquals(value, INFO1);
+        assertEquals(value.getPropName(), INFO1.getPropName());
+        assertEquals(value.getLabel(), INFO1.getLabel());
+        assertEquals(value.getDescription(), INFO1.getDescription());
+        assertEquals(value.getPropType(), INFO1.getPropType());
     }    
 }

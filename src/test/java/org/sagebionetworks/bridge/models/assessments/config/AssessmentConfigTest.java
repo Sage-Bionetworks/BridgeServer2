@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.testng.annotations.Test;
 
@@ -28,7 +29,7 @@ public class AssessmentConfigTest {
         hibConfig.setVersion(2L);
 
         AssessmentConfig config = AssessmentConfig.create(hibConfig);
-        assertEquals(config.getConfig().toString(), data.toString());
+        assertEquals(config.getConfig(), data);
         assertEquals(config.getCreatedOn(), CREATED_ON);
         assertEquals(config.getModifiedOn(), MODIFIED_ON);
         assertEquals(config.getVersion(), 2L);
@@ -45,14 +46,14 @@ public class AssessmentConfigTest {
         config.setVersion(2L);
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(config);
-        assertEquals(node.get("config").toString(), data.toString());
+        assertEquals(node.get("config"), data);
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("version").longValue(), 2L);
         assertEquals(node.get("type").textValue(), "AssessmentConfig");
         
         AssessmentConfig deser = BridgeObjectMapper.get().readValue(node.toString(), AssessmentConfig.class);
-        assertEquals(deser.getConfig().toString(), data.toString());
+        assertEquals(deser.getConfig(), data);
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getVersion(), 2L);
