@@ -26,8 +26,6 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -132,14 +130,13 @@ public class UploadController extends BaseController {
         // User can be a worker account (get study and health code from the upload itself)...
         UserSession session = getAuthenticatedSession();
         Upload upload = uploadService.getUpload(uploadId);
-        StudyIdentifier studyIdentifier;
+        String studyId;
         UploadCompletionClient uploadCompletionClient;
         if (session.isInRole(Roles.WORKER)) {
-            String studyId = upload.getStudyId();
+            studyId = upload.getStudyId();
             if (studyId == null) {
                 studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
             }
-            studyIdentifier = new StudyIdentifierImpl(studyId);
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
@@ -149,10 +146,10 @@ public class UploadController extends BaseController {
                 throw new UnauthorizedException();
             }
 
-            studyIdentifier = session.getStudyIdentifier();
+            studyId = session.getStudyIdentifier();
             uploadCompletionClient = UploadCompletionClient.APP;
         }
-        uploadService.uploadComplete(studyIdentifier, uploadCompletionClient, upload, redrive);
+        uploadService.uploadComplete(studyId, uploadCompletionClient, upload, redrive);
 
         // In async mode, we get the validation status (probably in validation_in_progress) and return immediately.
         // In sync mode, we poll until the validation status is complete (or failed or another non-transient status).
@@ -181,7 +178,7 @@ public class UploadController extends BaseController {
             }
             
             if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getStudyIdentifier().getIdentifier().equals(record.getStudyId())) {
+                !session.getStudyIdentifier().equals(record.getStudyId())) {
                 throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
             }
             uploadId = record.getUploadId();

@@ -92,7 +92,7 @@ public class BulkDownloadUtil {
             study.setIdentifier(uploadObj.studyId);
 
             UploadValidationContext ctx = new UploadValidationContext();
-            ctx.setStudy(study);
+            ctx.setStudy(uploadObj.studyId);
             ctx.setUpload(uploadObj.metadata);
 
             // Make temp dir within temp dir.

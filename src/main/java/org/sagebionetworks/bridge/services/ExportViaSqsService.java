@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /** Implementation of ExportService using SQS. */
 @Component
@@ -47,16 +46,16 @@ public class ExportViaSqsService implements ExportService {
 
     /** {@inheritDoc} */
     @Override
-    public void startOnDemandExport(StudyIdentifier studyId) throws JsonProcessingException {
+    public void startOnDemandExport(String studyId) throws JsonProcessingException {
         // endDateTime is set to 5 seconds ago, to account for clock skew.
         String endDateTimeStr = DateTime.now(BridgeConstants.LOCAL_TIME_ZONE).minusSeconds(5).toString();
 
         // Study whitelist is needed because we only export the given study.
         ArrayNode studyWhitelistNode = JSON_OBJECT_MAPPER.createArrayNode();
-        studyWhitelistNode.add(studyId.getIdentifier());
+        studyWhitelistNode.add(studyId);
 
         // Generate tag, for both logging here and for the BridgeEX request
-        String tag = "On-Demand Export studyId=" + studyId.getIdentifier() + " endDateTime=" + endDateTimeStr;
+        String tag = "On-Demand Export studyId=" + studyId + " endDateTime=" + endDateTimeStr;
 
         // Create exporter request as a JSON node.
         ObjectNode requestNode = JSON_OBJECT_MAPPER.createObjectNode();

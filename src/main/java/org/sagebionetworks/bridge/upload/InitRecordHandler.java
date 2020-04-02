@@ -48,7 +48,7 @@ public class InitRecordHandler implements UploadValidationHandler {
 
         // health data records fields
         record.setHealthCode(upload.getHealthCode());
-        record.setStudyId(context.getStudy().getIdentifier());
+        record.setStudyId(context.getStudy());
         // TODO: If we globalize Bridge, we'll need to make this timezone configurable.
         record.setUploadDate(LocalDate.now(BridgeConstants.LOCAL_TIME_ZONE));
         record.setUploadId(uploadId);

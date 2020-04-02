@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 @CrossOrigin
@@ -50,7 +49,7 @@ public class SchedulePlanController extends BaseController {
         Study study = studyService.getStudy(studyId);
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
-                study.getStudyIdentifier(), includeDeleted);
+                study.getIdentifier(), includeDeleted);
         return new ResourceList<>(plans);
     }
 
@@ -58,7 +57,7 @@ public class SchedulePlanController extends BaseController {
     public ResourceList<SchedulePlan> getSchedulePlans(@RequestParam(defaultValue = "false") boolean includeDeleted)
             throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         // We don't filter plans when we return a list of all of them for developers.
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId,
@@ -80,7 +79,7 @@ public class SchedulePlanController extends BaseController {
     @GetMapping("/v3/scheduleplans/{guid}")
     public SchedulePlan getSchedulePlan(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
         
         return schedulePlanService.getSchedulePlan(studyId, guid);
     }
@@ -101,7 +100,7 @@ public class SchedulePlanController extends BaseController {
     public StatusMessage deleteSchedulePlan(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
         
         if (physical && session.isInRole(ADMIN)) {
             schedulePlanService.deleteSchedulePlanPermanently(studyId, guid);

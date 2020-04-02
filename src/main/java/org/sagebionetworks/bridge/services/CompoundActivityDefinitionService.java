@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.CompoundActivityDefinitionValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -38,10 +37,10 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Creates a compound activity definition. */
-    public CompoundActivityDefinition createCompoundActivityDefinition(StudyIdentifier studyId,
+    public CompoundActivityDefinition createCompoundActivityDefinition(String studyId,
             CompoundActivityDefinition compoundActivityDefinition) {
         // Set study to prevent people from creating defs in other studies.
-        compoundActivityDefinition.setStudyId(studyId.getIdentifier());
+        compoundActivityDefinition.setStudyId(studyId);
 
         // validate def
         Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, compoundActivityDefinition);
@@ -51,7 +50,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Deletes a compound activity definition. */
-    public void deleteCompoundActivityDefinition(StudyIdentifier studyId, String taskId) {
+    public void deleteCompoundActivityDefinition(String studyId, String taskId) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
@@ -63,7 +62,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Deletes all compound activity definitions in the specified study. Used when we physically delete a study. */
-    public void deleteAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+    public void deleteAllCompoundActivityDefinitionsInStudy(String studyId) {
         // no user input - study comes from controller
 
         // call through to dao
@@ -71,7 +70,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** List all compound activity definitions in a study. */
-    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(String studyId) {
         // no user input - study comes from controller
 
         // call through to dao
@@ -79,7 +78,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Get a compound activity definition by ID. */
-    public CompoundActivityDefinition getCompoundActivityDefinition(StudyIdentifier studyId, String taskId) {
+    public CompoundActivityDefinition getCompoundActivityDefinition(String studyId, String taskId) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
@@ -90,7 +89,7 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Update a compound activity definition. */
-    public CompoundActivityDefinition updateCompoundActivityDefinition(StudyIdentifier studyId, String taskId,
+    public CompoundActivityDefinition updateCompoundActivityDefinition(String studyId, String taskId,
             CompoundActivityDefinition compoundActivityDefinition) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
@@ -99,7 +98,7 @@ public class CompoundActivityDefinitionService {
 
         // Set the studyId and taskId. This prevents people from updating the wrong def or updating a def in another
         // study.
-        compoundActivityDefinition.setStudyId(studyId.getIdentifier());
+        compoundActivityDefinition.setStudyId(studyId);
         compoundActivityDefinition.setTaskId(taskId);
 
         // validate def
@@ -109,7 +108,7 @@ public class CompoundActivityDefinitionService {
         return compoundActivityDefDao.updateCompoundActivityDefinition(compoundActivityDefinition);
     }
     
-    private void checkConstraintViolations(StudyIdentifier studyId, String taskId) {
+    private void checkConstraintViolations(String studyId, String taskId) {
         // You cannot physically delete a compound activity if it is referenced by a logically deleted schedule plan. 
         // It's possible the schedule plan could be restored. All you can do is logically delete the compound activity.
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);

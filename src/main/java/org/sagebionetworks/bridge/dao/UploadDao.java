@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -27,7 +26,7 @@ public interface UploadDao {
      *         upload ID this upload is a duplicate of, or null if it's not a dupe
      * @return upload metadata of created upload
      */
-    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId,
+    Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String studyId,
             @Nonnull String healthCode, @Nullable String originalUploadId);
 
     /**
@@ -48,7 +47,7 @@ public interface UploadDao {
     /**
      * Get the uploads for an entire study in the indicated time range.
      */
-    ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull StudyIdentifier studyId,
+    ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull String studyId,
             @Nonnull DateTime startTime, @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
 
     /**

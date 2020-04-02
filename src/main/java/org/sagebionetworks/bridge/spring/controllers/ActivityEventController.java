@@ -51,7 +51,7 @@ public class ActivityEventController extends BaseController {
     public String getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getStudyIdentifier().getIdentifier(),
+        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getStudyIdentifier(),
                 session.getHealthCode());
         
         // I do not like the fact we are serializing in the controller, but that's the only way to access

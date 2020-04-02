@@ -10,7 +10,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.AppConfigElementValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +27,13 @@ public class AppConfigElementService {
         this.appConfigElementDao = appConfigElementDao;
     }
     
-    public List<AppConfigElement> getMostRecentElements(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<AppConfigElement> getMostRecentElements(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         return appConfigElementDao.getMostRecentElements(studyId, includeDeleted);
     }
     
-    public VersionHolder createElement(StudyIdentifier studyId, AppConfigElement element) {
+    public VersionHolder createElement(String studyId, AppConfigElement element) {
         checkNotNull(studyId);
         checkNotNull(element);
         
@@ -44,7 +43,7 @@ public class AppConfigElementService {
         // Validate that ID exists before you try and use it to set the key
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        element.setStudyId(studyId.getIdentifier());
+        element.setStudyId(studyId);
         element.setId(element.getId());
         element.setVersion(null);
         element.setDeleted(false);
@@ -60,14 +59,14 @@ public class AppConfigElementService {
         return appConfigElementDao.saveElementRevision(element);
     }
 
-    public List<AppConfigElement> getElementRevisions(StudyIdentifier studyId, String id, boolean includeDeleted) {
+    public List<AppConfigElement> getElementRevisions(String studyId, String id, boolean includeDeleted) {
         checkNotNull(studyId);
         checkNotNull(id);
         
         return appConfigElementDao.getElementRevisions(studyId, id, includeDeleted);
     }
     
-    public AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id) {
+    public AppConfigElement getMostRecentElement(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -78,7 +77,7 @@ public class AppConfigElementService {
         return element;
     }
 
-    public AppConfigElement getElementRevision(StudyIdentifier studyId, String id, long revision) {
+    public AppConfigElement getElementRevision(String studyId, String id, long revision) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -89,7 +88,7 @@ public class AppConfigElementService {
         return element;
     }
 
-    public VersionHolder updateElementRevision(StudyIdentifier studyId, AppConfigElement element) {
+    public VersionHolder updateElementRevision(String studyId, AppConfigElement element) {
         checkNotNull(studyId);
         checkNotNull(element);
         
@@ -99,7 +98,7 @@ public class AppConfigElementService {
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        element.setStudyId(studyId.getIdentifier());
+        element.setStudyId(studyId);
         element.setId(element.getId());
         element.setModifiedOn(DateTime.now().getMillis());
         // cannot change the creation timestamp
@@ -107,7 +106,7 @@ public class AppConfigElementService {
         return appConfigElementDao.saveElementRevision(element);
     }
     
-    public void deleteElementRevision(StudyIdentifier studyId, String id, long revision) {
+    public void deleteElementRevision(String studyId, String id, long revision) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -117,7 +116,7 @@ public class AppConfigElementService {
         appConfigElementDao.saveElementRevision(existing);
     }
     
-    public void deleteElementAllRevisions(StudyIdentifier studyId, String id) {
+    public void deleteElementAllRevisions(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -130,7 +129,7 @@ public class AppConfigElementService {
         }
     }
     
-    public void deleteElementRevisionPermanently(StudyIdentifier studyId, String id, long revision) {
+    public void deleteElementRevisionPermanently(String studyId, String id, long revision) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -139,7 +138,7 @@ public class AppConfigElementService {
         appConfigElementDao.deleteElementRevisionPermanently(studyId, id, revision);
     }
     
-    public void deleteElementAllRevisionsPermanently(StudyIdentifier studyId, String id) {
+    public void deleteElementAllRevisionsPermanently(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         

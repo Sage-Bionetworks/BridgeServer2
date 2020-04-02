@@ -24,8 +24,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 @CrossOrigin
@@ -47,15 +45,12 @@ public class UserManagementController extends BaseController {
     public JsonNode signInForSuperAdmin() throws Exception {
         SignIn originSignIn = parseJson(SignIn.class);
         
-        // Persist the requested study
-        StudyIdentifier originStudy = new StudyIdentifierImpl(originSignIn.getStudyId());
-        
         // Adjust the sign in so it is always done against the API study.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
                 .withStudy(API_STUDY_ID_STRING).build();        
         
         Study study = studyService.getStudy(signIn.getStudyId());
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
 
         // We do not check consent, but do verify this is an administrator
         UserSession session = authenticationService.signIn(study, context, signIn);
@@ -66,7 +61,7 @@ public class UserManagementController extends BaseController {
         }
         
         // Now act as if the user is in the study that was requested
-        sessionUpdateService.updateStudy(session, originStudy);
+        sessionUpdateService.updateStudy(session, originSignIn.getStudyId());
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
@@ -90,7 +85,7 @@ public class UserManagementController extends BaseController {
 
         // Verify it's correct
         Study study = studyService.getStudy(studyId);
-        sessionUpdateService.updateStudy(session, study.getStudyIdentifier());
+        sessionUpdateService.updateStudy(session, study.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
     }

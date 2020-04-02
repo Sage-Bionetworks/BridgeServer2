@@ -5,8 +5,6 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SubstudyService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -42,8 +40,8 @@ public class ExternalIdValidator implements Validator {
             errors.rejectValue("identifier", msg);
         }
         if (!isV3) {
-            StudyIdentifier studyId = StringUtils.isBlank(extId.getStudyId()) ? 
-                    null : new StudyIdentifierImpl(extId.getStudyId());
+            String studyId = StringUtils.isBlank(extId.getStudyId()) ? 
+                    null : extId.getStudyId();
             if (StringUtils.isBlank(extId.getSubstudyId())) {
                 errors.rejectValue("substudyId", "cannot be null or blank");
             } else if (substudyService.getSubstudy(studyId, extId.getSubstudyId(), false) == null) {

@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
@@ -81,8 +81,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -106,7 +104,6 @@ public class StudyServiceMockTest extends Mockito {
 
     // Don't use TestConstants.TEST_STUDY since this conflicts with the whitelist.
     private static final String TEST_STUDY_ID = "test-study";
-    private static final StudyIdentifier TEST_STUDY_IDENTIFIER = new StudyIdentifierImpl(TEST_STUDY_ID);
 
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
@@ -398,7 +395,7 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void sendVerifyEmailNullType() throws Exception {
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, null);
+        service.sendVerifyEmail(TEST_STUDY_ID, null);
     }
 
     // This can be manually triggered through the API even though there's no consent
@@ -409,7 +406,7 @@ public class StudyServiceMockTest extends Mockito {
         study.setConsentNotificationEmail(null);
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
         
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_STUDY_ID, StudyEmailType.CONSENT_NOTIFICATION);
     }
     
     @Test
@@ -419,7 +416,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute.
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_STUDY_ID, StudyEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
         verifyEmailVerificationEmail(study.getConsentNotificationEmail());
@@ -466,7 +463,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -484,7 +481,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -502,7 +499,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test
@@ -520,7 +517,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
 
         ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
@@ -712,12 +709,12 @@ public class StudyServiceMockTest extends Mockito {
         // verify we called the correct dependent services
         verify(mockStudyDao).deleteStudy(study);
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
-                study.getStudyIdentifier());
-        verify(mockSubpopService).deleteAllSubpopulations(study.getStudyIdentifier());
-        verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
+                study.getIdentifier());
+        verify(mockSubpopService).deleteAllSubpopulations(study.getIdentifier());
+        verify(mockTopicService).deleteAllTopics(study.getIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
-        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
-        verify(mockFileService).deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_ID);
+        verify(mockFileService).deleteAllStudyFiles(TEST_STUDY_ID);
     }
 
     private Template createTemplate(String guid) {
@@ -1445,7 +1442,7 @@ public class StudyServiceMockTest extends Mockito {
         
         service.createStudy(study);
         
-        verify(mockUploadCertService, never()).createCmsKeyPair(TEST_STUDY);
+        verify(mockUploadCertService, never()).createCmsKeyPair(TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -1630,9 +1627,9 @@ public class StudyServiceMockTest extends Mockito {
 
         verify(mockStudyDao).deleteStudy(updatedStudy);
         verify(mockCompoundActivityDefinitionService)
-                .deleteAllCompoundActivityDefinitionsInStudy(updatedStudy.getStudyIdentifier());
-        verify(mockSubpopService).deleteAllSubpopulations(updatedStudy.getStudyIdentifier());
-        verify(mockTopicService).deleteAllTopics(updatedStudy.getStudyIdentifier());
+                .deleteAllCompoundActivityDefinitionsInStudy(updatedStudy.getIdentifier());
+        verify(mockSubpopService).deleteAllSubpopulations(updatedStudy.getIdentifier());
+        verify(mockTopicService).deleteAllTopics(updatedStudy.getIdentifier());
     }
 
     @Test

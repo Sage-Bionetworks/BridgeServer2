@@ -74,8 +74,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
@@ -216,7 +214,7 @@ public class ParticipantService {
         }
         Set<String> substudyIds = BridgeUtils.collectSubstudyIds(account);
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier())
+                .withStudyIdentifier(study.getIdentifier())
                 .withUserId(userId)
                 .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
@@ -239,7 +237,7 @@ public class ParticipantService {
         registration.setEndpoint(account.getPhone().getNumber());
 
         // Create registration.
-        notificationsService.createRegistration(study.getStudyIdentifier(), criteriaContext, registration);
+        notificationsService.createRegistration(study.getIdentifier(), criteriaContext, registration);
     }
 
     public StudyParticipant getParticipant(Study study, String userId, boolean includeHistory) {
@@ -286,13 +284,13 @@ public class ParticipantService {
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
-            copyHistoryToParticipant(builder, account, study.getStudyIdentifier());
+            copyHistoryToParticipant(builder, account, study.getIdentifier());
         }
         // Without requestInfo, we cannot reliably determine if the user is consented
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
             CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getStudyIdentifier())
+                .withStudyIdentifier(study.getIdentifier())
                 .withUserId(account.getId())
                 .withHealthCode(account.getHealthCode())
                 .withUserDataGroups(account.getDataGroups())
@@ -330,7 +328,7 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, StudyIdentifier studyId) {
+    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, String studyId) {
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         // The history includes all subpopulations whether they match the user or not.
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(studyId, false);
@@ -750,10 +748,8 @@ public class ParticipantService {
      * Get a history of all consent records for a given subpopulation, whether user is withdrawn or not.
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
-        final StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
+            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyId(), subpopGuid);
             boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
 
             return new UserConsentHistory.Builder()
@@ -796,7 +792,7 @@ public class ParticipantService {
 
         Account account = getAccountThrowingException(study.getIdentifier(), userId);
 
-        return notificationsService.sendNotificationToUser(study.getStudyIdentifier(), account.getHealthCode(), message);
+        return notificationsService.sendNotificationToUser(study.getIdentifier(), account.getHealthCode(), message);
     }
 
     /**
@@ -920,8 +916,7 @@ public class ParticipantService {
             return null;
         }
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        ExternalIdentifier identifier = externalIdService.getExternalId(studyId, externalId).orElse(null);
+        ExternalIdentifier identifier = externalIdService.getExternalId(account.getStudyId(), externalId).orElse(null);
         if (identifier == null) {
             return null;
         }
@@ -964,7 +959,7 @@ public class ParticipantService {
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
         return new CriteriaContext.Builder()
-            .withStudyIdentifier(study.getStudyIdentifier())
+            .withStudyIdentifier(study.getIdentifier())
             .withHealthCode(participant.getHealthCode())
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)

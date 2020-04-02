@@ -8,7 +8,8 @@ import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
-import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -44,7 +45,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AssessmentResourceService;
 
 public class AssessmentResourceControllerTest extends Mockito {
@@ -74,7 +74,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(new StudyIdentifierImpl(APP_ID));
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -211,7 +211,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourcesRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, null, null, null);
@@ -220,7 +220,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void createAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.createAssessmentResource(ASSESSMENT_ID);
@@ -229,7 +229,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.getAssessmentResource(ASSESSMENT_ID, GUID);
@@ -238,7 +238,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
@@ -247,7 +247,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void deleteAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
@@ -268,7 +268,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void publishAssessmentResourceRejectsSharedAppContext() throws Exception {
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.publishAssessmentResource(ASSESSMENT_ID);

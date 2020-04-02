@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.reports;
 import java.util.Objects;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -15,12 +14,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public final class ReportDataKey implements BridgeEntity {
     
-    private final StudyIdentifier studyId;
+    private final String studyId;
     private final String identifier;
     private final String healthCode;
     private final ReportType reportType;
     
-    private ReportDataKey(String healthCode, String identifier, StudyIdentifier studyId, ReportType reportType) {
+    private ReportDataKey(String healthCode, String identifier, String studyId, ReportType reportType) {
         this.studyId = studyId;
         this.identifier = identifier;
         this.healthCode = healthCode;
@@ -28,7 +27,7 @@ public final class ReportDataKey implements BridgeEntity {
     }
     
     @JsonIgnore
-    public StudyIdentifier getStudyId() {
+    public String getStudyId() {
         return studyId;
     }
 
@@ -48,13 +47,13 @@ public final class ReportDataKey implements BridgeEntity {
     @JsonIgnore
     public String getKeyString() {
         return (healthCode != null) ?
-                String.format("%s:%s:%s", healthCode, identifier, studyId.getIdentifier()) :
-                String.format("%s:%s", identifier, studyId.getIdentifier());
+                String.format("%s:%s:%s", healthCode, identifier, studyId) :
+                String.format("%s:%s", identifier, studyId);
     }
     
     @JsonIgnore
     public String getIndexKeyString() {
-        return String.format("%s:%s",studyId.getIdentifier(), reportType.name());
+        return String.format("%s:%s",studyId, reportType.name());
     }
     
     @Override
@@ -80,12 +79,12 @@ public final class ReportDataKey implements BridgeEntity {
     }
     
     public static class Builder {
-        private StudyIdentifier studyId;
+        private String studyId;
         private String identifier;
         private String healthCode;
         private ReportType reportType;
         
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
+        public Builder withStudyIdentifier(String studyId) {
             this.studyId = studyId;
             return this;
         }

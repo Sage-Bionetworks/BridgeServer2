@@ -9,7 +9,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.testng.Assert.assertEquals;
@@ -34,7 +33,7 @@ public class AccountSummaryTest {
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("sub1", "externalId"), "ABC", dateTime, UNVERIFIED, TEST_STUDY,
+                ImmutableMap.of("sub1", "externalId"), "ABC", dateTime, UNVERIFIED, TEST_STUDY_IDENTIFIER,
                 ImmutableSet.of("sub1", "sub2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
@@ -49,6 +48,7 @@ public class AccountSummaryTest {
         assertEquals(node.get("externalIds").get("sub1").textValue(), "externalId");
         assertEquals(node.get("createdOn").textValue(), dateTime.withZone(UTC).toString());
         assertEquals(node.get("status").textValue(), "unverified");
+        assertEquals(node.get("studyId").textValue(), TEST_STUDY_IDENTIFIER);
         assertEquals(node.get("studyIdentifier").get("identifier").textValue(), TEST_STUDY_IDENTIFIER);
         assertEquals(node.get("substudyIds").get(0).textValue(), "sub1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "sub2");
@@ -62,7 +62,7 @@ public class AccountSummaryTest {
     @Test
     public void serializationDoesntBreakOnNullExternalIdMap() {
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", SYNAPSE_USER_ID, PHONE,
-                null, "ABC", null, UNVERIFIED, TEST_STUDY, ImmutableSet.of("sub1", "sub2"));
+                null, "ABC", null, UNVERIFIED, TEST_STUDY_IDENTIFIER, ImmutableSet.of("sub1", "sub2"));
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
         assertNull(node.get("externalId"));
     }

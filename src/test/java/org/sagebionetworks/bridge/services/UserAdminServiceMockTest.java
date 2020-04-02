@@ -159,7 +159,7 @@ public class UserAdminServiceMockTest {
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
+        assertEquals(context.getStudyIdentifier(), study.getIdentifier());
         
         verify(consentService).consentToResearch(eq(study), eq(SubpopulationGuid.create("foo1")), any(StudyParticipant.class), any(),
                 eq(SharingScope.NO_SHARING), eq(false));
@@ -188,7 +188,7 @@ public class UserAdminServiceMockTest {
         verify(authenticationService).signIn(eq(study), contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
+        assertEquals(context.getStudyIdentifier(), study.getIdentifier());
         
         SignIn signIn = signInCaptor.getValue();
         assertEquals(signIn.getPhone(), participant.getPhone());
@@ -261,7 +261,7 @@ public class UserAdminServiceMockTest {
         verify(authenticationService).getSession(eq(study), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), study.getStudyIdentifier());
+        assertEquals(context.getStudyIdentifier(), study.getIdentifier());
         assertEquals(context.getAccountId().getId(), USER_ID);
     }
     
@@ -332,7 +332,7 @@ public class UserAdminServiceMockTest {
         verify(cacheProvider).removeSessionByUserId("userId");
         verify(requestInfoService).removeRequestInfo("userId");
         verify(healthDataService).deleteRecordsForHealthCode("healthCode");
-        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), "healthCode");
+        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");

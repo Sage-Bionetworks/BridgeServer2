@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -75,7 +76,7 @@ public class TranscribeConsentHandlerTest {
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
         inputRecord = HealthDataRecord.create();
         context = new UploadValidationContext();
-        context.setStudy(TestConstants.TEST_STUDY);
+        context.setStudy(TEST_STUDY_IDENTIFIER);
         context.setHealthCode(HEALTH_CODE);
         context.setHealthDataRecord(inputRecord);
     }

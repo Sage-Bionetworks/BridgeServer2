@@ -13,7 +13,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -76,8 +75,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -136,7 +133,7 @@ public class AuthenticationServiceMockTest {
     private static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(TestConstants.TEST_STUDY_IDENTIFIER, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
@@ -227,7 +224,7 @@ public class AuthenticationServiceMockTest {
         setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withLanguages(LANGUAGES)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
@@ -251,7 +248,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
@@ -302,7 +299,7 @@ public class AuthenticationServiceMockTest {
         setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY)
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
             .withLanguages(LANGUAGES)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
@@ -331,7 +328,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
@@ -426,10 +423,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void signOut() {
-        StudyIdentifier studyIdentifier = new StudyIdentifierImpl(STUDY_ID);
-        
         UserSession session = new UserSession();
-        session.setStudyIdentifier(studyIdentifier);
+        session.setStudyIdentifier(STUDY_ID);
         session.setReauthToken(TOKEN);
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
@@ -949,7 +944,7 @@ public class AuthenticationServiceMockTest {
         Account mockAccount = mock(Account.class);
 
         CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         TestUtils.mockEditAccount(accountService, mockAccount);
         doReturn(mockAccount).when(accountService).getAccount(any());
         
@@ -959,7 +954,7 @@ public class AuthenticationServiceMockTest {
         
         service.getSession(study, context);
         
-        verify(accountService).editAccount(eq(TestConstants.TEST_STUDY), eq("healthCode"), any());
+        verify(accountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq("healthCode"), any());
         verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
@@ -1015,14 +1010,14 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdRecordMissing() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
         service.generatePassword(study, EXTERNAL_ID, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordNoAccountDoNotCreateAccount() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         service.generatePassword(study, EXTERNAL_ID, false);
@@ -1030,9 +1025,9 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void generatePasswordAndAccountOK() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         IdentifierHolder idHolder = new IdentifierHolder("userId");
@@ -1049,9 +1044,9 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void generatePasswordAndAccountWhenExternalIdTaken() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(participantService.createParticipant(eq(study), participantCaptor.capture(), eq(false)))
@@ -1072,9 +1067,9 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void generatePasswordAndAccountWhenExternalIdMissing() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
             .thenReturn(Optional.empty());
         
         try {
@@ -1090,8 +1085,8 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void generatePasswordOK() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         
@@ -1121,9 +1116,9 @@ public class AuthenticationServiceMockTest {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(study.getIdentifier(), "substudyA", "id")));
@@ -1136,9 +1131,9 @@ public class AuthenticationServiceMockTest {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), EXTERNAL_ID);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setSubstudyId("substudyA");
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), EXTERNAL_ID))
+        when(externalIdService.getExternalId(study.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(accountService.getAccount(any())).thenReturn(account);
@@ -1265,7 +1260,7 @@ public class AuthenticationServiceMockTest {
         
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
@@ -1284,7 +1279,7 @@ public class AuthenticationServiceMockTest {
         assertTrue(session.isAuthenticated());
         assertEquals(session.getEnvironment(), Environment.LOCAL);
         assertEquals(session.getIpAddress(), IP_ADDRESS);
-        assertEquals(session.getStudyIdentifier(), TestConstants.TEST_STUDY);
+        assertEquals(session.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         
@@ -1299,7 +1294,7 @@ public class AuthenticationServiceMockTest {
 
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
         Account account = Account.create();
 
@@ -1325,7 +1320,7 @@ public class AuthenticationServiceMockTest {
 
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
         Account account = Account.create();
 
@@ -1352,7 +1347,7 @@ public class AuthenticationServiceMockTest {
             expectedExceptionsMessageRegExp="Account not found.")
     public void getSessionNotFound() {
         CriteriaContext context = new CriteriaContext.Builder().withUserId(USER_ID)
-                .withStudyIdentifier(TEST_STUDY).build();        
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();        
         
         service.getSession(study, context);
     }
@@ -1436,7 +1431,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
         
         // Note that the context does not have the healthCode, you must use the participant
-        verify(accountService).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(accountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq(HEALTH_CODE), any());
    }
     
    @Test

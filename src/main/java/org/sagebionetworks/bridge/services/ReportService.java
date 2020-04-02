@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ReportDataKeyValidator;
 import org.sagebionetworks.bridge.validators.ReportDataValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -87,7 +86,7 @@ public class ReportService {
     /**
      * Return set of study report records based on the provided local date range. Substudy memberships are enforced.
      */
-    public DateRangeResourceList<? extends ReportData> getStudyReport(StudyIdentifier studyId, String identifier,
+    public DateRangeResourceList<? extends ReportData> getStudyReport(String studyId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         
         RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
@@ -111,7 +110,7 @@ public class ReportService {
      * Return set of participant report records based on the provided local date range. Substudy memberships are
      * enforced.
      */
-    public DateRangeResourceList<? extends ReportData> getParticipantReport(StudyIdentifier studyId, String identifier,
+    public DateRangeResourceList<? extends ReportData> getParticipantReport(String studyId, String identifier,
             String healthCode, LocalDate startDate, LocalDate endDate) {
         
         RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
@@ -135,7 +134,7 @@ public class ReportService {
     /**
      * Return set of participant report records based on the provided datetime range. Substudy memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final StudyIdentifier studyId,
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String studyId,
             final String identifier, final String healthCode, final DateTime startTime, final DateTime endTime,
             final String offsetKey, final int pageSize) {
         
@@ -161,7 +160,7 @@ public class ReportService {
     /**
      * Return set of study report records based on the provided datetime range. Substudy memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final StudyIdentifier studyId,
+    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String studyId,
             final String identifier, final DateTime startTime, final DateTime endTime, final String offsetKey,
             final int pageSize) {
         
@@ -193,7 +192,7 @@ public class ReportService {
      * the user locks themselves out of the study we do not prevent it). On subsequent saves, the substudy 
      * memberships will be enforced based on the existing report index.
      */
-    public void saveStudyReport(StudyIdentifier studyId, String identifier, ReportData reportData) {
+    public void saveStudyReport(String studyId, String identifier, ReportData reportData) {
         checkNotNull(reportData);
         
         ReportDataKey key = new ReportDataKey.Builder()
@@ -222,7 +221,7 @@ public class ReportService {
      * no substudy memberships, or it must be a subset of the substudies assigned to the caller. If it is a 
      * subsequent record, then substudy memberships will be enforced based on the existing report index.
      */
-    public void saveParticipantReport(StudyIdentifier studyId, String identifier, String healthCode,
+    public void saveParticipantReport(String studyId, String identifier, String healthCode,
             ReportData reportData) {
         checkNotNull(reportData);
         
@@ -250,7 +249,7 @@ public class ReportService {
     /**
      * Delete all records for a study report. Substudy memberships will be enforced.
      */
-    public void deleteStudyReport(StudyIdentifier studyId, String identifier) {
+    public void deleteStudyReport(String studyId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
@@ -268,7 +267,7 @@ public class ReportService {
     /**
      * Delete one record of a study report. Substudy memberships will be enforced.
      */
-    public void deleteStudyReportRecord(StudyIdentifier studyId, String identifier, String date) {
+    public void deleteStudyReportRecord(String studyId, String identifier, String date) {
         if (StringUtils.isBlank(date)) {
             throw new BadRequestException(RECORD_DATE_MISSING_MSG);
         }
@@ -297,7 +296,7 @@ public class ReportService {
     /**
      * Return all report indices for the supplied type (participant or study). No substudy memberships are enforced.
      */
-    public ReportTypeResourceList<? extends ReportIndex> getReportIndices(StudyIdentifier studyId, ReportType reportType) {
+    public ReportTypeResourceList<? extends ReportIndex> getReportIndices(String studyId, ReportType reportType) {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
@@ -307,7 +306,7 @@ public class ReportService {
     /**
      * Delete all records of a participant report. Substudy memberships are enforced. 
      */
-    public void deleteParticipantReport(StudyIdentifier studyId, String identifier, String healthCode) {
+    public void deleteParticipantReport(String studyId, String identifier, String healthCode) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
@@ -325,7 +324,7 @@ public class ReportService {
     /**
      * Delete one record of a participant report. Substudy memberships are enforced. 
      */
-    public void deleteParticipantReportRecord(StudyIdentifier studyId, String identifier, String date, String healthCode) {
+    public void deleteParticipantReportRecord(String studyId, String identifier, String date, String healthCode) {
         if (StringUtils.isBlank(date)) {
             throw new BadRequestException(RECORD_DATE_MISSING_MSG);
         }
@@ -349,7 +348,7 @@ public class ReportService {
      * delete these because we cannot determine all individual records have been deleted without a table scan, 
      * but this method is provided for tests. 
      */
-    public void deleteParticipantReportIndex(StudyIdentifier studyId, String identifier) {
+    public void deleteParticipantReportIndex(String studyId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
              // force INDEX key to be generated event for participant index (healthCode not relevant for this)
                 .withHealthCode("dummy-value") 
@@ -368,7 +367,7 @@ public class ReportService {
      * Update a report index. Substudy memberships are enforced. Only a user who is not associated to any substudies 
      * may change the substudy associations of the report index.
      */
-    public void updateReportIndex(StudyIdentifier studyId, ReportType reportType, ReportIndex index) {
+    public void updateReportIndex(String studyId, ReportType reportType, ReportIndex index) {
         if (reportType == ReportType.PARTICIPANT) {
             index.setPublic(false);
         }

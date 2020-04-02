@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertEquals;
@@ -9,7 +10,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleImportStatus;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
@@ -33,7 +33,7 @@ public class SharedModuleControllerTest extends Mockito {
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 
@@ -47,7 +47,7 @@ public class SharedModuleControllerTest extends Mockito {
     @Test
     public void byIdAndVersion() throws Exception {
         // mock service
-        when(mockSvc.importModuleByIdAndVersion(TestConstants.TEST_STUDY, MODULE_ID, MODULE_VERSION)).thenReturn(
+        when(mockSvc.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, MODULE_ID, MODULE_VERSION)).thenReturn(
                 new SharedModuleImportStatus(SCHEMA_ID, SCHEMA_REV));
 
         // setup, execute, and validate
@@ -61,7 +61,7 @@ public class SharedModuleControllerTest extends Mockito {
     @Test
     public void latestPublished() throws Exception {
         // mock service
-        when(mockSvc.importModuleByIdLatestPublishedVersion(TestConstants.TEST_STUDY, MODULE_ID)).thenReturn(
+        when(mockSvc.importModuleByIdLatestPublishedVersion(TEST_STUDY_IDENTIFIER, MODULE_ID)).thenReturn(
                 new SharedModuleImportStatus(SCHEMA_ID, SCHEMA_REV));
 
         // setup, execute, and validate

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.FileMetadataDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 @Component
 public class HibernateFileMetadataDao implements FileMetadataDao {
@@ -34,24 +33,24 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     }
     
     @Override
-    public Optional<FileMetadata> getFile(StudyIdentifier studyId, String guid) {
+    public Optional<FileMetadata> getFile(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        Map<String, Object> params = ImmutableMap.of("studyId", studyId.getIdentifier(), "guid", guid);
+        Map<String, Object> params = ImmutableMap.of("studyId", studyId, "guid", guid);
 
         List<FileMetadata> files = hibernateHelper.queryGet(FROM_FILE+WITH_GUID, params, null, null, FileMetadata.class);
         return (files.isEmpty()) ? Optional.empty() : Optional.of(files.get(0));
     }
 
     @Override
-    public PagedResourceList<FileMetadata> getFiles(StudyIdentifier studyId, int offset, int limit, boolean includeDeleted) {
+    public PagedResourceList<FileMetadata> getFiles(String studyId, int offset, int limit, boolean includeDeleted) {
         checkNotNull(studyId);
         
         String countQuery = SELECT_COUNT+FROM_FILE + (!includeDeleted ? WO_DELETED : "");
         String getQuery = FROM_FILE + (!includeDeleted ? WO_DELETED : "") + ORDER_BY;
 
-        Map<String,Object> params = ImmutableMap.of("studyId", studyId.getIdentifier());
+        Map<String,Object> params = ImmutableMap.of("studyId", studyId);
         int count = hibernateHelper.queryCount(countQuery, params);
         
         List<FileMetadata> files = hibernateHelper.queryGet(getQuery, params, offset, limit, FileMetadata.class);
@@ -79,21 +78,21 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     }
 
     @Override
-    public void deleteFilePermanently(StudyIdentifier studyId, String guid) {
+    public void deleteFilePermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
         FileMetadata file = hibernateHelper.getById(FileMetadata.class, guid);
-        if (file == null || !file.getStudyId().equals(studyId.getIdentifier())) {
+        if (file == null || !file.getStudyId().equals(studyId)) {
             return;
         }
         hibernateHelper.deleteById(FileMetadata.class, guid);
     }
     
     @Override
-    public void deleteAllStudyFiles(StudyIdentifier studyId) {
+    public void deleteAllStudyFiles(String studyId) {
         checkNotNull(studyId);
         
-        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", studyId.getIdentifier()));   
+        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", studyId));   
     }
 }

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.BETWEEN;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.reports.ReportType.PARTICIPANT;
 import static org.sagebionetworks.bridge.models.reports.ReportType.STUDY;
 import static org.testng.Assert.assertEquals;
@@ -49,9 +49,9 @@ public class DynamoReportDataDaoTest extends Mockito {
     static final String REPORT_ID = "aReportId";
     static final String OFFSET_KEY = "anOffsetKey";
     static final ReportDataKey STUDY_REPORT_KEY = new ReportDataKey.Builder().withIdentifier(REPORT_ID)
-            .withReportType(STUDY).withStudyIdentifier(TEST_STUDY).build();
+            .withReportType(STUDY).withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
     static final ReportDataKey PARTICIPANT_REPORT_KEY = new ReportDataKey.Builder().withIdentifier(REPORT_ID)
-            .withHealthCode(HEALTH_CODE).withReportType(PARTICIPANT).withStudyIdentifier(TEST_STUDY).build();
+            .withHealthCode(HEALTH_CODE).withReportType(PARTICIPANT).withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
     
     DynamoReportData report0;
     DynamoReportData report1;

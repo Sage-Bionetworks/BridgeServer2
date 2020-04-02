@@ -38,8 +38,6 @@ import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ReportService;
 
 /**
@@ -140,16 +138,16 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternal(new StudyIdentifierImpl(studyId), userId, reportId, startDate,
+        return getParticipantReportInternal(studyId, userId, reportId, startDate,
                 endDate);
     }
 
-    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(StudyIdentifier studyId, String userId, String reportId,
+    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String studyId, String userId, String reportId,
             String startDateString, String endDateString) {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
-        Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(studyId, userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -174,18 +172,18 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternalV4(new StudyIdentifierImpl(studyId), userId, reportId, startTime, endTime,
+        return getParticipantReportInternalV4(studyId, userId, reportId, startTime, endTime,
                 offsetKey, pageSize);
     }
 
     // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
-    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(StudyIdentifier studyId, String userId, String reportId,
+    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String studyId, String userId, String reportId,
             String startTimeString, String endTimeString, String offsetKey, String pageSizeString) {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
-        Account account = accountService.getAccount(AccountId.forId(studyId.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(studyId, userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

@@ -27,7 +27,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.ImmutableMap;
@@ -61,7 +60,7 @@ public class UserSessionTest {
         session.setAuthenticated(true);
         session.setEnvironment(PROD);
         session.setIpAddress("ip address");
-        session.setStudyIdentifier(new StudyIdentifierImpl("study-key"));
+        session.setStudyIdentifier("study-key");
         session.setReauthToken("reauthToken");
         session.setConsentStatuses(statuses);
         

@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.models.accounts;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -13,9 +13,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoExternalIdentifier.class)
 public interface ExternalIdentifier extends BridgeEntity {
 
-    static ExternalIdentifier create(StudyIdentifier studyId, String identifier) {
-        checkNotNull(studyId);
-        return new DynamoExternalIdentifier(studyId.getIdentifier(), identifier);
+    static ExternalIdentifier create(String studyId, String identifier) {
+        if (isBlank(studyId)) {
+            throw new BadRequestException("studyId cannot be null or blank");
+        }
+        return new DynamoExternalIdentifier(studyId, identifier);
     }
     
     String getStudyId();

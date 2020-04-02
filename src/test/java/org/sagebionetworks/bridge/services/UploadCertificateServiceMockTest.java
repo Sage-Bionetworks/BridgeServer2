@@ -23,15 +23,12 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.s3.S3Helper;
 
 public class UploadCertificateServiceMockTest {
     // For safety, don't use api study. Otherwise, if we botch the test, we risk stomping over the api PEM keys again.
     private static final String STUDY_ID_STRING = "cert-test-study";
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(STUDY_ID_STRING);
-    private static final String PEM_FILENAME = UploadCertificateService.getPemFilename(STUDY_ID);
+    private static final String PEM_FILENAME = UploadCertificateService.getPemFilename(STUDY_ID_STRING);
 
     private AmazonS3 mockS3client;
     private UploadCertificateService svc;
@@ -72,7 +69,7 @@ public class UploadCertificateServiceMockTest {
 
     private void testCreateKeyPair() {
         // execute
-        svc.createCmsKeyPair(STUDY_ID);
+        svc.createCmsKeyPair(STUDY_ID_STRING);
 
         // verify key pair were created
         ArgumentCaptor<String> certCaptor = ArgumentCaptor.forClass(String.class);
@@ -96,7 +93,7 @@ public class UploadCertificateServiceMockTest {
                 true);
 
         // execute
-        svc.createCmsKeyPair(STUDY_ID);
+        svc.createCmsKeyPair(STUDY_ID_STRING);
 
         // We never upload to S3.
         verify(svc, never()).s3Put(any(), any(), any());
@@ -107,11 +104,11 @@ public class UploadCertificateServiceMockTest {
         S3Helper mockS3CmsHelper = mock(S3Helper.class);
         svc.setS3CmsHelper(mockS3CmsHelper);
         
-        svc.getPublicKeyAsPem(STUDY_ID);
+        svc.getPublicKeyAsPem(STUDY_ID_STRING);
         
         verify(mockS3CmsHelper).readS3FileAsString(
                 BridgeConfigFactory.getConfig().getProperty("upload.cms.cert.bucket"),
-                STUDY_ID.getIdentifier() + ".pem");
+                STUDY_ID_STRING + ".pem");
     }
     
     @Test(expectedExceptions = BridgeServiceException.class)
@@ -120,7 +117,7 @@ public class UploadCertificateServiceMockTest {
         svc.setS3CmsHelper(mockS3CmsHelper);
         
         when(mockS3CmsHelper.readS3FileAsString(any(), any())).thenThrow(new IOException());
-        svc.getPublicKeyAsPem(STUDY_ID);
+        svc.getPublicKeyAsPem(STUDY_ID_STRING);
     }
     
     @Test

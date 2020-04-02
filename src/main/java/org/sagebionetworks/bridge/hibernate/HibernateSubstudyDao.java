@@ -9,7 +9,6 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.SubstudyDao;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.models.substudies.SubstudyId;
 import org.springframework.stereotype.Component;
@@ -27,10 +26,10 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public List<Substudy> getSubstudies(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<Substudy> getSubstudies(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
-        Map<String,Object> parameters = ImmutableMap.of("studyId", studyId.getIdentifier());
+        Map<String,Object> parameters = ImmutableMap.of("studyId", studyId);
         String query = "from HibernateSubstudy as substudy where studyId=:studyId";
         if (!includeDeleted) {
             query += " and deleted != 1";
@@ -40,11 +39,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public Substudy getSubstudy(StudyIdentifier studyId, String id) {
+    public Substudy getSubstudy(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
 
-        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
+        SubstudyId substudyId = new SubstudyId(studyId, id);
         return hibernateHelper.getById(HibernateSubstudy.class, substudyId);
     }
     
@@ -65,11 +64,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public void deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
+    public void deleteSubstudyPermanently(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
-        SubstudyId substudyId = new SubstudyId(studyId.getIdentifier(), id);
+        SubstudyId substudyId = new SubstudyId(studyId, id);
         hibernateHelper.deleteById(HibernateSubstudy.class, substudyId);
     }
 }

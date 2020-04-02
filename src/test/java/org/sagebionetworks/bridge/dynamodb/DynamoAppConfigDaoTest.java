@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -77,7 +76,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         when(mockResults.iterator()).thenReturn(configs.iterator());
         when(mockMapper.query(eq(DynamoAppConfig.class), any())).thenReturn(mockResults);
         
-        List<AppConfig> results = dao.getAppConfigs(TEST_STUDY, true);
+        List<AppConfig> results = dao.getAppConfigs(TEST_STUDY_IDENTIFIER, true);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
@@ -95,7 +94,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         when(mockResults.iterator()).thenReturn(configs.iterator());
         when(mockMapper.query(eq(DynamoAppConfig.class), any())).thenReturn(mockResults);
         
-        List<AppConfig> results = dao.getAppConfigs(TEST_STUDY, false);
+        List<AppConfig> results = dao.getAppConfigs(TEST_STUDY_IDENTIFIER, false);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
@@ -118,7 +117,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         Criteria criteria = new DynamoCriteria();
         when(mockCriteriaDao.getCriteria(CRITERIA_KEY)).thenReturn(criteria);
         
-        AppConfig result = dao.getAppConfig(TEST_STUDY, GUID);
+        AppConfig result = dao.getAppConfig(TEST_STUDY_IDENTIFIER, GUID);
         
         assertSame(result, config);
         assertSame(result.getCriteria(), criteria);
@@ -130,13 +129,13 @@ public class DynamoAppConfigDaoTest extends Mockito {
         config.setGuid(GUID);
         when(mockMapper.load(KEY)).thenReturn(config);
         
-        AppConfig result = dao.getAppConfig(TEST_STUDY, GUID);
+        AppConfig result = dao.getAppConfig(TEST_STUDY_IDENTIFIER, GUID);
         assertNotNull(result.getCriteria());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAppConfigNotFound() {
-        dao.getAppConfig(TEST_STUDY, GUID);
+        dao.getAppConfig(TEST_STUDY_IDENTIFIER, GUID);
     }
     
     @Test
@@ -268,7 +267,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         saved.setCriteria(Criteria.create());
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfig(TEST_STUDY, GUID);
+        dao.deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockMapper).save(configCaptor.capture());
         assertTrue(configCaptor.getValue().isDeleted());
@@ -276,7 +275,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteAppConfigNotFound() {
-        dao.deleteAppConfig(TEST_STUDY, GUID);
+        dao.deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -285,7 +284,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         saved.setDeleted(true);
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfig(TEST_STUDY, GUID);
+        dao.deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
     }
     
     @Test
@@ -294,7 +293,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         saved.setGuid(GUID);
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfigPermanently(TEST_STUDY, GUID);
+        dao.deleteAppConfigPermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockMapper).delete(saved);
         verify(mockCriteriaDao).deleteCriteria(CRITERIA_KEY);
@@ -302,6 +301,6 @@ public class DynamoAppConfigDaoTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteAppConfigPermanentlyNotFound() {
-        dao.deleteAppConfigPermanently(TEST_STUDY, GUID);
+        dao.deleteAppConfigPermanently(TEST_STUDY_IDENTIFIER, GUID);
     }
 }

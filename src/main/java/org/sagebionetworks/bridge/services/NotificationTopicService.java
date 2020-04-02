@@ -27,7 +27,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.notifications.SubscriptionStatus;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
 import org.sagebionetworks.bridge.models.notifications.TopicSubscription;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationTopicValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -72,13 +71,13 @@ public class NotificationTopicService {
         this.snsClient = snsClient;
     }
     
-    public List<NotificationTopic> listTopics(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<NotificationTopic> listTopics(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         return topicDao.listTopics(studyId, includeDeleted);
     }
     
-    public NotificationTopic getTopic(StudyIdentifier studyId, String guid) {
+    public NotificationTopic getTopic(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -101,14 +100,14 @@ public class NotificationTopicService {
         return topicDao.updateTopic(topic);
     }
     
-    public void deleteTopic(StudyIdentifier studyId, String guid) {
+    public void deleteTopic(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
         topicDao.deleteTopic(studyId, guid);
     }
     
-    public void deleteTopicPermanently(StudyIdentifier studyId, String guid) {
+    public void deleteTopicPermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -118,13 +117,13 @@ public class NotificationTopicService {
     /**
      * Delete all the topics in the study permanently.
      */
-    public void deleteAllTopics(StudyIdentifier studyId) {
+    public void deleteAllTopics(String studyId) {
         checkNotNull(studyId);
         
         topicDao.deleteAllTopics(studyId);
     }
     
-    public void sendNotification(StudyIdentifier studyId, String guid, NotificationMessage message) {
+    public void sendNotification(String studyId, String guid, NotificationMessage message) {
         checkNotNull(studyId);
         checkNotNull(guid);
         checkNotNull(message);
@@ -139,7 +138,7 @@ public class NotificationTopicService {
         snsClient.publish(request);
     }
     
-    public List<SubscriptionStatus> currentSubscriptionStatuses(StudyIdentifier studyId, String healthCode, String registrationGuid) {
+    public List<SubscriptionStatus> currentSubscriptionStatuses(String studyId, String healthCode, String registrationGuid) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
@@ -164,7 +163,7 @@ public class NotificationTopicService {
      * match the criteria context will be subscribed. All other topics will be unsubscribed. This only considers
      * criteria-managed subscriptions. Manually-managed subscriptions will be untouched.
      */
-    public void manageCriteriaBasedSubscriptions(StudyIdentifier studyId, CriteriaContext context, String healthCode) {
+    public void manageCriteriaBasedSubscriptions(String studyId, CriteriaContext context, String healthCode) {
         checkNotNull(studyId);
         checkNotNull(context);
         checkNotNull(healthCode);
@@ -201,7 +200,7 @@ public class NotificationTopicService {
      * Unsubscribe the given registration from all topics. This is generally used before deleting a registration, to
      * clean up any orphaned subscriptions.
      */
-    public void unsubscribeAll(StudyIdentifier studyId, String healthCode, String registrationGuid) {
+    public void unsubscribeAll(String studyId, String healthCode, String registrationGuid) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
@@ -233,7 +232,7 @@ public class NotificationTopicService {
      * unsubscribed. Note that this only affects manual subscription topics. Topics managed by criteria are ignored by
      * this method.
      */
-    public List<SubscriptionStatus> subscribe(StudyIdentifier studyId, String healthCode, String registrationGuid,
+    public List<SubscriptionStatus> subscribe(String studyId, String healthCode, String registrationGuid,
             Set<String> desiredTopicGuidSet) {
         checkNotNull(studyId);
         checkNotNull(healthCode);

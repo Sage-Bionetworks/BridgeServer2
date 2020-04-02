@@ -7,7 +7,6 @@ import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.file.FileHelper;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,11 +56,11 @@ public class UploadValidationTaskFactory {
      *         upload metadata object for the upload
      * @return upload validation task, which will validate the upload
      */
-    public UploadValidationTask newTask(@Nonnull StudyIdentifier study, @Nonnull Upload upload) {
+    public UploadValidationTask newTask(@Nonnull String studyId, @Nonnull Upload upload) {
         // context
         UploadValidationContext context = new UploadValidationContext();
         context.setHealthCode(upload.getHealthCode());
-        context.setStudy(study);
+        context.setStudy(studyId);
         context.setUpload(upload);
 
         // task

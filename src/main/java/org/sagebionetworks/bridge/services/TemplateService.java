@@ -55,7 +55,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -214,7 +213,7 @@ public class TemplateService {
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
-            .withStudyIdentifier(study.getStudyIdentifier())
+            .withStudyIdentifier(study.getIdentifier())
             .build();
 
         Template template = getTemplateForUser(study, context, type)
@@ -264,7 +263,7 @@ public class TemplateService {
         return Optional.empty();
     }
     
-    public PagedResourceList<? extends Template> getTemplatesForType(StudyIdentifier studyId, TemplateType type,
+    public PagedResourceList<? extends Template> getTemplatesForType(String studyId, TemplateType type,
             Integer offset, Integer pageSize, boolean includeDeleted) {
         checkNotNull(studyId);
         checkNotNull(type);
@@ -288,7 +287,7 @@ public class TemplateService {
         return templates;
     }
     
-    public Template getTemplate(StudyIdentifier studyId, String guid) {
+    public Template getTemplate(String studyId, String guid) {
         checkNotNull(studyId);
         
         if (StringUtils.isBlank(guid)) {
@@ -311,7 +310,7 @@ public class TemplateService {
             revision.setMimeType(triple.getRight());
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
@@ -341,7 +340,7 @@ public class TemplateService {
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
-    public GuidVersionHolder updateTemplate(StudyIdentifier studyId, Template template) {
+    public GuidVersionHolder updateTemplate(String studyId, Template template) {
         checkNotNull(studyId);
         checkNotNull(template);
         
@@ -350,14 +349,14 @@ public class TemplateService {
         if (existing.isDeleted() && template.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
-        template.setStudyId(studyId.getIdentifier());
+        template.setStudyId(studyId);
         template.setModifiedOn(getTimestamp());
         // no reason for these to be updated after creation
         template.setTemplateType(existing.getTemplateType());
         template.setCreatedOn(existing.getCreatedOn());
         
         Study study = studyService.getStudy(studyId);
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
@@ -373,7 +372,7 @@ public class TemplateService {
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
-    public void deleteTemplate(StudyIdentifier studyId, String guid) {
+    public void deleteTemplate(String studyId, String guid) {
         // This not only verifies the template exists, it verifies it is in the caller's study
         Template existing = getTemplate(studyId, guid);
         if (existing.isDeleted()) {
@@ -390,7 +389,7 @@ public class TemplateService {
         templateDao.updateTemplate(existing);
     }
     
-    public void deleteTemplatePermanently(StudyIdentifier studyId, String guid) {
+    public void deleteTemplatePermanently(String studyId, String guid) {
         // Throws exception if template doesn't exist
         Template template = getTemplate(studyId, guid);
 
@@ -398,11 +397,11 @@ public class TemplateService {
         criteriaDao.deleteCriteria(getKey(template));
     }
     
-    public void deleteTemplatesForStudy(StudyIdentifier studyId) {
+    public void deleteTemplatesForStudy(String studyId) {
         templateDao.deleteTemplatesForStudy(studyId);
     }
 
-    private boolean isDefaultTemplate(Template template, StudyIdentifier studyId) {
+    private boolean isDefaultTemplate(Template template, String studyId) {
         Study study = studyService.getStudy(studyId);
         String defaultGuid = study.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
         

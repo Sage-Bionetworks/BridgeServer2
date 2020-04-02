@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.testng.Assert.assertEquals;
 
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ExportService;
@@ -22,7 +22,7 @@ public class ExportControllerTest extends Mockito {
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
 
         // mock service
@@ -32,7 +32,7 @@ public class ExportControllerTest extends Mockito {
         // execute and validate
         StatusMessage result = controller.startOnDemandExport();
         assertEquals(result.getMessage(), "Request submitted.");
-        verify(mockExportService).startOnDemandExport(TestConstants.TEST_STUDY);
+        verify(mockExportService).startOnDemandExport(TEST_STUDY_IDENTIFIER);
         verify(controller).getAuthenticatedSession(DEVELOPER);
     }
 }

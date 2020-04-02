@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
@@ -48,14 +47,14 @@ public class HibernateTemplateDao implements TemplateDao {
     }
     
     @Override
-    public PagedResourceList<? extends Template> getTemplates(StudyIdentifier studyId, TemplateType type,
+    public PagedResourceList<? extends Template> getTemplates(String studyId, TemplateType type,
             Integer offset, Integer pageSize, boolean includeDeleted) {
         checkNotNull(studyId);
         checkNotNull(type);
         
         ImmutableMap<String,Object> params = ImmutableMap.of(
                 TEMPLATE_TYPE, type, 
-                "studyId", studyId.getIdentifier());
+                "studyId", studyId);
         String countQuery = SELECT_COUNT + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         String getQuery = SELECT_TEMPLATE + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         
@@ -72,11 +71,11 @@ public class HibernateTemplateDao implements TemplateDao {
     }
     
     @Override
-    public Optional<Template> getTemplate(StudyIdentifier studyId, String guid) { 
+    public Optional<Template> getTemplate(String studyId, String guid) { 
         checkNotNull(guid);
         
         Template template = hibernateHelper.getById(HibernateTemplate.class, guid);
-        if (template != null && !template.getStudyId().equals(studyId.getIdentifier())) {
+        if (template != null && !template.getStudyId().equals(studyId)) {
             return Optional.empty();
         }
         return Optional.ofNullable(template);
@@ -97,7 +96,7 @@ public class HibernateTemplateDao implements TemplateDao {
     }
 
     @Override
-    public void deleteTemplatePermanently(StudyIdentifier studyId, String guid) {
+    public void deleteTemplatePermanently(String studyId, String guid) {
         checkNotNull(guid);
         
         Optional<Template> template = getTemplate(studyId, guid);
@@ -107,7 +106,7 @@ public class HibernateTemplateDao implements TemplateDao {
     }
     
     @Override
-    public void deleteTemplatesForStudy(StudyIdentifier studyId) {
-        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("studyId", studyId.getIdentifier()));
+    public void deleteTemplatesForStudy(String studyId) {
+        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("studyId", studyId));
     }
 }

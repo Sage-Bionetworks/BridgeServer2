@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
@@ -267,7 +266,7 @@ public class AccountServiceTest extends Mockito {
         AccountId accountId = AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, HEALTH_CODE);
         Account account = mockGetAccountById(accountId, false);
 
-        service.editAccount(TEST_STUDY, HEALTH_CODE, mockConsumer);
+        service.editAccount(TEST_STUDY_IDENTIFIER, HEALTH_CODE, mockConsumer);
 
         InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
         inOrder.verify(mockConsumer).accept(account);
@@ -276,7 +275,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        service.editAccount(TEST_STUDY, "bad-health-code", mockConsumer);
+        service.editAccount(TEST_STUDY_IDENTIFIER, "bad-health-code", mockConsumer);
 
         verify(mockConsumer, never()).accept(any());
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
@@ -924,7 +923,7 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setAccountSubstudies(ACCOUNT_SUBSTUDIES);
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
 
-        service.editAccount(TEST_STUDY, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
+        service.editAccount(TEST_STUDY_IDENTIFIER, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
 
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
         BridgeUtils.setRequestContext(null);

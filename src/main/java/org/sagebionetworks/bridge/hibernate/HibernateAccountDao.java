@@ -31,8 +31,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -227,9 +225,9 @@ public class HibernateAccountDao implements AccountDao {
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        StudyIdentifier studyId = null;
+        String studyId = null;
         if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
-            studyId = new StudyIdentifierImpl(hibernateAccount.getStudyId());
+            studyId = hibernateAccount.getStudyId();
         }
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 

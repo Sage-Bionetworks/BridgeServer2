@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -96,7 +95,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
         ObjectNode dataMap = (ObjectNode) record.getData();
         JsonNode infoJson = context.getInfoJsonNode();
-        StudyIdentifier studyId = context.getStudy();
+        String studyId = context.getStudy();
         Map<String, File> unzippedDataFileMap = context.getUnzippedDataFileMap();
 
         // Parse createdOn.
@@ -116,7 +115,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
     // Helper method to get a schema based on inputs from info.json.
     // Package-scoped to facilitate unit tests.
-    UploadSchema getUploadSchema(StudyIdentifier studyId, JsonNode infoJson) {
+    UploadSchema getUploadSchema(String studyId, JsonNode infoJson) {
         // Try getting by survey first.
         String surveyGuid = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_GUID);
         String surveyCreatedOn = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_CREATED_ON);

@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 @CrossOrigin
@@ -73,7 +72,7 @@ public class ScheduleController extends BaseController {
     
     private List<Schedule> getSchedulesInternal() {
         UserSession session = getAuthenticatedAndConsentedSession();
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
         
         ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
 

@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleImportStatus;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SharedModuleService;
 
 @CrossOrigin
@@ -30,7 +29,7 @@ public class SharedModuleController extends BaseController {
     public SharedModuleImportStatus importModuleByIdAndVersion(@PathVariable String moduleId,
             @PathVariable int moduleVersion) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         return moduleService.importModuleByIdAndVersion(studyId, moduleId, moduleVersion);
     }
@@ -39,7 +38,7 @@ public class SharedModuleController extends BaseController {
     @PostMapping("/v3/sharedmodules/{moduleId}/import")
     public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(@PathVariable String moduleId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         return moduleService.importModuleByIdLatestPublishedVersion(studyId, moduleId);
     }

@@ -80,8 +80,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
@@ -102,7 +100,6 @@ public class AuthenticationControllerTest extends Mockito {
     private static final String TEST_EMAIL = "email@email.com";
     private static final String TEST_SESSION_TOKEN = "session-token";
     private static final String TEST_STUDY_ID_STRING = "study-key";
-    private static final StudyIdentifier TEST_STUDY_ID = new StudyIdentifierImpl(TEST_STUDY_ID_STRING);
     private static final String TEST_TOKEN = "verify-token";
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder().withStudy(TEST_STUDY_ID_STRING)
             .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();
@@ -188,13 +185,12 @@ public class AuthenticationControllerTest extends Mockito {
         userSession.setSessionToken(TEST_SESSION_TOKEN);
         userSession.setParticipant(new StudyParticipant.Builder().withId(TEST_ACCOUNT_ID).build());
         userSession.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
-        userSession.setStudyIdentifier(TEST_STUDY_ID);
+        userSession.setStudyIdentifier(TEST_STUDY_ID_STRING);
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
         study.setDataGroups(TestConstants.USER_DATA_GROUPS);
         when(mockStudyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
-        when(mockStudyService.getStudy(TEST_STUDY_ID)).thenReturn(study);
         when(mockStudyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(Study.class));
         
         doReturn(metrics).when(controller).getMetrics();
@@ -502,7 +498,7 @@ public class AuthenticationControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     private void signInNewSession(boolean isConsented, Roles role) throws Exception {
         // Even if a session token already exists, we still ignore it and call signIn anyway.
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(String.class));
 
         // mock request
         String requestJsonString = "{\n" +
@@ -527,7 +523,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals("spId", requestInfo.getUserId());
-        assertEquals(TEST_STUDY_ID, requestInfo.getStudyIdentifier());
+        assertEquals(TEST_STUDY_ID_STRING, requestInfo.getStudyIdentifier());
         assertTrue(requestInfo.getSignedInOn() != null);
         assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
         assertNotNull(requestInfo.getSignedInOn());
@@ -681,7 +677,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void localSignInSetsSessionCookie() throws Exception {
         when(mockConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
-        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(StudyIdentifier.class));
+        doReturn(TEST_CONTEXT).when(controller).getCriteriaContext(any(String.class));
 
         // mock request
         String requestJsonString = "{" +
@@ -774,7 +770,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID.getIdentifier(), deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
     
@@ -802,7 +798,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.PHONE), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID.getIdentifier(), deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TestConstants.PHONE, deser.getPhone());
     }
     
@@ -1013,7 +1009,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier().getIdentifier());
+        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
@@ -1251,7 +1247,7 @@ public class AuthenticationControllerTest extends Mockito {
         // administrators.
         assertEquals(node.get("sessionToken").textValue(), "session-token");
         
-        verify(mockSessionUpdateService).updateStudy(userSession, newStudy.getStudyIdentifier());
+        verify(mockSessionUpdateService).updateStudy(userSession, newStudy.getIdentifier());
         
         verify(mockAuthService, never()).signOut(any());
         verify(mockAuthService, never()).getSessionFromAccount(any(), any(), any());
@@ -1329,7 +1325,7 @@ public class AuthenticationControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         session.setSessionToken(TEST_SESSION_TOKEN);
-        session.setStudyIdentifier(TEST_STUDY_ID);
+        session.setStudyIdentifier(TEST_STUDY_ID_STRING);
         if (status != null){
             session.setConsentStatuses(ImmutableMap.of(
                 SubpopulationGuid.create(status.getSubpopulationGuid()), status));    

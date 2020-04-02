@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -72,12 +70,13 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID)
-                .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER)).withCallerUserId("DefaultStudyBootstrapper").build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID_STRING)
+                .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
+                .withCallerUserId("DefaultStudyBootstrapper").build());
 
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
-            studyService.getStudy(API_STUDY_ID);
+            studyService.getStudy(API_STUDY_ID_STRING);
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Test Study");
@@ -112,7 +111,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
         try {
-            studyService.getStudy(SHARED_STUDY_ID);
+            studyService.getStudy(SHARED_STUDY_ID_STRING);
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Shared Module Library");

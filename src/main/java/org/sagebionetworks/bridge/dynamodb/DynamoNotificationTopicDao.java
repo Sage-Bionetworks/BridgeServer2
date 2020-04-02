@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.notifications.NotificationTopic;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -67,13 +66,13 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public List<NotificationTopic> listTopics(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<NotificationTopic> listTopics(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
 
         // Consistent reads is set to true, because this is the table's primary key, and having reliable tests is more
         // important than saving a small amount of DDB capacity.
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
-        hashKey.setStudyId(studyId.getIdentifier());
+        hashKey.setStudyId(studyId);
         
         DynamoDBQueryExpression<DynamoNotificationTopic> query = new DynamoDBQueryExpression<DynamoNotificationTopic>();
         query.withConsistentRead(true);
@@ -93,11 +92,11 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public NotificationTopic getTopic(StudyIdentifier studyId, String guid) {
+    public NotificationTopic getTopic(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        return getTopicInternal(studyId.getIdentifier(), guid);
+        return getTopicInternal(studyId, guid);
     }
 
     private NotificationTopic getTopicInternal(String studyId, String guid) {
@@ -160,11 +159,11 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
     
     @Override
-    public void deleteTopic(StudyIdentifier studyId, String guid) {
+    public void deleteTopic(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        NotificationTopic existing = getTopicInternal(studyId.getIdentifier(), guid);
+        NotificationTopic existing = getTopicInternal(studyId, guid);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(NotificationTopic.class);
         }
@@ -173,17 +172,17 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
 
     @Override
-    public void deleteTopicPermanently(StudyIdentifier studyId, String guid) {
+    public void deleteTopicPermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
-        NotificationTopic existing = getTopicInternal(studyId.getIdentifier(), guid);
+        NotificationTopic existing = getTopicInternal(studyId, guid);
         
         // Delete the DDB record first. If it fails an exception is thrown. If SNS fails, the SNS topic
         // is not deleted, but the DDB record has successfully deleted, so suppress the exception (just 
         // log it) because the topic has been deleted from Bridge without a referential integrity problem.
         DynamoNotificationTopic hashKey = new DynamoNotificationTopic();
-        hashKey.setStudyId(studyId.getIdentifier());
+        hashKey.setStudyId(studyId);
         hashKey.setGuid(guid);
         
         mapper.delete(hashKey);
@@ -204,7 +203,7 @@ public class DynamoNotificationTopicDao implements NotificationTopicDao {
     }
     
     @Override
-    public void deleteAllTopics(StudyIdentifier studyId) {
+    public void deleteAllTopics(String studyId) {
         checkNotNull(studyId);
         
         List<NotificationTopic> topics = listTopics(studyId, true);

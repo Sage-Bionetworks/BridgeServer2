@@ -9,8 +9,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -134,10 +132,6 @@ public final class ScheduleContext {
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
         public Builder withStudyIdentifier(String studyId) {
-            contextBuilder.withStudyIdentifier(new StudyIdentifierImpl(studyId));
-            return this;
-        }
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
             contextBuilder.withStudyIdentifier(studyId);
             return this;
         }

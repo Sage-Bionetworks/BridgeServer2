@@ -47,7 +47,7 @@ public class AssessmentController extends BaseController {
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -64,7 +64,7 @@ public class AssessmentController extends BaseController {
     public Assessment createAssessment() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -77,7 +77,7 @@ public class AssessmentController extends BaseController {
     public Assessment getAssessmentByGuid(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -88,7 +88,7 @@ public class AssessmentController extends BaseController {
     public Assessment updateAssessmentByGuid(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -104,7 +104,7 @@ public class AssessmentController extends BaseController {
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -122,7 +122,7 @@ public class AssessmentController extends BaseController {
     public Assessment createAssessmentRevision(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -142,7 +142,7 @@ public class AssessmentController extends BaseController {
     public Assessment publishAssessment(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -154,7 +154,7 @@ public class AssessmentController extends BaseController {
     public StatusMessage deleteAssessment(@PathVariable String guid, @RequestParam(required = false) String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -173,7 +173,7 @@ public class AssessmentController extends BaseController {
     public Assessment getLatestAssessment(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -187,7 +187,7 @@ public class AssessmentController extends BaseController {
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -204,7 +204,7 @@ public class AssessmentController extends BaseController {
     public Assessment getAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }

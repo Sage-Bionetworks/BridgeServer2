@@ -25,15 +25,13 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.FPHSService;
 
 @CrossOrigin
 @RestController
 public class FPHSController extends BaseController {
     
-    static final StudyIdentifier FPHS_ID = new StudyIdentifierImpl("fphs");
+    static final String FPHS_ID = "fphs";
     
     private static final TypeReference<List<FPHSExternalIdentifier>> EXTERNAL_ID_TYPE_REF = 
             new TypeReference<List<FPHSExternalIdentifier>>() {};

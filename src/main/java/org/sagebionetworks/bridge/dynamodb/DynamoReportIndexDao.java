@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
@@ -113,12 +112,12 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
     
     @Override
-    public ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType reportType) {
+    public ReportTypeResourceList<? extends ReportIndex> getIndices(String studyId, ReportType reportType) {
         checkNotNull(studyId);
         checkNotNull(reportType);
         
         // Don't use ReportDataKey because it enforces presence of healthCode for ReportType.PARTICIPANT.
-        String key = String.format("%s:%s", studyId.getIdentifier(), reportType.name());
+        String key = String.format("%s:%s", studyId, reportType.name());
         
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key);

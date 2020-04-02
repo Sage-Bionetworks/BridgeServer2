@@ -6,6 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -233,16 +234,16 @@ public class UploadHandlersEndToEndTest {
         // mock schema service
         UploadSchemaService mockUploadSchemaService = mock(UploadSchemaService.class);
         if (schema != null) {
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schema.getSchemaId(),
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY_IDENTIFIER, schema.getSchemaId(),
                     schema.getRevision())).thenReturn(schema);
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(TestConstants.TEST_STUDY,
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_IDENTIFIER,
                     schema.getSchemaId(), schema.getRevision())).thenReturn(schema);
         }
 
         // mock survey service
         SurveyService mockSurveyService = mock(SurveyService.class);
         if (survey != null) {
-            when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+            when(mockSurveyService.getSurvey(TEST_STUDY_IDENTIFIER,
                     new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn()), false, true))
                             .thenReturn(survey);
         }
@@ -271,7 +272,7 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(STUDY);
         strictValidationHandler.setStudyService(mockStudyService);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "test-substudy", "userId");
@@ -313,7 +314,7 @@ public class UploadHandlersEndToEndTest {
         taskFactory.setHealthDataService(mockHealthDataService);
 
         // create task, execute
-        UploadValidationTask task = taskFactory.newTask(TestConstants.TEST_STUDY, UPLOAD);
+        UploadValidationTask task = taskFactory.newTask(TEST_STUDY_IDENTIFIER, UPLOAD);
         task.run();
     }
 

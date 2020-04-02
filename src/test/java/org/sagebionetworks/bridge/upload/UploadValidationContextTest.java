@@ -54,7 +54,7 @@ public class UploadValidationContextTest {
         // create original
         UploadValidationContext original = new UploadValidationContext();
         original.setHealthCode(HEALTH_CODE);
-        original.setStudy(study);
+        original.setStudy(study.getIdentifier());
         original.setUpload(upload);
         original.setSuccess(false);
         original.addMessage("common message");
@@ -69,7 +69,7 @@ public class UploadValidationContextTest {
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
         assertEquals(copy.getHealthCode(), HEALTH_CODE);
-        assertSame(copy.getStudy(), study);
+        assertSame(copy.getStudy(), study.getIdentifier());
         assertSame(copy.getUpload(), upload);
         assertFalse(copy.getSuccess());
         assertSame(copy.getTempDir(), tempDir);

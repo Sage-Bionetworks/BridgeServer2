@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -44,7 +44,6 @@ import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -98,7 +97,7 @@ public class FPHSControllerTest extends Mockito {
         controller.setSessionUpdateService(sessionUpdateService);
         
         Study study = Study.create();
-        study.setIdentifier(FPHS_ID.getIdentifier());
+        study.setIdentifier(FPHS_ID);
 
         when(mockStudyService.getStudy(FPHS_ID)).thenReturn(study);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
@@ -110,7 +109,7 @@ public class FPHSControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode("BBB").build();
         
         UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(new StudyIdentifierImpl("fphs"));
+        session.setStudyIdentifier(FPHS_ID);
         session.setAuthenticated(true);
         
         doReturn(session).when(controller).getSessionIfItExists();
@@ -226,10 +225,10 @@ public class FPHSControllerTest extends Mockito {
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         mockRequestBody(mockRequest, ImmutableList.of(id1, id2));
         
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(Study.create());
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(Study.create());
         
         UserSession session = setUserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         // Now when we have an admin user, we get back results
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());

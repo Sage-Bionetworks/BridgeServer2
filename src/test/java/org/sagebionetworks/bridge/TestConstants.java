@@ -23,8 +23,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -55,15 +53,13 @@ public class TestConstants {
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
     public static final String TEST_STUDY_IDENTIFIER = "api";
-    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
     public static final String APP_ID = "api";
     
     public static final String SHARED_STUDY_IDENTIFIER = "shared";
-    public static final StudyIdentifier SHARED_STUDY = new StudyIdentifierImpl(SHARED_STUDY_IDENTIFIER);
     
     public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
-            .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withUserId("user-id").withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";

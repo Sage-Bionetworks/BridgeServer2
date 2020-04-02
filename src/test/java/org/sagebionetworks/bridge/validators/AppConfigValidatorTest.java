@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -118,7 +117,7 @@ public class AppConfigValidatorTest {
         appConfig.setConfigReferences(ImmutableList.of(ref1));
         appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
         
-        when(mockAppConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
+        when(mockAppConfigElementService.getElementRevision(TEST_STUDY_IDENTIFIER, "id:1", 1L))
                 .thenThrow(new EntityNotFoundException(AppConfigElement.class));
         
         // This succeeds because the mock does not throw an exception
@@ -179,7 +178,7 @@ public class AppConfigValidatorTest {
     
     @Test
     public void schemaDoesNotExistOnCreate() {
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY_IDENTIFIER, "guid", 3))
                 .thenThrow(new EntityNotFoundException(AppConfig.class));
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
@@ -189,7 +188,7 @@ public class AppConfigValidatorTest {
     
     @Test
     public void schemaDoesNotExistOnUpdate() {
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY_IDENTIFIER, "guid", 3))
             .thenThrow(new EntityNotFoundException(AppConfig.class));
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
@@ -215,7 +214,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnCreate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_STUDY_IDENTIFIER, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -226,7 +225,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnUpdate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_STUDY_IDENTIFIER, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -249,7 +248,7 @@ public class AppConfigValidatorTest {
     public void rejectsReferenceToLogicallyDeletedSurvey() {
         Survey survey = Survey.create();
         survey.setDeleted(true);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_STUDY_IDENTIFIER, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -261,7 +260,7 @@ public class AppConfigValidatorTest {
         UploadSchema schema = UploadSchema.create();
         schema.setDeleted(true);
         
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3)).thenReturn(schema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY_IDENTIFIER, "guid", 3)).thenReturn(schema);
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
         

@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.crypto.CertificateInfo;
 import org.sagebionetworks.bridge.crypto.KeyPairFactory;
 import org.sagebionetworks.bridge.crypto.PemUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +55,7 @@ public class UploadCertificateService {
     /**
      * Creates a CMS key pair for a particular study and save it in permanent storage.
      */
-    public void createCmsKeyPair(final StudyIdentifier studyIdentifier) {
+    public void createCmsKeyPair(final String studyIdentifier) {
         checkNotNull(studyIdentifier);
         String pemFilename = getPemFilename(studyIdentifier);
         if (!s3CmsClient.doesObjectExist(PRIVATE_KEY_BUCKET, pemFilename) ||
@@ -80,15 +79,15 @@ public class UploadCertificateService {
     }
 
     // Helper function to get the PEM filename. Package-scoped to facilitate unit tests.
-    static String getPemFilename(StudyIdentifier studyId) {
-        return studyId.getIdentifier() + ".pem";
+    static String getPemFilename(String studyId) {
+        return studyId + ".pem";
     }
 
     /**
      * Get the PEM file for the public key of the CMS key pair. Study developers need 
      * access to this certificate to encrypt data they send to us.
      */
-    public String getPublicKeyAsPem(StudyIdentifier studyIdentifier) {
+    public String getPublicKeyAsPem(String studyIdentifier) {
         try {
             return s3CmsHelper.readS3FileAsString(CERT_BUCKET, getPemFilename(studyIdentifier));
         } catch (IOException e) {

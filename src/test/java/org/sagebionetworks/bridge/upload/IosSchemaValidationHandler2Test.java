@@ -33,8 +33,6 @@ import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -63,8 +61,6 @@ public class IosSchemaValidationHandler2Test {
         DateTimeUtils.setCurrentMillisFixed(MOCK_NOW.getMillis());
 
         // set up common params for test context
-        // dummy study, all we need is the ID
-        StudyIdentifier study = new StudyIdentifierImpl(TEST_STUDY_ID);
 
         // For upload, we need uploadId, healthCode, and uploadDate
         DynamoUpload2 upload = new DynamoUpload2();
@@ -77,7 +73,7 @@ public class IosSchemaValidationHandler2Test {
         record.setData(BridgeObjectMapper.get().createObjectNode());
 
         context = new UploadValidationContext();
-        context.setStudy(study);
+        context.setStudy(TEST_STUDY_ID);
         context.setUpload(upload);
         context.setHealthDataRecord(record);
 
@@ -136,9 +132,9 @@ public class IosSchemaValidationHandler2Test {
 
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(study, "test-survey", 1))
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_ID, "test-survey", 1))
                 .thenReturn(surveySchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(study, "non-survey", 1))
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_ID, "non-survey", 1))
                 .thenReturn(nonSurveySchema);
 
         // mock upload file helper

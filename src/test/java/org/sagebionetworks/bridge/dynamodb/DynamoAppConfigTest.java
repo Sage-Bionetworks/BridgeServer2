@@ -23,8 +23,6 @@ import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
@@ -53,7 +51,7 @@ public class DynamoAppConfigTest {
     private static final List<FileReference> FILE_REFS = ImmutableList.of(
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl(TestUtils.randomName(DynamoAppConfigTest.class));
+    private static final String STUDY_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
     @Test
     public void hashCodeEquals() {
@@ -94,7 +92,7 @@ public class DynamoAppConfigTest {
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig appConfig = AppConfig.create();
-        appConfig.setStudyId(STUDY_ID.getIdentifier());
+        appConfig.setStudyId(STUDY_ID);
         appConfig.setLabel(LABEL);
         appConfig.setCriteria(criteria);
         appConfig.setCreatedOn(TIMESTAMP.getMillis());

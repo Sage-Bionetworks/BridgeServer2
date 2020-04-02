@@ -13,7 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.REQUEST_ID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TIMEZONE_MSK;
 import static org.sagebionetworks.bridge.TestConstants.UA;
@@ -166,7 +166,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void getSessionIfItExists() {
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -179,13 +179,13 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getAuthenticatedAndConsentedSession() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         UserSession returnedSession = controller.getAuthenticatedAndConsentedSession();
         assertEquals(session, returnedSession);
@@ -199,13 +199,13 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = ConsentRequiredException.class)
     public void getAuthenticatedAndConsentedSessionNotConsented() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         controller.getAuthenticatedAndConsentedSession();
     }
@@ -213,14 +213,14 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getAuthenticatedSessionRolesSucceeds() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         UserSession retrievedSession = controller.getAuthenticatedSession(Roles.DEVELOPER);
         assertEquals(session, retrievedSession);
@@ -229,14 +229,14 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getAuthenticatedSessionRolesFailsRolesMismatched() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getAuthenticatedSession(Roles.DEVELOPER);
     }
@@ -244,13 +244,13 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getAuthenticatedSessionRolesFailsNoCallerRole() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getAuthenticatedSession(Roles.DEVELOPER);
     }
@@ -264,13 +264,13 @@ public class BaseControllerTest extends Mockito {
     public void getAuthenticationNotAuthenticated() {
         study.setParticipantIpLockingEnabled(false);
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         session.setAuthenticated(false);
         
         controller.getAuthenticatedSession();
@@ -279,14 +279,14 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionEitherConsentedOrInRoleSucceedsOnRole() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.RESEARCHER);
         assertEquals(session, retrievedSession);
@@ -295,13 +295,13 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionEitherConsentedOrInRoleSucceedsOnConsent() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.RESEARCHER);
         assertEquals(session, retrievedSession);
@@ -310,14 +310,14 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getSessionEitherConsentedOrInRoleFails() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.ADMIN);
         assertEquals(session, retrievedSession);
@@ -348,14 +348,14 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void getLanguagesInits() {
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         when(mockRequest.getHeader(ACCEPT_LANGUAGE))
                 .thenReturn("fr-fr;q=0.4,fr;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         controller.getLanguages(session);
         
-        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq(HEALTH_CODE), any());
         verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -364,7 +364,7 @@ public class BaseControllerTest extends Mockito {
     
     @Test
     public void getLanguagesDoesNotOverwrite() {
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withLanguages(ImmutableList.of("fr"))
                 .withHealthCode(HEALTH_CODE).build());
         when(mockRequest.getHeader(ACCEPT_LANGUAGE))
@@ -385,9 +385,9 @@ public class BaseControllerTest extends Mockito {
                 .build());
         when(mockRequest.getHeader(BridgeConstants.X_FORWARDED_FOR_HEADER)).thenReturn(IP_ADDRESS);
         
-        CriteriaContext context = controller.getCriteriaContext(TEST_STUDY);
+        CriteriaContext context = controller.getCriteriaContext(TEST_STUDY_IDENTIFIER);
         
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(context.getLanguages(), ImmutableList.of("en"));
         assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
     }
@@ -396,7 +396,7 @@ public class BaseControllerTest extends Mockito {
     public void getCriteriaContextWithSession() {
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setIpAddress(IP_ADDRESS);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
@@ -410,7 +410,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
     }
 
     @Test
@@ -479,14 +479,14 @@ public class BaseControllerTest extends Mockito {
         
         session.setInternalSessionToken("internalSessionToken");
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         
         controller.writeSessionInfoToMetrics(session);
         
         ObjectNode node = metrics.getJson();
         assertEquals(node.get("session_id").textValue(), "internalSessionToken");
         assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("study").textValue(), TEST_STUDY.getIdentifier());
+        assertEquals(node.get("study").textValue(), TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -511,7 +511,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void setCookieAndRecordMetrics() {
         session.setSessionToken(SESSION_TOKEN);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
         controller.setCookieAndRecordMetrics(session);
@@ -535,7 +535,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void setCookieAndRecordMetricsNoCookieOutsideLocal() throws Exception {
         session.setSessionToken(SESSION_TOKEN);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
         
@@ -554,7 +554,7 @@ public class BaseControllerTest extends Mockito {
         when(requestInfoService.getRequestInfo(USER_ID)).thenReturn(existingInfo);
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).withLanguages(LANGUAGES)
                 .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
                 .withTimeZone(TIMEZONE_MSK).build());
@@ -568,7 +568,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(info.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(info.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(info.getTimeZone(), TIMEZONE_MSK);
-        assertEquals(info.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(info.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
     }
 
 
@@ -626,11 +626,11 @@ public class BaseControllerTest extends Mockito {
         
         session.setAuthenticated(true);
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getSessionIfItExists();
 
         // Mock study.
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         // Single arg success.
         assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
@@ -686,14 +686,14 @@ public class BaseControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withLanguages(ImmutableList.of()).build());
         session.setSessionToken(SESSION_TOKEN);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         
         // Verify as well that the values retrieved from the header have been saved in session and ParticipantOptions table.
         List<String> languages = controller.getLanguages(session);
         assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
-        verify(mockAccountService).editAccount(eq(TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq(HEALTH_CODE), any());
         assertEquals(account.getLanguages(), LANGUAGES);
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
@@ -711,7 +711,7 @@ public class BaseControllerTest extends Mockito {
                 .withHealthCode(HEALTH_CODE)
                 .withLanguages(Lists.newArrayList()).build();
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         // Execute test.
         List<String> languages = controller.getLanguages(session);
@@ -740,12 +740,12 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setIpAddress("original address");
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         study.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -758,12 +758,12 @@ public class BaseControllerTest extends Mockito {
         // Setup test
         session.setAuthenticated(true);
         session.setIpAddress("original address");
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         study.setParticipantIpLockingEnabled(true);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -776,12 +776,12 @@ public class BaseControllerTest extends Mockito {
         // Setup test
         session.setAuthenticated(true);
         session.setIpAddress("original address");
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         study.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
@@ -798,12 +798,12 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setIpAddress("same address");
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         study.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
@@ -824,16 +824,16 @@ public class BaseControllerTest extends Mockito {
                 .withRoles(roles).withId(USER_ID).build();
         session.setParticipant(participant);
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        session.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getAuthenticatedSession(false);
         
         context = BridgeUtils.getRequestContext();
         assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerStudyId(), TEST_STUDY.getIdentifier());
+        assertEquals(context.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
         assertTrue(context.isAdministrator());
         assertTrue(context.isInRole(DEVELOPER));
@@ -846,10 +846,10 @@ public class BaseControllerTest extends Mockito {
                 .build();
         session.setAuthenticated(true);
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         UserSession returned = controller.getAuthenticatedSession(false, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -859,10 +859,10 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = ConsentRequiredException.class)
     public void getSessionWithNoRolesConsentedOrRoleFails() {
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
@@ -874,10 +874,10 @@ public class BaseControllerTest extends Mockito {
                 .build();
         session.setAuthenticated(true);
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
@@ -889,10 +889,10 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -905,10 +905,10 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         session.setParticipant(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
         
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);

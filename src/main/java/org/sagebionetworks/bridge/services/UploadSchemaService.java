@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -59,7 +58,7 @@ public class UploadSchemaService {
      * UploadSchema object. If the revision isn't specified, we'll get the latest schema rev for the schema ID and use
      * that rev + 1.
      */
-    public UploadSchema createSchemaRevisionV4(StudyIdentifier studyId, UploadSchema schema) {
+    public UploadSchema createSchemaRevisionV4(String studyId, UploadSchema schema) {
         // Controller guarantees valid studyId and non-null uploadSchema
         checkNotNull(studyId, "studyId must be non-null");
         checkNotNull(schema, "uploadSchema must be non-null");
@@ -73,7 +72,7 @@ public class UploadSchemaService {
         }
 
         // Set study. This enforces that you can't create schemas outside of your study.
-        schema.setStudyId(studyId.getIdentifier());
+        schema.setStudyId(studyId);
 
         // validate schema
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -94,7 +93,7 @@ public class UploadSchemaService {
      * in a ConcurrentModificationException.
      * </p>
      */
-    public UploadSchema createOrUpdateUploadSchema(StudyIdentifier studyId, UploadSchema schema) {
+    public UploadSchema createOrUpdateUploadSchema(String studyId, UploadSchema schema) {
         // Controller guarantees valid studyId and non-null uploadSchema
         checkNotNull(studyId, "studyId must be non-null");
         checkNotNull(schema, "uploadSchema must be non-null");
@@ -109,7 +108,7 @@ public class UploadSchemaService {
         schema.setRevision(oldRev + 1);
 
         // Set study. This enforces that you can't create schemas outside of your study.
-        schema.setStudyId(studyId.getIdentifier());
+        schema.setStudyId(studyId);
 
         // validate schema
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
@@ -122,7 +121,7 @@ public class UploadSchemaService {
      * Private helper function to get the current schema revision of the specified schema ID. Returns 0 if the schema
      * doesn't exist. This is generally useful for validating the proper revision number for making updates.
      */
-    private int getCurrentSchemaRevision(StudyIdentifier studyId, String schemaId) {
+    private int getCurrentSchemaRevision(String studyId, String schemaId) {
         UploadSchema oldSchema = getUploadSchemaNoThrow(studyId, schemaId);
         if (oldSchema != null) {
             return oldSchema.getRevision();
@@ -142,7 +141,7 @@ public class UploadSchemaService {
      * creating a new schema revision.
      * </p>
      */
-    public UploadSchema createUploadSchemaFromSurvey(StudyIdentifier studyId, Survey survey, boolean newSchemaRev) {
+    public UploadSchema createUploadSchemaFromSurvey(String studyId, Survey survey, boolean newSchemaRev) {
         // https://sagebionetworks.jira.com/browse/BRIDGE-1698 - If the existing Schema ID points to a different survey
         // or a non-survey, this is an error. Having multiple surveys point to the same schema ID causes really bad
         // things to happen, and we need to prevent it.
@@ -215,21 +214,21 @@ public class UploadSchemaService {
      * Service handler for deleting all revisions of the upload schema with the specified study and schema ID. If there
      * are no schemas with this schema ID, this API throws an EntityNotFoundException.
      */
-    public void deleteUploadSchemaById(StudyIdentifier studyId, String schemaId) {
+    public void deleteUploadSchemaById(String studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
         List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
         uploadSchemaDao.deleteUploadSchemas(schemaList);
     }
 
-    public void deleteUploadSchemaByIdPermanently(StudyIdentifier studyId, String schemaId) {
+    public void deleteUploadSchemaByIdPermanently(String studyId, String schemaId) {
         // Schema ID is validated by getUploadSchemaAllRevisions()
 
         List<UploadSchema> schemaList = getSchemaRevisionsForDelete(studyId, schemaId);
         uploadSchemaDao.deleteUploadSchemasPermanently(schemaList);
     }
 
-    protected List<UploadSchema> getSchemaRevisionsForDelete(StudyIdentifier studyId, String schemaId) {
+    protected List<UploadSchema> getSchemaRevisionsForDelete(String studyId, String schemaId) {
         List<UploadSchema> schemaList = getUploadSchemaAllRevisions(studyId, schemaId, true);
 
         List<Integer> revisions = new ArrayList<>();
@@ -253,7 +252,7 @@ public class UploadSchemaService {
      * Service handler for deleting an upload schema with the specified study, schema ID, and revision. If the schema
      * doesn't exist, this API throws an EntityNotFoundException.
      */
-    public void deleteUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int rev) {
+    public void deleteUploadSchemaByIdAndRevision(String studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
         UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
@@ -263,7 +262,7 @@ public class UploadSchemaService {
         uploadSchemaDao.deleteUploadSchemas(ImmutableList.of(schema));    
     }
     
-    public void deleteUploadSchemaByIdAndRevisionPermanently(StudyIdentifier studyId, String schemaId, int rev) {
+    public void deleteUploadSchemaByIdAndRevisionPermanently(String studyId, String schemaId, int rev) {
         // Schema ID and rev are validated by getUploadSchemaByIdAndRev()
 
         UploadSchema schema = getRevisionForDeletion(studyId, schemaId, rev);
@@ -274,12 +273,12 @@ public class UploadSchemaService {
     }
 
     /** Returns all revisions of all schemas. */
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(String studyId, boolean includeDeleted) {
         return uploadSchemaDao.getAllUploadSchemasAllRevisions(studyId, includeDeleted);
     }
 
     /** Service handler for fetching the most recent revision of all upload schemas in a study. */
-    public List<UploadSchema> getUploadSchemasForStudy(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<UploadSchema> getUploadSchemasForStudy(String studyId, boolean includeDeleted) {
         // Get all schemas. No simple query for just latest schemas.
         List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(studyId, includeDeleted);
 
@@ -301,7 +300,7 @@ public class UploadSchemaService {
      * schema ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema
      * doesn't exist, this handler throws an InvalidEntityException.
      */
-    public UploadSchema getUploadSchema(StudyIdentifier studyId, String schemaId) {
+    public UploadSchema getUploadSchema(String studyId, String schemaId) {
         UploadSchema schema = getUploadSchemaNoThrow(studyId, schemaId);
         if (schema == null) {
             throw new EntityNotFoundException(UploadSchema.class);
@@ -313,7 +312,7 @@ public class UploadSchemaService {
      * Private helper method to get the latest version of an upload schema, but doesn't throw if the schema does not
      * exist. Note that it still validates the user inputs (schemaId) and will throw a BadRequestException.
      */
-    private UploadSchema getUploadSchemaNoThrow(StudyIdentifier studyId, String schemaId) {
+    private UploadSchema getUploadSchemaNoThrow(String studyId, String schemaId) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
@@ -325,7 +324,7 @@ public class UploadSchemaService {
      * exist. User inputs are validated (schemaId and revision) and the method will throw a BadRequestException if 
      * the schema is referenced as part of shared module metadata.
      */
-    private UploadSchema getRevisionForDeletion(StudyIdentifier studyId, String schemaId, int revision) {
+    private UploadSchema getRevisionForDeletion(String studyId, String schemaId, int revision) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
@@ -352,7 +351,7 @@ public class UploadSchemaService {
      * Service handler for fetching upload schemas. This method fetches all revisions of an an upload schema for
      * the specified study and schema ID. If the schema doesn't exist, this handler throws an EntityNotFoundException.
      */
-    public List<UploadSchema> getUploadSchemaAllRevisions(StudyIdentifier studyId, String schemaId, boolean includeDeleted) {
+    public List<UploadSchema> getUploadSchemaAllRevisions(String studyId, String schemaId, boolean includeDeleted) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
         }
@@ -368,7 +367,7 @@ public class UploadSchemaService {
      * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
      * throws an EntityNotFoundException
      */
-    public UploadSchema getUploadSchemaByIdAndRev(StudyIdentifier studyId, String schemaId, int revision) {
+    public UploadSchema getUploadSchemaByIdAndRev(String studyId, String schemaId, int revision) {
         UploadSchema schema = getUploadSchemaByIdAndRevNoThrow(studyId, schemaId, revision);
         if (schema == null) {
             throw new EntityNotFoundException(UploadSchema.class, "Can't find schema " + schemaId + "-v" + revision);
@@ -380,7 +379,7 @@ public class UploadSchemaService {
      * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
      * returns null.
      */
-    public UploadSchema getUploadSchemaByIdAndRevNoThrow(StudyIdentifier studyId, String schemaId,
+    public UploadSchema getUploadSchemaByIdAndRevNoThrow(String studyId, String schemaId,
             int revision) {
         if (StringUtils.isBlank(schemaId)) {
             throw new BadRequestException("Schema ID must be specified");
@@ -397,7 +396,7 @@ public class UploadSchemaService {
      * schema revision for the specified schema ID, then checks the schema's min/maxAppVersion against the clientInfo.
      * If multiple schema revisions match, it returns the latest one.
      */
-    public UploadSchema getLatestUploadSchemaRevisionForAppVersion(StudyIdentifier studyId, String schemaId,
+    public UploadSchema getLatestUploadSchemaRevisionForAppVersion(String studyId, String schemaId,
             ClientInfo clientInfo) {
         checkNotNull(studyId, "Study ID must be specified");
         checkNotNull(clientInfo, "Client Info must be specified");
@@ -442,7 +441,7 @@ public class UploadSchemaService {
      * Updating a schema revision that doesn't exist throws an EntityNotFoundException.
      * </p>
      */
-    public UploadSchema updateSchemaRevisionV4(StudyIdentifier studyId, String schemaId, int revision,
+    public UploadSchema updateSchemaRevisionV4(String studyId, String schemaId, int revision,
             UploadSchema schemaToUpdate) {
         // Controller guarantees valid studyId and non-null uploadSchema
         checkNotNull(studyId, "studyId must be non-null");
@@ -461,7 +460,7 @@ public class UploadSchemaService {
         }
 
         // Set study ID, schema ID, and revision. This ensures we are updating the correct schema in the correct study.
-        schemaToUpdate.setStudyId(studyId.getIdentifier());
+        schemaToUpdate.setStudyId(studyId);
         schemaToUpdate.setSchemaId(schemaId);
         schemaToUpdate.setRevision(revision);
 
@@ -508,7 +507,7 @@ public class UploadSchemaService {
 
         // If we have any errors, concat them together and throw a 400 bad request.
         if (!errorMessageList.isEmpty()) {
-            throw new BadRequestException("Can't update study " + studyId.getIdentifier() + " schema " + schemaId +
+            throw new BadRequestException("Can't update study " + studyId + " schema " + schemaId +
                     " revision " + revision + ": " + BridgeUtils.SEMICOLON_SPACE_JOINER.join(errorMessageList));
         }
 

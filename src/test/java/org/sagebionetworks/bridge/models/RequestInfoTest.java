@@ -13,8 +13,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
@@ -24,7 +22,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class RequestInfoTest {
 
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "userId";
     private static final ClientInfo CLIENT_INFO = ClientInfo.parseUserAgentString("app/20");
     private static final String USER_AGENT_STRING = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36";
@@ -66,12 +64,8 @@ public class RequestInfoTest {
         assertEquals(node.get("timeZone").textValue(), "+03:00");
         assertEquals(node.get("type").textValue(), "RequestInfo");
         assertEquals(node.get("userAgent").textValue(), USER_AGENT_STRING);
+        assertEquals(node.get("studyIdentifier").textValue(), "test-study");
         assertEquals(node.size(), 12);
-        
-        JsonNode studyIdNode = node.get("studyIdentifier");
-        assertEquals(studyIdNode.get("identifier").textValue(), "test-study");
-        assertEquals(studyIdNode.get("type").textValue(), "StudyIdentifier");
-        assertEquals(studyIdNode.size(), 2);
         
         JsonNode clientInfoNode = node.get("clientInfo");
         assertEquals(clientInfoNode.get("appName").textValue(), "app");

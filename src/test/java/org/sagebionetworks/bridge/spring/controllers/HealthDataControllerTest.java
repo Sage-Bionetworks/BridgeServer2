@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -130,11 +130,11 @@ public class HealthDataControllerTest extends Mockito {
 
         // Mock services.
         when(mockParticipantService.getParticipant(same(STUDY), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(STUDY);
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         mockSession.setParticipant(PARTICIPANT);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
@@ -217,7 +217,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate call to healthDataService
         ArgumentCaptor<HealthDataSubmission> submissionCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
-        verify(mockHealthDataService).submitHealthData(eq(TEST_STUDY), same(PARTICIPANT), submissionCaptor.capture());
+        verify(mockHealthDataService).submitHealthData(eq(TEST_STUDY_IDENTIFIER), same(PARTICIPANT), submissionCaptor.capture());
 
         HealthDataSubmission submission = submissionCaptor.getValue();
         assertEquals(submission.getAppVersion(), APP_VERSION);
@@ -272,7 +272,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate call to healthDataService
         ArgumentCaptor<HealthDataSubmission> submissionCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
-        verify(mockHealthDataService).submitHealthData(eq(TestConstants.TEST_STUDY), same(OTHER_PARTICIPANT),
+        verify(mockHealthDataService).submitHealthData(eq(TEST_STUDY_IDENTIFIER), same(OTHER_PARTICIPANT),
                 submissionCaptor.capture());
 
         HealthDataSubmission submission = submissionCaptor.getValue();

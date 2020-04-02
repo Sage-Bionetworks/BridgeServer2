@@ -42,7 +42,7 @@ public class DecryptHandlerTest {
         DynamoStudy study = TestUtils.getValidStudy(DecryptHandlerTest.class);
 
         UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setStudy(study);
+        ctx.setStudy(study.getIdentifier());
         ctx.setTempDir(tmpDir);
         ctx.setDataFile(dataFile);
 

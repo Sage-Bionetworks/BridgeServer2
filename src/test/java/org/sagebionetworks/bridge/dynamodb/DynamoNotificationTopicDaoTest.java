@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 import static org.testng.Assert.assertEquals;
@@ -179,7 +178,7 @@ public class DynamoNotificationTopicDaoTest {
         doReturn(results).when(mockQueryResultPage).getResults();
         doReturn(mockQueryResultPage).when(mockMapper).queryPage(eq(DynamoNotificationTopic.class), any());
         
-        dao.deleteAllTopics(TEST_STUDY);
+        dao.deleteAllTopics(TEST_STUDY_IDENTIFIER);
         
         verify(mockMapper, times(2)).delete(topicCaptor.capture());
         NotificationTopic captured = topicCaptor.getAllValues().get(0);
@@ -203,7 +202,7 @@ public class DynamoNotificationTopicDaoTest {
         NotificationTopic existingTopic = getNotificationTopic();
         when(mockMapper.load(any())).thenReturn(existingTopic);
         
-        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
+        dao.deleteTopic(TEST_STUDY_IDENTIFIER, "ABC-DEF");
         
         verify(mockMapper).save(topicCaptor.capture());
         assertTrue(topicCaptor.getValue().isDeleted());
@@ -215,12 +214,12 @@ public class DynamoNotificationTopicDaoTest {
         existingTopic.setDeleted(true);
         when(mockMapper.load(any())).thenReturn(existingTopic);
         
-        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
+        dao.deleteTopic(TEST_STUDY_IDENTIFIER, "ABC-DEF");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteTopicNotFound() {
-        dao.deleteTopic(TEST_STUDY, "ABC-DEF");
+        dao.deleteTopic(TEST_STUDY_IDENTIFIER, "ABC-DEF");
     }
     
     @Test
@@ -228,7 +227,7 @@ public class DynamoNotificationTopicDaoTest {
         NotificationTopic topic = getNotificationTopic();
         doReturn(topic).when(mockMapper).load(any());
 
-        dao.deleteTopicPermanently(TEST_STUDY, "anything");
+        dao.deleteTopicPermanently(TEST_STUDY_IDENTIFIER, "anything");
         
         verify(mockSnsClient).deleteTopic(deleteTopicRequestCaptor.capture());
         DeleteTopicRequest capturedRequest = deleteTopicRequestCaptor.getValue();
@@ -242,7 +241,7 @@ public class DynamoNotificationTopicDaoTest {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteTopicPermanentlyNotFound() {
-        dao.deleteTopicPermanently(TEST_STUDY, "anything");
+        dao.deleteTopicPermanently(TEST_STUDY_IDENTIFIER, "anything");
     }
 
     @Test
@@ -254,7 +253,7 @@ public class DynamoNotificationTopicDaoTest {
         when(mockMapper.load(any())).thenReturn(existingTopic);
 
         // Execute.
-        dao.deleteTopicPermanently(TEST_STUDY, GUID_WITH_CRITERIA);
+        dao.deleteTopicPermanently(TEST_STUDY_IDENTIFIER, GUID_WITH_CRITERIA);
 
         // Verify criteria DAO.
         verify(mockCriteriaDao).deleteCriteria(DynamoNotificationTopicDao.CRITERIA_KEY_PREFIX +
@@ -267,7 +266,7 @@ public class DynamoNotificationTopicDaoTest {
         topic.setCriteria(null);
         doReturn(topic).when(mockMapper).load(any());
         
-        NotificationTopic updated = dao.getTopic(TEST_STUDY, topic.getGuid());
+        NotificationTopic updated = dao.getTopic(TEST_STUDY_IDENTIFIER, topic.getGuid());
         assertEquals(updated.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(updated.getGuid(), "topicGuid");
         assertNull(updated.getCriteria());
@@ -280,7 +279,7 @@ public class DynamoNotificationTopicDaoTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getTopicNotFound() {
-        dao.getTopic(TEST_STUDY, getNotificationTopic().getGuid());
+        dao.getTopic(TEST_STUDY_IDENTIFIER, getNotificationTopic().getGuid());
     }
     
     @Test
@@ -292,7 +291,7 @@ public class DynamoNotificationTopicDaoTest {
         when(mockMapper.load(any())).thenReturn(topic);
 
         // Execute and validate.
-        NotificationTopic result = dao.getTopic(TEST_STUDY, GUID_WITH_CRITERIA);
+        NotificationTopic result = dao.getTopic(TEST_STUDY_IDENTIFIER, GUID_WITH_CRITERIA);
         assertEquals(result.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(result.getGuid(), GUID_WITH_CRITERIA);
         assertCriteria(GUID_WITH_CRITERIA, result.getCriteria());
@@ -303,7 +302,7 @@ public class DynamoNotificationTopicDaoTest {
         mockListCall();
 
         // Execute and verify.
-        dao.listTopics(TEST_STUDY, false);
+        dao.listTopics(TEST_STUDY_IDENTIFIER, false);
 
         // Verify query.
         verify(mockMapper).queryPage(eq(DynamoNotificationTopic.class), queryExpressionCaptor.capture());
@@ -328,7 +327,7 @@ public class DynamoNotificationTopicDaoTest {
         mockListCall(topicWithoutCriteria, topicWithCriteria);
 
         // Execute and verify.
-        List<NotificationTopic> topics = dao.listTopics(TEST_STUDY, true);
+        List<NotificationTopic> topics = dao.listTopics(TEST_STUDY_IDENTIFIER, true);
         assertEquals(topics.size(), 2);
 
         assertEquals(topics.get(0).getGuid(), GUID_WITHOUT_CRITERIA);
@@ -377,7 +376,7 @@ public class DynamoNotificationTopicDaoTest {
         doThrow(new RuntimeException()).when(mockMapper).delete(any());
         
         try {
-            dao.deleteTopicPermanently(TEST_STUDY, "guid");
+            dao.deleteTopicPermanently(TEST_STUDY_IDENTIFIER, "guid");
             fail("Should have thrown exception");
         } catch(RuntimeException e) {
             // expected exception
@@ -391,7 +390,7 @@ public class DynamoNotificationTopicDaoTest {
         doReturn(getNotificationTopic()).when(mockMapper).load(any());
         doThrow(new AmazonServiceException("error")).when(mockSnsClient).deleteTopic(any(DeleteTopicRequest.class));
         
-        dao.deleteTopicPermanently(TEST_STUDY, "guid");
+        dao.deleteTopicPermanently(TEST_STUDY_IDENTIFIER, "guid");
         
         verify(mockMapper).delete(any());
     }

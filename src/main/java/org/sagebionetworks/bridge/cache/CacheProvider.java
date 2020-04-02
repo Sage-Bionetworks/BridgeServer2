@@ -21,6 +21,8 @@ import org.sagebionetworks.bridge.redis.JedisTransaction;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * A wrapper around our use of Redis.
@@ -76,6 +78,7 @@ public class CacheProvider {
     public RequestInfo getRequestInfo(String userId) {
         checkNotNull(userId);
         CacheKey redisKey = CacheKey.requestInfo(userId);
+        
         return getObject(redisKey, RequestInfo.class);
     }
 
@@ -124,7 +127,9 @@ public class CacheProvider {
                 CacheKey userIdToSessionKey = CacheKey.userIdToSession(userId);
                 String ser = jedisOps.get(userIdToSessionKey.toString());
                 if (ser != null) {
-                    UserSession session = BridgeObjectMapper.get().readValue(ser, UserSession.class);
+                    JsonNode node = adjustJsonWithStudyIdentifier(ser);
+                    UserSession session = BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
+                    
                     // The token --> userId look up is not replaced on session invalidation. 
                     // Check here and only return if the sessionToken is valid. It is possible 
                     // to successfully sign in and then have this fail due to concurrent requests.
@@ -139,6 +144,7 @@ public class CacheProvider {
             }
             return null;
         } catch (Throwable e) {
+            e.printStackTrace();
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
@@ -153,11 +159,27 @@ public class CacheProvider {
             if (ser == null) {
                 return null;
             }
-            return BridgeObjectMapper.get().readValue(ser, UserSession.class);
+            JsonNode node = adjustJsonWithStudyIdentifier(ser);
+            return BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
+    }
+
+    // During a transition period away from StudyIdentifier, we will need special handling to 
+    // ensure persisted sessions are retrieved correctly. This can be removed after a couple
+    // of days.
+    private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree(ser);
+        JsonNode studyObj = node.get("studyIdentifier");
+        if (studyObj != null && studyObj.isObject()) {
+            JsonNode idObj = studyObj.get("identifier");
+            if (idObj != null) {
+                ((ObjectNode)node).put("studyIdentifier", idObj.textValue());    
+            }
+        }
+        return node;
     }
     
     public void removeSession(UserSession session) {
@@ -214,7 +236,8 @@ public class CacheProvider {
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
-                return BridgeObjectMapper.get().readValue(ser, clazz);
+                JsonNode node = adjustJsonWithStudyIdentifier(ser);                
+                return BridgeObjectMapper.get().treeToValue(node, clazz);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

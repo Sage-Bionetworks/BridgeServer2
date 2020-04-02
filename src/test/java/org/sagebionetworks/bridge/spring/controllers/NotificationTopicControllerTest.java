@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -83,7 +82,7 @@ public class NotificationTopicControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         doReturn(Environment.UAT).when(mockBridgeConfig).getEnvironment();
-        doReturn(TEST_STUDY).when(mockUserSession).getStudyIdentifier();
+        doReturn(TEST_STUDY_IDENTIFIER).when(mockUserSession).getStudyIdentifier();
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -104,11 +103,11 @@ public class NotificationTopicControllerTest extends Mockito {
     public void getAllTopicsIncludeDeleted() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
-        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, true);
+        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY_IDENTIFIER, true);
 
         ResourceList<NotificationTopic> result = controller.getAllTopics(true);
 
-        verify(mockTopicService).listTopics(TEST_STUDY, true);
+        verify(mockTopicService).listTopics(TEST_STUDY_IDENTIFIER, true);
         assertEquals(result.getItems().size(), 1);
         assertEquals(result.getItems().get(0).getGuid(), topic.getGuid());
     }
@@ -117,12 +116,12 @@ public class NotificationTopicControllerTest extends Mockito {
     public void getAllTopicsExcludeDeleted() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         NotificationTopic topic = getNotificationTopic();
-        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY, false);
+        doReturn(Lists.newArrayList(topic)).when(mockTopicService).listTopics(TEST_STUDY_IDENTIFIER, false);
 
         controller.getAllTopics(false);
 
         // It's enough to test it's there, the prior test has a more complete test of the payload
-        verify(mockTopicService).listTopics(TEST_STUDY, false);
+        verify(mockTopicService).listTopics(TEST_STUDY_IDENTIFIER, false);
     }
     
     @Test
@@ -144,7 +143,7 @@ public class NotificationTopicControllerTest extends Mockito {
     @Test
     public void getTopic() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockTopicService.getTopic(TEST_STUDY, GUID)).thenReturn(getNotificationTopic());
+        when(mockTopicService.getTopic(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(getNotificationTopic());
 
         NotificationTopic result = controller.getTopic(GUID);
         // Serialize and deserialize to verify studyId is not included
@@ -178,7 +177,7 @@ public class NotificationTopicControllerTest extends Mockito {
         StatusMessage result = controller.deleteTopic(GUID, false);
         assertEquals(result, NotificationTopicController.DELETE_STATUS_MSG);
 
-        verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
+        verify(mockTopicService).deleteTopic(TEST_STUDY_IDENTIFIER, GUID);
     }
     
     @Test
@@ -190,7 +189,7 @@ public class NotificationTopicControllerTest extends Mockito {
         assertEquals(result, NotificationTopicController.DELETE_STATUS_MSG);
 
         // Does not delete permanently because permissions are wrong; just logically deletes
-        verify(mockTopicService).deleteTopicPermanently(TEST_STUDY, GUID);
+        verify(mockTopicService).deleteTopicPermanently(TEST_STUDY_IDENTIFIER, GUID);
     }
 
     @Test
@@ -200,7 +199,7 @@ public class NotificationTopicControllerTest extends Mockito {
         assertEquals(result, NotificationTopicController.DELETE_STATUS_MSG);
 
         // Does not delete permanently because permissions are wrong; just logically deletes
-        verify(mockTopicService).deleteTopic(TEST_STUDY, GUID);
+        verify(mockTopicService).deleteTopic(TEST_STUDY_IDENTIFIER, GUID);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -218,7 +217,7 @@ public class NotificationTopicControllerTest extends Mockito {
         StatusMessage result = controller.sendNotification(GUID);
         assertEquals(result, NotificationTopicController.SEND_STATUS_MSG);
 
-        verify(mockTopicService).sendNotification(eq(TEST_STUDY), eq(GUID), messageCaptor.capture());
+        verify(mockTopicService).sendNotification(eq(TEST_STUDY_IDENTIFIER), eq(GUID), messageCaptor.capture());
         NotificationMessage captured = messageCaptor.getValue();
         assertEquals(captured.getSubject(), "a subject");
         assertEquals(captured.getMessage(), "a message");

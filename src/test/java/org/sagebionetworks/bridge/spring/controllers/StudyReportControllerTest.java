@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -127,11 +126,11 @@ public class StudyReportControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build();
         
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         
-        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
+        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getSessionIfItExists();
         
         ReportIndex index = ReportIndex.create();
@@ -191,7 +190,7 @@ public class StudyReportControllerTest extends Mockito {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(REPORT_ID)
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
@@ -235,7 +234,7 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.saveStudyReport(REPORT_ID);
         assertEquals(result, StudyReportController.SAVED_MSG);
         
-        verify(mockReportService).saveStudyReport(eq(TEST_STUDY), eq(REPORT_ID), reportDataCaptor.capture());
+        verify(mockReportService).saveStudyReport(eq(TEST_STUDY_IDENTIFIER), eq(REPORT_ID), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -275,7 +274,7 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.updateStudyReportIndex(REPORT_ID);
         assertEquals(result, StudyReportController.UPDATED_MSG);
         
-        verify(mockReportService).updateReportIndex(eq(TEST_STUDY), eq(STUDY), reportDataIndex.capture());
+        verify(mockReportService).updateReportIndex(eq(TEST_STUDY_IDENTIFIER), eq(STUDY), reportDataIndex.capture());
         ReportIndex index = reportDataIndex.getValue();
         assertTrue(index.isPublic());
         assertEquals(index.getIdentifier(), REPORT_ID);
@@ -284,8 +283,8 @@ public class StudyReportControllerTest extends Mockito {
     
     @Test
     public void canGetPublicStudyReport() throws Exception {
-        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_STUDY).withIdentifier(REPORT_ID)
-                .withReportType(STUDY).build();
+        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+                .withIdentifier(REPORT_ID).withReportType(STUDY).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(true);
@@ -296,13 +295,13 @@ public class StudyReportControllerTest extends Mockito {
                 REPORT_ID, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData>result = controller.getPublicStudyReport(
-                TEST_STUDY.getIdentifier(), REPORT_ID, START_DATE.toString(), END_DATE.toString());
+                TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE.toString(), END_DATE.toString());
 
         assertEquals(2, result.getItems().size());
         
         assertEquals(NULL_INSTANCE, getRequestContext());
         verify(mockReportService).getReportIndex(key);
-        verify(mockReportService).getStudyReport(TEST_STUDY, REPORT_ID, START_DATE, END_DATE);
+        verify(mockReportService).getStudyReport(TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE, END_DATE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -313,7 +312,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void privatePublicStudyReturns404() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);
@@ -328,7 +327,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test
     public void getStudyReportV4() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);
@@ -341,7 +340,7 @@ public class StudyReportControllerTest extends Mockito {
         ForwardCursorPagedResourceList<ReportData> result = controller.getStudyReportV4(REPORT_ID,
                 START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
         
-        verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
+        verify(mockReportService).getStudyReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, START_TIME, END_TIME,
                 OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         assertEquals(result.getNextPageOffsetKey(), "nextPageOffsetKey");
@@ -351,41 +350,6 @@ public class StudyReportControllerTest extends Mockito {
         assertEquals(result.getRequestParams().get(ResourceList.END_TIME), END_TIME.toString());
     }
     
-    /* Not referenced in routes file
-    @Test
-    public void getPublicStudyReportV4() throws Exception {
-        ReportDataKey key = new ReportDataKey.Builder()
-                .withIdentifier(REPORT_ID)
-                .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_STUDY).build();
-        
-        ReportIndex index = ReportIndex.create();
-        index.setPublic(true);
-        index.setKey(key.getIndexKeyString());
-        index.setIdentifier(REPORT_ID);
-        
-        doReturn(page).when(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME,
-                END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
-        doReturn(index).when(mockReportService).getReportIndex(key);
-        
-        Result result = controller.getPublicStudyReportV4(TEST_STUDY.getIdentifier(), REPORT_ID, START_TIME.toString(),
-                END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
-        TestUtils.assertResult(result, 200);
-        
-        verify(mockReportService).getStudyReportV4(TEST_STUDY, REPORT_ID, START_TIME, END_TIME,
-                OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
-
-        assertEquals(RequestContext.NULL_INSTANCE, BridgeUtils.getRequestContext());
-        
-        ForwardCursorPagedResourceList<ReportData> page = BridgeObjectMapper.get()
-                .readValue(Helpers.contentAsString(result), ReportData.PAGED_REPORT_DATA);        
-        assertEquals("nextPageOffsetKey", page.getNextPageOffsetKey());
-        assertEquals(OFFSET_KEY, page.getRequestParams().get(ResourceList.OFFSET_KEY));
-        assertEquals(Integer.parseInt(PAGE_SIZE), page.getRequestParams().get(ResourceList.PAGE_SIZE));
-        assertEquals(START_TIME.toString(), page.getRequestParams().get(ResourceList.START_TIME));
-        assertEquals(END_TIME.toString(), page.getRequestParams().get(ResourceList.END_TIME));
-    }
-    */
     private void assertResult(DateRangeResourceList<? extends ReportData> result) throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(BridgeObjectMapper.get().writeValueAsString(result));
         
@@ -423,7 +387,7 @@ public class StudyReportControllerTest extends Mockito {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
-        report.setKey("foo:" + TEST_STUDY.getIdentifier());
+        report.setKey("foo:" + TEST_STUDY_IDENTIFIER);
         report.setLocalDate(date);
         report.setData(node);
         return report;

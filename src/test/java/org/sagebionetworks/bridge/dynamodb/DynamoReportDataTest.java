@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -29,7 +30,7 @@ public class DynamoReportDataTest {
         
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("ABC")
                 .withIdentifier("foo").withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
         objNode.put("a", true);

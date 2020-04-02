@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.sagebionetworks.bridge.models.DateRange;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 /**
  * Interface for user data download requests. Current implementation uses SQS (see {@link
@@ -14,6 +13,6 @@ public interface UserDataDownloadService {
      * Kicks off an asynchronous request to gather user data for the logged in user, with data from the specified date
      * range (inclusive).
      */
-    void requestUserData(StudyIdentifier studyIdentifier, String userId, DateRange dateRange)
+    void requestUserData(String studyId, String userId, DateRange dateRange)
             throws JsonProcessingException;
 }

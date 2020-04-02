@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -30,7 +31,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -76,7 +76,7 @@ public class AppConfigElementsControllerTest {
         MockitoAnnotations.initMocks(this);
 
         session = new UserSession(new StudyParticipant.Builder().build());
-        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
@@ -98,38 +98,38 @@ public class AppConfigElementsControllerTest {
     
     @Test
     public void getMostRecentElementsIncludeDeleted() throws Exception {
-        when(mockService.getMostRecentElements(TestConstants.TEST_STUDY, true)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getMostRecentElements(TEST_STUDY_IDENTIFIER, true)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getMostRecentElements("true");
         
         assertEquals(2, result.getItems().size());
         assertTrue((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
         
-        verify(mockService).getMostRecentElements(TestConstants.TEST_STUDY, true);
+        verify(mockService).getMostRecentElements(TEST_STUDY_IDENTIFIER, true);
     }
     
     @Test
     public void getMostRecentElementsExcludeDeleted() throws Exception {
-        when(mockService.getMostRecentElements(TestConstants.TEST_STUDY, false)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getMostRecentElements(TEST_STUDY_IDENTIFIER, false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getMostRecentElements("false");
 
         assertEquals(2, result.getItems().size());
         assertFalse((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
         
-        verify(mockService).getMostRecentElements(TestConstants.TEST_STUDY, false);
+        verify(mockService).getMostRecentElements(TEST_STUDY_IDENTIFIER, false);
     }
     
     @Test
     public void getMostRecentElementsDefaultToExcludeDeleted() throws Exception {
-        when(mockService.getMostRecentElements(TestConstants.TEST_STUDY, false)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getMostRecentElements(TEST_STUDY_IDENTIFIER, false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getMostRecentElements(null);
         
         assertEquals(2, result.getItems().size());
         assertFalse((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
         
-        verify(mockService).getMostRecentElements(TestConstants.TEST_STUDY, false);
+        verify(mockService).getMostRecentElements(TEST_STUDY_IDENTIFIER, false);
     }
     
     @Test
@@ -138,7 +138,7 @@ public class AppConfigElementsControllerTest {
         element.setId("element-id");
         TestUtils.mockRequestBody(mockRequest, element);
         
-        when(mockService.createElement(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
+        when(mockService.createElement(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(VERSION_HOLDER);
         
         VersionHolder result = controller.createElement();
         assertEquals(new Long(1), result.getVersion());
@@ -146,68 +146,68 @@ public class AppConfigElementsControllerTest {
         verify(mockCacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
         assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
         
-        verify(mockService).createElement(eq(TestConstants.TEST_STUDY), elementCaptor.capture());
+        verify(mockService).createElement(eq(TEST_STUDY_IDENTIFIER), elementCaptor.capture());
         assertEquals("element-id", elementCaptor.getValue().getId());
     }
 
     @Test
     public void getElementRevisionsIncludeDeleted() throws Exception {
-        when(mockService.getElementRevisions(TestConstants.TEST_STUDY, "id", true)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getElementRevisions(TEST_STUDY_IDENTIFIER, "id", true)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getElementRevisions("id", "true");
         
         assertEquals(2, result.getItems().size());
         assertTrue((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(mockService).getElementRevisions(TestConstants.TEST_STUDY, "id", true);
+        verify(mockService).getElementRevisions(TEST_STUDY_IDENTIFIER, "id", true);
     }
     
     @Test
     public void getElementRevisionsExcludeDeleted() throws Exception {
-        when(mockService.getElementRevisions(TestConstants.TEST_STUDY, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getElementRevisions(TEST_STUDY_IDENTIFIER, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getElementRevisions("id", "false");
         
         assertEquals(2, result.getItems().size());
         assertFalse((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(mockService).getElementRevisions(TestConstants.TEST_STUDY, "id", false);
+        verify(mockService).getElementRevisions(TEST_STUDY_IDENTIFIER, "id", false);
     }
     
     @Test
     public void getElementRevisionsDefaultsToExcludeDeleted() throws Exception {
-        when(mockService.getElementRevisions(TestConstants.TEST_STUDY, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
+        when(mockService.getElementRevisions(TEST_STUDY_IDENTIFIER, "id", false)).thenReturn(APP_CONFIG_ELEMENTS);
         
         ResourceList<AppConfigElement> result = controller.getElementRevisions("id", null);
         
         assertEquals(2, result.getItems().size());
         assertFalse((Boolean)result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(mockService).getElementRevisions(TestConstants.TEST_STUDY, "id", false);
+        verify(mockService).getElementRevisions(TEST_STUDY_IDENTIFIER, "id", false);
     }
     
     @Test
     public void getMostRecentElement() throws Exception {
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
-        when(mockService.getMostRecentElement(TestConstants.TEST_STUDY, "element-id")).thenReturn(element);
+        when(mockService.getMostRecentElement(TEST_STUDY_IDENTIFIER, "element-id")).thenReturn(element);
         
         AppConfigElement result = controller.getMostRecentElement("element-id");
         assertEquals("element-id", result.getId());
         
-        verify(mockService).getMostRecentElement(TestConstants.TEST_STUDY, "element-id");
+        verify(mockService).getMostRecentElement(TEST_STUDY_IDENTIFIER, "element-id");
     }
 
     @Test
     public void getElementRevision() throws Exception {
         AppConfigElement element = AppConfigElement.create();
         element.setId("element-id");
-        when(mockService.getElementRevision(TestConstants.TEST_STUDY, "id", 3L)).thenReturn(element);
+        when(mockService.getElementRevision(TEST_STUDY_IDENTIFIER, "id", 3L)).thenReturn(element);
         
         AppConfigElement result = controller.getElementRevision("id", "3");
         assertEquals("element-id", result.getId());
         
-        verify(mockService).getElementRevision(TestConstants.TEST_STUDY, "id", 3L);
+        verify(mockService).getElementRevision(TEST_STUDY_IDENTIFIER, "id", 3L);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -222,7 +222,7 @@ public class AppConfigElementsControllerTest {
         element.setId("element-id");
         element.setRevision(3L);
         mockRequestBody(mockRequest, element);
-        when(mockService.updateElementRevision(eq(TestConstants.TEST_STUDY), any())).thenReturn(VERSION_HOLDER);
+        when(mockService.updateElementRevision(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(VERSION_HOLDER);
         
         VersionHolder result = controller.updateElementRevision("id", "1");
         assertEquals(new Long(1), result.getVersion());
@@ -230,7 +230,7 @@ public class AppConfigElementsControllerTest {
         verify(mockCacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
         assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
         
-        verify(mockService).updateElementRevision(eq(TestConstants.TEST_STUDY), elementCaptor.capture());
+        verify(mockService).updateElementRevision(eq(TEST_STUDY_IDENTIFIER), elementCaptor.capture());
         assertEquals("id", elementCaptor.getValue().getId());
         assertEquals(new Long(1), elementCaptor.getValue().getRevision());
     }
@@ -248,7 +248,7 @@ public class AppConfigElementsControllerTest {
         verify(mockCacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
         assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
         
-        verify(mockService).deleteElementAllRevisions(TestConstants.TEST_STUDY, "id");
+        verify(mockService).deleteElementAllRevisions(TEST_STUDY_IDENTIFIER, "id");
     }
     
     @Test
@@ -261,7 +261,7 @@ public class AppConfigElementsControllerTest {
         verify(mockCacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
         assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
 
-        verify(mockService).deleteElementAllRevisionsPermanently(TestConstants.TEST_STUDY, "id");
+        verify(mockService).deleteElementAllRevisionsPermanently(TEST_STUDY_IDENTIFIER, "id");
     }
     
     @Test
@@ -269,7 +269,7 @@ public class AppConfigElementsControllerTest {
         StatusMessage result = controller.deleteElementAllRevisions("id", "true");
         assertEquals(result.getMessage(), "App config element deleted.");
      
-        verify(mockService).deleteElementAllRevisions(TestConstants.TEST_STUDY, "id");
+        verify(mockService).deleteElementAllRevisions(TEST_STUDY_IDENTIFIER, "id");
     }
     
     @Test
@@ -280,7 +280,7 @@ public class AppConfigElementsControllerTest {
         verify(mockCacheProvider).removeSetOfCacheKeys(cacheKeyCaptor.capture());
         assertEquals("api:AppConfigList", cacheKeyCaptor.getValue().toString());
 
-        verify(mockService).deleteElementRevision(TestConstants.TEST_STUDY, "id", 3L);
+        verify(mockService).deleteElementRevision(TEST_STUDY_IDENTIFIER, "id", 3L);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -295,7 +295,7 @@ public class AppConfigElementsControllerTest {
         StatusMessage result = controller.deleteElementRevision("id", "3", "true");
         assertEquals(result.getMessage(), "App config element revision deleted.");
      
-        verify(mockService).deleteElementRevisionPermanently(TestConstants.TEST_STUDY, "id", 3L);
+        verify(mockService).deleteElementRevisionPermanently(TEST_STUDY_IDENTIFIER, "id", 3L);
     }
     
     @Test
@@ -303,6 +303,6 @@ public class AppConfigElementsControllerTest {
         StatusMessage result = controller.deleteElementRevision("id", "3", "true");
         assertEquals(result.getMessage(), "App config element revision deleted.");
      
-        verify(mockService).deleteElementRevision(TestConstants.TEST_STUDY, "id", 3L);
+        verify(mockService).deleteElementRevision(TEST_STUDY_IDENTIFIER, "id", 3L);
     }
 }

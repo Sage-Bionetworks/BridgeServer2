@@ -4,6 +4,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -11,8 +13,6 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -59,27 +59,27 @@ public class SharedModuleServiceTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void byIdAndVersionNullId() {
-        moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, null, MODULE_VERSION);
+        moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, null, MODULE_VERSION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void byIdAndVersionEmptyId() {
-        moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, "", MODULE_VERSION);
+        moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, "", MODULE_VERSION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void byIdAndVersionBlankId() {
-        moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, "   ", MODULE_VERSION);
+        moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, "   ", MODULE_VERSION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void byIdAndVersionNegativeVersion() {
-        moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, MODULE_ID, -1);
+        moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, MODULE_ID, -1);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void byIdAndVersionZeroVersion() {
-        moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, MODULE_ID, 0);
+        moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, MODULE_ID, 0);
     }
 
     @Test
@@ -93,11 +93,11 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
-        when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID_STRING, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
         // execute and validate import status
-        SharedModuleImportStatus status = moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, MODULE_ID,
+        SharedModuleImportStatus status = moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, MODULE_ID,
                 MODULE_VERSION);
         assertEquals(status.getModuleType(), SharedModuleType.SCHEMA);
         assertEquals(status.getSchemaId(), SCHEMA_ID);
@@ -108,7 +108,7 @@ public class SharedModuleServiceTest {
         assertEquals(modifiedSchema.getModuleVersion().intValue(), MODULE_VERSION);
 
         // verify calls to create schema
-        verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);
+        verify(mockSchemaService).createSchemaRevisionV4(TEST_STUDY_IDENTIFIER, sharedSchema);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class SharedModuleServiceTest {
 
         // mock survey service
         Survey sharedSurvey = Survey.create();
-        when(mockSurveyService.getSurvey(BridgeConstants.SHARED_STUDY_ID, SHARED_SURVEY_KEY, true, true)).thenReturn(sharedSurvey);
+        when(mockSurveyService.getSurvey(SHARED_STUDY_ID_STRING, SHARED_SURVEY_KEY, true, true)).thenReturn(sharedSurvey);
 
         Survey localSurvey = Survey.create();
         localSurvey.setGuid(LOCAL_SURVEY_GUID);
@@ -127,7 +127,7 @@ public class SharedModuleServiceTest {
         when(mockSurveyService.createSurvey(any())).thenReturn(localSurvey);
 
         // execute and validate import status
-        SharedModuleImportStatus status = moduleService.importModuleByIdAndVersion(TestConstants.TEST_STUDY, MODULE_ID,
+        SharedModuleImportStatus status = moduleService.importModuleByIdAndVersion(TEST_STUDY_IDENTIFIER, MODULE_ID,
                 MODULE_VERSION);
         assertEquals(status.getModuleType(), SharedModuleType.SURVEY);
         assertEquals(status.getSurveyCreatedOn().longValue(), LOCAL_SURVEY_CREATED_ON);
@@ -137,27 +137,27 @@ public class SharedModuleServiceTest {
         ArgumentCaptor<Survey> surveyToCreateCaptor = ArgumentCaptor.forClass(Survey.class);
         verify(mockSurveyService).createSurvey(surveyToCreateCaptor.capture());
         Survey surveyToCreate = surveyToCreateCaptor.getValue();
-        assertEquals(surveyToCreate.getStudyIdentifier(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(surveyToCreate.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(surveyToCreate.getModuleId(), MODULE_ID);
         assertEquals(surveyToCreate.getModuleVersion().intValue(), MODULE_VERSION);
 
         // verify call to publish survey
-        verify(mockSurveyService).publishSurvey(TestConstants.TEST_STUDY, LOCAL_SURVEY_KEY, true);
+        verify(mockSurveyService).publishSurvey(TEST_STUDY_IDENTIFIER, LOCAL_SURVEY_KEY, true);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void latestPublishedNullId() {
-        moduleService.importModuleByIdLatestPublishedVersion(TestConstants.TEST_STUDY, null);
+        moduleService.importModuleByIdLatestPublishedVersion(TEST_STUDY_IDENTIFIER, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void latestPublishedEmptyId() {
-        moduleService.importModuleByIdLatestPublishedVersion(TestConstants.TEST_STUDY, "");
+        moduleService.importModuleByIdLatestPublishedVersion(TEST_STUDY_IDENTIFIER, "");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void latestPublishedBlankId() {
-        moduleService.importModuleByIdLatestPublishedVersion(TestConstants.TEST_STUDY, "   ");
+        moduleService.importModuleByIdLatestPublishedVersion(TEST_STUDY_IDENTIFIER, "   ");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -167,7 +167,7 @@ public class SharedModuleServiceTest {
                 .thenReturn(ImmutableList.of());
 
         // execute
-        moduleService.importModuleByIdLatestPublishedVersion(TestConstants.TEST_STUDY, MODULE_ID);
+        moduleService.importModuleByIdLatestPublishedVersion(TEST_STUDY_IDENTIFIER, MODULE_ID);
     }
 
     @Test
@@ -181,12 +181,12 @@ public class SharedModuleServiceTest {
 
         // mock schema service
         UploadSchema sharedSchema = UploadSchema.create();
-        when(mockSchemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID_STRING, SCHEMA_ID, SCHEMA_REV))
                 .thenReturn(sharedSchema);
 
         // execute and validate import status
         SharedModuleImportStatus status = moduleService.importModuleByIdLatestPublishedVersion(
-                TestConstants.TEST_STUDY, MODULE_ID);
+                TEST_STUDY_IDENTIFIER, MODULE_ID);
         assertEquals(status.getModuleType(), SharedModuleType.SCHEMA);
         assertEquals(status.getSchemaId(), SCHEMA_ID);
         assertEquals(status.getSchemaRevision().intValue(), SCHEMA_REV);
@@ -196,7 +196,7 @@ public class SharedModuleServiceTest {
         assertEquals(modifiedSchema.getModuleVersion().intValue(), MODULE_VERSION);
 
         // verify calls to create schema
-        verify(mockSchemaService).createSchemaRevisionV4(TestConstants.TEST_STUDY, sharedSchema);
+        verify(mockSchemaService).createSchemaRevisionV4(TEST_STUDY_IDENTIFIER, sharedSchema);
     }
 
     private static SharedModuleMetadata makeValidMetadataWithSchema() {
