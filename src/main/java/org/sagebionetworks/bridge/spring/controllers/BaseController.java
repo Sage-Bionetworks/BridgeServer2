@@ -14,7 +14,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +32,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
@@ -332,10 +330,7 @@ public abstract class BaseController {
         try {
             return supplier.get();
         } catch (Throwable ex) {
-            if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
-                throw (InvalidEntityException)Throwables.getRootCause(ex);
-            }
-            throw new InvalidEntityException("Error parsing JSON in request body" + ex.getMessage());    
+            throw BridgeUtils.convertParsingError(ex);
         }
     }
     

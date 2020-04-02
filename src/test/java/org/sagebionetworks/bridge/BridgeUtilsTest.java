@@ -20,8 +20,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -40,11 +45,13 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.jsoup.safety.Whitelist;
+import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -1031,6 +1038,34 @@ public class BridgeUtilsTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void getIntegerOrDefaultThrowsBadRequest() {
         BridgeUtils.getIntegerOrDefault("asdf", null);
+    }
+    
+    @Test
+    public void convertParsingErrorMismatchedInputException() {
+        MismatchedInputException mie = Mockito.mock(MismatchedInputException.class);
+        Reference ref1 = new Reference(null, "password");
+        Reference ref2 = new Reference(null, "phone");
+        List<Reference> list = ImmutableList.of(ref1, ref2);
+        Mockito.when(mie.getPath()).thenReturn(list);
+        
+        InvalidEntityException e = BridgeUtils.convertParsingError(mie);
+        assertEquals(e.getMessage(), "Error parsing JSON in request body fields: password, phone");
+    }
+    
+    @Test
+    public void convertParsingErrorWrappedInvalidEntityException() {
+        InvalidEntityException iee = new InvalidEntityException("error");
+        RuntimeException re = new RuntimeException(iee);
+        
+        InvalidEntityException e = BridgeUtils.convertParsingError(re);
+        assertSame(e, iee);
+    }
+
+    @Test
+    public void convertParsingErrorOtherException() {
+        IOException ioe = new IOException("error");
+        InvalidEntityException e = BridgeUtils.convertParsingError(ioe);
+        assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

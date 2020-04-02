@@ -444,7 +444,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body fields: phone.*")
     public void signUpBadJson() throws Exception {
         mockRequestBody(mockRequest, "{\"phone\":\"+1234567890\"}");
         

@@ -255,7 +255,7 @@ public class UserManagementControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body fields: phone.*")
     public void createUserBadJson() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
@@ -264,7 +264,7 @@ public class UserManagementControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*no String-argument constructor/factory method.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body fields: phone.*")
     public void createUserWithStudyIdBadJson() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
