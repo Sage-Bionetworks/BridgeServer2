@@ -44,9 +44,10 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getTitle())) {
             errors.rejectValue("title", CANNOT_BE_BLANK);   
         }
+        String osName = assessment.getOsName();
         if (isBlank(assessment.getOsName())) {
             errors.rejectValue("osName", CANNOT_BE_BLANK);   
-        } else if (!OperatingSystem.ALL_OS_SYSTEMS.contains(assessment.getOsName())) {
+        } else if (!OperatingSystem.ALL_OS_SUPPORT_OPTIONS.contains(osName)) {
             errors.rejectValue("osName", "is not a supported platform");
         }
         if (isBlank(assessment.getIdentifier())) {

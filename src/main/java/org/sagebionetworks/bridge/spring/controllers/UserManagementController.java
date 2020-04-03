@@ -44,7 +44,7 @@ public class UserManagementController extends BaseController {
     }
     
     @PostMapping("/v3/auth/admin/signIn")
-    public JsonNode signInForSuperAdmin() throws Exception {
+    public JsonNode signInForSuperAdmin() {
         SignIn originSignIn = parseJson(SignIn.class);
         
         // Persist the requested study
@@ -77,11 +77,10 @@ public class UserManagementController extends BaseController {
      * users.
      * 
      * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
-     * @throws Exception
      */
     @Deprecated
     @PostMapping("/v3/auth/admin/study")
-    public JsonNode changeStudyForAdmin() throws Exception {
+    public JsonNode changeStudyForAdmin() {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         // The only part of this payload we care about is the study property
@@ -97,12 +96,12 @@ public class UserManagementController extends BaseController {
     
     @PostMapping("/v3/users")
     @ResponseStatus(HttpStatus.CREATED)
-    public JsonNode createUser() throws Exception {
+    public JsonNode createUser() {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
         JsonNode node = parseJson(JsonNode.class);
-        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant participant = parseJson(node, StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
@@ -116,16 +115,15 @@ public class UserManagementController extends BaseController {
      * nearly identical to createUser() one
      * @param studyId
      * @return
-     * @throws Exception
      */
     @PostMapping("/v3/studies/{studyId}/users")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithStudyId(@PathVariable String studyId) throws Exception {
+    public StatusMessage createUserWithStudyId(@PathVariable String studyId) {
         getAuthenticatedSession(SUPERADMIN);
         Study study = studyService.getStudy(studyId);
         
         JsonNode node = parseJson(JsonNode.class);
-        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant participant = parseJson(node, StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
 
@@ -135,7 +133,7 @@ public class UserManagementController extends BaseController {
     }
 
     @DeleteMapping("/v3/users/{userId}")
-    public StatusMessage deleteUser(@PathVariable String userId) throws Exception {
+    public StatusMessage deleteUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         

@@ -55,7 +55,7 @@ public class ConsentController extends BaseController {
     @Deprecated
     @PostMapping("/api/v1/consent")
     @ResponseStatus(HttpStatus.CREATED)
-    public JsonNode giveV1() throws Exception {
+    public JsonNode giveV1() {
         UserSession session = getAuthenticatedSession();
         return giveConsentForVersion(1, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
     }
@@ -63,14 +63,14 @@ public class ConsentController extends BaseController {
     @Deprecated
     @PostMapping({"/v3/consents/signature", "/api/v2/consent"})
     @ResponseStatus(HttpStatus.CREATED)
-    public JsonNode giveV2() throws Exception {
+    public JsonNode giveV2() {
         UserSession session = getAuthenticatedSession();
         return giveConsentForVersion(2, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
     }
 
     @Deprecated
     @PostMapping({"/v3/consents/signature/email", "/api/v1/consent/email"})
-    public StatusMessage emailCopy() throws Exception {
+    public StatusMessage emailCopy() {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         return resendConsentAgreement(session.getStudyIdentifier().getIdentifier());
@@ -78,27 +78,27 @@ public class ConsentController extends BaseController {
 
     @Deprecated
     @PostMapping("/api/v1/consent/dataSharing/suspend")
-    public JsonNode suspendDataSharing() throws Exception {
+    public JsonNode suspendDataSharing() {
         return changeSharingScope(SharingScope.NO_SHARING, 
                 "Data sharing with the study researchers has been suspended.");
     }
 
     @Deprecated
     @PostMapping("/api/v1/consent/dataSharing/resume")
-    public JsonNode resumeDataSharing() throws Exception {
+    public JsonNode resumeDataSharing() {
         return changeSharingScope(SharingScope.SPONSORS_AND_PARTNERS,
                 "Data sharing with the study researchers has been resumed.");
     }
     
     @PostMapping({"/v3/users/self/dataSharing", "/api/v2/consent/dataSharing"})
-    public JsonNode changeSharingScope() throws Exception {
+    public JsonNode changeSharingScope() {
         SharingOption sharing = SharingOption.fromJson(parseJson(JsonNode.class), 2);
         return changeSharingScope(sharing.getSharingScope(), "Data sharing has been changed.");
     }
     
     @Deprecated
     @PostMapping("/v3/consents/signature/withdraw")
-    public JsonNode withdrawConsent() throws Exception {
+    public JsonNode withdrawConsent() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -118,12 +118,12 @@ public class ConsentController extends BaseController {
     
     @PostMapping("/v3/subpopulations/{guid}/consents/signature")
     @ResponseStatus(HttpStatus.CREATED)
-    public JsonNode giveV3(@PathVariable String guid) throws Exception {
+    public JsonNode giveV3(@PathVariable String guid) {
         return giveConsentForVersion(2, SubpopulationGuid.create(guid));
     }
     
     @PostMapping("/v3/subpopulations/{guid}/consents/signature/withdraw")
-    public JsonNode withdrawConsentV2(@PathVariable String guid) throws Exception {
+    public JsonNode withdrawConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -178,7 +178,7 @@ public class ConsentController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
-    private JsonNode giveConsentForVersion(int version, SubpopulationGuid subpopGuid) throws Exception {
+    private JsonNode giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
 

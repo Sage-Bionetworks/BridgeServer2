@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -63,7 +62,7 @@ public class SurveyController extends BaseController {
 
     @GetMapping("/v3/surveys")
     public ResourceList<Survey> getAllSurveysMostRecentVersion(
-            @RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
+            @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -73,7 +72,7 @@ public class SurveyController extends BaseController {
 
     @GetMapping("/v3/surveys/published")
     public ResourceList<Survey> getAllSurveysMostRecentlyPublishedVersion(
-            @RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
+            @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -102,7 +101,7 @@ public class SurveyController extends BaseController {
     }
 
     @GetMapping(path="/api/v2/surveys/{surveyGuid}/revisions/published", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSurveyMostRecentlyPublishedVersionForUser(@PathVariable String surveyGuid) throws Exception {
+    public String getSurveyMostRecentlyPublishedVersionForUser(@PathVariable String surveyGuid) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session);
@@ -113,7 +112,7 @@ public class SurveyController extends BaseController {
         UserSession session = getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         if (session.isInRole(WORKER)) {
             // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
-            return BridgeObjectMapper.get().writeValueAsString(getSurveyForWorker(surveyGuid, createdOn));
+            return MAPPER.writeValueAsString(getSurveyForWorker(surveyGuid, createdOn));
         } else {
             return getCachedSurveyInternal(surveyGuid, createdOn, session);
         }
@@ -142,14 +141,14 @@ public class SurveyController extends BaseController {
     }
 
     @GetMapping(path="/api/v2/surveys/{surveyGuid}/revisions/{createdOn}", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSurveyForUser(@PathVariable String surveyGuid, @PathVariable String createdOn) throws Exception {
+    public String getSurveyForUser(@PathVariable String surveyGuid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         return getCachedSurveyInternal(surveyGuid, createdOn, session);
     }
 
     @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/recent", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSurveyMostRecentVersion(@PathVariable String surveyGuid) throws Exception {
+    public String getSurveyMostRecentVersion(@PathVariable String surveyGuid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -161,7 +160,7 @@ public class SurveyController extends BaseController {
     }
 
     @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/published", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSurveyMostRecentlyPublishedVersion(@PathVariable String surveyGuid) throws Exception {
+    public String getSurveyMostRecentlyPublishedVersion(@PathVariable String surveyGuid) {
         UserSession session = getSessionEitherConsentedOrInRole(DEVELOPER);
 
         return getCachedSurveyMostRecentlyPublishedInternal(surveyGuid, session);
@@ -176,11 +175,10 @@ public class SurveyController extends BaseController {
      * @param createdOnString
      * @param physical
      * @return
-     * @throws Exception
      */
     @DeleteMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}")
     public StatusMessage deleteSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn,
-            @RequestParam(defaultValue = "false") boolean physical) throws Exception {
+            @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -203,7 +201,7 @@ public class SurveyController extends BaseController {
 
     @GetMapping("/v3/surveys/{surveyGuid}/revisions")
     public ResourceList<Survey> getSurveyAllVersions(@PathVariable String surveyGuid,
-            @RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
+            @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -213,7 +211,7 @@ public class SurveyController extends BaseController {
 
     @PostMapping("/v3/surveys")
     @ResponseStatus(HttpStatus.CREATED)
-    public GuidCreatedOnVersionHolder createSurvey() throws Exception {
+    public GuidCreatedOnVersionHolder createSurvey() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -226,8 +224,7 @@ public class SurveyController extends BaseController {
 
     @PostMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}/version")
     @ResponseStatus(HttpStatus.CREATED)
-    public GuidCreatedOnVersionHolder versionSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn)
-            throws Exception {
+    public GuidCreatedOnVersionHolder versionSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -241,8 +238,7 @@ public class SurveyController extends BaseController {
     }
 
     @PostMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}")
-    public GuidCreatedOnVersionHolder updateSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn)
-            throws Exception {
+    public GuidCreatedOnVersionHolder updateSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -261,7 +257,7 @@ public class SurveyController extends BaseController {
 
     @PostMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}/publish")
     public GuidCreatedOnVersionHolder publishSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn,
-            @RequestParam(defaultValue = "false") boolean newSchemaRev) throws Exception {
+            @RequestParam(defaultValue = "false") boolean newSchemaRev) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
 

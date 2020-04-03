@@ -52,7 +52,7 @@ public class SubpopulationController extends BaseController {
 
     @PostMapping("/v3/subpopulations")
     @ResponseStatus(HttpStatus.CREATED)
-    public GuidVersionHolder createSubpopulation() throws Exception {
+    public GuidVersionHolder createSubpopulation() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 

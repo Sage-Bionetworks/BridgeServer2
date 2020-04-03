@@ -109,6 +109,14 @@ public class AssessmentValidatorTest extends Mockito {
         assertValidatorMessage(validator, assessment, "osName", "is not a supported platform");
     }
     @Test
+    public void osNameUniversalIsValid() {
+        when(mockSubstudyService.getSubstudy(TEST_STUDY, assessment.getOwnerId(), false))
+            .thenReturn(Substudy.create());
+        
+        assessment.setOsName("Universal");
+        Validate.entityThrowingException(validator, assessment);
+    }
+    @Test
     public void identifierNull() {
         assessment.setIdentifier(null);
         assertValidatorMessage(validator, assessment, "identifier", CANNOT_BE_BLANK);

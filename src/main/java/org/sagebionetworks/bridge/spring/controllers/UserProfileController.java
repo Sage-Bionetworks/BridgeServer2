@@ -63,7 +63,7 @@ public class UserProfileController extends BaseController {
 
     @Deprecated
     @GetMapping(path={"/v3/users/self", "/api/v1/profile"}, produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getUserProfile() throws Exception {
+    public String getUserProfile() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         String userId = session.getId();
@@ -93,7 +93,7 @@ public class UserProfileController extends BaseController {
 
     @Deprecated
     @PostMapping({"/v3/users/self", "/api/v1/profile"})
-    public JsonNode updateUserProfile() throws Exception {
+    public JsonNode updateUserProfile() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         String userId = session.getId();
@@ -128,7 +128,7 @@ public class UserProfileController extends BaseController {
 
     @Deprecated
     @GetMapping("/v3/users/self/dataGroups")
-    public JsonNode getDataGroups() throws Exception {
+    public JsonNode getDataGroups() {
         UserSession session = getAuthenticatedSession();
         
         AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
@@ -151,7 +151,7 @@ public class UserProfileController extends BaseController {
     
     @Deprecated
     @PostMapping("/v3/users/self/dataGroups")
-    public JsonNode updateDataGroups() throws Exception {
+    public JsonNode updateDataGroups() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         

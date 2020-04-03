@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
+import static org.sagebionetworks.bridge.models.OperatingSystem.UNIVERSAL;
 import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
@@ -166,6 +167,21 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(config.getCreatedOn(), CREATED_ON);
         assertEquals(config.getModifiedOn(), CREATED_ON);
         assertNotNull(config.getConfig());
+    }
+    
+    @Test
+    public void createAssessmentAdjustsOsNameAlias() {
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(mockSubstudy);
+        when(mockDao.getAssessmentRevisions(any(), any(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(EMPTY_LIST);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOsName("Both");
+        
+        service.createAssessment(APP_ID_VALUE, assessment);
+        
+        assertEquals(assessment.getOsName(), UNIVERSAL);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -330,6 +346,23 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test
+    public void updateAssessmentAdjustsOsNameAlias() {
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOsName("Both");
+        when(mockDao.saveAssessment(APP_ID_VALUE, assessment)).thenReturn(assessment);
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        when(mockDao.getAssessment(APP_ID_VALUE, GUID)).thenReturn(Optional.of(existing));
+        
+        service.updateAssessment(APP_ID_VALUE, assessment);
+        
+        assertEquals(assessment.getOsName(), UNIVERSAL);
+    }    
+
+    @Test
     public void updateAssessmentSomeFieldsImmutable() {
         when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false)).thenReturn(mockSubstudy);
         
@@ -463,6 +496,28 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessment.getOriginGuid(), "unusualGuid");
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
+    }
+    
+    @Test
+    public void updateSharedAssessmentAdjustsOsNameAlias() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerStudyId(APP_AS_STUDY_ID)
+                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        
+        when(mockSubstudyService.getSubstudy(APP_AS_STUDY_ID, OWNER_ID, false))
+            .thenReturn(Substudy.create());
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setDeleted(false);
+        existing.setOwnerId(APP_ID_VALUE + ":" + OWNER_ID);
+        when(mockDao.getAssessment(SHARED_STUDY_ID_STRING, GUID))
+            .thenReturn(Optional.of(existing));
+        
+        Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOsName("Both");
+        service.updateSharedAssessment(APP_ID_VALUE, assessment);
+        
+        assertEquals(assessment.getOsName(), UNIVERSAL);
     }
     
     @Test

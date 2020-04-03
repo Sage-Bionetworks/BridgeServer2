@@ -14,8 +14,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.exceptions.UnsupportedVersionException;
@@ -53,6 +52,11 @@ import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
+    
+    @FunctionalInterface
+    private static interface ExceptionThrowingSupplier<T> {
+        T get() throws Throwable;
+    };
     
     protected final static ObjectMapper MAPPER = BridgeObjectMapper.get();
 
@@ -311,24 +315,22 @@ public abstract class BaseController {
     }
     
     protected @Nonnull <T> T parseJson(TypeReference<? extends T> clazz) {
-        try {
-            return MAPPER.readValue(request().getInputStream(), clazz);
-        } catch (Throwable ex) {
-            if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
-                throw (InvalidEntityException)Throwables.getRootCause(ex);
-            }
-            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());    
-        }
+        return parseWithExceptionConversion(() -> MAPPER.readValue(request().getInputStream(), clazz));
     }
 
     protected @Nonnull <T> T parseJson(Class<? extends T> clazz) {
+        return parseWithExceptionConversion(() -> MAPPER.readValue(request().getInputStream(), clazz));
+    }
+    
+    protected @Nonnull <T> T parseJson(JsonNode node, Class<? extends T> clazz) {
+        return parseWithExceptionConversion(() -> MAPPER.treeToValue(node, clazz));
+    }
+    
+    private @Nonnull <T> T parseWithExceptionConversion(ExceptionThrowingSupplier<T> supplier) {
         try {
-            return MAPPER.readValue(request().getInputStream(), clazz);
+            return supplier.get();
         } catch (Throwable ex) {
-            if (Throwables.getRootCause(ex) instanceof InvalidEntityException) {
-                throw (InvalidEntityException)Throwables.getRootCause(ex);
-            }
-            throw new InvalidEntityException("Error parsing JSON in request body: " + ex.getMessage());    
+            throw BridgeUtils.convertParsingError(ex);
         }
     }
     
