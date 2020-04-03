@@ -351,7 +351,7 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOsName("Both");
-        when(mockDao.saveAssessment(APP_ID_VALUE, assessment)).thenReturn(assessment);
+        when(mockDao.updateAssessment(APP_ID_VALUE, assessment)).thenReturn(assessment);
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setDeleted(false);
