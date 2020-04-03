@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_CONFIG_SQL;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_RESOURCES_SQL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -35,6 +37,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class HibernateAssessmentDaoTest extends Mockito {
     
@@ -79,11 +83,20 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Captor
     ArgumentCaptor<Map<String,Object>> paramsCaptor;
     
+    @Captor
+    ArgumentCaptor<HibernateAssessment> assessmentCaptor;
+    
+    @Captor
+    ArgumentCaptor<HibernateAssessmentConfig> configCaptor;
+    
     @Mock
     Session mockSession;
     
     @Mock
-    NativeQuery<?> mockNativeQuery;
+    NativeQuery<?> mockDelResourcesQuery;
+    
+    @Mock
+    NativeQuery<?> mockDelConfigQuery;
     
     @InjectMocks
     @Spy
@@ -215,12 +228,30 @@ public class HibernateAssessmentDaoTest extends Mockito {
         Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, ID_VALUE, REV_VALUE);
         assertFalse(retValue.isPresent());
     }
+    
+    @Test
+    public void createAssessment() throws Exception {
+        Assessment assessment = AssessmentTest.createAssessment();
+        AssessmentConfig config = new AssessmentConfig();
+        
+        when(mockSession.merge(any())).thenReturn(
+                HibernateAssessment.create(APP_ID_VALUE, assessment));
+        
+        Assessment retValue = dao.createAssessment(APP_ID_VALUE, assessment, config);
+        assertEquals(retValue.getGuid(), GUID);
+        
+        verify(mockSession).persist(configCaptor.capture());
+        assertEquals(configCaptor.getValue().getGuid(), GUID);
+        
+        verify(mockSession).merge(assessmentCaptor.capture());
+        assertEquals(assessmentCaptor.getValue().getGuid(), GUID);
+    }
 
     @Test
-    public void createOrUpdateAssessment() throws Exception {
+    public void updateAssessment() throws Exception {
         when(mockSession.merge(any())).thenReturn(HIBERNATE_ASSESSMENT);
         
-        Assessment returnValue = dao.saveAssessment(APP_ID_VALUE, new Assessment());
+        Assessment returnValue = dao.updateAssessment(APP_ID_VALUE, new Assessment());
         assertNotNull(returnValue);
         
         verify(mockSession).merge(any(HibernateAssessment.class));
@@ -229,7 +260,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
     // I discovered a ClassCastException because we're not converting and returning
     // a BridgeEntity within the lambda. Test verifies this is fixed.
     @Test(expectedExceptions = ConcurrentModificationException.class)
-    public void createOrUpdateOptimisticLockException() throws Exception {
+    public void createOptimisticLockException() throws Exception {
         SessionFactory mockSessionFactory = mock(SessionFactory.class);
         PersistenceExceptionConverter exceptionConverter = new BasicPersistenceExceptionConverter();
         when(mockSessionFactory.openSession()).thenReturn(mockSession);
@@ -239,19 +270,37 @@ public class HibernateAssessmentDaoTest extends Mockito {
         
         when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
         
-        dao.saveAssessment(APP_ID_VALUE, new Assessment());
+        dao.createAssessment(APP_ID_VALUE, new Assessment(), new AssessmentConfig());
     }
 
+    @Test(expectedExceptions = ConcurrentModificationException.class)
+    public void updateOptimisticLockException() throws Exception {
+        SessionFactory mockSessionFactory = mock(SessionFactory.class);
+        PersistenceExceptionConverter exceptionConverter = new BasicPersistenceExceptionConverter();
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        
+        HibernateHelper helper = new HibernateHelper(mockSessionFactory, exceptionConverter);
+        dao.setHibernateHelper(helper);
+        
+        when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
+        
+        dao.updateAssessment(APP_ID_VALUE, new Assessment());
+    }
+    
     @Test
     public void deleteAssessmentLeaveResources() throws Exception {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 2);
         doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
         
+        when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);
+        
         Assessment assessment = AssessmentTest.createAssessment();
         
         dao.deleteAssessment(APP_ID_VALUE, assessment);
         
-        verify(mockNativeQuery, never()).executeUpdate();
+        verify(mockDelResourcesQuery, never()).executeUpdate();
+        verify(mockDelConfigQuery).setParameter("guid", GUID);
+        verify(mockDelConfigQuery).executeUpdate();
         verify(mockSession).remove(any());
     }
 
@@ -260,15 +309,19 @@ public class HibernateAssessmentDaoTest extends Mockito {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 1);
         doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
         
-        when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockNativeQuery);
+        when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockDelResourcesQuery);
+        when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);
         Assessment assessment = AssessmentTest.createAssessment();
         
         dao.deleteAssessment(APP_ID_VALUE, assessment);
         
-        verify(mockNativeQuery).setParameter("appId", APP_ID_VALUE);
-        verify(mockNativeQuery).setParameter("assessmentId", IDENTIFIER);
-        verify(mockNativeQuery).executeUpdate();
-
+        verify(mockDelResourcesQuery).setParameter("appId", APP_ID_VALUE);
+        verify(mockDelResourcesQuery).setParameter("assessmentId", IDENTIFIER);
+        verify(mockDelResourcesQuery).executeUpdate();
+        
+        verify(mockDelConfigQuery).setParameter("guid", GUID);
+        verify(mockDelConfigQuery).executeUpdate();
+        
         verify(mockSession).remove(any());
     }
     
@@ -276,23 +329,27 @@ public class HibernateAssessmentDaoTest extends Mockito {
     public void publishAssessment() throws Exception {
         Assessment original = new Assessment();
         Assessment assessmentToPublish = AssessmentTest.createAssessment();
+        AssessmentConfig originConfig = new AssessmentConfig();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
         
-        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish);
+        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, originConfig);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
-        verify(mockSession).merge(any(HibernateAssessment.class));
+        verify(mockSession).saveOrUpdate(any(HibernateAssessmentConfig.class));
+        verify(mockSession).saveOrUpdate(any(HibernateAssessment.class));
     }
     
     @Test
     public void importAssessment() throws Exception {
         Assessment assessmentToImport = AssessmentTest.createAssessment();
+        AssessmentConfig configToImport = new AssessmentConfig();
         
-        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport);
+        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport, configToImport);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
+        verify(mockSession).saveOrUpdate(any(HibernateAssessmentConfig.class));
         verify(mockSession).merge(any(HibernateAssessment.class));
     }
 }

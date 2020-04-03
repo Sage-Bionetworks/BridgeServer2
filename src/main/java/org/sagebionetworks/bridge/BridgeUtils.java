@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -65,6 +67,7 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.amazonaws.util.Throwables;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
@@ -742,6 +745,37 @@ public class BridgeUtils {
         } catch(NumberFormatException e) {
             throw new BadRequestException(value + " is not an integer");
         }
+    }
+    
+    /**
+     * Walk a JSON node tree and call a BiConsumer with each object node or array 
+     * element in the tree. This implements the visitor pattern over a JsonNode 
+     * tree. The consumer is passed the path of the current node, and the node itself. 
+     * The path can be used for error reporting, logging, etc.
+     */
+    public static void walk(JsonNode node, BiConsumer<String, JsonNode> consumer) {
+        walk(node, "", consumer);
+    }
+    
+    private static void walk(JsonNode node, String fieldPath, BiConsumer<String, JsonNode> consumer) {
+        if (node.isObject()) {
+            consumer.accept(fieldPath, node);
+            for (Iterator<Map.Entry<String, JsonNode>> i = node.fields(); i.hasNext(); ) {
+                Map.Entry<String, JsonNode> entry = i.next();
+                walk(entry.getValue(), appendPath(fieldPath, entry.getKey()), consumer);
+            }
+        } else if (node.isArray()) {
+            int i = 0;
+            for (Iterator<JsonNode> iter = node.elements(); iter.hasNext(); ) {
+                JsonNode element = iter.next();
+                walk(element, fieldPath + "["+i+"]", consumer);
+                i++;
+            }
+        }
+    }
+    
+    private static String appendPath(String existingPath, String newElement) {
+        return (existingPath.length() == 0) ? newElement : (existingPath + "." + newElement);
     }
     
     public static InvalidEntityException convertParsingError(Throwable throwable) {

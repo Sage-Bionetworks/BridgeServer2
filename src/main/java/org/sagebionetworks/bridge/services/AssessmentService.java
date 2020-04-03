@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -43,6 +44,8 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.validators.AssessmentValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -54,11 +57,18 @@ public class AssessmentService {
 
     private AssessmentDao dao;
     
+    private AssessmentConfigService configService;
+    
     private SubstudyService substudyService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
         this.dao = assessmentDao;
+    }
+    
+    @Autowired
+    final void setAssessmentConfigService(AssessmentConfigService configService) {
+        this.configService = configService;
     }
     
     @Autowired
@@ -187,7 +197,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
 
-        return dao.saveAssessment(appId, assessment);        
+        return dao.updateAssessment(appId, assessment);        
     }
         
     public Assessment getAssessmentByGuid(String appId, String guid) {
@@ -264,6 +274,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessmentToPublish = getAssessmentByGuid(appId, guid);
+        AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
         checkOwnership(appId, assessmentToPublish.getOwnerId());
@@ -299,7 +310,7 @@ public class AssessmentService {
         
         original.setOriginGuid(assessmentToPublish.getGuid());
         
-        return dao.publishAssessment(appId, original, assessmentToPublish);
+        return dao.publishAssessment(appId, original, assessmentToPublish, configToPublish);
     }
     
     /**
@@ -325,6 +336,7 @@ public class AssessmentService {
         checkOwnership(appId, ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, guid);
         
         // Figure out what revision this should be in the new app context if the identifier already exists
         int revision = nextRevisionNumber(appId, sharedAssessment.getIdentifier());
@@ -333,7 +345,7 @@ public class AssessmentService {
         sharedAssessment.setRevision(revision);
         sharedAssessment.setOwnerId(ownerId);
         
-        return dao.importAssessment(appId, sharedAssessment);
+        return dao.importAssessment(appId, sharedAssessment, sharedConfig);
     }
         
     public void deleteAssessment(String appId, String guid) {
@@ -348,7 +360,7 @@ public class AssessmentService {
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
-        dao.saveAssessment(appId, assessment);
+        dao.updateAssessment(appId, assessment);
     }
         
     public void deleteAssessmentPermanently(String appId, String guid) {
@@ -357,7 +369,7 @@ public class AssessmentService {
         
         Optional<Assessment> opt = dao.getAssessment(appId, guid);
         if (opt.isPresent()) {
-            dao.deleteAssessment(appId, opt.get());    
+            dao.deleteAssessment(appId, opt.get());
         }
     }
 
@@ -379,7 +391,12 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
         Validate.entityThrowingException(validator, assessment);
         
-        return dao.saveAssessment(appId, assessment);
+        AssessmentConfig config = new AssessmentConfig();
+        config.setCreatedOn(timestamp);
+        config.setModifiedOn(timestamp);
+        config.setConfig(JsonNodeFactory.instance.objectNode());
+        
+        return dao.createAssessment(appId, assessment, config);
     }
     
     Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
@@ -421,12 +438,17 @@ public class AssessmentService {
             );
         }
         if (assessment.getCustomizationFields() != null) {
-            Map<String, Set<String>> map = new HashMap<>();
-            for (Map.Entry<String, Set<String>> entry : assessment.getCustomizationFields().entrySet()) {                
+            Map<String, Set<PropertyInfo>> map = new HashMap<>();
+            for (Map.Entry<String, Set<PropertyInfo>> entry : assessment.getCustomizationFields().entrySet()) {                
                 String key = sanitizeHTML(none(), entry.getKey());
-                Set<String> values = entry.getValue().stream()
-                        .map(string -> sanitizeHTML(none(), string))
-                        .collect(toImmutableSet());
+                Set<PropertyInfo> values = entry.getValue().stream().map(prop -> {
+                        return new PropertyInfo.Builder()
+                                .withPropName(sanitizeHTML(none(), prop.getPropName()))
+                                .withLabel(sanitizeHTML(none(), prop.getLabel()))
+                                .withDescription(sanitizeHTML(none(), prop.getDescription()))
+                                .withPropType(sanitizeHTML(none(), prop.getPropType()))
+                                .build();
+                    }).collect(toImmutableSet());
                 map.put(key, values);
             }
             assessment.setCustomizationFields(map);

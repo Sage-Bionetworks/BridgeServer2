@@ -20,8 +20,9 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
-import org.sagebionetworks.bridge.hibernate.StringToStringSetMapConverter;
+import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 /**
  * Persistence object for a record about an assessment (task, survey, measure) in 
@@ -31,7 +32,7 @@ import org.sagebionetworks.bridge.models.Tag;
 @Table(name = "Assessments")
 public class HibernateAssessment {
     
-    public static HibernateAssessment create(Assessment dto, String appId) {
+    public static HibernateAssessment create(String appId, Assessment dto) {
         HibernateAssessment assessment = new HibernateAssessment();
         assessment.setGuid(dto.getGuid());
         assessment.setAppId(appId);
@@ -84,8 +85,8 @@ public class HibernateAssessment {
     )
     private Set<Tag> tags;
     
-    @Convert(converter = StringToStringSetMapConverter.class)
-    private Map<String,Set<String>> customizationFields;
+    @Convert(converter = CustomizationFieldsConverter.class)
+    private Map<String,Set<PropertyInfo>> customizationFields;
     
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
@@ -164,10 +165,10 @@ public class HibernateAssessment {
     public void setTags(Set<Tag> tags) {
         this.tags = tags;
     }
-    public Map<String, Set<String>> getCustomizationFields() {
+    public Map<String, Set<PropertyInfo>> getCustomizationFields() {
         return customizationFields;
     }
-    public void setCustomizationFields(Map<String, Set<String>> customizationFields) {
+    public void setCustomizationFields(Map<String, Set<PropertyInfo>> customizationFields) {
         this.customizationFields = customizationFields;
     }
     public DateTime getCreatedOn() {
