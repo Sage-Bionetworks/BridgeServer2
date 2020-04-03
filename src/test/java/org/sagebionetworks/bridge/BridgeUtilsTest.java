@@ -1044,7 +1044,18 @@ public class BridgeUtilsTest {
         } catch(IOException e) {
             InvalidEntityException retValue = BridgeUtils.convertParsingError(e);
             assertEquals(retValue.getMessage(), 
-                    "Error parsing JSON in request body field: password");
+                    "Error parsing JSON in request body, fields: password");
+        }
+    }
+    
+    @Test
+    public void convertParsingErrorJsonParseException() throws Exception {
+        try {
+            new ObjectMapper().readValue("asdf", Integer.class);
+        } catch(IOException e) {
+            InvalidEntityException retValue = BridgeUtils.convertParsingError(e);
+            assertTrue(retValue.getMessage().contains(
+                    "Error parsing JSON in request body: Unrecognized token 'asdf'"));
         }
     }
     

@@ -88,7 +88,7 @@ public class IntentControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body field: phone.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
     public void intentToParticipanteBadJson() throws Exception {
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         

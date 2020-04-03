@@ -66,7 +66,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.util.Throwables;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -744,14 +745,13 @@ public class BridgeUtils {
     }
     
     public static InvalidEntityException convertParsingError(Throwable throwable) {
-        if (throwable instanceof MismatchedInputException) {
-            // Jackson stops parsing after the first value it cannot convert, so the error 
-            // need not be plural, despite the fields of the exception suggesting otherwise.
-            MismatchedInputException mie = (MismatchedInputException)throwable;
-            String fieldName = (mie.getPath().isEmpty()) ? "[uknown]" : mie.getPath().get(0).getFieldName();
-            return new InvalidEntityException("Error parsing JSON in request body field: " + fieldName);
-        } else if (Throwables.getRootCause(throwable) instanceof InvalidEntityException) {
+        if (Throwables.getRootCause(throwable) instanceof InvalidEntityException) {
             return (InvalidEntityException)Throwables.getRootCause(throwable);
+        } else if (throwable instanceof JsonMappingException) {
+            JsonMappingException jme = (JsonMappingException)throwable;
+            List<String> fields = jme.getPath().stream().map(Reference::getFieldName).collect(toList());
+            String msg = "Error parsing JSON in request body, fields: " + COMMA_SPACE_JOINER.skipNulls().join(fields);
+            return new InvalidEntityException(msg);
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }

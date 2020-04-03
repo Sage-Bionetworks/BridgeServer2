@@ -361,7 +361,7 @@ public class ParticipantReportControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body field:.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields:.*")
     public void saveParticipantReportForWorkerBadJson() throws Exception {
         mockRequestBody(mockRequest, "\"+1234567890\"");
         
