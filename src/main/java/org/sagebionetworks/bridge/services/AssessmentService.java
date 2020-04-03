@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -269,7 +270,7 @@ public class AssessmentService {
      * The caller must be associated to the organization that own's the assessment 
      * locally.
      */
-    public Assessment publishAssessment(String appId, String guid) {
+    public Assessment publishAssessment(String appId, String newIdentifier, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
@@ -279,6 +280,9 @@ public class AssessmentService {
         
         checkOwnership(appId, assessmentToPublish.getOwnerId());
         
+        if (StringUtils.isNotBlank(newIdentifier)) {
+            assessmentToPublish.setIdentifier(newIdentifier);
+        }
         // Only the original owning organization can publish new revisions of an assessment to 
         // the shared repository, so check for this as well.
         String ownerId = appId + ":" + assessmentToPublish.getOwnerId();
@@ -319,7 +323,7 @@ public class AssessmentService {
      * is associated to). If the identifier already exists in this study, the revision number is adjusted
      * appropriately. The origin GUID is set to the GUID of the shared assessment.
      */
-    public Assessment importAssessment(String appId, String ownerId, String guid) {
+    public Assessment importAssessment(String appId, String ownerId, String newIdentifier, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
 
@@ -338,6 +342,9 @@ public class AssessmentService {
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, guid);
         
+        if (isNotBlank(newIdentifier)) {
+            sharedAssessment.setIdentifier(newIdentifier);
+        }
         // Figure out what revision this should be in the new app context if the identifier already exists
         int revision = nextRevisionNumber(appId, sharedAssessment.getIdentifier());
         sharedAssessment.setOriginGuid(sharedAssessment.getGuid());

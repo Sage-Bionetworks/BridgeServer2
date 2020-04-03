@@ -40,11 +40,12 @@ public class SharedAssessmentController extends BaseController {
     
     @PostMapping("/v1/sharedassessments/{guid}/import")
     @ResponseStatus(HttpStatus.CREATED)
-    public Assessment importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId) {
+    public Assessment importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId,
+            @RequestParam(required = false) String newIdentifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier().getIdentifier();
         
-        return service.importAssessment(appId, ownerId, guid);
+        return service.importAssessment(appId, ownerId, newIdentifier, guid);
     }
     
     @GetMapping("/v1/sharedassessments")
