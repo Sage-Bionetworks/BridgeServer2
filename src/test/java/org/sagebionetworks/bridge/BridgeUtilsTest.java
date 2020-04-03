@@ -33,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.databind.JsonMappingException.Reference;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -45,7 +43,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.jsoup.safety.Whitelist;
-import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -1042,14 +1039,13 @@ public class BridgeUtilsTest {
     
     @Test
     public void convertParsingErrorMismatchedInputException() {
-        MismatchedInputException mie = Mockito.mock(MismatchedInputException.class);
-        Reference ref1 = new Reference(null, "password");
-        Reference ref2 = new Reference(null, "phone");
-        List<Reference> list = ImmutableList.of(ref1, ref2);
-        Mockito.when(mie.getPath()).thenReturn(list);
-        
-        InvalidEntityException e = BridgeUtils.convertParsingError(mie);
-        assertEquals(e.getMessage(), "Error parsing JSON in request body fields: password, phone");
+        try {
+            new ObjectMapper().readValue("{\"password\": {\"value\":3}, \"phone\":\"123\"|", StudyParticipant.class);
+        } catch(IOException e) {
+            InvalidEntityException retValue = BridgeUtils.convertParsingError(e);
+            assertEquals(retValue.getMessage(), 
+                    "Error parsing JSON in request body field: password");
+        }
     }
     
     @Test

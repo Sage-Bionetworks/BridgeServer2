@@ -8,7 +8,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -67,7 +66,6 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.amazonaws.util.Throwables;
-import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -747,10 +745,11 @@ public class BridgeUtils {
     
     public static InvalidEntityException convertParsingError(Throwable throwable) {
         if (throwable instanceof MismatchedInputException) {
+            // Jackson stops parsing after the first value it cannot convert, so the error 
+            // need not be plural, despite the fields of the exception suggesting otherwise.
             MismatchedInputException mie = (MismatchedInputException)throwable;
-            List<String> fields = mie.getPath().stream().map(Reference::getFieldName).collect(toList());
-            String msg = "Error parsing JSON in request body fields: " + COMMA_SPACE_JOINER.skipNulls().join(fields);
-            return new InvalidEntityException(msg);
+            String fieldName = (mie.getPath().isEmpty()) ? "[uknown]" : mie.getPath().get(0).getFieldName();
+            return new InvalidEntityException("Error parsing JSON in request body field: " + fieldName);
         } else if (Throwables.getRootCause(throwable) instanceof InvalidEntityException) {
             return (InvalidEntityException)Throwables.getRootCause(throwable);
         }

@@ -379,7 +379,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body fields:.*")
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body field:.*")
     public void updateScheduledActivitiesBadJson() throws Exception {
         mockRequestBody(mockRequest, "[\"+1234567890\"]");
         
