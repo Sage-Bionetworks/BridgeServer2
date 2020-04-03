@@ -28,12 +28,12 @@ public class IntentController extends BaseController {
     
     @PostMapping("/v3/itp")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage submitIntentToParticipate() throws Exception {
+    public StatusMessage submitIntentToParticipate() {
         // An early hack in the system was that sharing scope was added to the consent signature 
         // JSON even though it is not part of the signature. We need to move that value because 
         // the client API continues to treat sharing as part of the consent signature.
         JsonNode requestNode = parseJson(JsonNode.class);
-        IntentToParticipate intent = MAPPER.treeToValue(requestNode, IntentToParticipate.class);
+        IntentToParticipate intent = parseJson(requestNode, IntentToParticipate.class);
         
         if (requestNode != null && requestNode.has("consentSignature")) {
             SharingOption sharing = SharingOption.fromJson(requestNode.get("consentSignature"), 2);

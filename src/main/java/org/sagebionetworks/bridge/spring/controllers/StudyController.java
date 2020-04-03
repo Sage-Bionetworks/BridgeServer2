@@ -37,7 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
@@ -58,6 +57,7 @@ import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 import org.sagebionetworks.bridge.services.StudyEmailType;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
+import org.sagebionetworks.client.exceptions.SynapseException;
 
 @CrossOrigin
 @RestController
@@ -105,14 +105,14 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping("/v3/studies/self")
-    public Study getCurrentStudy() throws Exception {
+    public Study getCurrentStudy() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
         return studyService.getStudy(session.getStudyIdentifier());
     }
     
     @PostMapping("/v3/studies/self")
-    public VersionHolder updateStudyForDeveloperOrAdmin() throws Exception {
+    public VersionHolder updateStudyForDeveloperOrAdmin() {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
 
@@ -123,7 +123,7 @@ public class StudyController extends BaseController {
     }
 
     @PostMapping("/v3/studies/{identifier}")
-    public VersionHolder updateStudy(@PathVariable String identifier) throws Exception {
+    public VersionHolder updateStudy(@PathVariable String identifier) {
         getAuthenticatedSession(SUPERADMIN);
         
         Study studyUpdate = parseJson(Study.class);
@@ -133,7 +133,7 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping("/v3/studies/{identifier}")
-    public Study getStudy(@PathVariable String identifier) throws Exception {
+    public Study getStudy(@PathVariable String identifier) {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
@@ -191,7 +191,7 @@ public class StudyController extends BaseController {
 
     @PostMapping("/v3/studies")
     @ResponseStatus(HttpStatus.CREATED)
-    public VersionHolder createStudy() throws Exception {
+    public VersionHolder createStudy() {
         getAuthenticatedSession(SUPERADMIN);
 
         Study study = parseJson(Study.class);
@@ -201,7 +201,7 @@ public class StudyController extends BaseController {
 
     @PostMapping("/v3/studies/init")
     @ResponseStatus(HttpStatus.CREATED)
-    public VersionHolder createStudyAndUsers() throws Exception {
+    public VersionHolder createStudyAndUsers() throws SynapseException {
         getAuthenticatedSession(SUPERADMIN);
 
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
@@ -212,7 +212,7 @@ public class StudyController extends BaseController {
 
     @PostMapping("/v3/studies/self/synapseProject")
     @ResponseStatus(HttpStatus.CREATED)
-    public SynapseProjectIdTeamIdHolder createSynapse() throws Exception {
+    public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
@@ -227,7 +227,7 @@ public class StudyController extends BaseController {
     // since only admin can delete study, no need to check if return results should contain deactivated ones
     @DeleteMapping("/v3/studies/{identifier}")
     public StatusMessage deleteStudy(@PathVariable String identifier,
-            @RequestParam(defaultValue = "false") boolean physical) throws Exception {
+            @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
         // Finally, you cannot delete your own study because it locks this user out of their session.
@@ -246,7 +246,7 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping("/v3/studies/self/publicKey")
-    public CmsPublicKey getStudyPublicKeyAsPem() throws Exception {
+    public CmsPublicKey getStudyPublicKeyAsPem() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String pem = uploadCertificateService.getPublicKeyAsPem(session.getStudyIdentifier());
@@ -255,7 +255,7 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping("/v3/studies/self/emailStatus")
-    public EmailVerificationStatusHolder getEmailStatus() throws Exception {
+    public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -299,7 +299,7 @@ public class StudyController extends BaseController {
     }
 
     @PostMapping("/v3/studies/self/verifyEmail")
-    public EmailVerificationStatusHolder verifySenderEmail() throws Exception {
+    public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -326,8 +326,7 @@ public class StudyController extends BaseController {
     @GetMapping("/v3/studies/{identifier}/uploads")
     public ForwardCursorPagedResourceList<UploadView> getUploadsForStudy(@PathVariable String identifier,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
-            @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey)
-            throws EntityNotFoundException {
+            @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
         getAuthenticatedSession(WORKER);
 
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);

@@ -43,14 +43,14 @@ public class ScheduleController extends BaseController {
     
     @Deprecated
     @GetMapping("/api/v1/schedules")
-    public ResourceList<Schedule> getSchedulesV1() throws Exception {
+    public ResourceList<Schedule> getSchedulesV1() {
         getAuthenticatedAndConsentedSession();
         return new ResourceList<>(ImmutableList.of());
     }
     
     @Deprecated
     @GetMapping(path="/v3/schedules", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSchedulesV3() throws Exception {
+    public String getSchedulesV3() {
         List<Schedule> schedules = getSchedulesInternal();
         
         JsonNode node = MAPPER.valueToTree(new ResourceList<Schedule>(schedules));
@@ -66,7 +66,7 @@ public class ScheduleController extends BaseController {
     }
     
     @GetMapping("/v4/schedules")
-    public ResourceList<Schedule> getSchedules() throws Exception {
+    public ResourceList<Schedule> getSchedules() {
         List<Schedule> schedules = getSchedulesInternal();
         return new ResourceList<>(schedules);
     }

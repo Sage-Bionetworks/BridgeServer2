@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -64,6 +65,9 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -738,5 +742,17 @@ public class BridgeUtils {
         } catch(NumberFormatException e) {
             throw new BadRequestException(value + " is not an integer");
         }
+    }
+    
+    public static InvalidEntityException convertParsingError(Throwable throwable) {
+        if (Throwables.getRootCause(throwable) instanceof InvalidEntityException) {
+            return (InvalidEntityException)Throwables.getRootCause(throwable);
+        } else if (throwable instanceof JsonMappingException) {
+            JsonMappingException jme = (JsonMappingException)throwable;
+            List<String> fields = jme.getPath().stream().map(Reference::getFieldName).collect(toList());
+            String msg = "Error parsing JSON in request body, fields: " + COMMA_SPACE_JOINER.skipNulls().join(fields);
+            return new InvalidEntityException(msg);
+        }
+        return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
 }

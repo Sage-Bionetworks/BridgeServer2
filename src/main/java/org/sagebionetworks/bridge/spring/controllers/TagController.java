@@ -40,7 +40,7 @@ public class TagController extends BaseController {
     }
 
     @GetMapping(path="/v1/tags", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getTags() throws Exception {
+    public String getTags() {
         return viewCache.getView(CacheKey.tagList(), () -> tagService.getTags());
     }
     
