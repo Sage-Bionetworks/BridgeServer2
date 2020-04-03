@@ -3,14 +3,18 @@ package org.sagebionetworks.bridge.models.assessments.config;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator.INSTANCE;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator;
 import org.sagebionetworks.bridge.validators.AbstractValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 public class AssessmentConfigValidatorTest {
     
@@ -49,6 +53,17 @@ public class AssessmentConfigValidatorTest {
             "    ]" + 
             "}";
 
+    @Test
+    public void valid() throws Exception {
+        ObjectNode obj = (ObjectNode)TestUtils.getClientData();
+        obj.put("identifier", "asdf");
+        obj.put("type", "SimpleType");
+        
+        AssessmentConfig config = new AssessmentConfig();
+        config.setConfig(obj);
+        Validate.entityThrowingException(INSTANCE, config);
+    }
+    
     @Test
     public void test() throws Exception {
         AssessmentConfig config = new AssessmentConfig();
