@@ -898,7 +898,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment existing =  AssessmentTest.createAssessment();
     
         when(mockDao.getAssessment(APP_ID_VALUE, "oldGuid")).thenReturn(Optional.of(existing));
-        when(mockDao.publishAssessment(any(), any(), any())).thenReturn(ASSESSMENT);
+        when(mockDao.publishAssessment(any(), any(), any(), any())).thenReturn(ASSESSMENT);
     
         // Assume no published versions
         when(mockDao.getAssessmentRevisions(SHARED_STUDY_ID_STRING, NEW_IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
@@ -907,7 +907,7 @@ public class AssessmentServiceTest extends Mockito {
         assertSame(retValue, ASSESSMENT);
 
         verify(mockDao).publishAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), 
-                assessmentCaptor.capture());
+                assessmentCaptor.capture(), configCaptor.capture());
     
         Assessment assessmentToPublish = assessmentCaptor.getAllValues().get(1);
     
@@ -1018,7 +1018,7 @@ public class AssessmentServiceTest extends Mockito {
         
         service.importAssessment(APP_ID_VALUE, OWNER_ID, NEW_IDENTIFIER, GUID);
         
-        verify(mockDao).importAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture());
+        verify(mockDao).importAssessment(eq(APP_ID_VALUE), assessmentCaptor.capture(), configCaptor.capture());
         
         // This is at revision 1 because in this test, the new identifier is indeed new.
         assertEquals(assessmentCaptor.getValue().getIdentifier(), NEW_IDENTIFIER);
