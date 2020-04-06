@@ -122,13 +122,10 @@ public class CacheProvider {
         checkNotNull(sessionToken);
         try {
             CacheKey tokenToUserIdKey = CacheKey.tokenToUserId(sessionToken);
-System.out.println(tokenToUserIdKey.toString());
             String userId = jedisOps.get(tokenToUserIdKey.toString());
             if (userId != null) {
                 CacheKey userIdToSessionKey = CacheKey.userIdToSession(userId);
-                System.out.println(userIdToSessionKey.toString());
                 String ser = jedisOps.get(userIdToSessionKey.toString());
-                System.out.println(ser);
                 if (ser != null) {
                     JsonNode node = adjustJsonWithStudyIdentifier(ser);
                     UserSession session = BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
@@ -173,6 +170,8 @@ System.out.println(tokenToUserIdKey.toString());
     // ensure persisted sessions are retrieved correctly. This can be removed after a couple
     // of days.
     private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
+        // This is also verified by newUserSessionDeserializes(), but this focuses only on 
+        // the study identifier
         JsonNode node = BridgeObjectMapper.get().readTree(ser);
         JsonNode studyObj = node.get("studyIdentifier");
         if (studyObj != null && studyObj.isObject()) {
