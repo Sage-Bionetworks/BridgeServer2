@@ -30,7 +30,7 @@ public class FPHSService {
         this.accountService = accountService;
     }
     
-    public void verifyExternalIdentifier(ExternalIdentifier externalId) throws Exception {
+    public void verifyExternalIdentifier(ExternalIdentifier externalId) {
         checkNotNull(externalId);
         
         if (isBlank(externalId.getIdentifier())) {
@@ -39,7 +39,8 @@ public class FPHSService {
         // Throws exception if not verified
         fphsDao.verifyExternalId(externalId);
     }
-    public void registerExternalIdentifier(String studyId, String healthCode, ExternalIdentifier externalId) throws Exception {
+
+    public void registerExternalIdentifier(String studyId, String healthCode, ExternalIdentifier externalId) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(externalId);
@@ -65,7 +66,7 @@ public class FPHSService {
      * @return
      * @throws Exception
      */
-    public List<FPHSExternalIdentifier> getExternalIdentifiers() throws Exception {
+    public List<FPHSExternalIdentifier> getExternalIdentifiers() {
         return fphsDao.getExternalIds();
     }
     
@@ -76,7 +77,7 @@ public class FPHSService {
      * @param externalIds
      * @throws Exception
      */
-    public void addExternalIdentifiers(List<FPHSExternalIdentifier> externalIds) throws Exception {
+    public void addExternalIdentifiers(List<FPHSExternalIdentifier> externalIds) {
         checkNotNull(externalIds);
         fphsDao.addExternalIds(externalIds);
     }

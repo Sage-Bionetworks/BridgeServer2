@@ -28,7 +28,7 @@ public class EmailController extends BaseController {
      * this call to succeed. Subject to change without warning or backwards compatibility. 
      */
     @RequestMapping(method = {GET, POST}, path="/v3/users/self/unsubscribeEmail", produces="text/plain")
-    public String unsubscribeFromEmail() throws Exception {
+    public String unsubscribeFromEmail() {
         // We catch and return 200s because MailChimp makes a validation call when configuring the web hook, and if it fails,
         // MailChimp won't persist the configuration. We could also detect the validation call because it has a different
         // User-Agent than the real callbacks, "MailChimp.com WebHook Validator" versus "MailChimp.com", and always return 

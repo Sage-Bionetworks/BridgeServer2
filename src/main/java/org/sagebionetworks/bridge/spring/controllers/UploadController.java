@@ -5,9 +5,9 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
-import java.io.IOException;
 import java.util.EnumSet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,9 +61,10 @@ public class UploadController extends BaseController {
         this.healthCodeDao = healthCodeDao;
     }
     
-    /** Gets validation status and messages for the given upload ID. */
+    /** Gets validation status and messages for the given upload ID. 
+     * @throws JsonProcessingException */
     @GetMapping(path={"/v3/uploadstatuses/{uploadId}", "/api/v1/upload/{uploadId}/status"}, produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getValidationStatus(@PathVariable String uploadId) throws IOException {
+    public String getValidationStatus(@PathVariable String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         // If not a researcher, validate that this user owns the upload

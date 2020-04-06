@@ -112,7 +112,7 @@ public class ParticipantController extends BaseController {
     }
     
     @PostMapping("/v3/participants/self")
-    public JsonNode updateSelfParticipant() throws Exception {
+    public JsonNode updateSelfParticipant() {
         UserSession session = getAuthenticatedSession();
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -122,7 +122,7 @@ public class ParticipantController extends BaseController {
         JsonNode node = parseJson(JsonNode.class);
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
-        StudyParticipant participant = MAPPER.treeToValue(node, StudyParticipant.class);
+        StudyParticipant participant = parseJson(node, StudyParticipant.class);
         StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .copyOf(existing)
@@ -211,7 +211,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/self/identifiers")
-    public JsonNode updateIdentifiers() throws Exception {
+    public JsonNode updateIdentifiers() {
         UserSession session = getAuthenticatedSession();
         
         IdentifierUpdate update = parseJson(IdentifierUpdate.class);
@@ -240,7 +240,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/search")
-    public PagedResourceList<AccountSummary> searchForAccountSummaries() throws Exception {
+    public PagedResourceList<AccountSummary> searchForAccountSummaries() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -263,7 +263,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/studies/{studyId}/participants/search")
-    public PagedResourceList<AccountSummary> searchForAccountSummariesForWorker(@PathVariable String studyId) throws Exception {
+    public PagedResourceList<AccountSummary> searchForAccountSummariesForWorker(@PathVariable String studyId) {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
         
@@ -273,7 +273,7 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants")
     @ResponseStatus(HttpStatus.CREATED)
-    public IdentifierHolder createParticipant() throws Exception {
+    public IdentifierHolder createParticipant() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
@@ -315,7 +315,7 @@ public class ParticipantController extends BaseController {
     }
     
     @GetMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) throws Exception {
+    public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) {
         getAuthenticatedSession(WORKER);
 
         // Verify it's in the same study as the researcher.
@@ -329,7 +329,7 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping("/v3/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfo(@PathVariable String userId) throws Exception {
+    public RequestInfo getRequestInfo(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -359,7 +359,7 @@ public class ParticipantController extends BaseController {
     }
     
     @PostMapping("/v3/participants/{userId}/signOut")
-    public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) throws Exception {
+    public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -369,8 +369,7 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/requestResetPassword")
-    public StatusMessage requestResetPassword(@PathVariable String userId)
-            throws Exception {
+    public StatusMessage requestResetPassword(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -405,7 +404,7 @@ public class ParticipantController extends BaseController {
     }
 
     @DeleteMapping("/v3/participants/{userId}/activities")
-    public StatusMessage deleteActivities(@PathVariable String userId) throws Exception {
+    public StatusMessage deleteActivities(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 

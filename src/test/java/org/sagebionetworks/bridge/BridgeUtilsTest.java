@@ -20,8 +20,10 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -45,12 +50,14 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidatorTest;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
@@ -1031,6 +1038,57 @@ public class BridgeUtilsTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void getIntegerOrDefaultThrowsBadRequest() {
         BridgeUtils.getIntegerOrDefault("asdf", null);
+    }
+    
+    @Test
+    public void walkWorks() throws Exception {
+        JsonNode node = new ObjectMapper().readTree(AssessmentConfigValidatorTest.TEST_JSON);
+        
+        BridgeUtils.walk(node, 
+                (fieldPath, visited) -> ((ObjectNode)visited).put("_test", fieldPath));
+        
+        assertEquals(node.get("_test").textValue(), "");
+        JsonNode el = node.get("elements").get(0);
+        assertEquals(el.get("_test").textValue(), "elements[0]");
+        assertEquals(el.get("beforeRules").get(0).get("_test").textValue(), "elements[0].beforeRules[0]");
+    }
+    
+    @Test
+    public void convertParsingErrorMismatchedInputException() {
+        try {
+            new ObjectMapper().readValue("{\"password\": {\"value\":3}, \"phone\":\"123\"|", StudyParticipant.class);
+        } catch(IOException e) {
+            InvalidEntityException retValue = BridgeUtils.convertParsingError(e);
+            assertEquals(retValue.getMessage(), 
+                    "Error parsing JSON in request body, fields: password");
+        }
+    }
+    
+    @Test
+    public void convertParsingErrorJsonParseException() throws Exception {
+        try {
+            new ObjectMapper().readValue("asdf", Integer.class);
+        } catch(IOException e) {
+            InvalidEntityException retValue = BridgeUtils.convertParsingError(e);
+            assertTrue(retValue.getMessage().contains(
+                    "Error parsing JSON in request body: Unrecognized token 'asdf'"));
+        }
+    }
+    
+    @Test
+    public void convertParsingErrorWrappedInvalidEntityException() {
+        InvalidEntityException iee = new InvalidEntityException("error");
+        RuntimeException re = new RuntimeException(iee);
+        
+        InvalidEntityException e = BridgeUtils.convertParsingError(re);
+        assertSame(e, iee);
+    }
+
+    @Test
+    public void convertParsingErrorOtherException() {
+        IOException ioe = new IOException("error");
+        InvalidEntityException e = BridgeUtils.convertParsingError(ioe);
+        assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

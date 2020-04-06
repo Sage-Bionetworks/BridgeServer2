@@ -46,7 +46,7 @@ public class SharedModuleMetadataController extends BaseController {
     /** Creates the specified metadata object. */
     @PostMapping("/v3/sharedmodules/metadata")
     @ResponseStatus(HttpStatus.CREATED)
-    public SharedModuleMetadata createMetadata() throws Exception {
+    public SharedModuleMetadata createMetadata() {
         verifySharedDeveloperAccess();
         SharedModuleMetadata metadata = parseJson(SharedModuleMetadata.class);
         return metadataService.createMetadata(metadata);

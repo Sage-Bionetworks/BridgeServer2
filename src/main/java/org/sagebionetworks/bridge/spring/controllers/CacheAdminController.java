@@ -28,14 +28,14 @@ public class CacheAdminController extends BaseController {
     }
     
     @GetMapping
-    public Set<String> listItems() throws Exception {
+    public Set<String> listItems() {
         getAuthenticatedSession(SUPERADMIN);
         
         return cacheAdminService.listItems();
     }
     
     @DeleteMapping("{cacheKey}")
-    public StatusMessage removeItem(@PathVariable String cacheKey) throws Exception {
+    public StatusMessage removeItem(@PathVariable String cacheKey) {
         getAuthenticatedSession(SUPERADMIN);
         
         cacheAdminService.removeItem(cacheKey);

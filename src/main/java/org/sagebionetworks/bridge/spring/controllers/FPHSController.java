@@ -44,7 +44,7 @@ public class FPHSController extends BaseController {
     }
     
     @GetMapping("/fphs/externalId")
-    public FPHSExternalIdentifier verifyExternalIdentifier(@RequestParam String identifier) throws Exception {
+    public FPHSExternalIdentifier verifyExternalIdentifier(@RequestParam String identifier) {
         // public API, no restrictions. externalId can be null so we can create a 400 error in the service.
         ExternalIdentifier externalId = ExternalIdentifier.create(FPHS_ID, identifier);
         fphsService.verifyExternalIdentifier(externalId);
@@ -52,7 +52,7 @@ public class FPHSController extends BaseController {
     }
     
     @PostMapping("/fphs/externalId")
-    public StatusMessage registerExternalIdentifier() throws Exception {
+    public StatusMessage registerExternalIdentifier() {
         UserSession session = getAuthenticatedSession();
         
         ExternalIdentifier externalId = parseJson(ExternalIdentifier.class);
@@ -75,7 +75,7 @@ public class FPHSController extends BaseController {
     
     @PostMapping("/fphs/externalIds")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage addExternalIdentifiers() throws Exception {
+    public StatusMessage addExternalIdentifiers() {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         if (!FPHS_ID.equals(session.getStudyIdentifier())) {

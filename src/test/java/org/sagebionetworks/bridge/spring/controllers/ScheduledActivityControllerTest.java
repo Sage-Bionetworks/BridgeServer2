@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -376,6 +377,14 @@ public class ScheduledActivityControllerTest extends Mockito {
         verifyNoMoreInteractions(mockScheduledActivityService);
     }
 
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields:.*")
+    public void updateScheduledActivitiesBadJson() throws Exception {
+        mockRequestBody(mockRequest, "[\"+1234567890\"]");
+        
+        controller.updateScheduledActivities();
+    }
+    
     @SuppressWarnings("deprecation")
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void mustBeAuthenticated() throws Exception {

@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -356,6 +357,14 @@ public class ParticipantReportControllerTest extends Mockito {
         assertNull(reportData.getKey());
         assertEquals(reportData.getData().get("field1").asText(), "Last");
         assertEquals(reportData.getData().get("field2").asText(), "Name");
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields:.*")
+    public void saveParticipantReportForWorkerBadJson() throws Exception {
+        mockRequestBody(mockRequest, "\"+1234567890\"");
+        
+        controller.saveParticipantReport(USER_ID, REPORT_ID);
     }
     
     // This should be legal

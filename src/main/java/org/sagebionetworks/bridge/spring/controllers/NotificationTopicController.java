@@ -48,7 +48,7 @@ public class NotificationTopicController extends BaseController {
     
     @PostMapping("/v3/topics")
     @ResponseStatus(HttpStatus.CREATED)
-    public GuidHolder createTopic() throws Exception {
+    public GuidHolder createTopic() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         NotificationTopic topic = parseJson(NotificationTopic.class);

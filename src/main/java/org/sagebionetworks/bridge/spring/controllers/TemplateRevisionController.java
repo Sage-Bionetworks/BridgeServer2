@@ -49,7 +49,7 @@ public class TemplateRevisionController extends BaseController {
     
     @PostMapping("/v3/templates/{guid}/revisions")
     @ResponseStatus(CREATED)
-    public CreatedOnHolder createTemplateRevision(@PathVariable String guid) throws Exception {
+    public CreatedOnHolder createTemplateRevision(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         TemplateRevision revision = parseJson(TemplateRevision.class);
@@ -58,8 +58,7 @@ public class TemplateRevisionController extends BaseController {
     }
     
     @GetMapping("/v3/templates/{guid}/revisions/{createdOn}")
-    public TemplateRevision getTemplateRevision(@PathVariable String guid, @PathVariable String createdOn)
-            throws Exception {
+    public TemplateRevision getTemplateRevision(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         DateTime createdOnDate = getDateTimeOrDefault(createdOn, null);

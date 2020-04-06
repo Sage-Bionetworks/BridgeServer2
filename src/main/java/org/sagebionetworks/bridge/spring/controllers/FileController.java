@@ -107,7 +107,7 @@ public class FileController extends BaseController {
     
     @PostMapping("/v3/files/{guid}/revisions")
     @ResponseStatus(HttpStatus.CREATED)
-    public FileRevision createFileRevision(@PathVariable String guid) throws Exception {
+    public FileRevision createFileRevision(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         // The only information that can really be submitted is a description
@@ -118,7 +118,7 @@ public class FileController extends BaseController {
     }
     
     @PostMapping("/v3/files/{guid}/revisions/{createdOn}")
-    public StatusMessage finishFileRevision(@PathVariable String guid, @PathVariable("createdOn") String createdOnStr) throws Exception {
+    public StatusMessage finishFileRevision(@PathVariable String guid, @PathVariable("createdOn") String createdOnStr) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         DateTime createdOn = DateTime.parse(createdOnStr);

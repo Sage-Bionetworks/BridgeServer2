@@ -67,7 +67,7 @@ public class StudyReportController extends BaseController {
      */
     @GetMapping("/v3/reports")
     public ReportTypeResourceList<? extends ReportIndex> listStudyReportIndices(
-            @RequestParam(required = false) String type) throws Exception {
+            @RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession();
         ReportType reportType = ("participant".equalsIgnoreCase(type)) ? PARTICIPANT : STUDY;
         
@@ -131,7 +131,7 @@ public class StudyReportController extends BaseController {
      */
     @PostMapping({"/v4/reports/{identifier}", "/v3/reports/{identifier}"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveStudyReport(@PathVariable String identifier) throws Exception {
+    public StatusMessage saveStudyReport(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
      
         ReportData reportData = parseJson(ReportData.class);
@@ -147,8 +147,7 @@ public class StudyReportController extends BaseController {
      */
     @PostMapping("/v3/studies/{studyId}/reports/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveStudyReportForWorker(@PathVariable String studyId, @PathVariable String identifier)
-            throws Exception {
+    public StatusMessage saveStudyReportForWorker(@PathVariable String studyId, @PathVariable String identifier) {
         getAuthenticatedSession(WORKER);
 
         ReportData reportData = parseJson(ReportData.class);

@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -46,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -64,6 +67,10 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
@@ -738,5 +745,48 @@ public class BridgeUtils {
         } catch(NumberFormatException e) {
             throw new BadRequestException(value + " is not an integer");
         }
+    }
+    
+    /**
+     * Walk a JSON node tree and call a BiConsumer with each object node or array 
+     * element in the tree. This implements the visitor pattern over a JsonNode 
+     * tree. The consumer is passed the path of the current node, and the node itself. 
+     * The path can be used for error reporting, logging, etc.
+     */
+    public static void walk(JsonNode node, BiConsumer<String, JsonNode> consumer) {
+        walk(node, "", consumer);
+    }
+    
+    private static void walk(JsonNode node, String fieldPath, BiConsumer<String, JsonNode> consumer) {
+        if (node.isObject()) {
+            consumer.accept(fieldPath, node);
+            for (Iterator<Map.Entry<String, JsonNode>> i = node.fields(); i.hasNext(); ) {
+                Map.Entry<String, JsonNode> entry = i.next();
+                walk(entry.getValue(), appendPath(fieldPath, entry.getKey()), consumer);
+            }
+        } else if (node.isArray()) {
+            int i = 0;
+            for (Iterator<JsonNode> iter = node.elements(); iter.hasNext(); ) {
+                JsonNode element = iter.next();
+                walk(element, fieldPath + "["+i+"]", consumer);
+                i++;
+            }
+        }
+    }
+    
+    private static String appendPath(String existingPath, String newElement) {
+        return (existingPath.length() == 0) ? newElement : (existingPath + "." + newElement);
+    }
+    
+    public static InvalidEntityException convertParsingError(Throwable throwable) {
+        if (Throwables.getRootCause(throwable) instanceof InvalidEntityException) {
+            return (InvalidEntityException)Throwables.getRootCause(throwable);
+        } else if (throwable instanceof JsonMappingException) {
+            JsonMappingException jme = (JsonMappingException)throwable;
+            List<String> fields = jme.getPath().stream().map(Reference::getFieldName).collect(toList());
+            String msg = "Error parsing JSON in request body, fields: " + COMMA_SPACE_JOINER.skipNulls().join(fields);
+            return new InvalidEntityException(msg);
+        }
+        return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
 }

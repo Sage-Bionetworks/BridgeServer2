@@ -61,8 +61,7 @@ public class TemplateRevisionService {
         return templateRevisionDao.getTemplateRevisions(templateGuid, offset, pageSize);
     }
     
-    public CreatedOnHolder createTemplateRevision(String studyId, String templateGuid, TemplateRevision revision)
-            throws Exception {
+    public CreatedOnHolder createTemplateRevision(String studyId, String templateGuid, TemplateRevision revision) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
         checkNotNull(revision);
@@ -87,8 +86,7 @@ public class TemplateRevisionService {
         return new CreatedOnHolder(createdOn);
     }
     
-    public TemplateRevision getTemplateRevision(String studyId, String templateGuid, DateTime createdOn)
-            throws Exception {
+    public TemplateRevision getTemplateRevision(String studyId, String templateGuid, DateTime createdOn) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
         

@@ -83,6 +83,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -754,6 +755,14 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertEquals(context.getLanguages(), LANGUAGES);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
+    public void updateSelfParticipantBadJson() throws Exception {
+        mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
+        
+        controller.updateSelfParticipant();
     }
 
     // Some values will be missing in the JSON and should be preserved from this original participant object.

@@ -220,7 +220,7 @@ public class ParticipantReportController extends BaseController {
      */
     @PostMapping("/v3/participants/reports/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveParticipantReportForWorker(@PathVariable String identifier) throws Exception {
+    public StatusMessage saveParticipantReportForWorker(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(WORKER);
         
         JsonNode node = parseJson(JsonNode.class);
@@ -229,7 +229,7 @@ public class ParticipantReportController extends BaseController {
         }
         String healthCode = node.get("healthCode").asText();
         
-        ReportData reportData = MAPPER.treeToValue(node, ReportData.class);
+        ReportData reportData = parseJson(node, ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
         reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 

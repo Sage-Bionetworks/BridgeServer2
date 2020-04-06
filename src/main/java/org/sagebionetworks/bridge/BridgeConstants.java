@@ -1,17 +1,23 @@
 package org.sagebionetworks.bridge;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
     public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
+    public static final TypeReference<Map<String, Map<String, JsonNode>>> UPDATES_TYPEREF = new TypeReference<Map<String, Map<String, JsonNode>>>() {};
 
+    public static final String ID_FIELD_NAME = "identifier";
+    public static final String TYPE_FIELD_NAME = "type";
+    
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
 
     public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";

@@ -9,7 +9,12 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -21,6 +26,7 @@ import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.SubstudyService;
 
@@ -139,5 +145,18 @@ public class AssessmentValidatorTest extends Mockito {
     public void ownerIdEmpty() {
         assessment.setOwnerId("\t");
         assertValidatorMessage(validator, assessment, "ownerId", CANNOT_BE_BLANK);
+    }
+    @Test
+    public void propertyInfoInvalid() {
+        PropertyInfo info = new PropertyInfo.Builder().build();
+        Map<String, Set<PropertyInfo>> customizationFields = new HashMap<>();
+        customizationFields.put("oneIdentifier", ImmutableSet.of(info));
+        
+        assessment.setCustomizationFields(customizationFields);
+        
+        assertValidatorMessage(validator, assessment, "customizationFields[oneIdentifier][0].propName",
+                CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, assessment, "customizationFields[oneIdentifier][0].label", 
+                CANNOT_BE_BLANK);
     }
 }

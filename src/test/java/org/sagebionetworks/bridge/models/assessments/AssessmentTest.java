@@ -101,10 +101,22 @@ public class AssessmentTest {
         assertEquals(tags.get(1).textValue(), "tag2");
         
         ObjectNode customFields = (ObjectNode)node.get("customizationFields");
-        ArrayNode node1 = (ArrayNode)customFields.get("node1");
+        ArrayNode node1 = (ArrayNode)customFields.get("guid1");
+
         assertEquals(node1.size(), 2);
-        assertEquals(node1.get(0).textValue(), "field1");
-        assertEquals(node1.get(1).textValue(), "field2");
+        ObjectNode propInfo1 = (ObjectNode)node1.get(0);
+        assertEquals(propInfo1.get("propName").textValue(), "foo");
+        assertEquals(propInfo1.get("label").textValue(), "foo label");
+        assertEquals(propInfo1.get("description").textValue(), "a description");
+        assertEquals(propInfo1.get("propType").textValue(), "string");
+        assertEquals(propInfo1.get("type").textValue(), "PropertyInfo");
+        
+        ObjectNode propInfo2 = (ObjectNode)node1.get(1);
+        assertEquals(propInfo2.get("propName").textValue(), "bar");
+        assertEquals(propInfo2.get("label").textValue(), "bar label");
+        assertEquals(propInfo2.get("description").textValue(), "a description");
+        assertEquals(propInfo2.get("propType").textValue(), "string");
+        assertEquals(propInfo2.get("type").textValue(), "PropertyInfo");
         
         Assessment deser = BridgeObjectMapper.get().readValue(node.toString(), Assessment.class);
         assertAssessment(deser);

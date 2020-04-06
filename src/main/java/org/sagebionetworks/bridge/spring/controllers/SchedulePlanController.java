@@ -44,7 +44,7 @@ public class SchedulePlanController extends BaseController {
     
     @GetMapping("/v3/studies/{studyId}/scheduleplans")
     public ResourceList<SchedulePlan> getSchedulePlansForWorker(@PathVariable String studyId,
-            @RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
+            @RequestParam(defaultValue = "false") boolean includeDeleted) {
         getAuthenticatedSession(WORKER);
         Study study = studyService.getStudy(studyId);
         
@@ -54,8 +54,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     @GetMapping("/v3/scheduleplans")
-    public ResourceList<SchedulePlan> getSchedulePlans(@RequestParam(defaultValue = "false") boolean includeDeleted)
-            throws Exception {
+    public ResourceList<SchedulePlan> getSchedulePlans(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         String studyId = session.getStudyIdentifier();
 
@@ -67,7 +66,7 @@ public class SchedulePlanController extends BaseController {
 
     @PostMapping("/v3/scheduleplans")
     @ResponseStatus(HttpStatus.CREATED)
-    public GuidVersionHolder createSchedulePlan() throws Exception {
+    public GuidVersionHolder createSchedulePlan() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 
@@ -77,7 +76,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     @GetMapping("/v3/scheduleplans/{guid}")
-    public SchedulePlan getSchedulePlan(@PathVariable String guid) throws Exception {
+    public SchedulePlan getSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String studyId = session.getStudyIdentifier();
         
@@ -85,7 +84,7 @@ public class SchedulePlanController extends BaseController {
     }
 
     @PostMapping("/v3/scheduleplans/{guid}")
-    public GuidVersionHolder updateSchedulePlan(@PathVariable String guid) throws Exception {
+    public GuidVersionHolder updateSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         Study study = studyService.getStudy(session.getStudyIdentifier());
 

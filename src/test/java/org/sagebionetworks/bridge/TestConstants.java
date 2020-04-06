@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
+import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
@@ -165,8 +166,19 @@ public class TestConstants {
     public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS);
     public static final DateTime CREATED_ON = TIMESTAMP.minusHours(1);
     public static final DateTime MODIFIED_ON = TIMESTAMP.plusHours(1);
-    public static final Map<String, Set<String>> CUSTOMIZATION_FIELDS = ImmutableMap.of("node1",
-            ImmutableSet.of("field1", "field2")); 
+
+    public static final PropertyInfo INFO1 = new PropertyInfo.Builder().withPropName("foo").withLabel("foo label")
+            .withDescription("a description").withPropType("string").build();
+    public static final PropertyInfo INFO2 = new PropertyInfo.Builder().withPropName("bar").withLabel("bar label")
+            .withDescription("a description").withPropType("string").build();
+    public static final PropertyInfo INFO3 = new PropertyInfo.Builder().withPropName("baz").withLabel("baz label")
+            .withDescription("a description").withPropType("string").build();
+    public static final PropertyInfo INFO4 = new PropertyInfo.Builder().withPropName("bop").withLabel("bop label")
+            .withDescription("a description").withPropType("string").build();
+    
+    public static final Map<String, Set<PropertyInfo>> CUSTOMIZATION_FIELDS = ImmutableMap.of(
+            "guid1", ImmutableSet.of(INFO1, INFO2), 
+            "guid2", ImmutableSet.of(INFO3, INFO4)); 
     
     public static final ImmutableList<String> PUBLISHERS = ImmutableList.of("pub1", "pub2");
     public static final ImmutableList<String> CREATORS = ImmutableList.of("creator1", "creator2");

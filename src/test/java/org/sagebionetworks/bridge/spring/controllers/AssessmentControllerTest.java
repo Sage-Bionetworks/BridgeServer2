@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.services.AssessmentService;
 
 public class AssessmentControllerTest extends Mockito {
+    private static final String NEW_IDENTIFIER = "oneNewIdentifier";
     
     @Mock
     AssessmentService mockService;
@@ -447,19 +448,29 @@ public class AssessmentControllerTest extends Mockito {
     public void publishAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.publishAssessment(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
+        when(mockService.publishAssessment(API_STUDY_ID_STRING, null, GUID)).thenReturn(assessment);
         
-        Assessment retValue = controller.publishAssessment(GUID);
+        Assessment retValue = controller.publishAssessment(GUID, null);
         assertSame(retValue, assessment);
     }
 
+    @Test
+    public void publishAssessmentWithNewIdentifier() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        Assessment assessment = AssessmentTest.createAssessment();
+        when(mockService.publishAssessment(API_STUDY_ID_STRING, NEW_IDENTIFIER, GUID)).thenReturn(assessment);
+        
+        Assessment retValue = controller.publishAssessment(GUID, NEW_IDENTIFIER);
+        assertSame(retValue, assessment);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void publishAssessmentRejectsSharedAppContext() {
         session.setStudyIdentifier(SHARED_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        controller.publishAssessment(GUID);
+        controller.publishAssessment(GUID, null);
     }
     
     @Test

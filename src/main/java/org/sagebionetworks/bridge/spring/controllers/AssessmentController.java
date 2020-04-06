@@ -139,7 +139,8 @@ public class AssessmentController extends BaseController {
     
     @PostMapping("/v1/assessments/{guid}/publish")
     @ResponseStatus(HttpStatus.CREATED)
-    public Assessment publishAssessment(@PathVariable String guid) {
+    public Assessment publishAssessment(@PathVariable String guid,
+            @RequestParam(required = false) String newIdentifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String appId = session.getStudyIdentifier();
@@ -147,7 +148,7 @@ public class AssessmentController extends BaseController {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        return service.publishAssessment(appId, guid);
+        return service.publishAssessment(appId, newIdentifier, guid);
     }
         
     @DeleteMapping("/v1/assessments/{guid}")
