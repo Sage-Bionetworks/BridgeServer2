@@ -15,7 +15,7 @@ public final class AccountSummary {
     // This is the one class that exposes this object through the API. Because this 
     // may involve updating some downstream projects like BridgeWorkerPlatform, leave
     // it until the full refactor to getAppId() is done, then swap out. getStudyId has
-    // been added to move the code along in BridgeServer2.
+    // been added and will be refactored to getAppId in the next step of migration.
     public final static class StudyIdentifier {
         private final String identifier;
         StudyIdentifier(String identifier) {

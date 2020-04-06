@@ -225,10 +225,8 @@ public class HibernateAccountDao implements AccountDao {
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        String studyId = null;
-        if (StringUtils.isNotBlank(hibernateAccount.getStudyId())) {
-            studyId = hibernateAccount.getStudyId();
-        }
+        String studyId = hibernateAccount.getStudyId();
+        
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
         // avoid this 1+N query.

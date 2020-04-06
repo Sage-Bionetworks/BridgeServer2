@@ -165,7 +165,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     // Alternatively, surveyGuid and surveyCreatedOn are used to map the upload to a survey.
     //
     // This is package-scoped to facilitate unit tests.
-    UploadSchema getUploadSchema(String study, JsonNode infoJson) {
+    UploadSchema getUploadSchema(String studyId, JsonNode infoJson) {
         // get relevant params from info.json
         String item = JsonUtils.asText(infoJson, UploadUtil.FIELD_ITEM);
         Integer schemaRev = JsonUtils.asInt(infoJson, UploadUtil.FIELD_SCHEMA_REV);
@@ -178,28 +178,28 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         if (StringUtils.isNotBlank(surveyGuid) && StringUtils.isNotBlank(surveyCreatedOn)) {
             // First try getting the schema by survey.
-            return getUploadSchemaBySurvey(study, surveyGuid, surveyCreatedOn);
+            return getUploadSchemaBySurvey(studyId, surveyGuid, surveyCreatedOn);
         } else if (StringUtils.isNotBlank(item)) {
             // Fall back to item field.
-            return getUploadSchemaByItemAndRev(study, item, schemaRev);
+            return getUploadSchemaByItemAndRev(studyId, item, schemaRev);
         } else if (StringUtils.isNotBlank(identifier)) {
             // Fall back to identifier field. Log a warning that we're using this non-standard field.
             logger.warn("info.json missing item field, falling back to identifier field, identifier=" + identifier);
-            return getUploadSchemaByItemAndRev(study, identifier, schemaRev);
+            return getUploadSchemaByItemAndRev(studyId, identifier, schemaRev);
         } else {
             // Schemaless.
             return null;
         }
     }
 
-    private UploadSchema getUploadSchemaBySurvey(String study, String surveyGuid, String surveyCreatedOn) {
+    private UploadSchema getUploadSchemaBySurvey(String studyId, String surveyGuid, String surveyCreatedOn) {
         // surveyCreatedOn is a timestamp. SurveyService takes long epoch millis. Convert.
         long surveyCreatedOnMillis= DateUtils.convertToMillisFromEpoch(surveyCreatedOn);
 
         // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
         // specified.
         GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-        Survey survey = surveyService.getSurvey(study, surveyKeys, false, true);
+        Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
         String schemaId = survey.getIdentifier();
         Integer schemaRev = survey.getSchemaRevision();
         if (StringUtils.isBlank(schemaId) || schemaRev == null) {
@@ -209,7 +209,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         // Get the schema with the schema ID and rev.
         // Note that if there's no schema, we treat this like schemaless.
-        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(study, schemaId, schemaRev);
+        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(studyId, schemaId, schemaRev);
     }
 
     private UploadSchema getUploadSchemaByItemAndRev(String studyId, String item, Integer schemaRev) {

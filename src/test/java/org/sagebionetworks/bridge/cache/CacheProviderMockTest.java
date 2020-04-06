@@ -392,6 +392,39 @@ public class CacheProviderMockTest {
         assertNull(retrieved);
     }
     
+    @Test
+    public void getUserSessionWithStudyIdentifier() {
+        reset(jedisOps);
+        String json = "{" + 
+                "   \"authenticated\":true," + 
+                "   \"environment\":\"local\"," + 
+                "   \"ipAddress\":\"0:0:0:0:0:0:0:1\"," + 
+                "   \"sessionToken\":\"yb_1TVdTFDbutUVMeOhddtoq\"," + 
+                "   \"internalSessionToken\":\"Pd45m1owTlXjUUL3M11c9lF6\"," + 
+                "   \"studyIdentifier\":\"api\"," + 
+                "   \"participant\":{" + 
+                "      \"sharingScope\":\"no_sharing\"," + 
+                "      \"notifyByEmail\":true," + 
+                "      \"dataGroups\":[\"test_user\"]," + 
+                "      \"status\":\"enabled\"," + 
+                "      \"createdOn\":\"2019-07-17T16:19:31.841Z\"," + 
+                "      \"id\":\"67071802-8860-4a6d-a43d-73fb1440ad7b\"," + 
+                "      \"timeZone\":\"-07:00\"," + 
+                "      \"type\":\"StudyParticipant\"" + 
+                "   }," + 
+                "   \"type\":\"UserSession\"" + 
+                "}";
+        when(jedisOps.get("A:session2")).thenReturn("B");
+        when(jedisOps.get("B:session2:user")).thenReturn(json);
+        
+        //A:session2
+        //B:session2:user
+        
+        UserSession retrieved = cacheProvider.getUserSession("A");
+        System.out.println(retrieved);
+        assertEquals(retrieved.getStudyIdentifier(), "api");
+    }
+    
     private void mockTransaction(JedisTransaction trans) {
         when(trans.setex(any(String.class), anyInt(), any(String.class))).thenReturn(trans);
         // */when(trans.expire(any(String.class), anyInt())).thenReturn(trans);

@@ -52,9 +52,7 @@ public class HibernateTemplateDao implements TemplateDao {
         checkNotNull(studyId);
         checkNotNull(type);
         
-        ImmutableMap<String,Object> params = ImmutableMap.of(
-                TEMPLATE_TYPE, type, 
-                "studyId", studyId);
+        ImmutableMap<String, Object> params = ImmutableMap.of(TEMPLATE_TYPE, type, "studyId", studyId);
         String countQuery = SELECT_COUNT + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         String getQuery = SELECT_TEMPLATE + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         

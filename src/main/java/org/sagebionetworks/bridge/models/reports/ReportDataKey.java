@@ -53,7 +53,7 @@ public final class ReportDataKey implements BridgeEntity {
     
     @JsonIgnore
     public String getIndexKeyString() {
-        return String.format("%s:%s",studyId, reportType.name());
+        return String.format("%s:%s", studyId, reportType.name());
     }
     
     @Override

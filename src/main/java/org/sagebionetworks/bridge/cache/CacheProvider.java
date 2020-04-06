@@ -122,10 +122,13 @@ public class CacheProvider {
         checkNotNull(sessionToken);
         try {
             CacheKey tokenToUserIdKey = CacheKey.tokenToUserId(sessionToken);
+System.out.println(tokenToUserIdKey.toString());
             String userId = jedisOps.get(tokenToUserIdKey.toString());
             if (userId != null) {
                 CacheKey userIdToSessionKey = CacheKey.userIdToSession(userId);
+                System.out.println(userIdToSessionKey.toString());
                 String ser = jedisOps.get(userIdToSessionKey.toString());
+                System.out.println(ser);
                 if (ser != null) {
                     JsonNode node = adjustJsonWithStudyIdentifier(ser);
                     UserSession session = BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
@@ -144,7 +147,6 @@ public class CacheProvider {
             }
             return null;
         } catch (Throwable e) {
-            e.printStackTrace();
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
