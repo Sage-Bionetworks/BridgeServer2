@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.files;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -26,7 +26,7 @@ public class FileMetadataTest extends Mockito {
     @Test
     public void canSerialize() throws Exception { 
         FileMetadata metadata = new FileMetadata();
-        metadata.setStudyId(TEST_STUDY_IDENTIFIER);
+        metadata.setStudyId(API_APP_ID);
         metadata.setName("oneName");
         metadata.setGuid(GUID);
         metadata.setDescription("oneDescription");

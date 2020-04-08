@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.WITHDRAWAL;
@@ -115,7 +115,7 @@ public class ConsentControllerTest extends Mockito {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
 
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -185,7 +185,7 @@ public class ConsentControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void getConsentSignatureV1() throws Exception {
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TestConstants.TEST_STUDY_IDENTIFIER);
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(API_APP_ID);
         when(mockConsentService.getConsentSignature(study, defaultGuid, USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignature();
@@ -306,7 +306,7 @@ public class ConsentControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void withdrawConsent() throws Exception {
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TestConstants.TEST_STUDY_IDENTIFIER);
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(API_APP_ID);
         mockRequestBody(mockRequest, WITHDRAWAL);
         
         // You do not need to be fully consented for this call to succeed. Nothing should prevent

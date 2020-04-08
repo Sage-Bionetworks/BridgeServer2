@@ -9,8 +9,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -182,7 +182,7 @@ public class DynamoSubpopulationDaoMockTest {
     @Test
     public void updateSubpopulationUpdatesCriteriaFromObject() {
         Subpopulation subpopWithCritObject = Subpopulation.create();
-        subpopWithCritObject.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpopWithCritObject.setStudyIdentifier(API_APP_ID);
         subpopWithCritObject.setGuidString(BridgeUtils.generateGuid());
         subpopWithCritObject.setVersion(1L);
         subpopWithCritObject.setCriteria(CRITERIA);
@@ -205,7 +205,7 @@ public class DynamoSubpopulationDaoMockTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setDeleted(false);
-        subpop.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpop.setStudyIdentifier(API_APP_ID);
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setVersion(1L);
         
@@ -222,7 +222,7 @@ public class DynamoSubpopulationDaoMockTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setDeleted(true);
-        subpop.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpop.setStudyIdentifier(API_APP_ID);
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setVersion(1L);
         
@@ -239,7 +239,7 @@ public class DynamoSubpopulationDaoMockTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setDeleted(true);
-        subpop.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpop.setStudyIdentifier(API_APP_ID);
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setVersion(1L);
         
@@ -293,7 +293,7 @@ public class DynamoSubpopulationDaoMockTest {
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SUBPOP_GUID);
-        subpop.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpop.setStudyIdentifier(API_APP_ID);
         subpop.setCriteria(criteria);
         return subpop;
     }

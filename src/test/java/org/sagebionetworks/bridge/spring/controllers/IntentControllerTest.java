@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -103,7 +103,7 @@ public class IntentControllerTest extends Mockito {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         return new IntentToParticipate.Builder()
-                .withStudyId(TEST_STUDY_IDENTIFIER)
+                .withStudyId(API_APP_ID)
                 .withScope(SPONSORS_AND_PARTNERS)
                 .withPhone(PHONE)
                 .withSubpopGuid("subpopGuid")

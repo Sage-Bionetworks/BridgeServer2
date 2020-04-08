@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.cache;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -61,7 +62,7 @@ public class CacheKeyTest {
     
     @Test
     public void emailSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withEmail("email@email.com").build();
         assertEquals(CacheKey.emailSignInRequest(signIn).toString(), "email@email.com:api:signInRequest");
     }
@@ -90,7 +91,7 @@ public class CacheKeyTest {
     
     @Test
     public void passwordResetForEmail() {
-        assertEquals(CacheKey.passwordResetForEmail("sptoken", "api").toString(), "sptoken:api");
+        assertEquals(CacheKey.passwordResetForEmail("sptoken", API_APP_ID).toString(), "sptoken:api");
     }
     
     @Test
@@ -101,7 +102,7 @@ public class CacheKeyTest {
     
     @Test
     public void phoneSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withPhone(TestConstants.PHONE).build();
         
         assertEquals(CacheKey.phoneSignInRequest(signIn).toString(),
@@ -115,7 +116,7 @@ public class CacheKeyTest {
     
     @Test
     public void study() {
-        assertEquals(CacheKey.study("api").toString(), "api:study");
+        assertEquals(CacheKey.study(API_APP_ID).toString(), API_APP_ID + ":study");
     }    
     
     @Test

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -89,7 +89,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // mock service - Service output should have both task ID and study ID so we can test that study ID is filtered
         // out
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
@@ -127,7 +127,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void list() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         when(defService.getAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY)).thenReturn(
@@ -152,7 +152,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void get() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         when(defService.getCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID)).thenReturn(serviceOutput);
@@ -177,7 +177,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(

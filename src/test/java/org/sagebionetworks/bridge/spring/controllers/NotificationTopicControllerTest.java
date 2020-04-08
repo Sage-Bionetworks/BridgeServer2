@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -233,7 +233,7 @@ public class NotificationTopicControllerTest extends Mockito {
         topic.setName("Test Topic Name");
         topic.setShortName("Short Name");
         topic.setDescription("Test Description");
-        topic.setStudyId(TEST_STUDY_IDENTIFIER);
+        topic.setStudyId(API_APP_ID);
         topic.setTopicARN("atopicArn");
         return topic;
     }

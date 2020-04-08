@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -135,7 +136,7 @@ public class UploadSchemaServiceTest {
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
         assertEquals(daoInputSchema.getRevision(), expectedRev);
 
         // Validate DAO input is also svcOutput.
@@ -219,7 +220,7 @@ public class UploadSchemaServiceTest {
 
             // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
             UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-            assertEquals(daoInputSchema.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+            assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
             assertEquals(daoInputSchema.getRevision(), expectedRev.intValue());
 
             // Validate DAO input is also svcOutput.
@@ -975,7 +976,7 @@ public class UploadSchemaServiceTest {
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID, schema ID, and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
         assertEquals(daoInputSchema.getSchemaId(), SCHEMA_ID);
         assertEquals(daoInputSchema.getRevision(), SCHEMA_REV);
 

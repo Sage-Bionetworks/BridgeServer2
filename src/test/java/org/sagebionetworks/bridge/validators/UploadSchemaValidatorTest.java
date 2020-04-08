@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -10,7 +11,6 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUploadSchema;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -291,7 +291,7 @@ public class UploadSchemaValidatorTest {
         schema.setName("valid schema");
         schema.setRevision(1);
         schema.setSchemaId("valid-schema");
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(API_APP_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
         return schema;
     }

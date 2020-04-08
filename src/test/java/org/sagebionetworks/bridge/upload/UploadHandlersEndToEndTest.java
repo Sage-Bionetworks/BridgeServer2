@@ -6,6 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -214,7 +215,7 @@ public class UploadHandlersEndToEndTest {
 
         // set up DecryptHandler - For ease of tests, this will just return the input verbatim.
         UploadArchiveService mockUploadArchiveService = mock(UploadArchiveService.class);
-        when(mockUploadArchiveService.decrypt(eq(TestConstants.TEST_STUDY_IDENTIFIER), any(InputStream.class)))
+        when(mockUploadArchiveService.decrypt(eq(API_APP_ID), any(InputStream.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1));
 
         DecryptHandler decryptHandler = new DecryptHandler();
@@ -274,7 +275,7 @@ public class UploadHandlersEndToEndTest {
         when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
         strictValidationHandler.setStudyService(mockStudyService);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "test-substudy", "userId");
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, "test-substudy", "userId");
         acctSubstudy.setExternalId(EXTERNAL_ID);
 
         // set up TranscribeConsentHandler
@@ -328,7 +329,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(record.getCreatedOnTimeZone(), CREATED_ON_TIME_ZONE);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(record.getStudyId(), API_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_TODAY);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
@@ -367,7 +368,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SURVEY_SCHEMA_REV);
         schema.setSchemaId(SURVEY_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(API_APP_ID);
         schema.setSurveyGuid(SURVEY_GUID);
         schema.setSurveyCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
@@ -558,7 +559,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SCHEMA_REV);
         schema.setSchemaId(SCHEMA_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(API_APP_ID);
 
         // set up upload files
         String cccTxtContent = "Blob file";

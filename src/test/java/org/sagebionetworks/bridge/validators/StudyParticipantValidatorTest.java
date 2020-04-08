@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
@@ -59,7 +59,7 @@ public class StudyParticipantValidatorTest {
         substudy = Substudy.create();
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         study.setHealthCodeExportEnabled(true);
         study.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         study.setDataGroups(STUDY_DATA_GROUPS);

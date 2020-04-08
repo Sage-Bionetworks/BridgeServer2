@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
 import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -8,7 +9,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.STUDY;
@@ -121,7 +121,7 @@ public class StudyReportControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build();
@@ -307,7 +307,7 @@ public class StudyReportControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void missingPublicStudyReturns404() throws Exception {
-        controller.getPublicStudyReport(TEST_STUDY_IDENTIFIER, "does-not-exist", "2016-05-02", "2016-05-09");
+        controller.getPublicStudyReport(API_APP_ID, "does-not-exist", "2016-05-02", "2016-05-09");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -322,7 +322,7 @@ public class StudyReportControllerTest extends Mockito {
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
-        controller.getPublicStudyReport(TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE.toString(), END_DATE.toString());
+        controller.getPublicStudyReport(API_APP_ID, REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test

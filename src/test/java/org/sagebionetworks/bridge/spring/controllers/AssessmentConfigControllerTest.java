@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -81,12 +81,12 @@ public class AssessmentConfigControllerTest extends Mockito {
     public void getAssessmentConfig() {
         doReturn(session).when(controller).getAuthenticatedSession();
         AssessmentConfig config = new AssessmentConfig();
-        when(mockService.getAssessmentConfig(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(config);
+        when(mockService.getAssessmentConfig(API_APP_ID, GUID)).thenReturn(config);
         
         AssessmentConfig retValue = controller.getAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).getAssessmentConfig(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).getAssessmentConfig(API_APP_ID, GUID);
     }
     
     @Test
@@ -95,14 +95,14 @@ public class AssessmentConfigControllerTest extends Mockito {
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
-        when(mockService.updateAssessmentConfig(eq(TEST_STUDY_IDENTIFIER), eq(GUID), any())).thenReturn(config);
+        when(mockService.updateAssessmentConfig(eq(API_APP_ID), eq(GUID), any())).thenReturn(config);
         
         mockRequestBody(mockRequest, config);
         
         AssessmentConfig retValue = controller.updateAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).updateAssessmentConfig(eq(TEST_STUDY_IDENTIFIER), eq(GUID), configCaptor.capture());
+        verify(mockService).updateAssessmentConfig(eq(API_APP_ID), eq(GUID), configCaptor.capture());
         
         AssessmentConfig captured = configCaptor.getValue();
         assertEquals(captured.getConfig().toString(), TestUtils.getClientData().toString());
@@ -127,7 +127,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
-        when(mockService.customizeAssessmentConfig(eq(TEST_STUDY_IDENTIFIER), eq(GUID), any())).thenReturn(config);
+        when(mockService.customizeAssessmentConfig(eq(API_APP_ID), eq(GUID), any())).thenReturn(config);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         updates.put("guid", ImmutableMap.of("objGuid", TestUtils.getClientData()));
@@ -136,7 +136,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         AssessmentConfig retValue = controller.customizeAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).customizeAssessmentConfig(eq(TEST_STUDY_IDENTIFIER), eq(GUID), updatesCaptor.capture());
+        verify(mockService).customizeAssessmentConfig(eq(API_APP_ID), eq(GUID), updatesCaptor.capture());
         
         Map<String, Map<String, JsonNode>> captured = updatesCaptor.getValue();
         assertEquals(captured.get("guid").get("objGuid"), TestUtils.getClientData());
@@ -172,7 +172,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         
         controller.customizeAssessmentConfig(GUID);
         
-        verify(mockService).customizeAssessmentConfig(eq(TEST_STUDY_IDENTIFIER), 
+        verify(mockService).customizeAssessmentConfig(eq(API_APP_ID), 
                 eq(GUID), updatesCaptor.capture());
         
         Map<String, Map<String, JsonNode>> captured = updatesCaptor.getValue();

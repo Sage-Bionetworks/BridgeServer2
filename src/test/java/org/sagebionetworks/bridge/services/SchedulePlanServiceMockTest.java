@@ -6,8 +6,8 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -60,7 +60,7 @@ public class SchedulePlanServiceMockTest {
     @BeforeMethod
     public void before() {
         study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         study.setTaskIdentifiers(ImmutableSet.of("tapTest", "taskGuid", "CCC"));
         study.setDataGroups(ImmutableSet.of("AAA"));
         

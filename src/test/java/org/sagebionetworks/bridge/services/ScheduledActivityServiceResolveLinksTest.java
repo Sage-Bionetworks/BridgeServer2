@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -70,7 +71,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Mock compound activity definition service. This compound activity contains a schema ref with an unresolved
         // revision, and a survey reference with no createdOn (published survey).
         CompoundActivityDefinition compoundActivityDefinition = CompoundActivityDefinition.create();
-        compoundActivityDefinition.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        compoundActivityDefinition.setStudyId(API_APP_ID);
         compoundActivityDefinition.setTaskId(COMPOUND_ACTIVITY_REF_TASK_ID);
         compoundActivityDefinition.setSchemaList(ImmutableList.of(new SchemaReference(SCHEMA_ID, null)));
         compoundActivityDefinition.setSurveyList(ImmutableList.of(new SurveyReference(SURVEY_ID, SURVEY_GUID, null)));
@@ -84,7 +85,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Mock schema service to provide a concrete schema. Schema only cares about ID and rev.
         UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(API_APP_ID);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 
@@ -94,7 +95,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Similarly, mock Survey.
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         survey.setIdentifier(SURVEY_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);

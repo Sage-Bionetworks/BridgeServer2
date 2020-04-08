@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -69,7 +70,7 @@ public class CompoundActivityDefinitionServiceTest {
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(serviceInput, daoInput);
-        assertEquals(daoInput.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInput.getStudyId(), API_APP_ID);
 
         // Validate that the service result is the same as the dao result.
         assertSame(serviceResult, daoResult);
@@ -246,7 +247,7 @@ public class CompoundActivityDefinitionServiceTest {
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(daoInput, serviceInput);
-        assertEquals(daoInput.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInput.getStudyId(), API_APP_ID);
         assertEquals(daoInput.getTaskId(), TASK_ID);
 
         // Validate that the service result is the same as the dao result.

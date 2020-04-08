@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -86,7 +87,7 @@ public class DynamoAppConfigElementDaoTest {
         assertEquals(query.getIndexName(), DynamoAppConfigElementDao.STUDY_ID_INDEX_NAME);
         assertFalse(query.isConsistentRead());
         assertFalse(query.isScanIndexForward());
-        assertEquals(query.getHashKeyValues().getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(query.getHashKeyValues().getStudyId(), API_APP_ID);
         assertNull(query.getHashKeyValues().getId());
     }
     
@@ -208,7 +209,7 @@ public class DynamoAppConfigElementDaoTest {
     @Test
     public void deleteElementRevisionPermanently() {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        key.setStudyId(API_APP_ID);
         key.setId("id");
         key.setRevision(3L);
         when(mockMapper.load(key)).thenReturn(key);
@@ -251,12 +252,12 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V1.setStudyId(API_APP_ID);
         el1V1.setId(ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V2.setStudyId(API_APP_ID);
         el1V2.setId(ID_1);
         el1V2.setRevision(2L);
 
@@ -266,32 +267,32 @@ public class DynamoAppConfigElementDaoTest {
     
     private List<DynamoAppConfigElement> appConfigElementListId1And2() {
         DynamoAppConfigElement el1V1 = new DynamoAppConfigElement();
-        el1V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V1.setStudyId(API_APP_ID);
         el1V1.setId(ID_1);
         el1V1.setRevision(1L);
         
         DynamoAppConfigElement el1V2 = new DynamoAppConfigElement();
-        el1V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V2.setStudyId(API_APP_ID);
         el1V2.setId(ID_1);
         el1V2.setRevision(2L);
         
         DynamoAppConfigElement el1V3 = new DynamoAppConfigElement();
-        el1V3.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el1V3.setStudyId(API_APP_ID);
         el1V3.setId(ID_1);
         el1V3.setRevision(3L);
         
         DynamoAppConfigElement el2V1 = new DynamoAppConfigElement();
-        el2V1.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V1.setStudyId(API_APP_ID);
         el2V1.setId(ID_2);
         el2V1.setRevision(1L);
         
         DynamoAppConfigElement el2V2 = new DynamoAppConfigElement();
-        el2V2.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V2.setStudyId(API_APP_ID);
         el2V2.setId(ID_2);
         el2V2.setRevision(2L);
         
         DynamoAppConfigElement el2V3 = new DynamoAppConfigElement();
-        el2V3.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        el2V3.setStudyId(API_APP_ID);
         el2V3.setId(ID_2);
         el2V3.setRevision(3L);
         

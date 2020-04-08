@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -31,7 +31,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
 
     static final String VENDOR_ID = "aVendorId";
     static final String OFFSET_KEY = "offsetKey";
-    static final String KEY = TEST_STUDY_IDENTIFIER + ":" + VENDOR_ID;
+    static final String KEY = API_APP_ID + ":" + VENDOR_ID;
     
     @Mock
     DynamoDBMapper mockMapper;

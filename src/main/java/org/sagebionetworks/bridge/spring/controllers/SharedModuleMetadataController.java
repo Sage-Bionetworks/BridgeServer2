@@ -172,7 +172,7 @@ public class SharedModuleMetadataController extends BaseController {
     private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
+        if (!BridgeConstants.SHARED_APP_ID.equals(studyId.getIdentifier())) {
             throw new UnauthorizedException();
         }
         return session;
@@ -181,7 +181,7 @@ public class SharedModuleMetadataController extends BaseController {
     private UserSession verifySharedDeveloperOrAdminAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
+        if (!BridgeConstants.SHARED_APP_ID.equals(studyId.getIdentifier())) {
             throw new UnauthorizedException();
         }
         return session;

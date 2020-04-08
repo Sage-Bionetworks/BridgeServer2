@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -132,7 +132,7 @@ public class UserProfileControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         study.setDataGroups(USER_DATA_GROUPS);
         study.setUserProfileAttributes(TEST_STUDY_ATTRIBUTES);
 

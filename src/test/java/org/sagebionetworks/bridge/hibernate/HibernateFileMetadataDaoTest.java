@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.hibernate.HibernateFileMetadataDao.DELETE;
 import static org.sagebionetworks.bridge.hibernate.HibernateFileMetadataDao.FROM_FILE;
 import static org.sagebionetworks.bridge.hibernate.HibernateFileMetadataDao.ORDER_BY;
@@ -57,7 +57,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         assertSame(returned.get(), metadata);
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_STUDY_IDENTIFIER);
+        assertEquals(map.get("studyId"), API_APP_ID);
         assertEquals(map.get("guid"), GUID);
     }
 
@@ -88,7 +88,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(TEST_STUDY_IDENTIFIER, map.get("studyId"));
+        assertEquals(API_APP_ID, map.get("studyId"));
     }
 
     @Test
@@ -107,7 +107,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(TEST_STUDY_IDENTIFIER, map.get("studyId"));
+        assertEquals(API_APP_ID, map.get("studyId"));
     }
     
     @Test
@@ -133,7 +133,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     @Test
     public void deleteFilePermanently() {
         FileMetadata metadata = new FileMetadata();
-        metadata.setStudyId(TEST_STUDY_IDENTIFIER);
+        metadata.setStudyId(API_APP_ID);
         when(mockHibernateHelper.getById(FileMetadata.class, GUID)).thenReturn(metadata);
         
         dao.deleteFilePermanently(TEST_STUDY, GUID);
@@ -167,6 +167,6 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         dao.deleteAllStudyFiles(TEST_STUDY);
         
         verify(mockHibernateHelper).query(eq(DELETE + FROM_FILE), paramsCaptor.capture());
-        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_IDENTIFIER);
+        assertEquals(paramsCaptor.getValue().get("studyId"), API_APP_ID);
     }
 }

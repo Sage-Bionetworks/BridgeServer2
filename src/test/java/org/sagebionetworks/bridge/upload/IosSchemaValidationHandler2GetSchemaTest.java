@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.upload;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class IosSchemaValidationHandler2GetSchemaTest {
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
-            ImmutableMap.of(TEST_STUDY_IDENTIFIER, ImmutableMap.of("schema-rev-test", 2));
+            ImmutableMap.of(API_APP_ID, ImmutableMap.of("schema-rev-test", 2));
 
     private static final String TEST_SURVEY_CREATED_ON_STRING = "2015-08-27T13:38:55-07:00";
     private static final long TEST_SURVEY_CREATED_ON_MILLIS = DateTime.parse(TEST_SURVEY_CREATED_ON_STRING)

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -95,7 +95,7 @@ public class FPHSServiceTest {
         assertEquals(accountSubstudies.size(), 1);
         
         AccountSubstudy acctSubstudy = Iterables.getFirst(accountSubstudies, null);
-        assertEquals(acctSubstudy.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(acctSubstudy.getStudyId(), API_APP_ID);
         assertEquals(acctSubstudy.getSubstudyId(), "harvard");
         assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
     }

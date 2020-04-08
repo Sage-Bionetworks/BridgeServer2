@@ -2,10 +2,12 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -116,34 +118,34 @@ public class SignInTest {
     
     @Test
     public void signInAccountIdWithEmail() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER).withEmail("email")
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail("email")
                 .withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(accountId.getStudyId(), API_APP_ID);
         assertEquals(accountId.getEmail(), "email");
     }
     
     @Test
     public void signInAccountIdWithPhone() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withPhone(TestConstants.PHONE).withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(accountId.getStudyId(), API_APP_ID);
         assertEquals(accountId.getPhone().getNumber(), TestConstants.PHONE.getNumber());
     }
     
     @Test
     public void signInAccountIdWithExternalId() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withExternalId("external-id").withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(accountId.getStudyId(), API_APP_ID);
         assertEquals(accountId.getExternalId(), "external-id");
     }
     
     @Test
     public void signInAccountIncomplete() {
-        SignIn signIn = new SignIn.Builder().withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withPassword("password").build();
         // SignIn should be validated to hold either email or phone before we 
         // retrieve accountId 
@@ -162,7 +164,7 @@ public class SignInTest {
                 .withPhone(TestConstants.PHONE)
                 .withExternalId("externalId")
                 .withPassword("password")
-                .withStudy(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudy(BridgeConstants.API_APP_ID)
                 .withToken("token")
                 .withReauthToken("reauthToken").build();
         
@@ -171,7 +173,7 @@ public class SignInTest {
         assertEquals(copy.getPhone(), TestConstants.PHONE);
         assertEquals(copy.getExternalId(), "externalId");
         assertEquals(copy.getPassword(), "password");
-        assertEquals(copy.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(copy.getStudyId(), API_APP_ID);
         assertEquals(copy.getToken(), "token");
         assertEquals(copy.getReauthToken(), "reauthToken");
         

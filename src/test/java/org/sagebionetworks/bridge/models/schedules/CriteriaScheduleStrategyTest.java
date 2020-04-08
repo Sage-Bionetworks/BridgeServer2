@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -55,7 +55,7 @@ public class CriteriaScheduleStrategyTest {
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
-        PLAN.setStudyKey(TEST_STUDY_IDENTIFIER);
+        PLAN.setStudyKey(API_APP_ID);
     }
     
     private CriteriaScheduleStrategy strategy;

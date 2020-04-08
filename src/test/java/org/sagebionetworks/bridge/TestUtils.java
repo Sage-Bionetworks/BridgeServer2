@@ -357,7 +357,7 @@ public class TestUtils {
         topic.setName("Test Topic Name");
         topic.setShortName("Short Name");
         topic.setDescription("Test Description");
-        topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        topic.setStudyId(BridgeConstants.API_APP_ID);
         topic.setTopicARN("atopicArn");
         return topic;
     }
@@ -370,7 +370,7 @@ public class TestUtils {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         return new IntentToParticipate.Builder()
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(BridgeConstants.API_APP_ID)
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")

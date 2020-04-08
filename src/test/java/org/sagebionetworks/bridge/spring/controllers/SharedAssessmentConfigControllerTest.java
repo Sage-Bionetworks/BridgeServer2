@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -38,11 +38,11 @@ public class SharedAssessmentConfigControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentConfig() {
         AssessmentConfig config = new AssessmentConfig();
-        when(mockService.getAssessmentConfig(SHARED_STUDY_ID_STRING, GUID)).thenReturn(config);
+        when(mockService.getAssessmentConfig(SHARED_APP_ID, GUID)).thenReturn(config);
         
         AssessmentConfig retValue = controller.getSharedAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).getAssessmentConfig(SHARED_STUDY_ID_STRING, GUID);
+        verify(mockService).getAssessmentConfig(SHARED_APP_ID, GUID);
     }
 }

@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -82,7 +82,7 @@ public class SchedulePlanControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         
         when(mockStudyService.getStudy(study.getStudyIdentifier())).thenReturn(study);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
@@ -113,7 +113,7 @@ public class SchedulePlanControllerTest extends Mockito {
         when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false))
                 .thenReturn(Lists.newArrayList(plan));
         
-        ResourceList<SchedulePlan> result = controller.getSchedulePlansForWorker(TEST_STUDY_IDENTIFIER, false);
+        ResourceList<SchedulePlan> result = controller.getSchedulePlansForWorker(API_APP_ID, false);
         assertEquals(result.getItems().get(0), plan);
         
         verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY, false);

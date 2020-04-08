@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -78,7 +78,7 @@ public class AppConfigValidatorTest {
         MockitoAnnotations.initMocks(this);
         
         appConfig = AppConfig.create();
-        appConfig.setStudyId(TEST_STUDY_IDENTIFIER);
+        appConfig.setStudyId(API_APP_ID);
         
         this.newValidator = new AppConfigValidator(mockSurveyService, mockSchemaService, mockAppConfigElementService,
                 mockFileService, USER_DATA_GROUPS, USER_SUBSTUDY_IDS, true);
@@ -116,7 +116,7 @@ public class AppConfigValidatorTest {
     public void configReferenceNotFound() { 
         ConfigReference ref1 = new ConfigReference("id:1", 1L);
         appConfig.setConfigReferences(ImmutableList.of(ref1));
-        appConfig.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        appConfig.setStudyId(API_APP_ID);
         
         when(mockAppConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
                 .thenThrow(new EntityNotFoundException(AppConfigElement.class));

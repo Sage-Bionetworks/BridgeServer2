@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -67,7 +68,7 @@ public class HibernateSubstudyDaoTest {
         
         assertEquals(queryCaptor.getValue(), "from HibernateSubstudy as substudy where studyId=:studyId");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(parameters.get("studyId"), API_APP_ID);
     }
 
     @Test
@@ -84,7 +85,7 @@ public class HibernateSubstudyDaoTest {
         assertEquals(queryCaptor.getValue(),
                 "from HibernateSubstudy as substudy where studyId=:studyId and deleted != 1");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(parameters.get("studyId"), API_APP_ID);
     }
     
     @Test
@@ -99,7 +100,7 @@ public class HibernateSubstudyDaoTest {
         
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "id");
-        assertEquals(substudyId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(substudyId.getStudyId(), API_APP_ID);
     }
     
     @Test
@@ -137,7 +138,7 @@ public class HibernateSubstudyDaoTest {
         verify(hibernateHelper).deleteById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "oneId");
-        assertEquals(substudyId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(substudyId.getStudyId(), API_APP_ID);
     }    
 
     @Test(expectedExceptions = PersistenceException.class)

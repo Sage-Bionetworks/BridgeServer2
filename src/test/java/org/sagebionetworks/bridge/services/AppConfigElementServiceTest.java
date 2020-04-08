@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -101,8 +102,8 @@ public class AppConfigElementServiceTest {
         AppConfigElement captured = elementCaptor.getValue();
         assertNull(captured.getVersion());
         assertFalse(captured.isDeleted());
-        assertEquals(captured.getStudyId(), "api");
-        assertEquals(captured.getKey(), "api:id");
+        assertEquals(captured.getStudyId(), API_APP_ID);
+        assertEquals(captured.getKey(), API_APP_ID + ":id");
         assertEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
     }
@@ -204,8 +205,8 @@ public class AppConfigElementServiceTest {
         
         verify(dao).saveElementRevision(elementCaptor.capture());
         AppConfigElement captured = elementCaptor.getValue(); 
-        assertEquals(captured.getStudyId(), "api");
-        assertEquals(captured.getKey(), "api:id");
+        assertEquals(captured.getStudyId(), API_APP_ID);
+        assertEquals(captured.getKey(), API_APP_ID + ":id");
         assertNotEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
     }

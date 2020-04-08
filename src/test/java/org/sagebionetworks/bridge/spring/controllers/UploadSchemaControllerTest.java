@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -207,11 +207,11 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, WORKER);
-        UploadSchema result = controller.getUploadSchemaByStudyAndSchemaAndRev(TEST_STUDY_IDENTIFIER, TEST_SCHEMA_ID, 1);
+        UploadSchema result = controller.getUploadSchemaByStudyAndSchemaAndRev(API_APP_ID, TEST_SCHEMA_ID, 1);
 
         // Unlike the other methods, this also returns study ID
         assertEquals(result.getSchemaId(), TEST_SCHEMA_ID);
-        assertEquals(result.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(result.getStudyId(), API_APP_ID);
     }
 
     @Test
@@ -390,7 +390,7 @@ public class UploadSchemaControllerTest extends Mockito {
         node.put("revision", revision);
 
         // Server returns schemas with study IDs (which are filtered out selectively in some methods).
-        node.put("studyId", TestConstants.TEST_STUDY_IDENTIFIER);
+        node.put("studyId", API_APP_ID);
 
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);
     }

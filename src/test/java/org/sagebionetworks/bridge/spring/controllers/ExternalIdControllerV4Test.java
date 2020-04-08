@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -87,7 +87,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         list = new ForwardCursorPagedResourceList<>(items, "nextPageOffsetKey");
 
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
 
         session = new UserSession();
         session.setStudyIdentifier(TEST_STUDY);
@@ -141,7 +141,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         verify(mockService).createExternalId(externalIdCaptor.capture(), eq(false));
 
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
-        assertEquals(retrievedId.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(retrievedId.getStudyId(), API_APP_ID);
         assertEquals(retrievedId.getSubstudyId(), "substudyId");
         assertEquals(retrievedId.getIdentifier(), "identifier");
     }
@@ -156,7 +156,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
         verify(mockService).deleteExternalIdPermanently(eq(study), externalIdCaptor.capture());
         assertEquals(externalIdCaptor.getValue().getIdentifier(), "externalId");
-        assertEquals(externalIdCaptor.getValue().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(externalIdCaptor.getValue().getStudyId(), API_APP_ID);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)

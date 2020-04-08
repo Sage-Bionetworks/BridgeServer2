@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -38,7 +38,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     
     private static final DynamoAppConfig KEY = new DynamoAppConfig();
     static {
-        KEY.setStudyId(TEST_STUDY_IDENTIFIER);
+        KEY.setStudyId(API_APP_ID);
         KEY.setGuid(GUID);
     }
     
@@ -83,7 +83,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(query.getHashKeyValues().getStudyId(), API_APP_ID);
         // Regardless of the state of the deleted flag
         assertNull(query.getQueryFilter());
     }
@@ -101,7 +101,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(query.getHashKeyValues().getStudyId(), API_APP_ID);
         
         // where the deleted flag is not set to 1 (deleted)
         Condition condition = query.getQueryFilter().get("deleted");
@@ -162,7 +162,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_STUDY_IDENTIFIER);
+        config.setStudyId(API_APP_ID);
         config.setGuid(GUID);
         config.setCriteria(criteria);
         
@@ -190,7 +190,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_STUDY_IDENTIFIER);
+        config.setStudyId(API_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true); // can be deleted as part of an update
         config.setCriteria(criteria);
@@ -216,7 +216,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_STUDY_IDENTIFIER);
+        config.setStudyId(API_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(false); // can be undeleted as part of an update
         config.setCriteria(criteria);
@@ -239,7 +239,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigLogicallyDeleted() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_STUDY_IDENTIFIER);
+        config.setStudyId(API_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true);
         config.setCriteria(Criteria.create());
@@ -254,7 +254,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigNotFound() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_STUDY_IDENTIFIER);
+        config.setStudyId(API_APP_ID);
         config.setGuid(GUID);
         
         dao.updateAppConfig(config);
@@ -263,7 +263,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test
     public void deleteAppConfig() {
         DynamoAppConfig saved = new DynamoAppConfig();
-        saved.setStudyId(TEST_STUDY_IDENTIFIER);
+        saved.setStudyId(API_APP_ID);
         saved.setGuid(GUID);
         saved.setCriteria(Criteria.create());
         when(mockMapper.load(KEY)).thenReturn(saved);

@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -24,109 +24,109 @@ public class AccountIdTest {
     
     @Test
     public void twoAccountIdsAreTheSameWithTheSameData() {
-        assertTrue(AccountId.forId(TEST_STUDY_IDENTIFIER, "id")
-                .equals(AccountId.forId(TEST_STUDY_IDENTIFIER, "id")));
+        assertTrue(AccountId.forId(API_APP_ID, "id")
+                .equals(AccountId.forId(API_APP_ID, "id")));
         
-        assertTrue(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE)
-                .equals(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE)));
+        assertTrue(AccountId.forPhone(API_APP_ID, PHONE)
+                .equals(AccountId.forPhone(API_APP_ID, PHONE)));
         
-        assertTrue(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email")
-                .equals(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email")));
+        assertTrue(AccountId.forEmail(API_APP_ID, "email")
+                .equals(AccountId.forEmail(API_APP_ID, "email")));
         
-        assertTrue(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")
-                .equals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI")));
+        assertTrue(AccountId.forHealthCode(API_APP_ID, "DEF-GHI")
+                .equals(AccountId.forHealthCode(API_APP_ID, "DEF-GHI")));
         
-        assertTrue(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")
-                .equals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID")));
+        assertTrue(AccountId.forExternalId(API_APP_ID, "EXTID")
+                .equals(AccountId.forExternalId(API_APP_ID, "EXTID")));
         
-        assertTrue(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)
-                .equals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID)));
+        assertTrue(AccountId.forSynapseUserId(API_APP_ID, SYNAPSE_USER_ID)
+                .equals(AccountId.forSynapseUserId(API_APP_ID, SYNAPSE_USER_ID)));
     }
     
     @Test
     public void testToString() {
-        assertEquals(AccountId.forId(TEST_STUDY_IDENTIFIER, "user-id").toString(), "AccountId [studyId=api, credential=user-id]");
+        assertEquals(AccountId.forId(API_APP_ID, "user-id").toString(), "AccountId [studyId=api, credential=user-id]");
         
-        assertEquals(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).toString(), "AccountId [studyId=api, credential=Phone [regionCode=US, number=9712486796]]");
+        assertEquals(AccountId.forPhone(API_APP_ID, PHONE).toString(), "AccountId [studyId=api, credential=Phone [regionCode=US, number=9712486796]]");
         
-        assertEquals(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "email").toString(), "AccountId [studyId=api, credential=email]");
+        assertEquals(AccountId.forEmail(API_APP_ID, "email").toString(), "AccountId [studyId=api, credential=email]");
         
-        assertEquals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "DEF-GHI").toString(), "AccountId [studyId=api, credential=HEALTH_CODE]");
+        assertEquals(AccountId.forHealthCode(API_APP_ID, "DEF-GHI").toString(), "AccountId [studyId=api, credential=HEALTH_CODE]");
         
-        assertEquals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").toString(), "AccountId [studyId=api, credential=EXTID]");
+        assertEquals(AccountId.forExternalId(API_APP_ID, "EXTID").toString(), "AccountId [studyId=api, credential=EXTID]");
         
-        assertEquals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID).toString(), "AccountId [studyId=api, credential="+SYNAPSE_USER_ID+"]");
+        assertEquals(AccountId.forSynapseUserId(API_APP_ID, SYNAPSE_USER_ID).toString(), "AccountId [studyId=api, credential="+SYNAPSE_USER_ID+"]");
     }
     
     @Test
     public void factoryMethodsWork() {
         String number = PHONE.getNumber();
-        assertEquals(AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getId(), "one");
-        assertEquals(AccountId.forEmail(TEST_STUDY_IDENTIFIER, "one").getEmail(), "one");
-        assertEquals(AccountId.forPhone(TEST_STUDY_IDENTIFIER, PHONE).getPhone().getNumber(), number);
-        assertEquals(AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "ABC-DEF").getHealthCode(), "ABC-DEF");
-        assertEquals(AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "EXTID").getExternalId(), "EXTID");
-        assertEquals(AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, SYNAPSE_USER_ID).getSynapseUserId(), SYNAPSE_USER_ID);
+        assertEquals(AccountId.forId(API_APP_ID, "one").getId(), "one");
+        assertEquals(AccountId.forEmail(API_APP_ID, "one").getEmail(), "one");
+        assertEquals(AccountId.forPhone(API_APP_ID, PHONE).getPhone().getNumber(), number);
+        assertEquals(AccountId.forHealthCode(API_APP_ID, "ABC-DEF").getHealthCode(), "ABC-DEF");
+        assertEquals(AccountId.forExternalId(API_APP_ID, "EXTID").getExternalId(), "EXTID");
+        assertEquals(AccountId.forSynapseUserId(API_APP_ID, SYNAPSE_USER_ID).getSynapseUserId(), SYNAPSE_USER_ID);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void idAccessorThrows() {
-        AccountId.forEmail(TEST_STUDY_IDENTIFIER, "one").getId();
+        AccountId.forEmail(API_APP_ID, "one").getId();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void emailAccessorThrows() {
-        AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getEmail();
+        AccountId.forId(API_APP_ID, "one").getEmail();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void phoneAccessorThrows() {
-        AccountId.forId(TEST_STUDY_IDENTIFIER, "one").getPhone();
+        AccountId.forId(API_APP_ID, "one").getPhone();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void healthCodeAccessorThrows() {
-        AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, "one").getEmail();
+        AccountId.forHealthCode(API_APP_ID, "one").getEmail();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void externalIdAccessorThrows() {
-        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "one").getEmail();
+        AccountId.forExternalId(API_APP_ID, "one").getEmail();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void synapseUserIdAccessorThrows() {
-        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, "one").getSynapseUserId();
+        AccountId.forExternalId(API_APP_ID, "one").getSynapseUserId();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoEmail() {
-        AccountId.forEmail(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forEmail(API_APP_ID, null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoId() {
-        AccountId.forId(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forId(API_APP_ID, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoPhone() {
-        AccountId.forPhone(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forPhone(API_APP_ID, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoHealthCode() {
-        AccountId.forHealthCode(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forHealthCode(API_APP_ID, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoExternalId() {
-        AccountId.forExternalId(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forExternalId(API_APP_ID, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoSynapseUserId() {
-        AccountId.forSynapseUserId(TEST_STUDY_IDENTIFIER, null);
+        AccountId.forSynapseUserId(API_APP_ID, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -175,7 +175,7 @@ public class AccountIdTest {
         
         AccountId identifier = BridgeObjectMapper.get().readValue(json, AccountId.class);
         
-        assertEquals(identifier.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(identifier.getStudyId(), API_APP_ID);
         assertEquals(identifier.getEmail(), EMAIL);
         assertEquals(identifier.getExternalId(), "someExternalId");
         assertEquals(identifier.getHealthCode(), "someHealthCode");

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
@@ -236,7 +236,7 @@ public class DynamoNotificationTopicDaoTest {
         
         verify(mockMapper).delete(topicCaptor.capture());
         NotificationTopic capturedTopic = topicCaptor.getValue();
-        assertEquals(capturedTopic.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(capturedTopic.getStudyId(), API_APP_ID);
         assertEquals(capturedTopic.getGuid(), "anything");
     }
 
@@ -268,7 +268,7 @@ public class DynamoNotificationTopicDaoTest {
         doReturn(topic).when(mockMapper).load(any());
         
         NotificationTopic updated = dao.getTopic(TEST_STUDY, topic.getGuid());
-        assertEquals(updated.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(updated.getStudyId(), API_APP_ID);
         assertEquals(updated.getGuid(), "topicGuid");
         assertNull(updated.getCriteria());
         
@@ -293,7 +293,7 @@ public class DynamoNotificationTopicDaoTest {
 
         // Execute and validate.
         NotificationTopic result = dao.getTopic(TEST_STUDY, GUID_WITH_CRITERIA);
-        assertEquals(result.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(result.getStudyId(), API_APP_ID);
         assertEquals(result.getGuid(), GUID_WITH_CRITERIA);
         assertCriteria(GUID_WITH_CRITERIA, result.getCriteria());
     }
@@ -342,7 +342,7 @@ public class DynamoNotificationTopicDaoTest {
         
         DynamoDBQueryExpression<DynamoNotificationTopic> capturedQuery = queryExpressionCaptor.getValue();
         DynamoNotificationTopic capturedTopic = capturedQuery.getHashKeyValues();
-        assertEquals(capturedTopic.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(capturedTopic.getStudyId(), API_APP_ID);
         assertNull(capturedTopic.getGuid());
         assertNull(capturedQuery.getQueryFilter()); // deleted are not being filtered out
     }

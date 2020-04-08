@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -11,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import org.springframework.validation.MapBindingResult;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoCompoundActivityDefinition;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -138,7 +138,7 @@ public class CompoundActivityDefinitionValidatorTest {
 
     private static CompoundActivityDefinition makeValidDef() {
         CompoundActivityDefinition def = CompoundActivityDefinition.create();
-        def.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        def.setStudyId(API_APP_ID);
         def.setTaskId(TASK_ID);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);

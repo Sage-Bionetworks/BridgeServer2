@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -12,7 +13,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -154,7 +154,7 @@ public class StudyControllerTest extends Mockito {
         
         study = new DynamoStudy();
         study.setSupportEmail(EMAIL_ADDRESS);
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         study.setSynapseProjectId(TEST_PROJECT_ID);
         study.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         study.setActive(true);
@@ -217,7 +217,7 @@ public class StudyControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
 
-        controller.getUploadsForStudy(TEST_STUDY_IDENTIFIER, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        controller.getUploadsForStudy(API_APP_ID, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
@@ -242,12 +242,12 @@ public class StudyControllerTest extends Mockito {
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void cannotDeactivateForDeveloper() throws Exception {
-        controller.deleteStudy(TEST_STUDY_IDENTIFIER, false);
+        controller.deleteStudy(API_APP_ID, false);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void cannotDeleteForDeveloper() throws Exception {
-        controller.deleteStudy(TEST_STUDY_IDENTIFIER, true);
+        controller.deleteStudy(API_APP_ID, true);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -396,28 +396,28 @@ public class StudyControllerTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullType() throws Exception {
-        controller.verifyEmail(TEST_STUDY_IDENTIFIER, DUMMY_VERIFICATION_TOKEN, null);
+        controller.verifyEmail(API_APP_ID, DUMMY_VERIFICATION_TOKEN, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailEmptyType() throws Exception {
-        controller.verifyEmail(TEST_STUDY_IDENTIFIER, DUMMY_VERIFICATION_TOKEN, "");
+        controller.verifyEmail(API_APP_ID, DUMMY_VERIFICATION_TOKEN, "");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailBlankType() throws Exception {
-        controller.verifyEmail(TEST_STUDY_IDENTIFIER, DUMMY_VERIFICATION_TOKEN, "   ");
+        controller.verifyEmail(API_APP_ID, DUMMY_VERIFICATION_TOKEN, "   ");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailInvalidType() throws Exception {
-        controller.verifyEmail(TEST_STUDY_IDENTIFIER, DUMMY_VERIFICATION_TOKEN, "bad-type");
+        controller.verifyEmail(API_APP_ID, DUMMY_VERIFICATION_TOKEN, "bad-type");
     }
 
     @Test
     public void verifyEmailSuccess() throws Exception {
         // Execute
-        StatusMessage result = controller.verifyEmail(TEST_STUDY_IDENTIFIER, DUMMY_VERIFICATION_TOKEN,
+        StatusMessage result = controller.verifyEmail(API_APP_ID, DUMMY_VERIFICATION_TOKEN,
                 CONSENT_NOTIFICATION.toString().toLowerCase());
         assertEquals(result, CONSENT_EMAIL_VERIFIED_MSG);
 
@@ -463,7 +463,7 @@ public class StudyControllerTest extends Mockito {
         ForwardCursorPagedResourceList<UploadView> result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         
         verify(mockUploadService).getStudyUploads(TEST_STUDY, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
-        verify(mockStudyService, never()).getStudy(TEST_STUDY_IDENTIFIER);
+        verify(mockStudyService, never()).getStudy(API_APP_ID);
         // in other words, it's the object we mocked out from the service, we were returned the value.
         assertNull(result.getRequestParams().get("offsetBy"));
         assertNull(result.getTotal());
@@ -519,7 +519,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(uploads).when(mockUploadService).getStudyUploads(TEST_STUDY, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
                 null);
 
-        ForwardCursorPagedResourceList<UploadView> result = controller.getUploadsForStudy(TEST_STUDY_IDENTIFIER, startTime.toString(), endTime.toString(),
+        ForwardCursorPagedResourceList<UploadView> result = controller.getUploadsForStudy(API_APP_ID, startTime.toString(), endTime.toString(),
                 API_MAXIMUM_PAGE_SIZE, null);
 
         verify(mockUploadService).getStudyUploads(TEST_STUDY, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
@@ -606,7 +606,7 @@ public class StudyControllerTest extends Mockito {
         study.setName("value to seek");
         mockRequestBody(mockRequest, study);
         
-        VersionHolder holder = controller.updateStudy(TEST_STUDY_IDENTIFIER);
+        VersionHolder holder = controller.updateStudy(API_APP_ID);
         assertEquals(holder.getVersion(), Long.valueOf(3L));
         
         verify(mockStudyService).updateStudy(studyCaptor.capture(), eq(true));
@@ -854,7 +854,7 @@ public class StudyControllerTest extends Mockito {
         when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(studyA, studyB, studyC, studyD));
         
         // This user is only associated to the API study, but they are an admin
-        List<String> list = ImmutableList.of(TEST_STUDY_IDENTIFIER);
+        List<String> list = ImmutableList.of(API_APP_ID);
         when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();

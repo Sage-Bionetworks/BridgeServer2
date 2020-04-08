@@ -9,8 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -114,7 +114,7 @@ public class SubpopulationServiceTest {
         
         Set<String> dataGroups = ImmutableSet.of("group1","group2");
         when(study.getDataGroups()).thenReturn(dataGroups);
-        when(study.getIdentifier()).thenReturn(TEST_STUDY_IDENTIFIER);
+        when(study.getIdentifier()).thenReturn(API_APP_ID);
         when(study.getStudyIdentifier()).thenReturn(TEST_STUDY);
         
         when(subpopDao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
@@ -156,7 +156,7 @@ public class SubpopulationServiceTest {
         assertNotNull(result.getGuidString());
         assertNotEquals(result.getGuidString(), "cannot-set-guid");
         assertFalse(result.isDeleted());
-        assertEquals(result.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
+        assertEquals(result.getStudyIdentifier(), API_APP_ID);
         
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
@@ -223,7 +223,7 @@ public class SubpopulationServiceTest {
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals(result.getName(), "Name");
         assertEquals(result.getGuidString(), "guid");
-        assertEquals(result.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
+        assertEquals(result.getStudyIdentifier(), API_APP_ID);
         
         verify(subpopDao).updateSubpopulation(subpop);
         verify(substudyService).getSubstudyIds(TEST_STUDY);
@@ -440,7 +440,7 @@ public class SubpopulationServiceTest {
     
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
-        subpop.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        subpop.setStudyIdentifier(API_APP_ID);
         subpop.setName(name);
         subpop.setGuidString(BridgeUtils.generateGuid());
         

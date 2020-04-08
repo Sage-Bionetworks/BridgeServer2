@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
@@ -16,7 +17,7 @@ public class PasswordResetTest {
         PasswordReset reset = BridgeObjectMapper.get().readValue(json, PasswordReset.class);
         assertEquals(reset.getSptoken(), "3x9HSBY3vZr5zrx9qkEtLa");
         assertEquals(reset.getPassword(), "pass");
-        assertEquals(reset.getStudyIdentifier(), "api");
+        assertEquals(reset.getStudyIdentifier(), API_APP_ID);
     }
     
 }

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.assessments;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -8,7 +9,6 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -40,7 +40,7 @@ public class AssessmentTest {
     @Test
     public void createFactoryMethod() {
         HibernateAssessment assessment = new HibernateAssessment();
-        assessment.setAppId(TEST_STUDY_IDENTIFIER);
+        assessment.setAppId(API_APP_ID);
         assessment.setGuid(GUID);
         assessment.setIdentifier(IDENTIFIER);
         assessment.setRevision(5);

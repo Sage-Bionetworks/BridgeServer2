@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -64,11 +65,11 @@ public class ExportViaSqsServiceTest {
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_END_DATE_TIME).textValue(),
                 EXPECTED_END_DATE_TIME_STRING);
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_TAG).textValue(), "On-Demand Export studyId="
-                + TestConstants.TEST_STUDY_IDENTIFIER + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
+                + API_APP_ID + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
         assertTrue(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_USE_LAST_EXPORT_TIME).booleanValue());
 
         JsonNode studyWhitelistNode = sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_STUDY_WHITELIST);
         assertEquals(studyWhitelistNode.size(), 1);
-        assertEquals(studyWhitelistNode.get(0).textValue(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(studyWhitelistNode.get(0).textValue(), API_APP_ID);
     }
 }

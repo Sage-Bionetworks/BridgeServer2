@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
@@ -52,7 +52,7 @@ public class UserManagementController extends BaseController {
         
         // Adjust the sign in so it is always done against the API study.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
-                .withStudy(API_STUDY_ID_STRING).build();        
+                .withStudy(API_APP_ID).build();        
         
         Study study = studyService.getStudy(signIn.getStudyId());
         CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());

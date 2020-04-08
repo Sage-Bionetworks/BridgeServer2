@@ -4,6 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -58,7 +59,7 @@ public class ExternalIdServiceTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudyId(TestConstants.TEST_STUDY).build());
         study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         extId = ExternalIdentifier.create(TestConstants.TEST_STUDY, ID);
         extId.setSubstudyId(SUBSTUDY_ID);
         externalIdService = new ExternalIdService();
@@ -233,7 +234,7 @@ public class ExternalIdServiceTest {
     @Test
     public void unassignExternalId() {
         Account account = Account.create();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         
         externalIdService.unassignExternalId(account, ID);
@@ -244,7 +245,7 @@ public class ExternalIdServiceTest {
     @Test
     public void unassignExternalIdNullDoesNothing() {
         Account account = Account.create();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         
         externalIdService.unassignExternalId(account, null);

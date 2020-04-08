@@ -8,8 +8,8 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -34,6 +34,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -115,7 +116,7 @@ public class SurveyServiceMockTest {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
         study = TestUtils.getValidStudy(SurveyServiceMockTest.class);
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -183,7 +184,7 @@ public class SurveyServiceMockTest {
     @Test
     public void getSurveyWithoutElements() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(any(), any(), eq(false))).thenReturn(survey);
         
         service.getSurvey(TEST_STUDY, SURVEY_KEYS, false, true);
@@ -194,7 +195,7 @@ public class SurveyServiceMockTest {
     @Test
     public void getSurveyMostRecentlyPublishedWithoutElements() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(TEST_STUDY, SURVEY_GUID, false))
                 .thenReturn(survey);
         
@@ -239,7 +240,7 @@ public class SurveyServiceMockTest {
         
         Survey existing = Survey.create();
         existing.setPublished(true);
-        existing.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        existing.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, surveyKeys, false)).thenReturn(existing);
         
         // Now create a schedule that points to this survey
@@ -253,7 +254,7 @@ public class SurveyServiceMockTest {
     public void publishSurvey() {
         // test inputs and outputs
         Survey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         
         // mock DAO
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, true)).thenReturn(survey);
@@ -481,10 +482,10 @@ public class SurveyServiceMockTest {
         // One published survey, should throw exception
         Survey survey1 = createSurvey();
         survey1.setPublished(true);
-        survey1.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey1.setStudyIdentifier(BridgeConstants.API_APP_ID);
         Survey survey2 = createSurvey();
         survey2.setPublished(true);
-        survey2.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey2.setStudyIdentifier(BridgeConstants.API_APP_ID);
         when(mockSurveyDao.getSurvey(any(), any(), eq(false))).thenReturn(survey1);
         doReturn(Lists.newArrayList(survey1, survey2)).when(mockSurveyDao).getSurveyAllVersions(TEST_STUDY, SURVEY_GUID, false);
         
@@ -595,7 +596,7 @@ public class SurveyServiceMockTest {
     @Test(expectedExceptions = PublishedSurveyException.class)
     public void updateSurveyAlreadyPublishedThrowsException() {
         Survey existing = Survey.create();
-        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setStudyIdentifier(BridgeConstants.API_APP_ID);
         existing.setDeleted(false);
         existing.setPublished(true);
         
@@ -605,7 +606,7 @@ public class SurveyServiceMockTest {
         Survey update = Survey.create();
         update.setGuid(SURVEY_GUID);
         update.setCreatedOn(SURVEY_CREATED_ON.getMillis());
-        update.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        update.setStudyIdentifier(API_APP_ID);
         update.getElements().add(SurveyInfoScreen.create());
         service.updateSurvey(TEST_STUDY, update);
     }
@@ -615,14 +616,14 @@ public class SurveyServiceMockTest {
         Survey existing = Survey.create();
         existing.setDeleted(true);
         existing.setPublished(true);
-        existing.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        existing.setStudyIdentifier(API_APP_ID);
         
         when(mockSurveyDao.getSurvey(any(), any(), eq(false))).thenReturn(existing);
         when(mockSurveyDao.getSurvey(any(), any(), eq(true))).thenReturn(existing);
         
         Survey update = Survey.create();
         update.setGuid(SURVEY_GUID);
-        update.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        update.setStudyIdentifier(API_APP_ID);
         update.setDeleted(false);
         
         service.updateSurvey(TEST_STUDY, update);
@@ -635,7 +636,7 @@ public class SurveyServiceMockTest {
     public void updateSurveyValidatesDataGroups() {
         study.setDataGroups(ImmutableSet.of("groupA", "groupB", "groupC"));
         Survey existing = Survey.create();
-        existing.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        existing.setStudyIdentifier(API_APP_ID);
         
         when(mockSurveyDao.getSurvey(any(), any(), eq(false))).thenReturn(existing);
         when(mockSurveyDao.getSurvey(any(), any(), eq(true))).thenReturn(existing);
@@ -644,7 +645,7 @@ public class SurveyServiceMockTest {
         update.setIdentifier("surveyIdentifier");
         update.setName("This is a survey name");
         update.setGuid(BridgeUtils.generateGuid());
-        update.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        update.setStudyIdentifier(API_APP_ID);
         
         // Create a data group rule that includes invalid data groups
         SurveyRule rule = new SurveyRule.Builder().withDataGroups(ImmutableSet.of("groupB", "groupdD"))
@@ -699,7 +700,7 @@ public class SurveyServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSurveyInOtherStudyThrowsException() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(BridgeConstants.API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
         service.getSurvey(OTHER_STUDY, SURVEY_KEYS, false, true);
@@ -708,7 +709,7 @@ public class SurveyServiceMockTest {
     @Test
     public void getSurveyInOtherStudyReturnsNull() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(BridgeConstants.API_APP_ID);
         when(mockSurveyDao.getSurvey(OTHER_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
         assertNull(service.getSurvey(OTHER_STUDY, SURVEY_KEYS, false, false));
@@ -735,7 +736,7 @@ public class SurveyServiceMockTest {
         Survey survey = Survey.create();
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, (GuidCreatedOnVersionHolder)survey, false)).thenReturn(survey);
         
         try {
@@ -751,7 +752,7 @@ public class SurveyServiceMockTest {
         Survey survey = Survey.create();
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, (GuidCreatedOnVersionHolder)survey, true)).thenReturn(survey);
         
         try {
@@ -765,7 +766,7 @@ public class SurveyServiceMockTest {
     @Test
     public void versionSurveyInOtherStudy() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
         try {
@@ -779,7 +780,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyInOtherStudy() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, true)).thenReturn(survey);
         
         try {
@@ -793,7 +794,7 @@ public class SurveyServiceMockTest {
     @Test
     public void deleteSurveyPermanentlyInOtherStudyThrowsException() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
         try {
@@ -808,7 +809,7 @@ public class SurveyServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSurveyMostRecentlyPublishedVersionInOtherStudy() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true)).thenReturn(survey);
         
         service.getSurveyMostRecentlyPublishedVersion(OTHER_STUDY, SURVEY_GUID, true);
@@ -833,7 +834,7 @@ public class SurveyServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSurveyMostRecentVersionInOtherStudy() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID)).thenReturn(survey);
         
         service.getSurveyMostRecentVersion(OTHER_STUDY, SURVEY_GUID);    
@@ -847,7 +848,7 @@ public class SurveyServiceMockTest {
     @Test
     public void versionSurvey() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
         service.versionSurvey(TEST_STUDY, SURVEY_KEYS);
@@ -863,7 +864,7 @@ public class SurveyServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void versionSurveyLogicallyDeleted() {
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         survey.setDeleted(true);
         when(mockSurveyDao.getSurvey(TEST_STUDY, SURVEY_KEYS, false)).thenReturn(survey);
         
@@ -912,7 +913,7 @@ public class SurveyServiceMockTest {
 
     private Survey createSurvey() {
         Survey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON.getMillis());
         survey.setPublished(false);
@@ -923,7 +924,7 @@ public class SurveyServiceMockTest {
         // Set study ID and identifier. Clear guid and createdOn. (Guid is set by the service. CreatedOn is set by the
         // dao.)
         Survey survey = new TestSurvey(SurveyServiceMockTest.class, true);
-        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
         survey.setIdentifier(SURVEY_ID);
         survey.setGuid(null);
         survey.setCreatedOn(0);

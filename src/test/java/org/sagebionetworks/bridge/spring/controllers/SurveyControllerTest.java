@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -591,7 +592,7 @@ public class SurveyControllerTest extends Mockito {
     private void assertCacheIsCleared(ExecuteSurvey executeSurvey, int getCount) throws Exception {
         // Setup the cache to return content and verify the cache returns content
         Survey survey = new DynamoSurvey();
-        survey.setStudyIdentifier("api");
+        survey.setStudyIdentifier(API_APP_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(CREATED_ON.getMillis());
         
@@ -602,7 +603,7 @@ public class SurveyControllerTest extends Mockito {
         when(mockSurveyService.getSurvey(eq(TEST_STUDY), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
         
         viewCache.getView(viewCache.getCacheKey(
-                Survey.class, SURVEY_GUID, CREATED_ON.toString(), "api"), () -> { return survey; });
+                Survey.class, SURVEY_GUID, CREATED_ON.toString(), API_APP_ID), () -> { return survey; });
         
         // Verify this call hits the cache not the mockSurveyService
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());

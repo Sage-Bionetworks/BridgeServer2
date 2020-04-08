@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -33,7 +33,7 @@ public class SmsControllerTest extends Mockito {
     private static final Study DUMMY_STUDY;
     static {
         DUMMY_STUDY = Study.create();
-        DUMMY_STUDY.setIdentifier(TEST_STUDY_IDENTIFIER);
+        DUMMY_STUDY.setIdentifier(API_APP_ID);
     }
 
     private SmsController controller;

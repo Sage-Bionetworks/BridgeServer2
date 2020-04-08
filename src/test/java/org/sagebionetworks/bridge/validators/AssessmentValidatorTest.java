@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
-import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -47,10 +47,10 @@ public class AssessmentValidatorTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         assessment = AssessmentTest.createAssessment();
         
-        when(mockAssessmentDao.getAssessmentRevisions(API_STUDY_ID_STRING, IDENTIFIER, 0, 1, true))
+        when(mockAssessmentDao.getAssessmentRevisions(API_APP_ID, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
         
-        validator = new AssessmentValidator(mockSubstudyService, API_STUDY_ID_STRING);
+        validator = new AssessmentValidator(mockSubstudyService, API_APP_ID);
     }
     
     @Test
@@ -62,8 +62,8 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void validSharedAssessment() {
-        validator = new AssessmentValidator(mockSubstudyService, SHARED_STUDY_IDENTIFIER);
-        assessment.setOwnerId(API_STUDY_ID_STRING + ":" + OWNER_ID);
+        validator = new AssessmentValidator(mockSubstudyService, SHARED_APP_ID);
+        assessment.setOwnerId(API_APP_ID + ":" + OWNER_ID);
         
         when(mockSubstudyService.getSubstudy(TEST_STUDY, OWNER_ID, false)).thenReturn(Substudy.create());
     

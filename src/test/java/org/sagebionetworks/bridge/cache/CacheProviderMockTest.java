@@ -11,6 +11,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -129,7 +130,7 @@ public class CacheProviderMockTest {
         assertEquals(session.getSessionToken(), DECRYPTED_SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), "4f0937a5-6ebf-451b-84bc-fbf649b9e93c");
         assertEquals(session.getId(), "6gq4jGXLmAxVbLLmVifKN4");
-        assertEquals(session.getStudyIdentifier().getIdentifier(), "api");
+        assertEquals(session.getStudyIdentifier().getIdentifier(), API_APP_ID);
         
         StudyParticipant participant = session.getParticipant();
         assertEquals(participant.getFirstName(), "Bridge");
@@ -143,7 +144,7 @@ public class CacheProviderMockTest {
         
         assertEquals(ENCRYPTOR.decrypt(ENCRYPTED_SESSION_TOKEN), participant.getHealthCode());
         
-        SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
+        SubpopulationGuid apiGuid = SubpopulationGuid.create(API_APP_ID);
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         ConsentStatus status = consentStatuses.get(apiGuid);
         assertEquals(status.getName(), "Default Consent Group");

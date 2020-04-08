@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.EQ;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -109,7 +109,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         SchedulePlan schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setGuid(GUID);
         schedulePlan.setLabel("Schedule Plan");
-        schedulePlan.setStudyKey(TEST_STUDY_IDENTIFIER);
+        schedulePlan.setStudyKey(API_APP_ID);
         schedulePlan.setDeleted(false);
         
         Schedule schedule = TestUtils.getSchedule("My Schedule");
@@ -432,7 +432,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         verify(mockMapper).save(schedulePlanCaptor.capture());
         SchedulePlan persisted = schedulePlanCaptor.getValue();
 
-        assertEquals(persisted.getStudyKey(), TEST_STUDY_IDENTIFIER);
+        assertEquals(persisted.getStudyKey(), API_APP_ID);
         assertEquals(persisted.getGuid(), GUID);
         assertEquals(persisted.getModifiedOn(), TIMESTAMP.getMillis());
         assertFalse(persisted.isDeleted());
@@ -456,12 +456,12 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         plan.setModifiedOn(0L); // this will be set
         
         SchedulePlan returned = dao.updateSchedulePlan(TEST_STUDY, plan);
-        assertEquals(returned.getStudyKey(), TEST_STUDY_IDENTIFIER);
+        assertEquals(returned.getStudyKey(), API_APP_ID);
         assertEquals(returned.getModifiedOn(), TIMESTAMP.getMillis());
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSchedulePlan> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyKey(), TEST_STUDY_IDENTIFIER);
+        assertEquals(query.getHashKeyValues().getStudyKey(), API_APP_ID);
         Condition cond = query.getRangeKeyConditions().get("guid");
         assertEquals(cond.getComparisonOperator(), EQ.name());
         assertEquals(cond.getAttributeValueList().get(0).getS(), GUID);
@@ -475,7 +475,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         SchedulePlan persisted = schedulePlanCaptor.getValue();
 
         // verify the schedule plan was updated with key fields
-        assertEquals(persisted.getStudyKey(), TEST_STUDY_IDENTIFIER);
+        assertEquals(persisted.getStudyKey(), API_APP_ID);
         assertEquals(persisted.getModifiedOn(), TIMESTAMP.getMillis());
         assertSame(returned, plan);
     }

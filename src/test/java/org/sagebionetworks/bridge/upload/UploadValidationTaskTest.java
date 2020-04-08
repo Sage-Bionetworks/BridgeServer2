@@ -7,6 +7,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -222,7 +223,7 @@ public class UploadValidationTaskTest {
         record.setId(recordId);
         record.setSchemaId(SCHEMA_ID);
         record.setSchemaRevision(SCHEMA_REV);
-        record.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        record.setStudyId(API_APP_ID);
         record.setUploadDate(UPLOAD_DATE);
         record.setUploadedOn(UPLOADED_ON);
         record.setUploadId(UPLOAD_ID);

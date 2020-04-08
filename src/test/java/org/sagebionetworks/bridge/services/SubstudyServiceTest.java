@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -130,7 +131,7 @@ public class SubstudyServiceTest {
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
-        assertEquals(persisted.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(persisted.getStudyId(), API_APP_ID);
         assertNull(persisted.getVersion());
         assertFalse(persisted.isDeleted());
         assertNotEquals(persisted.getCreatedOn(), timestamp);
@@ -173,7 +174,7 @@ public class SubstudyServiceTest {
         verify(substudyDao).updateSubstudy(substudyCaptor.capture());
         
         Substudy returnedValue = substudyCaptor.getValue();
-        assertEquals(returnedValue.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(returnedValue.getStudyId(), API_APP_ID);
         assertEquals(returnedValue.getId(), "oneId");
         assertEquals(returnedValue.getName(), "newName");
         assertNotNull(returnedValue.getCreatedOn());

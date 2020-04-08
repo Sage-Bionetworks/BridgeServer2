@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -108,7 +109,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createSurveyWithInvalidStudyId() {
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("some-id", 1L);
-        when(mockSurveyService.getSurvey(eq(new StudyIdentifierImpl("shared")), eq(holder), eq(false), eq(false))).thenReturn(null);
+        when(mockSurveyService.getSurvey(eq(new StudyIdentifierImpl(SHARED_APP_ID)), eq(holder), eq(false), eq(false))).thenReturn(null);
         
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
         svcInputMetadata.setSchemaId(null);

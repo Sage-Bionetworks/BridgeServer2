@@ -137,7 +137,7 @@ public class SharedModuleServiceTest {
         ArgumentCaptor<Survey> surveyToCreateCaptor = ArgumentCaptor.forClass(Survey.class);
         verify(mockSurveyService).createSurvey(surveyToCreateCaptor.capture());
         Survey surveyToCreate = surveyToCreateCaptor.getValue();
-        assertEquals(surveyToCreate.getStudyIdentifier(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(surveyToCreate.getStudyIdentifier(), BridgeConstants.API_APP_ID);
         assertEquals(surveyToCreate.getModuleId(), MODULE_ID);
         assertEquals(surveyToCreate.getModuleVersion().intValue(), MODULE_VERSION);
 

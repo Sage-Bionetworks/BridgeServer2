@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -95,7 +96,7 @@ public class HealthDataServiceSubmitHealthDataTest {
     public void before() throws Exception {
         // Mock Schema Service.
         schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(API_APP_ID);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 
@@ -222,7 +223,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(contextRecord.getSchemaId(), SCHEMA_ID);
         assertEquals(contextRecord.getSchemaRevision().intValue(), SCHEMA_REV);
         assertEquals(contextRecord.getHealthCode(), HEALTH_CODE);
-        assertEquals(contextRecord.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(contextRecord.getStudyId(), API_APP_ID);
         assertEquals(contextRecord.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(contextRecord.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
         assertEquals(contextRecord.getCreatedOn().longValue(), CREATED_ON_MILLIS);

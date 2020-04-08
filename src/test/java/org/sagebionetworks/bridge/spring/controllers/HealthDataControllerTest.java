@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -71,7 +72,7 @@ public class HealthDataControllerTest extends Mockito {
     private static final Study STUDY;
     static {
         STUDY = Study.create();
-        STUDY.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        STUDY.setIdentifier(API_APP_ID);
     }
     
     private static final HealthDataRecord.ExporterStatus TEST_STATUS = HealthDataRecord.ExporterStatus.SUCCEEDED;

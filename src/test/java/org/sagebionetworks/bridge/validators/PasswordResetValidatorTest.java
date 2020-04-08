@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.mockito.Mockito.doReturn;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -32,7 +33,7 @@ public class PasswordResetValidatorTest {
         MockitoAnnotations.initMocks(this);
         
         doReturn(PasswordPolicy.DEFAULT_PASSWORD_POLICY).when(study).getPasswordPolicy();
-        doReturn(study).when(studyService).getStudy("api");
+        doReturn(study).when(studyService).getStudy(API_APP_ID);
         
         validator = new PasswordResetValidator();
         validator.setStudyService(studyService);
@@ -45,21 +46,21 @@ public class PasswordResetValidatorTest {
 
     @Test
     public void validatesValid() {
-        PasswordReset reset = new PasswordReset("P@ssword1`", "token", "api");
+        PasswordReset reset = new PasswordReset("P@ssword1`", "token", API_APP_ID);
         
         Validate.entityThrowingException(validator, reset);
     }
     
     @Test
     public void passwordRequired() {
-        validate(new PasswordReset("", "token", "api"), (e) -> {
+        validate(new PasswordReset("", "token", API_APP_ID), (e) -> {
             assertError(e, "password", "is required");
         });
     }
     
     @Test
     public void spTokenRequired() {
-        validate(new PasswordReset("asdfasdf", "", "api"), (e) -> {
+        validate(new PasswordReset("asdfasdf", "", API_APP_ID), (e) -> {
             assertError(e, "sptoken", "is required");
         });
     }
@@ -73,7 +74,7 @@ public class PasswordResetValidatorTest {
     
     @Test
     public void invalidPassword() {
-        validate(new PasswordReset("e", "token", "api"), (e) -> {
+        validate(new PasswordReset("e", "token", API_APP_ID), (e) -> {
             assertError(e, "password", "must be at least 8 characters",
                     "must contain at least one number (0-9)",
                     "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )",

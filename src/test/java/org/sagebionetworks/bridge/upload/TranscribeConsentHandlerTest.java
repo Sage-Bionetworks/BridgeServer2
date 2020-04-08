@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -36,8 +37,7 @@ public class TranscribeConsentHandlerTest {
     private static final DateTime STUDY_START_TIME = DateTime.parse("2019-07-21T22:28:31.648-0700");
     private static final Set<String> TEST_USER_GROUPS = ImmutableSet.of("test-group1","test-group2");
 
-    private static final AccountId ACCOUNT_ID = AccountId.forHealthCode(TestConstants.TEST_STUDY_IDENTIFIER,
-            HEALTH_CODE);
+    private static final AccountId ACCOUNT_ID = AccountId.forHealthCode(API_APP_ID, HEALTH_CODE);
 
     @Mock
     private AccountService mockAccountService;
@@ -82,9 +82,9 @@ public class TranscribeConsentHandlerTest {
 
     @Test
     public void test() {
-        AccountSubstudy as1 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subA",
+        AccountSubstudy as1 = AccountSubstudy.create(API_APP_ID, "subA",
                 "id1");
-        AccountSubstudy as2 = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "subB",
+        AccountSubstudy as2 = AccountSubstudy.create(API_APP_ID, "subB",
                 "id2");
         as2.setExternalId("extB");
         

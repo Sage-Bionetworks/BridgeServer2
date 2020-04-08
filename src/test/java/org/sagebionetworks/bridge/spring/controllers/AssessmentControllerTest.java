@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -119,7 +119,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withRequestParam(PAGE_SIZE, 25)
                 .withRequestParam(INCLUDE_DELETED, true)
                 .withRequestParam(PagedResourceList.TAGS, STRING_TAGS);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 100, 25, STRING_TAGS, true)).thenReturn(page);
+        when(mockService.getAssessments(API_APP_ID, 100, 25, STRING_TAGS, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessments("100", "25",
                 STRING_TAGS, "true");
@@ -137,11 +137,11 @@ public class AssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockService.getAssessments(API_STUDY_ID_STRING, 0, 50, null, false)).thenReturn(page);
+        when(mockService.getAssessments(API_APP_ID, 0, 50, null, false)).thenReturn(page);
         
         controller.getAssessments(null, null, null, null);
         
-        verify(mockService).getAssessments(API_STUDY_ID_STRING, 0, 50, null, false);
+        verify(mockService).getAssessments(API_APP_ID, 0, 50, null, false);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -161,11 +161,11 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.createAssessment(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
+        when(mockService.createAssessment(eq(API_APP_ID), any())).thenReturn(updated);
         
         Assessment retValue = controller.createAssessment();
 
-        verify(mockService).createAssessment(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
+        verify(mockService).createAssessment(eq(API_APP_ID), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getIdentifier(), IDENTIFIER);
@@ -206,12 +206,12 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.updateAssessment(eq(API_STUDY_ID_STRING), any())).thenReturn(updated);
+        when(mockService.updateAssessment(eq(API_APP_ID), any())).thenReturn(updated);
         
         Assessment retValue = controller.updateAssessmentByGuid(GUID);
         assertNotNull(retValue);
 
-        verify(mockService).updateAssessment(eq(API_STUDY_ID_STRING), assessmentCaptor.capture());
+        verify(mockService).updateAssessment(eq(API_APP_ID), assessmentCaptor.capture());
         Assessment captured = assessmentCaptor.getValue();
         
         assertEquals(captured.getGuid(), GUID);
@@ -230,7 +230,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getAssessmentByGuid() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentByGuid(API_STUDY_ID_STRING, GUID)).thenReturn(assessment);
+        when(mockService.getAssessmentByGuid(API_APP_ID, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.getAssessmentByGuid(GUID);
         assertSame(retValue, assessment);
@@ -265,7 +265,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getAssessmentById() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentById(API_STUDY_ID_STRING, IDENTIFIER, 10)).thenReturn(assessment);
+        when(mockService.getAssessmentById(API_APP_ID, IDENTIFIER, 10)).thenReturn(assessment);
         
         Assessment retValue = controller.getAssessmentById(IDENTIFIER, "10");
         assertSame(retValue, assessment);
@@ -319,7 +319,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getLatestAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getLatestAssessment(API_STUDY_ID_STRING, IDENTIFIER)).thenReturn(assessment);
+        when(mockService.getLatestAssessment(API_APP_ID, IDENTIFIER)).thenReturn(assessment);
 
         Assessment retValue = controller.getLatestAssessment(IDENTIFIER);
         assertSame(retValue, assessment);
@@ -340,7 +340,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
-                API_STUDY_ID_STRING, IDENTIFIER, 20, 5, true)).thenReturn(page);
+                API_APP_ID, IDENTIFIER, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, "20", "5", "true");
         assertSame(retValue, page);
@@ -352,7 +352,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
-                API_STUDY_ID_STRING, IDENTIFIER, 0, 50, false)).thenReturn(page);
+                API_APP_ID, IDENTIFIER, 0, 50, false)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, null, null, null);
         assertSame(retValue, page);
@@ -373,7 +373,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
-                API_STUDY_ID_STRING, GUID, 20, 5, true)).thenReturn(page);
+                API_APP_ID, GUID, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
         assertSame(retValue, page);
@@ -385,7 +385,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
-                API_STUDY_ID_STRING, GUID, 0, 50, false)).thenReturn(page);
+                API_APP_ID, GUID, 0, 50, false)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, null, null, null);
         assertSame(retValue, page);
@@ -408,11 +408,11 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.createAssessmentRevision(eq(API_STUDY_ID_STRING), eq(GUID), any())).thenReturn(updated);
+        when(mockService.createAssessmentRevision(eq(API_APP_ID), eq(GUID), any())).thenReturn(updated);
         
         Assessment retValue = controller.createAssessmentRevision(GUID);
 
-        verify(mockService).createAssessmentRevision(eq(API_STUDY_ID_STRING), eq(GUID), assessmentCaptor.capture());
+        verify(mockService).createAssessmentRevision(eq(API_APP_ID), eq(GUID), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);
@@ -448,7 +448,7 @@ public class AssessmentControllerTest extends Mockito {
     public void publishAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.publishAssessment(API_STUDY_ID_STRING, null, GUID)).thenReturn(assessment);
+        when(mockService.publishAssessment(API_APP_ID, null, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.publishAssessment(GUID, null);
         assertSame(retValue, assessment);
@@ -458,7 +458,7 @@ public class AssessmentControllerTest extends Mockito {
     public void publishAssessmentWithNewIdentifier() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.publishAssessment(API_STUDY_ID_STRING, NEW_IDENTIFIER, GUID)).thenReturn(assessment);
+        when(mockService.publishAssessment(API_APP_ID, NEW_IDENTIFIER, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.publishAssessment(GUID, NEW_IDENTIFIER);
         assertSame(retValue, assessment);
@@ -479,7 +479,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(API_STUDY_ID_STRING, GUID);
+        verify(mockService).deleteAssessment(API_APP_ID, GUID);
     }
 
     @Test
@@ -488,7 +488,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(API_STUDY_ID_STRING, GUID);
+        verify(mockService).deleteAssessment(API_APP_ID, GUID);
     }
 
     @Test
@@ -497,7 +497,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "true");
-        verify(mockService).deleteAssessment(API_STUDY_ID_STRING, GUID);        
+        verify(mockService).deleteAssessment(API_APP_ID, GUID);        
     }
 
     @Test
@@ -506,7 +506,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "true");
-        verify(mockService).deleteAssessmentPermanently(API_STUDY_ID_STRING, GUID);        
+        verify(mockService).deleteAssessmentPermanently(API_APP_ID, GUID);        
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 

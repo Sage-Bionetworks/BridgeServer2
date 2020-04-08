@@ -99,7 +99,7 @@ public class SmsServiceTest {
 
         // Mock study service. This is only used to get the study short name.
         study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(BridgeConstants.API_APP_ID);
         study.setShortName(STUDY_SHORT_NAME);
 
         // Mock other DAOs and services.
@@ -306,7 +306,7 @@ public class SmsServiceTest {
         assertEquals(loggedMessage.getMessageBody(), expectedMessage);
         assertEquals(loggedMessage.getMessageId(), MESSAGE_ID);
         assertEquals(loggedMessage.getSmsType(), expectedSmsType);
-        assertEquals(loggedMessage.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(loggedMessage.getStudyId(), BridgeConstants.API_APP_ID);
     }
 
     private void verifyHealthData(StudyParticipant expectedParticipant, DateTimeZone expectedTimeZone,
@@ -366,7 +366,7 @@ public class SmsServiceTest {
         message.setMessageId(MESSAGE_ID);
         message.setMessageBody(MESSAGE_BODY);
         message.setSmsType(SmsType.PROMOTIONAL);
-        message.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        message.setStudyId(BridgeConstants.API_APP_ID);
         return message;
     }
 

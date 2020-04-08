@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -35,13 +35,13 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     
     static DynamoCompoundActivityDefinition KEYS = new DynamoCompoundActivityDefinition();
     static {
-        KEYS.setStudyId(TEST_STUDY_IDENTIFIER);
+        KEYS.setStudyId(API_APP_ID);
         KEYS.setTaskId(TASK_ID);
     }
     
     static DynamoCompoundActivityDefinition COMPOUND_ACTIVITY_DEF = new DynamoCompoundActivityDefinition();
     static {
-        COMPOUND_ACTIVITY_DEF.setStudyId(TEST_STUDY_IDENTIFIER);
+        COMPOUND_ACTIVITY_DEF.setStudyId(API_APP_ID);
         COMPOUND_ACTIVITY_DEF.setTaskId(TASK_ID);
     }
     
@@ -71,7 +71,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     @Test
     public void createCompoundActivityDefinition() {
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
-        def.setStudyId(TEST_STUDY_IDENTIFIER);
+        def.setStudyId(API_APP_ID);
         def.setTaskId(TASK_ID);
         def.setVersion(1L);
         
@@ -148,7 +148,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(any(), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyId(), API_APP_ID);
     }
 
     @Test
@@ -160,7 +160,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         
         verify(mockMapper).load(defCaptor.capture());
         CompoundActivityDefinition def = defCaptor.getValue();
-        assertEquals(def.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(def.getStudyId(), API_APP_ID);
         assertEquals(def.getTaskId(), TASK_ID);
     }
 

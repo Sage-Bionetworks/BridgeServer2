@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -71,7 +71,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         verify(mockHelper).queryGet(queryCaptor.capture(), any(), eq(5), eq(50), eq(HibernateTemplate.class));
         
         Map<String,Object> queryParams = paramsCaptor.getValue();
-        assertEquals(queryParams.get("studyId"), TEST_STUDY_IDENTIFIER);
+        assertEquals(queryParams.get("studyId"), API_APP_ID);
         assertEquals(queryParams.get("templateType"), SMS_ACCOUNT_EXISTS);
         String countQuery = queryCaptor.getAllValues().get(0);
         String getQuery = queryCaptor.getAllValues().get(1);
@@ -95,7 +95,7 @@ public class HibernateTemplateDaoTest extends Mockito {
     @Test
     public void getTemplate() { 
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(TEST_STUDY_IDENTIFIER);
+        template.setStudyId(API_APP_ID);
         when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
         
         Optional<Template> result = dao.getTemplate(TEST_STUDY, GUID);
@@ -139,7 +139,7 @@ public class HibernateTemplateDaoTest extends Mockito {
     @Test
     public void deleteTemplatePermanently() {
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(TEST_STUDY_IDENTIFIER);
+        template.setStudyId(API_APP_ID);
         when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
         
         dao.deleteTemplatePermanently(TEST_STUDY, GUID);
@@ -162,6 +162,6 @@ public class HibernateTemplateDaoTest extends Mockito {
         verify(mockHelper).query(eq("DELETE FROM HibernateTemplate WHERE studyId = :studyId"),
                 paramsCaptor.capture());
         
-        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_IDENTIFIER);
+        assertEquals(paramsCaptor.getValue().get("studyId"), API_APP_ID);
     }
 }

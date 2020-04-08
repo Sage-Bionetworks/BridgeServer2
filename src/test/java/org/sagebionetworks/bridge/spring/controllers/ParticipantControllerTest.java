@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -19,7 +20,6 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -154,10 +154,10 @@ public class ParticipantControllerTest extends Mockito {
             ENABLED, TEST_STUDY, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
+            .withStudy(API_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_STUDY_IDENTIFIER).withPhone(PHONE)
+            .withStudy(API_APP_ID).withPhone(PHONE)
             .withPassword(PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             PHONE, null, null);
@@ -244,7 +244,7 @@ public class ParticipantControllerTest extends Mockito {
 
         study = new DynamoStudy();
         study.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
 
         participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withSubstudyIds(CALLER_SUBS)
                 .withId(USER_ID).build();
@@ -256,7 +256,7 @@ public class ParticipantControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
 
         List<AccountSummary> summaries = ImmutableList.of(SUMMARY, SUMMARY, SUMMARY);
         PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 30).withRequestParam("offsetBy", 10)
@@ -451,7 +451,7 @@ public class ParticipantControllerTest extends Mockito {
         when(mockParticipantService.getParticipant(study, "healthCode:" + USER_ID, true)).thenReturn(studyParticipant);
         
         // You can still retrieve the user with a health code
-        String result = controller.getParticipantForWorker(TEST_STUDY_IDENTIFIER, "healthCode:"+USER_ID, true);
+        String result = controller.getParticipantForWorker(API_APP_ID, "healthCode:"+USER_ID, true);
         assertNotNull(result);
     }
 
@@ -1340,7 +1340,7 @@ public class ParticipantControllerTest extends Mockito {
 
         mockRequestBody(mockRequest, new SmsTemplate("This is a message"));
 
-        StatusMessage result = controller.sendSmsMessageForWorker(TEST_STUDY_IDENTIFIER, USER_ID);
+        StatusMessage result = controller.sendSmsMessageForWorker(API_APP_ID, USER_ID);
 
         assertEquals(result.getMessage(), "Message sent.");
         verify(mockParticipantService).sendSmsMessage(eq(study), eq(USER_ID), templateCaptor.capture());
@@ -1358,7 +1358,7 @@ public class ParticipantControllerTest extends Mockito {
         List<ActivityEvent> events = ImmutableList.of(anEvent);
         when(mockParticipantService.getActivityEvents(study, USER_ID)).thenReturn(events);
 
-        ResourceList<ActivityEvent> result = controller.getActivityEventsForWorker(TEST_STUDY_IDENTIFIER, USER_ID);
+        ResourceList<ActivityEvent> result = controller.getActivityEventsForWorker(API_APP_ID, USER_ID);
 
         verify(mockParticipantService).getActivityEvents(study, USER_ID);
         assertEquals(result.getItems().get(0).getEventId(), "event-id");
@@ -1374,7 +1374,7 @@ public class ParticipantControllerTest extends Mockito {
         when(mockParticipantService.getActivityHistory(eq(study), eq(USER_ID), eq("activityGuid"), any(), any(), eq("asdf"),
                 eq(50))).thenReturn(cursor);
 
-        JsonNode result = controller.getActivityHistoryForWorkerV2(TEST_STUDY_IDENTIFIER, USER_ID,
+        JsonNode result = controller.getActivityHistoryForWorkerV2(API_APP_ID, USER_ID,
                 "activityGuid", START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
 
         verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq("activityGuid"), any(), any(),
@@ -1395,7 +1395,7 @@ public class ParticipantControllerTest extends Mockito {
         when(mockParticipantService.getActivityHistory(eq(study), eq(USER_ID), eq(ActivityType.TASK), any(), any(),
                 any(), eq("asdf"), eq(50))).thenReturn(cursor);
 
-        String result = controller.getActivityHistoryForWorkerV3(TEST_STUDY_IDENTIFIER, USER_ID, "tasks",
+        String result = controller.getActivityHistoryForWorkerV3(API_APP_ID, USER_ID, "tasks",
                 START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
 
         verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ActivityType.TASK), any(), any(),

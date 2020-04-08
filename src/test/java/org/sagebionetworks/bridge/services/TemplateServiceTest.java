@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -135,7 +135,7 @@ public class TemplateServiceTest extends Mockito {
         when(service.getUserId()).thenReturn(USER_ID);
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         study.setDataGroups(USER_DATA_GROUPS);
         study.setDefaultTemplates(new HashMap<>());
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
@@ -407,7 +407,7 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(holder.getGuid(), GUID1);
         assertEquals(holder.getVersion(), new Long(10));
         
-        assertEquals(template.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(template.getStudyId(), API_APP_ID);
         assertFalse(template.isDeleted());
         assertEquals(template.getVersion(), 10);
         assertEquals(template.getGuid(), GUID1);
@@ -458,7 +458,7 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
@@ -477,7 +477,7 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(result.getGuid(), GUID1);
         assertEquals(result.getVersion(), new Long(10));
         
-        assertEquals(template.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(template.getStudyId(), API_APP_ID);
         assertEquals(template.getGuid(), GUID1);
         assertEquals(template.getVersion(), 10);
         // cannot be changed by an update.
@@ -502,7 +502,7 @@ public class TemplateServiceTest extends Mockito {
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setGuid(GUID1);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
@@ -521,12 +521,12 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateTemplateFailsIfDeleted() { 
         Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setDeleted(true);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
-        template.setStudyId(TEST_STUDY_IDENTIFIER);
+        template.setStudyId(API_APP_ID);
         template.setGuid(GUID1);
         template.setDeleted(true);
         
@@ -545,7 +545,7 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void deleteTemplate() {
         Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
@@ -562,7 +562,7 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteTemplateLogicallyDeleted() { 
         Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setGuid(GUID1);
         existing.setDeleted(true);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
@@ -580,7 +580,7 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void deleteTemplatePermanently() {
         Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
@@ -605,7 +605,7 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setDeleted(false);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
         
@@ -622,7 +622,7 @@ public class TemplateServiceTest extends Mockito {
     public void cannotLogicallyDeleteDefaultTemplate() {
         study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
         Template existing = Template.create();
-        existing.setStudyId(TEST_STUDY_IDENTIFIER);
+        existing.setStudyId(API_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_STUDY, GUID1)).thenReturn(Optional.of(existing));
@@ -648,7 +648,7 @@ public class TemplateServiceTest extends Mockito {
         TemplateRevision r2 = TemplateRevision.create();
         when(mockTemplateRevisionDao.getTemplateRevision(GUID2, createdOn.plusHours(1))).thenReturn(Optional.of(r2));
         
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         
         TemplateRevision retrieved = service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
         assertSame(retrieved, r2);
@@ -674,7 +674,7 @@ public class TemplateServiceTest extends Mockito {
         
         when(mockTemplateRevisionDao.getTemplateRevision(GUID1, createdOn)).thenReturn(Optional.empty());
         
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         
         service.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
     }

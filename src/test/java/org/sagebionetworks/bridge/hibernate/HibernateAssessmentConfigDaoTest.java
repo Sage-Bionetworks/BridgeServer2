@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -83,7 +83,7 @@ public class HibernateAssessmentConfigDaoTest extends Mockito {
         AssessmentConfig config = new AssessmentConfig();
         config.setVersion(3L);
         
-        dao.updateAssessmentConfig(APP_ID, assessment, GUID, config);
+        dao.updateAssessmentConfig(API_APP_ID, assessment, GUID, config);
         
         verify(mockSession, times(2)).merge(argCaptor.capture());
         

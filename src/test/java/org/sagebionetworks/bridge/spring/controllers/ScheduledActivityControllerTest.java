@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -190,7 +190,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
 
-        STUDY.setIdentifier("api");
+        STUDY.setIdentifier(API_APP_ID);
         when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(STUDY);
         when(mockBridgeConfig.getEnvironment()).thenReturn(UAT);
         
@@ -281,7 +281,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getLanguages(), LANGUAGES);
         assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(critContext.getStudyIdentifier().getIdentifier(), TEST_STUDY_IDENTIFIER);
+        assertEquals(critContext.getStudyIdentifier().getIdentifier(), API_APP_ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());

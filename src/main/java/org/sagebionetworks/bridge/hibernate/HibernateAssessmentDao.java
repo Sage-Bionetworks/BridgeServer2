@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.util.stream.Collectors.toList;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.AND_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 
@@ -178,7 +178,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     public Assessment publishAssessment(String originAppId, Assessment origin, Assessment dest,
             AssessmentConfig destConfig) {
         HibernateAssessment hibernateOrigin = HibernateAssessment.create(originAppId, origin);
-        HibernateAssessment hibernateDest = HibernateAssessment.create(SHARED_STUDY_ID_STRING, dest);
+        HibernateAssessment hibernateDest = HibernateAssessment.create(SHARED_APP_ID, dest);
         HibernateAssessmentConfig hibernateDestConfig = HibernateAssessmentConfig.create(dest.getGuid(), destConfig);
 
         HibernateAssessment retValue = hibernateHelper.executeWithExceptionHandling(hibernateOrigin, (session) -> {

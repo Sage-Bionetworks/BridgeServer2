@@ -7,10 +7,10 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -49,7 +49,7 @@ public class AccountSummaryTest {
         assertEquals(node.get("externalIds").get("sub1").textValue(), "externalId");
         assertEquals(node.get("createdOn").textValue(), dateTime.withZone(UTC).toString());
         assertEquals(node.get("status").textValue(), "unverified");
-        assertEquals(node.get("studyIdentifier").get("identifier").textValue(), TEST_STUDY_IDENTIFIER);
+        assertEquals(node.get("studyIdentifier").get("identifier").textValue(), API_APP_ID);
         assertEquals(node.get("substudyIds").get(0).textValue(), "sub1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "sub2");
         assertEquals(node.get("externalId").textValue(), "externalId");

@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -66,7 +67,7 @@ public class CriteriaContextTest {
                 .withUserId(USER_ID).build();
         
         AccountId accountId = context.getAccountId();
-        assertEquals(accountId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(accountId.getStudyId(), API_APP_ID);
         assertEquals(accountId.getId(), USER_ID);
     }
 }

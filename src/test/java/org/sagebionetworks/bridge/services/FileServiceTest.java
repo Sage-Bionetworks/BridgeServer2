@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
@@ -154,7 +154,7 @@ public class FileServiceTest extends Mockito {
         assertEquals(captured.getVersion(), 0L);
         assertFalse(captured.isDeleted());
         assertEquals(captured.getGuid(), GUID);
-        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), API_APP_ID);
         assertEquals(captured.getCreatedOn(), TIMESTAMP);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
     }
@@ -181,7 +181,7 @@ public class FileServiceTest extends Mockito {
         
         verify(mockFileDao).updateFile(metadataCaptor.capture());
         FileMetadata captured = metadataCaptor.getValue();
-        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), API_APP_ID);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
         assertEquals(captured.getCreatedOn(), TIMESTAMP.minusDays(1));
     }

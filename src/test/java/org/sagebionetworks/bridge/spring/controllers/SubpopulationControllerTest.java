@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -274,21 +274,21 @@ public class SubpopulationControllerTest extends Mockito {
         session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(ADMIN)).build());
 
-        controller.updateSubpopulation(TEST_STUDY_IDENTIFIER);
+        controller.updateSubpopulation(API_APP_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
 
-        controller.getSubpopulation(TEST_STUDY_IDENTIFIER);
+        controller.getSubpopulation(API_APP_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
 
-        controller.getSubpopulation(TEST_STUDY_IDENTIFIER);
+        controller.getSubpopulation(API_APP_ID);
     }
 
     private List<Subpopulation> createSubpopulationList() {

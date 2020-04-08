@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
@@ -266,7 +267,7 @@ public class IntentServiceTest {
     public void submitIntentToParticipateAccountExists() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
-        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, intent.getPhone()); 
+        AccountId accountId = AccountId.forPhone(API_APP_ID, intent.getPhone()); 
         
         Account account = Account.create();
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
@@ -291,7 +292,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(API_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -328,7 +329,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withEmail(TestConstants.EMAIL)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(API_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -365,7 +366,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(API_APP_ID)
                 .withSubpopGuid("AAA")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -377,7 +378,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(API_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")

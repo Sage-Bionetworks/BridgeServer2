@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -61,13 +61,13 @@ public class SharedAssessmentResourceController extends BaseController {
                 .map(s -> getEnumOrDefault(s, ResourceCategory.class, null))
                 .collect(toSet());
         }
-        return service.getResources(SHARED_STUDY_ID_STRING, assessmentId, offsetByInt, pageSizeInt, categories,
+        return service.getResources(SHARED_APP_ID, assessmentId, offsetByInt, pageSizeInt, categories,
                 minRevisionInt, maxRevisionInt, incDeletedBool);
     }
     
     @GetMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource getAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        return service.getResource(SHARED_STUDY_ID_STRING, assessmentId, guid);
+        return service.getResource(SHARED_APP_ID, assessmentId, guid);
     }
 
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
@@ -87,9 +87,9 @@ public class SharedAssessmentResourceController extends BaseController {
         getAuthenticatedSession(SUPERADMIN);
         
         if ("true".equals(physical)) {
-            service.deleteResourcePermanently(SHARED_STUDY_ID_STRING, assessmentId, guid);
+            service.deleteResourcePermanently(SHARED_APP_ID, assessmentId, guid);
         } else {
-            service.deleteResource(SHARED_STUDY_ID_STRING, assessmentId, guid);
+            service.deleteResource(SHARED_APP_ID, assessmentId, guid);
         }
         return new StatusMessage("Assessment resource deleted.");        
     }

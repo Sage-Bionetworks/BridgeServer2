@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -29,7 +29,7 @@ public class HibernateTemplateTest extends Mockito {
         Criteria criteria = TestUtils.createCriteria(1, 5, ImmutableSet.of(), ImmutableSet.of());
         
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(TEST_STUDY_IDENTIFIER);
+        template.setStudyId(API_APP_ID);
         template.setGuid("oneGuid");
         template.setTemplateType(EMAIL_APP_INSTALL_LINK);
         template.setName("oneName");

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -99,7 +100,7 @@ public class DynamoSurveyDaoMockTest {
         // set up survey
         survey = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         survey.setIdentifier(SURVEY_ID);
-        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(API_APP_ID);
 
         // mock schema dao
         UploadSchema schema = UploadSchema.create();
@@ -135,7 +136,7 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
 
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(query.getHashKeyValues().getStudyIdentifier(), API_APP_ID);
         assertFalse(query.isConsistentRead());
         assertEquals(query.getLimit().intValue(), 1);
 
@@ -241,7 +242,7 @@ public class DynamoSurveyDaoMockTest {
     public void updateSurveyUndeleteExistingDeletedOK() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         existing.setIdentifier(SURVEY_ID);
-        existing.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        existing.setStudyIdentifier(API_APP_ID);
         existing.setDeleted(true);
         existing.setPublished(false);
         

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -106,7 +107,7 @@ public class StudyServiceMockTest extends Mockito {
 
     // Don't use TestConstants.TEST_STUDY since this conflicts with the whitelist.
     private static final String TEST_STUDY_ID = "test-study";
-    private static final StudyIdentifier TEST_STUDY_IDENTIFIER = new StudyIdentifierImpl(TEST_STUDY_ID);
+    private static final StudyIdentifier TEST_APP_ID = new StudyIdentifierImpl(TEST_STUDY_ID);
 
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
@@ -182,7 +183,7 @@ public class StudyServiceMockTest extends Mockito {
                 .thenReturn(String.valueOf(BRIDGE_ADMIN_TEAM_ID));
         when(mockBridgeConfig.get(StudyService.CONFIG_KEY_TEAM_BRIDGE_STAFF))
                 .thenReturn(String.valueOf(BRIDGE_STAFF_TEAM_ID));
-        when(mockBridgeConfig.getPropertyAsList(StudyService.CONFIG_STUDY_WHITELIST)).thenReturn(ImmutableList.of("api"));
+        when(mockBridgeConfig.getPropertyAsList(StudyService.CONFIG_STUDY_WHITELIST)).thenReturn(ImmutableList.of(API_APP_ID));
         when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(SYNAPSE_TRACKING_VIEW_ID);
         service.setBridgeConfig(mockBridgeConfig); // this has to be set again after being mocked
 
@@ -398,7 +399,7 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void sendVerifyEmailNullType() throws Exception {
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, null);
+        service.sendVerifyEmail(TEST_APP_ID, null);
     }
 
     // This can be manually triggered through the API even though there's no consent
@@ -409,7 +410,7 @@ public class StudyServiceMockTest extends Mockito {
         study.setConsentNotificationEmail(null);
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
         
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
     }
     
     @Test
@@ -419,7 +420,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute.
-        service.sendVerifyEmail(TEST_STUDY_IDENTIFIER, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
         verifyEmailVerificationEmail(study.getConsentNotificationEmail());
@@ -427,28 +428,28 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullToken() {
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, null, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, null, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailEmptyToken() {
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, "", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, "", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailBlankToken() {
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, "   ", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, "   ", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullType() {
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, null);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullVerificationData() {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(null);
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -466,7 +467,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -484,7 +485,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -502,7 +503,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test
@@ -520,7 +521,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
-        service.verifyEmail(TEST_STUDY_IDENTIFIER, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
 
         ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
@@ -702,8 +703,8 @@ public class StudyServiceMockTest extends Mockito {
         PagedResourceList<? extends Template> page2 = new PagedResourceList<>(ImmutableList.of(), 3);
 
         doReturn(page1, page2).when(mockTemplateService).getTemplatesForType(
-                TEST_STUDY_IDENTIFIER, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
-        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(TEST_STUDY_IDENTIFIER), 
+                TEST_APP_ID, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
+        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(TEST_APP_ID), 
                 not(eq(EMAIL_ACCOUNT_EXISTS)), eq(0), eq(50), eq(true));
         
         // execute
@@ -716,8 +717,8 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(study.getStudyIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getStudyIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
-        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
-        verify(mockFileService).deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_APP_ID);
+        verify(mockFileService).deleteAllStudyFiles(TEST_APP_ID);
     }
 
     private Template createTemplate(String guid) {
@@ -1441,7 +1442,7 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void createStudyDoesNotCreateCertsForWhitelistedStudies() {
         Study study = getTestStudy();
-        study.setIdentifier("api"); // the only Id in the mock whitelist
+        study.setIdentifier(API_APP_ID); // the only Id in the mock whitelist
         
         service.createStudy(study);
         
@@ -1760,7 +1761,7 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cantDeleteApiStudy() {
-        service.deleteStudy("api", true);
+        service.deleteStudy(API_APP_ID, true);
     }
 
 }

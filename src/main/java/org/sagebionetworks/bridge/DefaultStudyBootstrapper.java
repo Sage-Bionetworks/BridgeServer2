@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -37,8 +37,8 @@ import org.springframework.stereotype.Component;
 @Component("defaultStudyBootstrapper")
 public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
 
-    static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_STUDY_ID_STRING);
-    static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_STUDY_ID_STRING);
+    static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_APP_ID);
+    static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_APP_ID);
     
     /**
      * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
@@ -82,7 +82,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             Study study = Study.create();
             study.setName("Test Study");
             study.setShortName("TestStudy");
-            study.setIdentifier(API_STUDY_ID_STRING);
+            study.setIdentifier(API_APP_ID);
             study.setReauthenticationEnabled(false);
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
@@ -119,7 +119,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             study.setReauthenticationEnabled(false);
             study.setShortName("SharedLib");
             study.setSponsorName("Sage Bionetworks");
-            study.setIdentifier(SHARED_STUDY_ID_STRING);
+            study.setIdentifier(SHARED_APP_ID);
             study.setSupportEmail(config.get("admin.email"));
             study.setTechnicalEmail(config.get("admin.email"));
             study.setConsentNotificationEmail(config.get("admin.email"));

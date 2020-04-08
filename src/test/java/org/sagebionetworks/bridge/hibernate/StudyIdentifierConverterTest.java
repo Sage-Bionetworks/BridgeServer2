@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -17,7 +17,7 @@ public class StudyIdentifierConverterTest {
     public void convertToDatabaseColumn() throws Exception {
         String string = CONVERTER.convertToDatabaseColumn(TEST_STUDY);
         
-        assertEquals(string, TEST_STUDY_IDENTIFIER);
+        assertEquals(string, API_APP_ID);
     }
 
     @Test

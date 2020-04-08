@@ -11,8 +11,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -53,7 +53,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -149,7 +148,7 @@ public class DynamoExternalIdDaoMockTest {
         assertEquals(assignmentCondition.getComparisonOperator(), NOT_NULL.toString());
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_STUDY_IDENTIFIER);
+        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), API_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "offsetKey");
 
         assertEquals(query.getReturnConsumedCapacity(), ReturnConsumedCapacity.TOTAL.toString());
@@ -157,7 +156,7 @@ public class DynamoExternalIdDaoMockTest {
         assertTrue(query.isConsistentRead());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(id.getStudyId(), API_APP_ID);
         assertNull(id.getIdentifier());
     }
 
@@ -220,15 +219,15 @@ public class DynamoExternalIdDaoMockTest {
                 .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
         
         // Verify here that prior to migration, a lack of association doesn't break anything
-        DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId1");
+        DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(API_APP_ID, "extId1");
         extId1.setSubstudyId(null); // should see this external identifier record
-        DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId2");
+        DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(API_APP_ID, "extId2");
         extId2.setSubstudyId("substudyA");
-        DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId3");
+        DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(API_APP_ID, "extId3");
         extId3.setSubstudyId("substudyB");
-        DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId4");
+        DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(API_APP_ID, "extId4");
         extId4.setSubstudyId("substudyC");
-        DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(TestConstants.TEST_STUDY_IDENTIFIER, "extId5");
+        DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(API_APP_ID, "extId5");
         extId5.setSubstudyId("substudyD");
         setupQueryOfIds(ImmutableList.of(extId1, extId2, extId3, extId4, extId5));
         
@@ -390,11 +389,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(acctSubstudy);
@@ -409,11 +408,11 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        AccountSubstudy as = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy as = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.getAccountSubstudies().add(as);
 
         dao.unassignExternalId(account, ID);
@@ -428,11 +427,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy as = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy as = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(as);
@@ -448,11 +447,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_STUDY_IDENTIFIER);
+        account.setStudyId(API_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.setAccountSubstudies(null); // this would throw an error if executed
@@ -476,11 +475,11 @@ public class DynamoExternalIdDaoMockTest {
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = queryCaptor.getValue();
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_STUDY_IDENTIFIER);
+        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), API_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "CCCCC");
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(id.getStudyId(), API_APP_ID);
         assertNull(id.getIdentifier());
     }
 
@@ -502,7 +501,7 @@ public class DynamoExternalIdDaoMockTest {
         assertNull(query.getExclusiveStartKey());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(id.getStudyId(), API_APP_ID);
         assertNull(id.getIdentifier());
     }
     
@@ -516,7 +515,7 @@ public class DynamoExternalIdDaoMockTest {
         // Convert lists of strings to lists of DynamExternalIdentifiers
         List<List<DynamoExternalIdentifier>> extIdLists = Arrays.asList(lists).stream().map(oneList -> {
             return oneList.stream()
-                .map(id -> new DynamoExternalIdentifier(TEST_STUDY_IDENTIFIER, id))
+                .map(id -> new DynamoExternalIdentifier(API_APP_ID, id))
                 .collect(Collectors.toList());
         }).collect(Collectors.toList());
         

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 
@@ -55,14 +57,11 @@ public class TestConstants {
     public static final byte[] MOCK_MD5 = { -104, 10, -30, -37, 25, -113, 92, -9, 69, -118, -46, -87, 11, -14, 38, -61 };
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
-    public static final String TEST_STUDY_IDENTIFIER = "api";
-    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(TEST_STUDY_IDENTIFIER);
-    public static final String APP_ID = "api";
+    public static final StudyIdentifier TEST_STUDY = new StudyIdentifierImpl(API_APP_ID);
     
-    public static final String SHARED_STUDY_IDENTIFIER = "shared";
-    public static final StudyIdentifier SHARED_STUDY = new StudyIdentifierImpl(SHARED_STUDY_IDENTIFIER);
+    public static final StudyIdentifier SHARED_STUDY = new StudyIdentifierImpl(SHARED_APP_ID);
     
-    public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+    public static final AccountId ACCOUNT_ID = AccountId.forId(API_APP_ID, USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
             .withUserId("user-id").withStudyIdentifier(TestConstants.TEST_STUDY).build();
 

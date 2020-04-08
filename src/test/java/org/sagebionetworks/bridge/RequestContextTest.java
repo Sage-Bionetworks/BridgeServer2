@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -8,7 +9,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
@@ -86,7 +86,7 @@ public class RequestContextTest {
                 .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
 
         assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(context.getCallerStudyId(), API_APP_ID);
         assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
@@ -110,7 +110,7 @@ public class RequestContextTest {
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
         assertEquals(copy.getId(), "did-change-this");
-        assertEquals(copy.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(copy.getCallerStudyId(), API_APP_ID);
         assertEquals(copy.getCallerStudyIdentifier(), TEST_STUDY);
         assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);

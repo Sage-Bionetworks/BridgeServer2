@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -74,7 +74,7 @@ public class ParticipantReportControllerTest extends Mockito {
     private static final String REPORT_ID = "foo";
     private static final String OTHER_PARTICIPANT_HEALTH_CODE = "ABC";
     private static final String OTHER_PARTICIPANT_ID = "userId";
-    private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID);
+    private static final AccountId OTHER_ACCOUNT_ID = AccountId.forId(API_APP_ID, OTHER_PARTICIPANT_ID);
     private static final String HEALTH_CODE = "healthCode";
     private static final LocalDate START_DATE = LocalDate.parse("2015-01-02");
     private static final LocalDate END_DATE = LocalDate.parse("2015-02-02");
@@ -122,7 +122,7 @@ public class ParticipantReportControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(API_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(DEVELOPER)).build();
@@ -258,7 +258,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         // Execute and validate.
         ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportForWorkerV4(
-                TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID, REPORT_ID, null, null, null, null);
+                API_APP_ID, OTHER_PARTICIPANT_ID, REPORT_ID, null, null, null, null);
 
         assertReportDataPage(START_TIME, END_TIME, null, API_DEFAULT_PAGE_SIZE, result);
 
@@ -279,7 +279,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         // Execute and validate.
         ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportForWorkerV4(
-                TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID, REPORT_ID, START_TIME.toString(), END_TIME.toString(),
+                API_APP_ID, OTHER_PARTICIPANT_ID, REPORT_ID, START_TIME.toString(), END_TIME.toString(),
                 OFFSET_KEY, PAGE_SIZE);
 
         assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, result);
@@ -318,7 +318,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         // Execute and validate.
         DateRangeResourceList<? extends ReportData> result = controller
-                .getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID, REPORT_ID, null, null);
+                .getParticipantReportForWorker(API_APP_ID, OTHER_PARTICIPANT_ID, REPORT_ID, null, null);
         assertResultContent(START_DATE, END_DATE, result);
 
         // Verify dependent service call.
@@ -336,7 +336,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         // Execute and validate.
         DateRangeResourceList<? extends ReportData> result = controller.getParticipantReportForWorker(
-                TEST_STUDY_IDENTIFIER, OTHER_PARTICIPANT_ID, REPORT_ID, START_DATE.toString(), END_DATE.toString());
+                API_APP_ID, OTHER_PARTICIPANT_ID, REPORT_ID, START_DATE.toString(), END_DATE.toString());
         assertResultContent(START_DATE, END_DATE, result);
 
         // Verify dependent service call.
@@ -502,7 +502,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void getParticipantReportForWorkerAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         reset(mockAccountService);
-        controller.getParticipantReportForWorker(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null);
+        controller.getParticipantReportForWorker(API_APP_ID, USER_ID, REPORT_ID, null, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -542,7 +542,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void getParticipantReportForWorkerV4AccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         reset(mockAccountService);
-        controller.getParticipantReportForWorkerV4(TEST_STUDY_IDENTIFIER, USER_ID, REPORT_ID, null, null, null, null);
+        controller.getParticipantReportForWorkerV4(API_APP_ID, USER_ID, REPORT_ID, null, null, null, null);
     }
     
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,

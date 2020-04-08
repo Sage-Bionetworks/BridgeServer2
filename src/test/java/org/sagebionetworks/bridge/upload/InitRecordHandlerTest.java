@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -140,7 +141,7 @@ public class InitRecordHandlerTest {
         assertEquals(record.getAppVersion(), APP_VERSION);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(record.getStudyId(), API_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -10,7 +11,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -122,7 +122,7 @@ public class UserManagementControllerTest extends Mockito {
         doReturn(session).when(mockUserAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(mockAuthService).getSession(any(String.class));
         doReturn(mockStudy).when(mockStudyService).getStudy(TEST_STUDY);
-        doReturn(mockStudy).when(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
+        doReturn(mockStudy).when(mockStudyService).getStudy(API_APP_ID);
 
         when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
         doReturn(null).when(controller).getMetrics();
@@ -159,7 +159,7 @@ public class UserManagementControllerTest extends Mockito {
 
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals(session.getStudyIdentifier().getIdentifier(), "originalStudy");
-        assertEquals(signInCaptor.getValue().getStudyId(), "api");
+        assertEquals(signInCaptor.getValue().getStudyId(), API_APP_ID);
 
         verify(mockResponse).addCookie(cookieCaptor.capture());
         
@@ -196,7 +196,7 @@ public class UserManagementControllerTest extends Mockito {
     public void changeStudyForAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, USER_ID);
+        AccountId accountId = AccountId.forId(API_APP_ID, USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
@@ -241,7 +241,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         // same study id as above test
-        StatusMessage result = controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
+        StatusMessage result = controller.createUserWithStudyId(API_APP_ID);
         assertEquals(result, UserManagementController.CREATED_MSG);
     }
     
@@ -251,7 +251,7 @@ public class UserManagementControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
+        controller.createUserWithStudyId(API_APP_ID);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -269,7 +269,7 @@ public class UserManagementControllerTest extends Mockito {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         
-        controller.createUserWithStudyId(TEST_STUDY_IDENTIFIER);
+        controller.createUserWithStudyId(API_APP_ID);
     }
     
     @Test

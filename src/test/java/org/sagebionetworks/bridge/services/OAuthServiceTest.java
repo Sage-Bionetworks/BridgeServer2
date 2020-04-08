@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 import static org.mockito.Mockito.verify;
@@ -55,8 +55,8 @@ public class OAuthServiceTest {
     private static final Set<String> SCOPE_SET = ImmutableSet.copyOf(SCOPE_LIST);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             INTROSPECT_URL);
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, AUTH_TOKEN_STRING, null);
-    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(TEST_STUDY_IDENTIFIER, VENDOR_ID, null, null);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(API_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(API_APP_ID, VENDOR_ID, null, null);
     
     @Spy
     private OAuthService service;

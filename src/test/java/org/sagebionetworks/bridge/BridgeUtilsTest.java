@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -7,10 +8,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -145,9 +144,9 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
 
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asA = AccountSubstudy.create(API_APP_ID, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(API_APP_ID, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(API_APP_ID, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
         Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
@@ -158,9 +157,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void substudyIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asA = AccountSubstudy.create(API_APP_ID, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(API_APP_ID, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(API_APP_ID, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
         Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
@@ -196,11 +195,11 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
 
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asA = AccountSubstudy.create(API_APP_ID, "substudyA", "id");
         asA.setExternalId("extA");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asB = AccountSubstudy.create(API_APP_ID, "substudyB", "id");
         asB.setExternalId("extB");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asC = AccountSubstudy.create(API_APP_ID, "substudyC", "id");
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
@@ -212,11 +211,11 @@ public class BridgeUtilsTest {
     
     @Test
     public void externalIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asA = AccountSubstudy.create(API_APP_ID, "substudyA", "id");
         asA.setExternalId("extA");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asB = AccountSubstudy.create(API_APP_ID, "substudyB", "id");
         asB.setExternalId("extB");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asC = AccountSubstudy.create(API_APP_ID, "substudyC", "id");
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
@@ -251,11 +250,11 @@ public class BridgeUtilsTest {
     @Test
     public void collectExternalIds() {
         Account account = Account.create();
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
+        AccountSubstudy as1 = AccountSubstudy.create(API_APP_ID, "substudyA", "userId");
         as1.setExternalId("subAextId");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
+        AccountSubstudy as2 = AccountSubstudy.create(API_APP_ID, "substudyB", "userId");
         as2.setExternalId("subBextId");
-        AccountSubstudy as3 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "userId");
+        AccountSubstudy as3 = AccountSubstudy.create(API_APP_ID, "substudyC", "userId");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
         
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
@@ -271,9 +270,9 @@ public class BridgeUtilsTest {
     @Test
     public void collectSubstudyIds() {
         Account account = Account.create();
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "userId");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "userId");
-        AccountSubstudy as3 = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "userId");
+        AccountSubstudy as1 = AccountSubstudy.create(API_APP_ID, "substudyA", "userId");
+        AccountSubstudy as2 = AccountSubstudy.create(API_APP_ID, "substudyB", "userId");
+        AccountSubstudy as3 = AccountSubstudy.create(API_APP_ID, "substudyC", "userId");
         account.setAccountSubstudies(ImmutableSet.of(as1, as2, as3));
         
         Set<String> externalIds = BridgeUtils.collectSubstudyIds(account);
@@ -931,20 +930,20 @@ public class BridgeUtilsTest {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkOwnershipOwnerIdIsBlank() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
-        BridgeUtils.checkOwnership(APP_ID, null);
+        BridgeUtils.checkOwnership(API_APP_ID, null);
     }
     
     @Test
     public void checkOwnershipGlobalUser() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
-        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+        BridgeUtils.checkOwnership(API_APP_ID, OWNER_ID);
     }
     
     @Test
     public void checkOwnershipScopedUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
-        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+        BridgeUtils.checkOwnership(API_APP_ID, OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -952,34 +951,34 @@ public class BridgeUtilsTest {
     public void checkOwnershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
-        BridgeUtils.checkOwnership(APP_ID, OWNER_ID);
+        BridgeUtils.checkOwnership(API_APP_ID, OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkSharedOwnershipOwnerIdIsBlank() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, null);
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, null);
     }
     
     @Test
     public void checkSharedOwnershipGlobalUser() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkSharedOwnershipAgainstNonGlobalOwnerId() {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, OWNER_ID);
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, OWNER_ID);
     }
     
     @Test
     public void sharedOwnershipScopedUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -987,15 +986,15 @@ public class BridgeUtilsTest {
     public void checkSharedOwnershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, SHARED_OWNER_ID);
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkSharedOwnershipWrongAppId() { 
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(TEST_STUDY_IDENTIFIER)).build());
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, "other:"+OWNER_ID);        
+                .withCallerSubstudies(ImmutableSet.of(API_APP_ID)).build());
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, "other:"+OWNER_ID);        
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -1004,7 +1003,7 @@ public class BridgeUtilsTest {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
         // still doesn't pass because the appId must always match (global users must call 
         // this API after associating to the right app context):
-        BridgeUtils.checkSharedOwnership(TEST_STUDY_IDENTIFIER, GUID, "other:"+OWNER_ID);        
+        BridgeUtils.checkSharedOwnership(API_APP_ID, GUID, "other:"+OWNER_ID);        
     }
     
     @Test
