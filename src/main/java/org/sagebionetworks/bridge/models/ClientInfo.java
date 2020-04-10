@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.models;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 
 /**
  * <p>
@@ -60,7 +63,7 @@ import com.google.common.cache.LoadingCache;
 public final class ClientInfo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientInfo.class);
-
+    
     /**
      * A cache of ClientInfo objects that have already been parsed from user agent strings. 
      * We're using this, rather than ConcurrentHashMap, because external clients submit this string, 
@@ -84,14 +87,26 @@ public final class ClientInfo {
     public static final ClientInfo UNKNOWN_CLIENT = new ClientInfo.Builder().build();
 
     /** Numbers followed by spacing, followed by non-numbers, indicates two stanzas */
-    //private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+[^0-9]+.*";
-    //private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=([^0-9]))";
-    private static final String TWO_STANZA_REGEXP = ".*[0-9]+\\s+.*";
-    private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=(.*))";
-    private static final String OLD_OS_FORMAT_REGEXP = "[^/]+\\s[\\d\\.]+";
-    private static final String DIGITS_REGEXP = "^\\s*[0-9]+\\s*$";
-    private static final String SEMANTIC_VERSION_REGEXP = "^\\s*[0-9\\.]+\\s*$";
+    private static final Pattern TWO_STANZA_REGEXP = Pattern.compile(".*[0-9]+\\s+.*");
+    private static final Pattern OLD_OS_FORMAT_REGEXP = Pattern.compile("[^/]+\\s[\\d\\.]+");
+    private static final Pattern DIGITS_REGEXP = Pattern.compile("^\\s*[0-9]+\\s*$");
+    private static final Pattern SEMANTIC_VERSION_REGEXP = Pattern.compile("^\\s*[0-9\\.]+\\s*$");
 
+    private static final String STANZA_SPLIT_REGEXP = "(?<=[0-9])\\s(?=(.*))";
+    private static final String NOT = "[^\\/\\(\\);]";
+    private static final String NOT_DEVICE = "[^\\/;]";
+    
+    private static final Pattern MULTI_PARENS = Pattern.compile("^.*\\(.*\\).*\\(.*\\).*$");
+    private static final Pattern SEMICOLON_IN_APP_STANZA = Pattern.compile("^.*;.*\\(.*$");
+    private static final Pattern MULTI_SLASHES_IN_OUTER_STANZA = Pattern.compile("^.*/.*/.*$");
+    private static final Pattern DEVICE_STANZA_FORMAT = Pattern.compile(
+            String.format("^%s*\\;?%s*\\/?%s*$", NOT_DEVICE, NOT, NOT));
+    
+    private static final Pattern VALID1 = Pattern.compile(String.format("^%s+$", NOT));
+    private static final Pattern VALID2 = Pattern.compile(String.format("^%s*/%s*$", NOT, NOT));
+    private static final Pattern VALID3 = Pattern.compile(String.format("^%s*/%s*/%s*$", NOT, NOT, NOT));
+    private static final List<Pattern> VALID_NO_DEVICE_FORMATS = ImmutableList.of(VALID1, VALID2, VALID3);
+    
     private final String appName;
     private final Integer appVersion;
     private final String deviceName;
@@ -244,11 +259,25 @@ public final class ClientInfo {
     }
     
     static ClientInfo parseUserAgentString(String userAgent) {
-        if (StringUtils.isBlank(userAgent) || invalidFormat(userAgent)) {
-            return ClientInfo.UNKNOWN_CLIENT;
+        if (StringUtils.isBlank(userAgent) || 
+            MULTI_PARENS.matcher(userAgent).matches() ||
+            SEMICOLON_IN_APP_STANZA.matcher(userAgent).matches()) {
+            return UNKNOWN_CLIENT;
         }
+
         ClientInfo.Builder builder = new ClientInfo.Builder();
-        String[] stanzas = userAgent.split("[()]");
+        
+        String[] stanzas = split(userAgent);
+        if (stanzas.length == 3) {
+            if (MULTI_SLASHES_IN_OUTER_STANZA.matcher(stanzas[0]).matches() ||
+                !DEVICE_STANZA_FORMAT.matcher(stanzas[1]).matches() ||
+                MULTI_SLASHES_IN_OUTER_STANZA.matcher(stanzas[2]).matches()) {
+                return UNKNOWN_CLIENT;
+            }
+        } else if (invalidFormat(userAgent)) {
+            return UNKNOWN_CLIENT;
+        }
+        
         if (stanzas.length == 3) {
             // All three components are present.
             parseAppStanza(builder, stanzas[0]);
@@ -260,7 +289,7 @@ public final class ClientInfo {
             parseDeviceStanza(builder, stanzas[1]);
         } else if (stanzas.length == 1) {
             // This is the app or sdk stanza, or both
-            if (stanzas[0].matches(TWO_STANZA_REGEXP)) {
+            if (TWO_STANZA_REGEXP.matcher(stanzas[0]).matches()) {
                 // It's both
                 String[] components = stanzas[0].split(STANZA_SPLIT_REGEXP);
                 parseAppStanza(builder, components[0]);
@@ -282,69 +311,29 @@ public final class ClientInfo {
         return info;
     }
     
-    /**
-     * Verifies a few things about the string:
-     * 
-     * - shouldn't be more than one set of parentheses (and they are matched)
-     * - if there's a semicolon, there should only be one and there should be parentheses
-     * - shouldn't be more than 3 slashes
-     */
-    private static boolean invalidFormat(String userAgent) {
-        // Format: a/b (c; d/e) f/g
-        //    : / ( /
-        // 1/ : ( /
-        // (  : ; / )      
-        // ;  : / )
-        // 2/ : )
-        // )  : /
-        // 3/ : 
-        char lastSeparator = 0;
-        int slashes = 0;
-        for (int i=0; i < userAgent.length(); i++) {
-            char oneChar = userAgent.charAt(i);
-            
-            if (!inSet(oneChar, '(', ')', ';', '/')) {
-                continue;
+    private static String[] split(String string) {
+        if (string.contains("(")) {
+            int firstParens = string.indexOf("(");
+            int lastParens = string.lastIndexOf(")");
+            if (lastParens < firstParens) {
+                return new String[] {"", "", ""};
             }
-            if ((lastSeparator == 0 && !inSet(oneChar, '/', '(')) ||
-                (lastSeparator == '(' && !inSet(oneChar, ';', '/', ')')) ||
-                (lastSeparator == ';' && !inSet(oneChar, ')', '/')) ||
-                (lastSeparator == ')' && !inSet(oneChar, '/'))) {
-                return true;
-            } else if (lastSeparator == '/') {
-                ++slashes;
-                
-                if ((slashes == 1 && !inSet(oneChar, '(', '/', ')')) ||
-                    (slashes == 2 && !inSet(oneChar, ')', '/')) || 
-                    (slashes > 2)) {
-                    return true;
-                }
-                /*
-                if (slashes == 1 && !inSet(oneChar, '(', '/', ')')) {
-                    return true;
-                } else if (slashes == 2 && !inSet(oneChar, ')', '/')) {
-                    return true;
-                } else if (slashes > 2) {
-                    return true;
-                }*/
-            }
-            // Basically once you have a device stanza and it's completed
-            // we want to ensure you are looking for the last slash.
-            if (oneChar == ')') {
-                ++slashes;
-            }
-            lastSeparator = oneChar;
+            return new String[] {
+                string.substring(0, firstParens),
+                string.substring(firstParens+1, lastParens),
+                string.substring(lastParens+1)
+            };
         }
-        return false;
+        return new String[] { string };    
     }
     
-    private static boolean inSet(char character, char... set) {
-        for (char testCharacter : set) {
-            if (character == testCharacter) {
-                return true;
+    private static boolean invalidFormat(String userAgent) {
+        for (int i=0; i < VALID_NO_DEVICE_FORMATS.size(); i++) {
+            if (VALID_NO_DEVICE_FORMATS.get(i).matcher(userAgent).matches()) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
     
     private static void parseAppStanza(ClientInfo.Builder builder, String stanza) {
@@ -353,13 +342,13 @@ public final class ClientInfo {
         }
         String[] components = stanza.split("/");
         if (components.length == 2) {
-            if (!components[0].matches(DIGITS_REGEXP)) {
+            if (!DIGITS_REGEXP.matcher(components[0]).matches()) {
                 builder.withAppName(parseString(components[0]));    
             }
             builder.withAppVersion(parseInteger(components[1]));
         } else if (components.length == 1) {
             // if it's a number, it's a version, otherwise it's the name.
-            if (components[0].matches(DIGITS_REGEXP)) {
+            if (DIGITS_REGEXP.matcher(components[0]).matches()) {
                 builder.withAppVersion(parseInteger(components[0]));
             } else {
                 builder.withAppName(parseString(components[0]));
@@ -380,7 +369,7 @@ public final class ClientInfo {
     private static void parseOsStanza(ClientInfo.Builder builder, String stanza) {
         // The old format did not have a slash in it. We have to account for that.
         String[] components = null;
-        if (stanza.matches(OLD_OS_FORMAT_REGEXP)) {
+        if (OLD_OS_FORMAT_REGEXP.matcher(stanza).matches()) {
             components = new String[] {
                 stanza.substring(0, stanza.lastIndexOf(" ")),
                 stanza.substring(stanza.lastIndexOf(" ")),
@@ -393,7 +382,7 @@ public final class ClientInfo {
             builder.withOsVersion(parseString(components[1]));
         } else if (components.length == 1) {
             // if it's a number, it's a version, otherwise it's the name.
-            if (components[0].trim().matches(SEMANTIC_VERSION_REGEXP)) {
+            if (SEMANTIC_VERSION_REGEXP.matcher(components[0].trim()).matches()) {
                 builder.withOsVersion(parseString(components[0]));
             } else {
                 builder.withOsName(parseString(components[0]));
@@ -404,12 +393,12 @@ public final class ClientInfo {
     private static void parseSdkStanza(ClientInfo.Builder builder, String stanza) {
         String[] sdkComponents = stanza.split("/");
         if (sdkComponents.length == 2) {
-            if (!sdkComponents[0].matches(DIGITS_REGEXP)) {
+            if (!DIGITS_REGEXP.matcher(sdkComponents[0]).matches()) {
                 builder.withSdkName(parseString(sdkComponents[0]));    
             }
             builder.withSdkVersion(parseInteger(sdkComponents[1]));
         } else if (sdkComponents.length == 1) {
-            if (sdkComponents[0].matches(DIGITS_REGEXP)) {
+            if (DIGITS_REGEXP.matcher(sdkComponents[0]).matches()) {
                 builder.withSdkVersion(parseInteger(sdkComponents[0]));
             } else {
                 builder.withSdkName(parseString(sdkComponents[0]));
@@ -419,7 +408,7 @@ public final class ClientInfo {
     
     private static String parseString(String value) {
         // should not contain characters we consider special
-        if (StringUtils.isBlank(value.trim()) || value.matches(".*[;\\(\\)]+.*")) { 
+        if (StringUtils.isBlank(value.trim())) { 
             return null;
         }
         return value.trim();

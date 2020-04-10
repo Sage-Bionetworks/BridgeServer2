@@ -28,7 +28,7 @@ public class ClientInfoTest {
         assertClientInfo("/3", null, 3, null, null, null, null, null);
         assertClientInfo("3", null, 3, null, null, null, null, null);
         
-        // Parenthesese can indicate which side the free string is on
+        // Parentheses can indicate which side the free string is on
         // 1 central stanza:
         assertClientInfo("(osName)", null, null, null, "osName", null, null, null);
         assertClientInfo("(osName/)", null, null, null, "osName", null, null, null);
@@ -126,6 +126,8 @@ public class ClientInfoTest {
         // I made this up so it would break the parser.
         assertClientInfo("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) Chrome/64.0.3282.186 Safari/537.36", 
                 null, null, null, null, null, null, null);
+        assertClientInfo("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.5 Safari/605.1.15",
+                null, null, null, null, null, null, null);
         assertClientInfo(";;", null, null, null, null, null, null, null);
         assertClientInfo(";(", null, null, null, null, null, null, null);
         assertClientInfo("))", null, null, null, null, null, null, null);
@@ -141,18 +143,31 @@ public class ClientInfoTest {
         
         // Finally, for the supremely lazy client, this is all that is needed to trigger server-side matching:
         assertClientInfo("20 (iOS)", null, 20, null, "iPhone OS", null, null, null);
+        
+        assertClientInfo("elevateMS/29 (Unknown iOS device; iOS/13.1.3) BridgeSDK/27",
+                "elevateMS", 29, "Unknown iOS device", "iPhone OS", "13.1.3", "BridgeSDK", 27);
+        assertClientInfo("MFS Pilot/22 (iPhone 8+; iOS/13.3.1) BridgeSDK/68",
+                "MFS Pilot", 22, "iPhone 8+", "iPhone OS", "13.3.1", "BridgeSDK", 68);
+        assertClientInfo("PsorcastValidation/20 (iPhone SE; iOS/13.4) BridgeSDK/69",
+                "PsorcastValidation", 20, "iPhone SE", "iPhone OS", "13.4", "BridgeSDK", 69);
+    }
+    
+    @Test
+    public void canHandleDeviceNameWithParens() {
+        assertClientInfo("mPower 2.0/2001 (Motorola moto g(6) play; Android/8.0.0) BridgeAndroidSDK/4",
+                "mPower 2.0", 2001, "Motorola moto g(6) play", "Android", "8.0.0", "BridgeAndroidSDK", 4);
     }
 
     private void assertClientInfo(String userAgentString, String appName, Integer appVersion, String deviceName,
             String osName, String osVersion, String sdkName, Integer sdkVersion) {
         ClientInfo info = ClientInfo.parseUserAgentString(userAgentString);
-        assertEquals(info.getAppName(), appName);
-        assertEquals(info.getAppVersion(), appVersion);
-        assertEquals(info.getDeviceName(), deviceName);
-        assertEquals(info.getOsName(), osName);
-        assertEquals(info.getOsVersion(), osVersion);
-        assertEquals(info.getSdkName(), sdkName);
-        assertEquals(info.getSdkVersion(), sdkVersion);
+        assertEquals(info.getAppName(), appName, "appName");
+        assertEquals(info.getAppVersion(), appVersion, "appVersion");
+        assertEquals(info.getDeviceName(), deviceName, "deviceName");
+        assertEquals(info.getOsName(), osName, "osName");
+        assertEquals(info.getOsVersion(), osVersion, "osVersion");
+        assertEquals(info.getSdkName(), sdkName, "sdkName");
+        assertEquals(info.getSdkVersion(), sdkVersion, "sdkVersion");
     }
 
     @Test
