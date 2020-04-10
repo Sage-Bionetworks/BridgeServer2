@@ -283,11 +283,7 @@ public final class ClientInfo {
             parseAppStanza(builder, stanzas[0]);
             parseDeviceStanza(builder, stanzas[1]);
             parseSdkStanza(builder, stanzas[2]);
-        } else if (stanzas.length == 2) {
-            // This is the left or left and center stanza
-            parseAppStanza(builder, stanzas[0]);
-            parseDeviceStanza(builder, stanzas[1]);
-        } else if (stanzas.length == 1) {
+        } else {
             // This is the app or sdk stanza, or both
             if (TWO_STANZA_REGEXP.matcher(stanzas[0]).matches()) {
                 // It's both
@@ -361,7 +357,7 @@ public final class ClientInfo {
         if (components.length == 2) {
             builder.withDeviceName(parseString(components[0]));
             parseOsStanza(builder, components[1].trim());
-        } else if (components.length == 1) {
+        } else {
             parseOsStanza(builder, components[0].trim());
         }
     }
@@ -397,7 +393,7 @@ public final class ClientInfo {
                 builder.withSdkName(parseString(sdkComponents[0]));    
             }
             builder.withSdkVersion(parseInteger(sdkComponents[1]));
-        } else if (sdkComponents.length == 1) {
+        } else {
             if (DIGITS_REGEXP.matcher(sdkComponents[0]).matches()) {
                 builder.withSdkVersion(parseInteger(sdkComponents[0]));
             } else {

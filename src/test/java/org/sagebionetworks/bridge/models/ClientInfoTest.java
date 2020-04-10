@@ -229,5 +229,4 @@ public class ClientInfoTest {
         assertEquals(info.getOsVersion(), "Version1");
         assertEquals(info.getSdkVersion().intValue(), 4);
     }
-    
  }
