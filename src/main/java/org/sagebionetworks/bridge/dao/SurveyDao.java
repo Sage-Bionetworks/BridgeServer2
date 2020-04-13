@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dao;
 import java.util.List;
 
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 public interface SurveyDao {
@@ -16,13 +15,13 @@ public interface SurveyDao {
     /**
      * Update an unpublished survey. A survey version can be edited until it is published.
      */
-    Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey);
+    Survey updateSurvey(String studyIdentifier, Survey survey);
     
     /**
      * Version this survey (create a copy with a new createdOn timestamp). New versions are 
      * created unpublished and can be modified.
      */
-    Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
+    Survey versionSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys);
 
     /**
      * Make this version of this survey available for scheduling. One scheduled for publishing,
@@ -38,7 +37,7 @@ public interface SurveyDao {
      *         true if you want to cut a new survey schema, false if you should (attempt to) modify the existing one
      * @return published survey
      */
-    Survey publishSurvey(StudyIdentifier study, Survey survey, boolean newSchemaRev);
+    Survey publishSurvey(String study, Survey survey, boolean newSchemaRev);
 
     /**
      * Delete this survey. Survey still exists in system and can be retrieved by direct reference
@@ -55,45 +54,45 @@ public interface SurveyDao {
      *
      * @param keys survey keys (guid, created-on timestamp)
      */
-    void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys);
+    void deleteSurveyPermanently(String studyIdentifier, GuidCreatedOnVersionHolder keys);
 
     /**
      * Get a specific version of a survey with or without its elements.
      */
-    Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements);
+    Survey getSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements);
 
     /**
      * Helper method to get the survey guid for the given study and survey identifier. Returns null if no such survey
      * exists. Primarily used to check identifier uniqueness.
      */
-    String getSurveyGuidForIdentifier(StudyIdentifier studyId, String surveyId);
+    String getSurveyGuidForIdentifier(String studyId, String surveyId);
 
     /**
      * Get all versions of a specific survey, ordered by most recent version 
      * first in the list.
      */
-    List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted);
+    List<Survey> getSurveyAllVersions(String studyIdentifier, String guid, boolean includeDeleted);
     
     /**
      * Get the most recent version of a survey, regardless of whether it is published
      * or not.
      */
-    Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid);
+    Survey getSurveyMostRecentVersion(String studyIdentifier, String guid);
     
     /**
      * Get the most recent version of a survey that is published, with or without its elements. 
      * More recent, unpublished versions of the survey will be ignored. 
      */
-    Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements);
+    Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid, boolean includeElements);
     
     /**
      * Get the most recent version of each survey in the study, that has been published. 
      */
-    List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted);
+    List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier, boolean includeDeleted);
     
     /**
      * Get the most recent version of each survey in the study, whether published or not.
      */
-    List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted);
+    List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier, boolean includeDeleted);
     
 }

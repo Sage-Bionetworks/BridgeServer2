@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.CONFIG_KEY_UDD_SQS_QUEUE_URL;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.REQUEST_KEY_BODY;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.REQUEST_KEY_END_DATE;
@@ -22,7 +22,6 @@ import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.DateRange;
 
@@ -58,7 +57,7 @@ public class UserDataDownloadViaSqsServiceTest {
         DateRange dateRange = new DateRange(LocalDate.parse(START_DATE), LocalDate.parse(END_DATE));
 
         // execute
-        testService.requestUserData(TEST_STUDY, USER_ID, dateRange);
+        testService.requestUserData(TEST_STUDY_IDENTIFIER, USER_ID, dateRange);
 
         // Validate SQS args.
         String sqsMessageText = sqsMessageCaptor.getValue();
@@ -73,7 +72,7 @@ public class UserDataDownloadViaSqsServiceTest {
         JsonNode msgBody = sqsMessageNode.path(REQUEST_KEY_BODY);
         assertEquals(msgBody.size(), 4);
 
-        assertEquals(msgBody.get(REQUEST_KEY_STUDY_ID).textValue(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(msgBody.get(REQUEST_KEY_STUDY_ID).textValue(), TEST_STUDY_IDENTIFIER);
         assertEquals(msgBody.get(REQUEST_KEY_USER_ID).textValue(), USER_ID);
         assertEquals(msgBody.get(REQUEST_KEY_START_DATE).textValue(), START_DATE);
         assertEquals(msgBody.get(REQUEST_KEY_END_DATE).textValue(), END_DATE);

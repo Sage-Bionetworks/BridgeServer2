@@ -10,8 +10,6 @@ import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class RequestContext {
     
@@ -19,7 +17,7 @@ public class RequestContext {
             ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
 
     private final String requestId;
-    private final StudyIdentifier callerStudyId;
+    private final String callerStudyId;
     private final Set<String> callerSubstudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
@@ -32,7 +30,7 @@ public class RequestContext {
             Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages,
             String callerIpAddress) {
         this.requestId = requestId;
-        this.callerStudyId = (callerStudyId == null) ? null : new StudyIdentifierImpl(callerStudyId);
+        this.callerStudyId = callerStudyId;
         this.callerSubstudies = callerSubstudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
@@ -49,9 +47,6 @@ public class RequestContext {
         return requestId;
     }
     public String getCallerStudyId() {
-        return (callerStudyId == null) ? null : callerStudyId.getIdentifier();
-    }
-    public StudyIdentifier getCallerStudyIdentifier() {
         return callerStudyId;
     }
     public Set<String> getCallerSubstudies() {
@@ -111,8 +106,8 @@ public class RequestContext {
             this.metrics = metrics;
             return this;
         }
-        public Builder withCallerStudyId(StudyIdentifier studyId) {
-            this.callerStudyId = (studyId == null) ? null : studyId.getIdentifier();
+        public Builder withCallerStudyId(String studyId) {
+            this.callerStudyId = studyId;
             return this;
         }
         public Builder withCallerSubstudies(Set<String> callerSubstudies) {

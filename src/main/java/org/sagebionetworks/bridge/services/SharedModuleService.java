@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
 
 import java.util.List;
 
@@ -10,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleImportStatus;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
@@ -55,7 +54,7 @@ public class SharedModuleService {
     }
 
     /** Imports a specific module version into the specified study. */
-    public SharedModuleImportStatus importModuleByIdAndVersion(StudyIdentifier studyId, String moduleId,
+    public SharedModuleImportStatus importModuleByIdAndVersion(String studyId, String moduleId,
             int moduleVersion) {
         // studyId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
@@ -71,7 +70,7 @@ public class SharedModuleService {
     }
 
     /** Imports the latest published version of a module into the specified study. */
-    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(StudyIdentifier studyId, String moduleId) {
+    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String studyId, String moduleId) {
         // studyId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
             throw new BadRequestException("module ID must be specified");
@@ -91,7 +90,7 @@ public class SharedModuleService {
     }
 
     // Helper method to import a module given the module metadata object.
-    private SharedModuleImportStatus importModule(StudyIdentifier studyId, SharedModuleMetadata metadata) {
+    private SharedModuleImportStatus importModule(String studyId, SharedModuleMetadata metadata) {
         // Callers will have passed in a non-null metadata object. This preconditions check is just to check against
         // bad coding.
         checkNotNull(metadata, "metadata must be specified");
@@ -103,7 +102,7 @@ public class SharedModuleService {
             // Copy schema from shared to local.
             String schemaId = metadata.getSchemaId();
             int schemaRev = metadata.getSchemaRevision();
-            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(BridgeConstants.SHARED_STUDY_ID, schemaId,
+            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID_STRING, schemaId,
                     schemaRev);
 
             // annotate with module ID and version
@@ -120,14 +119,14 @@ public class SharedModuleService {
             long sharedSurveyCreatedOn = metadata.getSurveyCreatedOn();
             GuidCreatedOnVersionHolder sharedSurveyKey = new GuidCreatedOnVersionHolderImpl(sharedSurveyGuid,
                     sharedSurveyCreatedOn);
-            Survey sharedSurvey = surveyService.getSurvey(BridgeConstants.SHARED_STUDY_ID, sharedSurveyKey, true, true);
+            Survey sharedSurvey = surveyService.getSurvey(SHARED_STUDY_ID_STRING, sharedSurveyKey, true, true);
 
             // annotate survey with module ID and version
             sharedSurvey.setModuleId(moduleId);
             sharedSurvey.setModuleVersion(moduleVersion);
 
             // Survey keys don't include study ID. Instead, we need to set the study ID directly in the survey object.
-            sharedSurvey.setStudyIdentifier(studyId.getIdentifier());
+            sharedSurvey.setStudyIdentifier(studyId);
             Survey localSurvey = surveyService.createSurvey(sharedSurvey);
             GuidCreatedOnVersionHolder localSurveyKey = new GuidCreatedOnVersionHolderImpl(localSurvey.getGuid(),
                     localSurvey.getCreatedOn());

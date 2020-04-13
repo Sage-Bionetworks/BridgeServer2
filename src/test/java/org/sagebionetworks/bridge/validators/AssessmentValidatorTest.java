@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY_IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
@@ -55,7 +55,7 @@ public class AssessmentValidatorTest extends Mockito {
     
     @Test
     public void validAssessment() {
-        when(mockSubstudyService.getSubstudy(TEST_STUDY, assessment.getOwnerId(), false))
+        when(mockSubstudyService.getSubstudy(TEST_STUDY_IDENTIFIER, assessment.getOwnerId(), false))
             .thenReturn(Substudy.create());
         
         Validate.entityThrowingException(validator, assessment);
@@ -65,7 +65,7 @@ public class AssessmentValidatorTest extends Mockito {
         validator = new AssessmentValidator(mockSubstudyService, SHARED_STUDY_IDENTIFIER);
         assessment.setOwnerId(API_STUDY_ID_STRING + ":" + OWNER_ID);
         
-        when(mockSubstudyService.getSubstudy(TEST_STUDY, OWNER_ID, false)).thenReturn(Substudy.create());
+        when(mockSubstudyService.getSubstudy(TEST_STUDY_IDENTIFIER, OWNER_ID, false)).thenReturn(Substudy.create());
     
         Validate.entityThrowingException(validator, assessment);
     }
@@ -110,7 +110,7 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void osNameUniversalIsValid() {
-        when(mockSubstudyService.getSubstudy(TEST_STUDY, assessment.getOwnerId(), false))
+        when(mockSubstudyService.getSubstudy(TEST_STUDY_IDENTIFIER, assessment.getOwnerId(), false))
             .thenReturn(Substudy.create());
         
         assessment.setOsName("Universal");

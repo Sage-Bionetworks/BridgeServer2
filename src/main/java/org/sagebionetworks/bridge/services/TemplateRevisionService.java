@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CreatedOnHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.validators.TemplateRevisionValidator;
@@ -38,7 +37,7 @@ public class TemplateRevisionService {
         this.templateRevisionDao = templateRevisionDao;
     }
     
-    public PagedResourceList<? extends TemplateRevision> getTemplateRevisions(StudyIdentifier studyId,
+    public PagedResourceList<? extends TemplateRevision> getTemplateRevisions(String studyId,
             String templateGuid, Integer offset, Integer pageSize) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
@@ -62,7 +61,7 @@ public class TemplateRevisionService {
         return templateRevisionDao.getTemplateRevisions(templateGuid, offset, pageSize);
     }
     
-    public CreatedOnHolder createTemplateRevision(StudyIdentifier studyId, String templateGuid, TemplateRevision revision) {
+    public CreatedOnHolder createTemplateRevision(String studyId, String templateGuid, TemplateRevision revision) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
         checkNotNull(revision);
@@ -87,7 +86,7 @@ public class TemplateRevisionService {
         return new CreatedOnHolder(createdOn);
     }
     
-    public TemplateRevision getTemplateRevision(StudyIdentifier studyId, String templateGuid, DateTime createdOn) {
+    public TemplateRevision getTemplateRevision(String studyId, String templateGuid, DateTime createdOn) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
         
@@ -101,7 +100,7 @@ public class TemplateRevisionService {
         return revision;
     }
     
-    public void publishTemplateRevision(StudyIdentifier studyId, String templateGuid, DateTime createdOn) {
+    public void publishTemplateRevision(String studyId, String templateGuid, DateTime createdOn) {
         checkNotNull(studyId);
         checkNotNull(templateGuid);
         checkNotNull(createdOn);

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.hibernate.HibernateFileMetadataDao.DELETE;
 import static org.sagebionetworks.bridge.hibernate.HibernateFileMetadataDao.FROM_FILE;
@@ -53,7 +52,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(eq(FROM_FILE + WITH_GUID), paramsCaptor.capture(), isNull(), isNull(),
                 eq(FileMetadata.class))).thenReturn(ImmutableList.of(metadata));
         
-        Optional<FileMetadata> returned = dao.getFile(TEST_STUDY, GUID);
+        Optional<FileMetadata> returned = dao.getFile(TEST_STUDY_IDENTIFIER, GUID);
         assertSame(returned.get(), metadata);
         
         Map<String,Object> map = paramsCaptor.getValue();
@@ -66,7 +65,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(eq(FROM_FILE + WITH_GUID), paramsCaptor.capture(), isNull(), isNull(),
                 eq(FileMetadata.class))).thenReturn(ImmutableList.of());
         
-        Optional<FileMetadata> returned = dao.getFile(TEST_STUDY, GUID);
+        Optional<FileMetadata> returned = dao.getFile(TEST_STUDY_IDENTIFIER, GUID);
         assertFalse(returned.isPresent());
     }
     
@@ -76,7 +75,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(eq(FROM_FILE + WO_DELETED + ORDER_BY), paramsCaptor.capture(), eq(5), eq(25),
                 eq(FileMetadata.class))).thenReturn(ImmutableList.of(new FileMetadata(), new FileMetadata()));
 
-        PagedResourceList<FileMetadata> returned = dao.getFiles(TEST_STUDY, 5, 25, false);
+        PagedResourceList<FileMetadata> returned = dao.getFiles(TEST_STUDY_IDENTIFIER, 5, 25, false);
         assertEquals(returned.getItems().size(), 2);
         assertEquals(returned.getTotal(), Integer.valueOf(10));
         assertEquals(returned.getRequestParams().get("offsetBy"), 5);
@@ -97,7 +96,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(eq(FROM_FILE + ORDER_BY), paramsCaptor.capture(), eq(5), eq(25),
                 eq(FileMetadata.class))).thenReturn(ImmutableList.of(new FileMetadata(), new FileMetadata()));
 
-        PagedResourceList<FileMetadata> returned = dao.getFiles(TEST_STUDY, 5, 25, true);
+        PagedResourceList<FileMetadata> returned = dao.getFiles(TEST_STUDY_IDENTIFIER, 5, 25, true);
         assertEquals(returned.getItems().size(), 2);
         assertEquals(returned.getTotal(), Integer.valueOf(10));
         assertTrue((Boolean)returned.getRequestParams().get("includeDeleted"));
@@ -136,7 +135,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         metadata.setStudyId(TEST_STUDY_IDENTIFIER);
         when(mockHibernateHelper.getById(FileMetadata.class, GUID)).thenReturn(metadata);
         
-        dao.deleteFilePermanently(TEST_STUDY, GUID);
+        dao.deleteFilePermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockHibernateHelper).getById(FileMetadata.class, GUID);
         verify(mockHibernateHelper).deleteById(FileMetadata.class, GUID);
@@ -144,7 +143,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     
     @Test
     public void deleteFilePermanentlyNoFile() {
-        dao.deleteFilePermanently(TEST_STUDY, GUID);
+        dao.deleteFilePermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockHibernateHelper).getById(FileMetadata.class, GUID);
         verify(mockHibernateHelper, never()).deleteById(FileMetadata.class, GUID);
@@ -156,7 +155,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         metadata.setStudyId("some-other-study");
         when(mockHibernateHelper.getById(FileMetadata.class, GUID)).thenReturn(metadata);
         
-        dao.deleteFilePermanently(TEST_STUDY, GUID);
+        dao.deleteFilePermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockHibernateHelper).getById(FileMetadata.class, GUID);
         verify(mockHibernateHelper, never()).deleteById(FileMetadata.class, GUID);
@@ -164,7 +163,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     
     @Test
     public void deleteAllStudyFiles() {
-        dao.deleteAllStudyFiles(TEST_STUDY);
+        dao.deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
         
         verify(mockHibernateHelper).query(eq(DELETE + FROM_FILE), paramsCaptor.capture());
         assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_IDENTIFIER);

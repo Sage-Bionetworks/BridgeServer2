@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.SharedModuleMetadataService;
 
 @CrossOrigin
@@ -171,8 +170,8 @@ public class SharedModuleMetadataController extends BaseController {
     // study (the study for the Shared Module Library).
     private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
+        String studyId = session.getStudyIdentifier();
+        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId)) {
             throw new UnauthorizedException();
         }
         return session;
@@ -180,8 +179,8 @@ public class SharedModuleMetadataController extends BaseController {
     
     private UserSession verifySharedDeveloperOrAdminAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId.getIdentifier())) {
+        String studyId = session.getStudyIdentifier();
+        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId)) {
             throw new UnauthorizedException();
         }
         return session;

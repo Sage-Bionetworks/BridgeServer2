@@ -7,7 +7,6 @@ import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 public interface ReportIndexDao {
 
@@ -38,6 +37,6 @@ public interface ReportIndexDao {
     /**
      * Get all the identifiers for a study, for either study or participant reports.
      */
-    ReportTypeResourceList<? extends ReportIndex> getIndices(StudyIdentifier studyId, ReportType type);
+    ReportTypeResourceList<? extends ReportIndex> getIndices(String studyId, ReportType type);
     
 }

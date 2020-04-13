@@ -43,7 +43,7 @@ public class SharedAssessmentController extends BaseController {
     public Assessment importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId,
             @RequestParam(required = false) String newIdentifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         return service.importAssessment(appId, ownerId, newIdentifier, guid);
     }
@@ -115,7 +115,7 @@ public class SharedAssessmentController extends BaseController {
     @PostMapping("/v1/sharedassessments/{guid}")
     public Assessment updateSharedAssessment(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         Assessment assessment = parseJson(Assessment.class);
         assessment.setGuid(guid);

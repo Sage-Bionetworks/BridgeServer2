@@ -62,7 +62,7 @@ public class EmailController extends BaseController {
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
             }
-            accountService.editAccount(study.getStudyIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
+            accountService.editAccount(study.getIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {

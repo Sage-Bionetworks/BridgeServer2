@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -156,7 +155,7 @@ public class UploadService {
         this.pollValidationStatusSleepMillis = pollValidationStatusSleepMillis;
     }
 
-    public UploadSession createUpload(StudyIdentifier studyId, StudyParticipant participant, UploadRequest uploadRequest) {
+    public UploadSession createUpload(String studyId, StudyParticipant participant, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
 
         // Check to see if upload is a dupe, and if it is, get the upload status.
@@ -166,7 +165,7 @@ public class UploadService {
         UploadStatus originalUploadStatus = null;
 
         // Dedupe logic gated on whitelist.
-        if (!dupeStudyWhitelist.contains(studyId.getIdentifier())) {
+        if (!dupeStudyWhitelist.contains(studyId)) {
             try {
                 originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5,
                         uploadRequestedOn);
@@ -193,7 +192,7 @@ public class UploadService {
 
             if (originalUploadId != null) {
                 // We had a dupe of a previous completed upload. Log this for future analysis.
-                logger.info("Detected dupe: Study " + studyId.getIdentifier() + ", upload " + uploadId +
+                logger.info("Detected dupe: Study " + studyId + ", upload " + uploadId +
                         " is a dupe of " + originalUploadId);
             } else {
                 try {
@@ -281,7 +280,7 @@ public class UploadService {
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public ForwardCursorPagedResourceList<UploadView> getStudyUploads(@Nonnull StudyIdentifier studyId,
+    public ForwardCursorPagedResourceList<UploadView> getStudyUploads(@Nonnull String studyId,
             @Nullable DateTime startTime, @Nullable DateTime endTime, @Nullable Integer pageSize, @Nullable String offsetKey) {
         checkNotNull(studyId);
 
@@ -405,7 +404,7 @@ public class UploadService {
         }
     }
 
-    public void uploadComplete(StudyIdentifier studyId, UploadCompletionClient completedBy, Upload upload,
+    public void uploadComplete(String studyId, UploadCompletionClient completedBy, Upload upload,
             boolean redrive) {
         String uploadId = upload.getUploadId();
 

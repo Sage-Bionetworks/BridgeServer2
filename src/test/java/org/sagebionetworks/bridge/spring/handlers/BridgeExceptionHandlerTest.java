@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -107,7 +106,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
         session.setInternalSessionToken("internalToken");
         session.setSessionToken("sessionToken");
         session.setReauthToken("reauthToken");
-        session.setStudyIdentifier(new StudyIdentifierImpl("test"));
+        session.setStudyIdentifier("test");
         session.setConsentStatuses(Maps.newHashMap());
         
         ConsentRequiredException exception = new ConsentRequiredException(session);

@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.UserDataDownloadService;
 
 @CrossOrigin
@@ -37,7 +36,7 @@ public class UserDataDownloadController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestUserData() throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        StudyIdentifier studyIdentifier = session.getStudyIdentifier();
+        String studyIdentifier = session.getStudyIdentifier();
         
         // At least for now, if the user does not have a verified email address, do not allow this service.
         StudyParticipant participant = session.getParticipant();

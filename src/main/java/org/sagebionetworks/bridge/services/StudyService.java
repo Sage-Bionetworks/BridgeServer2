@@ -72,7 +72,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -257,12 +256,6 @@ public class StudyService {
         return getStudy(identifier, false);
     }
 
-    public Study getStudy(StudyIdentifier studyId) {
-        checkNotNull(studyId, Validate.CANNOT_BE_NULL, "studyIdentifier");
-        
-        return getStudy(studyId.getIdentifier());
-    }
-
     public List<Study> getStudies() {
         return studyDao.getStudies();
     }
@@ -355,7 +348,7 @@ public class StudyService {
 
         // do not create certs for whitelisted studies (legacy studies)
         if (!studyWhitelist.contains(study.getIdentifier())) {
-            uploadCertService.createCmsKeyPair(study.getStudyIdentifier());
+            uploadCertService.createCmsKeyPair(study.getIdentifier());
         }
 
         study = studyDao.createStudy(study);
@@ -637,12 +630,12 @@ public class StudyService {
             studyDao.deleteStudy(existing);
 
             // delete study data
-            templateService.deleteTemplatesForStudy(existing.getStudyIdentifier());
+            templateService.deleteTemplatesForStudy(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
-                    existing.getStudyIdentifier());
-            subpopService.deleteAllSubpopulations(existing.getStudyIdentifier());
-            topicService.deleteAllTopics(existing.getStudyIdentifier());
-            fileService.deleteAllStudyFiles(existing.getStudyIdentifier());
+                    existing.getIdentifier());
+            subpopService.deleteAllSubpopulations(existing.getIdentifier());
+            topicService.deleteAllTopics(existing.getIdentifier());
+            fileService.deleteAllStudyFiles(existing.getIdentifier());
         }
 
         cacheProvider.removeStudy(identifier);
@@ -678,7 +671,7 @@ public class StudyService {
     }
     
     /** Sends the email verification email for the given study's email. */
-    public void sendVerifyEmail(StudyIdentifier studyId, StudyEmailType type) {
+    public void sendVerifyEmail(String studyId, StudyEmailType type) {
         Study study = getStudy(studyId);
         sendVerifyEmail(study, type);
     }
@@ -728,10 +721,9 @@ public class StudyService {
     }
 
     /** Verifies the email with the given verification token. */
-    public void verifyEmail(StudyIdentifier studyId, String token, StudyEmailType type) {
+    public void verifyEmail(String studyId, String token, StudyEmailType type) {
         // Verify input.
         checkNotNull(studyId);
-        checkNotNull(studyId.getIdentifier());
         if (StringUtils.isBlank(token)) {
             throw new BadRequestException("Verification token must be specified");
         }
@@ -760,7 +752,7 @@ public class StudyService {
         // Make sure the study's current consent notification email matches the email saved in the verification data.
         // If the study's consent notification email is updated, the caller might still be using an older verification
         // email.
-        if (!studyId.getIdentifier().equals(data.getStudyId())) {
+        if (!studyId.equals(data.getStudyId())) {
             throw new BadRequestException("Email verification token is for a different study.");
         }
         if (email == null || !email.equals(data.getEmail())) {

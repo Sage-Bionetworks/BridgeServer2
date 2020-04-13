@@ -25,7 +25,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -121,7 +120,7 @@ public class NotificationsService {
      * then that registration record will be returned in lieu of creating a redundant record.
      * </p>
      */
-    public NotificationRegistration createRegistration(StudyIdentifier studyId, CriteriaContext context,
+    public NotificationRegistration createRegistration(String studyId, CriteriaContext context,
             NotificationRegistration registration) {
         checkNotNull(studyId);
         checkNotNull(context);
@@ -164,7 +163,7 @@ public class NotificationsService {
      * best practice to re-send this token to the server on every start-up of the app. The registration record 
      * that is returned should always have the GUID that was used to submit the update.
      */
-    public NotificationRegistration updateRegistration(StudyIdentifier studyId, NotificationRegistration registration) {
+    public NotificationRegistration updateRegistration(String studyId, NotificationRegistration registration) {
         checkNotNull(studyId);
         checkNotNull(registration);
         
@@ -179,7 +178,7 @@ public class NotificationsService {
      * Deletes all notification registrations for a user, generally used to clean up registrations when deleting a
      * user.
      */
-    public void deleteAllRegistrations(StudyIdentifier studyId, String healthCode) {
+    public void deleteAllRegistrations(String studyId, String healthCode) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
 
@@ -192,7 +191,7 @@ public class NotificationsService {
     /**
      * Delete a registration record. User can no longer be sent push notifications by the server.
      */
-    public void deleteRegistration(StudyIdentifier studyId, String healthCode, String guid) {
+    public void deleteRegistration(String studyId, String healthCode, String guid) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(guid);
@@ -207,7 +206,7 @@ public class NotificationsService {
      * to many accounts.</i> Create a topic, ask your users to subscribe to that topic in your application, and message 
      * them via that topic.
      */
-    public Set<String> sendNotificationToUser(StudyIdentifier studyId, String healthCode, NotificationMessage message) {
+    public Set<String> sendNotificationToUser(String studyId, String healthCode, NotificationMessage message) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         checkNotNull(message);
@@ -229,7 +228,7 @@ public class NotificationsService {
             try {
                 PublishResult result = snsClient.publish(request);
                 LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", study=" +
-                        studyId.getIdentifier() + ", message ID=" + result.getMessageId());
+                        studyId + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);
                 erroredRegistrations.add(registration.getGuid());

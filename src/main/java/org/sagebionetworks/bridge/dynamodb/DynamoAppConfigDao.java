@@ -11,8 +11,6 @@ import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -40,12 +38,12 @@ public class DynamoAppConfigDao implements AppConfigDao {
         this.criteriaDao = criteriaDao;
     }
     
-    DynamoAppConfig loadAppConfig(StudyIdentifier studyId, String guid) {
+    DynamoAppConfig loadAppConfig(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
         DynamoAppConfig key = new DynamoAppConfig();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setGuid(guid);
         
         DynamoAppConfig config = mapper.load(key);
@@ -55,11 +53,11 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return config;
     }
     
-    public List<AppConfig> getAppConfigs(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<AppConfig> getAppConfigs(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         DynamoAppConfig key = new DynamoAppConfig();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
 
         DynamoDBQueryExpression<DynamoAppConfig> query = new DynamoDBQueryExpression<DynamoAppConfig>()
                 .withHashKeyValues(key);
@@ -78,7 +76,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return list;
     }
     
-    public AppConfig getAppConfig(StudyIdentifier studyId, String guid) {
+    public AppConfig getAppConfig(String studyId, String guid) {
         DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
         if (appConfig == null) {
             throw new EntityNotFoundException(AppConfig.class);
@@ -101,7 +99,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
     public AppConfig updateAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
         
-        DynamoAppConfig saved = loadAppConfig(new StudyIdentifierImpl(appConfig.getStudyId()), appConfig.getGuid());
+        DynamoAppConfig saved = loadAppConfig(appConfig.getStudyId(), appConfig.getGuid());
         // If it doesn't exist, or it's deleted and not being undeleted, then return 404
         if (saved == null || (appConfig.isDeleted() && saved.isDeleted())) {
             throw new EntityNotFoundException(AppConfig.class);
@@ -113,7 +111,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return appConfig;
     }
     
-    public void deleteAppConfig(StudyIdentifier studyId, String guid) {
+    public void deleteAppConfig(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -125,7 +123,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
         mapper.save(appConfig);
     }
     
-    public void deleteAppConfigPermanently(StudyIdentifier studyId, String guid) {
+    public void deleteAppConfigPermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         

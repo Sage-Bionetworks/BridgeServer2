@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
@@ -74,8 +72,6 @@ public class AppConfigValidator implements Validator {
             errors.rejectValue("studyId", "is required");
         } else {
             // We can't validate schema references if there is no studyId
-            StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
-            
             if (appConfig.getSchemaReferences() != null) {
                 for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
                     SchemaReference ref = appConfig.getSchemaReferences().get(i);
@@ -88,8 +84,8 @@ public class AppConfigValidator implements Validator {
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
                         try {
-                            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(studyId, ref.getId(),
-                                    ref.getRevision());
+                            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(appConfig.getStudyId(),
+                                    ref.getId(), ref.getRevision());
                             // We do throw a validation error if the object is logically deleted because while the
                             // object will still be accessible through the API, it was deleted, suggesting the intention
                             // to stop using it, which is not reflected in this appConfig
@@ -116,8 +112,8 @@ public class AppConfigValidator implements Validator {
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
                         try {
-                            AppConfigElement element = appConfigElementService.getElementRevision(studyId, ref.getId(),
-                                    ref.getRevision());
+                            AppConfigElement element = appConfigElementService
+                                    .getElementRevision(appConfig.getStudyId(), ref.getId(), ref.getRevision());
                             // We do throw a validation error if the object is logically deleted because while the
                             // object will still be accessible through the API, it was deleted, suggesting the intention
                             // to stop using it, which is not reflected in this appConfig
@@ -139,9 +135,8 @@ public class AppConfigValidator implements Validator {
                 if (ref.getCreatedOn() == null) {
                     errors.rejectValue("createdOn", "is required");
                 } else {
-                    StudyIdentifier studyId = new StudyIdentifierImpl(appConfig.getStudyId());
                     GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
-                    Survey survey = surveyService.getSurvey(studyId, keys, false, false);
+                    Survey survey = surveyService.getSurvey(appConfig.getStudyId(), keys, false, false);
                     // We do throw a validation error if the object is logically deleted because while the
                     // object will still be accessible through the API, it was deleted, suggesting the intention
                     // to stop using it, which is not reflected in this appConfig

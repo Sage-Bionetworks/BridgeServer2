@@ -30,7 +30,7 @@ public class UploadValidationServiceTest {
 
         // mock task factory
         UploadValidationTaskFactory mockTaskFactory = mock(UploadValidationTaskFactory.class);
-        when(mockTaskFactory.newTask(study, upload)).thenReturn(mockTask);
+        when(mockTaskFactory.newTask(study.getIdentifier(), upload)).thenReturn(mockTask);
 
         // mock async thread pool
         ExecutorService mockExecutor = mock(ExecutorService.class);
@@ -41,7 +41,7 @@ public class UploadValidationServiceTest {
         svc.setTaskFactory(mockTaskFactory);
 
         // execute
-        svc.validateUpload(study, upload);
+        svc.validateUpload(study.getIdentifier(), upload);
 
         // validate
         verify(mockExecutor).execute(mockTask);

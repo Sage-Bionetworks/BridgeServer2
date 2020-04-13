@@ -61,14 +61,14 @@ public class AppConfigController extends BaseController {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(reqContext.getCallerLanguages())
                 .withClientInfo(reqContext.getCallerClientInfo())
-                .withStudyIdentifier(study.getStudyIdentifier())
+                .withStudyIdentifier(study.getIdentifier())
                 .build();
         
         CacheKey cacheKey = getCriteriaContextCacheKey(context);
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
             // So we can delete all the relevant cached versions, keep track of them under the study
-            cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(study.getStudyIdentifier()), cacheKey.toString());
+            cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(study.getIdentifier()), cacheKey.toString());
             return appConfig;
         });
         return json;
@@ -135,7 +135,7 @@ public class AppConfigController extends BaseController {
         ClientInfo info = context.getClientInfo();
         String appVersion = info.getAppVersion() == null ? "0" : Integer.toString(info.getAppVersion());
         String osName = info.getOsName() == null ? "" : info.getOsName();
-        String studyId = context.getStudyIdentifier().getIdentifier();
+        String studyId = context.getStudyIdentifier();
         // Languages. We don't provide a UI to create filtering criteria for these, but if they are 
         // set through our API, and they are included in the Accept-Language header, we will filter on 
         // them, so it's important they be part of the key

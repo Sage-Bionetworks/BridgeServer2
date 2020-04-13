@@ -34,8 +34,6 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.ReportService;
 
 /**
@@ -98,9 +96,8 @@ public class StudyReportController extends BaseController {
     public DateRangeResourceList<? extends ReportData> getPublicStudyReport(@PathVariable String studyId,
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        StudyIdentifier studyIdObj = new StudyIdentifierImpl(studyId);
 
-        verifyIndexIsPublic(studyIdObj, identifier);
+        verifyIndexIsPublic(studyId, identifier);
         // We do not want to inherit a user's session information, if a session token is being 
         // passed to this method.
         setRequestContext(NULL_INSTANCE);
@@ -108,7 +105,7 @@ public class StudyReportController extends BaseController {
         LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
         
-        return reportService.getStudyReport(studyIdObj, identifier, startDateObj, endDateObj);
+        return reportService.getStudyReport(studyId, identifier, startDateObj, endDateObj);
     }
     
     /**
@@ -156,8 +153,7 @@ public class StudyReportController extends BaseController {
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
 
-        StudyIdentifier studyIdObj = new StudyIdentifierImpl(studyId);
-        reportService.saveStudyReport(studyIdObj, identifier, reportData);
+        reportService.saveStudyReport(studyId, identifier, reportData);
 
         return SAVED_MSG;
     }
@@ -222,7 +218,7 @@ public class StudyReportController extends BaseController {
         return UPDATED_MSG;
     }
 
-    private void verifyIndexIsPublic(final StudyIdentifier studyId, final String identifier) {
+    private void verifyIndexIsPublic(final String studyId, final String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(STUDY)

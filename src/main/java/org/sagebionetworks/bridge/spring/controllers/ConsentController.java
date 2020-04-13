@@ -49,7 +49,7 @@ public class ConsentController extends BaseController {
             APPLICATION_JSON_UTF8_VALUE })
     public String getConsentSignature() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        return getConsentSignatureV2(session.getStudyIdentifier().getIdentifier());
+        return getConsentSignatureV2(session.getStudyIdentifier());
     }
 
     @Deprecated
@@ -57,7 +57,7 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode giveV1() {
         UserSession session = getAuthenticatedSession();
-        return giveConsentForVersion(1, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
+        return giveConsentForVersion(1, SubpopulationGuid.create(session.getStudyIdentifier()));
     }
 
     @Deprecated
@@ -65,7 +65,7 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode giveV2() {
         UserSession session = getAuthenticatedSession();
-        return giveConsentForVersion(2, SubpopulationGuid.create(session.getStudyIdentifier().getIdentifier()));
+        return giveConsentForVersion(2, SubpopulationGuid.create(session.getStudyIdentifier()));
     }
 
     @Deprecated
@@ -73,7 +73,7 @@ public class ConsentController extends BaseController {
     public StatusMessage emailCopy() {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        return resendConsentAgreement(session.getStudyIdentifier().getIdentifier());
+        return resendConsentAgreement(session.getStudyIdentifier());
     }
 
     @Deprecated

@@ -73,7 +73,7 @@ public class SharedAssessmentResourceController extends BaseController {
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         AssessmentResource resource = parseJson(AssessmentResource.class);
         resource.setGuid(guid);
@@ -97,7 +97,7 @@ public class SharedAssessmentResourceController extends BaseController {
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/import")
     public ResourceList<AssessmentResource> importAssessmentResources(@PathVariable String assessmentId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
 
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         

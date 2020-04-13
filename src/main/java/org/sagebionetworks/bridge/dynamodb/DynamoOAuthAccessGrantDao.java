@@ -14,7 +14,6 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -36,7 +35,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
     
     @Override
-    public ForwardCursorPagedResourceList<OAuthAccessGrant> getAccessGrants(StudyIdentifier studyId, String vendorId,
+    public ForwardCursorPagedResourceList<OAuthAccessGrant> getAccessGrants(String studyId, String vendorId,
             String offsetKey, int pageSize) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(vendorId));
@@ -75,7 +74,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
     
     @Override
-    public OAuthAccessGrant getAccessGrant(StudyIdentifier studyId, String vendorId, String healthCode) {
+    public OAuthAccessGrant getAccessGrant(String studyId, String vendorId, String healthCode) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(vendorId));
         checkArgument(isNotBlank(healthCode));
@@ -88,7 +87,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
 
     @Override
-    public OAuthAccessGrant saveAccessGrant(StudyIdentifier studyId, OAuthAccessGrant grant) {
+    public OAuthAccessGrant saveAccessGrant(String studyId, OAuthAccessGrant grant) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(grant.getVendorId()));
         checkArgument(isNotBlank(grant.getHealthCode()));
@@ -100,7 +99,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
 
     @Override
-    public void deleteAccessGrant(StudyIdentifier studyId, String vendorId, String healthCode) {
+    public void deleteAccessGrant(String studyId, String vendorId, String healthCode) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(vendorId));
         checkArgument(isNotBlank(healthCode));
@@ -112,7 +111,7 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
         mapper.delete(grantKey);
     }
 
-    private String getGrantKey(StudyIdentifier studyId, String vendorId) {
-        return studyId.getIdentifier() + ":" + vendorId;
+    private String getGrantKey(String studyId, String vendorId) {
+        return studyId + ":" + vendorId;
     }
 }

@@ -20,7 +20,6 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,13 +53,13 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier,
             boolean includeDeleted) {
         checkNotNull(clientInfo);
         checkNotNull(studyIdentifier);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(studyIdentifier.getIdentifier());
+        plan.setStudyKey(studyIdentifier);
         
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
@@ -82,7 +81,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+    public SchedulePlan getSchedulePlan(String studyIdentifier, String guid) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(guid));
         
@@ -94,11 +93,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public SchedulePlan createSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
+    public SchedulePlan createSchedulePlan(String studyIdentifier, SchedulePlan plan) {
         checkNotNull(studyIdentifier);
         checkNotNull(plan);
         
-        plan.setStudyKey(studyIdentifier.getIdentifier());
+        plan.setStudyKey(studyIdentifier);
         plan.setGuid(generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setDeleted(false);
@@ -110,7 +109,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public SchedulePlan updateSchedulePlan(StudyIdentifier studyIdentifier, SchedulePlan plan) {
+    public SchedulePlan updateSchedulePlan(String studyIdentifier, SchedulePlan plan) {
         checkNotNull(studyIdentifier);
         checkNotNull(plan);
 
@@ -119,7 +118,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         if (saved.isDeleted() && plan.isDeleted()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        plan.setStudyKey(studyIdentifier.getIdentifier());
+        plan.setStudyKey(studyIdentifier);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
         forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
@@ -128,7 +127,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+    public void deleteSchedulePlan(String studyIdentifier, String guid) {
         SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
         if (plan == null || plan.isDeleted()) {
             throw new EntityNotFoundException(SchedulePlan.class);
@@ -138,7 +137,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
+    public void deleteSchedulePlanPermanently(String studyIdentifier, String guid) {
         SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
         if (plan == null) {
             throw new EntityNotFoundException(SchedulePlan.class);
@@ -147,12 +146,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         mapper.delete(plan);
     }
 
-    private SchedulePlan getSchedulePlanInternal(StudyIdentifier studyIdentifier, String guid) {
+    private SchedulePlan getSchedulePlanInternal(String studyIdentifier, String guid) {
         checkNotNull(studyIdentifier);
         checkArgument(isNotBlank(guid));
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(studyIdentifier.getIdentifier());
+        plan.setStudyKey(studyIdentifier);
         
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);

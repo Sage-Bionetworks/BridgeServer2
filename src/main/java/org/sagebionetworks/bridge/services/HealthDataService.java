@@ -21,7 +21,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -122,7 +121,7 @@ public class HealthDataService {
      * Synchronous health data API. Used to submit small health data payloads (such as survey responses) without
      * incurring the overhead of creating a bunch of small files to upload to S3.
      */
-    public HealthDataRecord submitHealthData(StudyIdentifier studyId, StudyParticipant participant,
+    public HealthDataRecord submitHealthData(String studyId, StudyParticipant participant,
             HealthDataSubmission healthDataSubmission) throws IOException, UploadValidationException {
         // validate health data submission
         if (healthDataSubmission == null) {
@@ -204,7 +203,7 @@ public class HealthDataService {
     }
 
     // Helper method which encapsulates getting the schema, either by schemaId/Revision or by surveyGuid/CreatedOn.
-    private UploadSchema getSchemaForSubmission(StudyIdentifier studyId, HealthDataSubmission healthDataSubmission) {
+    private UploadSchema getSchemaForSubmission(String studyId, HealthDataSubmission healthDataSubmission) {
         if (healthDataSubmission.getSchemaId() != null) {
             // Note that if there's no schema, we treat this like schemaless.
             return schemaService.getUploadSchemaByIdAndRevNoThrow(studyId, healthDataSubmission.getSchemaId(),
@@ -281,7 +280,7 @@ public class HealthDataService {
      *         the data submission
      * @return created health data record
      */
-    private static HealthDataRecord makeRecordFromSubmission(StudyIdentifier studyId, StudyParticipant participant,
+    private static HealthDataRecord makeRecordFromSubmission(String studyId, StudyParticipant participant,
             HealthDataSubmission healthDataSubmission) {
         // from submission
         HealthDataRecord record = HealthDataRecord.create();
@@ -295,7 +294,7 @@ public class HealthDataService {
 
         // from elsewhere
         record.setHealthCode(participant.getHealthCode());
-        record.setStudyId(studyId.getIdentifier());
+        record.setStudyId(studyId);
         record.setUploadDate(DateUtils.getCurrentCalendarDateInLocalTime());
         record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
 

@@ -145,9 +145,9 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
 
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asA = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
         Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
@@ -158,9 +158,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void substudyIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asA = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "id");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
         Set<String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies)
@@ -196,11 +196,11 @@ public class BridgeUtilsTest {
         Set<String> callerSubstudies = ImmutableSet.of("substudyA", "substudyB", "substudyD");
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies).build());
 
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asA = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "id");
         asA.setExternalId("extA");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "id");
         asB.setExternalId("extB");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "id");
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
@@ -212,11 +212,11 @@ public class BridgeUtilsTest {
     
     @Test
     public void externalIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
-        AccountSubstudy asA = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyA", "id");
+        AccountSubstudy asA = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyA", "id");
         asA.setExternalId("extA");
-        AccountSubstudy asB = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyB", "id");
+        AccountSubstudy asB = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyB", "id");
         asB.setExternalId("extB");
-        AccountSubstudy asC = AccountSubstudy.create(TestConstants.TEST_STUDY_IDENTIFIER, "substudyC", "id");
+        AccountSubstudy asC = AccountSubstudy.create(TEST_STUDY_IDENTIFIER, "substudyC", "id");
         asC.setExternalId("extC");
         Set<AccountSubstudy> accountSubstudies = ImmutableSet.of(asA, asB, asC);
         
@@ -379,7 +379,7 @@ public class BridgeUtilsTest {
     }
     
     private ExternalIdentifier getExternalIdentifierWithSubstudy(String substudyId) {
-        ExternalIdentifier id = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "identifier");
         id.setSubstudyId(substudyId);
         return id;
     }

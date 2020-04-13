@@ -8,7 +8,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
@@ -37,7 +37,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class SharedModuleMetadataServiceTest {
     private static final String MODULE_ID = "test-module";
@@ -91,7 +90,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createNotFoundSchema() {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
-        doThrow(EntityNotFoundException.class).when(mockUploadSchemaService).getUploadSchemaByIdAndRev(SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV);
+        doThrow(EntityNotFoundException.class).when(mockUploadSchemaService).getUploadSchemaByIdAndRev(SHARED_STUDY_IDENTIFIER, SCHEMA_ID, SCHEMA_REV);
         svc.createMetadata(svcInputMetadata);
     }
 
@@ -108,7 +107,7 @@ public class SharedModuleMetadataServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createSurveyWithInvalidStudyId() {
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("some-id", 1L);
-        when(mockSurveyService.getSurvey(eq(new StudyIdentifierImpl("shared")), eq(holder), eq(false), eq(false))).thenReturn(null);
+        when(mockSurveyService.getSurvey(eq(SHARED_STUDY_IDENTIFIER), eq(holder), eq(false), eq(false))).thenReturn(null);
         
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
         svcInputMetadata.setSchemaId(null);
@@ -676,7 +675,7 @@ public class SharedModuleMetadataServiceTest {
         SharedModuleMetadata svcInputMetadata = makeValidMetadata();
         when(mockDao.getMetadataByIdAndVersion(anyString(), anyInt())).thenReturn(svcInputMetadata);
 
-        when(mockUploadSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID, SCHEMA_ID, SCHEMA_REV)).thenThrow(EntityNotFoundException.class);
+        when(mockUploadSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_IDENTIFIER, SCHEMA_ID, SCHEMA_REV)).thenThrow(EntityNotFoundException.class);
         svc.updateMetadata(MODULE_ID, MODULE_VERSION, svcInputMetadata);
     }
 

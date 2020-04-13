@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -90,7 +89,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
 
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -131,7 +130,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void createExternalIdentifier() throws Exception {
-        ExternalIdentifier extId = ExternalIdentifier.create(TEST_STUDY, "identifier");
+        ExternalIdentifier extId = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "identifier");
         extId.setSubstudyId("substudyId");
         mockRequestBody(mockRequest, extId);
 
@@ -149,7 +148,7 @@ public class ExternalIdControllerV4Test extends Mockito {
     @Test
     public void deleteExternalIdentifier() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         StatusMessage result = controller.deleteExternalIdentifier("externalId");
         assertEquals(result.getMessage(), "External identifier deleted.");
@@ -166,7 +165,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void generatePassword() throws Exception {
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
         GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");

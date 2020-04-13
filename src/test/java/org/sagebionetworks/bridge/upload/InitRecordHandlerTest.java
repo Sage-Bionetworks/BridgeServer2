@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -68,7 +69,7 @@ public class InitRecordHandlerTest {
                 (name, node) -> makeFileWithContent(name, node.toString())));
 
         // Contexts always include studyId.
-        context.setStudy(TestConstants.TEST_STUDY);
+        context.setStudy(TEST_STUDY_IDENTIFIER);
 
         // And upload (with upload ID and health code).
         DynamoUpload2 upload = new DynamoUpload2();

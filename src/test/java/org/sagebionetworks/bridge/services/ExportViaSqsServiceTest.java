@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -17,7 +18,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 
 public class ExportViaSqsServiceTest {
@@ -56,7 +56,7 @@ public class ExportViaSqsServiceTest {
         service.setSqsClient(mockSqsClient);
 
         // execute and validate
-        service.startOnDemandExport(TestConstants.TEST_STUDY);
+        service.startOnDemandExport(TEST_STUDY_IDENTIFIER);
 
         String sqsMessageText = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessageText);
@@ -64,11 +64,11 @@ public class ExportViaSqsServiceTest {
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_END_DATE_TIME).textValue(),
                 EXPECTED_END_DATE_TIME_STRING);
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_TAG).textValue(), "On-Demand Export studyId="
-                + TestConstants.TEST_STUDY_IDENTIFIER + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
+                + TEST_STUDY_IDENTIFIER + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
         assertTrue(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_USE_LAST_EXPORT_TIME).booleanValue());
 
         JsonNode studyWhitelistNode = sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_STUDY_WHITELIST);
         assertEquals(studyWhitelistNode.size(), 1);
-        assertEquals(studyWhitelistNode.get(0).textValue(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(studyWhitelistNode.get(0).textValue(), TEST_STUDY_IDENTIFIER);
     }
 }

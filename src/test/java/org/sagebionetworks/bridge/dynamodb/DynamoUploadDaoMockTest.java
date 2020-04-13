@@ -6,7 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.APP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -37,8 +37,6 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -135,7 +133,7 @@ public class DynamoUploadDaoMockTest {
     public void createUpload() {
         // execute
         UploadRequest req = createUploadRequest();
-        Upload upload = dao.createUpload(req, TEST_STUDY, "fakeHealthCode", null);
+        Upload upload = dao.createUpload(req, TEST_STUDY_IDENTIFIER, "fakeHealthCode", null);
 
         // Validate that our mock DDB mapper was called.
         verify(mockMapper).save(uploadCaptor.capture());
@@ -145,7 +143,7 @@ public class DynamoUploadDaoMockTest {
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
         assertEquals(capturedUpload.getUploadId(), upload.getUploadId());
         assertNull(capturedUpload.getDuplicateUploadId());
-        assertEquals(capturedUpload.getStudyId(), TEST_STUDY.getIdentifier());
+        assertEquals(capturedUpload.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.REQUESTED);
         assertEquals(capturedUpload.getContentLength(), req.getContentLength());
@@ -158,7 +156,7 @@ public class DynamoUploadDaoMockTest {
     public void createUploadDupe() {
         // execute
         UploadRequest req = createUploadRequest();
-        dao.createUpload(req, TEST_STUDY, "fakeHealthCode", "original-upload-id");
+        dao.createUpload(req, TEST_STUDY_IDENTIFIER, "fakeHealthCode", "original-upload-id");
 
         // Validate that our mock DDB mapper was called.
         verify(mockMapper).save(uploadCaptor.capture());
@@ -168,7 +166,7 @@ public class DynamoUploadDaoMockTest {
         // Validate key values (study ID, requestedOn) and values from the dupe code path.
         // Everything else is tested in the previous test
         assertEquals(capturedUpload.getDuplicateUploadId(), "original-upload-id");
-        assertEquals(capturedUpload.getStudyId(), TEST_STUDY.getIdentifier());
+        assertEquals(capturedUpload.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.DUPLICATE);
     }
@@ -402,7 +400,6 @@ public class DynamoUploadDaoMockTest {
     @SuppressWarnings("unchecked")
     @Test
     public void getStudyUploadsPagingWorks() throws Exception {
-        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 2;
@@ -436,14 +433,14 @@ public class DynamoUploadDaoMockTest {
 
         when(mockMapper.batchLoad(any(List.class))).thenReturn(batchLoadMap1, batchLoadMap2);
 
-        ForwardCursorPagedResourceList<Upload> page1 = dao.getStudyUploads(studyId, startTime, endTime, pageSize, null);
+        ForwardCursorPagedResourceList<Upload> page1 = dao.getStudyUploads("test-study", startTime, endTime, pageSize, null);
         assertEquals(page1.getNextPageOffsetKey(), "uploadId3");
         assertNull(page1.getRequestParams().get("offsetKey"));
         assertEquals(page1.getRequestParams().get("pageSize"), pageSize);
         assertEquals(page1.getRequestParams().get("startTime"), startTime.toString());
         assertEquals(page1.getRequestParams().get("endTime"), endTime.toString());
 
-        ForwardCursorPagedResourceList<Upload> page2 = dao.getStudyUploads(studyId, startTime, endTime, pageSize,
+        ForwardCursorPagedResourceList<Upload> page2 = dao.getStudyUploads("test-study", startTime, endTime, pageSize,
                 page1.getNextPageOffsetKey());
         assertNull(page2.getNextPageOffsetKey());
         assertEquals(page2.getRequestParams().get("offsetKey"), "uploadId3");
@@ -454,13 +451,12 @@ public class DynamoUploadDaoMockTest {
 
     @Test
     public void getStudyUploadsBadOffsetKey() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 2;
 
         try {
-            dao.getStudyUploads(studyId, startTime, endTime, pageSize, "bad-key");
+            dao.getStudyUploads("test-study", startTime, endTime, pageSize, "bad-key");
             fail("Should have thrown an exception");
         } catch (BadRequestException e) {
             assertEquals(e.getMessage(), "Invalid offsetKey: bad-key");
@@ -469,20 +465,18 @@ public class DynamoUploadDaoMockTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyUploadsMinPageSizeEnforced() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 
-        dao.getStudyUploads(studyId, startTime, endTime, -1, null);
+        dao.getStudyUploads("test-study", startTime, endTime, -1, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyUploadsMaxPageSizeEnforced() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 
-        dao.getStudyUploads(studyId, startTime, endTime, 101, null);
+        dao.getStudyUploads("test-study", startTime, endTime, 101, null);
     }
 
     @Test

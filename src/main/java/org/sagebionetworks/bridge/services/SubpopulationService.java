@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -87,7 +86,7 @@ public class SubpopulationService {
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setStudyIdentifier(study.getIdentifier());
 
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
@@ -98,7 +97,7 @@ public class SubpopulationService {
         StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
         studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
         
-        cacheProvider.removeObject(CacheKey.subpopList(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
         return created;
     }
     
@@ -109,7 +108,7 @@ public class SubpopulationService {
      */
     public Subpopulation createDefaultSubpopulation(Study study) {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(study.getIdentifier());
-        Subpopulation created = subpopDao.createDefaultSubpopulation(study.getStudyIdentifier());
+        Subpopulation created = subpopDao.createDefaultSubpopulation(study.getIdentifier());
         
         // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
@@ -117,7 +116,7 @@ public class SubpopulationService {
             studyConsentService.publishConsent(study, created, view.getCreatedOn());
         }
         
-        cacheProvider.removeObject(CacheKey.subpopList(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
         return created;
     }
     
@@ -135,7 +134,7 @@ public class SubpopulationService {
 
         // Verify this subpopulation is part of the study. Existing code also doesn't submit
         // this publication timestamp back to the server, so set if it doesn't exist.
-        Subpopulation existingSubpop = getSubpopulation(study, subpop.getGuid());
+        Subpopulation existingSubpop = getSubpopulation(study.getIdentifier(), subpop.getGuid());
         if (subpop.getPublishedConsentCreatedOn() == 0L) {
             subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
         }
@@ -146,14 +145,14 @@ public class SubpopulationService {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);
-        cacheProvider.removeObject(CacheKey.subpop(updated.getGuid(), study.getStudyIdentifier()));
-        cacheProvider.removeObject(CacheKey.subpopList(study.getStudyIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpop(updated.getGuid(), study.getIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
         return updated;
     }
     
@@ -162,7 +161,7 @@ public class SubpopulationService {
      * there are no subpopulations, a default subpopulation will be created with a 
      * default consent.
      */
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<Subpopulation> getSubpopulations(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         // If retrieving all subpopulations, which is unusual, do not use the cache. Cache is always
@@ -185,7 +184,7 @@ public class SubpopulationService {
      * @param subpopGuid
      * @return subpopulation
      */
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
@@ -213,7 +212,7 @@ public class SubpopulationService {
     /**
      * Delete a subpopulation and remove it from cache.
      */
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
         
@@ -225,7 +224,7 @@ public class SubpopulationService {
     /**
      * Permanently delete a subpopulation and remove it from cache.
      */
-    public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulationPermanently(String studyId, SubpopulationGuid subpopGuid) {
         checkNotNull(studyId);
         checkNotNull(subpopGuid);
 
@@ -240,7 +239,7 @@ public class SubpopulationService {
      * in the API. This deletes everything, including the default subpopulation. This is used when 
      * deleting a study, as part of a test, for example.
      */
-    public void deleteAllSubpopulations(StudyIdentifier studyId) {
+    public void deleteAllSubpopulations(String studyId) {
         checkNotNull(studyId);
         
         List<Subpopulation> subpops = getSubpopulations(studyId, true);

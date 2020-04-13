@@ -81,7 +81,7 @@ public class StudyParticipantValidator implements Validator {
         }
 
         for (String substudyId : participant.getSubstudyIds()) {
-            Substudy substudy = substudyService.getSubstudy(study.getStudyIdentifier(), substudyId, false);
+            Substudy substudy = substudyService.getSubstudy(study.getIdentifier(), substudyId, false);
             if (substudy == null) {
                 errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy");
             }
@@ -90,7 +90,7 @@ public class StudyParticipantValidator implements Validator {
         // External ID can be updated during creation or on update. If it's already assigned to another user, 
         // the database constraints will prevent this record's persistence.
         if (isNotBlank(participant.getExternalId())) {
-            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getStudyIdentifier(),
+            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getIdentifier(),
                     participant.getExternalId());
             if (!optionalId.isPresent()) {
                 errors.rejectValue("externalId", "is not a valid external ID");

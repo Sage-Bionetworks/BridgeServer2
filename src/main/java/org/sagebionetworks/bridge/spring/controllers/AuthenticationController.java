@@ -76,7 +76,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
         UserSession session = null;
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
@@ -115,7 +115,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
         
         UserSession session = null;
         try {
@@ -137,7 +137,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signIn.getStudyId());
         verifySupportedVersionOrThrowException(study);
 
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
 
         UserSession session;
         try {
@@ -163,7 +163,7 @@ public class AuthenticationController extends BaseController {
         Study study = studyService.getStudy(signInRequest.getStudyId());
         verifySupportedVersionOrThrowException(study);
         
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
         UserSession session;
         try {
             session = authenticationService.reauthenticate(study, context, signInRequest);
@@ -313,7 +313,7 @@ public class AuthenticationController extends BaseController {
         // Cross study administrator can switch to any study. Implement this here because clients 
         // cannot tell who is a cross-study administrator once they've switched studies.
         if (session.isInRole(SUPERADMIN)) {
-            sessionUpdateService.updateStudy(session, targetStudy.getStudyIdentifier());
+            sessionUpdateService.updateStudy(session, targetStudy.getIdentifier());
             return UserSessionInfo.toJSON(session);
         }
         // Otherwise, verify the user has access to this study
@@ -332,7 +332,7 @@ public class AuthenticationController extends BaseController {
         // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withUserId(account.getId())
-            .withStudyIdentifier(targetStudy.getStudyIdentifier())
+            .withStudyIdentifier(targetStudy.getIdentifier())
             .build();
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);
@@ -346,7 +346,7 @@ public class AuthenticationController extends BaseController {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
         Study study = studyService.getStudy(token.getStudyId());
-        CriteriaContext context = getCriteriaContext(study.getStudyIdentifier());
+        CriteriaContext context = getCriteriaContext(study.getIdentifier());
         
         UserSession session = authenticationService.oauthSignIn(context, token);
         setCookieAndRecordMetrics(session);

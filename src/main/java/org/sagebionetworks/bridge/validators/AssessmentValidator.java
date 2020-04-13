@@ -15,8 +15,6 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SubstudyService;
 
 public class AssessmentValidator implements Validator {
@@ -83,17 +81,17 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getOwnerId())) {
             errors.rejectValue("ownerId", CANNOT_BE_BLANK);
         } else {
-            StudyIdentifier app = null;
+            String substudyId = null;
             String ownerId = null;
             if (SHARED_STUDY_ID_STRING.equals(appId)) {
                 String[] parts = assessment.getOwnerId().split(":");
-                app = new StudyIdentifierImpl(parts[0]);
+                substudyId = parts[0];
                 ownerId = parts[1];
             } else {
-                app = new StudyIdentifierImpl(appId);
+                substudyId = appId;
                 ownerId = assessment.getOwnerId();
             }
-            if (substudyService.getSubstudy(app, ownerId, false) == null) {
+            if (substudyService.getSubstudy(substudyId, ownerId, false) == null) {
                 errors.rejectValue("ownerId", "is not a valid organization ID");
             }
         }

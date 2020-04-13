@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 // This is required or Jackson searches for, and eventually, finds the same annotation for StudyIdentifer, 
 // and attempts to use that to deserialize study (not what you want).
 @JsonDeserialize(as=DynamoStudy.class)
-public interface Study extends BridgeEntity, StudyIdentifier {
+public interface Study extends BridgeEntity {
     ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
@@ -59,11 +59,6 @@ public interface Study extends BridgeEntity, StudyIdentifier {
      */
     String getIdentifier();
     void setIdentifier(String identifier);
-    
-    /**
-     * A strongly typed version of the study identifier.
-     */
-    StudyIdentifier getStudyIdentifier();
     
     /**
      * DynamoDB version number for optimistic locking of record.

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -17,7 +17,7 @@ public class ScheduleStrategyTest {
 
     @Test
     public void verifyStrategyDoesNotSerializeGetAllPossibleSchedules() throws Exception {
-        ScheduleStrategy strategy = TestUtils.getABTestSchedulePlan(TEST_STUDY).getStrategy();
+        ScheduleStrategy strategy = TestUtils.getABTestSchedulePlan(TEST_STUDY_IDENTIFIER).getStrategy();
         
         String output = BridgeObjectMapper.get().writeValueAsString(strategy);
         JsonNode node = BridgeObjectMapper.get().readTree(output);

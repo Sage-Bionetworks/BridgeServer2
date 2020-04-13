@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -485,12 +484,12 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummaryList.size(), 2);
 
         assertEquals(accountSummaryList.get(0).getId(), "account-1");
-        assertEquals(accountSummaryList.get(0).getStudyIdentifier(), TEST_STUDY);
+        assertEquals(accountSummaryList.get(0).getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(accountSummaryList.get(0).getEmail(), "email1@example.com");
         assertEquals(accountSummaryList.get(0).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
         assertEquals(accountSummaryList.get(1).getId(), "account-2");
-        assertEquals(accountSummaryList.get(1).getStudyIdentifier(), TEST_STUDY);
+        assertEquals(accountSummaryList.get(1).getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(accountSummaryList.get(1).getEmail(), "email2@example.com");
         assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
@@ -689,7 +688,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
         // verify hibernate calls
         Map<String, Object> params = new HashMap<>();
-        params.put("studyId", TEST_STUDY);
+        params.put("studyId", TEST_STUDY_IDENTIFIER);
         params.put("email", "%" + EMAIL + "%");
         params.put("number", "%" + phoneString + "%");
         params.put("startTime", startDate);
@@ -744,7 +743,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
         assertEquals(accountSummary.getId(), ACCOUNT_ID);
-        assertEquals(accountSummary.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(accountSummary.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(accountSummary.getEmail(), EMAIL);
         assertEquals(accountSummary.getPhone(), PHONE);
         assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA", "substudyB", "externalIdB"));

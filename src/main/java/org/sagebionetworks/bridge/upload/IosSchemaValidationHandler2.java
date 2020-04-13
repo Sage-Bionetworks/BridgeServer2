@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -166,7 +165,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
     // Alternatively, surveyGuid and surveyCreatedOn are used to map the upload to a survey.
     //
     // This is package-scoped to facilitate unit tests.
-    UploadSchema getUploadSchema(StudyIdentifier study, JsonNode infoJson) {
+    UploadSchema getUploadSchema(String studyId, JsonNode infoJson) {
         // get relevant params from info.json
         String item = JsonUtils.asText(infoJson, UploadUtil.FIELD_ITEM);
         Integer schemaRev = JsonUtils.asInt(infoJson, UploadUtil.FIELD_SCHEMA_REV);
@@ -179,28 +178,28 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         if (StringUtils.isNotBlank(surveyGuid) && StringUtils.isNotBlank(surveyCreatedOn)) {
             // First try getting the schema by survey.
-            return getUploadSchemaBySurvey(study, surveyGuid, surveyCreatedOn);
+            return getUploadSchemaBySurvey(studyId, surveyGuid, surveyCreatedOn);
         } else if (StringUtils.isNotBlank(item)) {
             // Fall back to item field.
-            return getUploadSchemaByItemAndRev(study, item, schemaRev);
+            return getUploadSchemaByItemAndRev(studyId, item, schemaRev);
         } else if (StringUtils.isNotBlank(identifier)) {
             // Fall back to identifier field. Log a warning that we're using this non-standard field.
             logger.warn("info.json missing item field, falling back to identifier field, identifier=" + identifier);
-            return getUploadSchemaByItemAndRev(study, identifier, schemaRev);
+            return getUploadSchemaByItemAndRev(studyId, identifier, schemaRev);
         } else {
             // Schemaless.
             return null;
         }
     }
 
-    private UploadSchema getUploadSchemaBySurvey(StudyIdentifier study, String surveyGuid, String surveyCreatedOn) {
+    private UploadSchema getUploadSchemaBySurvey(String studyId, String surveyGuid, String surveyCreatedOn) {
         // surveyCreatedOn is a timestamp. SurveyService takes long epoch millis. Convert.
         long surveyCreatedOnMillis= DateUtils.convertToMillisFromEpoch(surveyCreatedOn);
 
         // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
         // specified.
         GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-        Survey survey = surveyService.getSurvey(study, surveyKeys, false, true);
+        Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
         String schemaId = survey.getIdentifier();
         Integer schemaRev = survey.getSchemaRevision();
         if (StringUtils.isBlank(schemaId) || schemaRev == null) {
@@ -210,14 +209,14 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         // Get the schema with the schema ID and rev.
         // Note that if there's no schema, we treat this like schemaless.
-        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(study, schemaId, schemaRev);
+        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(studyId, schemaId, schemaRev);
     }
 
-    private UploadSchema getUploadSchemaByItemAndRev(StudyIdentifier study, String item, Integer schemaRev) {
+    private UploadSchema getUploadSchemaByItemAndRev(String studyId, String item, Integer schemaRev) {
         if (schemaRev == null && defaultSchemaRevisionMap != null) {
             // Fall back to the legacy default schema rev map. This map exists because some schemas had their versions
             // bumped before the apps started sending schemaRevision.
-            Map<String, Integer> studySchemaRevMap = defaultSchemaRevisionMap.get(study.getIdentifier());
+            Map<String, Integer> studySchemaRevMap = defaultSchemaRevisionMap.get(studyId);
             if (studySchemaRevMap != null) {
                 schemaRev = studySchemaRevMap.get(item);
             }
@@ -230,7 +229,7 @@ public class IosSchemaValidationHandler2 implements UploadValidationHandler {
 
         // get schema
         // Note that if there's no schema, we treat this like schemaless.
-        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(study, item, schemaRev);
+        return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(studyId, item, schemaRev);
     }
 
     private static void validateInfoJsonFileList(UploadValidationContext context, String uploadId,

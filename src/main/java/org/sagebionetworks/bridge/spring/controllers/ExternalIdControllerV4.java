@@ -73,7 +73,7 @@ public class ExternalIdControllerV4 extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
         Study study = studyService.getStudy(session.getStudyIdentifier());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getStudyIdentifier(), externalId);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), externalId);
         externalIdService.deleteExternalIdPermanently(study, externalIdentifier);
         
         return new StatusMessage("External identifier deleted.");

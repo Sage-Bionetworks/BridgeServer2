@@ -48,8 +48,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
@@ -114,10 +112,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/self")
     public VersionHolder updateStudyForDeveloperOrAdmin() {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        StudyIdentifier studyId = session.getStudyIdentifier();
 
         Study studyUpdate = parseJson(Study.class);
-        studyUpdate.setIdentifier(studyId.getIdentifier());
+        studyUpdate.setIdentifier(session.getStudyIdentifier());
         studyUpdate = studyService.updateStudy(studyUpdate, session.isInRole(ADMIN));
         return new VersionHolder(studyUpdate.getVersion());
     }
@@ -233,7 +230,7 @@ public class StudyController extends BaseController {
         // Finally, you cannot delete your own study because it locks this user out of their session.
         // This is true of *all* users in the study, btw. There is an action in the BSM that iterates 
         // through all the participants in a study and signs them out one-by-one.
-        if (session.getStudyIdentifier().getIdentifier().equals(identifier)) {
+        if (session.getStudyIdentifier().equals(identifier)) {
             throw new UnauthorizedException("Admin cannot delete the study they are associated with.");
         }
         if (getStudyWhitelist().contains(identifier)) {
@@ -280,7 +277,7 @@ public class StudyController extends BaseController {
     public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
             @RequestParam(required = false) String type) {
         StudyEmailType parsedType = parseEmailType(type);
-        studyService.verifyEmail(new StudyIdentifierImpl(identifier), token, parsedType);
+        studyService.verifyEmail(identifier, token, parsedType);
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
@@ -328,12 +325,14 @@ public class StudyController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
         getAuthenticatedSession(WORKER);
-
+        
+        // This won't happen because the route won't match, but tests look for a BadRequestException
+        if (StringUtils.isBlank(identifier)) {
+            throw new BadRequestException("studyId cannot be missing, null, or blank");
+        }
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
 
-        StudyIdentifier studyId = new StudyIdentifierImpl(identifier);
-
-        return uploadService.getStudyUploads(studyId, startTimeObj, endTimeObj, pageSize, offsetKey);
+        return uploadService.getStudyUploads(identifier, startTimeObj, endTimeObj, pageSize, offsetKey);
     }
 }

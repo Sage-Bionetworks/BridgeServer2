@@ -217,7 +217,7 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithProhibitedDataGroups();
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
                 .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(Sets.newHashSet("group1"))
                 .withHealthCode("BBB").build();
@@ -233,7 +233,7 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithProhibitedDataGroups();
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
                 .withClientInfo(CLIENT_INFO)
                 .withHealthCode("AAA").build();
         
@@ -251,7 +251,7 @@ public class CriteriaScheduleStrategyTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withUserDataGroups(Sets.newHashSet("req1", "req2"))
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
                 .withHealthCode("AAA").build();
         

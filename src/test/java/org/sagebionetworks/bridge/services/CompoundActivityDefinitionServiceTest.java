@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -17,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -63,13 +63,13 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(TEST_STUDY_IDENTIFIER,
                 serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(serviceInput, daoInput);
-        assertEquals(daoInput.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInput.getStudyId(), TEST_STUDY_IDENTIFIER);
 
         // Validate that the service result is the same as the dao result.
         assertSame(serviceResult, daoResult);
@@ -83,7 +83,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
+            service.createCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -100,10 +100,10 @@ public class CompoundActivityDefinitionServiceTest {
         // note: delete has no return value
 
         // execute
-        dao.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        dao.deleteCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID);
 
         // verify dao
-        verify(dao).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        verify(dao).deleteCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID);
     }
 
     @Test
@@ -123,18 +123,18 @@ public class CompoundActivityDefinitionServiceTest {
     
     @Test
     public void deleteWithConstraintViolation() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TestConstants.TEST_STUDY);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY_IDENTIFIER);
         CompoundActivity compoundActivity = new CompoundActivity.Builder()
                 .withTaskIdentifier(TASK_ID).build();
         Activity newActivity = new Activity.Builder()
                 .withCompoundActivity(compoundActivity).build();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true))
                 .thenReturn(Lists.newArrayList(plan));
         
         // Now, a schedule plan exists that references this task ID. It cannot be deleted.
         try {
-            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+            service.deleteCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID);
             fail("Shoud have thrown exception");
         } catch(ConstraintViolationException e) {
             assertEquals(e.getReferrerKeys().get("guid"), "GGG");
@@ -147,7 +147,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void deleteBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId);
+            service.deleteCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, taskId);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");
@@ -162,10 +162,10 @@ public class CompoundActivityDefinitionServiceTest {
     @Test
     public void deleteAll() {
         // execute
-        service.deleteAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY);
+        service.deleteAllCompoundActivityDefinitionsInStudy(TEST_STUDY_IDENTIFIER);
 
         // verify dao
-        verify(dao).deleteAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY);
+        verify(dao).deleteAllCompoundActivityDefinitionsInStudy(TEST_STUDY_IDENTIFIER);
     }
 
     // LIST
@@ -174,11 +174,11 @@ public class CompoundActivityDefinitionServiceTest {
     public void list() {
         // mock dao
         List<CompoundActivityDefinition> daoResultList = ImmutableList.of(makeValidDef());
-        when(dao.getAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY)).thenReturn(daoResultList);
+        when(dao.getAllCompoundActivityDefinitionsInStudy(TEST_STUDY_IDENTIFIER)).thenReturn(daoResultList);
 
         // execute
         List<CompoundActivityDefinition> serviceResultList = service.getAllCompoundActivityDefinitionsInStudy(
-                TestConstants.TEST_STUDY);
+                TEST_STUDY_IDENTIFIER);
 
         // Validate that the service result is the same as the dao result.
         assertSame(serviceResultList, daoResultList);
@@ -190,10 +190,10 @@ public class CompoundActivityDefinitionServiceTest {
     public void get() {
         // mock dao
         CompoundActivityDefinition daoResult = makeValidDef();
-        when(dao.getCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID)).thenReturn(daoResult);
+        when(dao.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID)).thenReturn(daoResult);
 
         // execute
-        CompoundActivityDefinition serviceResult = service.getCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER,
                 TASK_ID);
 
         // Validate that the service result is the same as the dao result.
@@ -218,7 +218,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void getBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.getCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId);
+            service.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, taskId);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");
@@ -240,13 +240,13 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(TEST_STUDY_IDENTIFIER,
                 TASK_ID, serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(daoInput, serviceInput);
-        assertEquals(daoInput.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(daoInput.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(daoInput.getTaskId(), TASK_ID);
 
         // Validate that the service result is the same as the dao result.
@@ -262,7 +262,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID, def);
+            service.updateCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -290,7 +290,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void updateBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, makeValidDef());
+            service.updateCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, taskId, makeValidDef());
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");

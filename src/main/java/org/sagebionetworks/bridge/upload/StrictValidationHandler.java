@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -72,8 +71,6 @@ public class StrictValidationHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
-        StudyIdentifier studyIdentifier = context.getStudy();
-
         // get fields from record builder
         HealthDataRecord record = context.getHealthDataRecord();
         JsonNode recordDataNode = record.getData();
@@ -86,7 +83,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
         int schemaRev = record.getSchemaRevision();
 
         // get schema
-        UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(studyIdentifier, schemaId, schemaRev);
+        UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(context.getStudy(), schemaId, schemaRev);
         List<UploadFieldDefinition> fieldDefList = schema.getFieldDefinitions();
 
         List<String> errorList = validateAllFields(fieldDefList, recordDataNode);
@@ -122,7 +119,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         // log warning
         String combinedErrorMessage = ERROR_MESSAGE_JOINER.join(errorList);
-        String loggedErrorMessage = "Strict upload validation error in study " + context.getStudy().getIdentifier()
+        String loggedErrorMessage = "Strict upload validation error in study " + context.getStudy()
                 + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUploadId() + ": " +
                 combinedErrorMessage;
         logger.warn(loggedErrorMessage);
@@ -148,7 +145,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * Returns what level of validation strictness we should use, based on study configs. Package-scoped to facilitate
      * unit tests.
      */
-    UploadValidationStrictness getUploadValidationStrictnessForStudy(StudyIdentifier studyId) {
+    UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {
         Study study = studyService.getStudy(studyId);
 
         // First check UploadValidationStrictness.

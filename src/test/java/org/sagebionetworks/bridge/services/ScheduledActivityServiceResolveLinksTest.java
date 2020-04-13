@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -22,7 +23,6 @@ import org.joda.time.DateTime;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
@@ -56,7 +56,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
     // We only care about ClientInfo (which is automatically populated to ClientInfo.UNKNOWN_CLIENT) and study ID.
     private static final ScheduleContext SCHEDULE_CONTEXT = new ScheduleContext.Builder()
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
     private CompoundActivityDefinitionService mockCompoundActivityDefinitionService;
     private SchedulePlanService mockSchedulePlanService;
@@ -70,13 +70,13 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Mock compound activity definition service. This compound activity contains a schema ref with an unresolved
         // revision, and a survey reference with no createdOn (published survey).
         CompoundActivityDefinition compoundActivityDefinition = CompoundActivityDefinition.create();
-        compoundActivityDefinition.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        compoundActivityDefinition.setStudyId(TEST_STUDY_IDENTIFIER);
         compoundActivityDefinition.setTaskId(COMPOUND_ACTIVITY_REF_TASK_ID);
         compoundActivityDefinition.setSchemaList(ImmutableList.of(new SchemaReference(SCHEMA_ID, null)));
         compoundActivityDefinition.setSurveyList(ImmutableList.of(new SurveyReference(SURVEY_ID, SURVEY_GUID, null)));
 
         mockCompoundActivityDefinitionService = mock(CompoundActivityDefinitionService.class);
-        when(mockCompoundActivityDefinitionService.getCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        when(mockCompoundActivityDefinitionService.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER,
                 COMPOUND_ACTIVITY_REF_TASK_ID)).thenReturn(compoundActivityDefinition);
 
         // Mock scheduler plan service. This is filled out in setupSchedulePlanServiceWithActivity().
@@ -84,23 +84,23 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Mock schema service to provide a concrete schema. Schema only cares about ID and rev.
         UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        schema.setStudyId(TEST_STUDY_IDENTIFIER);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 
         mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_STUDY_IDENTIFIER, SCHEMA_ID,
                 ClientInfo.UNKNOWN_CLIENT)).thenReturn(schema);
 
         // Similarly, mock Survey.
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        survey.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         survey.setIdentifier(SURVEY_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
         mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY_IDENTIFIER, SURVEY_GUID, false))
                 .thenReturn(survey);
         
         appConfigService = mock(AppConfigService.class);
@@ -154,7 +154,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         plan.setStrategy(strategy);
 
         // And the schedule plan service returns the schedule plan.
-        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false))
+        when(mockSchedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false))
                 .thenReturn(ImmutableList.of(plan));
     }
 
@@ -257,7 +257,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         setupSchedulePlanServiceWithActivity(activity);
 
         // Mock compound activity service to throw.
-        when(mockCompoundActivityDefinitionService.getCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        when(mockCompoundActivityDefinitionService.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER,
                 COMPOUND_ACTIVITY_REF_TASK_ID)).thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), but the activities don't
@@ -291,9 +291,9 @@ public class ScheduledActivityServiceResolveLinksTest {
         setupSchedulePlanServiceWithActivity(activity);
 
         // Mock schema and survey services to throw.
-        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_STUDY_IDENTIFIER, SCHEMA_ID,
                 ClientInfo.UNKNOWN_CLIENT)).thenThrow(EntityNotFoundException.class);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY_IDENTIFIER, SURVEY_GUID, false))
                 .thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), and the activities have
@@ -380,7 +380,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         setupSchedulePlanServiceWithActivity(activity);
 
         // Mock survey service to throw.
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TestConstants.TEST_STUDY, SURVEY_GUID, false))
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TEST_STUDY_IDENTIFIER, SURVEY_GUID, false))
                 .thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), but the activities don't
@@ -464,7 +464,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         setupSchedulePlanServiceWithActivity(activity);
 
         // Mock schema service to throw.
-        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TestConstants.TEST_STUDY, SCHEMA_ID,
+        when(mockSchemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_STUDY_IDENTIFIER, SCHEMA_ID,
                 ClientInfo.UNKNOWN_CLIENT)).thenThrow(EntityNotFoundException.class);
 
         // Execute and validate. We have 2 activities (because of how the test is set up), but the activities don't

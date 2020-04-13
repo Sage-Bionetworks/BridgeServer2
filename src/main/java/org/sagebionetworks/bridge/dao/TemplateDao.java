@@ -4,22 +4,21 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public interface TemplateDao {
     
-    PagedResourceList<? extends Template> getTemplates(StudyIdentifier studyId, TemplateType type, Integer offset,
+    PagedResourceList<? extends Template> getTemplates(String studyId, TemplateType type, Integer offset,
             Integer limit, boolean includeDeleted);
 
-    Optional<Template> getTemplate(StudyIdentifier studyId, String guid);
+    Optional<Template> getTemplate(String studyId, String guid);
     
     void createTemplate(Template template, Consumer<Template> consumer);
     
     void updateTemplate(Template template);
     
-    void deleteTemplatePermanently(StudyIdentifier studyId, String guid);
+    void deleteTemplatePermanently(String studyId, String guid);
     
-    void deleteTemplatesForStudy(StudyIdentifier studyId);
+    void deleteTemplatesForStudy(String studyId);
 }

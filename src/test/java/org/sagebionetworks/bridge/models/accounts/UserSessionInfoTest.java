@@ -16,7 +16,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,7 +52,7 @@ public class UserSessionInfoTest {
         session.setInternalSessionToken("internal");
         session.setSessionToken("external");
         session.setReauthToken("reauthToken");
-        session.setStudyIdentifier(new StudyIdentifierImpl("study-identifier"));
+        session.setStudyIdentifier("study-identifier");
         
         JsonNode node = UserSessionInfo.toJSON(session);
         assertEquals(node.get("firstName").textValue(), "first name");

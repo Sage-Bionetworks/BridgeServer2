@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -63,7 +63,7 @@ public class ActivityEventControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -71,7 +71,7 @@ public class ActivityEventControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         study = Study.create();
-        when(studyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(studyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
     }
     
     @Test
@@ -101,7 +101,7 @@ public class ActivityEventControllerTest extends Mockito {
         event.setTimestamp(TIMESTAMP.getMillis());
         
         List<ActivityEvent> activityEvents = ImmutableList.of(event);
-        when(mockActivityEventService.getActivityEventList(TEST_STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(activityEvents);
+        when(mockActivityEventService.getActivityEventList(TEST_STUDY_IDENTIFIER, HEALTH_CODE)).thenReturn(activityEvents);
         String response = controller.getSelfActivityEvents();
         
         ResourceList<ActivityEvent> list = BridgeObjectMapper.get().readValue(response, 
@@ -111,6 +111,6 @@ public class ActivityEventControllerTest extends Mockito {
         assertEquals(new Long(TIMESTAMP.getMillis()), returnedEvent.getTimestamp());
         assertNull(returnedEvent.getHealthCode());
         
-        verify(mockActivityEventService).getActivityEventList(TEST_STUDY.getIdentifier(), HEALTH_CODE);
+        verify(mockActivityEventService).getActivityEventList(TEST_STUDY_IDENTIFIER, HEALTH_CODE);
     }
 }

@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -135,11 +134,11 @@ public class ParticipantReportControllerTest extends Mockito {
         statuses.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
         
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setAuthenticated(true);
         session.setConsentStatuses(statuses);
         
-        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY);
+        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
@@ -155,7 +154,7 @@ public class ParticipantReportControllerTest extends Mockito {
         index.setIdentifier("fofo");
         list = new ReportTypeResourceList<>(Lists.newArrayList(index))
                 .withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
-        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        doReturn(list).when(mockReportService).getReportIndices(TEST_STUDY_IDENTIFIER, ReportType.PARTICIPANT);
         
         doReturn(mockRequest).when(controller).request();
     }
@@ -253,7 +252,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, null,
                 API_DEFAULT_PAGE_SIZE);
-        when(mockReportService.getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
+        when(mockReportService.getParticipantReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, null,
                 null, null, API_DEFAULT_PAGE_SIZE)).thenReturn(expectedPage);
 
         // Execute and validate.
@@ -263,7 +262,7 @@ public class ParticipantReportControllerTest extends Mockito {
         assertReportDataPage(START_TIME, END_TIME, null, API_DEFAULT_PAGE_SIZE, result);
 
         // Verify dependent service call.
-        verify(mockReportService).getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, null,
+        verify(mockReportService).getParticipantReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, null,
                 null, null, API_DEFAULT_PAGE_SIZE);
     }
 
@@ -274,7 +273,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, OFFSET_KEY,
                 PAGE_SIZE_INT);
-        when(mockReportService.getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+        when(mockReportService.getParticipantReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
                 OFFSET_KEY, PAGE_SIZE_INT)).thenReturn(expectedPage);
 
         // Execute and validate.
@@ -285,7 +284,7 @@ public class ParticipantReportControllerTest extends Mockito {
         assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, result);
 
         // Verify dependent service call.
-        verify(mockReportService).getParticipantReportV4(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+        verify(mockReportService).getParticipantReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
                 OFFSET_KEY, PAGE_SIZE_INT);
     }
 
@@ -313,7 +312,7 @@ public class ParticipantReportControllerTest extends Mockito {
         when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
-        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,
+        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE,
                 null, null);
 
         // Execute and validate.
@@ -322,7 +321,7 @@ public class ParticipantReportControllerTest extends Mockito {
         assertResultContent(START_DATE, END_DATE, result);
 
         // Verify dependent service call.
-        verify(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE, null, null);
+        verify(mockReportService).getParticipantReport(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, null, null);
     }
 
     @Test
@@ -331,7 +330,7 @@ public class ParticipantReportControllerTest extends Mockito {
         when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
-        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE,
+        doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE,
                 START_DATE, END_DATE);
 
         // Execute and validate.
@@ -340,7 +339,7 @@ public class ParticipantReportControllerTest extends Mockito {
         assertResultContent(START_DATE, END_DATE, result);
 
         // Verify dependent service call.
-        verify(mockReportService).getParticipantReport(TEST_STUDY, REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
+        verify(mockReportService).getParticipantReport(TEST_STUDY_IDENTIFIER, REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
     }
 
     @Test
@@ -351,7 +350,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         assertEquals(result.getMessage(), "Report data saved.");
 
-        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq(REPORT_ID),
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY_IDENTIFIER), eq(REPORT_ID),
                 eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(reportData.getDate().toString(), LocalDate.parse("2015-02-12").toString());
@@ -387,7 +386,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.saveParticipantReportForWorker(REPORT_ID);
         assertEquals(result.getMessage(), "Report data saved.");
         
-        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY), eq(REPORT_ID),
+        verify(mockReportService).saveParticipantReport(eq(TEST_STUDY_IDENTIFIER), eq(REPORT_ID),
                 eq(OTHER_PARTICIPANT_HEALTH_CODE), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(reportData.getDate().toString(), LocalDate.parse("2015-02-12").toString());
@@ -418,7 +417,7 @@ public class ParticipantReportControllerTest extends Mockito {
         assertEquals(results.getRequestParams().get("reportType"), ReportType.PARTICIPANT);
         assertEquals(results.getItems().get(0).getIdentifier(), "fofo");
         
-        verify(mockReportService).getReportIndices(TEST_STUDY, ReportType.PARTICIPANT);
+        verify(mockReportService).getReportIndices(TEST_STUDY_IDENTIFIER, ReportType.PARTICIPANT);
     }
     
     @Test
@@ -437,7 +436,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         verify(mockReportService).getReportIndex(reportDataKeyCaptor.capture());
         ReportDataKey key = reportDataKeyCaptor.getValue();
-        assertEquals(key.getStudyId(), TEST_STUDY);
+        assertEquals(key.getStudyId(), TEST_STUDY_IDENTIFIER);
         assertEquals(key.getIdentifier(), REPORT_ID);
         assertEquals(key.getReportType(), PARTICIPANT);
     }
@@ -477,7 +476,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteParticipantReportIndex(REPORT_ID);
         assertEquals(result.getMessage(), "Report index deleted.");
         
-        verify(mockReportService).deleteParticipantReportIndex(TEST_STUDY, REPORT_ID);
+        verify(mockReportService).deleteParticipantReportIndex(TEST_STUDY_IDENTIFIER, REPORT_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -618,7 +617,7 @@ public class ParticipantReportControllerTest extends Mockito {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
-        report.setKey("foo:" + TEST_STUDY.getIdentifier());
+        report.setKey("foo:" + TEST_STUDY_IDENTIFIER);
         report.setLocalDate(date);
         report.setData(node);
         return report;
@@ -629,7 +628,7 @@ public class ParticipantReportControllerTest extends Mockito {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
-        report.setKey("foo:" + TEST_STUDY.getIdentifier());
+        report.setKey("foo:" + TEST_STUDY_IDENTIFIER);
         report.setDateTime(date);
         report.setData(node);
         return report;

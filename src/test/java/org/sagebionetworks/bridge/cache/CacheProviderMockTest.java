@@ -129,7 +129,7 @@ public class CacheProviderMockTest {
         assertEquals(session.getSessionToken(), DECRYPTED_SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), "4f0937a5-6ebf-451b-84bc-fbf649b9e93c");
         assertEquals(session.getId(), "6gq4jGXLmAxVbLLmVifKN4");
-        assertEquals(session.getStudyIdentifier().getIdentifier(), "api");
+        assertEquals(session.getStudyIdentifier(), "api");
         
         StudyParticipant participant = session.getParticipant();
         assertEquals(participant.getFirstName(), "Bridge");
@@ -220,11 +220,20 @@ public class CacheProviderMockTest {
 
         verify(jedisOps).get(REQUEST_INFO_KEY);
     }
+    
+    @Test
+    public void getRequestInfoWithStudyIdentifier() throws Exception {
+        String json = TestUtils.createJson("{'userId':'userId','timeZone':'UTC',"+
+                "'studyIdentifier':{'identifier':'api'},'type':'RequestInfo'}");
+        when(jedisOps.get(REQUEST_INFO_KEY)).thenReturn(json);
+        
+        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
+        assertEquals("api", returned.getStudyIdentifier());
+    }
 
     @Test
     public void emptySetDoesNotDelete() {
         doReturn(Sets.newHashSet()).when(jedisOps).smembers(CACHE_KEY.toString());
-        // */doReturn(transaction).when(jedisOps).getTransaction(CACHE_KEY.toString());
         
         cacheProvider.removeSetOfCacheKeys(CACHE_KEY);
         verify(transaction, never()).del(anyString());
@@ -396,8 +405,7 @@ public class CacheProviderMockTest {
                 "'environment':'local',"+
                 "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'studyIdentifier':{'identifier':'api',"+
-                    "'type':'StudyIdentifier'},"+
+                "'studyIdentifier':{'identifier':'api', 'type':'StudyIdentifier'},"+
                 "'consentStatuses':{"+
                     "'api':{'name':'Default Consent Group',"+
                         "'subpopulationGuid':'api',"+

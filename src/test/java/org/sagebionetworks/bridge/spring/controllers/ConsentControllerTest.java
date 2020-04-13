@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -55,8 +54,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
@@ -116,12 +113,12 @@ public class ConsentControllerTest extends Mockito {
         
         study = Study.create();
         study.setIdentifier(TEST_STUDY_IDENTIFIER);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TestConstants.TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setSessionToken(ORIGINAL_SESSION_TOKEN);
         
         // The session token is just a marker to verify that we have retrieved an updated session.
@@ -166,7 +163,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(retrievedSession.getSessionToken(), ORIGINAL_SESSION_TOKEN);
         
-        verify(mockAccountService).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), accountConsumerCaptor.capture());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq(HEALTH_CODE), accountConsumerCaptor.capture());
         verify(mockSessionUpdateService).updateSharingScope(session, SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         // This works as a verification because the lambda carries a closure that includes the correct sharing 
@@ -217,7 +214,7 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
+        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
         session.setStudyIdentifier(studyId);
@@ -244,7 +241,7 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid());
+        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
         session.setStudyIdentifier(studyId);
@@ -401,7 +398,7 @@ public class ConsentControllerTest extends Mockito {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(mockAccountService).editAccount(eq(TestConstants.TEST_STUDY), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_STUDY_IDENTIFIER), eq(HEALTH_CODE), any());
     }
     
     @Test

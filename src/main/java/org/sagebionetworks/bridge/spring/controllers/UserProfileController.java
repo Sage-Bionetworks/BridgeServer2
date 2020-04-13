@@ -131,8 +131,7 @@ public class UserProfileController extends BaseController {
     public JsonNode getDataGroups() {
         UserSession session = getAuthenticatedSession();
         
-        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier().getIdentifier(),
-                session.getHealthCode());
+        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier(), session.getHealthCode());
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

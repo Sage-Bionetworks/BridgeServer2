@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -19,7 +20,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.models.substudies.SubstudyId;
@@ -59,7 +59,7 @@ public class HibernateSubstudyDaoTest {
         when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateSubstudy.class)))
                 .thenReturn(SUBSTUDIES);
         
-        List<Substudy> list = dao.getSubstudies(TestConstants.TEST_STUDY, true);
+        List<Substudy> list = dao.getSubstudies(TEST_STUDY_IDENTIFIER, true);
         assertEquals(list.size(), 2);
         
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
@@ -67,7 +67,7 @@ public class HibernateSubstudyDaoTest {
         
         assertEquals(queryCaptor.getValue(), "from HibernateSubstudy as substudy where studyId=:studyId");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(parameters.get("studyId"), TEST_STUDY_IDENTIFIER);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class HibernateSubstudyDaoTest {
         when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateSubstudy.class)))
             .thenReturn(SUBSTUDIES);
 
-        List<Substudy> list = dao.getSubstudies(TestConstants.TEST_STUDY, false);
+        List<Substudy> list = dao.getSubstudies(TEST_STUDY_IDENTIFIER, false);
         assertEquals(list.size(), 2);
         
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
@@ -84,7 +84,7 @@ public class HibernateSubstudyDaoTest {
         assertEquals(queryCaptor.getValue(),
                 "from HibernateSubstudy as substudy where studyId=:studyId and deleted != 1");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(parameters.get("studyId"), TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -92,14 +92,14 @@ public class HibernateSubstudyDaoTest {
         HibernateSubstudy substudy = new HibernateSubstudy();
         when(hibernateHelper.getById(eq(HibernateSubstudy.class), any())).thenReturn(substudy);
         
-        Substudy returnedValue = dao.getSubstudy(TestConstants.TEST_STUDY, "id");
+        Substudy returnedValue = dao.getSubstudy(TEST_STUDY_IDENTIFIER, "id");
         assertEquals(returnedValue, substudy);
         
         verify(hibernateHelper).getById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());
         
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "id");
-        assertEquals(substudyId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(substudyId.getStudyId(), TEST_STUDY_IDENTIFIER);
     }
     
     @Test
@@ -132,18 +132,18 @@ public class HibernateSubstudyDaoTest {
 
     @Test
     public void deleteSubstudyPermanently() {
-        dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
+        dao.deleteSubstudyPermanently(TEST_STUDY_IDENTIFIER, "oneId");
         
         verify(hibernateHelper).deleteById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "oneId");
-        assertEquals(substudyId.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(substudyId.getStudyId(), TEST_STUDY_IDENTIFIER);
     }    
 
     @Test(expectedExceptions = PersistenceException.class)
     public void deleteSubstudyPermanentlyNotFound() {
         doThrow(new PersistenceException()).when(hibernateHelper).deleteById(eq(HibernateSubstudy.class), any());
             
-        dao.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "oneId");
+        dao.deleteSubstudyPermanently(TEST_STUDY_IDENTIFIER, "oneId");
     }    
 }

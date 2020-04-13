@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;
 import org.sagebionetworks.bridge.upload.UploadValidationTaskFactory;
@@ -45,7 +44,7 @@ public class UploadValidationService {
      * @param upload
      *         upload metadata object for the upload
      */
-    public void validateUpload(@Nonnull StudyIdentifier study, @Nonnull Upload upload) {
+    public void validateUpload(@Nonnull String study, @Nonnull Upload upload) {
         UploadValidationTask task = taskFactory.newTask(study, upload);
         asyncExecutorService.execute(task);
     }

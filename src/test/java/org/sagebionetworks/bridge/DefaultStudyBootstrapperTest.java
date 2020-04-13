@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -67,7 +66,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        when(mockStudyService.getStudy(any(StudyIdentifier.class))).thenThrow(EntityNotFoundException.class);
+        when(mockStudyService.getStudy(any(String.class))).thenThrow(EntityNotFoundException.class);
         when(mockStudyService.createStudy(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 

@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -243,11 +242,11 @@ public class AccountService {
     /**
      * Load, and if it exists, edit and save an account. 
      */
-    public void editAccount(StudyIdentifier studyId, String healthCode, Consumer<Account> accountEdits) {
+    public void editAccount(String studyId, String healthCode, Consumer<Account> accountEdits) {
         checkNotNull(studyId);
         checkNotNull(healthCode);
         
-        AccountId accountId = AccountId.forHealthCode(studyId.getIdentifier(), healthCode);
+        AccountId accountId = AccountId.forHealthCode(studyId, healthCode);
         Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);

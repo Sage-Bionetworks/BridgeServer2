@@ -35,7 +35,7 @@ public class AssessmentConfigController extends BaseController {
     @GetMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig getAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         return service.getAssessmentConfig(appId, guid);
     }
@@ -43,7 +43,7 @@ public class AssessmentConfigController extends BaseController {
     @PostMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig updateAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -56,7 +56,7 @@ public class AssessmentConfigController extends BaseController {
     @PostMapping("/v1/assessments/{guid}/config/customize")
     public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier().getIdentifier();
+        String appId = session.getStudyIdentifier();
         
         if (SHARED_STUDY_ID_STRING.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);

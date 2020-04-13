@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
@@ -58,7 +57,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         when(mockHelper.queryGet(any(), any(), eq(5), eq(50), eq(HibernateTemplate.class)))
                 .thenReturn(ImmutableList.of(new HibernateTemplate(), new HibernateTemplate()));
         
-        PagedResourceList<? extends Template> paged = dao.getTemplates(TEST_STUDY, SMS_ACCOUNT_EXISTS, 5, 50, true);
+        PagedResourceList<? extends Template> paged = dao.getTemplates(TEST_STUDY_IDENTIFIER, SMS_ACCOUNT_EXISTS, 5, 50, true);
         Map<String,Object> params = paged.getRequestParams();
         assertEquals(params.get(TEMPLATE_TYPE), SMS_ACCOUNT_EXISTS);
         assertEquals(params.get(TOTAL), 150);
@@ -83,7 +82,7 @@ public class HibernateTemplateDaoTest extends Mockito {
 
     @Test
     public void getTemplatesExcludeDeleted() {
-        dao.getTemplates(TEST_STUDY, SMS_ACCOUNT_EXISTS, 5, 50, false);
+        dao.getTemplates(TEST_STUDY_IDENTIFIER, SMS_ACCOUNT_EXISTS, 5, 50, false);
         
         verify(mockHelper).queryCount(queryCaptor.capture(), paramsCaptor.capture());
         
@@ -98,13 +97,13 @@ public class HibernateTemplateDaoTest extends Mockito {
         template.setStudyId(TEST_STUDY_IDENTIFIER);
         when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
         
-        Optional<Template> result = dao.getTemplate(TEST_STUDY, GUID);
+        Optional<Template> result = dao.getTemplate(TEST_STUDY_IDENTIFIER, GUID);
         assertNotNull(result.get());
     }
     
     @Test
     public void getTemplateMissing() {
-        Optional<Template> template = dao.getTemplate(TEST_STUDY, GUID);
+        Optional<Template> template = dao.getTemplate(TEST_STUDY_IDENTIFIER, GUID);
         assertFalse(template.isPresent());
     }
     
@@ -114,7 +113,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         template.setStudyId("not the study we're looking for");
         when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
         
-        Optional<Template> result = dao.getTemplate(TEST_STUDY, GUID);
+        Optional<Template> result = dao.getTemplate(TEST_STUDY_IDENTIFIER, GUID);
         assertFalse(result.isPresent());
     }
 
@@ -142,7 +141,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         template.setStudyId(TEST_STUDY_IDENTIFIER);
         when(mockHelper.getById(HibernateTemplate.class, GUID)).thenReturn(template);
         
-        dao.deleteTemplatePermanently(TEST_STUDY, GUID);
+        dao.deleteTemplatePermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockHelper).deleteById(HibernateTemplate.class, GUID);
     }
@@ -150,14 +149,14 @@ public class HibernateTemplateDaoTest extends Mockito {
     @Test
     public void deleteTemplatePermanentlyMissing() {
         // should silently do nothing
-        dao.deleteTemplatePermanently(TEST_STUDY, GUID);
+        dao.deleteTemplatePermanently(TEST_STUDY_IDENTIFIER, GUID);
         
         verify(mockHelper, never()).deleteById(HibernateTemplate.class, GUID);
     }
     
     @Test
     public void deleteTemplatesForStudy() { 
-        dao.deleteTemplatesForStudy(TEST_STUDY);
+        dao.deleteTemplatesForStudy(TEST_STUDY_IDENTIFIER);
         
         verify(mockHelper).query(eq("DELETE FROM HibernateTemplate WHERE studyId = :studyId"),
                 paramsCaptor.capture());

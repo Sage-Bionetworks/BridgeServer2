@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
@@ -38,7 +37,7 @@ import com.google.common.collect.ImmutableList;
 public class ReferenceResolverTest {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.UNKNOWN_CLIENT;
-    private static final StudyIdentifier STUDY_ID = TestConstants.TEST_STUDY;
+    private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String SURVEY_ID = "surveyId";
     private static final String SURVEY_GUID = "guid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.now();

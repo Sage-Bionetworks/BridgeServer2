@@ -82,7 +82,7 @@ public class TestingHandlerTest {
         verifyZeroInteractions(mockValidator);
 
         UploadValidationContext testContext = testContextCaptor.getValue();
-        assertEquals(testContext.getStudy().getIdentifier(), TEST_STUDY_ID);
+        assertEquals(testContext.getStudy(), TEST_STUDY_ID);
         assertEquals(testContext.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testContext.getUpload().getFilename(), TEST_FILENAME);
     }
@@ -112,7 +112,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy().getIdentifier(), TEST_STUDY_ID);
+        assertEquals(testHandlerArg.getStudy(), TEST_STUDY_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -152,7 +152,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy().getIdentifier(), TEST_STUDY_ID);
+        assertEquals(testHandlerArg.getStudy(), TEST_STUDY_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -171,7 +171,7 @@ public class TestingHandlerTest {
         upload.setFilename(TEST_FILENAME);
 
         UploadValidationContext mockContext = new UploadValidationContext();
-        mockContext.setStudy(study);
+        mockContext.setStudy(TEST_STUDY_ID);
         mockContext.setUpload(upload);
         return mockContext;
     }

@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -74,7 +73,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // mock service
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> createdSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
-        when(mockSvc.createSchemaRevisionV4(eq(TEST_STUDY), createdSchemaCaptor.capture())).thenReturn(
+        when(mockSvc.createSchemaRevisionV4(eq(TEST_STUDY_IDENTIFIER), createdSchemaCaptor.capture())).thenReturn(
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -89,7 +88,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> createdSchemaArgCaptor = ArgumentCaptor.forClass(UploadSchema.class);
-        when(mockSvc.createOrUpdateUploadSchema(eq(TEST_STUDY), createdSchemaArgCaptor.capture()))
+        when(mockSvc.createOrUpdateUploadSchema(eq(TEST_STUDY_IDENTIFIER), createdSchemaArgCaptor.capture()))
                 .thenReturn(makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -108,7 +107,7 @@ public class UploadSchemaControllerTest extends Mockito {
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", false);
         assertEquals(result, DELETED_MSG);
-        verify(mockSvc).deleteUploadSchemaById(TEST_STUDY, "delete-schema");
+        verify(mockSvc).deleteUploadSchemaById(TEST_STUDY_IDENTIFIER, "delete-schema");
     }
     
     @Test
@@ -120,7 +119,7 @@ public class UploadSchemaControllerTest extends Mockito {
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", true);
         assertEquals(result, DELETED_MSG);
-        verify(mockSvc).deleteUploadSchemaByIdPermanently(TEST_STUDY, "delete-schema");
+        verify(mockSvc).deleteUploadSchemaByIdPermanently(TEST_STUDY_IDENTIFIER, "delete-schema");
     }
     
     @Test
@@ -132,7 +131,7 @@ public class UploadSchemaControllerTest extends Mockito {
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", true);
         assertEquals(result, DELETED_MSG);
-        verify(mockSvc).deleteUploadSchemaById(TEST_STUDY, "delete-schema");
+        verify(mockSvc).deleteUploadSchemaById(TEST_STUDY_IDENTIFIER, "delete-schema");
     }
     
     @Test
@@ -144,7 +143,7 @@ public class UploadSchemaControllerTest extends Mockito {
         
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, false);
         assertEquals(result, DELETED_REVISION_MSG);
-        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TEST_STUDY, "delete-schema", 4);
+        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, "delete-schema", 4);
     }
     
     @Test
@@ -156,7 +155,7 @@ public class UploadSchemaControllerTest extends Mockito {
         
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, true);
         assertEquals(result, DELETED_REVISION_MSG);
-        verify(mockSvc).deleteUploadSchemaByIdAndRevisionPermanently(TEST_STUDY, "delete-schema", 4);
+        verify(mockSvc).deleteUploadSchemaByIdAndRevisionPermanently(TEST_STUDY_IDENTIFIER, "delete-schema", 4);
     }
     
     @Test
@@ -169,14 +168,14 @@ public class UploadSchemaControllerTest extends Mockito {
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, true);
         assertEquals(result, DELETED_REVISION_MSG);
         // We do not call the permanent delete, we call the logical delete, as the user is a developer.
-        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, "delete-schema", 4);
+        verify(mockSvc).deleteUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY_IDENTIFIER, "delete-schema", 4);
     }
     
     @Test
     public void getSchemaById() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchema(TestConstants.TEST_STUDY, TEST_SCHEMA_ID)).thenReturn(
+        when(mockSvc.getUploadSchema(TestConstants.TEST_STUDY_IDENTIFIER, TEST_SCHEMA_ID)).thenReturn(
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -189,7 +188,7 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getSchemaByIdAndRev() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SCHEMA_ID, 1)).thenReturn(
+        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY_IDENTIFIER, TEST_SCHEMA_ID, 1)).thenReturn(
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -202,7 +201,7 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getByStudyAndSchemaAndRev() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, TEST_SCHEMA_ID, 1)).thenReturn(
+        when(mockSvc.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY_IDENTIFIER, TEST_SCHEMA_ID, 1)).thenReturn(
                 makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -218,7 +217,7 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getSchemasForStudyNoDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_STUDY, false)).thenReturn(ImmutableList.of(
+        when(mockSvc.getUploadSchemasForStudy(TEST_STUDY_IDENTIFIER, false)).thenReturn(ImmutableList.of(
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
@@ -241,14 +240,14 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getSchemasForStudyIncludeDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_STUDY, true))
+        when(mockSvc.getUploadSchemasForStudy(TEST_STUDY_IDENTIFIER, true))
                 .thenReturn(ImmutableList.of(makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
         controller.getUploadSchemasForStudy(true);
         
-        verify(mockSvc).getUploadSchemasForStudy(TEST_STUDY, true);
+        verify(mockSvc).getUploadSchemasForStudy(TEST_STUDY_IDENTIFIER, true);
     }
     
     @Test
@@ -262,7 +261,7 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of(
+        when(mockSvc.getUploadSchemaAllRevisions(TestConstants.TEST_STUDY_IDENTIFIER, schemaId, false)).thenReturn(ImmutableList.of(
                 schema3, schema2, schema1));
 
         // setup, execute, and validate
@@ -299,13 +298,13 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemaAllRevisions(TEST_STUDY, schemaId, false)).thenReturn(ImmutableList.of());
+        when(mockSvc.getUploadSchemaAllRevisions(TEST_STUDY_IDENTIFIER, schemaId, false)).thenReturn(ImmutableList.of());
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
         controller.getUploadSchemaAllRevisions(schemaId, true);
 
-        verify(mockSvc).getUploadSchemaAllRevisions(TEST_STUDY, schemaId, true);
+        verify(mockSvc).getUploadSchemaAllRevisions(TEST_STUDY_IDENTIFIER, schemaId, true);
     }
     
     @Test
@@ -313,7 +312,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // mock service
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         ArgumentCaptor<UploadSchema> updatedSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
-        when(mockSvc.updateSchemaRevisionV4(eq(TEST_STUDY), eq(TEST_SCHEMA_ID), eq(1),
+        when(mockSvc.updateSchemaRevisionV4(eq(TEST_STUDY_IDENTIFIER), eq(TEST_SCHEMA_ID), eq(1),
                 updatedSchemaCaptor.capture())).thenReturn(makeUploadSchemaForOutput());
 
         // setup, execute, and validate
@@ -326,7 +325,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithServiceWithoutSecondRole(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
 
         // spy controller
@@ -345,7 +344,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1, role2)).build());
 
         // spy controller
@@ -364,7 +363,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
 
         // spy controller

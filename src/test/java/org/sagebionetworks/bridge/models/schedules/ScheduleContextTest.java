@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -21,8 +21,8 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 
 public class ScheduleContextTest {
 
-    private static final ScheduleContext EMPTY_CONTEXT = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
-            .build();
+    private static final ScheduleContext EMPTY_CONTEXT = new ScheduleContext.Builder()
+            .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
     private static final String ENROLLMENT = "enrollment";
     private static final String HEALTH_CODE = "healthCode";
 
@@ -36,7 +36,7 @@ public class ScheduleContextTest {
         assertNull(EMPTY_CONTEXT.getEvent(ENROLLMENT));
         assertFalse(EMPTY_CONTEXT.hasEvents());
         
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY)
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER)
                 .withEvents(new HashMap<String, DateTime>()).build();
         assertNull(context.getEvent(ENROLLMENT));
         assertFalse(context.hasEvents());
@@ -68,7 +68,7 @@ public class ScheduleContextTest {
         // All the individual fields work
         ScheduleContext context = new ScheduleContext.Builder()
                 .withClientInfo(clientInfo)
-                .withStudyIdentifier(TEST_STUDY)
+                .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
                 .withInitialTimeZone(PST)
                 .withStartsOn(startsOn)
                 .withEndsOn(endsOn)
@@ -79,7 +79,7 @@ public class ScheduleContextTest {
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
         
-        assertEquals(context.getCriteriaContext().getStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getCriteriaContext().getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(context.getCriteriaContext().getClientInfo(), clientInfo);
         assertEquals(context.getInitialTimeZone(), PST);
         assertEquals(context.getEndsOn(), endsOn);
@@ -110,7 +110,7 @@ public class ScheduleContextTest {
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getLanguages().isEmpty());
         assertNull(EMPTY_CONTEXT.getCriteriaContext().getHealthCode());
         assertNull(EMPTY_CONTEXT.getCriteriaContext().getUserId());
-        assertEquals(EMPTY_CONTEXT.getCriteriaContext().getStudyIdentifier(), TEST_STUDY);
+        assertEquals(EMPTY_CONTEXT.getCriteriaContext().getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(EMPTY_CONTEXT.getCriteriaContext().getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         // And then there's this, which is not null
         assertNotNull(EMPTY_CONTEXT.getStartsOn());
@@ -123,13 +123,13 @@ public class ScheduleContextTest {
     @Test
     public void verifyAccountCreatedCopy() {
         // Null is safe and works
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).build();
+        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
         ScheduleContext copy = new ScheduleContext.Builder().withContext(context).build();
         assertNull(copy.getAccountCreatedOn());
         
         // Non-null is properly copied
         DateTime now = DateTime.now(DateTimeZone.UTC);
-        context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withAccountCreatedOn(now).build();
+        context = new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).withAccountCreatedOn(now).build();
         copy = new ScheduleContext.Builder().withContext(context).build();
         assertEquals(copy.getAccountCreatedOn(), now);
     }

@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -290,7 +289,7 @@ public abstract class BaseController {
         return languages;
     }
 
-    CriteriaContext getCriteriaContext(StudyIdentifier studyId) {
+    CriteriaContext getCriteriaContext(String studyId) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
             .withStudyIdentifier(studyId)
@@ -347,7 +346,7 @@ public abstract class BaseController {
         if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
-            metrics.setStudy(session.getStudyIdentifier().getIdentifier());
+            metrics.setStudy(session.getStudyIdentifier());
         }
     }
     

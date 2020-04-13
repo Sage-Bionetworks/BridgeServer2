@@ -10,7 +10,6 @@ import org.sagebionetworks.bridge.dao.SubstudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.SubstudyValidator;
@@ -30,7 +29,7 @@ public class SubstudyService {
         this.substudyDao = substudyDao;
     }
     
-    public Substudy getSubstudy(StudyIdentifier studyId, String id, boolean throwsException) {
+    public Substudy getSubstudy(String studyId, String id, boolean throwsException) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -46,22 +45,22 @@ public class SubstudyService {
      * objects throughout the system). Calling this method is preferred to getSubstudies() 
      * so we can provide a cache for these infrequently changing identifiers.
      */
-    public Set<String> getSubstudyIds(StudyIdentifier studyId) {
+    public Set<String> getSubstudyIds(String studyId) {
         return getSubstudies(studyId, false).stream()
                 .map(Substudy::getId).collect(BridgeCollectors.toImmutableSet());
     }
     
-    public List<Substudy> getSubstudies(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<Substudy> getSubstudies(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         return substudyDao.getSubstudies(studyId, includeDeleted);
     }
     
-    public VersionHolder createSubstudy(StudyIdentifier studyId, Substudy substudy) {
+    public VersionHolder createSubstudy(String studyId, Substudy substudy) {
         checkNotNull(studyId);
         checkNotNull(substudy);
         
-        substudy.setStudyId(studyId.getIdentifier());
+        substudy.setStudyId(studyId);
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
         substudy.setVersion(null);
@@ -78,11 +77,11 @@ public class SubstudyService {
         return substudyDao.createSubstudy(substudy);
     }
 
-    public VersionHolder updateSubstudy(StudyIdentifier studyId, Substudy substudy) {
+    public VersionHolder updateSubstudy(String studyId, Substudy substudy) {
         checkNotNull(studyId);
         checkNotNull(substudy);
 
-        substudy.setStudyId(studyId.getIdentifier());
+        substudy.setStudyId(studyId);
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
         Substudy existing = getSubstudy(studyId, substudy.getId(), true);
@@ -95,7 +94,7 @@ public class SubstudyService {
         return substudyDao.updateSubstudy(substudy);
     }
     
-    public void deleteSubstudy(StudyIdentifier studyId, String id) {
+    public void deleteSubstudy(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         
@@ -105,7 +104,7 @@ public class SubstudyService {
         substudyDao.updateSubstudy(existing);
     }
     
-    public void deleteSubstudyPermanently(StudyIdentifier studyId, String id) {
+    public void deleteSubstudyPermanently(String studyId, String id) {
         checkNotNull(studyId);
         checkNotNull(id);
         

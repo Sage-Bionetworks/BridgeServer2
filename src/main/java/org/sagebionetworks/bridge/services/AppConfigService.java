@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -100,13 +99,13 @@ public class AppConfigService {
         return BridgeUtils.generateGuid();
     }
     
-    public List<AppConfig> getAppConfigs(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<AppConfig> getAppConfigs(String studyId, boolean includeDeleted) {
         checkNotNull(studyId);
         
         return appConfigDao.getAppConfigs(studyId, includeDeleted);
     }
     
-    public AppConfig getAppConfig(StudyIdentifier studyId, String guid) {
+    public AppConfig getAppConfig(String studyId, String guid) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(guid));
         
@@ -150,7 +149,7 @@ public class AppConfigService {
         return matched;
     }
 
-    protected AppConfigElement retrieveConfigElement(StudyIdentifier studyId, ConfigReference configRef, String appConfigGuid) {
+    protected AppConfigElement retrieveConfigElement(String studyId, ConfigReference configRef, String appConfigGuid) {
         try {
             return appConfigElementService.getElementRevision(studyId, configRef.getId(), configRef.getRevision());
         } catch(EntityNotFoundException e) {
@@ -170,7 +169,7 @@ public class AppConfigService {
      * specific version or createdOn timestamp of a version, and we validate this when creating/
      * updating the app config. We're only concerned with adding the survey identifier here.
      */
-    SurveyReference resolveSurvey(StudyIdentifier studyId, SurveyReference surveyRef) {
+    SurveyReference resolveSurvey(String studyId, SurveyReference surveyRef) {
         if (surveyRef.getIdentifier() != null) {
             return surveyRef;
         }
@@ -182,15 +181,15 @@ public class AppConfigService {
         return surveyRef;
     }
     
-    public AppConfig createAppConfig(StudyIdentifier studyId, AppConfig appConfig) {
+    public AppConfig createAppConfig(String studyId, AppConfig appConfig) {
         checkNotNull(studyId);
         checkNotNull(appConfig);
         
-        appConfig.setStudyId(studyId.getIdentifier());
+        appConfig.setStudyId(studyId);
         
         Study study = studyService.getStudy(studyId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
                 fileService, study.getDataGroups(), substudyIds, true);
@@ -216,15 +215,15 @@ public class AppConfigService {
         return newAppConfig;
     }
     
-    public AppConfig updateAppConfig(StudyIdentifier studyId, AppConfig appConfig) {
+    public AppConfig updateAppConfig(String studyId, AppConfig appConfig) {
         checkNotNull(studyId);
         checkNotNull(appConfig);
         
-        appConfig.setStudyId(studyId.getIdentifier());
+        appConfig.setStudyId(studyId);
         
         Study study = studyService.getStudy(studyId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
                 fileService, study.getDataGroups(), substudyIds, false);
@@ -238,14 +237,14 @@ public class AppConfigService {
         return appConfigDao.updateAppConfig(appConfig);
     }
     
-    public void deleteAppConfig(StudyIdentifier studyId, String guid) {
+    public void deleteAppConfig(String studyId, String guid) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(guid));
         
         appConfigDao.deleteAppConfig(studyId, guid);
     }
     
-    public void deleteAppConfigPermanently(StudyIdentifier studyId, String guid) {
+    public void deleteAppConfigPermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkArgument(isNotBlank(guid));
         

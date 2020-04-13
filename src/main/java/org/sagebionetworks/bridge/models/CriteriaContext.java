@@ -7,14 +7,13 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public final class CriteriaContext {
     
-    private final StudyIdentifier studyId;
+    private final String studyId;
     private final String healthCode;
     private final String userId;
     private final ClientInfo clientInfo;
@@ -23,7 +22,7 @@ public final class CriteriaContext {
     // This set has ordered keys (most to least preferential)
     private final List<String> languages;
     
-    private CriteriaContext(StudyIdentifier studyId, String healthCode, String userId, ClientInfo clientInfo,
+    private CriteriaContext(String studyId, String healthCode, String userId, ClientInfo clientInfo,
             Set<String> userDataGroups, Set<String> userSubstudyIds, List<String> languages) {
         this.studyId = studyId;
         this.healthCode = healthCode;
@@ -35,7 +34,7 @@ public final class CriteriaContext {
     }
     
     public AccountId getAccountId() {
-        return AccountId.forId(studyId.getIdentifier(), userId);
+        return AccountId.forId(studyId, userId);
     }
 
     /**
@@ -53,7 +52,7 @@ public final class CriteriaContext {
         return userSubstudyIds;
     }
     
-    public StudyIdentifier getStudyIdentifier() {
+    public String getStudyIdentifier() {
         return studyId;
     }
     
@@ -105,7 +104,7 @@ public final class CriteriaContext {
     }
 
     public static class Builder {
-        private StudyIdentifier studyId;
+        private String studyId;
         private String healthCode;
         private String userId;
         private ClientInfo clientInfo;
@@ -113,7 +112,7 @@ public final class CriteriaContext {
         private Set<String> userSubstudyIds;
         private List<String> languages;
 
-        public Builder withStudyIdentifier(StudyIdentifier studyId) {
+        public Builder withStudyIdentifier(String studyId) {
             this.studyId = studyId;
             return this;
         }

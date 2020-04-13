@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.services.ExportService;
 
 @CrossOrigin
@@ -32,8 +31,7 @@ public class ExportController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage startOnDemandExport() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
-        exportService.startOnDemandExport(studyId);
+        exportService.startOnDemandExport(session.getStudyIdentifier());
         return new StatusMessage("Request submitted.");
     }
 }

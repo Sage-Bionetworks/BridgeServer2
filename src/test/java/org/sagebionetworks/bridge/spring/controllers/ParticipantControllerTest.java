@@ -18,7 +18,6 @@ import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -113,7 +112,6 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -151,7 +149,7 @@ public class ParticipantControllerTest extends Mockito {
 
     private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", EMAIL,
             SYNAPSE_USER_ID, PHONE, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
-            ENABLED, TEST_STUDY, EMPTY_SET);
+            ENABLED, TEST_STUDY_IDENTIFIER, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
             .withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL)
@@ -251,11 +249,10 @@ public class ParticipantControllerTest extends Mockito {
 
         session = new UserSession(participant);
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
         session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(study);
         when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(study);
 
         List<AccountSummary> summaries = ImmutableList.of(SUMMARY, SUMMARY, SUMMARY);
@@ -542,7 +539,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantRequestInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfo("userId");
@@ -563,7 +560,7 @@ public class ParticipantControllerTest extends Mockito {
     public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+                .withStudyIdentifier("some-other-study").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
@@ -580,7 +577,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY).build();
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
@@ -605,7 +602,7 @@ public class ParticipantControllerTest extends Mockito {
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withStudyIdentifier(new StudyIdentifierImpl("some-other-study")).build();
+                .withStudyIdentifier("some-other-study").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
@@ -751,7 +748,7 @@ public class ParticipantControllerTest extends Mockito {
 
         verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), TEST_STUDY);
+        assertEquals(context.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
         assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
