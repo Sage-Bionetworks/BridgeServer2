@@ -11,10 +11,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.S3_WORKER;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.SUCCEEDED;
 import static org.sagebionetworks.bridge.models.upload.UploadStatus.VALIDATION_IN_PROGRESS;
@@ -290,8 +290,8 @@ public class UploadServiceMockTest {
         
         ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<>(results, MOCK_OFFSET_KEY)
             .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(API_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(API_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         
         // Mock the record returned from the validation status record
         doReturn("schema-id").when(mockRecord).getSchemaId();
@@ -318,10 +318,10 @@ public class UploadServiceMockTest {
         setupUploadMocks();
         
         // Now verify the study uploads works
-        ForwardCursorPagedResourceList<UploadView> returned = svc.getStudyUploads(API_APP_ID,
+        ForwardCursorPagedResourceList<UploadView> returned = svc.getStudyUploads(TEST_APP_ID,
                 START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         
-        verify(mockUploadDao).getStudyUploads(API_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         validateUploadMocks(returned, MOCK_OFFSET_KEY);
     }
 
@@ -329,9 +329,9 @@ public class UploadServiceMockTest {
     public void canGetStudyUploadsWithoutPageSize() throws Exception {
         setupUploadMocks();
 
-        svc.getStudyUploads(API_APP_ID, START_TIME, END_TIME, null, null);
+        svc.getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, null, null);
 
-        verify(mockUploadDao).getStudyUploads(API_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
     }
 
     private void validateUploadMocks(ForwardCursorPagedResourceList<UploadView> returned, String expectedOffsetKey) {
@@ -430,12 +430,12 @@ public class UploadServiceMockTest {
         upload.setUploadId(NEW_UPLOAD_ID);
         
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
-        when(mockUploadDao.createUpload(uploadRequest, API_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
+        when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
         when(mockUploadCredentailsService.getSessionCredentials())
                 .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
-        UploadSession session = svc.createUpload(API_APP_ID, PARTICIPANT, uploadRequest);
+        UploadSession session = svc.createUpload(TEST_APP_ID, PARTICIPANT, uploadRequest);
         assertEquals(session.getId(), NEW_UPLOAD_ID);
         assertEquals(session.getUrl(), "https://ws.com/some-link");
         assertEquals(session.getExpires(), TIMESTAMP.getMillis() + UploadService.EXPIRATION);
@@ -479,12 +479,12 @@ public class UploadServiceMockTest {
         
         when(mockUploadDedupeDao.getDuplicate(eq(HEALTH_CODE), eq("md5-value"), any())).thenReturn(ORIGINAL_UPLOAD_ID);
         when(mockUploadDao.getUpload(ORIGINAL_UPLOAD_ID)).thenReturn(upload);
-        when(mockUploadDao.createUpload(uploadRequest, API_APP_ID, HEALTH_CODE, ORIGINAL_UPLOAD_ID)).thenReturn(upload);
+        when(mockUploadDao.createUpload(uploadRequest, TEST_APP_ID, HEALTH_CODE, ORIGINAL_UPLOAD_ID)).thenReturn(upload);
         when(mockUploadCredentailsService.getSessionCredentials())
                 .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
-        UploadSession session = svc.createUpload(API_APP_ID, PARTICIPANT, uploadRequest);
+        UploadSession session = svc.createUpload(TEST_APP_ID, PARTICIPANT, uploadRequest);
         assertEquals(session.getId(), ORIGINAL_UPLOAD_ID);
         assertEquals(session.getUrl(), "https://ws.com/some-link");
         assertEquals(session.getExpires(), TIMESTAMP.getMillis() + UploadService.EXPIRATION);
@@ -578,10 +578,10 @@ public class UploadServiceMockTest {
         metadata.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, ORIGINAL_UPLOAD_ID)).thenReturn(metadata);
         
-        svc.uploadComplete(API_APP_ID, S3_WORKER, upload, true);
+        svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, true);
         
         verify(mockUploadDao).uploadComplete(S3_WORKER, upload);
-        verify(mockUploadValidationService).validateUpload(API_APP_ID, upload);
+        verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
     }
     
     @Test
@@ -592,7 +592,7 @@ public class UploadServiceMockTest {
         upload.setUploadId(ORIGINAL_UPLOAD_ID);
         upload.setRecordId(RECORD_ID);
 
-        svc.uploadComplete(API_APP_ID, S3_WORKER, upload, false);
+        svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, false);
         
         verify(mockS3Client, never()).getObjectMetadata(any(), any());
         verify(mockUploadDao, never()).uploadComplete(any(), any());
@@ -608,7 +608,7 @@ public class UploadServiceMockTest {
         AmazonS3Exception ex = new AmazonS3Exception("Error message");
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, ORIGINAL_UPLOAD_ID)).thenThrow(ex);
         
-        svc.uploadComplete(API_APP_ID, S3_WORKER, upload, true);
+        svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, true);
     }
     
     @Test(expectedExceptions = NotFoundException.class)
@@ -621,7 +621,7 @@ public class UploadServiceMockTest {
         ex.setStatusCode(404);
         when(mockS3Client.getObjectMetadata(UPLOAD_BUCKET_NAME, ORIGINAL_UPLOAD_ID)).thenThrow(ex);
         
-        svc.uploadComplete(API_APP_ID, S3_WORKER, upload, true);
+        svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, true);
     }
     
     @Test
@@ -637,10 +637,10 @@ public class UploadServiceMockTest {
         
         doThrow(new ConcurrentModificationException("error")).when(mockUploadDao).uploadComplete(S3_WORKER, upload);
         
-        svc.uploadComplete(API_APP_ID, S3_WORKER, upload, true);
+        svc.uploadComplete(TEST_APP_ID, S3_WORKER, upload, true);
         
         verify(mockUploadDao).uploadComplete(S3_WORKER, upload);
-        verify(mockUploadValidationService, never()).validateUpload(API_APP_ID, upload);
+        verify(mockUploadValidationService, never()).validateUpload(TEST_APP_ID, upload);
     }
     
     UploadRequest constructUploadRequest() throws Exception {

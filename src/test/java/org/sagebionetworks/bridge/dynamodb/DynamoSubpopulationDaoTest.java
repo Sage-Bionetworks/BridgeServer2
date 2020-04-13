@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.dynamodb.DynamoSubpopulationDao.CANNOT_DELETE_DEFAULT_SUBPOP_MSG;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
@@ -78,7 +78,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         subpop.setDefaultGroup(true);
         subpop.setVersion(1L);
         subpop.setPublishedConsentCreatedOn(100L);
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         
         dao.createSubpopulation(subpop);
         
@@ -99,12 +99,12 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     public void createDefaultSubpopulation() {
         when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
         
-        Subpopulation result = dao.createDefaultSubpopulation(API_APP_ID);
+        Subpopulation result = dao.createDefaultSubpopulation(TEST_APP_ID);
         
         verify(mockMapper).save(subpopCaptor.capture());
         Subpopulation subpop = subpopCaptor.getValue();
-        assertEquals(subpop.getStudyIdentifier(), API_APP_ID);
-        assertEquals(subpop.getGuidString(), API_APP_ID);
+        assertEquals(subpop.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(subpop.getGuidString(), TEST_APP_ID);
         assertEquals(subpop.getName(), "Default Consent Group");
         assertTrue(subpop.isDefaultGroup());
         assertTrue(subpop.isRequired());
@@ -112,7 +112,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         
         verify(mockCriteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
         Criteria criteria = criteriaCaptor.getValue();
-        assertEquals(criteria.getKey(), "subpopulation:api");
+        assertEquals(criteria.getKey(), "subpopulation:" + TEST_APP_ID);
         assertEquals(criteria.getMinAppVersion(ANDROID), new Integer(0));
         assertEquals(criteria.getMinAppVersion(IOS), new Integer(0));
         assertSame(criteria, subpop.getCriteria());
@@ -131,11 +131,11 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(API_APP_ID, false, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
         assertEquals(result.size(), 2);
         
         verify(mockMapper).query(eq(DynamoSubpopulation.class), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyIdentifier(), API_APP_ID);        
+        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);        
     }
 
     @Test
@@ -151,7 +151,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(API_APP_ID, false, false);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, false);
         assertEquals(result.size(), 1);
         assertFalse(result.get(0).isDeleted());
     }
@@ -164,7 +164,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(API_APP_ID, true, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
         assertEquals(result.size(), 1);
         assertFalse(result.get(0).isDefaultGroup());
     }
@@ -178,7 +178,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
         // but don't create a default
-        List<Subpopulation> result = dao.getSubpopulations(API_APP_ID, false, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
         assertTrue(result.isEmpty());
     }
     
@@ -189,7 +189,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(API_APP_ID, true, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
         assertEquals(result.size(), 1);
         assertTrue(result.get(0).isDefaultGroup());
     }
@@ -199,13 +199,13 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         Subpopulation saved = Subpopulation.create();
         when(mockMapper.load(any())).thenReturn(saved);
         
-        Subpopulation result = dao.getSubpopulation(API_APP_ID, SUBPOP_GUID);
+        Subpopulation result = dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
         assertSame(result, saved);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSubpopulationNotFound() {
-        dao.getSubpopulation(API_APP_ID, SUBPOP_GUID);
+        dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
 
     @Test
@@ -215,7 +215,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(saved);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         subpop.setVersion(2L);
         subpop.setDefaultGroup(false);
@@ -232,7 +232,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class)
     public void updateSubpopulationNoVersion() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         
         dao.updateSubpopulation(subpop);
@@ -241,7 +241,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class)
     public void updateSubpopulationNoGuid() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setVersion(2L);
         
         dao.updateSubpopulation(subpop);
@@ -254,7 +254,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(saved);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         subpop.setVersion(2L);
         // not deleted
@@ -273,7 +273,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(saved);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         subpop.setVersion(2L);
         subpop.setDeleted(true);
@@ -292,7 +292,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(saved);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         subpop.setVersion(2L);
         subpop.setDeleted(true);
@@ -307,7 +307,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(saved);
         
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier(API_APP_ID);
+        subpop.setStudyIdentifier(TEST_APP_ID);
         subpop.setGuid(SUBPOP_GUID);
         subpop.setVersion(2L);
         subpop.setDeleted(true);
@@ -320,7 +320,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         Subpopulation saved = Subpopulation.create();
         when(mockMapper.load(any())).thenReturn(saved);
         
-        dao.deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
         
         verify(mockMapper).save(subpopCaptor.capture());
         assertTrue(subpopCaptor.getValue().isDeleted());
@@ -328,7 +328,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubpopulationNotFound() {
-        dao.deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -337,7 +337,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         saved.setDeleted(true);
         when(mockMapper.load(any())).thenReturn(saved);
         
-        dao.deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -346,7 +346,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         saved.setDefaultGroup(true);
         when(mockMapper.load(any())).thenReturn(saved);
         
-        dao.deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
     
     @Test
@@ -355,7 +355,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         saved.setGuid(SUBPOP_GUID);
         when(mockMapper.load(any())).thenReturn(saved);
         
-        dao.deleteSubpopulationPermanently(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
         
         verify(mockCriteriaDao).deleteCriteria("subpopulation:oneGuid");
         verify(mockMapper).delete(any());
@@ -363,6 +363,6 @@ public class DynamoSubpopulationDaoTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubpopulationPermanentlyNotFound() {
-        dao.deleteSubpopulationPermanently(API_APP_ID, SUBPOP_GUID);
+        dao.deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
     }
 }

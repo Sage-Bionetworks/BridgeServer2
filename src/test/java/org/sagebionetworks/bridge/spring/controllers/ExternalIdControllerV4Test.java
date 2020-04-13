@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -86,10 +86,10 @@ public class ExternalIdControllerV4Test extends Mockito {
         list = new ForwardCursorPagedResourceList<>(items, "nextPageOffsetKey");
 
         study = Study.create();
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
 
         session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -130,7 +130,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void createExternalIdentifier() throws Exception {
-        ExternalIdentifier extId = ExternalIdentifier.create(API_APP_ID, "identifier");
+        ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, "identifier");
         extId.setSubstudyId("substudyId");
         mockRequestBody(mockRequest, extId);
 
@@ -140,7 +140,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         verify(mockService).createExternalId(externalIdCaptor.capture(), eq(false));
 
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
-        assertEquals(retrievedId.getStudyId(), API_APP_ID);
+        assertEquals(retrievedId.getStudyId(), TEST_APP_ID);
         assertEquals(retrievedId.getSubstudyId(), "substudyId");
         assertEquals(retrievedId.getIdentifier(), "identifier");
     }
@@ -148,14 +148,14 @@ public class ExternalIdControllerV4Test extends Mockito {
     @Test
     public void deleteExternalIdentifier() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         StatusMessage result = controller.deleteExternalIdentifier("externalId");
         assertEquals(result.getMessage(), "External identifier deleted.");
 
         verify(mockService).deleteExternalIdPermanently(eq(study), externalIdCaptor.capture());
         assertEquals(externalIdCaptor.getValue().getIdentifier(), "externalId");
-        assertEquals(externalIdCaptor.getValue().getStudyId(), API_APP_ID);
+        assertEquals(externalIdCaptor.getValue().getStudyId(), TEST_APP_ID);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -165,7 +165,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void generatePassword() throws Exception {
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
         GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");

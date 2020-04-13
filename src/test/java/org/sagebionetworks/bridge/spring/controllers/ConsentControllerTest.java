@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.WITHDRAWAL;
@@ -112,13 +112,13 @@ public class ConsentControllerTest extends Mockito {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         
         study = Study.create();
-        study.setIdentifier(API_APP_ID);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        study.setIdentifier(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setSessionToken(ORIGINAL_SESSION_TOKEN);
         
         // The session token is just a marker to verify that we have retrieved an updated session.
@@ -163,7 +163,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(retrievedSession.getSessionToken(), ORIGINAL_SESSION_TOKEN);
         
-        verify(mockAccountService).editAccount(eq(API_APP_ID), eq(HEALTH_CODE), accountConsumerCaptor.capture());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), accountConsumerCaptor.capture());
         verify(mockSessionUpdateService).updateSharingScope(session, SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         // This works as a verification because the lambda carries a closure that includes the correct sharing 
@@ -182,7 +182,7 @@ public class ConsentControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void getConsentSignatureV1() throws Exception {
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create(API_APP_ID);
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         when(mockConsentService.getConsentSignature(study, defaultGuid, USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignature();
@@ -303,7 +303,7 @@ public class ConsentControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     @Test
     public void withdrawConsent() throws Exception {
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create(API_APP_ID);
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         mockRequestBody(mockRequest, WITHDRAWAL);
         
         // You do not need to be fully consented for this call to succeed. Nothing should prevent
@@ -398,7 +398,7 @@ public class ConsentControllerTest extends Mockito {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(mockAccountService).editAccount(eq(API_APP_ID), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), any());
     }
     
     @Test

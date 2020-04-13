@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -291,7 +291,7 @@ public class UploadSchemaValidatorTest {
         schema.setName("valid schema");
         schema.setRevision(1);
         schema.setSchemaId("valid-schema");
-        schema.setStudyId(API_APP_ID);
+        schema.setStudyId(TEST_APP_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
         return schema;
     }

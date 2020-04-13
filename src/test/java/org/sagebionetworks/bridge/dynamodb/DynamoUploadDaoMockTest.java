@@ -6,7 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.upload.UploadCompletionClient.APP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -133,7 +133,7 @@ public class DynamoUploadDaoMockTest {
     public void createUpload() {
         // execute
         UploadRequest req = createUploadRequest();
-        Upload upload = dao.createUpload(req, API_APP_ID, "fakeHealthCode", null);
+        Upload upload = dao.createUpload(req, TEST_APP_ID, "fakeHealthCode", null);
 
         // Validate that our mock DDB mapper was called.
         verify(mockMapper).save(uploadCaptor.capture());
@@ -143,7 +143,7 @@ public class DynamoUploadDaoMockTest {
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
         assertEquals(capturedUpload.getUploadId(), upload.getUploadId());
         assertNull(capturedUpload.getDuplicateUploadId());
-        assertEquals(capturedUpload.getStudyId(), API_APP_ID);
+        assertEquals(capturedUpload.getStudyId(), TEST_APP_ID);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.REQUESTED);
         assertEquals(capturedUpload.getContentLength(), req.getContentLength());
@@ -156,7 +156,7 @@ public class DynamoUploadDaoMockTest {
     public void createUploadDupe() {
         // execute
         UploadRequest req = createUploadRequest();
-        dao.createUpload(req, API_APP_ID, "fakeHealthCode", "original-upload-id");
+        dao.createUpload(req, TEST_APP_ID, "fakeHealthCode", "original-upload-id");
 
         // Validate that our mock DDB mapper was called.
         verify(mockMapper).save(uploadCaptor.capture());
@@ -166,7 +166,7 @@ public class DynamoUploadDaoMockTest {
         // Validate key values (study ID, requestedOn) and values from the dupe code path.
         // Everything else is tested in the previous test
         assertEquals(capturedUpload.getDuplicateUploadId(), "original-upload-id");
-        assertEquals(capturedUpload.getStudyId(), API_APP_ID);
+        assertEquals(capturedUpload.getStudyId(), TEST_APP_ID);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.DUPLICATE);
     }

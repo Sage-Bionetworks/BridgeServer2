@@ -8,7 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.services.SharedModuleMetadataServiceTest.makeValidMetadata;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -75,25 +75,25 @@ public class UploadSchemaServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createV4NullSchemaId() {
         svcInputSchema.setSchemaId(null);
-        svc.createSchemaRevisionV4(API_APP_ID, svcInputSchema);
+        svc.createSchemaRevisionV4(TEST_APP_ID, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createV4EmptySchemaId() {
         svcInputSchema.setSchemaId("");
-        svc.createSchemaRevisionV4(API_APP_ID, svcInputSchema);
+        svc.createSchemaRevisionV4(TEST_APP_ID, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createV4BlankSchemaId() {
         svcInputSchema.setSchemaId("   ");
-        svc.createSchemaRevisionV4(API_APP_ID, svcInputSchema);
+        svc.createSchemaRevisionV4(TEST_APP_ID, svcInputSchema);
     }
 
     @Test
     public void createV4InvalidSchema() {
         try {
-            svc.createSchemaRevisionV4(API_APP_ID, makeInvalidSchema());
+            svc.createSchemaRevisionV4(TEST_APP_ID, makeInvalidSchema());
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertSchemaValidationException(ex);
@@ -127,15 +127,15 @@ public class UploadSchemaServiceTest {
             // get should return a schema
             UploadSchema oldSchema = makeSimpleSchema();
             oldSchema.setRevision(oldRev);
-            when(dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID)).thenReturn(oldSchema);
+            when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID)).thenReturn(oldSchema);
         }
 
         // execute
-        UploadSchema svcOutputSchema = svc.createSchemaRevisionV4(API_APP_ID, svcInputSchema);
+        UploadSchema svcOutputSchema = svc.createSchemaRevisionV4(TEST_APP_ID, svcInputSchema);
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
+        assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
         assertEquals(daoInputSchema.getRevision(), expectedRev);
 
         // Validate DAO input is also svcOutput.
@@ -145,25 +145,25 @@ public class UploadSchemaServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createOrUpdateNullSchemaId() {
         svcInputSchema.setSchemaId(null);
-        svc.createOrUpdateUploadSchema(API_APP_ID, svcInputSchema);
+        svc.createOrUpdateUploadSchema(TEST_APP_ID, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createOrUpdateEmptySchemaId() {
         svcInputSchema.setSchemaId("");
-        svc.createOrUpdateUploadSchema(API_APP_ID, svcInputSchema);
+        svc.createOrUpdateUploadSchema(TEST_APP_ID, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createOrUpdateBlankSchemaId() {
         svcInputSchema.setSchemaId("   ");
-        svc.createOrUpdateUploadSchema(API_APP_ID, svcInputSchema);
+        svc.createOrUpdateUploadSchema(TEST_APP_ID, svcInputSchema);
     }
 
     @Test
     public void createOrUpdateInvalidSchema() {
         try {
-            svc.createOrUpdateUploadSchema(API_APP_ID, makeInvalidSchema());
+            svc.createOrUpdateUploadSchema(TEST_APP_ID, makeInvalidSchema());
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertSchemaValidationException(ex);
@@ -203,23 +203,23 @@ public class UploadSchemaServiceTest {
             // get should return a schema
             UploadSchema oldSchema = makeSimpleSchema();
             oldSchema.setRevision(oldRev);
-            when(dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID)).thenReturn(oldSchema);
+            when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID)).thenReturn(oldSchema);
         }
 
         // execute
         if (expectedThrow) {
             try {
-                svc.createOrUpdateUploadSchema(API_APP_ID, svcInputSchema);
+                svc.createOrUpdateUploadSchema(TEST_APP_ID, svcInputSchema);
                 fail("expected exception");
             } catch (ConcurrentModificationException ex) {
                 // expected exception
             }
         } else {
-            UploadSchema svcOutputSchema = svc.createOrUpdateUploadSchema(API_APP_ID, svcInputSchema);
+            UploadSchema svcOutputSchema = svc.createOrUpdateUploadSchema(TEST_APP_ID, svcInputSchema);
 
             // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
             UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-            assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
+            assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
             assertEquals(daoInputSchema.getRevision(), expectedRev.intValue());
 
             // Validate DAO input is also svcOutput.
@@ -229,42 +229,42 @@ public class UploadSchemaServiceTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdNullId() {
-        svc.deleteUploadSchemaById(API_APP_ID, null);
+        svc.deleteUploadSchemaById(TEST_APP_ID, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdPermanentlyNullId() {
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, null);
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, null);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdEmptyId() {
-        svc.deleteUploadSchemaById(API_APP_ID, "");
+        svc.deleteUploadSchemaById(TEST_APP_ID, "");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdPermanentlyEmptyId() {
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, "");
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, "");
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdBlankId() {
-        svc.deleteUploadSchemaById(API_APP_ID, "   ");
+        svc.deleteUploadSchemaById(TEST_APP_ID, "   ");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdPermanentlyBlankId() {
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, "   ");
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, "   ");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteByIdNotFound() {
-        svc.deleteUploadSchemaById(API_APP_ID, SCHEMA_ID);
+        svc.deleteUploadSchemaById(TEST_APP_ID, SCHEMA_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteByIdPermanentlyNotFound() {
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, SCHEMA_ID);
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, SCHEMA_ID);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -272,8 +272,8 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
-        svc.deleteUploadSchemaById(API_APP_ID, SCHEMA_ID);
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
+        svc.deleteUploadSchemaById(TEST_APP_ID, SCHEMA_ID);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -281,18 +281,18 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, SCHEMA_ID);
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, SCHEMA_ID);
     }
     
     @Test
     public void deleteByIdSuccess() {
         // mock dao
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, true)).thenReturn(schemaListToDelete);
 
         // execute and verify delete call
-        svc.deleteUploadSchemaById(API_APP_ID, SCHEMA_ID);
+        svc.deleteUploadSchemaById(TEST_APP_ID, SCHEMA_ID);
         verify(dao).deleteUploadSchemas(schemaListToDelete);
 
         // verify query args
@@ -309,11 +309,11 @@ public class UploadSchemaServiceTest {
     public void deleteByIdPermanentlySuccess() {
         // mock dao
         List<UploadSchema> schemaListToDelete = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, true))
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, true))
                 .thenReturn(schemaListToDelete);
 
         // execute and verify delete call
-        svc.deleteUploadSchemaByIdPermanently(API_APP_ID, SCHEMA_ID);
+        svc.deleteUploadSchemaByIdPermanently(TEST_APP_ID, SCHEMA_ID);
         verify(dao).deleteUploadSchemasPermanently(schemaListToDelete);
 
         // verify query args
@@ -328,55 +328,55 @@ public class UploadSchemaServiceTest {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevNullId() {
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, null, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, null, SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyNullId() {
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, null, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, null, SCHEMA_REV);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyEmptyId() {
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, "", SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, "", SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevBlankId() {
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, "   ", SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, "   ", SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyBlankId() {
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, "   ", SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, "   ", SCHEMA_REV);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevNegativeRev() {
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, -1);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, -1);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyNegativeRev() {
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, -1);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, -1);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevZeroRev() {
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, 0);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, 0);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteByIdAndRevPermanentlyZeroRev() {
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, 0);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, 0);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteByIdAndRevNotFound() {
         // mock dao to return null
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -384,17 +384,17 @@ public class UploadSchemaServiceTest {
         // mock dao to return logically deleted schema
         UploadSchema schema = makeSimpleSchema();
         schema.setDeleted(true);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
 
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteByIdAndRevPermanentlyNotFound() {
         // mock dao to return null
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
     
     @Test
@@ -402,9 +402,9 @@ public class UploadSchemaServiceTest {
         // mock dao to return logically deleted schema, you can permanently delete this
         UploadSchema schema = makeSimpleSchema();
         schema.setDeleted(true);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
 
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
         verify(dao).deleteUploadSchemasPermanently(ImmutableList.of(schema));
     }    
     
@@ -413,9 +413,9 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -423,20 +423,20 @@ public class UploadSchemaServiceTest {
         when(mockSharedModuleMetadataService.queryAllMetadata(anyBoolean(), anyBoolean(), anyString(), any(),
                 any(), anyBoolean())).thenReturn(ImmutableList.of(makeValidMetadata()));
         UploadSchema schemaToDelete = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
     
     @Test
     public void deleteByIdAndRevSuccess() {
         // mock dao
         UploadSchema schemaToDelete = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
 
         // execute and verify delete call
-        svc.deleteUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
         verify(dao).deleteUploadSchemas(ImmutableList.of(schemaToDelete));
 
         // verify query args
@@ -453,11 +453,11 @@ public class UploadSchemaServiceTest {
     public void deleteByIdAndRevPermanentlySuccess() {
         // mock dao
         UploadSchema schemaToDelete = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schemaToDelete);
 
         // execute and verify delete call
-        svc.deleteUploadSchemaByIdAndRevisionPermanently(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.deleteUploadSchemaByIdAndRevisionPermanently(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
         verify(dao).deleteUploadSchemasPermanently(ImmutableList.of(schemaToDelete));
 
         // verify query args
@@ -474,10 +474,10 @@ public class UploadSchemaServiceTest {
     public void allSchemasAllRevisions() {
         // mock dao
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
-        when(dao.getAllUploadSchemasAllRevisions(API_APP_ID, false)).thenReturn(daoOutputSchemaList);
+        when(dao.getAllUploadSchemasAllRevisions(TEST_APP_ID, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getAllUploadSchemasAllRevisions(API_APP_ID, false);
+        List<UploadSchema> svcOutputSchemaList = svc.getAllUploadSchemasAllRevisions(TEST_APP_ID, false);
         assertSame(svcOutputSchemaList, daoOutputSchemaList);
     }
 
@@ -501,10 +501,10 @@ public class UploadSchemaServiceTest {
         schemaBRev4.setRevision(4);
 
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(schemaARev1, schemaARev2, schemaBRev3, schemaBRev4);
-        when(dao.getAllUploadSchemasAllRevisions(API_APP_ID, false)).thenReturn(daoOutputSchemaList);
+        when(dao.getAllUploadSchemasAllRevisions(TEST_APP_ID, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemasForStudy(API_APP_ID, false);
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemasForStudy(TEST_APP_ID, false);
         assertEquals(svcOutputSchemaList.size(), 2);
 
         // List might be in any order, so convert it to a map.
@@ -517,69 +517,69 @@ public class UploadSchemaServiceTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getUploadSchemaNullId() {
-        svc.getUploadSchema(API_APP_ID, null);
+        svc.getUploadSchema(TEST_APP_ID, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getUploadSchemaEmptyId() {
-        svc.getUploadSchema(API_APP_ID, "");
+        svc.getUploadSchema(TEST_APP_ID, "");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getUploadSchemaBlankId() {
-        svc.getUploadSchema(API_APP_ID, "   ");
+        svc.getUploadSchema(TEST_APP_ID, "   ");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getUploadSchemaNotFound() {
         // mock dao to return null
-        when(dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID)).thenReturn(null);
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID)).thenReturn(null);
 
-        svc.getUploadSchema(API_APP_ID, SCHEMA_ID);
+        svc.getUploadSchema(TEST_APP_ID, SCHEMA_ID);
     }
 
     @Test
     public void getUploadSchemaSuccess() {
         // mock dao
         UploadSchema daoOutputSchema = makeSimpleSchema();
-        when(dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID)).thenReturn(daoOutputSchema);
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID)).thenReturn(daoOutputSchema);
 
         // execute and validate
-        UploadSchema svcOutputSchema = svc.getUploadSchema(API_APP_ID, SCHEMA_ID);
+        UploadSchema svcOutputSchema = svc.getUploadSchema(TEST_APP_ID, SCHEMA_ID);
         assertSame(svcOutputSchema, daoOutputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getSchemaAllRevisionsNullId() {
-        svc.getUploadSchemaAllRevisions(API_APP_ID, null, false);
+        svc.getUploadSchemaAllRevisions(TEST_APP_ID, null, false);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getSchemaAllRevisionsEmptyId() {
-        svc.getUploadSchemaAllRevisions(API_APP_ID, "", false);
+        svc.getUploadSchemaAllRevisions(TEST_APP_ID, "", false);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getSchemaAllRevisionsBlankId() {
-        svc.getUploadSchemaAllRevisions(API_APP_ID, "   ", false);
+        svc.getUploadSchemaAllRevisions(TEST_APP_ID, "   ", false);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSchemaAllRevisionsNotFound() {
         // mock dao to return empty list
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, false)).thenReturn(ImmutableList.of());
 
-        svc.getUploadSchemaAllRevisions(API_APP_ID, SCHEMA_ID, false);
+        svc.getUploadSchemaAllRevisions(TEST_APP_ID, SCHEMA_ID, false);
     }
 
     @Test
     public void getSchemaAllRevisionsSuccessExcludeDeleted() {
         // mock dao
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, false)).thenReturn(daoOutputSchemaList);
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, false)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(API_APP_ID, SCHEMA_ID, false);
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(TEST_APP_ID, SCHEMA_ID, false);
         assertSame(svcOutputSchemaList, daoOutputSchemaList);
     }
 
@@ -587,65 +587,65 @@ public class UploadSchemaServiceTest {
     public void getSchemaAllRevisionsSuccessIncludeDeleted() {
         // mock dao
         List<UploadSchema> daoOutputSchemaList = ImmutableList.of(makeSimpleSchema());
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, true)).thenReturn(daoOutputSchemaList);
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, true)).thenReturn(daoOutputSchemaList);
 
         // execute and validate
-        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(API_APP_ID, SCHEMA_ID, true);
+        List<UploadSchema> svcOutputSchemaList = svc.getUploadSchemaAllRevisions(TEST_APP_ID, SCHEMA_ID, true);
         assertSame(svcOutputSchemaList, daoOutputSchemaList);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getByIdAndRevNullId() {
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, null, SCHEMA_REV);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, null, SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getByIdAndRevEmptyId() {
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, "", SCHEMA_REV);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, "", SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getByIdAndRevBlankId() {
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, "   ", SCHEMA_REV);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, "   ", SCHEMA_REV);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getByIdAndRevNegativeRev() {
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, SCHEMA_ID, -1);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, SCHEMA_ID, -1);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getByIdAndRevZeroRev() {
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, SCHEMA_ID, 0);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, SCHEMA_ID, 0);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getByIdAndRevNotFound() {
         // mock dao to return null
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        svc.getUploadSchemaByIdAndRev(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        svc.getUploadSchemaByIdAndRev(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
     }
 
     @Test
     public void getByIdAndRevSuccess() {
         // mock dao
         UploadSchema daoOutputSchema = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 daoOutputSchema);
 
         // execute and validate
-        UploadSchema svcOutputSchema = svc.getUploadSchemaByIdAndRev(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        UploadSchema svcOutputSchema = svc.getUploadSchemaByIdAndRev(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
         assertSame(svcOutputSchema, daoOutputSchema);
     }
 
     @Test
     public void getByIdAndRevNoThrowNull() {
         // mock dao to return null
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
         // execute and validate
-        UploadSchema retVal = svc.getUploadSchemaByIdAndRevNoThrow(API_APP_ID, SCHEMA_ID, SCHEMA_REV);
+        UploadSchema retVal = svc.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV);
         assertNull(retVal);
     }
 
@@ -653,28 +653,28 @@ public class UploadSchemaServiceTest {
     public void getByIdAndRevNoThrowSuccess() {
         // mock dao
         UploadSchema daoOutputSchema = makeSimpleSchema();
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 daoOutputSchema);
 
         // execute and validate
-        UploadSchema svcOutputSchema = svc.getUploadSchemaByIdAndRevNoThrow(API_APP_ID, SCHEMA_ID,
+        UploadSchema svcOutputSchema = svc.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID,
                 SCHEMA_REV);
         assertSame(svcOutputSchema, daoOutputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getLatestNullId() {
-        svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, null, ClientInfo.UNKNOWN_CLIENT);
+        svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, null, ClientInfo.UNKNOWN_CLIENT);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getLatestEmptyId() {
-        svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, "", ClientInfo.UNKNOWN_CLIENT);
+        svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, "", ClientInfo.UNKNOWN_CLIENT);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getLatestBlankId() {
-        svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, "   ", ClientInfo.UNKNOWN_CLIENT);
+        svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, "   ", ClientInfo.UNKNOWN_CLIENT);
     }
 
     @Test
@@ -685,7 +685,7 @@ public class UploadSchemaServiceTest {
         ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(25).build();
 
         // execute and validate
-        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, SCHEMA_ID,
+        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID,
                 clientInfo);
         assertEquals(retval.getRevision(), 2);
     }
@@ -698,7 +698,7 @@ public class UploadSchemaServiceTest {
         ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(15).build();
 
         // execute and validate
-        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, SCHEMA_ID,
+        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID,
                 clientInfo);
         assertEquals(retval.getRevision(), 1);
     }
@@ -711,7 +711,7 @@ public class UploadSchemaServiceTest {
         ClientInfo clientInfo = new ClientInfo.Builder().withOsName(OS_NAME).withAppVersion(5).build();
 
         // execute and validate
-        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(API_APP_ID, SCHEMA_ID,
+        UploadSchema retval = svc.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID,
                 clientInfo);
         assertNull(retval);
     }
@@ -727,7 +727,7 @@ public class UploadSchemaServiceTest {
         schemaRev2.setMinAppVersion(OS_NAME, 20);
 
         // mock dao
-        when(dao.getUploadSchemaAllRevisionsById(API_APP_ID, SCHEMA_ID, false))
+        when(dao.getUploadSchemaAllRevisionsById(TEST_APP_ID, SCHEMA_ID, false))
                 .thenReturn(ImmutableList.of(schemaRev1, schemaRev2));
     }
 
@@ -770,45 +770,45 @@ public class UploadSchemaServiceTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void updateV4NullId() {
-        svc.updateSchemaRevisionV4(API_APP_ID, null, SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, null, SCHEMA_REV, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void updateV4EmptyId() {
-        svc.updateSchemaRevisionV4(API_APP_ID, "", SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, "", SCHEMA_REV, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void updateV4BlankId() {
-        svc.updateSchemaRevisionV4(API_APP_ID, "   ", SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, "   ", SCHEMA_REV, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void updateV4NegativeRev() {
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, -1, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, -1, svcInputSchema);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void updateV4ZeroRev() {
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, 0, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, 0, svcInputSchema);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateV4NotFound() {
         // mock dao to return null
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(null);
 
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateV4LogicallyDeleted() {
         UploadSchema schema = makeSimpleSchema();
         schema.setDeleted(true);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
 
         svcInputSchema.setDeleted(true);
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
     }
     
     @Test
@@ -817,10 +817,10 @@ public class UploadSchemaServiceTest {
         
         UploadSchema schema = makeSimpleSchema();
         schema.setDeleted(true);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
         
         svcInputSchema.setDeleted(false);
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
         
         verify(dao).updateSchemaRevision(schemaCaptor.capture());
         assertFalse(schemaCaptor.getValue().isDeleted());
@@ -832,10 +832,10 @@ public class UploadSchemaServiceTest {
         
         UploadSchema schema = makeSimpleSchema();
         schema.setDeleted(false);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
         
         svcInputSchema.setDeleted(true);
-        svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+        svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
         
         verify(dao).updateSchemaRevision(schemaCaptor.capture());
         assertTrue(schemaCaptor.getValue().isDeleted());
@@ -846,11 +846,11 @@ public class UploadSchemaServiceTest {
         // schema is annotated with shared module
         svcInputSchema.setModuleId("test-module");
         svcInputSchema.setModuleVersion(2);
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 svcInputSchema);
 
         try {
-            svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
+            svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, svcInputSchema);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(),
@@ -861,12 +861,12 @@ public class UploadSchemaServiceTest {
     @Test
     public void updateV4InvalidSchema() {
         // mock dao output - Must have a schema to update or we'll throw a 404.
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 makeSimpleSchema());
 
         // execute test
         try {
-            svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, makeInvalidSchema());
+            svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, makeInvalidSchema());
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             assertSchemaValidationException(ex);
@@ -909,13 +909,13 @@ public class UploadSchemaServiceTest {
         newSchema.setFieldDefinitions(newFieldDefList);
 
         // mock dao
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         // execute and validate
         String errMsg = null;
         try {
-            svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV, newSchema);
+            svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV, newSchema);
             fail("expected exception");
         } catch (BadRequestException ex) {
             errMsg = ex.getMessage();
@@ -962,7 +962,7 @@ public class UploadSchemaServiceTest {
         newSchema.setFieldDefinitions(newFieldDefList);
 
         // mock dao
-        when(dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         ArgumentCaptor<UploadSchema> daoInputSchemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
@@ -970,12 +970,12 @@ public class UploadSchemaServiceTest {
         when(dao.updateSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // execute
-        UploadSchema svcOutputSchema = svc.updateSchemaRevisionV4(API_APP_ID, SCHEMA_ID, SCHEMA_REV,
+        UploadSchema svcOutputSchema = svc.updateSchemaRevisionV4(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV,
                 newSchema);
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID, schema ID, and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), API_APP_ID);
+        assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
         assertEquals(daoInputSchema.getSchemaId(), SCHEMA_ID);
         assertEquals(daoInputSchema.getRevision(), SCHEMA_REV);
 

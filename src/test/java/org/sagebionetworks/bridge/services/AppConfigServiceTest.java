@@ -11,7 +11,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 
 import java.util.List;
 import java.util.Optional;
@@ -126,17 +126,17 @@ public class AppConfigServiceTest {
         AppConfig savedAppConfig = AppConfig.create();
         savedAppConfig.setLabel("AppConfig");
         savedAppConfig.setGuid(GUID);
-        savedAppConfig.setStudyId(API_APP_ID);
+        savedAppConfig.setStudyId(TEST_APP_ID);
         savedAppConfig.setCriteria(Criteria.create());
         savedAppConfig.setCreatedOn(TIMESTAMP.getMillis());
         savedAppConfig.setModifiedOn(TIMESTAMP.getMillis());
-        when(mockDao.getAppConfig(API_APP_ID, GUID)).thenReturn(savedAppConfig);
+        when(mockDao.getAppConfig(TEST_APP_ID, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
      
-        when(mockSubstudyService.getSubstudyIds(API_APP_ID)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
         
         study = Study.create();
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
     }
     
     @AfterMethod
@@ -168,7 +168,7 @@ public class AppConfigServiceTest {
         appConfig2.setSchemaReferences(SCHEMA_REF_LIST);
         RESULTS.add(appConfig2);
         
-        when(mockDao.getAppConfigs(API_APP_ID, false)).thenReturn(RESULTS);
+        when(mockDao.getAppConfigs(TEST_APP_ID, false)).thenReturn(RESULTS);
         return appConfig2;
     }
     
@@ -181,20 +181,20 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfigs() {
-        when(mockDao.getAppConfigs(API_APP_ID, false)).thenReturn(RESULTS);
+        when(mockDao.getAppConfigs(TEST_APP_ID, false)).thenReturn(RESULTS);
         
-        List<AppConfig> results = service.getAppConfigs(API_APP_ID, false);
+        List<AppConfig> results = service.getAppConfigs(TEST_APP_ID, false);
         assertEquals(results, RESULTS);
         
-        verify(mockDao).getAppConfigs(API_APP_ID, false);
+        verify(mockDao).getAppConfigs(TEST_APP_ID, false);
     }
     
     @Test
     public void getAppConfig() {
-        AppConfig returnValue = service.getAppConfig(API_APP_ID, GUID);
+        AppConfig returnValue = service.getAppConfig(TEST_APP_ID, GUID);
         assertNotNull(returnValue);
         
-        verify(mockDao).getAppConfig(API_APP_ID, GUID);
+        verify(mockDao).getAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -203,11 +203,11 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(mockSurveyService.getSurvey(API_APP_ID, SURVEY_KEY, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         
@@ -236,12 +236,12 @@ public class AppConfigServiceTest {
         ConfigReference ref2 = new ConfigReference("id2", 2L);
         List<ConfigReference> refs = ImmutableList.of(ref1, ref2);
         
-        when(mockAppConfigElementService.getElementRevision(API_APP_ID, "id1", 1L)).thenReturn(element1);
-        when(mockAppConfigElementService.getElementRevision(API_APP_ID, "id2", 2L)).thenReturn(element2);
+        when(mockAppConfigElementService.getElementRevision(TEST_APP_ID, "id1", 1L)).thenReturn(element1);
+        when(mockAppConfigElementService.getElementRevision(TEST_APP_ID, "id2", 2L)).thenReturn(element2);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setSurveyReferences(null);
@@ -274,13 +274,13 @@ public class AppConfigServiceTest {
         ConfigReference ref2 = new ConfigReference("id2", 2L);
         List<ConfigReference> refs = ImmutableList.of(ref1, ref2);
         
-        when(mockAppConfigElementService.getElementRevision(API_APP_ID, "id1", 1L))
+        when(mockAppConfigElementService.getElementRevision(TEST_APP_ID, "id1", 1L))
                 .thenThrow(new EntityNotFoundException(AppConfigElement.class));
-        when(mockAppConfigElementService.getElementRevision(API_APP_ID, "id2", 2L)).thenReturn(element2);
+        when(mockAppConfigElementService.getElementRevision(TEST_APP_ID, "id2", 2L)).thenReturn(element2);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setGuid("abc-def");
@@ -300,7 +300,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserMatchesMultipleAppConfigs() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig1 = AppConfig.create();
         appConfig1.setLabel("AppConfig1");
@@ -314,7 +314,7 @@ public class AppConfigServiceTest {
         appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
         RESULTS.add(appConfig2);
         
-        when(mockDao.getAppConfigs(API_APP_ID, false)).thenReturn(RESULTS);
+        when(mockDao.getAppConfigs(TEST_APP_ID, false)).thenReturn(RESULTS);
         
         AppConfig appConfig = service.getAppConfigForUser(context, false);
 
@@ -326,7 +326,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         
@@ -340,7 +340,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserSurveyIdentifierAlreadySet() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         appConfig2.setSurveyReferences(Lists.newArrayList(new SurveyReference("anIdentifier", "guid", DateTime.now())));
@@ -348,14 +348,14 @@ public class AppConfigServiceTest {
         AppConfig match = service.getAppConfigForUser(context, true);
         
         assertEquals(match.getSurveyReferences().get(0).getIdentifier(), "anIdentifier");
-        verify(mockSurveyService, never()).getSurvey(eq(API_APP_ID), any(), eq(false), eq(true));
+        verify(mockSurveyService, never()).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAppConfigForUserThrowsException() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         setupConfigsForUser();
         service.getAppConfigForUser(context, true);
@@ -365,7 +365,7 @@ public class AppConfigServiceTest {
     public void getAppCOnfigForUserReturnsNull() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         setupConfigsForUser();
         AppConfig result = service.getAppConfigForUser(context, false);
@@ -378,11 +378,11 @@ public class AppConfigServiceTest {
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
-        when(mockSurveyService.getSurvey(API_APP_ID, SURVEY_KEY, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, SURVEY_KEY, false, false)).thenReturn(survey);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         setupConfigsForUser();
         AppConfig appConfig = service.getAppConfigForUser(context, true);
@@ -392,7 +392,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void createAppConfig() {
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
         when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
         when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
@@ -406,13 +406,13 @@ public class AppConfigServiceTest {
         newConfig.setConfigReferences(CONFIG_REF_LIST);
         newConfig.setFileReferences(FILE_REF_LIST);
         
-        AppConfig returnValue = service.createAppConfig(API_APP_ID, newConfig);
+        AppConfig returnValue = service.createAppConfig(TEST_APP_ID, newConfig);
         
         assertEquals(returnValue.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getGuid(), GUID);
         assertEquals(returnValue.getLabel(), newConfig.getLabel());
-        assertEquals(returnValue.getStudyId(), API_APP_ID);
+        assertEquals(returnValue.getStudyId(), TEST_APP_ID);
         assertEquals(returnValue.getClientData(), TestUtils.getClientData());
         assertEquals(returnValue.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(returnValue.getSchemaReferences(), SCHEMA_REF_LIST);
@@ -426,25 +426,25 @@ public class AppConfigServiceTest {
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getLabel(), newConfig.getLabel());
-        assertEquals(captured.getStudyId(), API_APP_ID);
+        assertEquals(captured.getStudyId(), TEST_APP_ID);
         assertEquals(captured.getClientData().toString(), TestUtils.getClientData().toString());
         assertEquals(captured.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
         assertEquals(captured.getFileReferences(), FILE_REF_LIST);
         
-        verify(mockSubstudyService).getSubstudyIds(API_APP_ID);
+        verify(mockSubstudyService).getSubstudyIds(TEST_APP_ID);
     }
     
     @Test
     public void updateAppConfig() {
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         AppConfig oldConfig = setupAppConfig();
         oldConfig.setCreatedOn(0);
         oldConfig.setModifiedOn(0);
         oldConfig.setGuid(GUID);
-        AppConfig returnValue = service.updateAppConfig(API_APP_ID, oldConfig);
+        AppConfig returnValue = service.updateAppConfig(TEST_APP_ID, oldConfig);
         
         assertEquals(returnValue.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getModifiedOn(), TIMESTAMP.getMillis());
@@ -452,37 +452,37 @@ public class AppConfigServiceTest {
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(appConfigCaptor.getValue(), oldConfig);
         
-        verify(mockSubstudyService).getSubstudyIds(API_APP_ID);
+        verify(mockSubstudyService).getSubstudyIds(TEST_APP_ID);
 
         assertEquals(oldConfig, returnValue);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createAppConfigValidates() {
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         
-        service.createAppConfig(API_APP_ID, AppConfig.create());
+        service.createAppConfig(TEST_APP_ID, AppConfig.create());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateAppConfigValidates() {
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         
         AppConfig oldConfig = setupAppConfig();
-        service.updateAppConfig(API_APP_ID, oldConfig);
+        service.updateAppConfig(TEST_APP_ID, oldConfig);
     }
     
     @Test
     public void deleteAppConfig() {
-        service.deleteAppConfig(API_APP_ID,  GUID);
+        service.deleteAppConfig(TEST_APP_ID,  GUID);
         
-        verify(mockDao).deleteAppConfig(API_APP_ID, GUID);
+        verify(mockDao).deleteAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
     public void deleteAppConfigPermanently() {
-        service.deleteAppConfigPermanently(API_APP_ID, GUID);
+        service.deleteAppConfigPermanently(TEST_APP_ID, GUID);
         
-        verify(mockDao).deleteAppConfigPermanently(API_APP_ID, GUID);
+        verify(mockDao).deleteAppConfigPermanently(TEST_APP_ID, GUID);
     }
 }

@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -56,7 +56,7 @@ public class ExportViaSqsServiceTest {
         service.setSqsClient(mockSqsClient);
 
         // execute and validate
-        service.startOnDemandExport(API_APP_ID);
+        service.startOnDemandExport(TEST_APP_ID);
 
         String sqsMessageText = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessageText);
@@ -64,11 +64,11 @@ public class ExportViaSqsServiceTest {
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_END_DATE_TIME).textValue(),
                 EXPECTED_END_DATE_TIME_STRING);
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_TAG).textValue(), "On-Demand Export studyId="
-                + API_APP_ID + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
+                + TEST_APP_ID + " endDateTime=" + EXPECTED_END_DATE_TIME_STRING);
         assertTrue(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_USE_LAST_EXPORT_TIME).booleanValue());
 
         JsonNode studyWhitelistNode = sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_STUDY_WHITELIST);
         assertEquals(studyWhitelistNode.size(), 1);
-        assertEquals(studyWhitelistNode.get(0).textValue(), API_APP_ID);
+        assertEquals(studyWhitelistNode.get(0).textValue(), TEST_APP_ID);
     }
 }

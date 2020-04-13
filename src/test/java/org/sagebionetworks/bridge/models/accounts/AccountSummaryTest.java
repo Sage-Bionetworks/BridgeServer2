@@ -7,9 +7,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.joda.time.DateTimeZone.UTC;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -33,7 +33,7 @@ public class AccountSummaryTest {
         // equal below (to demonstrate the ISO 8601 string is in UTC time zone).
         DateTime dateTime = DateTime.now().withZone(DateTimeZone.forOffsetHours(-8));
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("sub1", "externalId"), "ABC", dateTime, UNVERIFIED, API_APP_ID,
+                ImmutableMap.of("sub1", "externalId"), "ABC", dateTime, UNVERIFIED, TEST_APP_ID,
                 ImmutableSet.of("sub1", "sub2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
@@ -48,8 +48,8 @@ public class AccountSummaryTest {
         assertEquals(node.get("externalIds").get("sub1").textValue(), "externalId");
         assertEquals(node.get("createdOn").textValue(), dateTime.withZone(UTC).toString());
         assertEquals(node.get("status").textValue(), "unverified");
-        assertEquals(node.get("studyId").textValue(), API_APP_ID);
-        assertEquals(node.get("studyIdentifier").get("identifier").textValue(), API_APP_ID);
+        assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("studyIdentifier").get("identifier").textValue(), TEST_APP_ID);
         assertEquals(node.get("substudyIds").get(0).textValue(), "sub1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "sub2");
         assertEquals(node.get("externalId").textValue(), "externalId");
@@ -62,7 +62,7 @@ public class AccountSummaryTest {
     @Test
     public void serializationDoesntBreakOnNullExternalIdMap() {
         AccountSummary summary = new AccountSummary("firstName", "lastName", "email@email.com", SYNAPSE_USER_ID, PHONE,
-                null, "ABC", null, UNVERIFIED, API_APP_ID, ImmutableSet.of("sub1", "sub2"));
+                null, "ABC", null, UNVERIFIED, TEST_APP_ID, ImmutableSet.of("sub1", "sub2"));
         JsonNode node = BridgeObjectMapper.get().valueToTree(summary);
         assertNull(node.get("externalId"));
     }

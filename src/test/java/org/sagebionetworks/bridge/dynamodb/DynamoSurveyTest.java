@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -153,7 +153,7 @@ public class DynamoSurveyTest {
         Survey copy = new DynamoSurvey(survey);
 
         // validate
-        assertEquals(copy.getStudyIdentifier(), API_APP_ID);
+        assertEquals(copy.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(copy.getGuid(), "test-survey-guid");
         assertEquals(copy.getCreatedOn(), TEST_CREATED_ON_MILLIS);
         assertEquals(copy.getModifiedOn(), TEST_MODIFIED_ON_MILLIS);

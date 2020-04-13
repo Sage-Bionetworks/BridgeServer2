@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.NE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -37,7 +37,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     
     private static final DynamoAppConfig KEY = new DynamoAppConfig();
     static {
-        KEY.setStudyId(API_APP_ID);
+        KEY.setStudyId(TEST_APP_ID);
         KEY.setGuid(GUID);
     }
     
@@ -76,13 +76,13 @@ public class DynamoAppConfigDaoTest extends Mockito {
         when(mockResults.iterator()).thenReturn(configs.iterator());
         when(mockMapper.query(eq(DynamoAppConfig.class), any())).thenReturn(mockResults);
         
-        List<AppConfig> results = dao.getAppConfigs(API_APP_ID, true);
+        List<AppConfig> results = dao.getAppConfigs(TEST_APP_ID, true);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), API_APP_ID);
+        assertEquals(query.getHashKeyValues().getStudyId(), TEST_APP_ID);
         // Regardless of the state of the deleted flag
         assertNull(query.getQueryFilter());
     }
@@ -94,13 +94,13 @@ public class DynamoAppConfigDaoTest extends Mockito {
         when(mockResults.iterator()).thenReturn(configs.iterator());
         when(mockMapper.query(eq(DynamoAppConfig.class), any())).thenReturn(mockResults);
         
-        List<AppConfig> results = dao.getAppConfigs(API_APP_ID, false);
+        List<AppConfig> results = dao.getAppConfigs(TEST_APP_ID, false);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), API_APP_ID);
+        assertEquals(query.getHashKeyValues().getStudyId(), TEST_APP_ID);
         
         // where the deleted flag is not set to 1 (deleted)
         Condition condition = query.getQueryFilter().get("deleted");
@@ -117,7 +117,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         Criteria criteria = new DynamoCriteria();
         when(mockCriteriaDao.getCriteria(CRITERIA_KEY)).thenReturn(criteria);
         
-        AppConfig result = dao.getAppConfig(API_APP_ID, GUID);
+        AppConfig result = dao.getAppConfig(TEST_APP_ID, GUID);
         
         assertSame(result, config);
         assertSame(result.getCriteria(), criteria);
@@ -129,13 +129,13 @@ public class DynamoAppConfigDaoTest extends Mockito {
         config.setGuid(GUID);
         when(mockMapper.load(KEY)).thenReturn(config);
         
-        AppConfig result = dao.getAppConfig(API_APP_ID, GUID);
+        AppConfig result = dao.getAppConfig(TEST_APP_ID, GUID);
         assertNotNull(result.getCriteria());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAppConfigNotFound() {
-        dao.getAppConfig(API_APP_ID, GUID);
+        dao.getAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -161,7 +161,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(API_APP_ID);
+        config.setStudyId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setCriteria(criteria);
         
@@ -189,7 +189,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(API_APP_ID);
+        config.setStudyId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true); // can be deleted as part of an update
         config.setCriteria(criteria);
@@ -215,7 +215,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(API_APP_ID);
+        config.setStudyId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(false); // can be undeleted as part of an update
         config.setCriteria(criteria);
@@ -238,7 +238,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigLogicallyDeleted() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(API_APP_ID);
+        config.setStudyId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true);
         config.setCriteria(Criteria.create());
@@ -253,7 +253,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigNotFound() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(API_APP_ID);
+        config.setStudyId(TEST_APP_ID);
         config.setGuid(GUID);
         
         dao.updateAppConfig(config);
@@ -262,12 +262,12 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test
     public void deleteAppConfig() {
         DynamoAppConfig saved = new DynamoAppConfig();
-        saved.setStudyId(API_APP_ID);
+        saved.setStudyId(TEST_APP_ID);
         saved.setGuid(GUID);
         saved.setCriteria(Criteria.create());
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfig(API_APP_ID, GUID);
+        dao.deleteAppConfig(TEST_APP_ID, GUID);
         
         verify(mockMapper).save(configCaptor.capture());
         assertTrue(configCaptor.getValue().isDeleted());
@@ -275,7 +275,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteAppConfigNotFound() {
-        dao.deleteAppConfig(API_APP_ID, GUID);
+        dao.deleteAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -284,7 +284,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         saved.setDeleted(true);
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfig(API_APP_ID, GUID);
+        dao.deleteAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -293,7 +293,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         saved.setGuid(GUID);
         when(mockMapper.load(KEY)).thenReturn(saved);
         
-        dao.deleteAppConfigPermanently(API_APP_ID, GUID);
+        dao.deleteAppConfigPermanently(TEST_APP_ID, GUID);
         
         verify(mockMapper).delete(saved);
         verify(mockCriteriaDao).deleteCriteria(CRITERIA_KEY);
@@ -301,6 +301,6 @@ public class DynamoAppConfigDaoTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteAppConfigPermanentlyNotFound() {
-        dao.deleteAppConfigPermanently(API_APP_ID, GUID);
+        dao.deleteAppConfigPermanently(TEST_APP_ID, GUID);
     }
 }

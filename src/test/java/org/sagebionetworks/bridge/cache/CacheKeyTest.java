@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.cache;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -35,7 +35,7 @@ public class CacheKeyTest {
     
     @Test
     public void reauthTokenLookupKey() {
-        assertEquals(CacheKey.reauthTokenLookupKey("ABC", API_APP_ID).toString(), "ABC:api:ReauthToken");
+        assertEquals(CacheKey.reauthTokenLookupKey("ABC", TEST_APP_ID).toString(), "ABC:" + TEST_APP_ID + ":ReauthToken");
     }
     
     @Test
@@ -45,7 +45,7 @@ public class CacheKeyTest {
     
     @Test
     public void appConfigList() {
-        assertEquals(CacheKey.appConfigList(API_APP_ID).toString(), "api:AppConfigList");
+        assertEquals(CacheKey.appConfigList(TEST_APP_ID).toString(),  TEST_APP_ID + ":AppConfigList");
     }
 
     @Test
@@ -62,9 +62,10 @@ public class CacheKeyTest {
     
     @Test
     public void emailSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail("email@email.com").build();
-        assertEquals(CacheKey.emailSignInRequest(signIn).toString(), "email@email.com:api:signInRequest");
+        assertEquals(CacheKey.emailSignInRequest(signIn).toString(),
+                "email@email.com:" + TEST_APP_ID + ":signInRequest");
     }
     
     @Test
@@ -74,14 +75,14 @@ public class CacheKeyTest {
     
     @Test
     public void itpWithPhone() {
-        assertEquals(CacheKey.itp(SUBPOP_GUID, API_APP_ID, TestConstants.PHONE).toString(),
-                "guid:" + TestConstants.PHONE.getNumber() + ":api:itp");
+        assertEquals(CacheKey.itp(SUBPOP_GUID, TEST_APP_ID, TestConstants.PHONE).toString(),
+                "guid:" + TestConstants.PHONE.getNumber() + ":" + TEST_APP_ID + ":itp");
     }
     
     @Test
     public void itpWithEmail() {
-        assertEquals(CacheKey.itp(SUBPOP_GUID, API_APP_ID, "email@email.com").toString(),
-                "guid:email@email.com:api:itp");
+        assertEquals(CacheKey.itp(SUBPOP_GUID, TEST_APP_ID, "email@email.com").toString(),
+                "guid:email@email.com:" + TEST_APP_ID + ":itp");
     }
     
     @Test
@@ -91,7 +92,7 @@ public class CacheKeyTest {
     
     @Test
     public void passwordResetForEmail() {
-        assertEquals(CacheKey.passwordResetForEmail("sptoken", API_APP_ID).toString(), "sptoken:api");
+        assertEquals(CacheKey.passwordResetForEmail("sptoken", TEST_APP_ID).toString(), "sptoken:" + TEST_APP_ID);
     }
     
     @Test
@@ -102,11 +103,11 @@ public class CacheKeyTest {
     
     @Test
     public void phoneSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withPhone(TestConstants.PHONE).build();
         
         assertEquals(CacheKey.phoneSignInRequest(signIn).toString(),
-                TestConstants.PHONE.getNumber() + ":api:phoneSignInRequest");
+                TestConstants.PHONE.getNumber() + ":" + TEST_APP_ID + ":phoneSignInRequest");
     }
     
     @Test
@@ -116,17 +117,17 @@ public class CacheKeyTest {
     
     @Test
     public void study() {
-        assertEquals(CacheKey.study(API_APP_ID).toString(), API_APP_ID + ":study");
+        assertEquals(CacheKey.study(TEST_APP_ID).toString(), TEST_APP_ID + ":study");
     }    
     
     @Test
     public void subpop() {
-        assertEquals(CacheKey.subpop(SUBPOP_GUID, API_APP_ID).toString(), "guid:api:Subpopulation");
+        assertEquals(CacheKey.subpop(SUBPOP_GUID, TEST_APP_ID).toString(), "guid:" + TEST_APP_ID + ":Subpopulation");
     }
     
     @Test
     public void subpopList() {
-        assertEquals(CacheKey.subpopList(API_APP_ID).toString(), "api:SubpopulationList");
+        assertEquals(CacheKey.subpopList(TEST_APP_ID).toString(), TEST_APP_ID + ":SubpopulationList");
     }
     
     @Test
@@ -151,7 +152,7 @@ public class CacheKeyTest {
     
     @Test
     public void isPublic() {
-        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", API_APP_ID);
+        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TEST_APP_ID);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
         CacheKey publicKey = CacheKey.study("studyId");

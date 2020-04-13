@@ -9,7 +9,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -99,13 +99,13 @@ public class DynamoSurveyDaoMockTest {
         // set up survey
         survey = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         survey.setIdentifier(SURVEY_ID);
-        survey.setStudyIdentifier(API_APP_ID);
+        survey.setStudyIdentifier(TEST_APP_ID);
 
         // mock schema dao
         UploadSchema schema = UploadSchema.create();
         schema.setRevision(SCHEMA_REV);
 
-        when(mockSchemaService.createUploadSchemaFromSurvey(API_APP_ID, survey, true)).thenReturn(
+        when(mockSchemaService.createUploadSchemaFromSurvey(TEST_APP_ID, survey, true)).thenReturn(
                 schema);
 
         // set up survey dao for test
@@ -127,7 +127,7 @@ public class DynamoSurveyDaoMockTest {
         when(mockSurveyMapper.queryPage(eq(DynamoSurvey.class), any())).thenReturn(mockQueryResultPage);
 
         // Execute.
-        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(API_APP_ID, SURVEY_ID);
+        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(TEST_APP_ID, SURVEY_ID);
         assertEquals(surveyGuid, SURVEY_GUID);
 
         // Verify query.
@@ -135,7 +135,7 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
 
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), API_APP_ID);
+        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
         assertFalse(query.isConsistentRead());
         assertEquals(query.getLimit().intValue(), 1);
 
@@ -151,7 +151,7 @@ public class DynamoSurveyDaoMockTest {
         when(mockSurveyMapper.queryPage(eq(DynamoSurvey.class), any())).thenReturn(mockQueryResultPage);
 
         // Execute.
-        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(API_APP_ID, SURVEY_ID);
+        String surveyGuid = surveyDao.getSurveyGuidForIdentifier(TEST_APP_ID, SURVEY_ID);
         assertNull(surveyGuid);
 
         // Query is verified in previous test.
@@ -168,7 +168,7 @@ public class DynamoSurveyDaoMockTest {
         
         survey.setDeleted(false);
         survey.setName("New title");
-        Survey updatedSurvey = surveyDao.updateSurvey(API_APP_ID, survey);
+        Survey updatedSurvey = surveyDao.updateSurvey(TEST_APP_ID, survey);
         
         assertEquals(updatedSurvey.getName(), "New title");
     }
@@ -183,7 +183,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(surveyQuestion));
 
         // execute and validate
-        Survey retval = surveyDao.publishSurvey(API_APP_ID, survey, true);
+        Survey retval = surveyDao.publishSurvey(TEST_APP_ID, survey, true);
         assertTrue(retval.isPublished());
         assertEquals(retval.getModifiedOn(), MOCK_NOW_MILLIS);
         assertEquals(retval.getSchemaRevision().intValue(), SCHEMA_REV);
@@ -202,7 +202,7 @@ public class DynamoSurveyDaoMockTest {
         survey.setElements(ImmutableList.of(infoScreen));
 
         // same test as above, except we *don't* call through to the upload schema DAO
-        Survey retval = surveyDao.publishSurvey(API_APP_ID, survey, true);
+        Survey retval = surveyDao.publishSurvey(TEST_APP_ID, survey, true);
         assertTrue(retval.isPublished());
         assertEquals(retval.getModifiedOn(), MOCK_NOW_MILLIS);
         assertNull(retval.getSchemaRevision());
@@ -217,12 +217,12 @@ public class DynamoSurveyDaoMockTest {
         doNothing().when(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
         
         // Execute
-        surveyDao.deleteSurveyPermanently(API_APP_ID, SURVEY_KEY);
+        surveyDao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEY);
 
         // Validate backends
         verify(surveyDao).deleteAllElements(SURVEY_GUID, SURVEY_CREATED_ON);
         verify(mockSurveyMapper).delete(survey);
-        verify(mockSchemaService).deleteUploadSchemaByIdPermanently(API_APP_ID, SURVEY_ID);
+        verify(mockSchemaService).deleteUploadSchemaByIdPermanently(TEST_APP_ID, SURVEY_ID);
     }
     
     @Test
@@ -232,7 +232,7 @@ public class DynamoSurveyDaoMockTest {
         doReturn(mockQueryResultPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("keys", DateTime.now().getMillis());
-        surveyDao.deleteSurveyPermanently(API_APP_ID, keys);
+        surveyDao.deleteSurveyPermanently(TEST_APP_ID, keys);
         
         verify(mockSurveyMapper, never()).delete(any());
     }
@@ -241,7 +241,7 @@ public class DynamoSurveyDaoMockTest {
     public void updateSurveyUndeleteExistingDeletedOK() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         existing.setIdentifier(SURVEY_ID);
-        existing.setStudyIdentifier(API_APP_ID);
+        existing.setStudyIdentifier(TEST_APP_ID);
         existing.setDeleted(true);
         existing.setPublished(false);
         
@@ -251,7 +251,7 @@ public class DynamoSurveyDaoMockTest {
         
         survey.setDeleted(false);
         survey.getElements().add(SurveyInfoScreen.create());
-        surveyDao.updateSurvey(API_APP_ID, survey);
+        surveyDao.updateSurvey(TEST_APP_ID, survey);
 
         verify(mockSurveyMapper).save(surveyCaptor.capture());
         assertFalse(surveyCaptor.getValue().isDeleted());

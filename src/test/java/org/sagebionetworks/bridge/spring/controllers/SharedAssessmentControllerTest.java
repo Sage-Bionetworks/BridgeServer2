@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -9,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 import static org.testng.Assert.assertEquals;
@@ -66,31 +66,31 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void importAssessment() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.importAssessment(API_APP_ID, OWNER_ID, null, GUID)).thenReturn(assessment);
+        when(mockService.importAssessment(TEST_APP_ID, OWNER_ID, null, GUID)).thenReturn(assessment);
 
         Assessment retValue = controller.importAssessment(GUID, OWNER_ID, null);
         assertSame(retValue, assessment);
 
-        verify(mockService).importAssessment(API_APP_ID, OWNER_ID, null, GUID);
+        verify(mockService).importAssessment(TEST_APP_ID, OWNER_ID, null, GUID);
     }
 
     @Test
     public void importAssessmentWithNewId() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.importAssessment(API_APP_ID, OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
+        when(mockService.importAssessment(TEST_APP_ID, OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
 
         Assessment retValue = controller.importAssessment(GUID, OWNER_ID, NEW_ID);
         assertSame(retValue, assessment);
 
-        verify(mockService).importAssessment(API_APP_ID, OWNER_ID, NEW_ID, GUID);
+        verify(mockService).importAssessment(TEST_APP_ID, OWNER_ID, NEW_ID, GUID);
     }
     
     @Test
@@ -192,13 +192,13 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void updateSharedAssessment() throws Exception {
         // You do need a session for this call
         UserSession session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setGuid("notCorrectGuid");
 
-        when(mockService.updateSharedAssessment(eq(API_APP_ID), any()))
+        when(mockService.updateSharedAssessment(eq(TEST_APP_ID), any()))
                 .thenAnswer(invoke -> invoke.getArgument(1));
 
         mockRequestBody(mockRequest, assessment);
@@ -206,7 +206,7 @@ public class SharedAssessmentControllerTest extends Mockito {
         Assessment retValue = controller.updateSharedAssessment(GUID);
         assertEquals(retValue.getGuid(), GUID);
 
-        verify(mockService).updateSharedAssessment(eq(API_APP_ID), assessmentCaptor.capture());
+        verify(mockService).updateSharedAssessment(eq(TEST_APP_ID), assessmentCaptor.capture());
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getIdentifier(), IDENTIFIER);
         assertEquals(captured.getGuid(), GUID);

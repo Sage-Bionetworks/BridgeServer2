@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -68,7 +68,7 @@ public class SendMailViaAmazonServiceConsentTest {
         
         study = new DynamoStudy();
         study.setName("Test Study (Sage)");
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
         study.setSupportEmail(SUPPORT_EMAIL);
 
         revision = TemplateRevision.create();
@@ -89,7 +89,7 @@ public class SendMailViaAmazonServiceConsentTest {
         service.setEmailVerificationService(emailVerificationService);
         
         subpopulation = Subpopulation.create();
-        subpopulation.setGuidString(API_APP_ID);
+        subpopulation.setGuidString(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(mock(StudyConsent.class), 
             "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");

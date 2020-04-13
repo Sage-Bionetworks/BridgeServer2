@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
@@ -1441,7 +1442,7 @@ public class StudyServiceMockTest extends Mockito {
         
         service.createStudy(study);
         
-        verify(mockUploadCertService, never()).createCmsKeyPair(TEST_STUDY_ID);
+        verify(mockUploadCertService, never()).createCmsKeyPair(API_APP_ID);
     }
     
     @Test

@@ -7,7 +7,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -23,7 +23,7 @@ public class HibernateSubstudyTest {
     public void canSerialize() throws Exception {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
-        substudy.setStudyId(API_APP_ID);
+        substudy.setStudyId(TEST_APP_ID);
         substudy.setName("name");
         substudy.setDeleted(true);
         substudy.setCreatedOn(CREATED_ON);

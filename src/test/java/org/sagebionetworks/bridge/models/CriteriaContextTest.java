@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -26,7 +26,7 @@ public class CriteriaContextTest {
     public void defaultsClientInfo() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withUserId(USER_ID)
-                .withStudyIdentifier(API_APP_ID).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         assertEquals(context.getLanguages(), ImmutableList.of());
         assertEquals(context.getUserDataGroups(), ImmutableList.of());
@@ -41,7 +41,7 @@ public class CriteriaContextTest {
     @Test
     public void builderWorks() {
         CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(API_APP_ID)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withUserId(USER_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
@@ -54,7 +54,7 @@ public class CriteriaContextTest {
         
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(copy.getClientInfo(), CLIENT_INFO);
-        assertEquals(copy.getStudyIdentifier(), API_APP_ID);
+        assertEquals(copy.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(copy.getUserId(), USER_ID);
         assertEquals(copy.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(copy.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
@@ -63,11 +63,11 @@ public class CriteriaContextTest {
     @Test
     public void contextHasAccountId() {
         CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(API_APP_ID)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withUserId(USER_ID).build();
         
         AccountId accountId = context.getAccountId();
-        assertEquals(accountId.getStudyId(), API_APP_ID);
+        assertEquals(accountId.getStudyId(), TEST_APP_ID);
         assertEquals(accountId.getId(), USER_ID);
     }
 }

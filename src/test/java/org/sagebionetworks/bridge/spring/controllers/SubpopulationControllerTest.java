@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -87,12 +87,12 @@ public class SubpopulationControllerTest extends Mockito {
 
         participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setAuthenticated(true);
 
-        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
+        when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockStudy);
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -111,7 +111,7 @@ public class SubpopulationControllerTest extends Mockito {
     @Test
     public void getAllSubpopulationsExcludeDeleted() throws Exception {
         List<Subpopulation> list = createSubpopulationList();
-        when(mockSubpopService.getSubpopulations(API_APP_ID, false)).thenReturn(list);
+        when(mockSubpopService.getSubpopulations(TEST_APP_ID, false)).thenReturn(list);
 
         String result = controller.getAllSubpopulations(false);
 
@@ -123,20 +123,20 @@ public class SubpopulationControllerTest extends Mockito {
         assertEquals(rList.getItems(), list);
         assertEquals(rList.getItems().size(), 2);
 
-        verify(mockSubpopService).getSubpopulations(API_APP_ID, false);
+        verify(mockSubpopService).getSubpopulations(TEST_APP_ID, false);
     }
 
     @Test
     public void getAllSubpopulationsIncludeDeleted() throws Exception {
         List<Subpopulation> list = createSubpopulationList();
-        when(mockSubpopService.getSubpopulations(API_APP_ID, true)).thenReturn(list);
+        when(mockSubpopService.getSubpopulations(TEST_APP_ID, true)).thenReturn(list);
 
         String result = controller.getAllSubpopulations(true);
 
         ResourceList<Subpopulation> payload = BridgeObjectMapper.get().readValue(result, SUBPOP_TYPE_REF);
         assertEquals(2, payload.getItems().size());
 
-        verify(mockSubpopService).getSubpopulations(API_APP_ID, true);
+        verify(mockSubpopService).getSubpopulations(TEST_APP_ID, true);
     }
 
     @Test
@@ -196,7 +196,7 @@ public class SubpopulationControllerTest extends Mockito {
     public void getSubpopulation() throws Exception {
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("AAA");
-        doReturn(subpop).when(mockSubpopService).getSubpopulation(API_APP_ID, SUBPOP_GUID);
+        doReturn(subpop).when(mockSubpopService).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
 
         String result = controller.getSubpopulation(SUBPOP_GUID.getGuid());
 
@@ -207,7 +207,7 @@ public class SubpopulationControllerTest extends Mockito {
         assertEquals("AAA", node.get("guid").asText());
         assertNull(node.get("studyIdentifier"));
 
-        verify(mockSubpopService).getSubpopulation(API_APP_ID, SUBPOP_GUID);
+        verify(mockSubpopService).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
 
     @Test
@@ -217,7 +217,7 @@ public class SubpopulationControllerTest extends Mockito {
 
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuidString("AAA");
-        doReturn(subpop).when(mockSubpopService).getSubpopulation(API_APP_ID, SUBPOP_GUID);
+        doReturn(subpop).when(mockSubpopService).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
 
         // Does not throw UnauthorizedException.
         controller.getSubpopulation(SUBPOP_GUID.getGuid());
@@ -228,28 +228,28 @@ public class SubpopulationControllerTest extends Mockito {
         StatusMessage result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), false);
 
         assertEquals(result, SubpopulationController.DELETED_MSG);
-        verify(mockSubpopService).deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        verify(mockSubpopService).deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
 
     @Test
     public void deleteSubpopulationPhysically() throws Exception {
         participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setAuthenticated(true);
         doReturn(session).when(controller).getSessionIfItExists();
 
         StatusMessage result = controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), true);
 
         assertEquals(result, SubpopulationController.DELETED_MSG);
-        verify(mockSubpopService).deleteSubpopulationPermanently(API_APP_ID, SUBPOP_GUID);
+        verify(mockSubpopService).deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
     }
 
     @Test
     public void deleteSubpopulationPhysicallyIsLogicalForResearcher() throws Exception {
         controller.deleteSubpopulation(SUBPOP_GUID.getGuid(), true);
 
-        verify(mockSubpopService).deleteSubpopulation(API_APP_ID, SUBPOP_GUID);
+        verify(mockSubpopService).deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -273,21 +273,21 @@ public class SubpopulationControllerTest extends Mockito {
         session.setParticipant(
                 new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(ADMIN)).build());
 
-        controller.updateSubpopulation(API_APP_ID);
+        controller.updateSubpopulation(TEST_APP_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
 
-        controller.getSubpopulation(API_APP_ID);
+        controller.getSubpopulation(TEST_APP_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
 
-        controller.getSubpopulation(API_APP_ID);
+        controller.getSubpopulation(TEST_APP_ID);
     }
 
     private List<Subpopulation> createSubpopulationList() {

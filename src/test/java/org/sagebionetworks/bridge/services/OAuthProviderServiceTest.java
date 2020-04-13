@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.services.OAuthProviderService.AUTHORIZATION_PROP_NAME;
 import static org.sagebionetworks.bridge.services.OAuthProviderService.SYNAPSE_USERID_KEY;
 import static org.testng.Assert.assertEquals;
@@ -74,8 +74,8 @@ public class OAuthProviderServiceTest extends Mockito {
     private static final String USER_ID = "26FWFL";
     private static final String VENDOR_ID = "vendorId";
     private static final String SYNAPSE_ID = "synapse";
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(API_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
-    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(API_APP_ID, SYNAPSE_ID, AUTH_TOKEN_STRING, CALLBACK_VALUE);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, SYNAPSE_ID, AUTH_TOKEN_STRING, CALLBACK_VALUE);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             null);
     private static final OAuthProvider PROVIDER_WITH_INTROSPECT = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT,
@@ -390,7 +390,7 @@ public class OAuthProviderServiceTest extends Mockito {
         when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
         
         AccountId returnedValue = service.oauthSignIn(SIGNIN_TOKEN);
-        assertEquals(returnedValue, AccountId.forSynapseUserId(API_APP_ID, "12345"));
+        assertEquals(returnedValue, AccountId.forSynapseUserId(TEST_APP_ID, "12345"));
         
         String authHeader = "Basic " + Base64.encodeBase64String(
                 (SYNAPSE_OAUTH_CLIENT_ID_VALUE + ":" + SYNAPSE_OAUTH_CLIENT_SECRET_VALUE).getBytes());
@@ -405,13 +405,13 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInNoVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(API_APP_ID, null, AUTH_TOKEN_STRING, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, null, AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInWrongVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(API_APP_ID, "google", AUTH_TOKEN_STRING, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "google", AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
@@ -423,7 +423,7 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignNoCode() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(API_APP_ID, SYNAPSE_ID, null, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, SYNAPSE_ID, null, null);
         service.oauthSignIn(token);
     }
     

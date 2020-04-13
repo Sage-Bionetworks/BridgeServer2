@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -20,7 +20,7 @@ import nl.jqno.equalsverifier.Warning;
 
 public class DynamoAppConfigElementTest {
     
-    private static final String KEY = "api:confusing: key: divider";
+    private static final String KEY = TEST_APP_ID + ":confusing: key: divider";
     private static final String ID = "confusing: key: divider";
     private static final DateTime CREATED_ON = DateTime.now(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = CREATED_ON.plusHours(2);
@@ -29,14 +29,14 @@ public class DynamoAppConfigElementTest {
     public void keyParsing() {
         // set through setters, get key
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setStudyId(API_APP_ID);
+        element.setStudyId(TEST_APP_ID);
         element.setId(ID);
         assertEquals(element.getKey(), KEY);
         
         // set key, get through getters
         element = new DynamoAppConfigElement();
         element.setKey(KEY);
-        assertEquals(element.getStudyId(), API_APP_ID);
+        assertEquals(element.getStudyId(), TEST_APP_ID);
         assertEquals(element.getId(), ID);
         
         // set key, get through getters
@@ -56,7 +56,7 @@ public class DynamoAppConfigElementTest {
         assertNull(element.getId());
         
         element = new DynamoAppConfigElement();
-        element.setStudyId(API_APP_ID);
+        element.setStudyId(TEST_APP_ID);
         element.setId(ID);
         element.setKey(null);
         assertNull(element.getStudyId());
@@ -73,7 +73,7 @@ public class DynamoAppConfigElementTest {
     @Test
     public void canSerialize() throws Exception {
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setStudyId(API_APP_ID);
+        element.setStudyId(TEST_APP_ID);
         element.setId(ID);
         element.setRevision(1L);
         element.setDeleted(true);
@@ -95,7 +95,7 @@ public class DynamoAppConfigElementTest {
         assertEquals(node.get("type").textValue(), "AppConfigElement");
         
         AppConfigElement deser = BridgeObjectMapper.get().readValue(node.toString(), AppConfigElement.class);
-        deser.setStudyId(API_APP_ID);
+        deser.setStudyId(TEST_APP_ID);
         assertEquals(deser, element);
     }
     

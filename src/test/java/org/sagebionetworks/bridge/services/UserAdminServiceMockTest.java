@@ -8,7 +8,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -316,9 +316,9 @@ public class UserAdminServiceMockTest {
         
         AccountId accountId = AccountId.forId(study.getIdentifier(),  "userId");
 
-        AccountSubstudy as1 = AccountSubstudy.create(API_APP_ID, "substudyA", "userId");
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", "userId");
         as1.setExternalId("subAextId");
-        AccountSubstudy as2 = AccountSubstudy.create(API_APP_ID, "substudyB", "userId");
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", "userId");
         as2.setExternalId("subBextId");
         Set<AccountSubstudy> substudies = ImmutableSet.of(as1, as2);
         

@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.CONFIG_KEY_UDD_SQS_QUEUE_URL;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.REQUEST_KEY_BODY;
 import static org.sagebionetworks.bridge.services.UserDataDownloadViaSqsService.REQUEST_KEY_END_DATE;
@@ -57,7 +57,7 @@ public class UserDataDownloadViaSqsServiceTest {
         DateRange dateRange = new DateRange(LocalDate.parse(START_DATE), LocalDate.parse(END_DATE));
 
         // execute
-        testService.requestUserData(API_APP_ID, USER_ID, dateRange);
+        testService.requestUserData(TEST_APP_ID, USER_ID, dateRange);
 
         // Validate SQS args.
         String sqsMessageText = sqsMessageCaptor.getValue();
@@ -72,7 +72,7 @@ public class UserDataDownloadViaSqsServiceTest {
         JsonNode msgBody = sqsMessageNode.path(REQUEST_KEY_BODY);
         assertEquals(msgBody.size(), 4);
 
-        assertEquals(msgBody.get(REQUEST_KEY_STUDY_ID).textValue(), API_APP_ID);
+        assertEquals(msgBody.get(REQUEST_KEY_STUDY_ID).textValue(), TEST_APP_ID);
         assertEquals(msgBody.get(REQUEST_KEY_USER_ID).textValue(), USER_ID);
         assertEquals(msgBody.get(REQUEST_KEY_START_DATE).textValue(), START_DATE);
         assertEquals(msgBody.get(REQUEST_KEY_END_DATE).textValue(), END_DATE);

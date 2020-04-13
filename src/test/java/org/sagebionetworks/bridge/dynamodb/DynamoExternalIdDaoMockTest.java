@@ -11,7 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.IDENTIFIER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -86,7 +86,7 @@ public class DynamoExternalIdDaoMockTest {
     public void setupTest() {
         MockitoAnnotations.initMocks(this);
         
-        externalId = ExternalIdentifier.create(API_APP_ID, ID);
+        externalId = ExternalIdentifier.create(TEST_APP_ID, ID);
         dao = new DynamoExternalIdDao();
         dao.setMapper(mapper);
         dao.setGetExternalIdRateLimiter(rateLimiter);
@@ -101,7 +101,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalId() {
         when(mapper.load(any())).thenReturn(externalId);
 
-        Optional<ExternalIdentifier> retrieved = dao.getExternalId(API_APP_ID, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_APP_ID, ID);
 
         verify(mapper).load(externalId);
         assertEquals(retrieved.get(), externalId);
@@ -111,7 +111,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIdReturnsNull() {
         when(mapper.load(any())).thenReturn(null);
 
-        Optional<ExternalIdentifier> retrieved = dao.getExternalId(API_APP_ID, ID);
+        Optional<ExternalIdentifier> retrieved = dao.getExternalId(TEST_APP_ID, ID);
 
         verify(mapper).load(externalId);
         assertFalse(retrieved.isPresent());
@@ -121,7 +121,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIds() {
         setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(API_APP_ID,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_APP_ID,
                 "offsetKey", 50, "offset", true);
         
         assertEquals(results.getItems().get(0).getIdentifier(), "foo1");
@@ -146,7 +146,7 @@ public class DynamoExternalIdDaoMockTest {
         assertEquals(assignmentCondition.getComparisonOperator(), NOT_NULL.toString());
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), API_APP_ID);
+        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "offsetKey");
 
         assertEquals(query.getReturnConsumedCapacity(), ReturnConsumedCapacity.TOTAL.toString());
@@ -154,18 +154,18 @@ public class DynamoExternalIdDaoMockTest {
         assertTrue(query.isConsistentRead());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), API_APP_ID);
+        assertEquals(id.getStudyId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void pageSizeCannotBeLessThanMin() {
-        dao.getExternalIds(API_APP_ID, null, -2, null, null);
+        dao.getExternalIds(TEST_APP_ID, null, -2, null, null);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void pageSizeCannotBeGreaterThanMax() {
-        dao.getExternalIds(API_APP_ID, null, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null, null);
+        dao.getExternalIds(TEST_APP_ID, null, BridgeConstants.API_MAXIMUM_PAGE_SIZE+1, null, null);
     }
     
     @Test
@@ -173,7 +173,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
         // Note that the page size is enforced in the service, and should never be 0
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(API_APP_ID,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_APP_ID,
                 null, BridgeConstants.API_MINIMUM_PAGE_SIZE, null, null);
         Map<String,Object> paramsMap = results.getRequestParams();
         assertEquals((int) paramsMap.get(ResourceList.PAGE_SIZE), BridgeConstants.API_MINIMUM_PAGE_SIZE);
@@ -194,7 +194,7 @@ public class DynamoExternalIdDaoMockTest {
     public void getExternalIdsMismatchedIdFilterClearsOffsetKey() {
         setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
-        dao.getExternalIds(API_APP_ID, "offsetKey", 50, "foo", true);
+        dao.getExternalIds(TEST_APP_ID, "offsetKey", 50, "foo", true);
 
         verify(mapper).queryPage(eq(DynamoExternalIdentifier.class), queryCaptor.capture());
 
@@ -217,19 +217,19 @@ public class DynamoExternalIdDaoMockTest {
                 .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
         
         // Verify here that prior to migration, a lack of association doesn't break anything
-        DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(API_APP_ID, "extId1");
+        DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TEST_APP_ID, "extId1");
         extId1.setSubstudyId(null); // should see this external identifier record
-        DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(API_APP_ID, "extId2");
+        DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(TEST_APP_ID, "extId2");
         extId2.setSubstudyId("substudyA");
-        DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(API_APP_ID, "extId3");
+        DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(TEST_APP_ID, "extId3");
         extId3.setSubstudyId("substudyB");
-        DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(API_APP_ID, "extId4");
+        DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(TEST_APP_ID, "extId4");
         extId4.setSubstudyId("substudyC");
-        DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(API_APP_ID, "extId5");
+        DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(TEST_APP_ID, "extId5");
         extId5.setSubstudyId("substudyD");
         setupQueryOfIds(ImmutableList.of(extId1, extId2, extId3, extId4, extId5));
         
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> externalIds = dao.getExternalIds(API_APP_ID, null, 10,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> externalIds = dao.getExternalIds(TEST_APP_ID, null, 10,
                 null, null);
         assertExternalId(externalIds.getItems().get(0), "extId1", null);  
         assertExternalId(externalIds.getItems().get(1), "extId2", "substudyA");
@@ -319,7 +319,7 @@ public class DynamoExternalIdDaoMockTest {
         int pageSize = 3;
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC", "DDD", "EEE"), ImmutableList.of("FFF", "GGG"));
 
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao.getExternalIds(API_APP_ID,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao.getExternalIds(TEST_APP_ID,
                 null, pageSize, null, false);
         assertEquals(result.getItems().size(), 3);
         assertEquals(result.getNextPageOffsetKey(), "CCC");
@@ -387,11 +387,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(API_APP_ID);
+        account.setStudyId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(acctSubstudy);
@@ -406,11 +406,11 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        AccountSubstudy as = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(API_APP_ID);
+        account.setStudyId(TEST_APP_ID);
         account.getAccountSubstudies().add(as);
 
         dao.unassignExternalId(account, ID);
@@ -425,11 +425,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy as = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(API_APP_ID);
+        account.setStudyId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(as);
@@ -445,11 +445,11 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, SUBSTUDY_ID, USER_ID);
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(API_APP_ID);
+        account.setStudyId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.setAccountSubstudies(null); // this would throw an error if executed
@@ -461,7 +461,7 @@ public class DynamoExternalIdDaoMockTest {
     public void pagingWithFilterShorterThanKeyWorks() {
         setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(API_APP_ID,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_APP_ID,
                 "CCCCC", 5, "CC", null);
 
         assertEquals((int) results.getRequestParams().get("pageSize"), 5);
@@ -473,11 +473,11 @@ public class DynamoExternalIdDaoMockTest {
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = queryCaptor.getValue();
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), API_APP_ID);
+        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "CCCCC");
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), API_APP_ID);
+        assertEquals(id.getStudyId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
 
@@ -485,7 +485,7 @@ public class DynamoExternalIdDaoMockTest {
     public void pagingWithFilterLongerThanKeyWorks() {
         setupQueryOfStrings(ImmutableList.of("foo1", "foo2"));
 
-        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(API_APP_ID,
+        ForwardCursorPagedResourceList<ExternalIdentifierInfo> results = dao.getExternalIds(TEST_APP_ID,
                 "CCCCC", 5, "CCCCCCCCCC", null);
 
         assertEquals((int) results.getRequestParams().get("pageSize"), 5);
@@ -499,7 +499,7 @@ public class DynamoExternalIdDaoMockTest {
         assertNull(query.getExclusiveStartKey());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), API_APP_ID);
+        assertEquals(id.getStudyId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
     
@@ -513,7 +513,7 @@ public class DynamoExternalIdDaoMockTest {
         // Convert lists of strings to lists of DynamExternalIdentifiers
         List<List<DynamoExternalIdentifier>> extIdLists = Arrays.asList(lists).stream().map(oneList -> {
             return oneList.stream()
-                .map(id -> new DynamoExternalIdentifier(API_APP_ID, id))
+                .map(id -> new DynamoExternalIdentifier(TEST_APP_ID, id))
                 .collect(Collectors.toList());
         }).collect(Collectors.toList());
         

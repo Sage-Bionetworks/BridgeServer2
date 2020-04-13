@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.BeforeMethod;
@@ -29,10 +29,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         Study study = Study.create();
         study.setUploadValidationStrictness(UploadValidationStrictness.STRICT);
         study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(API_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.STRICT);
     }
 
@@ -42,10 +42,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         Study study = Study.create();
         study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
         study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(API_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.REPORT);
     }
 
@@ -55,10 +55,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         Study study = Study.create();
         study.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
         study.setStrictUploadValidationEnabled(true);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(API_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.WARNING);
     }
 
@@ -68,10 +68,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         Study study = Study.create();
         study.setUploadValidationStrictness(null);
         study.setStrictUploadValidationEnabled(true);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(API_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.STRICT);
     }
 
@@ -81,10 +81,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         Study study = Study.create();
         study.setUploadValidationStrictness(null);
         study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(API_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.WARNING);
     }
 }

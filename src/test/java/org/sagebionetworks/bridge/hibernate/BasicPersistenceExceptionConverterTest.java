@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -37,7 +37,7 @@ public class BasicPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(API_APP_ID);
+        template.setStudyId(TEST_APP_ID);
         
         OptimisticLockException ole = new OptimisticLockException();
         

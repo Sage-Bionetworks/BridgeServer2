@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -55,7 +55,7 @@ public class CriteriaScheduleStrategyTest {
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
-        PLAN.setStudyKey(API_APP_ID);
+        PLAN.setStudyKey(TEST_APP_ID);
     }
     
     private CriteriaScheduleStrategy strategy;
@@ -217,7 +217,7 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithProhibitedDataGroups();
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(API_APP_ID)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(Sets.newHashSet("group1"))
                 .withHealthCode("BBB").build();
@@ -233,7 +233,7 @@ public class CriteriaScheduleStrategyTest {
         setUpStrategyWithProhibitedDataGroups();
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(API_APP_ID)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withHealthCode("AAA").build();
         
@@ -251,7 +251,7 @@ public class CriteriaScheduleStrategyTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
                 .withUserDataGroups(Sets.newHashSet("req1", "req2"))
-                .withStudyIdentifier(API_APP_ID)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/6")) // in range
                 .withHealthCode("AAA").build();
         

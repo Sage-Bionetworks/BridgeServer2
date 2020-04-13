@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -161,7 +161,7 @@ public class SmsMessageValidatorTest {
         message.setMessageId(MESSAGE_ID);
         message.setMessageBody(MESSAGE_BODY);
         message.setSmsType(SmsType.PROMOTIONAL);
-        message.setStudyId(API_APP_ID);
+        message.setStudyId(TEST_APP_ID);
         return message;
     }
 }

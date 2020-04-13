@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_3;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -185,12 +185,12 @@ public class ScheduledActivityControllerTest extends Mockito {
                 .withCreatedOn(ACCOUNT_CREATED_ON)
                 .withId(ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         
         when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
 
-        STUDY.setIdentifier(API_APP_ID);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(STUDY);
+        STUDY.setIdentifier(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
         when(mockBridgeConfig.getEnvironment()).thenReturn(UAT);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -280,7 +280,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getLanguages(), LANGUAGES);
         assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(critContext.getStudyIdentifier(), API_APP_ID);
+        assertEquals(critContext.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
@@ -289,7 +289,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getLanguages(), LANGUAGES);
         assertEquals(requestInfo.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(requestInfo.getStudyIdentifier(), API_APP_ID);
+        assertEquals(requestInfo.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(requestInfo.getUserAgent(), USER_AGENT);
         assertEquals(requestInfo.getClientInfo(), CLIENT_INFO);
         assertNotNull(requestInfo.getActivitiesAccessedOn());
@@ -545,7 +545,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
         assertNull(requestInfo.getSignedInOn());
-        assertEquals(requestInfo.getStudyIdentifier(), API_APP_ID);
+        assertEquals(requestInfo.getStudyIdentifier(), TEST_APP_ID);
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), startsOn.getZone());
@@ -557,7 +557,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(context.getAccountCreatedOn(), ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC));
         
         CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(critContext.getStudyIdentifier(), API_APP_ID);
+        assertEquals(critContext.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getUserId(), ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);

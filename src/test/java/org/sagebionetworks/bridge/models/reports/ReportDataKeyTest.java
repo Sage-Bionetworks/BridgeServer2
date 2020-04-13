@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.reports;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -22,11 +22,11 @@ public class ReportDataKeyTest {
     @Test
     public void constructParticipantKey() {
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode")
-                .withStudyIdentifier(API_APP_ID).withReportType(ReportType.PARTICIPANT)
+                .withStudyIdentifier(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
                 .withIdentifier("report").build();
 
-        assertEquals(key.getKeyString(), "healthCode:report:api");
-        assertEquals(key.getIndexKeyString(), "api:PARTICIPANT");
+        assertEquals(key.getKeyString(), "healthCode:report:" + TEST_APP_ID);
+        assertEquals(key.getIndexKeyString(), TEST_APP_ID + ":PARTICIPANT");
         assertEquals(key.getHealthCode(), "healthCode");
         assertEquals(key.getIdentifier(), "report");
         assertEquals(key.getReportType(), ReportType.PARTICIPANT);
@@ -35,12 +35,12 @@ public class ReportDataKeyTest {
     @Test
     public void constructStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder().withReportType(ReportType.STUDY)
-                .withStudyIdentifier(API_APP_ID).withIdentifier("report").build();
+                .withStudyIdentifier(TEST_APP_ID).withIdentifier("report").build();
         
         // This was constructed, the date is valid. It's not part of the key, it's validated in the builder
         // so validation errors are combined with key validation errors.
-        assertEquals(key.getKeyString(), "report:api");
-        assertEquals(key.getIndexKeyString(), "api:STUDY");
+        assertEquals(key.getKeyString(), "report:" + TEST_APP_ID);
+        assertEquals(key.getIndexKeyString(), TEST_APP_ID + ":STUDY");
         assertNull(key.getHealthCode());
         assertEquals(key.getIdentifier(), "report");
         assertEquals(key.getReportType(), ReportType.STUDY);
@@ -49,10 +49,10 @@ public class ReportDataKeyTest {
     @Test
     public void canConstructKeyWithoutValidatingDate() {
         ReportDataKey key = new ReportDataKey.Builder().withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(API_APP_ID).withHealthCode("AAA").withIdentifier("report").build();
+                .withStudyIdentifier(TEST_APP_ID).withHealthCode("AAA").withIdentifier("report").build();
         
-        assertEquals(key.getKeyString(), "AAA:report:api");
-        assertEquals(key.getIndexKeyString(), "api:PARTICIPANT");
+        assertEquals(key.getKeyString(), "AAA:report:" + TEST_APP_ID);
+        assertEquals(key.getIndexKeyString(), TEST_APP_ID + ":PARTICIPANT");
         assertEquals(key.getHealthCode(), "AAA");
         assertEquals(key.getIdentifier(), "report");
         assertEquals(key.getReportType(), ReportType.PARTICIPANT);
@@ -63,7 +63,7 @@ public class ReportDataKeyTest {
         // NOTE: Although we use @JsonIgnore annotations, we never serialize this value and return it via the API,
         // so arguably none of this is necessary.
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode")
-                .withStudyIdentifier(API_APP_ID).withReportType(ReportType.PARTICIPANT)
+                .withStudyIdentifier(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
                 .withIdentifier("report").build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(key);

@@ -4,7 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationTopic;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -51,7 +51,7 @@ public class NotificationTopicServiceTest {
     private static final String CRITERIA_GROUP_1 = "criteria-group-1";
     private static final String CRITERIA_GROUP_2 = "criteria-group-2";
     private static final CriteriaContext EMPTY_CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(API_APP_ID).build();
+            .withStudyIdentifier(TEST_APP_ID).build();
     private static final String HEALTH_CODE = "health-code";
 
     private static final NotificationTopic CRITERIA_TOPIC_1;
@@ -156,23 +156,23 @@ public class NotificationTopicServiceTest {
     @Test
     public void listTopics() {
         List<NotificationTopic> list = Lists.newArrayList(getNotificationTopic(), getNotificationTopic());
-        doReturn(list).when(mockTopicDao).listTopics(API_APP_ID, true);
+        doReturn(list).when(mockTopicDao).listTopics(TEST_APP_ID, true);
         
-        List<NotificationTopic> results = service.listTopics(API_APP_ID, true);
+        List<NotificationTopic> results = service.listTopics(TEST_APP_ID, true);
         assertEquals(results.size(), 2);
         
-        verify(mockTopicDao).listTopics(API_APP_ID, true);
+        verify(mockTopicDao).listTopics(TEST_APP_ID, true);
     }
     
     @Test
     public void getTopic() {
         NotificationTopic topic = getNotificationTopic();
-        doReturn(topic).when(mockTopicDao).getTopic(API_APP_ID, topic.getGuid());
+        doReturn(topic).when(mockTopicDao).getTopic(TEST_APP_ID, topic.getGuid());
         
-        NotificationTopic result = service.getTopic(API_APP_ID, topic.getGuid());
+        NotificationTopic result = service.getTopic(TEST_APP_ID, topic.getGuid());
         assertEquals(result, topic);
         
-        verify(mockTopicDao).getTopic(API_APP_ID, topic.getGuid());
+        verify(mockTopicDao).getTopic(TEST_APP_ID, topic.getGuid());
     }
     
     @Test
@@ -223,23 +223,23 @@ public class NotificationTopicServiceTest {
 
     @Test
     public void deleteTopic() {
-        service.deleteTopic(API_APP_ID, "ABC-DEF");
+        service.deleteTopic(TEST_APP_ID, "ABC-DEF");
         
-        verify(mockTopicDao).deleteTopic(API_APP_ID, "ABC-DEF");
+        verify(mockTopicDao).deleteTopic(TEST_APP_ID, "ABC-DEF");
     }
     
     @Test
     public void deleteTopicPermanently() {
-        service.deleteTopicPermanently(API_APP_ID, "ABC-DEF");
+        service.deleteTopicPermanently(TEST_APP_ID, "ABC-DEF");
         
-        verify(mockTopicDao).deleteTopicPermanently(API_APP_ID, "ABC-DEF");
+        verify(mockTopicDao).deleteTopicPermanently(TEST_APP_ID, "ABC-DEF");
     }
     
     @Test
     public void deleteAllTopics() {
-        service.deleteAllTopics(API_APP_ID);
+        service.deleteAllTopics(TEST_APP_ID);
         
-        verify(mockTopicDao).deleteAllTopics(API_APP_ID);
+        verify(mockTopicDao).deleteAllTopics(TEST_APP_ID);
     }
     
     @Test
@@ -247,9 +247,9 @@ public class NotificationTopicServiceTest {
         NotificationMessage message = TestUtils.getNotificationMessage();
         NotificationTopic topic = getNotificationTopic();
         topic.setTopicARN("topicARN");
-        doReturn(topic).when(mockTopicDao).getTopic(API_APP_ID, "ABC-DEF");
+        doReturn(topic).when(mockTopicDao).getTopic(TEST_APP_ID, "ABC-DEF");
         
-        service.sendNotification(API_APP_ID,  "ABC-DEF", message);
+        service.sendNotification(TEST_APP_ID,  "ABC-DEF", message);
         
         verify(mockSnsClient).publish(publishRequestCaptor.capture());
         PublishRequest request = publishRequestCaptor.getValue();
@@ -279,9 +279,9 @@ public class NotificationTopicServiceTest {
         
         doReturn(mockNotificationRegistration).when(mockRegistrationDao).getRegistration("healthCode", "registrationGuid");
         doReturn(subscribedTopicsStartOfTest).when(mockSubscriptionDao).listSubscriptions(mockNotificationRegistration);
-        doReturn(allTopics).when(mockTopicDao).listTopics(API_APP_ID, false);
+        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_APP_ID, false);
         
-        List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(API_APP_ID, "healthCode", "registrationGuid");
+        List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(TEST_APP_ID, "healthCode", "registrationGuid");
         
         ImmutableMap<String,SubscriptionStatus> statusesByTopicId = Maps.uniqueIndex(statuses, SubscriptionStatus::getTopicGuid);
         
@@ -297,19 +297,19 @@ public class NotificationTopicServiceTest {
         
         doReturn(mockNotificationRegistration).when(mockRegistrationDao).getRegistration("healthCode", "registrationGuid");
         doReturn(subscribedTopicsStartOfTest).when(mockSubscriptionDao).listSubscriptions(mockNotificationRegistration);
-        doReturn(allTopics).when(mockTopicDao).listTopics(API_APP_ID, false);
+        doReturn(allTopics).when(mockTopicDao).listTopics(TEST_APP_ID, false);
         
-        List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(API_APP_ID, "healthCode", "registrationGuid");
+        List<SubscriptionStatus> statuses = service.currentSubscriptionStatuses(TEST_APP_ID, "healthCode", "registrationGuid");
         assertTrue(statuses.isEmpty());
     }    
 
     @Test
     public void manageCriteriaBasedSubscriptions_NoCriteriaTopics() {
         // Topic list includes only manual subscriptions.
-        when(mockTopicDao.listTopics(API_APP_ID, true)).thenReturn(ImmutableList.of(MANUAL_TOPIC_1, MANUAL_TOPIC_2));
+        when(mockTopicDao.listTopics(TEST_APP_ID, true)).thenReturn(ImmutableList.of(MANUAL_TOPIC_1, MANUAL_TOPIC_2));
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(API_APP_ID, EMPTY_CONTEXT, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(TEST_APP_ID, EMPTY_CONTEXT, HEALTH_CODE);
 
         // No subscription changes.
         verifyZeroInteractions(mockSubscriptionDao);
@@ -318,12 +318,12 @@ public class NotificationTopicServiceTest {
     @Test
     public void manageCriteriaBasedSubscriptions_NoRegistrations() {
         // Mock back-ends.
-        when(mockTopicDao.listTopics(API_APP_ID, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_APP_ID, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2));
         when(mockRegistrationDao.listRegistrations(HEALTH_CODE)).thenReturn(ImmutableList.of());
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(API_APP_ID, EMPTY_CONTEXT, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(TEST_APP_ID, EMPTY_CONTEXT, HEALTH_CODE);
 
         // No subscription changes.
         verifyZeroInteractions(mockSubscriptionDao);
@@ -332,7 +332,7 @@ public class NotificationTopicServiceTest {
     @Test
     public void manageCriteriaBasedSubscriptions() {
         // 2 criteria-based topics, 2 manual topics.
-        when(mockTopicDao.listTopics(API_APP_ID, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_APP_ID, true)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2));
 
         // 2 registrations.
@@ -350,7 +350,7 @@ public class NotificationTopicServiceTest {
                 ImmutableSet.of(CRITERIA_GROUP_2)).build();
 
         // Execute test.
-        service.manageCriteriaBasedSubscriptions(API_APP_ID, context, HEALTH_CODE);
+        service.manageCriteriaBasedSubscriptions(TEST_APP_ID, context, HEALTH_CODE);
 
         // We un-sub from criteria topic 1 and sub to criteria topic 2.
         verify(mockSubscriptionDao).unsubscribe(PUSH_REGISTRATION, CRITERIA_TOPIC_1);
@@ -373,7 +373,7 @@ public class NotificationTopicServiceTest {
         when(mockSubscriptionDao.listSubscriptions(SMS_REGISTRATION)).thenReturn(ImmutableList.of());
 
         // Execute.
-        service.unsubscribeAll(API_APP_ID, HEALTH_CODE, SMS_REGISTRATION.getGuid());
+        service.unsubscribeAll(TEST_APP_ID, HEALTH_CODE, SMS_REGISTRATION.getGuid());
 
         // We don't unsubscribe from anything.
         verify(mockSubscriptionDao, never()).unsubscribe(any(), any());
@@ -387,15 +387,15 @@ public class NotificationTopicServiceTest {
         when(mockSubscriptionDao.listSubscriptions(SMS_REGISTRATION)).thenReturn((List) ImmutableList.of(
                 getSub(MANUAL_TOPIC_1.getGuid()), getSub(MANUAL_TOPIC_2.getGuid()), getSub(MANUAL_TOPIC_3.getGuid())));
 
-        when(mockTopicDao.getTopic(API_APP_ID, MANUAL_TOPIC_1.getGuid())).thenReturn(MANUAL_TOPIC_1);
-        when(mockTopicDao.getTopic(API_APP_ID, MANUAL_TOPIC_2.getGuid())).thenReturn(MANUAL_TOPIC_2);
-        when(mockTopicDao.getTopic(API_APP_ID, MANUAL_TOPIC_3.getGuid())).thenReturn(MANUAL_TOPIC_3);
+        when(mockTopicDao.getTopic(TEST_APP_ID, MANUAL_TOPIC_1.getGuid())).thenReturn(MANUAL_TOPIC_1);
+        when(mockTopicDao.getTopic(TEST_APP_ID, MANUAL_TOPIC_2.getGuid())).thenReturn(MANUAL_TOPIC_2);
+        when(mockTopicDao.getTopic(TEST_APP_ID, MANUAL_TOPIC_3.getGuid())).thenReturn(MANUAL_TOPIC_3);
 
         // To test error handling, unsubscribing from topic 2 will throw.
         doThrow(RuntimeException.class).when(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_2);
 
         // Execute.
-        service.unsubscribeAll(API_APP_ID, HEALTH_CODE, SMS_REGISTRATION.getGuid());
+        service.unsubscribeAll(TEST_APP_ID, HEALTH_CODE, SMS_REGISTRATION.getGuid());
 
         // Verify we unsubscribe from all 3 topics.
         verify(mockSubscriptionDao).unsubscribe(SMS_REGISTRATION, MANUAL_TOPIC_1);
@@ -406,10 +406,10 @@ public class NotificationTopicServiceTest {
     @Test
     public void subscribe_NoManualTopics() {
         // Topic list includes only criteria subscriptions.
-        when(mockTopicDao.listTopics(API_APP_ID, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2));
+        when(mockTopicDao.listTopics(TEST_APP_ID, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2));
 
         // Execute test. We pass in criteria topic guids for test purposes, but these are ignored.
-        List<SubscriptionStatus> statusList = service.subscribe(API_APP_ID, HEALTH_CODE, PUSH_REGISTRATION.getGuid(),
+        List<SubscriptionStatus> statusList = service.subscribe(TEST_APP_ID, HEALTH_CODE, PUSH_REGISTRATION.getGuid(),
                 ImmutableSet.of(CRITERIA_TOPIC_1.getGuid(), CRITERIA_TOPIC_2.getGuid()));
         assertTrue(statusList.isEmpty());
 
@@ -426,7 +426,7 @@ public class NotificationTopicServiceTest {
         //   4. Not subscribed and we stay unsubscribed.
 
         // 2 criteria-based topics, just to make sure we ignore those. 4 manual topics.
-        when(mockTopicDao.listTopics(API_APP_ID, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
+        when(mockTopicDao.listTopics(TEST_APP_ID, false)).thenReturn(ImmutableList.of(CRITERIA_TOPIC_1, CRITERIA_TOPIC_2,
                 MANUAL_TOPIC_1, MANUAL_TOPIC_2, MANUAL_TOPIC_3, MANUAL_TOPIC_4));
 
         // Mock registration dao.
@@ -438,7 +438,7 @@ public class NotificationTopicServiceTest {
                 getSub(MANUAL_TOPIC_1.getGuid()), getSub(MANUAL_TOPIC_2.getGuid())));
 
         // Execute. We want to subscribe to 1 and 3.
-        List<SubscriptionStatus> statusList = service.subscribe(API_APP_ID, HEALTH_CODE, PUSH_REGISTRATION.getGuid(),
+        List<SubscriptionStatus> statusList = service.subscribe(TEST_APP_ID, HEALTH_CODE, PUSH_REGISTRATION.getGuid(),
                 ImmutableSet.of(MANUAL_TOPIC_1.getGuid(), MANUAL_TOPIC_3.getGuid()));
         assertEquals(statusList.size(), 4);
 

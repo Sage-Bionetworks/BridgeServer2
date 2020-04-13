@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
@@ -77,7 +77,7 @@ public class TemplateRevisionServiceTest extends Mockito {
         PagedResourceList<? extends TemplateRevision> page = new PagedResourceList<>(list, 2);
         doReturn(page).when(mockTemplateRevisionDao).getTemplateRevisions(TEMPLATE_GUID, 400, 20);
         
-        PagedResourceList<? extends TemplateRevision> result = service.getTemplateRevisions(API_APP_ID,
+        PagedResourceList<? extends TemplateRevision> result = service.getTemplateRevisions(TEST_APP_ID,
                 TEMPLATE_GUID, 400, 20);
         assertSame(result.getItems(), list);
         assertEquals(result.getTotal(), Integer.valueOf(2));
@@ -87,14 +87,14 @@ public class TemplateRevisionServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp="Template not found.")
     public void getTemplateRevisionsTemplateNotFound() {
-        service.getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 400, 20);
+        service.getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 400, 20);
     }
     
     @Test
     public void getTemplateRevisionsSetsDefaults() {
         mockGetTemplate();
         
-        service.getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, null, null);
+        service.getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, null, null);
         
         verify(mockTemplateRevisionDao).getTemplateRevisions(TEMPLATE_GUID, 0, API_DEFAULT_PAGE_SIZE);
     }
@@ -102,21 +102,21 @@ public class TemplateRevisionServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Invalid negative offset value")
     public void getTemplateRevisionsOffsetNegative() {
         mockGetTemplate();
-        service.getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, -1, null);
+        service.getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, -1, null);
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "pageSize must be in range 1-"
             + API_MAXIMUM_PAGE_SIZE)
     public void getTemplateRevisionsExceedMaxPageSize() {
         mockGetTemplate();
-        service.getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 0, 1000);
+        service.getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 0, 1000);
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "pageSize must be in range 1-"
             + API_MAXIMUM_PAGE_SIZE)
     public void getTemplateRevisionsMinPageZero() {
         mockGetTemplate();
-        service.getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 0, 0);
+        service.getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 0, 0);
     }
     
     @Test
@@ -128,7 +128,7 @@ public class TemplateRevisionServiceTest extends Mockito {
         revision.setSubject(SUBJECT);
         revision.setDocumentContent(DOCUMENT_CONTENT);
         
-        CreatedOnHolder holder = service.createTemplateRevision(API_APP_ID, TEMPLATE_GUID, revision);
+        CreatedOnHolder holder = service.createTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, revision);
         assertEquals(holder.getCreatedOn(), CREATED_ON);
         
         verify(mockTemplateRevisionDao).createTemplateRevision(revisionCaptor.capture());
@@ -146,14 +146,14 @@ public class TemplateRevisionServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void createTemplateRevisionTemplateNotFound() throws Exception {
         TemplateRevision revision = TemplateRevision.create();
-        service.createTemplateRevision(API_APP_ID, TEMPLATE_GUID, revision);
+        service.createTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, revision);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createTemplateRevisionInvalid() throws Exception {
         mockGetTemplate();
         
-        service.createTemplateRevision(API_APP_ID, TEMPLATE_GUID, TemplateRevision.create());        
+        service.createTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, TemplateRevision.create());        
     }
     
     @Test
@@ -161,22 +161,22 @@ public class TemplateRevisionServiceTest extends Mockito {
         mockGetTemplate();
         TemplateRevision revision = mockGetTemplateRevision();
         
-        TemplateRevision returned = service.getTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        TemplateRevision returned = service.getTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
         assertSame(returned, revision);
         
-        verify(mockTemplateDao).getTemplate(API_APP_ID, TEMPLATE_GUID);
+        verify(mockTemplateDao).getTemplate(TEST_APP_ID, TEMPLATE_GUID);
         verify(mockTemplateRevisionDao).getTemplateRevision(TEMPLATE_GUID, CREATED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "Template not found.")
     public void getTemplateRevisionTemplateNotFound() throws Exception { 
-        service.getTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        service.getTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "TemplateRevision not found.")
     public void getTemplateRevisionTemplateRevisionNotFound() throws Exception { 
         mockGetTemplate();
-        service.getTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        service.getTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
     
     @Test
@@ -184,7 +184,7 @@ public class TemplateRevisionServiceTest extends Mockito {
         mockGetTemplate();
         mockGetTemplateRevision();
         
-        service.publishTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        service.publishTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
         
         verify(mockTemplateDao).updateTemplate(templateCaptor.capture());
         assertEquals(templateCaptor.getValue().getPublishedCreatedOn(), CREATED_ON);
@@ -192,21 +192,21 @@ public class TemplateRevisionServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "Template not found.")
     public void publishTemplateRevisionTemplateNotFound() {
-        service.publishTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        service.publishTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class, expectedExceptionsMessageRegExp = "TemplateRevision not found.")
     public void publishTemplateRevisionTemplateRevisionNotFound() { 
         mockGetTemplate();
         
-        service.publishTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        service.publishTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
     
     private void mockGetTemplate() {
         Template template = Template.create();
         template.setGuid(TEMPLATE_GUID);
         template.setTemplateType(SMS_PHONE_SIGN_IN);
-        when(mockTemplateDao.getTemplate(API_APP_ID, TEMPLATE_GUID)).thenReturn(Optional.of(template));
+        when(mockTemplateDao.getTemplate(TEST_APP_ID, TEMPLATE_GUID)).thenReturn(Optional.of(template));
     }
 
     private TemplateRevision mockGetTemplateRevision() {

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.testng.annotations.Test;
@@ -19,7 +19,7 @@ public class SignInValidatorTest {
 
     @Test
     public void emailSignInRequestOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).build();
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN_REQUEST, signIn);
     }
     @Test
@@ -29,7 +29,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void emailSignInOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).withToken(TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).withToken(TOKEN).build();
         Validate.entityThrowingException(SignInValidator.EMAIL_SIGNIN, signIn);
     }
     @Test
@@ -40,7 +40,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInRequestOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN_REQUEST, signIn);
     }
     @Test
@@ -50,7 +50,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).withToken(TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).withToken(TOKEN).build();
         Validate.entityThrowingException(SignInValidator.PHONE_SIGNIN, signIn);
     }
     @Test
@@ -68,12 +68,12 @@ public class SignInValidatorTest {
     }
     @Test
     public void passwordSignInWithEmailOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).withPassword(PASSWORD).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).withPassword(PASSWORD).build();
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
     }
     @Test
     public void passwordSignInWithPhoneOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
     }
     @Test
@@ -94,12 +94,12 @@ public class SignInValidatorTest {
     }
     @Test
     public void reauthWithEmailOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).withReauthToken(REAUTH_TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).withReauthToken(REAUTH_TOKEN).build();
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
     }
     @Test
     public void reauthWithPhoneOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).withReauthToken(REAUTH_TOKEN).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).withReauthToken(REAUTH_TOKEN).build();
         Validate.entityThrowingException(SignInValidator.REAUTH_SIGNIN, signIn);
     }
     @Test
@@ -120,10 +120,10 @@ public class SignInValidatorTest {
     }
     @Test
     public void requestResetPasswordOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).build();
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
 
-        signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).build();
+        signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).build();
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
     }
     @Test
@@ -133,10 +133,10 @@ public class SignInValidatorTest {
     }
     @Test
     public void minimalOK() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withEmail(EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
 
-        signIn = new SignIn.Builder().withStudy(API_APP_ID).withPhone(TestConstants.PHONE).build();
+        signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
     }
     @Test
@@ -146,12 +146,12 @@ public class SignInValidatorTest {
     }
     @Test
     public void blankExternalIdSignInInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withExternalId("").build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withExternalId("").build();
         assertValidatorMessage(SignInValidator.MINIMAL, signIn, "SignIn", "email, phone, or external ID is required");
     }
     @Test
     public void externalIdSignInOk() {
-        SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID).withExternalId("external-id").build();
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withExternalId("external-id").build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
     }
 }

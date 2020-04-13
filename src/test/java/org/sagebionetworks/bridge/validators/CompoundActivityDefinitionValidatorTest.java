@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -138,7 +138,7 @@ public class CompoundActivityDefinitionValidatorTest {
 
     private static CompoundActivityDefinition makeValidDef() {
         CompoundActivityDefinition def = CompoundActivityDefinition.create();
-        def.setStudyId(API_APP_ID);
+        def.setStudyId(TEST_APP_ID);
         def.setTaskId(TASK_ID);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);

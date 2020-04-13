@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -34,13 +34,13 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     
     static DynamoCompoundActivityDefinition KEYS = new DynamoCompoundActivityDefinition();
     static {
-        KEYS.setStudyId(API_APP_ID);
+        KEYS.setStudyId(TEST_APP_ID);
         KEYS.setTaskId(TASK_ID);
     }
     
     static DynamoCompoundActivityDefinition COMPOUND_ACTIVITY_DEF = new DynamoCompoundActivityDefinition();
     static {
-        COMPOUND_ACTIVITY_DEF.setStudyId(API_APP_ID);
+        COMPOUND_ACTIVITY_DEF.setStudyId(TEST_APP_ID);
         COMPOUND_ACTIVITY_DEF.setTaskId(TASK_ID);
     }
     
@@ -70,7 +70,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     @Test
     public void createCompoundActivityDefinition() {
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
-        def.setStudyId(API_APP_ID);
+        def.setStudyId(TEST_APP_ID);
         def.setTaskId(TASK_ID);
         def.setVersion(1L);
         
@@ -91,7 +91,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     public void deleteCompoundActivityDefinition() {
         when(mockMapper.load(any())).thenReturn(COMPOUND_ACTIVITY_DEF);
         
-        dao.deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
+        dao.deleteCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
         
         verify(mockMapper).delete(COMPOUND_ACTIVITY_DEF);
     }
@@ -101,7 +101,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         when(mockMapper.load(any())).thenReturn(COMPOUND_ACTIVITY_DEF);
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).delete(any());
         
-        dao.deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
+        dao.deleteCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         when(mockMapper.query(eq(DynamoCompoundActivityDefinition.class),
                 queryCaptor.capture())).thenReturn(mockQueryList);
         
-        dao.deleteAllCompoundActivityDefinitionsInStudy(API_APP_ID);
+        dao.deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
         
         verify(mockMapper).batchDelete(mockQueryList);
     }
@@ -130,7 +130,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         when(mockFailedBatchList.iterator()).thenReturn(ImmutableList.of(failure1, failure2).iterator());
         when(mockMapper.batchDelete(mockQueryList)).thenReturn(mockFailedBatchList);
         
-        dao.deleteAllCompoundActivityDefinitionsInStudy(API_APP_ID);
+        dao.deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
         
         verify(mockMapper).batchDelete(mockQueryList);
     }
@@ -143,29 +143,29 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         when(mockQueryList.toArray()).thenReturn(defList.toArray());
         when(mockMapper.query(eq(DynamoCompoundActivityDefinition.class), any())).thenReturn(mockQueryList);
         
-        List<CompoundActivityDefinition> results = dao.getAllCompoundActivityDefinitionsInStudy(API_APP_ID);
+        List<CompoundActivityDefinition> results = dao.getAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(any(), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyId(), API_APP_ID);
+        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyId(), TEST_APP_ID);
     }
 
     @Test
     public void getCompoundActivityDefinition() {
         when(mockMapper.load(any())).thenReturn(COMPOUND_ACTIVITY_DEF);
         
-        CompoundActivityDefinition result = dao.getCompoundActivityDefinition(API_APP_ID, TASK_ID);
+        CompoundActivityDefinition result = dao.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
         assertSame(result, COMPOUND_ACTIVITY_DEF);
         
         verify(mockMapper).load(defCaptor.capture());
         CompoundActivityDefinition def = defCaptor.getValue();
-        assertEquals(def.getStudyId(), API_APP_ID);
+        assertEquals(def.getStudyId(), TEST_APP_ID);
         assertEquals(def.getTaskId(), TASK_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getCompoundActivityDefinitionEntityNotFoundException() {
-        dao.getCompoundActivityDefinition(API_APP_ID, TASK_ID);
+        dao.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
     }
     
     @Test

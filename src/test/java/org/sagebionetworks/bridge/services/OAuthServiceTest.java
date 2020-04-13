@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 import static org.mockito.Mockito.verify;
@@ -54,8 +54,8 @@ public class OAuthServiceTest {
     private static final Set<String> SCOPE_SET = ImmutableSet.copyOf(SCOPE_LIST);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             INTROSPECT_URL);
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(API_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
-    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(API_APP_ID, VENDOR_ID, null, null);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, null, null);
     
     @Spy
     private OAuthService service;
@@ -81,7 +81,7 @@ public class OAuthServiceTest {
         providers.put("vendorId", PROVIDER);
         
         study = Study.create();
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
         study.setOAuthProviders(providers);
         
         when(service.getDateTime()).thenReturn(NOW);
@@ -100,11 +100,11 @@ public class OAuthServiceTest {
     
     private void setupDaoWithCurrentGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON);
-        when(mockGrantDao.getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
+        when(mockGrantDao.getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
     private void setupDaoWithExpiredGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON.minusHours(4));
-        when(mockGrantDao.getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
+        when(mockGrantDao.getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
     
     private void setupValidGrantCall() {
@@ -153,8 +153,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(TEST_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -168,9 +168,9 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
-        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
+        verify(mockGrantDao).saveAccessGrant(eq(TEST_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -187,9 +187,9 @@ public class OAuthServiceTest {
         } catch(EntityNotFoundException e) {
             
         }
-        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
-        verify(mockGrantDao).deleteAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).deleteAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
     }
@@ -202,7 +202,7 @@ public class OAuthServiceTest {
         
         assertAccessToken(token);
         verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
-        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
+        verify(mockGrantDao).saveAccessGrant(eq(TEST_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -242,8 +242,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(TEST_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -257,8 +257,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(TEST_APP_ID), grantCaptor.capture());
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);

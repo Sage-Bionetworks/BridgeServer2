@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
@@ -9,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -73,7 +73,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
     }
     
     @Test
@@ -92,7 +92,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         PagedResourceList<AssessmentResource> page = new PagedResourceList<>(
                 ImmutableList.of(AssessmentResourceTest.createAssessmentResource()), 100);
-        when(mockService.getResources(API_APP_ID, ASSESSMENT_ID, 10, 100, RESOURCE_CATEGORIES, 1, 1000, true)).thenReturn(page);
+        when(mockService.getResources(TEST_APP_ID, ASSESSMENT_ID, 10, 100, RESOURCE_CATEGORIES, 1, 1000, true)).thenReturn(page);
         
         PagedResourceList<AssessmentResource> retValue = controller.getAssessmentResources(
                 ASSESSMENT_ID, "10", "100", ImmutableSet.of("license", "publication"), 
@@ -101,7 +101,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         
-        verify(mockService).getResources(API_APP_ID, ASSESSMENT_ID, 10, 100, RESOURCE_CATEGORIES, 1, 1000, true);
+        verify(mockService).getResources(TEST_APP_ID, ASSESSMENT_ID, 10, 100, RESOURCE_CATEGORIES, 1, 1000, true);
     }
     
     @Test
@@ -110,7 +110,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         PagedResourceList<AssessmentResource> page = new PagedResourceList<>(
                 ImmutableList.of(AssessmentResourceTest.createAssessmentResource()), 100);
-        when(mockService.getResources(API_APP_ID, ASSESSMENT_ID, 0, API_DEFAULT_PAGE_SIZE, 
+        when(mockService.getResources(TEST_APP_ID, ASSESSMENT_ID, 0, API_DEFAULT_PAGE_SIZE, 
                 null, null, null, false)).thenReturn(page);
         
         PagedResourceList<AssessmentResource> retValue = controller.getAssessmentResources(
@@ -119,7 +119,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(100));
         
-        verify(mockService).getResources(API_APP_ID, ASSESSMENT_ID, 0, API_DEFAULT_PAGE_SIZE, null, null, null, false);
+        verify(mockService).getResources(TEST_APP_ID, ASSESSMENT_ID, 0, API_DEFAULT_PAGE_SIZE, null, null, null, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -143,7 +143,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         controller.createAssessmentResource(ASSESSMENT_ID);
         
-        verify(mockService).createResource(eq(API_APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
+        verify(mockService).createResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
         assertEquals(resourceCaptor.getValue().getTitle(), resource.getTitle());
     }
 
@@ -152,7 +152,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
-        when(mockService.getResource(API_APP_ID, ASSESSMENT_ID, GUID)).thenReturn(resource);
+        when(mockService.getResource(TEST_APP_ID, ASSESSMENT_ID, GUID)).thenReturn(resource);
         
         AssessmentResource retValue = controller.getAssessmentResource(ASSESSMENT_ID, GUID);
         assertSame(retValue, resource);
@@ -168,7 +168,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
         
-        verify(mockService).updateResource(eq(API_APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
+        verify(mockService).updateResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
         assertEquals(resourceCaptor.getValue().getTitle(), resource.getTitle());
         assertEquals(resourceCaptor.getValue().getGuid(), GUID);
     }
@@ -177,14 +177,14 @@ public class AssessmentResourceControllerTest extends Mockito {
     public void deleteAssessmentResourceDefaultsToLogical() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
-        verify(mockService).deleteResource(API_APP_ID, ASSESSMENT_ID, GUID);
+        verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
 
     @Test
     public void deleteAssessmentResourceDeveloperMustBeLogical() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
-        verify(mockService).deleteResource(API_APP_ID, ASSESSMENT_ID, GUID);
+        verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
     
     @Test
@@ -194,7 +194,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
-        verify(mockService).deleteResourcePermanently(API_APP_ID, ASSESSMENT_ID, GUID);
+        verify(mockService).deleteResourcePermanently(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
 
     @Test
@@ -204,7 +204,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "false");
-        verify(mockService).deleteResource(API_APP_ID, ASSESSMENT_ID, GUID);
+        verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -261,7 +261,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         
         controller.publishAssessmentResource(ASSESSMENT_ID);
         
-        verify(mockService).publishAssessmentResources(API_APP_ID, ASSESSMENT_ID, guids);
+        verify(mockService).publishAssessmentResources(TEST_APP_ID, ASSESSMENT_ID, guids);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 

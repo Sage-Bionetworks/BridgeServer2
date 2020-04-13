@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.dynamodb.DynamoStudyDao.STUDY_WHITELIST_PROPERTY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -59,18 +59,18 @@ public class DynamoStudyDaoTest extends Mockito {
         DynamoStudy saved = new DynamoStudy();
         when(mockMapper.load(any())).thenReturn(saved);
         
-        boolean returned = dao.doesIdentifierExist(API_APP_ID);
+        boolean returned = dao.doesIdentifierExist(TEST_APP_ID);
         assertTrue(returned);
         
         verify(mockMapper).load(studyCaptor.capture());
         
         Study study = studyCaptor.getValue();
-        assertEquals(study.getIdentifier(), API_APP_ID);
+        assertEquals(study.getIdentifier(), TEST_APP_ID);
     }
     
     @Test
     public void doesIdentifierExistFails() {
-        boolean returned = dao.doesIdentifierExist(API_APP_ID);
+        boolean returned = dao.doesIdentifierExist(TEST_APP_ID);
         assertFalse(returned);
     }
     
@@ -79,17 +79,17 @@ public class DynamoStudyDaoTest extends Mockito {
         DynamoStudy saved = new DynamoStudy();
         doReturn(saved).when(mockMapper).load(any());
         
-        Study result = dao.getStudy(API_APP_ID);
+        Study result = dao.getStudy(TEST_APP_ID);
         assertSame(result, saved);
         
         verify(mockMapper).load(studyCaptor.capture());
         Study key = studyCaptor.getValue();
-        assertEquals(key.getIdentifier(), API_APP_ID);
+        assertEquals(key.getIdentifier(), TEST_APP_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getStudyNotFound() {
-        dao.getStudy(API_APP_ID);   
+        dao.getStudy(TEST_APP_ID);   
     }
     
     @Test
@@ -126,7 +126,7 @@ public class DynamoStudyDaoTest extends Mockito {
     public void createStudyConditionalCheckFailedException() {
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).save(any());
         Study study = Study.create();
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
         
         dao.createStudy(study);
     }
@@ -161,7 +161,7 @@ public class DynamoStudyDaoTest extends Mockito {
     @Test
     public void deleteStudy() {
         Study study = Study.create();
-        study.setIdentifier(API_APP_ID);
+        study.setIdentifier(TEST_APP_ID);
         
         dao.deleteStudy(study);
         
@@ -183,7 +183,7 @@ public class DynamoStudyDaoTest extends Mockito {
         study.setVersion(2L);
         when(mockMapper.load(any())).thenReturn(study);
         
-        dao.deactivateStudy(API_APP_ID);
+        dao.deactivateStudy(TEST_APP_ID);
         
         verify(mockMapper).save(studyCaptor.capture());
         assertFalse(studyCaptor.getValue().isActive());

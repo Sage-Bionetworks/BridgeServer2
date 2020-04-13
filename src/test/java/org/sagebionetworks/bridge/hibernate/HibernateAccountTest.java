@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
@@ -135,11 +135,11 @@ public class HibernateAccountTest {
     
     @Test
     public void accountSummaryConstructor() {
-        HibernateAccount account = new HibernateAccount(new DateTime(123L), API_APP_ID, "firstName",
+        HibernateAccount account = new HibernateAccount(new DateTime(123L), TEST_APP_ID, "firstName",
                 "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID);
 
         assertEquals(account.getCreatedOn().getMillis(), 123L);
-        assertEquals(account.getStudyId(), API_APP_ID);
+        assertEquals(account.getStudyId(), TEST_APP_ID);
         assertEquals(account.getFirstName(), "firstName");
         assertEquals(account.getLastName(), "lastName");
         assertEquals(account.getEmail(), "email");

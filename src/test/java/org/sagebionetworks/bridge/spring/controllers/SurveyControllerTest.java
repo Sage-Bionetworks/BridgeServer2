@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -184,7 +184,7 @@ public class SurveyControllerTest extends Mockito {
     
     @Test
     public void verifyViewCacheIsWorking() throws Exception {
-        setupContext(API_APP_ID, CONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, CONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(String.class), anyString(), eq(true)))
                 .thenReturn(getSurvey(false));
@@ -192,56 +192,56 @@ public class SurveyControllerTest extends Mockito {
         controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
         controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
         
-        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(API_APP_ID, SURVEY_GUID, true);
+        verify(mockSurveyService, times(1)).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getAllSurveysMostRecentVersionDoNotIncludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        when(mockSurveyService.getAllSurveysMostRecentVersion(API_APP_ID, false)).thenReturn(getSurveys(3, false));
+        when(mockSurveyService.getAllSurveysMostRecentVersion(TEST_APP_ID, false)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion(false);
         
-        verify(mockSurveyService).getAllSurveysMostRecentVersion(API_APP_ID, false);
+        verify(mockSurveyService).getAllSurveysMostRecentVersion(TEST_APP_ID, false);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getAllSurveysMostRecentVersionIncludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        when(mockSurveyService.getAllSurveysMostRecentVersion(API_APP_ID, true)).thenReturn(getSurveys(3, false));
+        when(mockSurveyService.getAllSurveysMostRecentVersion(TEST_APP_ID, true)).thenReturn(getSurveys(3, false));
         
         controller.getAllSurveysMostRecentVersion(true);
         
-        verify(mockSurveyService).getAllSurveysMostRecentVersion(API_APP_ID, true);
+        verify(mockSurveyService).getAllSurveysMostRecentVersion(TEST_APP_ID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionDoNotIncludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(API_APP_ID, false)).thenReturn(getSurveys(2, false));
+        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, false)).thenReturn(getSurveys(2, false));
         
         controller.getAllSurveysMostRecentlyPublishedVersion(false);
         
-        verify(mockSurveyService).getAllSurveysMostRecentlyPublishedVersion(API_APP_ID, false);
+        verify(mockSurveyService).getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, false);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getAllSurveysMostRecentlyPublishedVersionIncludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(API_APP_ID, true)).thenReturn(getSurveys(2, false));
+        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, true)).thenReturn(getSurveys(2, false));
         
         controller.getAllSurveysMostRecentlyPublishedVersion(true);
         
-        verify(mockSurveyService).getAllSurveysMostRecentlyPublishedVersion(API_APP_ID, true);
+        verify(mockSurveyService).getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
@@ -253,10 +253,10 @@ public class SurveyControllerTest extends Mockito {
         List<Survey> surveyList = getSurveys(2, false);
         surveyList.get(0).setGuid("survey-0");
         surveyList.get(1).setGuid("survey-1");
-        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(API_APP_ID, false)).thenReturn(surveyList);
+        when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, false)).thenReturn(surveyList);
 
         // execute and validate
-        ResourceList<Survey> result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(API_APP_ID, false);
+        ResourceList<Survey> result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(TEST_APP_ID, false);
         
         List<Survey> resultSurveyList = result.getItems();
         assertEquals(resultSurveyList.size(), 2);
@@ -266,43 +266,43 @@ public class SurveyControllerTest extends Mockito {
 
     @Test
     public void getSurveyForUser() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, true, true)).thenReturn(getSurvey(false));
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, true, true)).thenReturn(getSurvey(false));
         
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, true, true);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, true, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getSurveyMostRecentlyPublishedVersionForUser() throws Exception {
-        setupContext(API_APP_ID, CONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, CONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(API_APP_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
         
         controller.getSurveyMostRecentlyPublishedVersionForUser(SURVEY_GUID);
         
-        verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(API_APP_ID, SURVEY_GUID, true);
+        verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getSurvey() throws Exception {
-        setupContext(API_APP_ID, CONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, CONSENTED, DEVELOPER);
         doReturn(session).when(controller).getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, true, true)).thenReturn(getSurvey(false));
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, true, true)).thenReturn(getSurvey(false));
         
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, true, true);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, true, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getSurveyForWorker() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, WORKER);
+        setupContext(TEST_APP_ID, UNCONSENTED, WORKER);
         doReturn(session).when(controller).getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         // make survey
         Survey survey = getSurvey(false);
@@ -318,150 +318,150 @@ public class SurveyControllerTest extends Mockito {
 
     @Test
     public void getSurveyMostRecentVersion() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getSurveyMostRecentVersion(API_APP_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
+        when(mockSurveyService.getSurveyMostRecentVersion(TEST_APP_ID, SURVEY_GUID)).thenReturn(getSurvey(false));
         
         controller.getSurveyMostRecentVersion(SURVEY_GUID);
 
-        verify(mockSurveyService).getSurveyMostRecentVersion(API_APP_ID, SURVEY_GUID);
+        verify(mockSurveyService).getSurveyMostRecentVersion(TEST_APP_ID, SURVEY_GUID);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getSurveyMostRecentlyPublishedVersion() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getSessionEitherConsentedOrInRole(DEVELOPER);
-        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(API_APP_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
+        when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, true)).thenReturn(getSurvey(false));
         
         controller.getSurveyMostRecentlyPublishedVersion(SURVEY_GUID);
 
-        verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(API_APP_ID, SURVEY_GUID, true);
+        verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void developerCanLogicallyDelete() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
         assertEquals(result, SurveyController.DELETED_MSG);
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, false, false);
-        verify(mockSurveyService).deleteSurvey(API_APP_ID, survey);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, false, false);
+        verify(mockSurveyService).deleteSurvey(TEST_APP_ID, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void adminCanLogicallyDelete() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, ADMIN);
+        setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
         assertEquals(result, SurveyController.DELETED_MSG);
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, false, false);
-        verify(mockSurveyService).deleteSurvey(API_APP_ID, survey);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, false, false);
+        verify(mockSurveyService).deleteSurvey(TEST_APP_ID, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void workerCannotDelete() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, WORKER);
+        setupContext(TEST_APP_ID, UNCONSENTED, WORKER);
         doReturn(session).when(controller).getSessionIfItExists();
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
     }
 
     @Test
     public void deleteSurveyAllowedForDeveloper() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false))
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false))
                 .thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
         assertEquals(result, SurveyController.DELETED_MSG);
 
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, false, false);
-        verify(mockSurveyService).deleteSurvey(API_APP_ID, survey);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, false, false);
+        verify(mockSurveyService).deleteSurvey(TEST_APP_ID, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void physicalDeleteOfSurveyNotAllowedForDeveloper() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), true);
         assertEquals(result, SurveyController.DELETED_MSG);
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, false, false);
-        verify(mockSurveyService).deleteSurvey(API_APP_ID, survey);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, false, false);
+        verify(mockSurveyService).deleteSurvey(TEST_APP_ID, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void physicalDeleteAllowedForAdmin() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, ADMIN);
+        setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
         StatusMessage result = controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), true);
         assertEquals(result, SurveyController.DELETED_MSG);
         
-        verify(mockSurveyService).getSurvey(API_APP_ID, KEYS, false, false);
-        verify(mockSurveyService).deleteSurveyPermanently(API_APP_ID, survey);
+        verify(mockSurveyService).getSurvey(TEST_APP_ID, KEYS, false, false);
+        verify(mockSurveyService).deleteSurveyPermanently(TEST_APP_ID, survey);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, false, false)).thenReturn(null);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(null);
         
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
     }
 
     @Test
     public void getSurveyAllVersionsExcludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getSurveyAllVersions(API_APP_ID, SURVEY_GUID, false)).thenReturn(getSurveys(3, false));
+        when(mockSurveyService.getSurveyAllVersions(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(getSurveys(3, false));
         
         ResourceList<Survey> result = controller.getSurveyAllVersions(SURVEY_GUID, false);
         assertEquals(result.getItems().size(), 3);
         
-        verify(mockSurveyService).getSurveyAllVersions(API_APP_ID, SURVEY_GUID, false);
+        verify(mockSurveyService).getSurveyAllVersions(TEST_APP_ID, SURVEY_GUID, false);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void getSurveyAllVersionsIncludeDeleted() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getSurveyAllVersions(API_APP_ID, SURVEY_GUID, true)).thenReturn(getSurveys(3, false));
+        when(mockSurveyService.getSurveyAllVersions(TEST_APP_ID, SURVEY_GUID, true)).thenReturn(getSurveys(3, false));
         
         ResourceList<Survey> result = controller.getSurveyAllVersions(SURVEY_GUID, true);
         assertEquals(result.getItems().size(), 3);
         
-        verify(mockSurveyService).getSurveyAllVersions(API_APP_ID, SURVEY_GUID, true);
+        verify(mockSurveyService).getSurveyAllVersions(TEST_APP_ID, SURVEY_GUID, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void createSurvey() throws Exception {
         Survey survey = getSurvey(true);
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         mockRequestBody(mockRequest, survey);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockSurveyService.createSurvey(any(Survey.class))).thenReturn(survey);
@@ -481,10 +481,10 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void versionSurvey() throws Exception {
         Survey survey = getSurvey(false);
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         mockRequestBody(mockRequest, survey);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.versionSurvey(eq(API_APP_ID), any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
+        when(mockSurveyService.versionSurvey(eq(TEST_APP_ID), any(GuidCreatedOnVersionHolder.class))).thenReturn(survey);
         
         GuidCreatedOnVersionHolder result = controller.versionSurvey(SURVEY_GUID, CREATED_ON.toString());
         assertEquals(result.getGuid(), SURVEY_GUID);
@@ -493,43 +493,43 @@ public class SurveyControllerTest extends Mockito {
         
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, CREATED_ON.getMillis());
         
-        verify(mockSurveyService).versionSurvey(API_APP_ID, keys);
+        verify(mockSurveyService).versionSurvey(TEST_APP_ID, keys);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void updateSurvey() throws Exception {
         Survey survey = getSurvey(false);
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         mockRequestBody(mockRequest, survey);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.updateSurvey(eq(API_APP_ID), any(Survey.class))).thenReturn(survey);
+        when(mockSurveyService.updateSurvey(eq(TEST_APP_ID), any(Survey.class))).thenReturn(survey);
         
         controller.updateSurvey(SURVEY_GUID, CREATED_ON.toString());
         
-        verify(mockSurveyService).updateSurvey(eq(API_APP_ID), any(Survey.class));
+        verify(mockSurveyService).updateSurvey(eq(TEST_APP_ID), any(Survey.class));
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void publishSurveyNewSchemaRev() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, DEVELOPER);
+        setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
-        when(mockSurveyService.publishSurvey(eq(API_APP_ID), eq(KEYS), eq(true))).thenReturn(survey);
+        when(mockSurveyService.publishSurvey(eq(TEST_APP_ID), eq(KEYS), eq(true))).thenReturn(survey);
 
         controller.publishSurvey(SURVEY_GUID, CREATED_ON.toString(), true);
         
-        verify(mockSurveyService).publishSurvey(API_APP_ID, KEYS, true);
+        verify(mockSurveyService).publishSurvey(TEST_APP_ID, KEYS, true);
         verifyNoMoreInteractions(mockSurveyService);
     }
 
     @Test
     public void adminRejectedAsUnauthorized() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, ADMIN);
+        setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
         doReturn(session).when(controller).getSessionIfItExists();
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, true, true)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, true, true)).thenReturn(survey);
         
         try {
             controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -541,10 +541,10 @@ public class SurveyControllerTest extends Mockito {
 
     @Test
     public void studyParticipantRejectedAsNotConsented() throws Exception {
-        setupContext(API_APP_ID, UNCONSENTED, null);
+        setupContext(TEST_APP_ID, UNCONSENTED, null);
         doReturn(session).when(controller).getSessionIfItExists();
         Survey survey = getSurvey(false);
-        when(mockSurveyService.getSurvey(API_APP_ID, KEYS, true, true)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, true, true)).thenReturn(survey);
         
         try {
             controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -589,18 +589,18 @@ public class SurveyControllerTest extends Mockito {
     private void assertCacheIsCleared(ExecuteSurvey executeSurvey, int getCount) throws Exception {
         // Setup the cache to return content and verify the cache returns content
         Survey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(API_APP_ID);
+        survey.setStudyIdentifier(TEST_APP_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(CREATED_ON.getMillis());
         
-        setupContext(API_APP_ID, false, DEVELOPER);
+        setupContext(TEST_APP_ID, false, DEVELOPER);
         TestUtils.mockRequestBody(mockRequest, survey);
         doReturn(session).when(controller).getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockSurveyService.getSurvey(eq(API_APP_ID), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
+        when(mockSurveyService.getSurvey(eq(TEST_APP_ID), any(), anyBoolean(), anyBoolean())).thenReturn(survey);
         
         viewCache.getView(viewCache.getCacheKey(
-                Survey.class, SURVEY_GUID, CREATED_ON.toString(), API_APP_ID), () -> { return survey; });
+                Survey.class, SURVEY_GUID, CREATED_ON.toString(), TEST_APP_ID), () -> { return survey; });
         
         // Verify this call hits the cache not the mockSurveyService
         controller.getSurvey(SURVEY_GUID, CREATED_ON.toString());
@@ -609,8 +609,8 @@ public class SurveyControllerTest extends Mockito {
         // Now mock the mockSurveyService because the *next* call (publish/delete/etc) will require it. The 
         // calls under test do not reference the cache, they clear it.
         when(mockSurveyService.publishSurvey(any(), any(), anyBoolean())).thenReturn(survey);
-        when(mockSurveyService.versionSurvey(eq(API_APP_ID), any())).thenReturn(survey);
-        when(mockSurveyService.updateSurvey(eq(API_APP_ID), any())).thenReturn(survey);
+        when(mockSurveyService.versionSurvey(eq(TEST_APP_ID), any())).thenReturn(survey);
+        when(mockSurveyService.updateSurvey(eq(TEST_APP_ID), any())).thenReturn(survey);
         
         // execute the test method, this should delete the cache
         executeSurvey.execute(SURVEY_GUID, CREATED_ON.toString());

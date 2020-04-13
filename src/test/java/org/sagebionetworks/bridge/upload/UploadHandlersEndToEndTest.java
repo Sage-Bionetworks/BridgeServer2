@@ -6,7 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -215,7 +215,7 @@ public class UploadHandlersEndToEndTest {
 
         // set up DecryptHandler - For ease of tests, this will just return the input verbatim.
         UploadArchiveService mockUploadArchiveService = mock(UploadArchiveService.class);
-        when(mockUploadArchiveService.decrypt(eq(API_APP_ID), any(InputStream.class)))
+        when(mockUploadArchiveService.decrypt(eq(TEST_APP_ID), any(InputStream.class)))
                 .thenAnswer(invocation -> invocation.getArgument(1));
 
         DecryptHandler decryptHandler = new DecryptHandler();
@@ -234,16 +234,16 @@ public class UploadHandlersEndToEndTest {
         // mock schema service
         UploadSchemaService mockUploadSchemaService = mock(UploadSchemaService.class);
         if (schema != null) {
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, schema.getSchemaId(),
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(TEST_APP_ID, schema.getSchemaId(),
                     schema.getRevision())).thenReturn(schema);
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(API_APP_ID,
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID,
                     schema.getSchemaId(), schema.getRevision())).thenReturn(schema);
         }
 
         // mock survey service
         SurveyService mockSurveyService = mock(SurveyService.class);
         if (survey != null) {
-            when(mockSurveyService.getSurvey(API_APP_ID,
+            when(mockSurveyService.getSurvey(TEST_APP_ID,
                     new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn()), false, true))
                             .thenReturn(survey);
         }
@@ -272,10 +272,10 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
         strictValidationHandler.setStudyService(mockStudyService);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, "test-substudy", "userId");
+        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "test-substudy", "userId");
         acctSubstudy.setExternalId(EXTERNAL_ID);
 
         // set up TranscribeConsentHandler
@@ -314,7 +314,7 @@ public class UploadHandlersEndToEndTest {
         taskFactory.setHealthDataService(mockHealthDataService);
 
         // create task, execute
-        UploadValidationTask task = taskFactory.newTask(API_APP_ID, UPLOAD);
+        UploadValidationTask task = taskFactory.newTask(TEST_APP_ID, UPLOAD);
         task.run();
     }
 
@@ -329,7 +329,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(record.getCreatedOnTimeZone(), CREATED_ON_TIME_ZONE);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), API_APP_ID);
+        assertEquals(record.getStudyId(), TEST_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_TODAY);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
@@ -368,7 +368,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SURVEY_SCHEMA_REV);
         schema.setSchemaId(SURVEY_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
-        schema.setStudyId(API_APP_ID);
+        schema.setStudyId(TEST_APP_ID);
         schema.setSurveyGuid(SURVEY_GUID);
         schema.setSurveyCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
@@ -559,7 +559,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SCHEMA_REV);
         schema.setSchemaId(SCHEMA_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        schema.setStudyId(API_APP_ID);
+        schema.setStudyId(TEST_APP_ID);
 
         // set up upload files
         String cccTxtContent = "Blob file";

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -50,7 +50,7 @@ public class FPHSServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        externalId = ExternalIdentifier.create(API_APP_ID, EXTERNAL_ID);
+        externalId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         service = new FPHSService();
         service.setFPHSExternalIdentifierDao(mockDao);
         service.setAccountService(mockAccountService);
@@ -58,7 +58,7 @@ public class FPHSServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void validateIdThrowsException() throws Exception {
-        service.verifyExternalIdentifier(ExternalIdentifier.create(API_APP_ID, ""));
+        service.verifyExternalIdentifier(ExternalIdentifier.create(TEST_APP_ID, ""));
     }
     
     @Test
@@ -76,7 +76,7 @@ public class FPHSServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void registerIdThrowsException() throws Exception {
-        service.registerExternalIdentifier(API_APP_ID, EXTERNAL_ID, ExternalIdentifier.create(API_APP_ID, null));
+        service.registerExternalIdentifier(TEST_APP_ID, EXTERNAL_ID, ExternalIdentifier.create(TEST_APP_ID, null));
     }
     
     @Test
@@ -88,13 +88,13 @@ public class FPHSServiceTest {
         when(mockAccount.getAccountSubstudies()).thenReturn(accountSubstudies);
         when(mockAccount.getId()).thenReturn("userId");
         
-        service.registerExternalIdentifier(API_APP_ID, EXTERNAL_ID, externalId);
+        service.registerExternalIdentifier(TEST_APP_ID, EXTERNAL_ID, externalId);
         verify(mockDao).registerExternalId(externalId);
         assertEquals(dataGroups, ImmutableSet.of("football_player"));
         assertEquals(accountSubstudies.size(), 1);
         
         AccountSubstudy acctSubstudy = Iterables.getFirst(accountSubstudies, null);
-        assertEquals(acctSubstudy.getStudyId(), API_APP_ID);
+        assertEquals(acctSubstudy.getStudyId(), TEST_APP_ID);
         assertEquals(acctSubstudy.getSubstudyId(), "harvard");
         assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
     }
@@ -104,7 +104,7 @@ public class FPHSServiceTest {
         // Mock this, throw exception afterward
         doThrow(new EntityNotFoundException(ExternalIdentifier.class, "Not found")).when(mockDao).registerExternalId(externalId);
         try {
-            service.registerExternalIdentifier(API_APP_ID, EXTERNAL_ID, externalId);
+            service.registerExternalIdentifier(TEST_APP_ID, EXTERNAL_ID, externalId);
             fail("Exception should have been thrown");
         } catch(EntityNotFoundException e) {
             verify(mockDao).verifyExternalId(externalId);
@@ -118,7 +118,7 @@ public class FPHSServiceTest {
     public void failureToSetExternalIdRollsBackRegistration() throws Exception {
         doThrow(new RuntimeException()).when(mockDao).verifyExternalId(any());
         try {
-            service.registerExternalIdentifier(API_APP_ID, EXTERNAL_ID, externalId);
+            service.registerExternalIdentifier(TEST_APP_ID, EXTERNAL_ID, externalId);
             fail("Exception should have been thrown");
         } catch(RuntimeException e) {
             verify(mockDao).verifyExternalId(externalId);

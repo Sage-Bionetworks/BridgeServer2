@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -70,7 +70,7 @@ public class SubstudyControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         session = new UserSession();
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
 
         controller.setSubstudyService(service);
 
@@ -93,26 +93,26 @@ public class SubstudyControllerTest extends Mockito {
 
     @Test
     public void getSubstudiesExcludeDeleted() throws Exception {
-        when(service.getSubstudies(API_APP_ID, false)).thenReturn(SUBSTUDIES);
+        when(service.getSubstudies(TEST_APP_ID, false)).thenReturn(SUBSTUDIES);
 
         ResourceList<Substudy> result = controller.getSubstudies(false);
 
         assertEquals(result.getItems().size(), 2);
         assertFalse((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getSubstudies(API_APP_ID, false);
+        verify(service).getSubstudies(TEST_APP_ID, false);
     }
 
     @Test
     public void getSubstudiesIncludeDeleted() throws Exception {
-        when(service.getSubstudies(API_APP_ID, true)).thenReturn(SUBSTUDIES);
+        when(service.getSubstudies(TEST_APP_ID, true)).thenReturn(SUBSTUDIES);
 
         ResourceList<Substudy> result = controller.getSubstudies(true);
 
         assertEquals(result.getItems().size(), 2);
         assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getSubstudies(API_APP_ID, true);
+        verify(service).getSubstudies(TEST_APP_ID, true);
     }
 
     @Test
@@ -127,7 +127,7 @@ public class SubstudyControllerTest extends Mockito {
         VersionHolder result = controller.createSubstudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createSubstudy(eq(API_APP_ID), substudyCaptor.capture());
+        verify(service).createSubstudy(eq(TEST_APP_ID), substudyCaptor.capture());
 
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
@@ -139,7 +139,7 @@ public class SubstudyControllerTest extends Mockito {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
-        when(service.getSubstudy(API_APP_ID, "id", true)).thenReturn(substudy);
+        when(service.getSubstudy(TEST_APP_ID, "id", true)).thenReturn(substudy);
 
         Substudy result = controller.getSubstudy("id");
         assertEquals(result, substudy);
@@ -147,7 +147,7 @@ public class SubstudyControllerTest extends Mockito {
         assertEquals(result.getId(), "oneId");
         assertEquals(result.getName(), "oneName");
 
-        verify(service).getSubstudy(API_APP_ID, "id", true);
+        verify(service).getSubstudy(TEST_APP_ID, "id", true);
     }
 
     @Test
@@ -157,13 +157,13 @@ public class SubstudyControllerTest extends Mockito {
         substudy.setName("oneName");
         mockRequestBody(mockRequest, substudy);
 
-        when(service.updateSubstudy(eq(API_APP_ID), any())).thenReturn(VERSION_HOLDER);
+        when(service.updateSubstudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
 
         VersionHolder result = controller.updateSubstudy("id");
 
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).updateSubstudy(eq(API_APP_ID), substudyCaptor.capture());
+        verify(service).updateSubstudy(eq(TEST_APP_ID), substudyCaptor.capture());
 
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
@@ -175,7 +175,7 @@ public class SubstudyControllerTest extends Mockito {
         StatusMessage result = controller.deleteSubstudy("id", false);
         assertEquals(result, SubstudyController.DELETED_MSG);
 
-        verify(service).deleteSubstudy(API_APP_ID, "id");
+        verify(service).deleteSubstudy(TEST_APP_ID, "id");
     }
 
     @Test
@@ -183,6 +183,6 @@ public class SubstudyControllerTest extends Mockito {
         StatusMessage result = controller.deleteSubstudy("id", true);
         assertEquals(result, SubstudyController.DELETED_MSG);
 
-        verify(service).deleteSubstudyPermanently(API_APP_ID, "id");
+        verify(service).deleteSubstudyPermanently(TEST_APP_ID, "id");
     }
 }

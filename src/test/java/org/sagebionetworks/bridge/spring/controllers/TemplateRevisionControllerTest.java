@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -72,7 +72,7 @@ public class TemplateRevisionControllerTest extends Mockito {
         doReturn(response).when(controller).response();
         
         UserSession session = new UserSession(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
     }
 
@@ -89,19 +89,19 @@ public class TemplateRevisionControllerTest extends Mockito {
     public void getTemplateRevisions() {
         List<TemplateRevision> list = ImmutableList.of(TemplateRevision.create(), TemplateRevision.create(), TemplateRevision.create());
         PagedResourceList<? extends TemplateRevision> page = new PagedResourceList<>(list, 3);
-        doReturn(page).when(mockRevisionService).getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 1000, 100);
+        doReturn(page).when(mockRevisionService).getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 1000, 100);
         
         PagedResourceList<? extends TemplateRevision> result = controller.getTemplateRevisions(TEMPLATE_GUID, "1000", "100");
         assertSame(result, page);
         
-        verify(mockRevisionService).getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 1000, 100);
+        verify(mockRevisionService).getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 1000, 100);
     }
 
     @Test
     public void getTemplateRevisionsSetsDefaults() {
         controller.getTemplateRevisions(TEMPLATE_GUID, null, null);
         
-        verify(mockRevisionService).getTemplateRevisions(API_APP_ID, TEMPLATE_GUID, 0, API_DEFAULT_PAGE_SIZE);
+        verify(mockRevisionService).getTemplateRevisions(TEST_APP_ID, TEMPLATE_GUID, 0, API_DEFAULT_PAGE_SIZE);
     }
     
     @Test
@@ -113,11 +113,11 @@ public class TemplateRevisionControllerTest extends Mockito {
         mockRequestBody(request, revision);
         
         CreatedOnHolder holder = new CreatedOnHolder(CREATED_ON);
-        when(mockRevisionService.createTemplateRevision(eq(API_APP_ID), eq(TEMPLATE_GUID), any())).thenReturn(holder);
+        when(mockRevisionService.createTemplateRevision(eq(TEST_APP_ID), eq(TEMPLATE_GUID), any())).thenReturn(holder);
         
         controller.createTemplateRevision(TEMPLATE_GUID);
         
-        verify(mockRevisionService).createTemplateRevision(eq(API_APP_ID), eq(TEMPLATE_GUID), revisionCaptor.capture());
+        verify(mockRevisionService).createTemplateRevision(eq(TEST_APP_ID), eq(TEMPLATE_GUID), revisionCaptor.capture());
         TemplateRevision captured = revisionCaptor.getValue();
         assertEquals(captured.getMimeType(), TEXT);
         assertEquals(captured.getSubject(), SUBJECT);
@@ -127,12 +127,12 @@ public class TemplateRevisionControllerTest extends Mockito {
     @Test
     public void getTemplateRevision() throws Exception {
         TemplateRevision revision = TemplateRevision.create();
-        when(mockRevisionService.getTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON)).thenReturn(revision);
+        when(mockRevisionService.getTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON)).thenReturn(revision);
         
         TemplateRevision result = controller.getTemplateRevision(TEMPLATE_GUID, CREATED_ON.toString());
         assertSame(result, revision);
         
-        verify(mockRevisionService).getTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        verify(mockRevisionService).getTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
     
     @Test
@@ -140,13 +140,13 @@ public class TemplateRevisionControllerTest extends Mockito {
         StatusMessage message = controller.publishTemplateRevision(TEMPLATE_GUID, CREATED_ON.toString());
         assertSame(message, PUBLISHED_MSG);
         
-        verify(mockRevisionService).publishTemplateRevision(API_APP_ID, TEMPLATE_GUID, CREATED_ON);
+        verify(mockRevisionService).publishTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, CREATED_ON);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "junk is not a DateTime value")
     public void publishTemplateRevisionBadDate() {
         controller.publishTemplateRevision(TEMPLATE_GUID, "junk");
-        verify(mockRevisionService).publishTemplateRevision(API_APP_ID, TEMPLATE_GUID, null);
+        verify(mockRevisionService).publishTemplateRevision(TEST_APP_ID, TEMPLATE_GUID, null);
     }
 }

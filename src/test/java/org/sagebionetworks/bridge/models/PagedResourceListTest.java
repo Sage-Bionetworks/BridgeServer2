@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.testng.Assert.assertEquals;
@@ -30,10 +30,10 @@ public class PagedResourceListTest {
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
         accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy1", "externalId1"), "id", DateTime.now(), DISABLED, API_APP_ID,
+                ImmutableMap.of("substudy1", "externalId1"), "id", DateTime.now(), DISABLED, TEST_APP_ID,
                 ImmutableSet.of()));
         accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy2", "externalId2"), "id2", DateTime.now(), ENABLED, API_APP_ID,
+                ImmutableMap.of("substudy2", "externalId2"), "id2", DateTime.now(), ENABLED, TEST_APP_ID,
                 ImmutableSet.of()));
 
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");

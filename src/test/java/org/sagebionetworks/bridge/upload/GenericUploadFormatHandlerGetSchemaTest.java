@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
@@ -35,7 +35,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
     @BeforeMethod
     public void setup() {
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 DUMMY_SCHEMA);
 
         mockSurveyService = mock(SurveyService.class);
@@ -51,7 +51,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         Survey survey = Survey.create();
         survey.setIdentifier(SCHEMA_ID);
         survey.setSchemaRevision(SCHEMA_REV);
-        when(mockSurveyService.getSurvey(API_APP_ID,
+        when(mockSurveyService.getSurvey(TEST_APP_ID,
                 new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
                         .thenReturn(survey);
 
@@ -61,7 +61,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         infoJsonNode.put(UploadUtil.FIELD_SURVEY_CREATED_ON, SURVEY_CREATED_ON_STRING);
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertSame(retVal, DUMMY_SCHEMA);
     }
 
@@ -72,7 +72,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         Survey survey = Survey.create();
         survey.setIdentifier(SCHEMA_ID);
         survey.setSchemaRevision(null);
-        when(mockSurveyService.getSurvey(API_APP_ID,
+        when(mockSurveyService.getSurvey(TEST_APP_ID,
                 new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
                         .thenReturn(survey);
 
@@ -82,7 +82,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         infoJsonNode.put(UploadUtil.FIELD_SURVEY_CREATED_ON, SURVEY_CREATED_ON_STRING);
 
         // Execute. Returns null.
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertNull(retVal);
     }
 
@@ -92,7 +92,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         Survey survey = Survey.create();
         survey.setIdentifier("missing-schema");
         survey.setSchemaRevision(SCHEMA_REV);
-        when(mockSurveyService.getSurvey(API_APP_ID,
+        when(mockSurveyService.getSurvey(TEST_APP_ID,
                 new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
                 .thenReturn(survey);
 
@@ -102,7 +102,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         infoJsonNode.put(UploadUtil.FIELD_SURVEY_CREATED_ON, SURVEY_CREATED_ON_STRING);
 
         // Execute. Returns null.
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertNull(retVal);
     }
 
@@ -114,7 +114,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         infoJsonNode.put(UploadUtil.FIELD_SCHEMA_REV, SCHEMA_REV);
 
         // execute and validate
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertSame(retVal, DUMMY_SCHEMA);
     }
 
@@ -126,7 +126,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         infoJsonNode.put(UploadUtil.FIELD_SCHEMA_REV, SCHEMA_REV);
 
         // Execute. Returns null.
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertNull(retVal);
     }
 
@@ -136,7 +136,7 @@ public class GenericUploadFormatHandlerGetSchemaTest {
         ObjectNode infoJsonNode = BridgeObjectMapper.get().createObjectNode();
 
         // Execute. Returns null.
-        UploadSchema retVal = handler.getUploadSchema(API_APP_ID, infoJsonNode);
+        UploadSchema retVal = handler.getUploadSchema(TEST_APP_ID, infoJsonNode);
         assertNull(retVal);
     }
 }

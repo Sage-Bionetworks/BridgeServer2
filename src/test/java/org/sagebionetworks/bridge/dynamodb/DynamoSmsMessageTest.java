@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,7 +31,7 @@ public class DynamoSmsMessageTest {
                 "   \"messageBody\":\"" + MESSAGE_BODY + "\",\n" +
                 "   \"messageId\":\"" + MESSAGE_ID + "\",\n" +
                 "   \"smsType\":\"" + SmsType.PROMOTIONAL.getValue().toLowerCase() + "\",\n" +
-                "   \"studyId\":\"" + API_APP_ID + "\"\n" +
+                "   \"studyId\":\"" + TEST_APP_ID + "\"\n" +
                 "}";
 
         // Convert to POJO.
@@ -42,7 +42,7 @@ public class DynamoSmsMessageTest {
         assertEquals(smsMessage.getMessageBody(), MESSAGE_BODY);
         assertEquals(smsMessage.getMessageId(), MESSAGE_ID);
         assertEquals(smsMessage.getSmsType(), SmsType.PROMOTIONAL);
-        assertEquals(smsMessage.getStudyId(), API_APP_ID);
+        assertEquals(smsMessage.getStudyId(), TEST_APP_ID);
 
         // Convert back to JSON node.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(smsMessage, JsonNode.class);
@@ -52,6 +52,6 @@ public class DynamoSmsMessageTest {
         assertEquals(jsonNode.get("messageBody").textValue(), MESSAGE_BODY);
         assertEquals(jsonNode.get("messageId").textValue(), MESSAGE_ID);
         assertEquals(jsonNode.get("smsType").textValue(), SmsType.PROMOTIONAL.getValue().toLowerCase());
-        assertEquals(jsonNode.get("studyId").textValue(), API_APP_ID);
+        assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
     }
 }

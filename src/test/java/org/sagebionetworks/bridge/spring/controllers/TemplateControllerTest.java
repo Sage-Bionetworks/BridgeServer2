@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -76,13 +76,13 @@ public class TemplateControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         
         study = Study.create();
-        study.setIdentifier(API_APP_ID);
-        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(study);
+        study.setIdentifier(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
     }
 
     @Test
@@ -99,19 +99,19 @@ public class TemplateControllerTest extends Mockito {
     public void getTemplates() {
         List<? extends Template> items = ImmutableList.of(Template.create(), Template.create());
         PagedResourceList<? extends Template> page = new PagedResourceList<>(items, 2);
-        doReturn(page).when(mockTemplateService).getTemplatesForType(API_APP_ID, EMAIL_ACCOUNT_EXISTS, 100, 50, true);
+        doReturn(page).when(mockTemplateService).getTemplatesForType(TEST_APP_ID, EMAIL_ACCOUNT_EXISTS, 100, 50, true);
         
         PagedResourceList<? extends Template> result = controller
                 .getTemplates(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), "100", "50", "true");
         assertEquals(result.getItems().size(), 2);
         
-        verify(mockTemplateService).getTemplatesForType(API_APP_ID, EMAIL_ACCOUNT_EXISTS, 100, 50, true);
+        verify(mockTemplateService).getTemplatesForType(TEST_APP_ID, EMAIL_ACCOUNT_EXISTS, 100, 50, true);
     }
     
     @Test
     public void getTemplatesDefaults() {
         controller.getTemplates(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), null, null, null);
-        verify(mockTemplateService).getTemplatesForType(API_APP_ID, EMAIL_ACCOUNT_EXISTS, 0, API_DEFAULT_PAGE_SIZE, false);
+        verify(mockTemplateService).getTemplatesForType(TEST_APP_ID, EMAIL_ACCOUNT_EXISTS, 0, API_DEFAULT_PAGE_SIZE, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -147,12 +147,12 @@ public class TemplateControllerTest extends Mockito {
     public void getTemplate() {
         Template template = Template.create();
         template.setName("This is a name");
-        when(mockTemplateService.getTemplate(API_APP_ID, GUID)).thenReturn(template);
+        when(mockTemplateService.getTemplate(TEST_APP_ID, GUID)).thenReturn(template);
         
         Template result = controller.getTemplate(GUID);
         assertSame(result, template);
         
-        verify(mockTemplateService).getTemplate(API_APP_ID, GUID);
+        verify(mockTemplateService).getTemplate(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -162,13 +162,13 @@ public class TemplateControllerTest extends Mockito {
         mockRequestBody(mockRequest, template);
         
         GuidVersionHolder holder = new GuidVersionHolder(GUID, 2L);
-        when(mockTemplateService.updateTemplate(eq(API_APP_ID), any())).thenReturn(holder);
+        when(mockTemplateService.updateTemplate(eq(TEST_APP_ID), any())).thenReturn(holder);
         
         GuidVersionHolder result = controller.updateTemplate(GUID);
         assertEquals(result.getGuid(), GUID);
         assertEquals(result.getVersion(), new Long(2));
         
-        verify(mockTemplateService).updateTemplate(eq(API_APP_ID), templateCaptor.capture());
+        verify(mockTemplateService).updateTemplate(eq(TEST_APP_ID), templateCaptor.capture());
         assertEquals(templateCaptor.getValue().getName(), "This is a name");
         assertEquals(templateCaptor.getValue().getGuid(), GUID);
     }
@@ -178,7 +178,7 @@ public class TemplateControllerTest extends Mockito {
         StatusMessage message = controller.deleteTemplate(GUID, null);
         assertEquals(message.getMessage(), "Template deleted.");
         
-        verify(mockTemplateService).deleteTemplate(API_APP_ID, GUID);
+        verify(mockTemplateService).deleteTemplate(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class TemplateControllerTest extends Mockito {
         StatusMessage message = controller.deleteTemplate(GUID, "false");
         assertEquals(message.getMessage(), "Template deleted.");
         
-        verify(mockTemplateService).deleteTemplate(API_APP_ID, GUID);
+        verify(mockTemplateService).deleteTemplate(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -194,7 +194,7 @@ public class TemplateControllerTest extends Mockito {
         StatusMessage message = controller.deleteTemplate(GUID, "true");
         assertEquals(message.getMessage(), "Template deleted.");
         
-        verify(mockTemplateService).deleteTemplate(API_APP_ID, GUID);
+        verify(mockTemplateService).deleteTemplate(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -203,6 +203,6 @@ public class TemplateControllerTest extends Mockito {
         StatusMessage message = controller.deleteTemplate(GUID, "true");
         assertEquals(message.getMessage(), "Template deleted.");
         
-        verify(mockTemplateService).deleteTemplatePermanently(API_APP_ID, GUID);
+        verify(mockTemplateService).deleteTemplatePermanently(TEST_APP_ID, GUID);
     }
 }

@@ -9,7 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -95,12 +95,12 @@ public class HealthDataServiceSubmitHealthDataTest {
     public void before() throws Exception {
         // Mock Schema Service.
         schema = UploadSchema.create();
-        schema.setStudyId(API_APP_ID);
+        schema.setStudyId(TEST_APP_ID);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(API_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(
                 schema);
 
         // Mock survey service.
@@ -111,7 +111,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         survey.setSchemaRevision(SCHEMA_REV);
 
         mockSurveyService = mock(SurveyService.class);
-        when(mockSurveyService.getSurvey(API_APP_ID,
+        when(mockSurveyService.getSurvey(TEST_APP_ID,
                 new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true))
                 .thenReturn(survey);
 
@@ -150,13 +150,13 @@ public class HealthDataServiceSubmitHealthDataTest {
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void nullSubmission() throws Exception {
-        svc.submitHealthData(API_APP_ID, PARTICIPANT, null);
+        svc.submitHealthData(TEST_APP_ID, PARTICIPANT, null);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void invalidSubmission() throws Exception {
         HealthDataSubmission submission = makeValidBuilderWithSchema().withData(null).build();
-        svc.submitHealthData(API_APP_ID, PARTICIPANT, submission);
+        svc.submitHealthData(TEST_APP_ID, PARTICIPANT, submission);
     }
 
     @Test
@@ -189,7 +189,7 @@ public class HealthDataServiceSubmitHealthDataTest {
                 .build();
 
         // execute
-        HealthDataRecord svcOutputRecord = svc.submitHealthData(API_APP_ID, PARTICIPANT, submission);
+        HealthDataRecord svcOutputRecord = svc.submitHealthData(TEST_APP_ID, PARTICIPANT, submission);
 
         // verify that we return the record returned by the internal getRecordById() call.
         assertSame(svcOutputRecord, createdRecord);
@@ -201,7 +201,7 @@ public class HealthDataServiceSubmitHealthDataTest {
 
         UploadValidationContext context = contextCaptor.getValue();
         assertEquals(context.getHealthCode(), HEALTH_CODE);
-        assertEquals(context.getStudy(), API_APP_ID);
+        assertEquals(context.getStudy(), TEST_APP_ID);
 
         // We generate an upload ID and use it for the record ID.
         String uploadId = context.getUploadId();
@@ -222,7 +222,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(contextRecord.getSchemaId(), SCHEMA_ID);
         assertEquals(contextRecord.getSchemaRevision().intValue(), SCHEMA_REV);
         assertEquals(contextRecord.getHealthCode(), HEALTH_CODE);
-        assertEquals(contextRecord.getStudyId(), API_APP_ID);
+        assertEquals(contextRecord.getStudyId(), TEST_APP_ID);
         assertEquals(contextRecord.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(contextRecord.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
         assertEquals(contextRecord.getCreatedOn().longValue(), CREATED_ON_MILLIS);
@@ -282,7 +282,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         HealthDataSubmission submission = makeValidBuilderWithSurvey().withData(inputData).build();
 
         // execute
-        svc.submitHealthData(API_APP_ID, PARTICIPANT, submission);
+        svc.submitHealthData(TEST_APP_ID, PARTICIPANT, submission);
 
         // Verify that the we wrote the correct schemaId/Rev to the record. (Everything else is already tested in a
         // previous test case.)
@@ -309,7 +309,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(answersNode.get("answer-me").textValue(), "C");
 
         // validate we did in fact call SurveyService
-        verify(mockSurveyService).getSurvey(API_APP_ID,
+        verify(mockSurveyService).getSurvey(TEST_APP_ID,
                 new GuidCreatedOnVersionHolderImpl(SURVEY_GUID, SURVEY_CREATED_ON_MILLIS), false, true);
     }
 
@@ -344,7 +344,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         HealthDataSubmission submission = submissionBuilder.withData(inputData).build();
 
         // Execute.
-        svc.submitHealthData(API_APP_ID, PARTICIPANT, submission);
+        svc.submitHealthData(TEST_APP_ID, PARTICIPANT, submission);
 
         // Everything else is covered by previous tests. Just verify that the data is submitted, has no schema ID or
         // rev, and has raw data.
@@ -385,7 +385,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         HealthDataSubmission submission = makeValidBuilderWithSchema().withData(inputData).build();
 
         // execute - This throws.
-        svc.submitHealthData(API_APP_ID, PARTICIPANT, submission);
+        svc.submitHealthData(TEST_APP_ID, PARTICIPANT, submission);
     }
 
     private static HealthDataSubmission.Builder makeValidBuilderWithSchema() {

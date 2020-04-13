@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -71,7 +71,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(API_APP_ID);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
     }
@@ -132,13 +132,13 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         resource.setGuid("junkGuid");
         mockRequestBody(mockRequest, resource);
         
-        when(mockService.updateSharedResource(eq(API_APP_ID), eq(ASSESSMENT_ID), any()))
+        when(mockService.updateSharedResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any()))
                 .thenReturn(resource);
         
         AssessmentResource retValue = controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
         assertSame(retValue, resource);
         
-        verify(mockService).updateSharedResource(eq(API_APP_ID), eq(ASSESSMENT_ID),
+        verify(mockService).updateSharedResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID),
                 resourceCaptor.capture());
         AssessmentResource captured = resourceCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);
@@ -179,12 +179,12 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
 
         List<AssessmentResource> list = ImmutableList.of(AssessmentResourceTest.createAssessmentResource(),
                 AssessmentResourceTest.createAssessmentResource(), AssessmentResourceTest.createAssessmentResource());
-        when(mockService.importAssessmentResources(eq(API_APP_ID), eq(ASSESSMENT_ID), any())) 
+        when(mockService.importAssessmentResources(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())) 
             .thenReturn(list);
         
         ResourceList<AssessmentResource> retValue = controller.importAssessmentResources(ASSESSMENT_ID);
         assertSame(retValue.getItems(), list);
         
-        verify(mockService).importAssessmentResources(API_APP_ID, ASSESSMENT_ID, guids);
+        verify(mockService).importAssessmentResources(TEST_APP_ID, ASSESSMENT_ID, guids);
     }
 }

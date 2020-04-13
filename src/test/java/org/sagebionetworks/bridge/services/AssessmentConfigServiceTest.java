@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
@@ -9,6 +8,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -80,13 +80,13 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void getAssessmentConfig() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
-        AssessmentConfig retValue = service.getAssessmentConfig(API_APP_ID, GUID);
+        AssessmentConfig retValue = service.getAssessmentConfig(TEST_APP_ID, GUID);
         assertSame(retValue, existing);
         
         verify(mockDao).getAssessmentConfig(GUID);
@@ -95,22 +95,22 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Assessment not found.")
     public void getAssessmentConfigAssessmentNotFound() {
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
-        service.getAssessmentConfig(API_APP_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "AssessmentConfig not found.")
     public void getAssessmentConfigAssessmentConfigNotFound() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.empty());
         
-        service.getAssessmentConfig(API_APP_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -118,7 +118,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         AssessmentConfig existing = new AssessmentConfig();
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
-        AssessmentConfig retValue = service.getSharedAssessmentConfig(API_APP_ID, GUID);
+        AssessmentConfig retValue = service.getSharedAssessmentConfig(TEST_APP_ID, GUID);
         assertSame(retValue, existing);
         
         verify(mockDao).getAssessmentConfig(GUID);
@@ -137,14 +137,14 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.empty());
         
-        service.getSharedAssessmentConfig(API_APP_ID, GUID);
+        service.getSharedAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test
     public void updateAssessmentConfig() {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
@@ -157,9 +157,9 @@ public class AssessmentConfigServiceTest extends Mockito {
         config.setConfig(configNode);
         config.setVersion(3L);
         
-        service.updateAssessmentConfig(API_APP_ID, GUID, config);
+        service.updateAssessmentConfig(TEST_APP_ID, GUID, config);
         
-        verify(mockDao).updateAssessmentConfig(eq(API_APP_ID), assessmentCaptor.capture(), eq(GUID),
+        verify(mockDao).updateAssessmentConfig(eq(TEST_APP_ID), assessmentCaptor.capture(), eq(GUID),
                 configCaptor.capture());
         
         AssessmentConfig captured = configCaptor.getValue();
@@ -175,7 +175,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     public void updateAssessmentConfigInvalid() {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
@@ -186,7 +186,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         config.setConfig(TestUtils.getClientData());
         config.setVersion(3L);
         
-        service.updateAssessmentConfig(API_APP_ID, GUID, config);
+        service.updateAssessmentConfig(TEST_APP_ID, GUID, config);
     }
     
     @Test
@@ -196,7 +196,7 @@ public class AssessmentConfigServiceTest extends Mockito {
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
                 new PropertyInfo.Builder().withPropName("identifier").build())));
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
@@ -211,7 +211,7 @@ public class AssessmentConfigServiceTest extends Mockito {
                 "intValue", JsonNodeFactory.instance.numberNode(10)
         ));
         
-        AssessmentConfig retValue = service.customizeAssessmentConfig(API_APP_ID, GUID, updates);
+        AssessmentConfig retValue = service.customizeAssessmentConfig(TEST_APP_ID, GUID, updates);
         assertSame(retValue, existing);
         
         // Not changed... it's not in the list of allowable fields to customize.
@@ -233,7 +233,7 @@ public class AssessmentConfigServiceTest extends Mockito {
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
                 new PropertyInfo.Builder().withPropName("identifier").build())));
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
@@ -249,7 +249,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         nodeUpdates.put("identifier", null);
         updates.put("anIdentifier", nodeUpdates);
         
-        service.customizeAssessmentConfig(API_APP_ID, GUID, updates);
+        service.customizeAssessmentConfig(TEST_APP_ID, GUID, updates);
     }
     
     @Test
@@ -258,7 +258,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build()
         )));
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
@@ -274,7 +274,7 @@ public class AssessmentConfigServiceTest extends Mockito {
                 "stringValue", JsonNodeFactory.instance.textNode("some value")
         ));
         
-        AssessmentConfig retValue = service.customizeAssessmentConfig(API_APP_ID, GUID, updates);
+        AssessmentConfig retValue = service.customizeAssessmentConfig(TEST_APP_ID, GUID, updates);
         assertSame(retValue, existing);
         
         verify(mockDao, never()).customizeAssessmentConfig(any(), any());
@@ -283,7 +283,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = "Updates to configuration are missing")
     public void customizeAssessmentConfigNull() {
-        service.customizeAssessmentConfig(API_APP_ID, GUID, null);
+        service.customizeAssessmentConfig(TEST_APP_ID, GUID, null);
     }
 
     // {"booleanFlag":true,"stringValue":"testString","intValue":4,
@@ -303,10 +303,10 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("substudyB");
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
-        service.getAssessmentConfig(API_APP_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -317,11 +317,11 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("substudyB");
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig config = new AssessmentConfig();
-        service.updateAssessmentConfig(API_APP_ID, GUID, config);
+        service.updateAssessmentConfig(TEST_APP_ID, GUID, config);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -332,9 +332,9 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("substudyB");
-        when(mockAssessmentService.getAssessmentByGuid(API_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
-        service.customizeAssessmentConfig(API_APP_ID, GUID, new HashMap<>());
+        service.customizeAssessmentConfig(TEST_APP_ID, GUID, new HashMap<>());
     }
 }
