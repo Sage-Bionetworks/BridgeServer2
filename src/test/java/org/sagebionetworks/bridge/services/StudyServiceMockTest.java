@@ -102,9 +102,7 @@ public class StudyServiceMockTest extends Mockito {
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
-    // Don't use TestConstants.TEST_STUDY since this conflicts with the whitelist.
     private static final String TEST_STUDY_ID = "test-study";
-
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
     private static final String TEST_USER_SYNAPSE_ID = "synapse-id-1";
@@ -197,6 +195,7 @@ public class StudyServiceMockTest extends Mockito {
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
         study = getTestStudy();
+        study.setIdentifier(TEST_STUDY_ID);
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
         
         GuidVersionHolder keys = new GuidVersionHolder("guid", 1L);
@@ -395,7 +394,7 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void sendVerifyEmailNullType() throws Exception {
-        service.sendVerifyEmail(API_APP_ID, null);
+        service.sendVerifyEmail(TEST_STUDY_ID, null);
     }
 
     // This can be manually triggered through the API even though there's no consent
@@ -406,7 +405,7 @@ public class StudyServiceMockTest extends Mockito {
         study.setConsentNotificationEmail(null);
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
         
-        service.sendVerifyEmail(API_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_STUDY_ID, StudyEmailType.CONSENT_NOTIFICATION);
     }
     
     @Test
@@ -416,7 +415,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute.
-        service.sendVerifyEmail(API_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_STUDY_ID, StudyEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
         verifyEmailVerificationEmail(study.getConsentNotificationEmail());
@@ -424,28 +423,28 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullToken() {
-        service.verifyEmail(API_APP_ID, null, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, null, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailEmptyToken() {
-        service.verifyEmail(API_APP_ID, "", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, "", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailBlankToken() {
-        service.verifyEmail(API_APP_ID, "   ", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, "   ", StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullType() {
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, null);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullVerificationData() {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(null);
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -463,7 +462,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -481,7 +480,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -499,7 +498,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockStudyDao.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Will throw.
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test
@@ -517,7 +516,7 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getStudy(TEST_STUDY_ID)).thenReturn(study);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
-        service.verifyEmail(API_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_STUDY_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
 
         ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
@@ -699,8 +698,8 @@ public class StudyServiceMockTest extends Mockito {
         PagedResourceList<? extends Template> page2 = new PagedResourceList<>(ImmutableList.of(), 3);
 
         doReturn(page1, page2).when(mockTemplateService).getTemplatesForType(
-                API_APP_ID, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
-        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(API_APP_ID), 
+                TEST_STUDY_ID, EMAIL_ACCOUNT_EXISTS, 0, 50, true);
+        doReturn(page2).when(mockTemplateService).getTemplatesForType(eq(TEST_STUDY_ID), 
                 not(eq(EMAIL_ACCOUNT_EXISTS)), eq(0), eq(50), eq(true));
         
         // execute
@@ -713,8 +712,8 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(study.getIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_STUDY_ID);
-        verify(mockTemplateService).deleteTemplatesForStudy(API_APP_ID);
-        verify(mockFileService).deleteAllStudyFiles(API_APP_ID);
+        verify(mockTemplateService).deleteTemplatesForStudy(TEST_STUDY_ID);
+        verify(mockFileService).deleteAllStudyFiles(TEST_STUDY_ID);
     }
 
     private Template createTemplate(String guid) {
@@ -1442,7 +1441,7 @@ public class StudyServiceMockTest extends Mockito {
         
         service.createStudy(study);
         
-        verify(mockUploadCertService, never()).createCmsKeyPair(API_APP_ID);
+        verify(mockUploadCertService, never()).createCmsKeyPair(TEST_STUDY_ID);
     }
     
     @Test
