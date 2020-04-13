@@ -111,7 +111,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
         try {
-            studyService.getStudy(API_APP_ID);
+            studyService.getStudy(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Shared Module Library");

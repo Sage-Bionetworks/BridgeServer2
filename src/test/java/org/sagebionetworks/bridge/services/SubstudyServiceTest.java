@@ -4,6 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -75,7 +76,7 @@ public class SubstudyServiceTest {
         when(substudyDao.getSubstudies(TEST_APP_ID, false)).thenReturn(substudies);
         
         Set<String> substudyIds = service.getSubstudyIds(TEST_APP_ID);
-        assertEquals(substudyIds, TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(substudyIds, USER_SUBSTUDY_IDS);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

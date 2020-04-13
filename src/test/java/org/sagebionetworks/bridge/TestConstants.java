@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 
@@ -34,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class TestConstants {
+    public static final String TEST_APP_ID = "test-study";
 
     public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
             .withSubject("a subject").withMessage("a message").build();
@@ -54,9 +54,9 @@ public class TestConstants {
     public static final byte[] MOCK_MD5 = { -104, 10, -30, -37, 25, -113, 92, -9, 69, -118, -46, -87, 11, -14, 38, -61 };
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
-    public static final AccountId ACCOUNT_ID = AccountId.forId(API_APP_ID, USER_ID);
+    public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
-            .withUserId("user-id").withStudyIdentifier(API_APP_ID).build();
+            .withUserId("user-id").withStudyIdentifier(TEST_APP_ID).build();
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";
@@ -76,8 +76,6 @@ public class TestConstants {
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
     
     public static final DateTime ENROLLMENT = DateTime.parse("2015-04-10T10:40:34.000-07:00");
-    
-    public static final String TEST_APP_ID = "test-study";
     
     /**
      * During tests, must sometimes pause because the underlying query uses a DynamoDB global 
