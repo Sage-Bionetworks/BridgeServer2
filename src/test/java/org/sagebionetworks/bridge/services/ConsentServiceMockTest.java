@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -100,7 +101,7 @@ public class ConsentServiceMockTest {
             .withId(ID).withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.TRUE)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder().withUserId(PARTICIPANT.getId())
-            .withStudyIdentifier(TestConstants.TEST_STUDY).build();
+            .withStudyIdentifier(API_APP_ID).build();
 
     @Spy
     private ConsentService consentService;
@@ -181,12 +182,12 @@ public class ConsentServiceMockTest {
         when(studyConsentView.getDocumentContent())
                 .thenReturn("<p>This is content of the final HTML document we assemble.</p>");
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(studyConsentView);
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
-        when(subpopService.getSubpopulation(study, SUBPOP_GUID))
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID))
                 .thenThrow(new EntityNotFoundException(Subpopulation.class));
 
         consentService.getConsentSignature(study, SUBPOP_GUID, PARTICIPANT.getId());
@@ -203,7 +204,7 @@ public class ConsentServiceMockTest {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotConsentToSubpopulationToWhichTheyAreNotMapped() {
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID))
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID))
                 .thenThrow(new EntityNotFoundException(Subpopulation.class));
 
         consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
@@ -367,7 +368,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         account.setDataGroups(dataGroups);
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
@@ -450,7 +451,7 @@ public class ConsentServiceMockTest {
             }
         }
 
-        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
@@ -463,7 +464,7 @@ public class ConsentServiceMockTest {
         account.setDataGroups(dataGroups);
 
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
@@ -535,7 +536,7 @@ public class ConsentServiceMockTest {
         assertEquals(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn(), new Long(WITHDREW_ON));
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
 
-        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
@@ -549,7 +550,7 @@ public class ConsentServiceMockTest {
         assertEquals(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn(), new Long(WITHDREW_ON));
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
 
-        verify(notificationsService).deleteAllRegistrations(study.getStudyIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
@@ -678,7 +679,7 @@ public class ConsentServiceMockTest {
         setupWithdrawTest(true, true);
         study.setConsentNotificationEmail(null);
 
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(study.getIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
 
         consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
@@ -916,7 +917,7 @@ public class ConsentServiceMockTest {
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
 
-        when(subpopService.getSubpopulation(study.getStudyIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
         consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,

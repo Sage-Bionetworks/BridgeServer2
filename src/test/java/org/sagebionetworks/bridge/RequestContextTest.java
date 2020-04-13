@@ -8,7 +8,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
@@ -46,7 +45,6 @@ public class RequestContextTest {
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerStudyId());
-        assertNull(nullContext.getCallerStudyIdentifier());
         assertNull(nullContext.getCallerUserId());
         assertNotNull(nullContext.getMetrics());
         assertTrue(nullContext.getCallerLanguages().isEmpty());
@@ -67,7 +65,6 @@ public class RequestContextTest {
         assertTrue(NULL_INSTANCE.getCallerSubstudies().isEmpty());
         assertTrue(NULL_INSTANCE.getCallerRoles().isEmpty());
         assertNull(NULL_INSTANCE.getCallerStudyId());
-        assertNull(NULL_INSTANCE.getCallerStudyIdentifier());
         assertNull(NULL_INSTANCE.getCallerUserId());
         assertNull(NULL_INSTANCE.getMetrics());
         assertTrue(NULL_INSTANCE.getCallerLanguages().isEmpty());
@@ -81,13 +78,12 @@ public class RequestContextTest {
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudyId(TEST_STUDY)
-                .withCallerSubstudies(SUBSTUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
-                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerSubstudies(SUBSTUDIES)
+                .withCallerStudyId(API_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
+                .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
 
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerStudyId(), API_APP_ID);
-        assertEquals(context.getCallerStudyIdentifier(), TEST_STUDY);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
@@ -103,15 +99,15 @@ public class RequestContextTest {
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudyId(TEST_STUDY)
-                .withCallerSubstudies(SUBSTUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
-                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();        
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
+                .withCallerStudyId(API_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
+                .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
+                .withCallerClientInfo(clientInfo).build();
         
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
         assertEquals(copy.getId(), "did-change-this");
         assertEquals(copy.getCallerStudyId(), API_APP_ID);
-        assertEquals(copy.getCallerStudyIdentifier(), TEST_STUDY);
         assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);
         assertEquals(copy.getCallerUserId(), USER_ID);

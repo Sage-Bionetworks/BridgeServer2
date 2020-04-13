@@ -17,9 +17,7 @@ import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeZoneAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.StringListConverter;
 import org.sagebionetworks.bridge.hibernate.StringSetConverter;
-import org.sagebionetworks.bridge.hibernate.StudyIdentifierConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -58,8 +56,7 @@ public final class RequestInfo {
     private DateTime uploadedOn;
     @Convert(converter = DateTimeZoneAttributeConverter.class)
     private DateTimeZone timeZone;
-    @Convert(converter = StudyIdentifierConverter.class)
-    private StudyIdentifier studyIdentifier;
+    private String studyIdentifier;
 
     // Hibernate needs a default constructor; the easiest thing to do is to remove the 
     // existing constructor and allow the builder to set private fields directly.
@@ -104,7 +101,7 @@ public final class RequestInfo {
         return timeZone;
     }
     
-    public StudyIdentifier getStudyIdentifier() {
+    public String getStudyIdentifier() {
         return studyIdentifier;
     }
 
@@ -154,7 +151,7 @@ public final class RequestInfo {
         private DateTime signedInOn;
         private DateTime uploadedOn;
         private DateTimeZone timeZone = DateTimeZone.UTC;
-        private StudyIdentifier studyIdentifier;
+        private String studyIdentifier;
 
         public Builder copyOf(RequestInfo requestInfo) {
             if (requestInfo != null) {
@@ -232,7 +229,7 @@ public final class RequestInfo {
             }
             return this;
         }
-        public Builder withStudyIdentifier(StudyIdentifier studyIdentifier) {
+        public Builder withStudyIdentifier(String studyIdentifier) {
             if (studyIdentifier != null) {
                 this.studyIdentifier = studyIdentifier;
             }

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
@@ -39,7 +38,7 @@ public class StudyParticipantValidatorTest {
     
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TestConstants.TEST_STUDY, "id");
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(API_APP_ID, "id");
     private Study study;
 
     private StudyParticipantValidator validator;
@@ -165,8 +164,8 @@ public class StudyParticipantValidatorTest {
     public void externalIdOnlyOK() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
 
-        when(externalIdService.getExternalId(TEST_STUDY, "external-id"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY, "external-id")));
+        when(externalIdService.getExternalId(API_APP_ID, "external-id"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(API_APP_ID, "external-id")));
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         Validate.entityThrowingException(validator, participant);
@@ -280,7 +279,7 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void createWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
+        when(externalIdService.getExternalId(study.getIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
         StudyParticipant participant = withExternalId("foo");
 
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
@@ -321,7 +320,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void updateWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
+        when(externalIdService.getExternalId(study.getIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
         StudyParticipant participant = withExternalIdAndId("foo");
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, false);
@@ -375,8 +374,8 @@ public class StudyParticipantValidatorTest {
         // In other words, you can "taint" a user with substudies, putting them in a limited security role.
         StudyParticipant participant = withSubstudies("substudyA", "substudyB");
         
-        when(substudyService.getSubstudy(study.getStudyIdentifier(), "substudyA", false)).thenReturn(substudy);
-        when(substudyService.getSubstudy(study.getStudyIdentifier(), "substudyB", false)).thenReturn(substudy);
+        when(substudyService.getSubstudy(study.getIdentifier(), "substudyA", false)).thenReturn(substudy);
+        when(substudyService.getSubstudy(study.getIdentifier(), "substudyB", false)).thenReturn(substudy);
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         Validate.entityThrowingException(validator, participant);
@@ -389,7 +388,7 @@ public class StudyParticipantValidatorTest {
             // The user (in three substudies) can create a participant in only one of those substudies
             StudyParticipant participant = withSubstudies("substudyB");
             
-            when(substudyService.getSubstudy(study.getStudyIdentifier(), "substudyB", false)).thenReturn(substudy);
+            when(substudyService.getSubstudy(study.getIdentifier(), "substudyB", false)).thenReturn(substudy);
             
             validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
             Validate.entityThrowingException(validator, participant);

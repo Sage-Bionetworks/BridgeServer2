@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 import static org.testng.Assert.assertEquals;
@@ -67,7 +66,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void importAssessment() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
@@ -82,7 +81,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void importAssessmentWithNewId() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
@@ -193,7 +192,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void updateSharedAssessment() throws Exception {
         // You do need a session for this call
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();

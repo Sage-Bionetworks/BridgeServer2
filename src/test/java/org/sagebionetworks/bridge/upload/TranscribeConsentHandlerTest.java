@@ -23,7 +23,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -75,7 +74,7 @@ public class TranscribeConsentHandlerTest {
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
         inputRecord = HealthDataRecord.create();
         context = new UploadValidationContext();
-        context.setStudy(TestConstants.TEST_STUDY);
+        context.setStudy(API_APP_ID);
         context.setHealthCode(HEALTH_CODE);
         context.setHealthDataRecord(inputRecord);
     }

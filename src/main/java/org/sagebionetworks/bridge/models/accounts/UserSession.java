@@ -8,7 +8,6 @@ import java.util.Set;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -24,7 +23,7 @@ public class UserSession {
     private String sessionToken;
     private String internalSessionToken;
     private String reauthToken;
-    private StudyIdentifier studyIdentifier;
+    private String studyIdentifier;
     private StudyParticipant participant;
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
 
@@ -84,10 +83,10 @@ public class UserSession {
     public void setEnvironment(Environment environment) {
         this.environment = environment;
     }
-    public StudyIdentifier getStudyIdentifier() {
+    public String getStudyIdentifier() {
         return studyIdentifier;
     }
-    public void setStudyIdentifier(StudyIdentifier studyIdentifier) {
+    public void setStudyIdentifier(String studyIdentifier) {
         this.studyIdentifier = studyIdentifier;
     }
     public boolean doesConsent() {

@@ -234,16 +234,16 @@ public class UploadHandlersEndToEndTest {
         // mock schema service
         UploadSchemaService mockUploadSchemaService = mock(UploadSchemaService.class);
         if (schema != null) {
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, schema.getSchemaId(),
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, schema.getSchemaId(),
                     schema.getRevision())).thenReturn(schema);
-            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(TestConstants.TEST_STUDY,
+            when(mockUploadSchemaService.getUploadSchemaByIdAndRevNoThrow(API_APP_ID,
                     schema.getSchemaId(), schema.getRevision())).thenReturn(schema);
         }
 
         // mock survey service
         SurveyService mockSurveyService = mock(SurveyService.class);
         if (survey != null) {
-            when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY,
+            when(mockSurveyService.getSurvey(API_APP_ID,
                     new GuidCreatedOnVersionHolderImpl(survey.getGuid(), survey.getCreatedOn()), false, true))
                             .thenReturn(survey);
         }
@@ -272,7 +272,7 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(STUDY);
         strictValidationHandler.setStudyService(mockStudyService);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(API_APP_ID, "test-substudy", "userId");
@@ -314,7 +314,7 @@ public class UploadHandlersEndToEndTest {
         taskFactory.setHealthDataService(mockHealthDataService);
 
         // create task, execute
-        UploadValidationTask task = taskFactory.newTask(TestConstants.TEST_STUDY, UPLOAD);
+        UploadValidationTask task = taskFactory.newTask(API_APP_ID, UPLOAD);
         task.run();
     }
 

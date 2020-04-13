@@ -241,7 +241,7 @@ public class AuthenticationService {
 
     public void signOut(final UserSession session) {
         if (session != null) {
-            AccountId accountId = AccountId.forId(session.getStudyIdentifier().getIdentifier(), session.getId());
+            AccountId accountId = AccountId.forId(session.getStudyIdentifier(), session.getId());
             accountService.deleteReauthToken(accountId);
             // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
             // removed, but once the reauth token is removed from the user table, the reauth token will no 
@@ -331,7 +331,7 @@ public class AuthenticationService {
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
-        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getStudyIdentifier(), externalId)
+        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getIdentifier(), externalId)
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
         // The *caller* must be associated to the external IDs substudy, if any
@@ -414,7 +414,7 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getStudyIdentifier().getIdentifier(), account.getId());
+            clearSession(context.getStudyIdentifier(), account.getId());
             Study study = studyService.getStudy(signIn.getStudyId());
             session = getSessionFromAccount(study, context, account);
 
@@ -465,7 +465,7 @@ public class AuthenticationService {
                     .withLanguages(context.getLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
-            accountService.editAccount(study.getStudyIdentifier(), participant.getHealthCode(),
+            accountService.editAccount(study.getIdentifier(), participant.getHealthCode(),
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
@@ -478,7 +478,7 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setIpAddress(reqContext.getCallerIpAddress());
-        session.setStudyIdentifier(study.getStudyIdentifier());
+        session.setStudyIdentifier(study.getIdentifier());
         session.setReauthToken(account.getReauthToken());
         
         CriteriaContext newContext = updateContextFromSession(context, session);

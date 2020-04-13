@@ -54,7 +54,7 @@ public class OAuthService {
         if (provider == null) {
             throw new EntityNotFoundException(OAuthProvider.class);
         }
-        ForwardCursorPagedResourceList<OAuthAccessGrant> list = grantDao.getAccessGrants(study, vendorId,
+        ForwardCursorPagedResourceList<OAuthAccessGrant> list = grantDao.getAccessGrants(study.getIdentifier(), vendorId,
                 offsetKey, pageSize);
 
         List<String> healthCodes = list.getItems().stream().map(OAuthAccessGrant::getHealthCode)
@@ -99,7 +99,7 @@ public class OAuthService {
                 grant = providerService.requestAccessGrant(provider, authToken);
             } else {
                 // If not, start first by seeing if a grant has been saved
-                grant = grantDao.getAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
+                grant = grantDao.getAccessGrant(study.getIdentifier(), vendorId, healthCode);
             }
             // If no grant was saved or successfully returned from a grant, it's not found.
             if (grant == null) {
@@ -112,13 +112,13 @@ public class OAuthService {
             // 502, 503, and 504 are potentially transient errors, but other server errors, delete the grant.
             // It is in an unknown state.
             if (e.getStatusCode() < 502 || e.getStatusCode() > 504) {
-                grantDao.deleteAccessGrant(study.getStudyIdentifier(), vendorId, healthCode);
+                grantDao.deleteAccessGrant(study.getIdentifier(), vendorId, healthCode);
             }
             throw e;
         }
         grant.setVendorId(vendorId);
         grant.setHealthCode(healthCode);
-        grantDao.saveAccessGrant(study.getStudyIdentifier(), grant);
+        grantDao.saveAccessGrant(study.getIdentifier(), grant);
         return getTokenForGrant(grant);
     }
     

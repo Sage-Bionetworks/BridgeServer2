@@ -18,8 +18,6 @@ import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -76,8 +74,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         if (subpop.getVersion() == null || subpop.getGuidString() == null) {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }
-        StudyIdentifier studyId = new StudyIdentifierImpl(subpop.getStudyIdentifier());
-        Subpopulation existing = getSubpopulation(studyId, subpop.getGuid());
+        Subpopulation existing = getSubpopulation(subpop.getStudyIdentifier(), subpop.getGuid());
         if (existing.isDeleted() && subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
@@ -94,9 +91,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public List<Subpopulation> getSubpopulations(StudyIdentifier studyId, boolean createDefault, boolean includeDeleted) {
+    public List<Subpopulation> getSubpopulations(String studyId, boolean createDefault, boolean includeDeleted) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setStudyIdentifier(studyId.getIdentifier());
+        hashKey.setStudyIdentifier(studyId);
         
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
@@ -121,10 +118,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation createDefaultSubpopulation(StudyIdentifier studyId) {
+    public Subpopulation createDefaultSubpopulation(String studyId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
-        subpop.setStudyIdentifier(studyId.getIdentifier());
-        subpop.setGuidString(studyId.getIdentifier());
+        subpop.setStudyIdentifier(studyId);
+        subpop.setGuidString(studyId);
         subpop.setName("Default Consent Group");
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
@@ -143,9 +140,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation getSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setStudyIdentifier(studyId.getIdentifier());
+        hashKey.setStudyIdentifier(studyId);
         hashKey.setGuidString(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);
@@ -158,7 +155,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public void deleteSubpopulation(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
         
         if (subpop.isDeleted()) {
@@ -172,7 +169,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public void deleteSubpopulationPermanently(StudyIdentifier studyId, SubpopulationGuid subpopGuid) {
+    public void deleteSubpopulationPermanently(String studyId, SubpopulationGuid subpopGuid) {
         Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
 
         criteriaDao.deleteCriteria(subpop.getCriteria().getKey());

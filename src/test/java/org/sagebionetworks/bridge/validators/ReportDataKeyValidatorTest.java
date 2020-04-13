@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
@@ -14,7 +14,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void validStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withStudyIdentifier(API_APP_ID)
                 .withIdentifier("foo")
                 .withReportType(ReportType.STUDY).build();
         
@@ -24,7 +24,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void validParticipantKey() {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withStudyIdentifier(TestConstants.TEST_STUDY)
+                .withStudyIdentifier(API_APP_ID)
                 .withHealthCode("ABC")
                 .withIdentifier("foo")
                 .withReportType(ReportType.PARTICIPANT).build();
@@ -35,7 +35,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void reportTypeMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withHealthCode("ABC")
+            new ReportDataKey.Builder().withStudyIdentifier(API_APP_ID).withHealthCode("ABC")
                     .withIdentifier("foo").build();
             
         }, "reportType", "is required");
@@ -44,7 +44,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void healthCodeMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withIdentifier("foo")
+            new ReportDataKey.Builder().withStudyIdentifier(API_APP_ID).withIdentifier("foo")
                     .withReportType(ReportType.PARTICIPANT).build();
         }, "healthCode", "is required for participant reports");
     }
@@ -52,7 +52,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void identifierMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY)
+            new ReportDataKey.Builder().withStudyIdentifier(API_APP_ID)
                     .withReportType(ReportType.STUDY).build();
         }, "identifier", "cannot be missing or blank");
     }
@@ -60,7 +60,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void identifierInvalid() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TestConstants.TEST_STUDY).withIdentifier("My Report")
+            new ReportDataKey.Builder().withStudyIdentifier(API_APP_ID).withIdentifier("My Report")
                     .withReportType(ReportType.STUDY).build();
         }, "identifier", "can only contain letters, numbers, underscore and dash");
     }

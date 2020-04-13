@@ -18,7 +18,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 
 public class ExportViaSqsServiceTest {
@@ -57,7 +56,7 @@ public class ExportViaSqsServiceTest {
         service.setSqsClient(mockSqsClient);
 
         // execute and validate
-        service.startOnDemandExport(TestConstants.TEST_STUDY);
+        service.startOnDemandExport(API_APP_ID);
 
         String sqsMessageText = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessageText);

@@ -74,7 +74,7 @@ public class UploadValidationTaskTest {
         upload.setUploadId("test-upload");
 
         ctx = new UploadValidationContext();
-        ctx.setStudy(study);
+        ctx.setStudy(study.getIdentifier());
         ctx.setUpload(upload);
 
         // Set up other pre-reqs

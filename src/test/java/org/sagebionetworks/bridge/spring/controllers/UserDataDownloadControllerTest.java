@@ -24,14 +24,12 @@ import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.UserDataDownloadService;
 
 public class UserDataDownloadControllerTest extends Mockito {
     private static final String START_DATE = "2015-08-15";
     private static final String END_DATE = "2015-08-19";
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "test-user-id";
     private static final String EMAIL = "email@email.com";
 

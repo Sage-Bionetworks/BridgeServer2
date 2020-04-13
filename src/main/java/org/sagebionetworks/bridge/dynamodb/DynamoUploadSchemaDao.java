@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.UploadSchemaDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /** DynamoDB implementation of the {@link org.sagebionetworks.bridge.dao.UploadSchemaDao} */
@@ -90,19 +89,19 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(String studyId, boolean includeDeleted) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
-        hashKey.setStudyId(studyId.getIdentifier());
+        hashKey.setStudyId(studyId);
         return indexHelper(STUDY_ID_INDEX_NAME, hashKey, includeDeleted);
     }
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getUploadSchemaAllRevisionsById(StudyIdentifier studyId, String schemaId,
+    public List<UploadSchema> getUploadSchemaAllRevisionsById(String studyId, String schemaId,
             boolean includeDeleted) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setSchemaId(schemaId);
 
         // Get all revisions, in reverse sort order (highest first)
@@ -121,9 +120,9 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public UploadSchema getUploadSchemaByIdAndRevision(StudyIdentifier studyId, String schemaId, int revision) {
+    public UploadSchema getUploadSchemaByIdAndRevision(String studyId, String schemaId, int revision) {
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setSchemaId(schemaId);
         key.setRevision(revision);
 
@@ -132,10 +131,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public UploadSchema getUploadSchemaLatestRevisionById(StudyIdentifier studyId, String schemaId) {
+    public UploadSchema getUploadSchemaLatestRevisionById(String studyId, String schemaId) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setSchemaId(schemaId);
 
         // Get the latest revision. This is accomplished by scanning the range key backwards.

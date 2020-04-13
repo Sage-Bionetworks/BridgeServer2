@@ -6,12 +6,26 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Iterables;
 
 public final class AccountSummary {
+    
+    // This is the one class that exposes this object through the API. Because this 
+    // may involve updating some downstream projects like BridgeWorkerPlatform, leave
+    // it until the full refactor to getAppId() is done, then swap out. getStudyId has
+    // been added and will be refactored to getAppId in the next step of migration.
+    public final static class StudyIdentifier {
+        private final String identifier;
+        StudyIdentifier(String identifier) {
+            this.identifier = identifier;
+        }
+        public String getIdentifier() {
+            return identifier;
+        }
+    }
+    
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -21,7 +35,7 @@ public final class AccountSummary {
     private final String id;
     private final DateTime createdOn;
     private final AccountStatus status;
-    private final StudyIdentifier studyIdentifier;
+    private final String studyId;
     private final Set<String> substudyIds;
     
     @JsonCreator
@@ -29,8 +43,7 @@ public final class AccountSummary {
             @JsonProperty("email") String email, @JsonProperty("synapseUserId") String synapseUserId,
             @JsonProperty("phone") Phone phone, @JsonProperty("externalIds") Map<String, String> externalIds,
             @JsonProperty("id") String id, @JsonProperty("createdOn") DateTime createdOn,
-            @JsonProperty("status") AccountStatus status,
-            @JsonProperty("studyIdentifier") StudyIdentifier studyIdentifier,
+            @JsonProperty("status") AccountStatus status, @JsonProperty("studyIdentifier") String studyId,
             @JsonProperty("substudyIds") Set<String> substudyIds) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -41,7 +54,7 @@ public final class AccountSummary {
         this.id = id;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
-        this.studyIdentifier = studyIdentifier;
+        this.studyId = studyId;
         this.substudyIds = substudyIds;
     }
     
@@ -93,7 +106,11 @@ public final class AccountSummary {
     }
     
     public StudyIdentifier getStudyIdentifier() {
-        return studyIdentifier;
+        return new StudyIdentifier(studyId);
+    }
+    
+    public String getStudyId() { 
+        return studyId;
     }
     
     public Set<String> getSubstudyIds() {
@@ -103,7 +120,7 @@ public final class AccountSummary {
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                studyIdentifier, substudyIds);
+                studyId, substudyIds);
     }
 
     @Override
@@ -117,7 +134,7 @@ public final class AccountSummary {
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(externalIds, other.externalIds) && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
-                && Objects.equals(id, other.id) && Objects.equals(studyIdentifier, other.studyIdentifier)
+                && Objects.equals(id, other.id) && Objects.equals(studyId, other.studyId)
                 && Objects.equals(substudyIds, other.substudyIds);
     }
     

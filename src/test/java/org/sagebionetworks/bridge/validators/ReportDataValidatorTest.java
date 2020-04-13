@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 public class ReportDataValidatorTest {
     
@@ -32,7 +31,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -46,7 +45,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -84,7 +83,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -97,7 +96,7 @@ public class ReportDataValidatorTest {
     public void keyIsValidated() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -115,7 +114,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -136,7 +135,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(new StudyIdentifierImpl("test-study")).build();
+                .withStudyIdentifier("test-study").build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);

@@ -35,7 +35,7 @@ public class CacheKeyTest {
     
     @Test
     public void reauthTokenLookupKey() {
-        assertEquals(CacheKey.reauthTokenLookupKey("ABC", TestConstants.TEST_STUDY).toString(), "ABC:api:ReauthToken");
+        assertEquals(CacheKey.reauthTokenLookupKey("ABC", API_APP_ID).toString(), "ABC:api:ReauthToken");
     }
     
     @Test
@@ -45,7 +45,7 @@ public class CacheKeyTest {
     
     @Test
     public void appConfigList() {
-        assertEquals(CacheKey.appConfigList(TestConstants.TEST_STUDY).toString(), "api:AppConfigList");
+        assertEquals(CacheKey.appConfigList(API_APP_ID).toString(), "api:AppConfigList");
     }
 
     @Test
@@ -74,13 +74,13 @@ public class CacheKeyTest {
     
     @Test
     public void itpWithPhone() {
-        assertEquals(CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, TestConstants.PHONE).toString(),
+        assertEquals(CacheKey.itp(SUBPOP_GUID, API_APP_ID, TestConstants.PHONE).toString(),
                 "guid:" + TestConstants.PHONE.getNumber() + ":api:itp");
     }
     
     @Test
     public void itpWithEmail() {
-        assertEquals(CacheKey.itp(SUBPOP_GUID, TestConstants.TEST_STUDY, "email@email.com").toString(),
+        assertEquals(CacheKey.itp(SUBPOP_GUID, API_APP_ID, "email@email.com").toString(),
                 "guid:email@email.com:api:itp");
     }
     
@@ -121,12 +121,12 @@ public class CacheKeyTest {
     
     @Test
     public void subpop() {
-        assertEquals(CacheKey.subpop(SUBPOP_GUID, TestConstants.TEST_STUDY).toString(), "guid:api:Subpopulation");
+        assertEquals(CacheKey.subpop(SUBPOP_GUID, API_APP_ID).toString(), "guid:api:Subpopulation");
     }
     
     @Test
     public void subpopList() {
-        assertEquals(CacheKey.subpopList(TestConstants.TEST_STUDY).toString(), "api:SubpopulationList");
+        assertEquals(CacheKey.subpopList(API_APP_ID).toString(), "api:SubpopulationList");
     }
     
     @Test
@@ -151,7 +151,7 @@ public class CacheKeyTest {
     
     @Test
     public void isPublic() {
-        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TestConstants.TEST_STUDY);
+        CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", API_APP_ID);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
         CacheKey publicKey = CacheKey.study("studyId");

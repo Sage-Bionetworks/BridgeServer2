@@ -117,7 +117,7 @@ public class HealthDataController extends BaseController {
 
         // Submit health data.
         HealthDataSubmission healthDataSubmission = parseJson(HealthDataSubmission.class);
-        HealthDataRecord savedRecord = healthDataService.submitHealthData(study.getStudyIdentifier(), participant,
+        HealthDataRecord savedRecord = healthDataService.submitHealthData(study.getIdentifier(), participant,
                 healthDataSubmission);
 
         // Write record ID into the metrics, for logging and diagnostics.

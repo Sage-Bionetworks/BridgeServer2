@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.FileMetadataValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -76,7 +75,7 @@ public class FileService {
         this.s3Client = s3Client;
     }
     
-    public PagedResourceList<FileMetadata> getFiles(StudyIdentifier studyId, int offset, int pageSize, boolean includeDeleted) {
+    public PagedResourceList<FileMetadata> getFiles(String studyId, int offset, int pageSize, boolean includeDeleted) {
         checkNotNull(studyId);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -85,7 +84,7 @@ public class FileService {
         return fileMetadataDao.getFiles(studyId, offset, pageSize, includeDeleted);
     }
     
-    public FileMetadata getFile(StudyIdentifier studyId, String guid) {
+    public FileMetadata getFile(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -93,7 +92,7 @@ public class FileService {
                 .orElseThrow(() -> new EntityNotFoundException(FileMetadata.class));
     }
     
-    public FileMetadata createFile(StudyIdentifier studyId, FileMetadata metadata) {
+    public FileMetadata createFile(String studyId, FileMetadata metadata) {
         checkNotNull(studyId);
         checkNotNull(metadata);
         
@@ -104,13 +103,13 @@ public class FileService {
         metadata.setVersion(0);
         metadata.setDeleted(false);
         metadata.setGuid(generateGuid());
-        metadata.setStudyId(studyId.getIdentifier());
+        metadata.setStudyId(studyId);
         metadata.setCreatedOn(timestamp);
         metadata.setModifiedOn(timestamp);
         return fileMetadataDao.createFile(metadata);
     }
     
-    public FileMetadata updateFile(StudyIdentifier studyId, FileMetadata metadata) {
+    public FileMetadata updateFile(String studyId, FileMetadata metadata) {
         checkNotNull(studyId);
         checkNotNull(metadata);
         
@@ -123,13 +122,13 @@ public class FileService {
         }
         Validate.entityThrowingException(FileMetadataValidator.INSTANCE, metadata);
         
-        metadata.setStudyId(studyId.getIdentifier());
+        metadata.setStudyId(studyId);
         metadata.setModifiedOn(getDateTime());
         metadata.setCreatedOn(existing.getCreatedOn());
         return fileMetadataDao.updateFile(metadata);
     }
     
-    public void deleteFile(StudyIdentifier studyId, String guid) {
+    public void deleteFile(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
@@ -142,14 +141,14 @@ public class FileService {
         fileMetadataDao.updateFile(existing);
     }
     
-    public void deleteFilePermanently(StudyIdentifier studyId, String guid) {
+    public void deleteFilePermanently(String studyId, String guid) {
         checkNotNull(studyId);
         checkNotNull(guid);
         
         fileMetadataDao.deleteFilePermanently(studyId, guid);
     }
     
-    public void deleteAllStudyFiles(StudyIdentifier studyId) {
+    public void deleteAllStudyFiles(String studyId) {
         checkNotNull(studyId);
         
         fileMetadataDao.deleteAllStudyFiles(studyId);
@@ -162,7 +161,7 @@ public class FileService {
         return fileRevisionDao.getFileRevision(guid, createdOn);
     }
     
-    public PagedResourceList<FileRevision> getFileRevisions(StudyIdentifier studyId, String guid, int offset, int pageSize) {
+    public PagedResourceList<FileRevision> getFileRevisions(String studyId, String guid, int offset, int pageSize) {
         // Will throw if the file doesn't exist in the caller's study
         getFile(studyId, guid);
         
@@ -176,7 +175,7 @@ public class FileService {
         return revisions;
     }
     
-    public FileRevision createFileRevision(StudyIdentifier studyId, FileRevision revision) {
+    public FileRevision createFileRevision(String studyId, FileRevision revision) {
         Validate.entityThrowingException(INSTANCE, revision);
         
         // Will throw if the file doesn't exist in the caller's study
@@ -205,7 +204,7 @@ public class FileService {
         return revision;
     }
     
-    public void finishFileRevision(StudyIdentifier studyId, String fileGuid, DateTime createdOn) {
+    public void finishFileRevision(String studyId, String fileGuid, DateTime createdOn) {
         FileRevision existing = fileRevisionDao.getFileRevision(fileGuid, createdOn)
                 .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
         

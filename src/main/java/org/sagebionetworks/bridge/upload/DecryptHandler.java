@@ -48,7 +48,7 @@ public class DecryptHandler implements UploadValidationHandler {
         // Note: Neither FileHelper nor CmsEncryptor introduce any buffering. Since we're creating and closing streams,
         // it's our responsibility to add the buffered stream.
         try (InputStream inputFileStream = getBufferedInputStream(fileHelper.getInputStream(context.getDataFile()));
-             InputStream decryptedInputFileStream = uploadArchiveService.decrypt(context.getStudy().getIdentifier(),
+             InputStream decryptedInputFileStream = uploadArchiveService.decrypt(context.getStudy(),
                      inputFileStream);
              OutputStream outputFileStream = new BufferedOutputStream(fileHelper.getOutputStream(outputFile))) {
             ByteStreams.copy(decryptedInputFileStream, outputFileStream);

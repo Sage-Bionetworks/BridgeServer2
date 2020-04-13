@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -26,9 +28,7 @@ import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -70,7 +70,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
 
         // mock controller with session with shared study
         mockSession = new UserSession();
-        mockSession.setStudyIdentifier(BridgeConstants.SHARED_STUDY_ID);
+        mockSession.setStudyIdentifier(SHARED_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
         
         mockRequest = mock(HttpServletRequest.class);
@@ -369,7 +369,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void nonSharedStudyCantCreate() throws Exception {
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
         controller.createMetadata();
     }
 
@@ -378,7 +378,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
         controller.deleteMetadataByIdAllVersions(MODULE_ID, false);
     }
 
@@ -386,14 +386,14 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     public void nonSharedStudyCantDeleteByIdAndVersion() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
         controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, false);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void nonSharedStudyUpdate() throws Exception {
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
         controller.updateMetadata(MODULE_ID, MODULE_VERSION);
     }
 

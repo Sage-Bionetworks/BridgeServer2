@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
@@ -226,16 +225,6 @@ public class DynamoStudyTest {
         // Deserialize back to a POJO and verify.
         final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
         assertEquals(deserStudy, study);
-    }
-    
-    @Test
-    public void settingStringOrObjectStudyIdentifierSetsTheOther() {
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier("test-study");
-        assertEquals(new StudyIdentifierImpl("test-study"), study.getStudyIdentifier());
-        
-        study.setIdentifier(null);
-        assertNull(study.getStudyIdentifier());
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

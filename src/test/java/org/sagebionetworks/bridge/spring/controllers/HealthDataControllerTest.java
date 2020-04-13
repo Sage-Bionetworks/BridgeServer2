@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -32,7 +31,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
@@ -131,11 +129,11 @@ public class HealthDataControllerTest extends Mockito {
 
         // Mock services.
         when(mockParticipantService.getParticipant(same(STUDY), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(STUDY);
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
         mockSession.setParticipant(PARTICIPANT);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
@@ -218,7 +216,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate call to healthDataService
         ArgumentCaptor<HealthDataSubmission> submissionCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
-        verify(mockHealthDataService).submitHealthData(eq(TEST_STUDY), same(PARTICIPANT), submissionCaptor.capture());
+        verify(mockHealthDataService).submitHealthData(eq(API_APP_ID), same(PARTICIPANT), submissionCaptor.capture());
 
         HealthDataSubmission submission = submissionCaptor.getValue();
         assertEquals(submission.getAppVersion(), APP_VERSION);
@@ -273,7 +271,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // validate call to healthDataService
         ArgumentCaptor<HealthDataSubmission> submissionCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
-        verify(mockHealthDataService).submitHealthData(eq(TestConstants.TEST_STUDY), same(OTHER_PARTICIPANT),
+        verify(mockHealthDataService).submitHealthData(eq(API_APP_ID), same(OTHER_PARTICIPANT),
                 submissionCaptor.capture());
 
         HealthDataSubmission submission = submissionCaptor.getValue();

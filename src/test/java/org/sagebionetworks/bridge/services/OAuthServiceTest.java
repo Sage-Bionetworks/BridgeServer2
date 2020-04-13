@@ -25,7 +25,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -82,7 +81,7 @@ public class OAuthServiceTest {
         providers.put("vendorId", PROVIDER);
         
         study = Study.create();
-        study.setIdentifier(TestConstants.TEST_STUDY.getIdentifier());
+        study.setIdentifier(API_APP_ID);
         study.setOAuthProviders(providers);
         
         when(service.getDateTime()).thenReturn(NOW);
@@ -101,11 +100,11 @@ public class OAuthServiceTest {
     
     private void setupDaoWithCurrentGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON);
-        when(mockGrantDao.getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
+        when(mockGrantDao.getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
     private void setupDaoWithExpiredGrant() {
         OAuthAccessGrant grant = createGrant(EXPIRES_ON.minusHours(4));
-        when(mockGrantDao.getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
+        when(mockGrantDao.getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE)).thenReturn(grant);
     }
     
     private void setupValidGrantCall() {
@@ -154,8 +153,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -169,9 +168,9 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.requestAccessToken(study, HEALTH_CODE, NO_AUTH_TOKEN);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
+        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -188,9 +187,9 @@ public class OAuthServiceTest {
         } catch(EntityNotFoundException e) {
             
         }
-        verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
-        verify(mockGrantDao).deleteAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).deleteAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
     }
@@ -203,7 +202,7 @@ public class OAuthServiceTest {
         
         assertAccessToken(token);
         verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
+        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -229,7 +228,7 @@ public class OAuthServiceTest {
             
         }
         verify(mockProviderService).requestAccessGrant(PROVIDER, AUTH_TOKEN);
-        verify(mockGrantDao).deleteAccessGrant(study.getStudyIdentifier(), VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).deleteAccessGrant(study.getIdentifier(), VENDOR_ID, HEALTH_CODE);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
     }
@@ -243,8 +242,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
         assertGrant(grantCaptor.getValue());
@@ -258,8 +257,8 @@ public class OAuthServiceTest {
         OAuthAccessToken token = service.getAccessToken(study, VENDOR_ID, HEALTH_CODE);
         
         assertAccessToken(token);
-        verify(mockGrantDao).getAccessGrant(TestConstants.TEST_STUDY, VENDOR_ID, HEALTH_CODE);
-        verify(mockGrantDao).saveAccessGrant(eq(TestConstants.TEST_STUDY), grantCaptor.capture());
+        verify(mockGrantDao).getAccessGrant(API_APP_ID, VENDOR_ID, HEALTH_CODE);
+        verify(mockGrantDao).saveAccessGrant(eq(API_APP_ID), grantCaptor.capture());
         verify(mockProviderService).refreshAccessGrant(PROVIDER, VENDOR_ID, REFRESH_TOKEN);
         verifyNoMoreInteractions(mockGrantDao);
         verifyNoMoreInteractions(mockProviderService);
@@ -287,12 +286,12 @@ public class OAuthServiceTest {
         ForwardCursorPagedResourceList<OAuthAccessGrant> page = new ForwardCursorPagedResourceList<>(items, "nextPageOffset")
                 .withRequestParam("offsetKey", "offsetKey");
         
-        when(mockGrantDao.getAccessGrants(study, VENDOR_ID, "offsetKey", 30)).thenReturn(page);
+        when(mockGrantDao.getAccessGrants(study.getIdentifier(), VENDOR_ID, "offsetKey", 30)).thenReturn(page);
         
         ForwardCursorPagedResourceList<String> results = service.getHealthCodesGrantingAccess(study, VENDOR_ID, 30,
                 "offsetKey");
         
-        verify(mockGrantDao).getAccessGrants(study, VENDOR_ID, "offsetKey", 30);
+        verify(mockGrantDao).getAccessGrants(study.getIdentifier(), VENDOR_ID, "offsetKey", 30);
         // Just verify a couple of fields to verify this is the page returned
         assertEquals(results.getNextPageOffsetKey(), "nextPageOffset");
         assertEquals(results.getItems().size(), 2);

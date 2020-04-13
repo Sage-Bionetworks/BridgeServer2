@@ -322,7 +322,7 @@ public class ParticipantController extends BaseController {
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!studyId.equals(requestInfo.getStudyIdentifier().getIdentifier())) {
+        } else if (!studyId.equals(requestInfo.getStudyIdentifier())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
         return requestInfo;
@@ -337,7 +337,7 @@ public class ParticipantController extends BaseController {
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!study.getStudyIdentifier().equals(requestInfo.getStudyIdentifier())) {
+        } else if (!study.getIdentifier().equals(requestInfo.getStudyIdentifier())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
         return requestInfo;

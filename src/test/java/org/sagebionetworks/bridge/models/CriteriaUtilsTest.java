@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import static java.util.Comparator.comparingLong;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
@@ -169,7 +169,7 @@ public class CriteriaUtilsTest {
     
     @Test
     public void matchingWithMinimalContextDoesNotCrash() {
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID)
                 .withClientInfo(UNKNOWN_CLIENT).build();
         
         assertTrue(matchCriteria(context, getCriteria().build()));
@@ -406,7 +406,7 @@ public class CriteriaUtilsTest {
         List<AppConfig> collection = ImmutableList.of(zhAppConfig, enAppConfig, frAppConfig);
         
         // The user wants French more than English, so French should be first in the list.
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID)
                 .withLanguages(ImmutableList.of("de", "fr", "en")).build();
         
         // Although English is first, we correctly understand that the French app config is the 
@@ -417,7 +417,7 @@ public class CriteriaUtilsTest {
         assertSame(selected.get(1), enAppConfig);
         
         // Let's do it again with a different language preference... the results should change
-        context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+        context = new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID)
                 .withLanguages(ImmutableList.of("en", "fr", "zh")).build();
         selected = CriteriaUtils.filterByCriteria(context, collection, null);
         assertEquals(selected.size(), 3);
@@ -444,7 +444,7 @@ public class CriteriaUtilsTest {
 
         // User has languages, but criteria don't match against them. The results returned do not 
         // change their sort order.
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID)
                 .withLanguages(ImmutableList.of("en", "fr")).withUserDataGroups(USER_DATA_GROUPS).build();
         
         List<AppConfig> selected = CriteriaUtils.filterByCriteria(context, collection, null);
@@ -473,7 +473,7 @@ public class CriteriaUtilsTest {
         
         List<AppConfig> collection = ImmutableList.of(appConfig1, appConfig2, appConfig3);
         
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID)
                 .withLanguages(ImmutableList.of("de", "en")).withUserDataGroups(USER_DATA_GROUPS).build();
         
         // All of these match, but they are returned in 
@@ -484,7 +484,7 @@ public class CriteriaUtilsTest {
     }
 
     private CriteriaContext.Builder getContext() {
-        return new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY);
+        return new CriteriaContext.Builder().withStudyIdentifier(API_APP_ID);
     }
     
     private CritBuilder getCriteria() { 

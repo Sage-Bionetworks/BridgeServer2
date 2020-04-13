@@ -17,8 +17,6 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Constraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -69,12 +67,8 @@ public class DynamoSurveyDao implements SurveyDao {
             this.surveyGuid = surveyGuid;
             return this;
         }
-        QueryBuilder setStudy(StudyIdentifier studyIdentifier) {
-            if (studyIdentifier == null) {
-                this.studyIdentifier = null;
-            } else {
-                this.studyIdentifier = studyIdentifier.getIdentifier();
-            }
+        QueryBuilder setStudy(String studyIdentifier) {
+            this.studyIdentifier = studyIdentifier;
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -277,7 +271,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(StudyIdentifier study, Survey survey, boolean newSchemaRev) {
+    public Survey publishSurvey(String studyId, Survey survey, boolean newSchemaRev) {
         if (!survey.isPublished()) {
             // update survey
             survey.setPublished(true);
@@ -285,7 +279,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
             // make schema from survey
             if (!survey.getUnmodifiableQuestionList().isEmpty()) {
-                UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(study, survey, newSchemaRev);
+                UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(studyId, survey, newSchemaRev);
                 survey.setSchemaRevision(schema.getRevision());
             }
 
@@ -299,7 +293,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
+    public Survey updateSurvey(String studyIdentifier, Survey survey) {
         Survey existing = getSurvey(studyIdentifier, survey, false);
         
         // copy over mutable fields
@@ -319,7 +313,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public Survey versionSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
         DynamoSurvey existing = (DynamoSurvey)getSurvey(studyIdentifier, keys, true);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
@@ -344,7 +338,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurveyPermanently(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
         Survey existing = getSurvey(studyIdentifier, keys, false);
 
         if (existing != null) {
@@ -352,8 +346,7 @@ public class DynamoSurveyDao implements SurveyDao {
             surveyMapper.delete(existing);
             // Delete the schemas as well, or they accumulate.
             try {
-                StudyIdentifier studyId = new StudyIdentifierImpl(existing.getStudyIdentifier());
-                uploadSchemaService.deleteUploadSchemaByIdPermanently(studyId, existing.getIdentifier());
+                uploadSchemaService.deleteUploadSchemaByIdPermanently(existing.getStudyIdentifier(), existing.getIdentifier());
             } catch(EntityNotFoundException e) {
                 // This is OK. Just means this survey wasn't published.
             }
@@ -361,31 +354,31 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
+    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid, boolean includeDeleted) {
         return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(includeDeleted).getAll();
     }
     
     @Override
-    public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
+    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
         return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(false).getOne();
     }
 
     @Override
-    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
+    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid, boolean includeElements) {
         return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).setDeleted(false)
                 .setSkipElements(!includeElements).getOne();
     }
     
     // secondary index query (not survey GUID) 
     @Override
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier, boolean includeDeleted) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
     
     // secondary index query (not survey GUID)
     @Override
-    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier, boolean includeDeleted) {
         List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
@@ -396,17 +389,17 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
+    public Survey getSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
         return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
 
     /** {@inheritDoc} */
     @Override
-    public String getSurveyGuidForIdentifier(StudyIdentifier studyId, String surveyId) {
+    public String getSurveyGuidForIdentifier(String studyId, String surveyId) {
         // Hash key.
         DynamoSurvey hashKey = new DynamoSurvey();
-        hashKey.setStudyIdentifier(studyId.getIdentifier());
+        hashKey.setStudyIdentifier(studyId);
 
         // Range key.
         Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.EQ)

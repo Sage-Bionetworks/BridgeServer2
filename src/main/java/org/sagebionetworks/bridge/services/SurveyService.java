@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -30,7 +29,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
@@ -77,7 +75,7 @@ public class SurveyService {
         this.studyService = studyService;
     }
     
-    public Survey getSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
+    public Survey getSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
         Survey survey = surveyDao.getSurvey(studyIdentifier, keys, includeElements);
         if (!isInStudy(studyIdentifier, survey)) {
             if (throwException) {
@@ -96,7 +94,7 @@ public class SurveyService {
 
         // Check survey ID uniqueness.
         if (isNotBlank(survey.getStudyIdentifier()) && isNotBlank(survey.getIdentifier())) {
-            StudyIdentifier studyId = new StudyIdentifierImpl(survey.getStudyIdentifier());
+            String studyId = survey.getStudyIdentifier();
             String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(studyId, survey.getIdentifier());
             if (existingSurveyGuid != null) {
                 String errMsg = "Survey identifier " + survey.getIdentifier() + " is already used by survey " +
@@ -124,7 +122,7 @@ public class SurveyService {
     /**
      * Update an existing survey.
      */
-    public Survey updateSurvey(StudyIdentifier studyIdentifier, Survey survey) {
+    public Survey updateSurvey(String studyIdentifier, Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
         checkNotNull(survey.getGuid(), "Guid cannot be null");
         checkNotNull(survey.getCreatedOn(), "createdOn cannot be null");
@@ -160,7 +158,7 @@ public class SurveyService {
      * longer be changed (it can still be the source of a new version). There can be more than one published version of
      * a survey.
      */
-    public Survey publishSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
+    public Survey publishSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
@@ -176,7 +174,7 @@ public class SurveyService {
     /**
      * Copy the survey and return a new version of it.
      */
-    public Survey versionSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public Survey versionSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
@@ -194,7 +192,7 @@ public class SurveyService {
      * survey version that could have been sent to users will remain in the API so you can look at its 
      * schema, etc. This is how study developers should delete surveys. 
      */
-    public void deleteSurvey(StudyIdentifier studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
@@ -220,7 +218,7 @@ public class SurveyService {
      *      right now.</li>
      * </ol>
      */
-    public void deleteSurveyPermanently(StudyIdentifier studyIdentifier,
+    public void deleteSurveyPermanently(String studyIdentifier,
             GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid());
         checkNotNull(keys.getCreatedOn());
@@ -255,7 +253,7 @@ public class SurveyService {
      * @param guid
      * @return
      */
-    public List<Survey> getSurveyAllVersions(StudyIdentifier studyIdentifier, String guid, boolean includeDeleted) {
+    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
@@ -273,7 +271,7 @@ public class SurveyService {
      * @param guid
      * @return
      */
-    public Survey getSurveyMostRecentVersion(StudyIdentifier studyIdentifier, String guid) {
+    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
@@ -294,7 +292,7 @@ public class SurveyService {
      *      if true, include the child elements, otherwise the collection is empty
      * @return
      */
-    public Survey getSurveyMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, String guid, boolean includeElements) {
+    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid, boolean includeElements) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
@@ -309,7 +307,7 @@ public class SurveyService {
      * Get the most recent version of each survey in the study that has been published. If a survey has not been
      * published, nothing is returned.
      */
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
         return surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier, includeDeleted);
@@ -321,7 +319,7 @@ public class SurveyService {
      * @param studyIdentifier
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentVersion(StudyIdentifier studyIdentifier, boolean includeDeleted) {
+    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier, boolean includeDeleted) {
         checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
 
         return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier, includeDeleted);
@@ -333,17 +331,17 @@ public class SurveyService {
      * study rule for shared study surveys. Eventually we want admins to be able to switch into the shared study in 
      * order to delete items there, then this exception to the check can be removed.
      */
-    private boolean isInStudy(StudyIdentifier studyId, Survey survey) {
+    private boolean isInStudy(String studyId, Survey survey) {
         if (studyId == null) {
             return true;
         }
         if (survey == null || survey.getStudyIdentifier() == null) {
             return false;
         }
-        return survey.getStudyIdentifier().equals(studyId.getIdentifier());
+        return survey.getStudyIdentifier().equals(studyId);
     }
     
-    private void checkConstraintsBeforePhysicalDelete(final StudyIdentifier studyId, final GuidCreatedOnVersionHolder keys) {
+    private void checkConstraintsBeforePhysicalDelete(final String studyId, final GuidCreatedOnVersionHolder keys) {
         // You cannot physically delete a survey if it is referenced by a logically deleted schedule plan. It's possible
         // the schedule plan could be restored. All you can do is logically delete the survey.
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);

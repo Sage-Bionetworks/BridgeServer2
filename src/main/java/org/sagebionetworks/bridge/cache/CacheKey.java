@@ -6,7 +6,6 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.models.ThrottleRequestType;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.base.Joiner;
@@ -35,14 +34,14 @@ public final class CacheKey {
         return new CacheKey("TagList");
     }
 
-    public static final CacheKey reauthTokenLookupKey(String userId, StudyIdentifier studyId) {
-        return new CacheKey(userId, studyId.getIdentifier(), "ReauthToken");
+    public static final CacheKey reauthTokenLookupKey(String userId, String studyId) {
+        return new CacheKey(userId, studyId, "ReauthToken");
     }
     public static final CacheKey shortenUrl(String token) {
         return new CacheKey(token, "ShortenedUrl");
     }
-    public static final CacheKey appConfigList(StudyIdentifier studyId) {
-        return new CacheKey(studyId.getIdentifier(), "AppConfigList");
+    public static final CacheKey appConfigList(String studyId) {
+        return new CacheKey(studyId, "AppConfigList");
     }
 
     /**
@@ -65,11 +64,11 @@ public final class CacheKey {
     public static final CacheKey emailVerification(String email) {
         return new CacheKey(email, "emailVerificationStatus");
     }
-    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, Phone phone) {
-        return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId.getIdentifier(), "itp");
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, String studyId, Phone phone) {
+        return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId, "itp");
     }
-    public static final CacheKey itp(SubpopulationGuid subpopGuid, StudyIdentifier studyId, String email) {
-        return new CacheKey(subpopGuid.getGuid(), email, studyId.getIdentifier(), "itp");
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, String studyId, String email) {
+        return new CacheKey(subpopGuid.getGuid(), email, studyId, "itp");
     }
     public static final CacheKey lock(String value, Class<?> clazz) {
         return new CacheKey(value, clazz.getCanonicalName(), "lock");
@@ -89,11 +88,11 @@ public final class CacheKey {
     public static final CacheKey study(String studyId) {
         return new CacheKey(studyId, "study");
     }    
-    public static final CacheKey subpop(SubpopulationGuid subpopGuid, StudyIdentifier studyId) {
-        return new CacheKey(subpopGuid.getGuid(), studyId.getIdentifier(), "Subpopulation");
+    public static final CacheKey subpop(SubpopulationGuid subpopGuid, String studyId) {
+        return new CacheKey(subpopGuid.getGuid(), studyId, "Subpopulation");
     }
-    public static final CacheKey subpopList(StudyIdentifier studyId) {
-        return new CacheKey(studyId.getIdentifier(), "SubpopulationList");
+    public static final CacheKey subpopList(String studyId) {
+        return new CacheKey(studyId, "SubpopulationList");
     }
     public static final CacheKey userIdToSession(String userId) {
         return new CacheKey(userId, "session2", "user");

@@ -11,8 +11,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
-import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class AssessmentConfigTest {
     

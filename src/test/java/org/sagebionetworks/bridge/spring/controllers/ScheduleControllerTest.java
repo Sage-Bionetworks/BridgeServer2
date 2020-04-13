@@ -42,8 +42,6 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 public class ScheduleControllerTest extends Mockito {
@@ -61,13 +59,13 @@ public class ScheduleControllerTest extends Mockito {
     @Mock
     HttpServletResponse mockResponse;
     
-    StudyIdentifier studyId;
+    String studyId;
     
     @BeforeMethod
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        studyId = new StudyIdentifierImpl(TestUtils.randomName(ScheduleControllerTest.class));
+        studyId = TestUtils.randomName(ScheduleControllerTest.class);
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
         List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyId);

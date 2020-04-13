@@ -121,13 +121,13 @@ public class IntentService {
 
         // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());
-        subpopService.getSubpopulation(study, guid);
+        subpopService.getSubpopulation(study.getIdentifier(), guid);
         
         // validate it has not yet been submitted
         // the validator has ensured that phone or email, but not both, have been provided;
         CacheKey cacheKey = (intent.getPhone() == null) ?
-                CacheKey.itp(guid, study.getStudyIdentifier(), intent.getEmail()) :
-                CacheKey.itp(guid, study.getStudyIdentifier(), intent.getPhone());
+                CacheKey.itp(guid, study.getIdentifier(), intent.getEmail()) :
+                CacheKey.itp(guid, study.getIdentifier(), intent.getPhone());
 
         if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
@@ -174,11 +174,11 @@ public class IntentService {
         }
         boolean consentsUpdated = false;
         StudyParticipant participant = null;
-        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getStudyIdentifier(), false);
+        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getIdentifier(), false);
         for (Subpopulation subpop : subpops) {
             CacheKey cacheKey = (phone == null) ?
-                    CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), email) :
-                    CacheKey.itp(subpop.getGuid(), study.getStudyIdentifier(), phone);
+                    CacheKey.itp(subpop.getGuid(), study.getIdentifier(), email) :
+                    CacheKey.itp(subpop.getGuid(), study.getIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
                 if (participant == null) {

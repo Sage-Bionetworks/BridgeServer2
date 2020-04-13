@@ -13,7 +13,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -38,9 +37,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
     
     @Override
-    public List<AppConfigElement> getMostRecentElements(StudyIdentifier studyId, boolean includeDeleted) {
+    public List<AppConfigElement> getMostRecentElements(String studyId, boolean includeDeleted) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withIndexName(STUDY_ID_INDEX_NAME)
@@ -78,9 +77,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public AppConfigElement getMostRecentElement(StudyIdentifier studyId, String id) {
+    public AppConfigElement getMostRecentElement(String studyId, String id) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
@@ -95,9 +94,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public List<AppConfigElement> getElementRevisions(StudyIdentifier studyId, String id, boolean includeDeleted) {
+    public List<AppConfigElement> getElementRevisions(String studyId, String id, boolean includeDeleted) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
@@ -118,9 +117,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public AppConfigElement getElementRevision(StudyIdentifier studyId, String id, long revision) {
+    public AppConfigElement getElementRevision(String studyId, String id, long revision) {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId.getIdentifier());
+        key.setStudyId(studyId);
         key.setId(id);
         key.setRevision(revision);
         
@@ -138,7 +137,7 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public void deleteElementRevisionPermanently(StudyIdentifier studyId, String id, long revision) {
+    public void deleteElementRevisionPermanently(String studyId, String id, long revision) {
         AppConfigElement element = getElementRevision(studyId, id, revision);
         if (element != null) {
             try {

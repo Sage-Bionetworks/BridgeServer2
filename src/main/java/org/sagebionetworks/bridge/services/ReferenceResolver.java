@@ -16,7 +16,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.schedules.TaskReference;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.slf4j.Logger;
@@ -37,7 +36,7 @@ class ReferenceResolver {
     private final UploadSchemaService schemaService;
     private final SurveyService surveyService;
     private final ClientInfo clientInfo;
-    private final StudyIdentifier studyId;
+    private final String studyId;
     
     private final Map<String,SurveyReference> surveyReferences;
     private final Map<String,SchemaReference> schemaReferences;
@@ -49,7 +48,7 @@ class ReferenceResolver {
     ReferenceResolver(CompoundActivityDefinitionService compoundActivityDefinitionService,
             UploadSchemaService schemaService, SurveyService surveyService,
             Map<String, SurveyReference> surveyReferences, Map<String, SchemaReference> schemaReferences,
-            ClientInfo clientInfo, StudyIdentifier studyId) {
+            ClientInfo clientInfo, String studyId) {
         this.compoundActivityDefinitionService = compoundActivityDefinitionService;
         this.schemaService = schemaService;
         this.surveyService = surveyService;

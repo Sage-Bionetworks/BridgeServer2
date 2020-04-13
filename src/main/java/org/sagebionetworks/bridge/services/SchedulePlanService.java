@@ -16,8 +16,6 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -48,12 +46,12 @@ public class SchedulePlanService {
         this.substudyService = substudyService;
     }
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, StudyIdentifier studyIdentifier,
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier,
             boolean includeDeleted) {
         return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier, includeDeleted);
     }
 
-    public SchedulePlan getSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+    public SchedulePlan getSchedulePlan(String studyIdentifier, String guid) {
         return schedulePlanDao.getSchedulePlan(studyIdentifier, guid);
     }
 
@@ -79,13 +77,13 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validate.entityThrowingException(
                 new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
 
-        lookupSurveyReferenceIdentifiers(study.getStudyIdentifier(), plan);
-        return schedulePlanDao.createSchedulePlan(study.getStudyIdentifier(), plan);
+        lookupSurveyReferenceIdentifiers(study.getIdentifier(), plan);
+        return schedulePlanDao.createSchedulePlan(study.getIdentifier(), plan);
     }
     
     public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan) {
@@ -99,7 +97,7 @@ public class SchedulePlanService {
         if (plan.getStrategy() != null) {
             // Verify that all GUIDs that are supplied already exist in the plan. If they don't (or GUID is null),
             // then add a new GUID.
-            SchedulePlan existing = schedulePlanDao.getSchedulePlan(study, plan.getGuid());
+            SchedulePlan existing = schedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid());
             Set<String> existingGuids = getAllActivityGuids(existing);
             List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
             for (Schedule schedule : schedules) {
@@ -113,24 +111,23 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getStudyIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
         Validate.entityThrowingException(
                 new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(plan.getStudyKey());
-        lookupSurveyReferenceIdentifiers(studyId, plan);
-        return schedulePlanDao.updateSchedulePlan(studyId, plan);
+        lookupSurveyReferenceIdentifiers(plan.getStudyKey(), plan);
+        return schedulePlanDao.updateSchedulePlan(plan.getStudyKey(), plan);
     }
 
-    public void deleteSchedulePlan(StudyIdentifier studyIdentifier, String guid) {
+    public void deleteSchedulePlan(String studyIdentifier, String guid) {
         checkNotNull(studyIdentifier);
         checkNotNull(isNotBlank(guid));
         
         schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
     }
     
-    public void deleteSchedulePlanPermanently(StudyIdentifier studyIdentifier, String guid) {
+    public void deleteSchedulePlanPermanently(String studyIdentifier, String guid) {
         checkNotNull(studyIdentifier);
         checkNotNull(isNotBlank(guid));
         
@@ -162,7 +159,7 @@ public class SchedulePlanService {
      * @param activity
      * @return
      */
-    private void lookupSurveyReferenceIdentifiers(StudyIdentifier studyId, SchedulePlan plan) {
+    private void lookupSurveyReferenceIdentifiers(String studyId, SchedulePlan plan) {
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
             for (int i=0; i < schedule.getActivities().size(); i++) {
                 Activity activity = schedule.getActivities().get(i);
@@ -172,7 +169,7 @@ public class SchedulePlanService {
         }
     }
 
-    private Activity updateActivityWithSurveyIdentifier(StudyIdentifier studyId, Activity activity) {
+    private Activity updateActivityWithSurveyIdentifier(String studyId, Activity activity) {
         if (activity.getSurvey() != null) {
             SurveyReference ref = activity.getSurvey();
             

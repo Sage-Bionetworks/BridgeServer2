@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -89,7 +89,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         
         when(mockSession.getHealthCode()).thenReturn(HEALTH_CODE);
         when(mockSession.getParticipant()).thenReturn(PARTICIPANT);
-        when(mockSession.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockSession.getStudyIdentifier()).thenReturn(API_APP_ID);
         
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(mockRequest).when(controller).request();
@@ -141,7 +141,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         assertEquals(result.getGuid(), GUID);
 
         // Verify service.
-        verify(mockNotificationService).createRegistration(eq(TEST_STUDY), any(), registrationCaptor.capture());
+        verify(mockNotificationService).createRegistration(eq(API_APP_ID), any(), registrationCaptor.capture());
         
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(registration.getDeviceId(), DEVICE_ID);
@@ -160,7 +160,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         
         assertEquals(result.getGuid(), GUID);
         
-        verify(mockNotificationService).updateRegistration(eq(TEST_STUDY), registrationCaptor.capture());
+        verify(mockNotificationService).updateRegistration(eq(API_APP_ID), registrationCaptor.capture());
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(registration.getDeviceId(), "NEW_DEVICE_ID");
         assertEquals(registration.getOsName(), OS_NAME);
@@ -184,7 +184,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         StatusMessage result = controller.deleteRegistration(GUID);
         assertEquals(result, NotificationRegistrationController.DELETED_MSG);
         
-        verify(mockNotificationService).deleteRegistration(TEST_STUDY, HEALTH_CODE, GUID);
+        verify(mockNotificationService).deleteRegistration(API_APP_ID, HEALTH_CODE, GUID);
     }
 
     @Test
@@ -192,7 +192,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
         doReturn(ImmutableList.of(status)).when(mockTopicService)
-                .currentSubscriptionStatuses(TEST_STUDY, HEALTH_CODE, GUID);
+                .currentSubscriptionStatuses(API_APP_ID, HEALTH_CODE, GUID);
 
         ResourceList<SubscriptionStatus> result = controller.getSubscriptionStatuses(GUID);
         
@@ -207,7 +207,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
     public void subscribe() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         SubscriptionStatus status = new SubscriptionStatus("topicGuid","topicName",true);
-        doReturn(ImmutableList.of(status)).when(mockTopicService).subscribe(eq(TEST_STUDY), eq(HEALTH_CODE), eq(GUID),
+        doReturn(ImmutableList.of(status)).when(mockTopicService).subscribe(eq(API_APP_ID), eq(HEALTH_CODE), eq(GUID),
                 any());
         mockRequestBody(mockRequest, createSubscriptionRequest());
         
@@ -219,7 +219,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         assertEquals(retrievedStatus.getTopicName(), "topicName");
         assertTrue(retrievedStatus.isSubscribed());
         
-        verify(mockTopicService).subscribe(eq(TEST_STUDY), eq(HEALTH_CODE), stringCaptor.capture(),
+        verify(mockTopicService).subscribe(eq(API_APP_ID), eq(HEALTH_CODE), stringCaptor.capture(),
                 stringSetCaptor.capture());
         
         assertEquals(stringCaptor.getValue(), GUID);

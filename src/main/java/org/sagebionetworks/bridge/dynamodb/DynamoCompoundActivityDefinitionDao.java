@@ -14,8 +14,6 @@ import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 /** DynamoDB implementation of CompoundActivityDefinitionDao. */
 @Component
@@ -50,7 +48,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public void deleteCompoundActivityDefinition(StudyIdentifier studyId, String taskId) {
+    public void deleteCompoundActivityDefinition(String studyId, String taskId) {
         // For whatever reason, DynamoDBMapper requires you to load the object before you delete it. It seems like you
         // can't use Delete Expressions to make this a single atomic request.
         DynamoCompoundActivityDefinition loadedDef = (DynamoCompoundActivityDefinition) getCompoundActivityDefinition(
@@ -67,7 +65,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public void deleteAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+    public void deleteAllCompoundActivityDefinitionsInStudy(String studyId) {
         // First, query for all defs in a study.
         List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
 
@@ -78,7 +76,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(StudyIdentifier studyId) {
+    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(String studyId) {
         List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
 
         // because of generics wonkiness, we need to convert this to a list of parent class CompoundActivityDefinition
@@ -87,10 +85,10 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     // Helper method for getting all defs in a study. Returns the raw results using a list of the implementation type.
     // This enables us to bulk load and batch delete.
-    private List<DynamoCompoundActivityDefinition> getAllHelper(StudyIdentifier studyId) {
+    private List<DynamoCompoundActivityDefinition> getAllHelper(String studyId) {
         // query expression
         DynamoCompoundActivityDefinition ddbHashKey = new DynamoCompoundActivityDefinition();
-        ddbHashKey.setStudyId(studyId.getIdentifier());
+        ddbHashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoCompoundActivityDefinition> ddbQueryExpr =
                 new DynamoDBQueryExpression<DynamoCompoundActivityDefinition>().withHashKeyValues(ddbHashKey);
 
@@ -102,10 +100,10 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public CompoundActivityDefinition getCompoundActivityDefinition(StudyIdentifier studyId, String taskId) {
+    public CompoundActivityDefinition getCompoundActivityDefinition(String studyId, String taskId) {
         // create key object
         DynamoCompoundActivityDefinition ddbDef = new DynamoCompoundActivityDefinition();
-        ddbDef.setStudyId(studyId.getIdentifier());
+        ddbDef.setStudyId(studyId);
         ddbDef.setTaskId(taskId);
 
         // Call DDB mapper. Throw exception if null.
@@ -128,9 +126,8 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
         // already exists.
 
         // Call get() to verify the def exists. This will throw an EntityNotFoundException if it doesn't exist.
-        StudyIdentifier studyId = new StudyIdentifierImpl(compoundActivityDefinition.getStudyId());
         String taskId = compoundActivityDefinition.getTaskId();
-        getCompoundActivityDefinition(studyId, taskId);
+        getCompoundActivityDefinition(compoundActivityDefinition.getStudyId(), taskId);
 
         // Call DDB mapper to save.
         try {

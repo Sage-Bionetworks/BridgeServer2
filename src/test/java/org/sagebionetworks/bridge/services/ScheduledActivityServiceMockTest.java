@@ -12,8 +12,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.services.ScheduledActivityService.V3_FILTER;
 import static org.sagebionetworks.bridge.validators.ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS;
 import static org.testng.Assert.assertEquals;
@@ -62,7 +62,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 
@@ -133,11 +132,11 @@ public class ScheduledActivityServiceMockTest {
         
         service = new ScheduledActivityService();
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
-                .thenReturn(TestUtils.getSchedulePlans(TEST_STUDY));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false))
+                .thenReturn(TestUtils.getSchedulePlans(API_APP_ID));
         
         Map<String,DateTime> map = ImmutableMap.of();
-        when(activityEventService.getActivityEventMap(eq(TEST_STUDY.getIdentifier()), anyString())).thenReturn(map);
+        when(activityEventService.getActivityEventMap(eq(API_APP_ID), anyString())).thenReturn(map);
         
         when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -151,7 +150,7 @@ public class ScheduledActivityServiceMockTest {
         doReturn(SURVEY_CREATED_ON.getMillis()).when(survey).getCreatedOn();
         doReturn("identifier").when(survey).getIdentifier();
         when(surveyService.getSurveyMostRecentlyPublishedVersion(
-                eq(TEST_STUDY), any(), eq(false))).thenReturn(survey);
+                eq(API_APP_ID), any(), eq(false))).thenReturn(survey);
         
         service.setSchedulePlanService(schedulePlanService);
         service.setScheduledActivityDao(activityDao);
@@ -240,7 +239,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(API_APP_ID)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC).withEndsOn(NOW.minusSeconds(1)).build());
     }
@@ -248,7 +247,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(API_APP_ID)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS).plusSeconds(1)).build());
@@ -295,7 +294,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
+                .withStudyIdentifier(API_APP_ID)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
@@ -309,7 +308,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void surveysAreResolved() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
+                .withStudyIdentifier(API_APP_ID)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
@@ -427,7 +426,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("BBB"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(study, createScheduleContext(NOW).build());
@@ -443,7 +442,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         
         ForwardCursorPagedResourceList<ScheduledActivity> list = new ForwardCursorPagedResourceList<>(createStartedActivities("BBB"+TIME_PORTION), null);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
@@ -461,7 +460,7 @@ public class ScheduledActivityServiceMockTest {
     public void persistedAndScheduledIncludedInResultsV3() {
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(ccc));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createStartedActivities("CCC"+TIME_PORTION));
         
         List<ScheduledActivity> returnedActivities = service.getScheduledActivities(study, createScheduleContext(NOW).build());
@@ -478,7 +477,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan aaa = schedulePlan("AAA");
         SchedulePlan bbb = schedulePlan("BBB");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(createExpiredActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION));
         
         // Ask for activities in the past so they will be expired.
@@ -501,7 +500,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(Lists.newArrayList(createFinishedActivities("AAA"+TIME_PORTION).get(0),
                 createStartedActivities("BBB"+TIME_PORTION).get(0)));
         
@@ -519,7 +518,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         
         List<ScheduledActivity> db = Lists.newArrayList(createExpiredActivities("AAA"+TIME_PORTION).get(0),
                 createFinishedActivities("BBB"+TIME_PORTION).get(0));
@@ -540,7 +539,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         List<ScheduledActivity> db = Lists.newArrayList(createFinishedActivities("AAA"+TIME_PORTION).get(0),
                 createStartedActivities("BBB"+TIME_PORTION).get(0));
         when(activityDao.getActivities(eq(TIME_ZONE), any())).thenReturn(db);
@@ -563,7 +562,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan bbb = schedulePlan("BBB");
         SchedulePlan ccc = schedulePlan("CCC");
         
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(aaa,bbb,ccc));
         
         List<ScheduledActivity> db = createStartedActivities("AAA"+TIME_PORTION,"CCC"+TIME_PORTION);
         when(activityDao.getActivityHistoryV2(HEALTH_CODE, "BBB", NOW, NOW, null, API_MAXIMUM_PAGE_SIZE))
@@ -600,7 +599,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -628,7 +627,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -658,7 +657,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -690,7 +689,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan ccc = schedulePlan(newActivity);
         
         // This is the schedule plan returned from the DB with the new Activity
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(ccc));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(ccc));
         
         // This is the persisted activity with the oldActivity
         Activity oldActivity = new Activity.Builder().withGuid("CCC")
@@ -788,7 +787,7 @@ public class ScheduledActivityServiceMockTest {
         schedule.addActivity(new Activity.Builder().withGuid("guidForCCC").withLabel("Do task CCC").withTask("CCC").build());
         schedule.setLabel("One-time task");
         
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(API_APP_ID);
         ((SimpleScheduleStrategy)plan.getStrategy()).setSchedule(schedule);
         
         reset(schedulePlanService);
@@ -852,7 +851,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(TEST_STUDY.getIdentifier());
+        plan.setStudyKey(API_APP_ID);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -961,13 +960,13 @@ public class ScheduledActivityServiceMockTest {
             
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", startsOn.withZone(DateTimeZone.UTC).minusDays(3));
-        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), "AAA")).thenReturn(events);
+        when(activityEventService.getActivityEventMap(API_APP_ID, "AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         
         SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
-        when(schedulePlanService.getSchedulePlans(info, new StudyIdentifierImpl("test-study"), false)).thenReturn(schedulePlans);
+        when(schedulePlanService.getSchedulePlans(info, "test-study", false)).thenReturn(schedulePlans);
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withClientInfo(info)
@@ -1184,7 +1183,7 @@ public class ScheduledActivityServiceMockTest {
         SchedulePlan plan2 = BridgeObjectMapper.get().readValue(json2, SchedulePlan.class);
         schedulePlans.add(plan2);
         reset(schedulePlanService);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false))
             .thenReturn(schedulePlans);        
         
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
@@ -1232,7 +1231,7 @@ public class ScheduledActivityServiceMockTest {
                 .put("activity:0c48dbe7-4091-4024-b199-e81a8f7327ed:finished", 
                         new DateTime(finishedActivity.getFinishedOn(), TIME_ZONE))
                 .build();
-        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), HEALTH_CODE)).thenReturn(eventsMap);
+        when(activityEventService.getActivityEventMap(API_APP_ID, HEALTH_CODE)).thenReturn(eventsMap);
         return createScheduleContext(ENDS_ON).withEvents(eventsMap).build();
     }
     
@@ -1323,17 +1322,17 @@ public class ScheduledActivityServiceMockTest {
         
         Map<String,DateTime> eventMap = Maps.newHashMap();
         eventMap.put("enrollment", enrollment);
-        when(activityEventService.getActivityEventMap(TEST_STUDY.getIdentifier(), "healthCode")).thenReturn(eventMap);
+        when(activityEventService.getActivityEventMap(API_APP_ID, "healthCode")).thenReturn(eventMap);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(schedule);
         plan.setStrategy(strategy);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false)).thenReturn(Lists.newArrayList(plan));
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(Lists.newArrayList(plan));
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY)
+                .withStudyIdentifier(API_APP_ID)
                 .withUserId("userId")
                 .withStartsOn(startsOn)
                 .withAccountCreatedOn(enrollment)
@@ -1343,8 +1342,8 @@ public class ScheduledActivityServiceMockTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
         
-        verify(activityEventService).getActivityEventMap(TEST_STUDY.getIdentifier(), "healthCode");
-        verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY, false);
+        verify(activityEventService).getActivityEventMap(API_APP_ID, "healthCode");
+        verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false);
         
         return activities.get(0).getScheduledOn().toString();
     }
@@ -1398,9 +1397,9 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_STUDY).withInitialTimeZone(DateTimeZone.UTC)
-                .withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2)).withEndsOn(endsOn)
-                .withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
+        return new ScheduleContext.Builder().withStudyIdentifier(API_APP_ID)
+                .withInitialTimeZone(DateTimeZone.UTC).withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2))
+                .withEndsOn(endsOn).withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
     }
     
 }

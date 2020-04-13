@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -13,6 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -59,7 +59,7 @@ public class DynamoReportIndexDaoMockTest {
     private ArgumentCaptor<DynamoDBQueryExpression<DynamoReportIndex>> queryCaptor;
     
     private ReportDataKey KEY = new ReportDataKey.Builder()
-            .withIdentifier("report-name").withStudyIdentifier(TEST_STUDY)
+            .withIdentifier("report-name").withStudyIdentifier(API_APP_ID)
             .withReportType(ReportType.STUDY).build();
 
     @BeforeMethod
@@ -183,7 +183,7 @@ public class DynamoReportIndexDaoMockTest {
         when(mapper.query(eq(DynamoReportIndex.class), any())).thenReturn(results);
         
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(
-                TestConstants.TEST_STUDY, ReportType.PARTICIPANT);
+                API_APP_ID, ReportType.PARTICIPANT);
         
         assertEquals(indices.getItems().size(), 1);
         assertEquals(indices.getRequestParams().get("reportType"), ReportType.PARTICIPANT);

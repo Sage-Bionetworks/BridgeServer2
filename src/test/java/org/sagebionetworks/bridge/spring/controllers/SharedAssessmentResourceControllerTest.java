@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -72,7 +71,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
     }

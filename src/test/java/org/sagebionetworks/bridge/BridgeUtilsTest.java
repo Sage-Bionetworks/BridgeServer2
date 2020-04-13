@@ -378,7 +378,7 @@ public class BridgeUtilsTest {
     }
     
     private ExternalIdentifier getExternalIdentifierWithSubstudy(String substudyId) {
-        ExternalIdentifier id = ExternalIdentifier.create(TestConstants.TEST_STUDY, "identifier");
+        ExternalIdentifier id = ExternalIdentifier.create(API_APP_ID, "identifier");
         id.setSubstudyId(substudyId);
         return id;
     }

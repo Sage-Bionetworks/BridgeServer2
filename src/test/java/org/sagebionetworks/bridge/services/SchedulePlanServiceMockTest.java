@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -23,7 +22,6 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -78,7 +76,7 @@ public class SchedulePlanServiceMockTest {
         Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean())).thenReturn(survey1);
-        when(mockSurveyService.getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true))).thenReturn(survey2);
+        when(mockSurveyService.getSurvey(eq(API_APP_ID), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
         
@@ -98,7 +96,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan schedulePlan = constructSchedulePlan();
         schedulePlan.setStrategy(null);
         
-        when(mockSchedulePlanDao.getSchedulePlan(eq(TEST_STUDY), any())).thenReturn(schedulePlan);
+        when(mockSchedulePlanDao.getSchedulePlan(eq(API_APP_ID), any())).thenReturn(schedulePlan);
         
         // The key thing here is that we make it to validation.
         service.updateSchedulePlan(study, schedulePlan);
@@ -107,12 +105,12 @@ public class SchedulePlanServiceMockTest {
     @Test
     public void getSchedulePlan() {
         SchedulePlan schedulePlan = SchedulePlan.create();
-        when(mockSchedulePlanDao.getSchedulePlan(TEST_STUDY, "oneGuid")).thenReturn(schedulePlan);
+        when(mockSchedulePlanDao.getSchedulePlan(API_APP_ID, "oneGuid")).thenReturn(schedulePlan);
         
-        SchedulePlan result = service.getSchedulePlan(TEST_STUDY, "oneGuid");
+        SchedulePlan result = service.getSchedulePlan(API_APP_ID, "oneGuid");
         assertSame(result, schedulePlan);
         
-        verify(mockSchedulePlanDao).getSchedulePlan(TEST_STUDY, "oneGuid");
+        verify(mockSchedulePlanDao).getSchedulePlan(API_APP_ID, "oneGuid");
     }
     
     @Test
@@ -123,7 +121,7 @@ public class SchedulePlanServiceMockTest {
         
         service.createSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
+        verify(mockSurveyService).getSurvey(eq(API_APP_ID), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -137,13 +135,13 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = constructSchedulePlan();
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
-        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
-        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
+        verify(mockSurveyService).getSurvey(eq(API_APP_ID), any(), eq(false), eq(true));
+        verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -161,7 +159,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = constructSchedulePlan();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, activity);
         
-        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
         
         // Verify that this was set.
         String identifier = plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
@@ -173,8 +171,8 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TestConstants.TEST_STUDY), any(), eq(false), eq(true));
-        verify(mockSchedulePlanDao).getSchedulePlan(study, plan.getGuid());
+        verify(mockSurveyService).getSurvey(eq(API_APP_ID), any(), eq(false), eq(true));
+        verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         // It was not used.
@@ -227,7 +225,7 @@ public class SchedulePlanServiceMockTest {
         DynamoStudy anotherStudy = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the studyKey
-        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy, plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.updateSchedulePlan(anotherStudy, plan);
@@ -256,7 +254,7 @@ public class SchedulePlanServiceMockTest {
     public void validatesOnUpdate() {
         // Check that 1) validation is called and 2) the study's enumerations are used in the validation
         SchedulePlan plan = constructorInvalidSchedulePlan();
-        when(mockSchedulePlanDao.getSchedulePlan(study, plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
         try {
             service.updateSchedulePlan(study, plan);
             fail("Should have thrown exception");
@@ -274,37 +272,37 @@ public class SchedulePlanServiceMockTest {
     @Test
     public void getSchedulePlansExcludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, false);
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, false);
     }
     
     @Test
     public void getSchedulePlansIncludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, true)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, true);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true);
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, true);
     }
     
     @Test
     public void deleteSchedulePlan() {
-        service.deleteSchedulePlan(TEST_STUDY, "planGuid");
+        service.deleteSchedulePlan(API_APP_ID, "planGuid");
         
-        verify(mockSchedulePlanDao).deleteSchedulePlan(TEST_STUDY, "planGuid");
+        verify(mockSchedulePlanDao).deleteSchedulePlan(API_APP_ID, "planGuid");
     }
     
     @Test
     public void deleteSchedulePlanPermanently() {
-        service.deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
+        service.deleteSchedulePlanPermanently(API_APP_ID, "planGuid");
         
-        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(TEST_STUDY, "planGuid");
+        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(API_APP_ID, "planGuid");
     }
     
     private SchedulePlan constructorInvalidSchedulePlan() {
@@ -331,7 +329,7 @@ public class SchedulePlanServiceMockTest {
     }
     
     private SchedulePlan constructSimpleSchedulePlan() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(API_APP_ID);
         plan.setLabel("Label");
         plan.setGuid("BBB");
         plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");

@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -89,11 +88,11 @@ public class OAuthControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(mockStudy);
-        when(mockStudyService.getStudy(TEST_STUDY.getIdentifier())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(mockStudy);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

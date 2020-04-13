@@ -4,8 +4,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
-import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 
 import static org.testng.Assert.assertEquals;
 

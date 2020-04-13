@@ -31,8 +31,6 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -64,7 +62,7 @@ public class SurveyController extends BaseController {
     public ResourceList<Survey> getAllSurveysMostRecentVersion(
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentVersion(studyId, includeDeleted);
         return new ResourceList<>(surveys);
@@ -74,7 +72,7 @@ public class SurveyController extends BaseController {
     public ResourceList<Survey> getAllSurveysMostRecentlyPublishedVersion(
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getAllSurveysMostRecentlyPublishedVersion(studyId, includeDeleted);
         return new ResourceList<>(surveys);
@@ -96,7 +94,7 @@ public class SurveyController extends BaseController {
         getAuthenticatedSession(WORKER);
 
         List<Survey> surveyList = surveyService
-                .getAllSurveysMostRecentlyPublishedVersion(new StudyIdentifierImpl(studyId), includeDeleted);
+                .getAllSurveysMostRecentlyPublishedVersion(studyId, includeDeleted);
         return new ResourceList<>(surveyList);
     }
 
@@ -150,9 +148,9 @@ public class SurveyController extends BaseController {
     @GetMapping(path="/v3/surveys/{surveyGuid}/revisions/recent", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSurveyMostRecentVersion(@PathVariable String surveyGuid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
-        CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId);
 
         return getView(cacheKey, session, () -> {
             return surveyService.getSurveyMostRecentVersion(studyId, surveyGuid);
@@ -180,7 +178,7 @@ public class SurveyController extends BaseController {
     public StatusMessage deleteSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         long createdOnLong = DateUtils.convertToMillisFromEpoch(createdOn);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOnLong);
@@ -203,7 +201,7 @@ public class SurveyController extends BaseController {
     public ResourceList<Survey> getSurveyAllVersions(@PathVariable String surveyGuid,
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         List<Survey> surveys = surveyService.getSurveyAllVersions(studyId, surveyGuid, includeDeleted);
         return new ResourceList<>(surveys);
@@ -213,10 +211,10 @@ public class SurveyController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidCreatedOnVersionHolder createSurvey() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         Survey survey = parseJson(Survey.class);
-        survey.setStudyIdentifier(studyId.getIdentifier());
+        survey.setStudyIdentifier(studyId);
 
         survey = surveyService.createSurvey(survey);
         return new GuidCreatedOnVersionHolderImpl(survey);
@@ -226,7 +224,7 @@ public class SurveyController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidCreatedOnVersionHolder versionSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         long createdOnLong = DateUtils.convertToMillisFromEpoch(createdOn);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOnLong);
@@ -240,14 +238,14 @@ public class SurveyController extends BaseController {
     @PostMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}")
     public GuidCreatedOnVersionHolder updateSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         // The parameters in the URL take precedence over anything declared in
         // the object itself.
         Survey survey = parseJson(Survey.class);
         survey.setGuid(surveyGuid);
         survey.setCreatedOn(DateUtils.convertToMillisFromEpoch(createdOn));
-        survey.setStudyIdentifier(studyId.getIdentifier());
+        survey.setStudyIdentifier(studyId);
 
         survey = surveyService.updateSurvey(session.getStudyIdentifier(), survey);
         expireCache(surveyGuid, createdOn, studyId);
@@ -259,7 +257,7 @@ public class SurveyController extends BaseController {
     public GuidCreatedOnVersionHolder publishSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn,
             @RequestParam(defaultValue = "false") boolean newSchemaRev) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyIdentifier studyId = session.getStudyIdentifier();
+        String studyId = session.getStudyIdentifier();
 
         long createdOnLong = DateUtils.convertToMillisFromEpoch(createdOn);
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOnLong);
@@ -275,7 +273,7 @@ public class SurveyController extends BaseController {
         GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn);
 
         CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString,
-                session.getStudyIdentifier().getIdentifier());
+                session.getStudyIdentifier());
 
         return getView(cacheKey, session, () -> {
             return surveyService.getSurvey(session.getStudyIdentifier(), keys, true, true);
@@ -284,7 +282,7 @@ public class SurveyController extends BaseController {
 
     private String getCachedSurveyMostRecentlyPublishedInternal(String surveyGuid, UserSession session) {
         CacheKey cacheKey = viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY,
-                session.getStudyIdentifier().getIdentifier());
+                session.getStudyIdentifier());
 
         return getView(cacheKey, session, () -> {
             return surveyService.getSurveyMostRecentlyPublishedVersion(session.getStudyIdentifier(), surveyGuid, true);
@@ -297,11 +295,11 @@ public class SurveyController extends BaseController {
         });
     }
 
-    private void expireCache(String surveyGuid, String createdOnString, StudyIdentifier studyId) {
+    private void expireCache(String surveyGuid, String createdOnString, String studyId) {
         // Don't screw around trying to figure out if *this* survey instance is the same survey
         // as the most recent or published version, expire all versions in the cache
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId.getIdentifier()));
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId.getIdentifier()));
-        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId.getIdentifier()));
+        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, createdOnString, studyId));
+        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, PUBLISHED_KEY, studyId));
+        viewCache.removeView(viewCache.getCacheKey(Survey.class, surveyGuid, MOSTRECENT_KEY, studyId));
     }
 }

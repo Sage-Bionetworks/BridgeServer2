@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.Optional;
@@ -28,7 +27,7 @@ public class IdentifierUpdateValidatorTest {
 
     private static final String UPDATED_EMAIL = "updated@email.com";
     private static final String UPDATED_EXTERNAL_ID = "updatedExternalId";
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_STUDY, UPDATED_EXTERNAL_ID);
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(API_APP_ID, UPDATED_EXTERNAL_ID);
     
     @Mock
     private ExternalIdService externalIdService;
@@ -134,8 +133,8 @@ public class IdentifierUpdateValidatorTest {
         SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
-        when(externalIdService.getExternalId(TEST_STUDY, "newExternalId"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY, "newExternalId")));
+        when(externalIdService.getExternalId(API_APP_ID, "newExternalId"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(API_APP_ID, "newExternalId")));
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "newExternalId", null);
         Validate.entityThrowingException(validator, update);
@@ -188,7 +187,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdValidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
+        when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
         
         SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
@@ -199,7 +198,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdInvalidWithManagement() {
-        when(externalIdService.getExternalId(study.getStudyIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
+        when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
         
         SignIn signIn = new SignIn.Builder().withStudy(API_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();

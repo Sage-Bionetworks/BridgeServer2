@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -46,7 +45,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
@@ -146,7 +144,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(true).when(mockWorkerSession).isInRole(Roles.WORKER);
         
         doReturn("consented-user-health-code").when(mockConsentedUserSession).getHealthCode();
-        doReturn(new StudyIdentifierImpl("consented-user-study-id")).when(mockConsentedUserSession).getStudyIdentifier();
+        doReturn("consented-user-study-id").when(mockConsentedUserSession).getStudyIdentifier();
         doReturn("userId").when(mockConsentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(mockConsentedUserSession).getParticipant();
         
@@ -186,7 +184,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals(upload.getHealthCode(), "consented-user-health-code");
@@ -209,7 +207,7 @@ public class UploadControllerTest extends Mockito {
 
         // verify back-end calls
         verify(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
-        verify(mockUploadService).uploadComplete(eq(new StudyIdentifierImpl("studyId")),
+        verify(mockUploadService).uploadComplete(eq("studyId"),
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals(upload.getHealthCode(), HEALTH_CODE);
@@ -229,7 +227,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
                 eq(UploadCompletionClient.APP), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -272,7 +270,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
                 eq(UploadCompletionClient.APP), any(), eq(false));
         verify(mockUploadService).pollUploadValidationStatusUntilComplete(UPLOAD_ID);
         verify(mockUploadService, never()).getUploadValidationStatus(any());
@@ -289,7 +287,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq(new StudyIdentifierImpl("consented-user-study-id")),
+        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
                 eq(UploadCompletionClient.APP), any(), eq(true));
         verify(mockUploadService).getUploadValidationStatus(UPLOAD_ID);
         verify(mockUploadService, never()).pollUploadValidationStatusUntilComplete(any());
@@ -334,7 +332,7 @@ public class UploadControllerTest extends Mockito {
     @Test
     public void getUploadByRecordId() throws Exception {
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        doReturn(TEST_STUDY).when(mockResearcherSession).getStudyIdentifier();
+        doReturn(API_APP_ID).when(mockResearcherSession).getStudyIdentifier();
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
@@ -363,7 +361,7 @@ public class UploadControllerTest extends Mockito {
     public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        when(mockResearcherSession.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("researcher-study-id"));
+        when(mockResearcherSession.getStudyIdentifier()).thenReturn("researcher-study-id");
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setStudyId(API_APP_ID);

@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -52,7 +51,7 @@ public class ExternalIdService {
         this.substudyService = substudyService;
     }
     
-    public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
+    public Optional<ExternalIdentifier> getExternalId(String studyId, String externalId) {
         checkNotNull(studyId);
         
         if (StringUtils.isBlank(externalId)) {
@@ -73,15 +72,15 @@ public class ExternalIdService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
 
-        StudyIdentifier studyId = BridgeUtils.getRequestContext().getCallerStudyIdentifier();
+        String studyId = BridgeUtils.getRequestContext().getCallerStudyId();
         return externalIdDao.getExternalIds(studyId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
     public void createExternalId(ExternalIdentifier externalId, boolean isV3) {
         checkNotNull(externalId);
         
-        StudyIdentifier studyId = BridgeUtils.getRequestContext().getCallerStudyIdentifier();
-        externalId.setStudyId(studyId.getIdentifier());
+        String studyId = BridgeUtils.getRequestContext().getCallerStudyId();
+        externalId.setStudyId(studyId);
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error
@@ -106,7 +105,7 @@ public class ExternalIdService {
         checkNotNull(study);
         checkNotNull(externalId);
         
-        ExternalIdentifier existing = externalIdDao.getExternalId(study.getStudyIdentifier(), externalId.getIdentifier())
+        ExternalIdentifier existing = externalIdDao.getExternalId(study.getIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         if (BridgeUtils.filterForSubstudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);

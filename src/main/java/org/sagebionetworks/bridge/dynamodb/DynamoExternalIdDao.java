@@ -33,8 +33,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 import org.slf4j.Logger;
@@ -81,16 +79,16 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     @Override
-    public Optional<ExternalIdentifier> getExternalId(StudyIdentifier studyId, String externalId) {
+    public Optional<ExternalIdentifier> getExternalId(String studyId, String externalId) {
         checkNotNull(studyId);
         checkNotNull(externalId);
         
-        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId.getIdentifier(), externalId);
+        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId, externalId);
         return Optional.ofNullable(mapper.load(key));
     }
 
     @Override
-    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(StudyIdentifier studyId,
+    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(String studyId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
 
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -202,8 +200,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(account);
         checkArgument(isNotBlank(externalId));
         
-        StudyIdentifier studyId = new StudyIdentifierImpl(account.getStudyId());
-        Optional<ExternalIdentifier> optionalId = getExternalId(studyId, externalId);
+        Optional<ExternalIdentifier> optionalId = getExternalId(account.getStudyId(), externalId);
         
         if (!optionalId.isPresent()) {
             return;
@@ -221,7 +218,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
     }
     
-    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(StudyIdentifier studyId, String offsetKey,
+    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(String studyId, String offsetKey,
             int pageSize, String idFilter, Boolean assignmentFilter) {
         
         DynamoDBQueryExpression<DynamoExternalIdentifier> query =
@@ -235,11 +232,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             query.withQueryFilterEntry(HEALTH_CODE, new Condition()
                 .withComparisonOperator(assignmentFilter.booleanValue() ? NOT_NULL : NULL));
         }
-        query.withHashKeyValues(new DynamoExternalIdentifier(studyId.getIdentifier(), null)); // no healthCode.
+        query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
 
         if (offsetKey != null) {
             Map<String, AttributeValue> map = new HashMap<>();
-            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+            map.put(STUDY_ID, new AttributeValue().withS(studyId));
             map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
             query.withExclusiveStartKey(map);
         }

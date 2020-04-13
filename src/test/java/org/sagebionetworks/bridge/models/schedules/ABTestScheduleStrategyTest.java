@@ -19,8 +19,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,8 +57,7 @@ public class ABTestScheduleStrategyTest {
     
     @Test
     public void testScheduleCollector() {
-        StudyIdentifier studyId = new StudyIdentifierImpl("test-study");
-        SchedulePlan plan = TestUtils.getABTestSchedulePlan(studyId);
+        SchedulePlan plan = TestUtils.getABTestSchedulePlan("test-study");
         
         List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
         assertEquals(schedules.size(), 3);
@@ -94,7 +91,7 @@ public class ABTestScheduleStrategyTest {
         List<Schedule> schedules = Lists.newArrayList();
         for (String healthCode : healthCodes) {
             ScheduleContext context = new ScheduleContext.Builder()
-                    .withStudyIdentifier(study.getStudyIdentifier())
+                    .withStudyIdentifier(study.getIdentifier())
                     .withHealthCode(healthCode).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);

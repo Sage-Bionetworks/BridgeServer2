@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -25,7 +24,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -47,7 +45,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void setup() {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TestConstants.TEST_STUDY);
+        mockSession.setStudyIdentifier(API_APP_ID);
 
         // mock study service
         studyService = mock(StudyService.class);
@@ -94,7 +92,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.createCompoundActivityDefinition(eq(TEST_STUDY), serviceInputCaptor.capture()))
+        when(defService.createCompoundActivityDefinition(eq(API_APP_ID), serviceInputCaptor.capture()))
                 .thenReturn(serviceOutput);
 
         // execute and validate
@@ -118,7 +116,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertEquals(result.getMessage(), "Compound activity definition has been deleted.");
 
         // verify call through to the service
-        verify(defService).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        verify(defService).deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verifyZeroInteractions(studyService);
     }
@@ -130,7 +128,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
-        when(defService.getAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY)).thenReturn(
+        when(defService.getAllCompoundActivityDefinitionsInStudy(API_APP_ID)).thenReturn(
                 ImmutableList.of(serviceOutput));
 
         // execute and validate
@@ -155,7 +153,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         serviceOutput.setStudyId(API_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
-        when(defService.getCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID)).thenReturn(serviceOutput);
+        when(defService.getCompoundActivityDefinition(API_APP_ID, TASK_ID)).thenReturn(serviceOutput);
 
         // execute and validate
         String result = controller.getCompoundActivityDefinition(TASK_ID);
@@ -182,7 +180,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.updateCompoundActivityDefinition(eq(TEST_STUDY), eq(TASK_ID),
+        when(defService.updateCompoundActivityDefinition(eq(API_APP_ID), eq(TASK_ID),
                 serviceInputCaptor.capture())).thenReturn(serviceOutput);
 
         // execute and validate

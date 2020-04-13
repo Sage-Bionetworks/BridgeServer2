@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -149,7 +148,7 @@ public class SmsService {
 
         // If we have a participant, make a health data.
         if (participant != null) {
-            initMessageLogSchema(study.getStudyIdentifier());
+            initMessageLogSchema(study.getIdentifier());
 
             // Set sentOn w/ user's time zone, if it exists.
             DateTime sentOnWithTimeZone;
@@ -172,7 +171,7 @@ public class SmsService {
                     .withCreatedOn(sentOnWithTimeZone).withSchemaId(MESSAGE_LOG_SCHEMA_ID)
                     .withSchemaRevision(MESSAGE_LOG_SCHEMA_REV).withData(healthDataNode).build();
             try {
-                healthDataService.submitHealthData(study.getStudyIdentifier(), participant, healthData);
+                healthDataService.submitHealthData(study.getIdentifier(), participant, healthData);
             } catch (IOException | UploadValidationException ex) {
                 throw new BridgeServiceException(ex);
             }
@@ -180,7 +179,7 @@ public class SmsService {
     }
 
     // Helper method to init the SMS log schema for the study.
-    private void initMessageLogSchema(StudyIdentifier studyId) {
+    private void initMessageLogSchema(String studyId) {
         // See if schema already exists.
         UploadSchema existingSchema = null;
         try {

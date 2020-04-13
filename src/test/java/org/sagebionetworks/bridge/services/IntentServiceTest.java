@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -116,7 +115,7 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
@@ -125,12 +124,12 @@ public class IntentServiceTest {
         revision.setMimeType(TEXT);
         when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
-        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), API_APP_ID,
                 TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq(API_APP_ID), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
         
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
@@ -154,7 +153,7 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
@@ -163,12 +162,12 @@ public class IntentServiceTest {
         revision.setMimeType(TEXT);
         when(mockTemplateService.getRevisionForUser(mockStudy, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
-        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), API_APP_ID,
                 TestConstants.PHONE);
         
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq(API_APP_ID), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
         
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
@@ -192,7 +191,7 @@ public class IntentServiceTest {
         installLinks.put("iOS", "this-is-a-link");
         installLinks.put("Android", "the-wrong-link");
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
@@ -203,11 +202,11 @@ public class IntentServiceTest {
         when(mockTemplateService.getRevisionForUser(mockStudy, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
 
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), 
-                TestConstants.TEST_STUDY, "email@email.com");
+                API_APP_ID, "email@email.com");
         
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq(API_APP_ID), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
         
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
@@ -245,17 +244,17 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), new StudyIdentifierImpl("testStudy"),
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), "testStudy",
                 TestConstants.PHONE);
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(new StudyIdentifierImpl("testStudy"));
+        when(mockStudy.getIdentifier()).thenReturn("testStudy");
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
 
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq("testStudy"), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
 
         // These are not called.
@@ -303,16 +302,16 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
-        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), API_APP_ID, TestConstants.PHONE);
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
+        when(mockSubpopService.getSubpopulations(API_APP_ID, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
+        verify(mockSubpopService).getSubpopulations(API_APP_ID, false);
         verify(mockCacheProvider).removeObject(key);
         verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("BBB")), 
                 any(), eq(intent.getConsentSignature()), eq(intent.getScope()), eq(true));
@@ -340,16 +339,16 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setEmail(TestConstants.EMAIL);
         
-        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.EMAIL);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), API_APP_ID, TestConstants.EMAIL);
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
+        when(mockSubpopService.getSubpopulations(API_APP_ID, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(key, IntentToParticipate.class)).thenReturn(intent);
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
+        verify(mockSubpopService).getSubpopulations(API_APP_ID, false);
         verify(mockCacheProvider).removeObject(key);
         verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("BBB")), 
                 any(), eq(intent.getConsentSignature()), eq(intent.getScope()), eq(true));
@@ -392,11 +391,11 @@ public class IntentServiceTest {
         
         StudyParticipant participant = new StudyParticipant.Builder().build(); 
         
-        CacheKey keyAAA = CacheKey.itp(SubpopulationGuid.create("AAA"), TestConstants.TEST_STUDY, TestConstants.PHONE);
-        CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey keyAAA = CacheKey.itp(SubpopulationGuid.create("AAA"), API_APP_ID, TestConstants.PHONE);
+        CacheKey keyBBB = CacheKey.itp(SubpopulationGuid.create("BBB"), API_APP_ID, TestConstants.PHONE);
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
+        when(mockSubpopService.getSubpopulations(API_APP_ID, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         when(mockCacheProvider.getObject(keyAAA, IntentToParticipate.class)).thenReturn(intentAAA);
         when(mockCacheProvider.getObject(keyBBB, IntentToParticipate.class)).thenReturn(intentBBB);
@@ -404,7 +403,7 @@ public class IntentServiceTest {
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
+        verify(mockSubpopService).getSubpopulations(API_APP_ID, false);
         verify(mockCacheProvider).removeObject(keyAAA);
         verify(mockCacheProvider).removeObject(keyBBB);
         verify(mockConsentService).consentToResearch(eq(mockStudy), eq(SubpopulationGuid.create("AAA")), 
@@ -436,15 +435,15 @@ public class IntentServiceTest {
         Account account = Account.create();
         account.setPhone(TestConstants.PHONE);
         
-        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), TestConstants.TEST_STUDY, TestConstants.PHONE);
+        CacheKey key = CacheKey.itp(SubpopulationGuid.create("BBB"), API_APP_ID, PHONE);
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
-        when(mockSubpopService.getSubpopulations(TestConstants.TEST_STUDY, false))
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
+        when(mockSubpopService.getSubpopulations(API_APP_ID, false))
                 .thenReturn(Lists.newArrayList(subpopA, subpopB));
         
         service.registerIntentToParticipate(mockStudy, account);
         
-        verify(mockSubpopService).getSubpopulations(TestConstants.TEST_STUDY, false);
+        verify(mockSubpopService).getSubpopulations(API_APP_ID, false);
         verify(mockCacheProvider, never()).removeObject(key);
         verifyNoMoreInteractions(mockConsentService); 
     }
@@ -453,15 +452,14 @@ public class IntentServiceTest {
     public void submitIntentToParticipateWithoutInstallLinks() {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
-        when(mockStudy.getStudyIdentifier()).thenReturn(TestConstants.TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
         when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
         
-        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TestConstants.TEST_STUDY,
-                TestConstants.PHONE);
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), API_APP_ID, PHONE);
         
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq(mockStudy), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq(API_APP_ID), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
         
         // We do store the intent

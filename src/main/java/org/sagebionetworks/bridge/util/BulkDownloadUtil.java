@@ -14,7 +14,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
@@ -87,12 +86,8 @@ public class BulkDownloadUtil {
 
         // process uploads
         for (UploadObject uploadObj : uploads) {
-            // Artificial study, because upload validation handler chain takes in study but only looks at the study ID.
-            DynamoStudy study = new DynamoStudy();
-            study.setIdentifier(uploadObj.studyId);
-
             UploadValidationContext ctx = new UploadValidationContext();
-            ctx.setStudy(study);
+            ctx.setStudy(uploadObj.studyId);
             ctx.setUpload(uploadObj.metadata);
 
             // Make temp dir within temp dir.

@@ -12,7 +12,6 @@ import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class MetricsTest {

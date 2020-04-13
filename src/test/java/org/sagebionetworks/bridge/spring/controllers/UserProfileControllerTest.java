@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -59,7 +58,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -138,7 +136,7 @@ public class UserProfileControllerTest extends Mockito {
 
         when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
-        when(mockStudyService.getStudy((StudyIdentifier)any())).thenReturn(study);
+        when(mockStudyService.getStudy((String)any())).thenReturn(study);
         
         ViewCache viewCache = new ViewCache();
         viewCache.setCachePeriod(BRIDGE_VIEW_EXPIRE_IN_SECONDS);
@@ -156,7 +154,7 @@ public class UserProfileControllerTest extends Mockito {
                 .withHealthCode(HEALTH_CODE)
                 .withId(USER_ID)
                 .build());
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(mockRequest).when(controller).request();

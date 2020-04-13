@@ -49,7 +49,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -91,7 +90,7 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull StudyIdentifier studyId,
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String studyId,
             @Nonnull String healthCode, @Nullable String originalUploadId) {
         checkNotNull(uploadRequest, "Upload request is null");
         checkNotNull(studyId, "Study identifier is null");
@@ -99,7 +98,7 @@ public class DynamoUploadDao implements UploadDao {
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
-        upload.setStudyId(studyId.getIdentifier());
+        upload.setStudyId(studyId);
         upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
 
         if (originalUploadId != null) {
@@ -192,7 +191,7 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public ForwardCursorPagedResourceList<Upload> getStudyUploads(StudyIdentifier studyId, DateTime startTime,
+    public ForwardCursorPagedResourceList<Upload> getStudyUploads(String studyId, DateTime startTime,
             DateTime endTime, int pageSize, String offsetKey) {
         checkNotNull(studyId);
 
@@ -229,10 +228,10 @@ public class DynamoUploadDao implements UploadDao {
                 .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
-    private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(StudyIdentifier studyId, DateTime startTime, DateTime endTime,
+    private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(String studyId, DateTime startTime, DateTime endTime,
                                                                              String offsetKey, int pageSize) {
 
-        DynamoDBQueryExpression<DynamoUpload2> query = createCountQuery(studyId.getIdentifier(), startTime, endTime);
+        DynamoDBQueryExpression<DynamoUpload2> query = createCountQuery(studyId, startTime, endTime);
         if (offsetKey != null) {
             // load table again to get the one last evaluated upload
             DynamoUpload2 retLastEvaluatedUpload = mapper.load(DynamoUpload2.class, offsetKey);
@@ -242,7 +241,7 @@ public class DynamoUploadDao implements UploadDao {
             Map<String,AttributeValue> map = new HashMap<>();
             map.put(UPLOAD_ID, new AttributeValue().withS(offsetKey));
             map.put(REQUESTED_ON, new AttributeValue().withN(String.valueOf(retLastEvaluatedUpload.getRequestedOn())));
-            map.put(STUDY_ID, new AttributeValue().withS(studyId.getIdentifier()));
+            map.put(STUDY_ID, new AttributeValue().withS(studyId));
             query.withExclusiveStartKey(map);
         }
         query.withLimit(pageSize);

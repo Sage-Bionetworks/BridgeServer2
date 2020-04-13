@@ -18,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CompoundActivityDefinitionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -64,7 +63,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(API_APP_ID,
                 serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
@@ -84,7 +83,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.createCompoundActivityDefinition(TestConstants.TEST_STUDY, def);
+            service.createCompoundActivityDefinition(API_APP_ID, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -101,10 +100,10 @@ public class CompoundActivityDefinitionServiceTest {
         // note: delete has no return value
 
         // execute
-        dao.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        dao.deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
 
         // verify dao
-        verify(dao).deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+        verify(dao).deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
     }
 
     @Test
@@ -124,18 +123,18 @@ public class CompoundActivityDefinitionServiceTest {
     
     @Test
     public void deleteWithConstraintViolation() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TestConstants.TEST_STUDY);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(API_APP_ID);
         CompoundActivity compoundActivity = new CompoundActivity.Builder()
                 .withTaskIdentifier(TASK_ID).build();
         Activity newActivity = new Activity.Builder()
                 .withCompoundActivity(compoundActivity).build();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, newActivity);
-        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TestConstants.TEST_STUDY, true))
+        when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, API_APP_ID, true))
                 .thenReturn(Lists.newArrayList(plan));
         
         // Now, a schedule plan exists that references this task ID. It cannot be deleted.
         try {
-            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID);
+            service.deleteCompoundActivityDefinition(API_APP_ID, TASK_ID);
             fail("Shoud have thrown exception");
         } catch(ConstraintViolationException e) {
             assertEquals(e.getReferrerKeys().get("guid"), "GGG");
@@ -148,7 +147,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void deleteBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.deleteCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId);
+            service.deleteCompoundActivityDefinition(API_APP_ID, taskId);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");
@@ -163,10 +162,10 @@ public class CompoundActivityDefinitionServiceTest {
     @Test
     public void deleteAll() {
         // execute
-        service.deleteAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY);
+        service.deleteAllCompoundActivityDefinitionsInStudy(API_APP_ID);
 
         // verify dao
-        verify(dao).deleteAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY);
+        verify(dao).deleteAllCompoundActivityDefinitionsInStudy(API_APP_ID);
     }
 
     // LIST
@@ -175,11 +174,11 @@ public class CompoundActivityDefinitionServiceTest {
     public void list() {
         // mock dao
         List<CompoundActivityDefinition> daoResultList = ImmutableList.of(makeValidDef());
-        when(dao.getAllCompoundActivityDefinitionsInStudy(TestConstants.TEST_STUDY)).thenReturn(daoResultList);
+        when(dao.getAllCompoundActivityDefinitionsInStudy(API_APP_ID)).thenReturn(daoResultList);
 
         // execute
         List<CompoundActivityDefinition> serviceResultList = service.getAllCompoundActivityDefinitionsInStudy(
-                TestConstants.TEST_STUDY);
+                API_APP_ID);
 
         // Validate that the service result is the same as the dao result.
         assertSame(serviceResultList, daoResultList);
@@ -191,10 +190,10 @@ public class CompoundActivityDefinitionServiceTest {
     public void get() {
         // mock dao
         CompoundActivityDefinition daoResult = makeValidDef();
-        when(dao.getCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID)).thenReturn(daoResult);
+        when(dao.getCompoundActivityDefinition(API_APP_ID, TASK_ID)).thenReturn(daoResult);
 
         // execute
-        CompoundActivityDefinition serviceResult = service.getCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.getCompoundActivityDefinition(API_APP_ID,
                 TASK_ID);
 
         // Validate that the service result is the same as the dao result.
@@ -219,7 +218,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void getBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.getCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId);
+            service.getCompoundActivityDefinition(API_APP_ID, taskId);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");
@@ -241,7 +240,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute
         CompoundActivityDefinition serviceInput = makeValidDef();
-        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY,
+        CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(API_APP_ID,
                 TASK_ID, serviceInput);
 
         // validate dao input - It's the same as the service input, but we also set the study ID.
@@ -263,7 +262,7 @@ public class CompoundActivityDefinitionServiceTest {
 
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, TASK_ID, def);
+            service.updateCompoundActivityDefinition(API_APP_ID, TASK_ID, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
             // expected exception
@@ -291,7 +290,7 @@ public class CompoundActivityDefinitionServiceTest {
     private void updateBadRequest(String taskId) {
         // execute, will throw
         try {
-            service.updateCompoundActivityDefinition(TestConstants.TEST_STUDY, taskId, makeValidDef());
+            service.updateCompoundActivityDefinition(API_APP_ID, taskId, makeValidDef());
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "taskId must be specified");

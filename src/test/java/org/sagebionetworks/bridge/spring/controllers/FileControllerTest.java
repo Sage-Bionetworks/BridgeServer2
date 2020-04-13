@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -77,7 +77,7 @@ public class FileControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -99,23 +99,23 @@ public class FileControllerTest extends Mockito {
     @Test
     public void getFilesIncludeDeleted() {
         PagedResourceList<FileMetadata> page = new PagedResourceList<>(ImmutableList.of(new FileMetadata()), 100);
-        when(mockFileService.getFiles(TEST_STUDY, 5, 40, true)).thenReturn(page);
+        when(mockFileService.getFiles(API_APP_ID, 5, 40, true)).thenReturn(page);
         
         ResourceList<FileMetadata> results = controller.getFiles("5", "40", "true");
         assertSame(results, page);
         
-        verify(mockFileService).getFiles(TEST_STUDY, 5, 40, true);
+        verify(mockFileService).getFiles(API_APP_ID, 5, 40, true);
     }
     
     @Test
     public void getFilesExcludeDeleted() {
         PagedResourceList<FileMetadata> page = new PagedResourceList<>(ImmutableList.of(new FileMetadata()), 100);
-        when(mockFileService.getFiles(TEST_STUDY, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(page);
+        when(mockFileService.getFiles(API_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(page);
         
         ResourceList<FileMetadata> results = controller.getFiles(null, null, "false");
         assertSame(results, page);
         
-        verify(mockFileService).getFiles(TEST_STUDY, 0, API_DEFAULT_PAGE_SIZE, false);
+        verify(mockFileService).getFiles(API_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
     }
     
     @Test
@@ -123,7 +123,7 @@ public class FileControllerTest extends Mockito {
         FileMetadata persisted = new FileMetadata();
         persisted.setGuid(GUID);
         persisted.setVersion(3L);
-        when(mockFileService.createFile(eq(TEST_STUDY), any())).thenReturn(persisted);
+        when(mockFileService.createFile(eq(API_APP_ID), any())).thenReturn(persisted);
         
         FileMetadata file = new FileMetadata();
         file.setName("a test name");
@@ -133,19 +133,19 @@ public class FileControllerTest extends Mockito {
         assertEquals(keys.getGuid(), GUID);
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
-        verify(mockFileService).createFile(eq(TEST_STUDY), metadataCaptor.capture());
+        verify(mockFileService).createFile(eq(API_APP_ID), metadataCaptor.capture());
         assertEquals(metadataCaptor.getValue().getName(), "a test name");
     }
     
     @Test
     public void getFile() {
         FileMetadata persisted = new FileMetadata();
-        when(mockFileService.getFile(TEST_STUDY, GUID)).thenReturn(persisted);
+        when(mockFileService.getFile(API_APP_ID, GUID)).thenReturn(persisted);
         
         FileMetadata file = controller.getFile(GUID);
         assertSame(file, persisted);
         
-        verify(mockFileService).getFile(TEST_STUDY, GUID);
+        verify(mockFileService).getFile(API_APP_ID, GUID);
     }
     
     @Test
@@ -153,7 +153,7 @@ public class FileControllerTest extends Mockito {
         FileMetadata persisted = new FileMetadata();
         persisted.setGuid(GUID);
         persisted.setVersion(3L);
-        when(mockFileService.updateFile(eq(TEST_STUDY), any())).thenReturn(persisted);
+        when(mockFileService.updateFile(eq(API_APP_ID), any())).thenReturn(persisted);
         
         FileMetadata file = new FileMetadata();
         file.setName("a test name");
@@ -163,7 +163,7 @@ public class FileControllerTest extends Mockito {
         assertEquals(keys.getGuid(), GUID);
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
-        verify(mockFileService).updateFile(eq(TEST_STUDY), metadataCaptor.capture());
+        verify(mockFileService).updateFile(eq(API_APP_ID), metadataCaptor.capture());
         assertEquals(metadataCaptor.getValue().getName(), "a test name");
         assertEquals(metadataCaptor.getValue().getGuid(), GUID);
     }
@@ -175,7 +175,7 @@ public class FileControllerTest extends Mockito {
         StatusMessage message = controller.deleteFile(GUID, null);
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
-        verify(mockFileService).deleteFile(TEST_STUDY, GUID);
+        verify(mockFileService).deleteFile(API_APP_ID, GUID);
     }
 
     @Test
@@ -185,7 +185,7 @@ public class FileControllerTest extends Mockito {
         StatusMessage message = controller.deleteFile(GUID, "false");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
-        verify(mockFileService).deleteFile(TEST_STUDY, GUID);
+        verify(mockFileService).deleteFile(API_APP_ID, GUID);
     }
 
     @Test
@@ -195,7 +195,7 @@ public class FileControllerTest extends Mockito {
         StatusMessage message = controller.deleteFile(GUID, "true");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
-        verify(mockFileService).deleteFile(TEST_STUDY, GUID);
+        verify(mockFileService).deleteFile(API_APP_ID, GUID);
     }
     
     @Test
@@ -206,7 +206,7 @@ public class FileControllerTest extends Mockito {
         StatusMessage message = controller.deleteFile(GUID, "true");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
         
-        verify(mockFileService).deleteFilePermanently(TEST_STUDY, GUID);
+        verify(mockFileService).deleteFilePermanently(API_APP_ID, GUID);
     }
     
     @Test
@@ -219,7 +219,7 @@ public class FileControllerTest extends Mockito {
         
         controller.createFileRevision(GUID);
         
-        verify(mockFileService).createFileRevision(eq(TEST_STUDY), revisionCaptor.capture());
+        verify(mockFileService).createFileRevision(eq(API_APP_ID), revisionCaptor.capture());
         FileRevision captured = revisionCaptor.getValue();
         assertEquals(GUID, captured.getFileGuid());
         assertEquals("name", captured.getName());
@@ -232,19 +232,19 @@ public class FileControllerTest extends Mockito {
         StatusMessage message = controller.finishFileRevision(GUID, CREATED_ON.toString());
         assertEquals(UPLOAD_FINISHED_MSG, message);
 
-        verify(mockFileService).finishFileRevision(eq(TEST_STUDY), eq(GUID), dateTimeCaptor.capture());
+        verify(mockFileService).finishFileRevision(eq(API_APP_ID), eq(GUID), dateTimeCaptor.capture());
         assertEquals(CREATED_ON.toString(), dateTimeCaptor.getValue().toString());
     }
     
     @Test
     public void getFileRevisions() throws Exception {
         PagedResourceList<FileRevision> list = new PagedResourceList<>(ImmutableList.of(new FileRevision(), new FileRevision()), 2);
-        when(mockFileService.getFileRevisions(TEST_STUDY, GUID, 10, 50)).thenReturn(list);
+        when(mockFileService.getFileRevisions(API_APP_ID, GUID, 10, 50)).thenReturn(list);
         
         PagedResourceList<FileRevision> revisions = controller.getFileRevisions(GUID, "10", "50");
         assertSame(revisions, list);
         
-        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 10, 50);
+        verify(mockFileService).getFileRevisions(API_APP_ID, GUID, 10, 50);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
@@ -263,6 +263,6 @@ public class FileControllerTest extends Mockito {
     public void getFileRevisionsDefaults() { 
         controller.getFileRevisions(GUID, null, null);
         
-        verify(mockFileService).getFileRevisions(TEST_STUDY, GUID, 0, API_DEFAULT_PAGE_SIZE);
+        verify(mockFileService).getFileRevisions(API_APP_ID, GUID, 0, API_DEFAULT_PAGE_SIZE);
     }
 }

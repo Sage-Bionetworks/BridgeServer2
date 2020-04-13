@@ -74,7 +74,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -420,25 +419,25 @@ public class TestUtils {
         return runSchedulerForActivities(getSchedulePlans(context.getCriteriaContext().getStudyIdentifier()), context);
     }
 
-    public static List<SchedulePlan> getSchedulePlans(StudyIdentifier studyId) {
+    public static List<SchedulePlan> getSchedulePlans(String studyId) {
         List<SchedulePlan> plans = Lists.newArrayListWithCapacity(3);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
         plan.setStrategy(getStrategy("P3D", getActivity1()));
-        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStudyKey(studyId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         plan.setStrategy(getStrategy("P1D", getActivity2()));
-        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStudyKey(studyId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
         plan.setStrategy(getStrategy("P2D", getActivity3()));
-        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStudyKey(studyId);
         plans.add(plan);
 
         return plans;
@@ -458,7 +457,7 @@ public class TestUtils {
         return new Activity.Builder().withLabel("Activity3").withGuid("AAA").withTask("tapTest").build();
     }
 
-    public static SchedulePlan getSimpleSchedulePlan(StudyIdentifier studyId) {
+    public static SchedulePlan getSimpleSchedulePlan(String studyId) {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 8 ? * TUE *");
@@ -474,7 +473,7 @@ public class TestUtils {
         plan.setLabel("Simple Test Plan");
         plan.setGuid("GGG");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStudyKey(studyId);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -543,7 +542,7 @@ public class TestUtils {
         return study;
     }
 
-    public static SchedulePlan getABTestSchedulePlan(StudyIdentifier studyId) {
+    public static SchedulePlan getABTestSchedulePlan(String studyId) {
         Schedule schedule1 = new Schedule();
         schedule1.setScheduleType(ScheduleType.RECURRING);
         schedule1.setCronTrigger("0 0 8 ? * TUE *");
@@ -572,7 +571,7 @@ public class TestUtils {
         plan.setGuid("AAA");
         plan.setLabel("Test A/B Schedule");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(studyId.getIdentifier());
+        plan.setStudyKey(studyId);
 
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(40, schedule1);

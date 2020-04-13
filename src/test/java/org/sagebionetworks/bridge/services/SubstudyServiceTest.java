@@ -55,12 +55,12 @@ public class SubstudyServiceTest {
     @Test
     public void getSubstudy() {
         Substudy substudy = Substudy.create();
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "id")).thenReturn(substudy);
+        when(substudyDao.getSubstudy(API_APP_ID, "id")).thenReturn(substudy);
         
-        Substudy returnedValue = service.getSubstudy(TestConstants.TEST_STUDY, "id", true);
+        Substudy returnedValue = service.getSubstudy(API_APP_ID, "id", true);
         assertEquals(returnedValue, substudy);
         
-        verify(substudyDao).getSubstudy(TestConstants.TEST_STUDY, "id");
+        verify(substudyDao).getSubstudy(API_APP_ID, "id");
     }
     
     @Test
@@ -72,41 +72,41 @@ public class SubstudyServiceTest {
         substudyB.setId("substudyB");
         List<Substudy> substudies = ImmutableList.of(substudyA, substudyB); 
         
-        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(substudies);
+        when(substudyDao.getSubstudies(API_APP_ID, false)).thenReturn(substudies);
         
-        Set<String> substudyIds = service.getSubstudyIds(TestConstants.TEST_STUDY);
+        Set<String> substudyIds = service.getSubstudyIds(API_APP_ID);
         assertEquals(substudyIds, TestConstants.USER_SUBSTUDY_IDS);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSubstudyNotFoundThrowingException() {
-        service.getSubstudy(TestConstants.TEST_STUDY, "id", true);
+        service.getSubstudy(API_APP_ID, "id", true);
     }
     
     @Test
     public void getSubstudyNotFoundNotThrowingException() {
-        Substudy substudy = service.getSubstudy(TestConstants.TEST_STUDY, "id", false);
+        Substudy substudy = service.getSubstudy(API_APP_ID, "id", false);
         assertNull(substudy);
     }
     
     @Test
     public void getSubstudiesIncludeDeleted() {
-        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, true)).thenReturn(SUBSTUDIES);
+        when(substudyDao.getSubstudies(API_APP_ID, true)).thenReturn(SUBSTUDIES);
         
-        List<Substudy> returnedValue = service.getSubstudies(TestConstants.TEST_STUDY, true);
+        List<Substudy> returnedValue = service.getSubstudies(API_APP_ID, true);
         assertEquals(returnedValue, SUBSTUDIES);
         
-        verify(substudyDao).getSubstudies(TestConstants.TEST_STUDY, true);
+        verify(substudyDao).getSubstudies(API_APP_ID, true);
     }
     
     @Test
     public void getSubstudiesExcludeDeleted() {
-        when(substudyDao.getSubstudies(TestConstants.TEST_STUDY, false)).thenReturn(SUBSTUDIES);
+        when(substudyDao.getSubstudies(API_APP_ID, false)).thenReturn(SUBSTUDIES);
         
-        List<Substudy> returnedValue = service.getSubstudies(TestConstants.TEST_STUDY, false);
+        List<Substudy> returnedValue = service.getSubstudies(API_APP_ID, false);
         assertEquals(returnedValue, SUBSTUDIES);
         
-        verify(substudyDao).getSubstudies(TestConstants.TEST_STUDY, false);
+        verify(substudyDao).getSubstudies(API_APP_ID, false);
     }
     
     @Test
@@ -123,7 +123,7 @@ public class SubstudyServiceTest {
 
         when(substudyDao.createSubstudy(any())).thenReturn(VERSION_HOLDER);
         
-        VersionHolder returnedValue = service.createSubstudy(TestConstants.TEST_STUDY, substudy);
+        VersionHolder returnedValue = service.createSubstudy(API_APP_ID, substudy);
         assertEquals(returnedValue, VERSION_HOLDER);
         
         verify(substudyDao).createSubstudy(substudyCaptor.capture());
@@ -140,7 +140,7 @@ public class SubstudyServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createSubstudyInvalidSubstudy() {
-        service.createSubstudy(TestConstants.TEST_STUDY, Substudy.create());
+        service.createSubstudy(API_APP_ID, Substudy.create());
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
@@ -149,9 +149,9 @@ public class SubstudyServiceTest {
         substudy.setId("oneId");
         substudy.setName("oneName");
         
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "oneId")).thenReturn(substudy);
+        when(substudyDao.getSubstudy(API_APP_ID, "oneId")).thenReturn(substudy);
         
-        service.createSubstudy(TestConstants.TEST_STUDY, substudy);
+        service.createSubstudy(API_APP_ID, substudy);
     }
 
     @Test
@@ -160,7 +160,7 @@ public class SubstudyServiceTest {
         existing.setId("oneId");
         existing.setName("oldName");
         existing.setCreatedOn(DateTime.now());
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "oneId")).thenReturn(existing);
+        when(substudyDao.getSubstudy(API_APP_ID, "oneId")).thenReturn(existing);
         when(substudyDao.updateSubstudy(any())).thenReturn(VERSION_HOLDER);
 
         Substudy substudy = Substudy.create();
@@ -168,7 +168,7 @@ public class SubstudyServiceTest {
         substudy.setId("oneId");
         substudy.setName("newName");
         
-        VersionHolder versionHolder = service.updateSubstudy(TestConstants.TEST_STUDY, substudy);
+        VersionHolder versionHolder = service.updateSubstudy(API_APP_ID, substudy);
         assertEquals(versionHolder, VERSION_HOLDER);
         
         verify(substudyDao).updateSubstudy(substudyCaptor.capture());
@@ -183,7 +183,7 @@ public class SubstudyServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateSubstudyInvalidSubstudy() {
-        service.updateSubstudy(TestConstants.TEST_STUDY, Substudy.create());
+        service.updateSubstudy(API_APP_ID, Substudy.create());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -193,28 +193,28 @@ public class SubstudyServiceTest {
         substudy.setName("oneName");
         substudy.setDeleted(true);
 
-        service.updateSubstudy(TestConstants.TEST_STUDY, substudy);
+        service.updateSubstudy(API_APP_ID, substudy);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateSubstudyEntityDeleted() {
         Substudy existing = Substudy.create();
         existing.setDeleted(true);
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "oneId")).thenReturn(existing);
+        when(substudyDao.getSubstudy(API_APP_ID, "oneId")).thenReturn(existing);
 
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
         substudy.setDeleted(true);
         
-        service.updateSubstudy(TestConstants.TEST_STUDY, substudy);
+        service.updateSubstudy(API_APP_ID, substudy);
     }
 
     @Test
     public void deleteSubstudy() {
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "id")).thenReturn(Substudy.create());
+        when(substudyDao.getSubstudy(API_APP_ID, "id")).thenReturn(Substudy.create());
         
-        service.deleteSubstudy(TestConstants.TEST_STUDY, "id");
+        service.deleteSubstudy(API_APP_ID, "id");
         
         verify(substudyDao).updateSubstudy(substudyCaptor.capture());
         Substudy persisted = substudyCaptor.getValue();
@@ -224,20 +224,20 @@ public class SubstudyServiceTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubstudyNotFound() {
-        service.deleteSubstudy(TestConstants.TEST_STUDY, "id");
+        service.deleteSubstudy(API_APP_ID, "id");
     }
     
     @Test
     public void deleteSubstudyPermanently() {
-        when(substudyDao.getSubstudy(TestConstants.TEST_STUDY, "id")).thenReturn(Substudy.create());
+        when(substudyDao.getSubstudy(API_APP_ID, "id")).thenReturn(Substudy.create());
         
-        service.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "id");
+        service.deleteSubstudyPermanently(API_APP_ID, "id");
         
-        verify(substudyDao).deleteSubstudyPermanently(TestConstants.TEST_STUDY, "id");
+        verify(substudyDao).deleteSubstudyPermanently(API_APP_ID, "id");
     }    
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubstudyPermanentlyNotFound() {
-        service.deleteSubstudyPermanently(TestConstants.TEST_STUDY, "id");
+        service.deleteSubstudyPermanently(API_APP_ID, "id");
     }    
 }

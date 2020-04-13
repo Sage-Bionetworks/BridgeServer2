@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.upload;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -46,7 +46,7 @@ public class StrictValidationHandlerTest {
 
         // Set up common context attributes.
         context = new UploadValidationContext();
-        context.setStudy(TEST_STUDY);
+        context.setStudy(API_APP_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId("test-upload");
@@ -70,7 +70,7 @@ public class StrictValidationHandlerTest {
 
         // mock schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "test-schema", 1)).thenReturn(
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, "test-schema", 1)).thenReturn(
                 testSchema);
         handler.setUploadSchemaService(mockSchemaService);
 
@@ -79,7 +79,7 @@ public class StrictValidationHandlerTest {
         testStudy.setUploadValidationStrictness(uploadValidationStrictness);
 
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_STUDY)).thenReturn(testStudy);
+        when(mockStudyService.getStudy(API_APP_ID)).thenReturn(testStudy);
         handler.setStudyService(mockStudyService);
 
         // set up JSON data

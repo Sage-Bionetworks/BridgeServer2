@@ -141,7 +141,7 @@ public class ConsentService {
         checkNotNull(userId);
         
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
-        subpopService.getSubpopulation(study, subpopGuid);
+        subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
@@ -177,7 +177,7 @@ public class ConsentService {
         ConsentSignatureValidator validator = new ConsentSignatureValidator(study.getMinAgeOfConsent());
         Validate.entityThrowingException(validator, consentSignature);
 
-        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpop);
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
@@ -301,7 +301,7 @@ public class ConsentService {
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
         Account account = accountService.getAccount(context.getAccountId());
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
@@ -309,7 +309,7 @@ public class ConsentService {
         }
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context, account);
         if (!ConsentStatus.isUserConsented(statuses)) {
-            notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
+            notificationsService.deleteAllRegistrations(study.getIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
@@ -338,7 +338,7 @@ public class ConsentService {
         
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             if (withdrawSignatures(account, subpopGuid, withdrewOn)) {
-                Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+                Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
                 account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
             }
         }
@@ -358,7 +358,7 @@ public class ConsentService {
         account.setPhoneVerified(false);
         accountService.updateAccount(account, null);
 
-        notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), participant.getHealthCode());
+        notificationsService.deleteAllRegistrations(study.getIdentifier(), participant.getHealthCode());
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.
@@ -390,7 +390,7 @@ public class ConsentService {
 
         ConsentSignature consentSignature = getConsentSignature(study, subpopGuid, participant.getId());
         SharingScope sharingScope = participant.getSharingScope();
-        Subpopulation subpop = subpopService.getSubpopulation(study.getStudyIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
         String studyConsentDocument = studyConsentService.getActiveConsent(subpop).getDocumentContent();
 
         boolean verifiedEmail = (participant.getEmail() != null

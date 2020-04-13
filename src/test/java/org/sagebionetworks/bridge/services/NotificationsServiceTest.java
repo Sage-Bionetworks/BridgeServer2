@@ -33,8 +33,6 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -45,7 +43,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class NotificationsServiceTest {
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
     private static final String GUID = "ABC-DEF-GHI-JKL";

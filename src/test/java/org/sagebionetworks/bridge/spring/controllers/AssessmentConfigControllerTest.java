@@ -1,11 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.SHARED_STUDY;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -65,7 +64,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         doReturn(mockRequest).when(controller).request();
     }
     
@@ -112,7 +111,7 @@ public class AssessmentConfigControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentConfigRejectsSharedStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_APP_ID);
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
@@ -146,7 +145,7 @@ public class AssessmentConfigControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void customizeAssessmentConfigRejectsSharedStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        session.setStudyIdentifier(SHARED_STUDY);
+        session.setStudyIdentifier(SHARED_APP_ID);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         updates.put("guid", ImmutableMap.of("objGuid", TestUtils.getClientData()));

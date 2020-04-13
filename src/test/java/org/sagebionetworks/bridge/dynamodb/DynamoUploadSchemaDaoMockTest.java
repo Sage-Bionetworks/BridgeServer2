@@ -29,7 +29,6 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 @SuppressWarnings({ "ConstantConditions", "rawtypes", "RedundantCast", "unchecked" })
@@ -106,7 +105,7 @@ public class DynamoUploadSchemaDaoMockTest {
                 indexHashKeyCaptor.capture(), eq(false));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, false);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(API_APP_ID, false);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
@@ -125,7 +124,7 @@ public class DynamoUploadSchemaDaoMockTest {
                 indexHashKeyCaptor.capture(), eq(true));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TestConstants.TEST_STUDY, true);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(API_APP_ID, true);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
@@ -170,7 +169,7 @@ public class DynamoUploadSchemaDaoMockTest {
         doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(API_APP_ID,
                 SCHEMA_ID, true);
 
         // validate query
@@ -194,7 +193,7 @@ public class DynamoUploadSchemaDaoMockTest {
         doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TestConstants.TEST_STUDY,
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(API_APP_ID,
                 SCHEMA_ID, false);
 
         // validate query
@@ -218,7 +217,7 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.load(mapperInputSchemaCaptor.capture())).thenReturn(mapperOutputSchema);
 
         // set up test dao and execute
-        UploadSchema daoOutputSchema = dao.getUploadSchemaByIdAndRevision(TestConstants.TEST_STUDY, SCHEMA_ID,
+        UploadSchema daoOutputSchema = dao.getUploadSchemaByIdAndRevision(API_APP_ID, SCHEMA_ID,
                 SCHEMA_REV);
         assertSame(daoOutputSchema, mapperOutputSchema);
 
@@ -242,7 +241,7 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.queryPage(eq(DynamoUploadSchema.class), mapperQueryCaptor.capture())).thenReturn(queryResultPage);
 
         // execute
-        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TestConstants.TEST_STUDY, SCHEMA_ID);
+        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
@@ -265,7 +264,7 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.queryPage(eq(DynamoUploadSchema.class), any())).thenReturn(queryResultPage);
 
         // execute and validate result is null
-        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TestConstants.TEST_STUDY, SCHEMA_ID);
+        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(API_APP_ID, SCHEMA_ID);
         assertNull(daoOutputSchema);
 
         // query is already validated in getLatestById(). Don't bother checking again.

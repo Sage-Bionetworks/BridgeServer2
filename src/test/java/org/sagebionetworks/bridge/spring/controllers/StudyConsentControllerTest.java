@@ -29,8 +29,6 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -45,7 +43,7 @@ public class StudyConsentControllerTest extends Mockito {
     private static final String GUID = "guid";
     private static final String DATETIME_STRING = DateTime.now().toString();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(GUID);
-    private static final StudyIdentifier STUDY_ID = new StudyIdentifierImpl("test-study");
+    private static final String STUDY_ID = "test-study";
     private static final Study STUDY = new DynamoStudy();
     static {
         STUDY.setIdentifier("test-study");

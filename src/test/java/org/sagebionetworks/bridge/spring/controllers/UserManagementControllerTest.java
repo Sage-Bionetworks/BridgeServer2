@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -112,7 +111,7 @@ public class UserManagementControllerTest extends Mockito {
                 .withId(USER_ID).withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
 
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY);
+        session.setStudyIdentifier(API_APP_ID);
         session.setAuthenticated(true);
 
         sessionUpdateService = new SessionUpdateService();
@@ -121,10 +120,9 @@ public class UserManagementControllerTest extends Mockito {
 
         doReturn(session).when(mockUserAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(mockAuthService).getSession(any(String.class));
-        doReturn(mockStudy).when(mockStudyService).getStudy(TEST_STUDY);
         doReturn(mockStudy).when(mockStudyService).getStudy(API_APP_ID);
 
-        when(mockStudy.getStudyIdentifier()).thenReturn(TEST_STUDY);
+        when(mockStudy.getIdentifier()).thenReturn(API_APP_ID);
         doReturn(null).when(controller).getMetrics();
 
         doReturn(mockRequest).when(controller).request();
@@ -158,8 +156,8 @@ public class UserManagementControllerTest extends Mockito {
         assertEquals(result.get("email").textValue(), EMAIL); // it's the session
 
         // This isn't in the session that is returned to the user, but verify it has been changed
-        assertEquals(session.getStudyIdentifier().getIdentifier(), "originalStudy");
-        assertEquals(signInCaptor.getValue().getStudyId(), API_APP_ID);
+        assertEquals(session.getStudyIdentifier(), "originalStudy");
+        assertEquals(signInCaptor.getValue().getStudyId(), "api");
 
         verify(mockResponse).addCookie(cookieCaptor.capture());
         
@@ -207,7 +205,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockStudyService.getStudy("nextStudy")).thenReturn(nextStudy);
 
         controller.changeStudyForAdmin();
-        assertEquals(session.getStudyIdentifier().getIdentifier(), "nextStudy");
+        assertEquals(session.getStudyIdentifier(), "nextStudy");
         verify(mockCacheProvider).setUserSession(session);
     }
     

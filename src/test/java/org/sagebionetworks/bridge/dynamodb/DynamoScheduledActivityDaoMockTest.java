@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -169,7 +169,7 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(API_APP_ID)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
@@ -199,7 +199,7 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY)
+            .withStudyIdentifier(API_APP_ID)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)

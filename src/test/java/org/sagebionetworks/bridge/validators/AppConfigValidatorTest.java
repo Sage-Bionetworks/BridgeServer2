@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -22,7 +21,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
@@ -118,7 +116,7 @@ public class AppConfigValidatorTest {
         appConfig.setConfigReferences(ImmutableList.of(ref1));
         appConfig.setStudyId(API_APP_ID);
         
-        when(mockAppConfigElementService.getElementRevision(TestConstants.TEST_STUDY, "id:1", 1L))
+        when(mockAppConfigElementService.getElementRevision(API_APP_ID, "id:1", 1L))
                 .thenThrow(new EntityNotFoundException(AppConfigElement.class));
         
         // This succeeds because the mock does not throw an exception
@@ -179,7 +177,7 @@ public class AppConfigValidatorTest {
     
     @Test
     public void schemaDoesNotExistOnCreate() {
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, "guid", 3))
                 .thenThrow(new EntityNotFoundException(AppConfig.class));
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
@@ -189,7 +187,7 @@ public class AppConfigValidatorTest {
     
     @Test
     public void schemaDoesNotExistOnUpdate() {
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3))
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, "guid", 3))
             .thenThrow(new EntityNotFoundException(AppConfig.class));
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
@@ -215,7 +213,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnCreate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(API_APP_ID, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -226,7 +224,7 @@ public class AppConfigValidatorTest {
     public void surveyIsNotPublishedOnUpdate() {
         Survey survey = Survey.create();
         survey.setPublished(false);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(API_APP_ID, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -249,7 +247,7 @@ public class AppConfigValidatorTest {
     public void rejectsReferenceToLogicallyDeletedSurvey() {
         Survey survey = Survey.create();
         survey.setDeleted(true);
-        when(mockSurveyService.getSurvey(TestConstants.TEST_STUDY, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
+        when(mockSurveyService.getSurvey(API_APP_ID, VALID_RESOLVED_SURVEY_KEYS, false, false)).thenReturn(survey);
         
         appConfig.getSurveyReferences().add(VALID_UNRESOLVED_SURVEY_REF);
         
@@ -261,7 +259,7 @@ public class AppConfigValidatorTest {
         UploadSchema schema = UploadSchema.create();
         schema.setDeleted(true);
         
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_STUDY, "guid", 3)).thenReturn(schema);
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, "guid", 3)).thenReturn(schema);
         
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
         

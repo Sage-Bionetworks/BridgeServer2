@@ -135,7 +135,7 @@ public class UserAdminService {
             // We don't filter users by any of these filtering criteria in the admin API.
             CriteriaContext context = new CriteriaContext.Builder()
                     .withUserId(identifier.getIdentifier())
-                    .withStudyIdentifier(study.getStudyIdentifier()).build();
+                    .withStudyIdentifier(study.getIdentifier()).build();
             
             if (consentUser) {
                 String name = String.format("[Signature for %s]", updatedParticipant.getEmail());
@@ -201,7 +201,7 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
-            notificationsService.deleteAllRegistrations(study.getStudyIdentifier(), healthCode);
+            notificationsService.deleteAllRegistrations(study.getIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);

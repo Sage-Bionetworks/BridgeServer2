@@ -23,7 +23,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -69,7 +68,7 @@ public class InitRecordHandlerTest {
                 (name, node) -> makeFileWithContent(name, node.toString())));
 
         // Contexts always include studyId.
-        context.setStudy(TestConstants.TEST_STUDY);
+        context.setStudy(API_APP_ID);
 
         // And upload (with upload ID and health code).
         DynamoUpload2 upload = new DynamoUpload2();

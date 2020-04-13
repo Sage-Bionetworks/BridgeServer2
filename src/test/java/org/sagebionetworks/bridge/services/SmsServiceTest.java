@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -90,7 +91,7 @@ public class SmsServiceTest {
         // Mock schema service to return dummy schema for message log. The schema is empty for the purposes of the
         // test, since we only care that it exists, not what's in it.
         mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SmsService.MESSAGE_LOG_SCHEMA_ID,
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, SmsService.MESSAGE_LOG_SCHEMA_ID,
                 SmsService.MESSAGE_LOG_SCHEMA_REV)).thenReturn(UploadSchema.create());
 
         // Mock SMS providers.
@@ -245,7 +246,7 @@ public class SmsServiceTest {
                 PARTICIPANT_WITH_TIME_ZONE);
 
         // Schema Service has no schema (throws).
-        when(mockSchemaService.getUploadSchemaByIdAndRev(TestConstants.TEST_STUDY, SmsService.MESSAGE_LOG_SCHEMA_ID,
+        when(mockSchemaService.getUploadSchemaByIdAndRev(API_APP_ID, SmsService.MESSAGE_LOG_SCHEMA_ID,
                 SmsService.MESSAGE_LOG_SCHEMA_REV)).thenThrow(EntityNotFoundException.class);
 
         // Set up test and execute.
@@ -258,7 +259,7 @@ public class SmsServiceTest {
 
         // Everything else is verified. Just verify that we create the new schema.
         ArgumentCaptor<UploadSchema> schemaCaptor = ArgumentCaptor.forClass(UploadSchema.class);
-        verify(mockSchemaService).createSchemaRevisionV4(eq(TestConstants.TEST_STUDY), schemaCaptor.capture());
+        verify(mockSchemaService).createSchemaRevisionV4(eq(API_APP_ID), schemaCaptor.capture());
 
         UploadSchema schema = schemaCaptor.getValue();
         assertEquals(schema.getSchemaId(), SmsService.MESSAGE_LOG_SCHEMA_ID);
@@ -312,7 +313,7 @@ public class SmsServiceTest {
     private void verifyHealthData(StudyParticipant expectedParticipant, DateTimeZone expectedTimeZone,
             SmsType expectedSmsType, String expectedMessage) throws Exception {
         ArgumentCaptor<HealthDataSubmission> healthDataCaptor = ArgumentCaptor.forClass(HealthDataSubmission.class);
-        verify(mockHealthDataService).submitHealthData(eq(TestConstants.TEST_STUDY), same(expectedParticipant),
+        verify(mockHealthDataService).submitHealthData(eq(API_APP_ID), same(expectedParticipant),
                 healthDataCaptor.capture());
         HealthDataSubmission healthData = healthDataCaptor.getValue();
 
@@ -366,7 +367,7 @@ public class SmsServiceTest {
         message.setMessageId(MESSAGE_ID);
         message.setMessageBody(MESSAGE_BODY);
         message.setSmsType(SmsType.PROMOTIONAL);
-        message.setStudyId(BridgeConstants.API_APP_ID);
+        message.setStudyId(API_APP_ID);
         return message;
     }
 

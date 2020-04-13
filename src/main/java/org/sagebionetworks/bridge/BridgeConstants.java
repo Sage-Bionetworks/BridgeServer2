@@ -7,9 +7,6 @@ import java.util.Set;
 import org.joda.time.DateTimeZone;
 import org.jsoup.safety.Whitelist;
 
-import org.sagebionetworks.bridge.models.studies.StudyIdentifier;
-import org.sagebionetworks.bridge.models.studies.StudyIdentifierImpl;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
@@ -37,14 +34,12 @@ public class BridgeConstants {
 
     // Study ID for the test study, used in local tests and most integ tests.
     public static final String API_APP_ID = "api";
-    public static final StudyIdentifier API_STUDY_ID = new StudyIdentifierImpl(API_APP_ID);
 
     /** A common string constraint we place on model identifiers. */
     public static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
 
     // Study ID used for the Shared Module Library
     public static final String SHARED_APP_ID = "shared";
-    public static final StudyIdentifier SHARED_STUDY_ID = new StudyIdentifierImpl(SHARED_APP_ID);
 
     /** A common string constraint Synapse places on model identifiers. */
     public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
