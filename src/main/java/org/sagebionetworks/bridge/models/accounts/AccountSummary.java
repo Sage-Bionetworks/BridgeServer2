@@ -43,7 +43,7 @@ public final class AccountSummary {
             @JsonProperty("email") String email, @JsonProperty("synapseUserId") String synapseUserId,
             @JsonProperty("phone") Phone phone, @JsonProperty("externalIds") Map<String, String> externalIds,
             @JsonProperty("id") String id, @JsonProperty("createdOn") DateTime createdOn,
-            @JsonProperty("status") AccountStatus status, @JsonProperty("studyIdentifier") String studyId,
+            @JsonProperty("status") AccountStatus status, @JsonProperty("studyId") String studyId,
             @JsonProperty("substudyIds") Set<String> substudyIds) {
         this.firstName = firstName;
         this.lastName = lastName;
