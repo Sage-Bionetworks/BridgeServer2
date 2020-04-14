@@ -60,7 +60,7 @@ public class UserSessionTest {
         session.setAuthenticated(true);
         session.setEnvironment(PROD);
         session.setIpAddress("ip address");
-        session.setStudyIdentifier("study-key");
+        session.setAppId("study-key");
         session.setReauthToken("reauthToken");
         session.setConsentStatuses(statuses);
         
@@ -73,7 +73,7 @@ public class UserSessionTest {
         assertEquals(newSession.getInternalSessionToken(), session.getInternalSessionToken());
         assertEquals(newSession.getEnvironment(), session.getEnvironment());
         assertEquals(newSession.getIpAddress(), session.getIpAddress());
-        assertEquals(newSession.getStudyIdentifier(), session.getStudyIdentifier());
+        assertEquals(newSession.getAppId(), session.getAppId());
         assertEquals(newSession.getParticipant(), session.getParticipant());
     }
     

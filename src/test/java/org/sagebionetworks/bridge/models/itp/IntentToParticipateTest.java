@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.itp;
 
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 
@@ -27,12 +28,12 @@ public class IntentToParticipateTest {
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
                 .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
-        IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
+        IntentToParticipate itp = new IntentToParticipate.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withOsName("iOS").withConsentSignature(consentSignature).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(itp);
-        assertEquals(node.get("studyId").textValue(), "studyId");
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("email").textValue(), EMAIL);
         assertEquals(node.get("subpopGuid").textValue(), "subpopGuid");
         assertEquals(node.get("scope").textValue(), "all_qualified_researchers");
@@ -58,7 +59,7 @@ public class IntentToParticipateTest {
         assertEquals(consentNode.size(), 7);
         
         IntentToParticipate deser = BridgeObjectMapper.get().readValue(node.toString(), IntentToParticipate.class);
-        assertEquals(deser.getStudyId(), "studyId");
+        assertEquals(deser.getAppId(), TEST_APP_ID);
         assertEquals(deser.getPhone().getNationalFormat(), PHONE.getNationalFormat());
         assertEquals(deser.getEmail(), EMAIL);
         assertEquals(deser.getSubpopGuid(), "subpopGuid");
@@ -85,12 +86,12 @@ public class IntentToParticipateTest {
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
                 .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
-        IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
+        IntentToParticipate itp = new IntentToParticipate.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withEmail(EMAIL).withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withOsName("iOS").withConsentSignature(consentSignature).build();
 
         IntentToParticipate copy = new IntentToParticipate.Builder().copyOf(itp).build();
-        assertEquals(copy.getStudyId(), itp.getStudyId());
+        assertEquals(copy.getAppId(), itp.getAppId());
         assertEquals(copy.getPhone().getNumber(), itp.getPhone().getNumber());
         assertEquals(copy.getEmail(), itp.getEmail());
         assertEquals(copy.getSubpopGuid(), itp.getSubpopGuid());
@@ -105,7 +106,7 @@ public class IntentToParticipateTest {
                 .withBirthdate("1980-10-10").withImageData("image-data").withImageMimeType("image/png")
                 .withSignedOn(TIMESTAMP.getMillis()).withConsentCreatedOn(TIMESTAMP.getMillis()).build();
         
-        IntentToParticipate itp = new IntentToParticipate.Builder().withStudyId("studyId").withPhone(PHONE)
+        IntentToParticipate itp = new IntentToParticipate.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withSubpopGuid("subpopGuid").withScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withOsName("iOS")
                 .withConsentSignature(consentSignature).build();
         

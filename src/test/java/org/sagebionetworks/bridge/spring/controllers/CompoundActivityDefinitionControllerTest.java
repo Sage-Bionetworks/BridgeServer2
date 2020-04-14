@@ -45,7 +45,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void setup() {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
 
         // mock study service
         studyService = mock(StudyService.class);

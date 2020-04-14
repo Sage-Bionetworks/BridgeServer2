@@ -134,7 +134,7 @@ public class ParticipantReportControllerTest extends Mockito {
         statuses.put(SubpopulationGuid.create(status.getSubpopulationGuid()), status);
         
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
         session.setConsentStatuses(statuses);
         
@@ -180,7 +180,7 @@ public class ParticipantReportControllerTest extends Mockito {
     
     @Test
     public void getParticipantReportDataForSelf() throws Exception {
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getAppId(),
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> result = controller.getParticipantReportForSelf(REPORT_ID, START_DATE.toString(), END_DATE.toString());
@@ -190,7 +190,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportDataForSelfV4() throws Exception {
         doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
-                .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                .getParticipantReportV4(session.getAppId(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
                         OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportForSelfV4(REPORT_ID, START_TIME.toString(), END_TIME.toString(),
@@ -207,7 +207,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.saveParticipantReportForSelf(REPORT_ID);
         assertEquals(result.getMessage(), "Report data saved.");
         
-        verify(mockReportService).saveParticipantReport(eq(session.getStudyIdentifier()), eq(REPORT_ID),
+        verify(mockReportService).saveParticipantReport(eq(session.getAppId()), eq(REPORT_ID),
                 eq(HEALTH_CODE), reportDataCaptor.capture());
         
         ReportData reportData = reportDataCaptor.getValue();
@@ -219,7 +219,7 @@ public class ParticipantReportControllerTest extends Mockito {
     
     @Test
     public void getParticipantReportDataNoDatesForSelf() throws Exception {
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getAppId(),
                 REPORT_ID, HEALTH_CODE, null, null);
         
         DateRangeResourceList<? extends ReportData> result = controller.getParticipantReportForSelf(REPORT_ID, null, null);
@@ -236,7 +236,7 @@ public class ParticipantReportControllerTest extends Mockito {
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
-                .getParticipantReportV4(session.getStudyIdentifier(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                .getParticipantReportV4(session.getAppId(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
                         OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportV4(OTHER_PARTICIPANT_ID,
@@ -298,7 +298,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getAppId(),
                 REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> result = controller.getParticipantReport(OTHER_PARTICIPANT_ID,
@@ -446,7 +446,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         assertEquals(result.getMessage(), "Report deleted.");
         
-        verify(mockReportService).deleteParticipantReport(session.getStudyIdentifier(), REPORT_ID, OTHER_PARTICIPANT_HEALTH_CODE);
+        verify(mockReportService).deleteParticipantReport(session.getAppId(), REPORT_ID, OTHER_PARTICIPANT_HEALTH_CODE);
     }
     
     @Test
@@ -454,7 +454,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteParticipantReportRecord(OTHER_PARTICIPANT_ID, REPORT_ID, "2014-05-10");
         assertEquals(result.getMessage(), "Report record deleted.");
         
-        verify(mockReportService).deleteParticipantReportRecord(session.getStudyIdentifier(), REPORT_ID,
+        verify(mockReportService).deleteParticipantReportRecord(session.getAppId(), REPORT_ID,
                 "2014-05-10", OTHER_PARTICIPANT_HEALTH_CODE);
     }
     

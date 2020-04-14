@@ -50,28 +50,28 @@ public class StudyConsentController extends BaseController {
     public ResourceList<StudyConsent> getAllConsents() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        return getAllConsentsV2(session.getStudyIdentifier());
+        return getAllConsentsV2(session.getAppId());
     }
 
     @Deprecated
     @GetMapping("/v3/consents/published")
     public StudyConsentView getActiveConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        return getActiveConsentV2(session.getStudyIdentifier());
+        return getActiveConsentV2(session.getAppId());
     }
     
     @Deprecated
     @GetMapping("/v3/consents/recent")
     public StudyConsentView getMostRecentConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        return getMostRecentConsentV2(session.getStudyIdentifier());
+        return getMostRecentConsentV2(session.getAppId());
     }
 
     @Deprecated
     @GetMapping("/v3/consents/{createdOn}")
     public StudyConsentView getConsent(@PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        return getConsentV2(session.getStudyIdentifier(), createdOn);
+        return getConsentV2(session.getAppId(), createdOn);
     }
     
     @Deprecated
@@ -79,14 +79,14 @@ public class StudyConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StudyConsentView addConsent() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        return addConsentV2(session.getStudyIdentifier());
+        return addConsentV2(session.getAppId());
     }
 
     @Deprecated
     @PostMapping("/v3/consents/{createdOn}/publish")
     public StatusMessage publishConsent(@PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        return publishConsentV2(session.getStudyIdentifier(), createdOn);
+        return publishConsentV2(session.getAppId(), createdOn);
     }
     
     // V2: consents associated to a subpopulation
@@ -94,7 +94,7 @@ public class StudyConsentController extends BaseController {
     @GetMapping("/v3/subpopulations/{guid}/consents")
     public ResourceList<StudyConsent> getAllConsentsV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
@@ -107,7 +107,7 @@ public class StudyConsentController extends BaseController {
     @GetMapping("/v3/subpopulations/{guid}/consents/published")
     public StudyConsentView getActiveConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
@@ -119,7 +119,7 @@ public class StudyConsentController extends BaseController {
     @GetMapping("/v3/subpopulations/{guid}/consents/recent")
     public StudyConsentView getMostRecentConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
@@ -131,7 +131,7 @@ public class StudyConsentController extends BaseController {
     @GetMapping("/v3/subpopulations/{guid}/consents/{createdOn}")
     public StudyConsentView getConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
@@ -145,7 +145,7 @@ public class StudyConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StudyConsentView addConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
@@ -158,7 +158,7 @@ public class StudyConsentController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}/consents/{createdOn}/publish")
     public StatusMessage publishConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study

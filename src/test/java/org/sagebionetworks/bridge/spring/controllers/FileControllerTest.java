@@ -77,7 +77,7 @@ public class FileControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

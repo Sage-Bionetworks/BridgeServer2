@@ -89,7 +89,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         study.setIdentifier(TEST_APP_ID);
 
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

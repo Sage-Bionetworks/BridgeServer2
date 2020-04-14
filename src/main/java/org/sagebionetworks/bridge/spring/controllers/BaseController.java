@@ -179,7 +179,7 @@ public abstract class BaseController {
         RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
         // If the user has already persisted languages, we'll use that instead of the Accept-Language header
         builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerStudyId(session.getStudyIdentifier());
+        builder.withCallerStudyId(session.getAppId());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
         builder.withCallerUserId(session.getParticipant().getId());
@@ -188,7 +188,7 @@ public abstract class BaseController {
         
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         Set<Roles> userRoles = session.getParticipant().getRoles();
         boolean userHasRoles = !userRoles.isEmpty();
         if (study.isParticipantIpLockingEnabled() || userHasRoles) {
@@ -271,7 +271,7 @@ public abstract class BaseController {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
-            accountService.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+            accountService.editAccount(session.getAppId(), session.getHealthCode(),
                     account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder()
@@ -281,7 +281,7 @@ public abstract class BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
+                .withStudyIdentifier(session.getAppId())
                 .build();
 
             sessionUpdateService.updateLanguage(session, newContext);
@@ -309,7 +309,7 @@ public abstract class BaseController {
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
             .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-            .withStudyIdentifier(session.getStudyIdentifier())
+            .withStudyIdentifier(session.getAppId())
             .build();
     }
     
@@ -346,7 +346,7 @@ public abstract class BaseController {
         if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
-            metrics.setStudy(session.getStudyIdentifier());
+            metrics.setStudy(session.getAppId());
         }
     }
     
@@ -386,7 +386,7 @@ public abstract class BaseController {
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
         builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
-        builder.withStudyIdentifier(session.getStudyIdentifier());
+        builder.withAppId(session.getAppId());
         return builder;
     }
     

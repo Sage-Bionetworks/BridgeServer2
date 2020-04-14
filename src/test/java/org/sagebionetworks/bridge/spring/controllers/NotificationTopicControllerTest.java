@@ -82,7 +82,7 @@ public class NotificationTopicControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         doReturn(Environment.UAT).when(mockBridgeConfig).getEnvironment();
-        doReturn(TEST_APP_ID).when(mockUserSession).getStudyIdentifier();
+        doReturn(TEST_APP_ID).when(mockUserSession).getAppId();
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

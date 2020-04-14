@@ -53,7 +53,7 @@ public class AssessmentResourceController extends BaseController {
             @RequestParam(required = false) String maxRevision,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -80,7 +80,7 @@ public class AssessmentResourceController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public AssessmentResource createAssessmentResource(@PathVariable String assessmentId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
 
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -93,7 +93,7 @@ public class AssessmentResourceController extends BaseController {
     @GetMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource getAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -105,7 +105,7 @@ public class AssessmentResourceController extends BaseController {
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -121,7 +121,7 @@ public class AssessmentResourceController extends BaseController {
     public StatusMessage deleteAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid,
             @RequestParam(required = false) String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -138,7 +138,7 @@ public class AssessmentResourceController extends BaseController {
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/publish")
     public ResourceList<AssessmentResource> publishAssessmentResource(@PathVariable String assessmentId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String appId = session.getStudyIdentifier();
+        String appId = session.getAppId();
 
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);

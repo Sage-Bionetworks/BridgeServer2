@@ -49,7 +49,7 @@ public class ConsentController extends BaseController {
             APPLICATION_JSON_UTF8_VALUE })
     public String getConsentSignature() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        return getConsentSignatureV2(session.getStudyIdentifier());
+        return getConsentSignatureV2(session.getAppId());
     }
 
     @Deprecated
@@ -57,7 +57,7 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode giveV1() {
         UserSession session = getAuthenticatedSession();
-        return giveConsentForVersion(1, SubpopulationGuid.create(session.getStudyIdentifier()));
+        return giveConsentForVersion(1, SubpopulationGuid.create(session.getAppId()));
     }
 
     @Deprecated
@@ -65,7 +65,7 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode giveV2() {
         UserSession session = getAuthenticatedSession();
-        return giveConsentForVersion(2, SubpopulationGuid.create(session.getStudyIdentifier()));
+        return giveConsentForVersion(2, SubpopulationGuid.create(session.getAppId()));
     }
 
     @Deprecated
@@ -73,7 +73,7 @@ public class ConsentController extends BaseController {
     public StatusMessage emailCopy() {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        return resendConsentAgreement(session.getStudyIdentifier());
+        return resendConsentAgreement(session.getAppId());
     }
 
     @Deprecated
@@ -100,7 +100,7 @@ public class ConsentController extends BaseController {
     @PostMapping("/v3/consents/signature/withdraw")
     public JsonNode withdrawConsent() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         return withdrawConsentV2(study.getIdentifier());
     }
@@ -110,7 +110,7 @@ public class ConsentController extends BaseController {
     @GetMapping(path="/v3/subpopulations/{guid}/consents/signature", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getConsentSignatureV2(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getId());
         return ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig);
@@ -126,7 +126,7 @@ public class ConsentController extends BaseController {
     public JsonNode withdrawConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
@@ -144,7 +144,7 @@ public class ConsentController extends BaseController {
     public StatusMessage withdrawFromStudy() {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         
         consentService.withdrawFromStudy(study, session.getParticipant(), withdrawal, withdrewOn);
@@ -161,7 +161,7 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendConsentAgreement(@PathVariable String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         consentService.resendConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
         return new StatusMessage("Signed consent agreement resent.");
@@ -170,7 +170,7 @@ public class ConsentController extends BaseController {
     private JsonNode changeSharingScope(SharingScope sharingScope, String message) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        accountService.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+        accountService.editAccount(session.getAppId(), session.getHealthCode(),
                 account -> account.setSharingScope(sharingScope));
 
         sessionUpdateService.updateSharingScope(session, sharingScope);
@@ -180,7 +180,7 @@ public class ConsentController extends BaseController {
     
     private JsonNode giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         JsonNode node = parseJson(JsonNode.class);
         ConsentSignature consentSignature = ConsentSignature.fromJSON(node);

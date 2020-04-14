@@ -41,7 +41,7 @@ public class OAuthController extends BaseController {
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, vendorId, token, null);
         
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         return service.requestAccessToken(study, session.getHealthCode(), authToken);
     }

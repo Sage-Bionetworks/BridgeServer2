@@ -71,7 +71,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
     }

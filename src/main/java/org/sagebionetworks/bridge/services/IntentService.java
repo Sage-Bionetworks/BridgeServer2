@@ -107,9 +107,9 @@ public class IntentService {
         // If the account exists, do nothing.
         AccountId accountId = null;
         if (intent.getPhone() != null) {
-            accountId = AccountId.forPhone(intent.getStudyId(), intent.getPhone());
+            accountId = AccountId.forPhone(intent.getAppId(), intent.getPhone());
         } else {
-            accountId = AccountId.forEmail(intent.getStudyId(), intent.getEmail());
+            accountId = AccountId.forEmail(intent.getAppId(), intent.getEmail());
         }
         Account account = accountService.getAccount(accountId);
         if (account != null) {
@@ -117,7 +117,7 @@ public class IntentService {
         }
         
         // validate study exists
-        Study study = studyService.getStudy(intent.getStudyId());
+        Study study = studyService.getStudy(intent.getAppId());
 
         // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());

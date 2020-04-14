@@ -133,7 +133,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         mockSession.setParticipant(PARTICIPANT);
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());

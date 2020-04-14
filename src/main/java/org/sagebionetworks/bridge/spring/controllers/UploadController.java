@@ -85,7 +85,7 @@ public class UploadController extends BaseController {
     public UploadSession upload() {
         UserSession session = getAuthenticatedAndConsentedSession();
         UploadRequest uploadRequest = UploadRequest.fromJson(parseJson(JsonNode.class));
-        UploadSession uploadSession = uploadService.createUpload(session.getStudyIdentifier(), session.getParticipant(),
+        UploadSession uploadSession = uploadService.createUpload(session.getAppId(), session.getParticipant(),
                 uploadRequest);
         final Metrics metrics = getMetrics();
         if (metrics != null) {
@@ -147,7 +147,7 @@ public class UploadController extends BaseController {
                 throw new UnauthorizedException();
             }
 
-            studyId = session.getStudyIdentifier();
+            studyId = session.getAppId();
             uploadCompletionClient = UploadCompletionClient.APP;
         }
         uploadService.uploadComplete(studyId, uploadCompletionClient, upload, redrive);
@@ -179,7 +179,7 @@ public class UploadController extends BaseController {
             }
             
             if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getStudyIdentifier().equals(record.getStudyId())) {
+                !session.getAppId().equals(record.getStudyId())) {
                 throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
             }
             uploadId = record.getUploadId();

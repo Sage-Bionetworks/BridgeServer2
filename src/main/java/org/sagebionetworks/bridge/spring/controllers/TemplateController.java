@@ -57,7 +57,7 @@ public class TemplateController extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         Boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         
-        return templateService.getTemplatesForType(session.getStudyIdentifier(), type, offsetInt, pageSizeInt,
+        return templateService.getTemplatesForType(session.getAppId(), type, offsetInt, pageSizeInt,
                 includeDeletedFlag);
     }
     
@@ -65,7 +65,7 @@ public class TemplateController extends BaseController {
     @ResponseStatus(CREATED)
     public GuidVersionHolder createTemplate() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Template template = parseJson(Template.class);
         
@@ -76,7 +76,7 @@ public class TemplateController extends BaseController {
     public Template getTemplate(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        return templateService.getTemplate(session.getStudyIdentifier(), guid);
+        return templateService.getTemplate(session.getAppId(), guid);
     }
 
     @PostMapping("/v3/templates/{guid}")
@@ -86,7 +86,7 @@ public class TemplateController extends BaseController {
         Template template = parseJson(Template.class);
         template.setGuid(guid);
         
-        return templateService.updateTemplate(session.getStudyIdentifier(), template);
+        return templateService.updateTemplate(session.getAppId(), template);
     }
     
     @DeleteMapping("/v3/templates/{guid}")
@@ -94,9 +94,9 @@ public class TemplateController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            templateService.deleteTemplatePermanently(session.getStudyIdentifier(), guid);
+            templateService.deleteTemplatePermanently(session.getAppId(), guid);
         } else {
-            templateService.deleteTemplate(session.getStudyIdentifier(), guid);
+            templateService.deleteTemplate(session.getAppId(), guid);
         }
         return new StatusMessage("Template deleted.");
     }

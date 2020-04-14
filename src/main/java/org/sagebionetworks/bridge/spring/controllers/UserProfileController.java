@@ -65,7 +65,7 @@ public class UserProfileController extends BaseController {
     @GetMapping(path={"/v3/users/self", "/api/v1/profile"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUserProfile() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         String userId = session.getId();
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
@@ -95,7 +95,7 @@ public class UserProfileController extends BaseController {
     @PostMapping({"/v3/users/self", "/api/v1/profile"})
     public JsonNode updateUserProfile() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         String userId = session.getId();
         
         JsonNode node = parseJson(JsonNode.class);
@@ -131,7 +131,7 @@ public class UserProfileController extends BaseController {
     public JsonNode getDataGroups() {
         UserSession session = getAuthenticatedSession();
         
-        AccountId accountId = AccountId.forHealthCode(session.getStudyIdentifier(), session.getHealthCode());
+        AccountId accountId = AccountId.forHealthCode(session.getAppId(), session.getHealthCode());
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
@@ -152,7 +152,7 @@ public class UserProfileController extends BaseController {
     @PostMapping("/v3/users/self/dataGroups")
     public JsonNode updateDataGroups() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
         
@@ -173,7 +173,7 @@ public class UserProfileController extends BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
                 .withUserSubstudyIds(updated.getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
+                .withStudyIdentifier(session.getAppId())
                 .build();
         
         sessionUpdateService.updateDataGroups(session, context);

@@ -52,7 +52,7 @@ public class UserSessionInfoTest {
         session.setInternalSessionToken("internal");
         session.setSessionToken("external");
         session.setReauthToken("reauthToken");
-        session.setStudyIdentifier("study-identifier");
+        session.setAppId("study-identifier");
         
         JsonNode node = UserSessionInfo.toJSON(session);
         assertEquals(node.get("firstName").textValue(), "first name");

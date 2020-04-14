@@ -30,8 +30,8 @@ public class SubpopulationValidator implements Validator {
     public void validate(Object object, Errors errors) {
         Subpopulation subpop = (Subpopulation)object;
         
-        if (subpop.getStudyIdentifier() == null) {
-            errors.rejectValue("studyIdentifier", "is required");
+        if (subpop.getAppId() == null) {
+            errors.rejectValue("appId", "is required");
         }
         if (isBlank(subpop.getName())) {
             errors.rejectValue("name", "is required");

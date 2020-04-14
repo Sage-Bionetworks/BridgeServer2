@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.IntentToParticipateValidator.INSTANCE;
 
@@ -13,7 +14,6 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 public class IntentToParticipateValidatorTest {
 
-    private static final String STUDY = "studyId";
     private static final String SUBPOP_GUID = "subpopGuid";
     private static final String OS_NAME = "Android";
     private static final SharingScope SCOPE = SharingScope.SPONSORS_AND_PARTNERS;
@@ -24,7 +24,7 @@ public class IntentToParticipateValidatorTest {
     
     private IntentToParticipate.Builder builder() {
         return new IntentToParticipate.Builder()
-                .withStudyId(STUDY)
+                .withAppId(TEST_APP_ID)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid(SUBPOP_GUID)
                 .withScope(SCOPE)
@@ -46,8 +46,8 @@ public class IntentToParticipateValidatorTest {
     
     @Test
     public void studyRequired() {
-        IntentToParticipate intent = builder().withStudyId(null).build();
-        assertValidatorMessage(INSTANCE, intent, "studyId", "is required");
+        IntentToParticipate intent = builder().withAppId(null).build();
+        assertValidatorMessage(INSTANCE, intent, "appId", "is required");
     }
     
     @Test

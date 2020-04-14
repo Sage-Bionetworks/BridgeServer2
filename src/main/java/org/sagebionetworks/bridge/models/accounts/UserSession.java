@@ -23,7 +23,7 @@ public class UserSession {
     private String sessionToken;
     private String internalSessionToken;
     private String reauthToken;
-    private String studyIdentifier;
+    private String appId;
     private StudyParticipant participant;
     private Map<SubpopulationGuid,ConsentStatus> consentStatuses = ImmutableMap.of();
 
@@ -83,11 +83,11 @@ public class UserSession {
     public void setEnvironment(Environment environment) {
         this.environment = environment;
     }
-    public String getStudyIdentifier() {
-        return studyIdentifier;
+    public String getAppId() {
+        return appId;
     }
-    public void setStudyIdentifier(String studyIdentifier) {
-        this.studyIdentifier = studyIdentifier;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     public boolean doesConsent() {
         return ConsentStatus.isUserConsented(consentStatuses);

@@ -38,7 +38,7 @@ public class SmsController extends BaseController {
     @GetMapping("/v3/participants/{userId}/sms/recent")
     public SmsMessage getMostRecentMessage(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         // Get phone number for participant.
         StudyParticipant participant = participantService.getParticipant(study, userId, false);

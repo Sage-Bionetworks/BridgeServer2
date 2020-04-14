@@ -108,24 +108,25 @@ public class AccountWorkflowService {
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
 
     static class VerificationData {
-        private final String studyId;
+        private final String appId;
         private final String userId;
         private final ChannelType type;
         private final long expiresOn;
         @JsonCreator
-        public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("type") ChannelType type,
-                @JsonProperty("userId") String userId, @JsonProperty("createdOn") long expiresOn) {
-            checkArgument(isNotBlank(studyId));
+        public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("appId") String appId,
+                @JsonProperty("type") ChannelType type, @JsonProperty("userId") String userId,
+                @JsonProperty("createdOn") long expiresOn) {
             checkArgument(isNotBlank(userId));
-            this.studyId = studyId;
+            this.appId = (appId != null) ? appId : studyId;
+            checkArgument(isNotBlank(this.appId));
             this.userId = userId;
             // On deployment, this value will be missing, and by inference is for email verifications
             // in process, since phone verification won't have existed until the deployment.
             this.type = (type == null) ? ChannelType.EMAIL : type;
             this.expiresOn = expiresOn;
         }
-        public String getStudyId() {
-            return studyId;
+        public String getAppId() {
+            return appId;
         }
         public String getUserId() {
             return userId;
@@ -218,7 +219,7 @@ public class AccountWorkflowService {
         String sptoken = getNextToken();
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
         
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
+        saveVerification(sptoken, new VerificationData(null, study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
 
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
@@ -252,7 +253,7 @@ public class AccountWorkflowService {
         String sptoken = getNextPhoneToken();
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId, expiresOn));
+        saveVerification(sptoken, new VerificationData(null, study.getIdentifier(), ChannelType.PHONE, userId, expiresOn));
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
@@ -299,7 +300,7 @@ public class AccountWorkflowService {
         if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
-        Study study = studyService.getStudy(data.getStudyId());
+        Study study = studyService.getStudy(data.getAppId());
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

@@ -324,7 +324,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithServiceWithoutSecondRole(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
 
         // spy controller
@@ -343,7 +343,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1, role2)).build());
 
         // spy controller
@@ -362,7 +362,7 @@ public class UploadSchemaControllerTest extends Mockito {
     private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
 
         // spy controller

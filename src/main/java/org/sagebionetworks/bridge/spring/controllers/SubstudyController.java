@@ -42,7 +42,7 @@ public class SubstudyController extends BaseController {
     public ResourceList<Substudy> getSubstudies(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
-        List<Substudy> substudies = service.getSubstudies(session.getStudyIdentifier(), includeDeleted);
+        List<Substudy> substudies = service.getSubstudies(session.getAppId(), includeDeleted);
 
         return new ResourceList<>(substudies).withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
@@ -53,14 +53,14 @@ public class SubstudyController extends BaseController {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         Substudy substudy = parseJson(Substudy.class);
-        return service.createSubstudy(session.getStudyIdentifier(), substudy);
+        return service.createSubstudy(session.getAppId(), substudy);
     }
 
     @GetMapping("/v3/substudies/{id}")
     public Substudy getSubstudy(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        return service.getSubstudy(session.getStudyIdentifier(), id, true);
+        return service.getSubstudy(session.getAppId(), id, true);
     }
 
     @PostMapping("/v3/substudies/{id}")
@@ -68,7 +68,7 @@ public class SubstudyController extends BaseController {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         Substudy substudy = parseJson(Substudy.class);
-        return service.updateSubstudy(session.getStudyIdentifier(), substudy);
+        return service.updateSubstudy(session.getAppId(), substudy);
     }
 
     @DeleteMapping("/v3/substudies/{id}")
@@ -77,9 +77,9 @@ public class SubstudyController extends BaseController {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         if (physical) {
-            service.deleteSubstudyPermanently(session.getStudyIdentifier(), id);
+            service.deleteSubstudyPermanently(session.getAppId(), id);
         } else {
-            service.deleteSubstudy(session.getStudyIdentifier(), id);
+            service.deleteSubstudy(session.getAppId(), id);
         }
         return DELETED_MSG;
     }

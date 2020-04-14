@@ -33,7 +33,7 @@ public class SubpopulationValidatorTest {
         subpop.setDescription("Description");
         subpop.setDefaultGroup(true);
         subpop.setRequired(true);
-        subpop.setStudyIdentifier("test-study");
+        subpop.setAppId("test-study");
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
         subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
@@ -64,7 +64,7 @@ public class SubpopulationValidatorTest {
         } catch(InvalidEntityException e) {
             assertMessage(e, "minAppVersions.iphone_os", " cannot be negative");
             assertMessage(e, "maxAppVersions.iphone_os", " cannot be negative");
-            assertMessage(e, "studyIdentifier", " is required");
+            assertMessage(e, "appId", " is required");
             assertMessage(e, "name", " is required");
             assertMessage(e, "guid", " is required");
             assertMessage(e, "noneOfGroups", " 'wrongGroup' is not in enumeration");
@@ -78,7 +78,7 @@ public class SubpopulationValidatorTest {
     @Test
     public void emptyListsOK() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier("test-study");
+        subpop.setAppId("test-study");
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of());
@@ -92,7 +92,7 @@ public class SubpopulationValidatorTest {
     @Test
     public void nullListsOK() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setStudyIdentifier("test-study");
+        subpop.setAppId("test-study");
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(null);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.testng.Assert.assertEquals;
@@ -22,7 +23,6 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class RequestInfoTest {
 
-    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "userId";
     private static final ClientInfo CLIENT_INFO = ClientInfo.parseUserAgentString("app/20");
     private static final String USER_AGENT_STRING = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.116 Safari/537.36";
@@ -64,7 +64,7 @@ public class RequestInfoTest {
         assertEquals(node.get("timeZone").textValue(), "+03:00");
         assertEquals(node.get("type").textValue(), "RequestInfo");
         assertEquals(node.get("userAgent").textValue(), USER_AGENT_STRING);
-        assertEquals(node.get("studyIdentifier").textValue(), "test-study");
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.size(), 12);
         
         JsonNode clientInfoNode = node.get("clientInfo");
@@ -94,7 +94,7 @@ public class RequestInfoTest {
         RequestInfo requestInfo = createRequestInfo();
         
         RequestInfo copy = new RequestInfo.Builder().copyOf(requestInfo).build();
-        assertEquals(copy.getStudyIdentifier(), STUDY_ID);
+        assertEquals(copy.getAppId(), TEST_APP_ID);
         assertEquals(copy.getClientInfo(), CLIENT_INFO);
         assertEquals(copy.getUserAgent(), USER_AGENT_STRING);
         assertEquals(copy.getUserDataGroups(), USER_DATA_GROUPS);
@@ -109,7 +109,7 @@ public class RequestInfoTest {
 
     private RequestInfo createRequestInfo() {
         RequestInfo requestInfo = new RequestInfo.Builder()
-                .withStudyIdentifier(STUDY_ID)
+                .withAppId(TEST_APP_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserAgent(USER_AGENT_STRING)
                 .withUserDataGroups(USER_DATA_GROUPS)

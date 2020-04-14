@@ -370,7 +370,7 @@ public class TestUtils {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         return new IntentToParticipate.Builder()
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")

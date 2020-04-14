@@ -144,6 +144,7 @@ public class CacheProvider {
             }
             return null;
         } catch (Throwable e) {
+            e.printStackTrace();
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
@@ -173,12 +174,29 @@ public class CacheProvider {
         // This is also verified by newUserSessionDeserializes(), but this focuses only on 
         // the study identifier
         JsonNode node = BridgeObjectMapper.get().readTree(ser);
-        JsonNode studyObj = node.get("studyIdentifier");
-        if (studyObj != null && studyObj.isObject()) {
-            JsonNode idObj = studyObj.get("identifier");
-            if (idObj != null) {
-                ((ObjectNode)node).put("studyIdentifier", idObj.textValue());    
+        if (node.isArray()) {
+            for (int i=0; i < node.size(); i++) {
+                JsonNode child = node.get(i);
+                if (child.has("studyIdentifier")) {
+                    ((ObjectNode)child).put("appId", child.get("studyIdentifier").textValue());
+                }
             }
+            return node;
+        }
+        JsonNode studyObj = node.get("studyIdentifier");
+        if (studyObj != null) {
+            if (studyObj.isObject()) {
+                JsonNode idObj = studyObj.get("identifier");
+                if (idObj != null) {
+                    ((ObjectNode)node).put("appId", idObj.textValue());    
+                }
+            } else if (studyObj.textValue() != null) {
+                ((ObjectNode)node).put("appId", studyObj.textValue());
+            }
+        }
+        studyObj = node.get("studyId");
+        if (studyObj != null) {
+            ((ObjectNode)node).put("appId", studyObj.textValue());
         }
         return node;
     }
@@ -253,7 +271,8 @@ public class CacheProvider {
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
-                return BridgeObjectMapper.get().readValue(ser, typeRef);
+                JsonNode node = adjustJsonWithStudyIdentifier(ser);
+                return BridgeObjectMapper.get().readValue(node.toString(), typeRef);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
@@ -268,6 +287,7 @@ public class CacheProvider {
     public <T> T getObject(CacheKey cacheKey, Class<T> clazz, int expireInSeconds) {
         checkNotNull(cacheKey);
         checkNotNull(clazz);
+        
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {

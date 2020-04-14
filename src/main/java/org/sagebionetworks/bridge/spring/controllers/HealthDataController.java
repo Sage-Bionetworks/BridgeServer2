@@ -87,7 +87,7 @@ public class HealthDataController extends BaseController {
         // Submit health data.
         UserSession session = getAuthenticatedAndConsentedSession();
         HealthDataSubmission healthDataSubmission = parseJson(HealthDataSubmission.class);
-        HealthDataRecord savedRecord = healthDataService.submitHealthData(session.getStudyIdentifier(),
+        HealthDataRecord savedRecord = healthDataService.submitHealthData(session.getAppId(),
                 session.getParticipant(), healthDataSubmission);
 
         // Write record ID into the metrics, for logging and diagnostics.
@@ -110,7 +110,7 @@ public class HealthDataController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public String submitHealthDataForParticipant(@PathVariable String userId) throws IOException, UploadValidationException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         // Get participant.
         StudyParticipant participant = participantService.getParticipant(study, userId, false);

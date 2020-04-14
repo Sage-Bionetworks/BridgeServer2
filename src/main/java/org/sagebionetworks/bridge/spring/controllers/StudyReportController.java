@@ -71,7 +71,7 @@ public class StudyReportController extends BaseController {
         UserSession session = getAuthenticatedSession();
         ReportType reportType = ("participant".equalsIgnoreCase(type)) ? PARTICIPANT : STUDY;
         
-        return reportService.getReportIndices(session.getStudyIdentifier(), reportType);
+        return reportService.getReportIndices(session.getAppId(), reportType);
     }
     
     /**
@@ -86,7 +86,7 @@ public class StudyReportController extends BaseController {
         LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
         
-        return reportService.getStudyReport(session.getStudyIdentifier(), identifier, startDateObj, endDateObj);
+        return reportService.getStudyReport(session.getAppId(), identifier, startDateObj, endDateObj);
     }
     
     /**
@@ -122,7 +122,7 @@ public class StudyReportController extends BaseController {
         DateTime endTimeObj = getDateTimeOrDefault(endTime, null);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return reportService.getStudyReportV4(session.getStudyIdentifier(), identifier, startTimeObj, endTimeObj,
+        return reportService.getStudyReportV4(session.getAppId(), identifier, startTimeObj, endTimeObj,
                 offsetKey, pageSizeInt);
     }
     
@@ -137,7 +137,7 @@ public class StudyReportController extends BaseController {
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveStudyReport(session.getStudyIdentifier(), identifier, reportData);
+        reportService.saveStudyReport(session.getAppId(), identifier, reportData);
         
         return SAVED_MSG;
     }
@@ -166,7 +166,7 @@ public class StudyReportController extends BaseController {
     public StatusMessage deleteStudyReport(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         
-        reportService.deleteStudyReport(session.getStudyIdentifier(), identifier);
+        reportService.deleteStudyReport(session.getAppId(), identifier);
         
         return DELETED_MSG;
     }
@@ -178,7 +178,7 @@ public class StudyReportController extends BaseController {
     public StatusMessage deleteStudyReportRecord(@PathVariable String identifier, @PathVariable String date) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
         
-        reportService.deleteStudyReportRecord(session.getStudyIdentifier(), identifier, date);
+        reportService.deleteStudyReportRecord(session.getAppId(), identifier, date);
         
         return DELETED_DATA_MSG;
     }
@@ -192,7 +192,7 @@ public class StudyReportController extends BaseController {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(STUDY)
-                .withStudyIdentifier(session.getStudyIdentifier()).build();
+                .withStudyIdentifier(session.getAppId()).build();
         
         return reportService.getReportIndex(key);
     }
@@ -209,11 +209,11 @@ public class StudyReportController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withReportType(STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(session.getStudyIdentifier()).build();
+                .withStudyIdentifier(session.getAppId()).build();
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(identifier);
         
-        reportService.updateReportIndex(session.getStudyIdentifier(), STUDY, index);
+        reportService.updateReportIndex(session.getAppId(), STUDY, index);
         
         return UPDATED_MSG;
     }

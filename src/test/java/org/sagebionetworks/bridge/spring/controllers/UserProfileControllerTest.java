@@ -154,7 +154,7 @@ public class UserProfileControllerTest extends Mockito {
                 .withHealthCode(HEALTH_CODE)
                 .withId(USER_ID)
                 .build());
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         
         doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(mockRequest).when(controller).request();

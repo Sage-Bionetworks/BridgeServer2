@@ -103,7 +103,7 @@ public class IntentControllerTest extends Mockito {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         return new IntentToParticipate.Builder()
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withScope(SPONSORS_AND_PARTNERS)
                 .withPhone(PHONE)
                 .withSubpopGuid("subpopGuid")

@@ -64,7 +64,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(mockRequest).when(controller).request();
     }
     
@@ -111,7 +111,7 @@ public class AssessmentConfigControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentConfigRejectsSharedStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
@@ -145,7 +145,7 @@ public class AssessmentConfigControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void customizeAssessmentConfigRejectsSharedStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         updates.put("guid", ImmutableMap.of("objGuid", TestUtils.getClientData()));

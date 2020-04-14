@@ -50,7 +50,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation createSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getStudyIdentifier());
+        checkNotNull(subpop.getAppId());
         
         subpop.setGuidString(generateGuid());
         subpop.setDeleted(false); 
@@ -68,13 +68,13 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation updateSubpopulation(Subpopulation subpop) {
         checkNotNull(subpop);
-        checkNotNull(subpop.getStudyIdentifier());
+        checkNotNull(subpop.getAppId());
         
         // These have to be supplied by the user so if they don't exist, we want a 400-level exception,
         if (subpop.getVersion() == null || subpop.getGuidString() == null) {
             throw new BadRequestException("Subpopulation appears to be a new object (no guid or version).");
         }
-        Subpopulation existing = getSubpopulation(subpop.getStudyIdentifier(), subpop.getGuid());
+        Subpopulation existing = getSubpopulation(subpop.getAppId(), subpop.getGuid());
         if (existing.isDeleted() && subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
         }
@@ -93,7 +93,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public List<Subpopulation> getSubpopulations(String studyId, boolean createDefault, boolean includeDeleted) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setStudyIdentifier(studyId);
+        hashKey.setAppId(studyId);
         
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
@@ -120,7 +120,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation createDefaultSubpopulation(String studyId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
-        subpop.setStudyIdentifier(studyId);
+        subpop.setAppId(studyId);
         subpop.setGuidString(studyId);
         subpop.setName("Default Consent Group");
         subpop.setDefaultGroup(true);
@@ -142,7 +142,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     @Override
     public Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setStudyIdentifier(studyId);
+        hashKey.setAppId(studyId);
         hashKey.setGuidString(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);

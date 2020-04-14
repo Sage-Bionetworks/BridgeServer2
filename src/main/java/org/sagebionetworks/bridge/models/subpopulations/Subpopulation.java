@@ -17,14 +17,14 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 public interface Subpopulation extends BridgeEntity, HasCriteria {
     ObjectWriter SUBPOP_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("studyIdentifier")));
+            SimpleBeanPropertyFilter.serializeAllExcept("appId")));
 
     static Subpopulation create() {
         return new DynamoSubpopulation();
     }
     
-    void setStudyIdentifier(String studyIdentifier);
-    String getStudyIdentifier();
+    void setAppId(String appId);
+    String getAppId();
 
     void setGuidString(String guid);
     String getGuidString();

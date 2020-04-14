@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -56,7 +57,8 @@ public final class RequestInfo {
     private DateTime uploadedOn;
     @Convert(converter = DateTimeZoneAttributeConverter.class)
     private DateTimeZone timeZone;
-    private String studyIdentifier;
+    @Column(name = "studyIdentifier")
+    private String appId;
 
     // Hibernate needs a default constructor; the easiest thing to do is to remove the 
     // existing constructor and allow the builder to set private fields directly.
@@ -101,14 +103,14 @@ public final class RequestInfo {
         return timeZone;
     }
     
-    public String getStudyIdentifier() {
-        return studyIdentifier;
+    public String getAppId() {
+        return appId;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(getActivitiesAccessedOn(), clientInfo, userAgent, languages, getSignedInOn(),
-                userDataGroups, userSubstudyIds, userId, timeZone, uploadedOn, studyIdentifier);
+                userDataGroups, userSubstudyIds, userId, timeZone, uploadedOn, appId);
     }
 
     @Override
@@ -128,7 +130,7 @@ public final class RequestInfo {
                Objects.equals(userSubstudyIds, other.userSubstudyIds) && 
                Objects.equals(userId, other.userId) && 
                Objects.equals(timeZone, other.timeZone) && 
-               Objects.equals(studyIdentifier, other.studyIdentifier);
+               Objects.equals(appId, other.appId);
     }
     
     @Override
@@ -136,8 +138,8 @@ public final class RequestInfo {
         return "RequestInfo [userId=" + userId + ", userAgent=" + userAgent + ", languages=" + languages
                 + ", userDataGroups=" + userDataGroups + ", userSubstudyIds=" + userSubstudyIds 
                 + ", activitiesAccessedOn=" + getActivitiesAccessedOn() + ", signedInOn=" + getSignedInOn() 
-                + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone + ", studyIdentifier=" 
-                + studyIdentifier + "]";
+                + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone + ", appId=" 
+                + appId + "]";
     }
 
     public static class Builder {
@@ -151,7 +153,7 @@ public final class RequestInfo {
         private DateTime signedInOn;
         private DateTime uploadedOn;
         private DateTimeZone timeZone = DateTimeZone.UTC;
-        private String studyIdentifier;
+        private String appId;
 
         public Builder copyOf(RequestInfo requestInfo) {
             if (requestInfo != null) {
@@ -165,7 +167,7 @@ public final class RequestInfo {
                 withSignedInOn(requestInfo.getSignedInOn());
                 withUploadedOn(requestInfo.getUploadedOn());
                 withTimeZone(requestInfo.getTimeZone());
-                withStudyIdentifier(requestInfo.getStudyIdentifier());
+                withAppId(requestInfo.getAppId());
             }
             return this;
         }
@@ -229,9 +231,9 @@ public final class RequestInfo {
             }
             return this;
         }
-        public Builder withStudyIdentifier(String studyIdentifier) {
-            if (studyIdentifier != null) {
-                this.studyIdentifier = studyIdentifier;
+        public Builder withAppId(String appId) {
+            if (appId != null) {
+                this.appId = appId;    
             }
             return this;
         }
@@ -248,7 +250,7 @@ public final class RequestInfo {
             info.signedInOn = signedInOn;
             info.uploadedOn = uploadedOn;
             info.timeZone = timeZone;
-            info.studyIdentifier = studyIdentifier;
+            info.appId = appId;
             return info;
         }
     }

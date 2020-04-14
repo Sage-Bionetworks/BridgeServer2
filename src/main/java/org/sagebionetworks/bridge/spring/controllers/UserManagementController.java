@@ -93,7 +93,7 @@ public class UserManagementController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode createUser() {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
@@ -130,7 +130,7 @@ public class UserManagementController extends BaseController {
     @DeleteMapping("/v3/users/{userId}")
     public StatusMessage deleteUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         userAdminService.deleteUser(study, userId);
         

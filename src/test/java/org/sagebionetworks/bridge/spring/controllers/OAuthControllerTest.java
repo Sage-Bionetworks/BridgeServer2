@@ -88,7 +88,7 @@ public class OAuthControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockStudy);

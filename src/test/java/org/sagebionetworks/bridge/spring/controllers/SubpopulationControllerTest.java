@@ -87,7 +87,7 @@ public class SubpopulationControllerTest extends Mockito {
 
         participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
 
         when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
@@ -235,7 +235,7 @@ public class SubpopulationControllerTest extends Mockito {
     public void deleteSubpopulationPhysically() throws Exception {
         participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
         doReturn(session).when(controller).getSessionIfItExists();
 

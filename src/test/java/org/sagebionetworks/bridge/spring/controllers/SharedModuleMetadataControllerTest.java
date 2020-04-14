@@ -70,7 +70,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
 
         // mock controller with session with shared study
         mockSession = new UserSession();
-        mockSession.setStudyIdentifier(SHARED_APP_ID);
+        mockSession.setAppId(SHARED_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
         
         mockRequest = mock(HttpServletRequest.class);
@@ -369,7 +369,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void nonSharedStudyCantCreate() throws Exception {
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         controller.createMetadata();
     }
 
@@ -378,7 +378,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         controller.deleteMetadataByIdAllVersions(MODULE_ID, false);
     }
 
@@ -386,14 +386,14 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     public void nonSharedStudyCantDeleteByIdAndVersion() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, false);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void nonSharedStudyUpdate() throws Exception {
         // Set session to return API study instead. This will cause the server to throw an 403 Unauthorized.
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         controller.updateMetadata(MODULE_ID, MODULE_VERSION);
     }
 

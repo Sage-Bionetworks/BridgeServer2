@@ -33,7 +33,7 @@ public class SharedModuleControllerTest extends Mockito {
 
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
 

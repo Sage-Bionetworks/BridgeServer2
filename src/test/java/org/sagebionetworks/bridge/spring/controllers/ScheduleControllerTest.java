@@ -91,7 +91,7 @@ public class ScheduleControllerTest extends Mockito {
         when(mockSchedulePlanService.getSchedulePlans(clientInfo, studyId, false)).thenReturn(plans);
         
         UserSession session = new UserSession();
-        session.setStudyIdentifier(studyId);
+        session.setAppId(studyId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());

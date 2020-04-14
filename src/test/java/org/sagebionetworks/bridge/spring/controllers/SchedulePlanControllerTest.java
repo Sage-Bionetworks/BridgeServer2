@@ -86,7 +86,7 @@ public class SchedulePlanControllerTest extends Mockito {
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
-        when(mockUserSession.getStudyIdentifier()).thenReturn(TEST_APP_ID);
+        when(mockUserSession.getAppId()).thenReturn(TEST_APP_ID);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         

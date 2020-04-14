@@ -36,7 +36,7 @@ public class UserDataDownloadController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestUserData() throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        String studyIdentifier = session.getStudyIdentifier();
+        String studyIdentifier = session.getAppId();
         
         // At least for now, if the user does not have a verified email address, do not allow this service.
         StudyParticipant participant = session.getParticipant();

@@ -59,7 +59,7 @@ public class NotificationRegistrationController extends BaseController {
         NotificationRegistration registration = parseJson(NotificationRegistration.class);
         registration.setHealthCode(session.getHealthCode());
         
-        NotificationRegistration result = notificationsService.createRegistration(session.getStudyIdentifier(),
+        NotificationRegistration result = notificationsService.createRegistration(session.getAppId(),
                 getCriteriaContext(session), registration);
         
         return new GuidHolder(result.getGuid());
@@ -73,7 +73,7 @@ public class NotificationRegistrationController extends BaseController {
         registration.setHealthCode(session.getHealthCode());
         registration.setGuid(guid);
         
-        NotificationRegistration result = notificationsService.updateRegistration(session.getStudyIdentifier(),
+        NotificationRegistration result = notificationsService.updateRegistration(session.getAppId(),
                 registration);
         
         return new GuidHolder(result.getGuid());
@@ -89,7 +89,7 @@ public class NotificationRegistrationController extends BaseController {
     @DeleteMapping("/v3/notifications/{guid}")
     public StatusMessage deleteRegistration(@PathVariable String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        notificationsService.deleteRegistration(session.getStudyIdentifier(), session.getHealthCode(), guid);
+        notificationsService.deleteRegistration(session.getAppId(), session.getHealthCode(), guid);
         return DELETED_MSG;
     }
 
@@ -97,7 +97,7 @@ public class NotificationRegistrationController extends BaseController {
     public ResourceList<SubscriptionStatus> getSubscriptionStatuses(@PathVariable String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        List<SubscriptionStatus> statuses = topicService.currentSubscriptionStatuses(session.getStudyIdentifier(),
+        List<SubscriptionStatus> statuses = topicService.currentSubscriptionStatuses(session.getAppId(),
                 session.getHealthCode(), guid);
         return new ResourceList<>(statuses);
     }
@@ -108,7 +108,7 @@ public class NotificationRegistrationController extends BaseController {
         
         SubscriptionRequest request = parseJson(SubscriptionRequest.class);
         
-        List<SubscriptionStatus> statuses = topicService.subscribe(session.getStudyIdentifier(),
+        List<SubscriptionStatus> statuses = topicService.subscribe(session.getAppId(),
                 session.getHealthCode(), guid, request.getTopicGuids());
         return new ResourceList<>(statuses);
     }
