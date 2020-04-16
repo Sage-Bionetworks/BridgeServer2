@@ -168,39 +168,44 @@ public class CacheProvider {
 
     /**
      * During a transition period away from StudyIdentifier, we will need special handling to
-     * ensure persisted sessions, subpopulations, are retrieved correctly. We can clear the 
-     * cache and then remove this code after a day (once all sessions have been refreshed or
-     * will be refreshed).
+     * ensure persisted sessions, subpopulations, and subpopulation lists are deserialized 
+     * correctly. 
      */
     private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree(ser);
         if (node.isArray()) {
             for (int i=0; i < node.size(); i++) {
-                JsonNode child = node.get(i);
-                if (child.has("studyIdentifier")) {
-                    ((ObjectNode)child).put("appId", child.get("studyIdentifier").textValue());
-                }
+                adjustNode(node.get(i));
             }
-            return node;
-        }
-        JsonNode studyObj = node.get("studyIdentifier");
-        if (studyObj != null) {
-            if (studyObj.isObject()) {
-                JsonNode idObj = studyObj.get("identifier");
-                if (idObj != null) {
-                    ((ObjectNode)node).put("appId", idObj.textValue());    
-                }
-            } else if (studyObj.textValue() != null) {
-                ((ObjectNode)node).put("appId", studyObj.textValue());
-            }
-        }
-        studyObj = node.get("studyId");
-        if (studyObj != null) {
-            ((ObjectNode)node).put("appId", studyObj.textValue());
+        } else {
+            adjustNode(node);
         }
         return node;
     }
+
+    private void adjustNode(JsonNode node) {
+        JsonNode child = seek(node, "studyIdentifier", "studyId");
+        if (child != null) {
+            if (child.isTextual()) {
+                ((ObjectNode)node).put("appId", child.textValue());
+            } else {
+                child = seek(child, "identifier");
+                if (child != null && child.isTextual()) {
+                    ((ObjectNode)node).put("appId", child.textValue());
+                }
+            }
+        }
+    }
     
+    private JsonNode seek(JsonNode node, String... propNames) {
+        for (int i=0; i < propNames.length; i++) {
+            if (node.has(propNames[i])) {
+                return node.get(propNames[i]);
+            }
+        }
+        return null;
+    }
+
     public void removeSession(UserSession session) {
         checkNotNull(session);
         checkNotNull(session.getSessionToken());
