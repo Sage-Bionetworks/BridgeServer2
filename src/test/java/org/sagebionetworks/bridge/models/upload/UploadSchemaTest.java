@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.upload;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -81,9 +82,9 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromStudyAndSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("api");
+        ddbUploadSchema.setStudyId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("test");
-        assertEquals(ddbUploadSchema.getKey(), "api:test");
+        assertEquals(ddbUploadSchema.getKey(), TEST_APP_ID + ":test");
     }
 
     @Test
@@ -112,14 +113,14 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromNullSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("api");
+        ddbUploadSchema.setStudyId(TEST_APP_ID);
         assertNull(ddbUploadSchema.getKey());
     }
 
     @Test
     public void getKeyFromEmptySchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("api");
+        ddbUploadSchema.setStudyId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -127,7 +128,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromBlankSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("api");
+        ddbUploadSchema.setStudyId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("   ");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -135,8 +136,8 @@ public class UploadSchemaTest {
     @Test
     public void getStudyAndSchemaFromKey() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api:test");
-        assertEquals(ddbUploadSchema.getStudyId(), "api");
+        ddbUploadSchema.setKey(TEST_APP_ID + ":test");
+        assertEquals(ddbUploadSchema.getStudyId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getSchemaId(), "test");
     }
 
@@ -167,22 +168,22 @@ public class UploadSchemaTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void keyWithEmptySchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api:");
+        ddbUploadSchema.setKey(TEST_APP_ID + ":");
     }
 
     @Test
     public void getKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("api");
+        ddbUploadSchema.setStudyId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("test:schema");
-        assertEquals(ddbUploadSchema.getKey(), "api:test:schema");
+        assertEquals(ddbUploadSchema.getKey(), TEST_APP_ID + ":test:schema");
     }
 
     @Test
     public void setKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setKey("api:test:schema");
-        assertEquals(ddbUploadSchema.getStudyId(), "api");
+        ddbUploadSchema.setKey(TEST_APP_ID + ":test:schema");
+        assertEquals(ddbUploadSchema.getStudyId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getSchemaId(), "test:schema");
     }
 

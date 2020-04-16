@@ -17,7 +17,6 @@ import org.joda.time.LocalDateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;

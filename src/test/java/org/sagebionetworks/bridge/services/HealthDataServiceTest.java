@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -304,7 +305,7 @@ public class HealthDataServiceTest {
         record.setMetadata(TEST_METADATA);
         record.setSchemaId(TEST_SCHEMA_ID);
         record.setSchemaRevision(TEST_SCHEMA_REV);
-        record.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        record.setStudyId(TEST_APP_ID);
         record.setUploadDate(TEST_UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setUserSharingScope(SharingScope.NO_SHARING);

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -98,9 +99,9 @@ public class MetricsTest {
         metrics.setStudy(" ");
         json = metrics.toJsonString();
         assertFalse(json.contains("\"study\":"));
-        metrics.setStudy("api");
+        metrics.setStudy(TEST_APP_ID);
         json = metrics.toJsonString();
-        assertTrue(json.contains("\"study\":\"api\""));
+        assertTrue(json.contains("\"study\":\""+TEST_APP_ID+"\""));
     }
 
     @Test

@@ -33,13 +33,13 @@ public class BridgeConstants {
     public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
 
     // Study ID for the test study, used in local tests and most integ tests.
-    public static final String API_STUDY_ID_STRING = "api";
+    public static final String API_APP_ID = "api";
 
     /** A common string constraint we place on model identifiers. */
     public static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
 
     // Study ID used for the Shared Module Library
-    public static final String SHARED_STUDY_ID_STRING = "shared";
+    public static final String SHARED_APP_ID = "shared";
 
     /** A common string constraint Synapse places on model identifiers. */
     public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";

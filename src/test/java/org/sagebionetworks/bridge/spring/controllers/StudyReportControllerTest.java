@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.STUDY;
@@ -120,17 +120,17 @@ public class StudyReportControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build();
         
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         
-        doReturn(study).when(mockStudyService).getStudy(TEST_STUDY_IDENTIFIER);
+        doReturn(study).when(mockStudyService).getStudy(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
         
         ReportIndex index = ReportIndex.create();
@@ -190,7 +190,7 @@ public class StudyReportControllerTest extends Mockito {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(REPORT_ID)
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
@@ -234,7 +234,7 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.saveStudyReport(REPORT_ID);
         assertEquals(result, StudyReportController.SAVED_MSG);
         
-        verify(mockReportService).saveStudyReport(eq(TEST_STUDY_IDENTIFIER), eq(REPORT_ID), reportDataCaptor.capture());
+        verify(mockReportService).saveStudyReport(eq(TEST_APP_ID), eq(REPORT_ID), reportDataCaptor.capture());
         ReportData reportData = reportDataCaptor.getValue();
         assertEquals(LocalDate.parse("2015-02-12").toString(), reportData.getDate().toString());
         assertNull(reportData.getKey());
@@ -274,16 +274,16 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.updateStudyReportIndex(REPORT_ID);
         assertEquals(result, StudyReportController.UPDATED_MSG);
         
-        verify(mockReportService).updateReportIndex(eq(TEST_STUDY_IDENTIFIER), eq(STUDY), reportDataIndex.capture());
+        verify(mockReportService).updateReportIndex(eq(TEST_APP_ID), eq(STUDY), reportDataIndex.capture());
         ReportIndex index = reportDataIndex.getValue();
         assertTrue(index.isPublic());
         assertEquals(index.getIdentifier(), REPORT_ID);
-        assertEquals(index.getKey(), "api:STUDY");
+        assertEquals(index.getKey(), TEST_APP_ID+":STUDY");
     }
     
     @Test
     public void canGetPublicStudyReport() throws Exception {
-        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID)
                 .withIdentifier(REPORT_ID).withReportType(STUDY).build();
         
         ReportIndex index = ReportIndex.create();
@@ -295,24 +295,24 @@ public class StudyReportControllerTest extends Mockito {
                 REPORT_ID, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData>result = controller.getPublicStudyReport(
-                TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE.toString(), END_DATE.toString());
+                TEST_APP_ID, REPORT_ID, START_DATE.toString(), END_DATE.toString());
 
         assertEquals(2, result.getItems().size());
         
         assertEquals(NULL_INSTANCE, getRequestContext());
         verify(mockReportService).getReportIndex(key);
-        verify(mockReportService).getStudyReport(TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE, END_DATE);
+        verify(mockReportService).getStudyReport(TEST_APP_ID, REPORT_ID, START_DATE, END_DATE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void missingPublicStudyReturns404() throws Exception {
-        controller.getPublicStudyReport(TEST_STUDY_IDENTIFIER, "does-not-exist", "2016-05-02", "2016-05-09");
+        controller.getPublicStudyReport(TEST_APP_ID, "does-not-exist", "2016-05-02", "2016-05-09");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void privatePublicStudyReturns404() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);
@@ -321,13 +321,13 @@ public class StudyReportControllerTest extends Mockito {
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
-        controller.getPublicStudyReport(TEST_STUDY_IDENTIFIER, REPORT_ID, START_DATE.toString(), END_DATE.toString());
+        controller.getPublicStudyReport(TEST_APP_ID, REPORT_ID, START_DATE.toString(), END_DATE.toString());
     }
     
     @Test
     public void getStudyReportV4() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);
@@ -340,7 +340,7 @@ public class StudyReportControllerTest extends Mockito {
         ForwardCursorPagedResourceList<ReportData> result = controller.getStudyReportV4(REPORT_ID,
                 START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
         
-        verify(mockReportService).getStudyReportV4(TEST_STUDY_IDENTIFIER, REPORT_ID, START_TIME, END_TIME,
+        verify(mockReportService).getStudyReportV4(TEST_APP_ID, REPORT_ID, START_TIME, END_TIME,
                 OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         assertEquals(result.getNextPageOffsetKey(), "nextPageOffsetKey");
@@ -387,7 +387,7 @@ public class StudyReportControllerTest extends Mockito {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         ReportData report = ReportData.create();
-        report.setKey("foo:" + TEST_STUDY_IDENTIFIER);
+        report.setKey("foo:" + TEST_APP_ID);
         report.setLocalDate(date);
         report.setData(node);
         return report;

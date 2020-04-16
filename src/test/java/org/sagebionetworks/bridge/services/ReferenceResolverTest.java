@@ -5,6 +5,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -19,7 +20,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -37,7 +37,6 @@ import com.google.common.collect.ImmutableList;
 public class ReferenceResolverTest {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.UNKNOWN_CLIENT;
-    private static final String STUDY_ID = TestConstants.TEST_STUDY_IDENTIFIER;
     private static final String SURVEY_ID = "surveyId";
     private static final String SURVEY_GUID = "guid";
     private static final DateTime SURVEY_CREATED_ON = DateTime.now();
@@ -108,7 +107,7 @@ public class ReferenceResolverTest {
         
         // All the dependencies are mocks or mutable maps, and can be adjusted per test
         resolver = new ReferenceResolver(compoundActivityDefinitionService, schemaService, surveyService,
-                surveyReferences, schemaReferences, CLIENT_INFO, STUDY_ID);
+                surveyReferences, schemaReferences, CLIENT_INFO, TEST_APP_ID);
         
         scheduledActivity = ScheduledActivity.create();
         
@@ -175,7 +174,7 @@ public class ReferenceResolverTest {
     @Test
     public void surveyResolvedFromServiceAndCached() {
         scheduledActivity.setActivity(activityBuilder.withSurvey(UNRESOLVED_SURVEY_REF).build());
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
         
         resolver.resolve(scheduledActivity);
         
@@ -183,13 +182,13 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false);
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false);
     }
     
     @Test
     public void surveyWithoutIdentifierResolvedFromServiceAndCached() {
         scheduledActivity.setActivity(activityBuilder.withSurvey(UNRESOLVED_SURVEY_ID_REF).build());
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
         
         resolver.resolve(scheduledActivity);
         
@@ -197,7 +196,7 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false);
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false);
     }
     
     @Test
@@ -218,7 +217,7 @@ public class ReferenceResolverTest {
     @Test
     public void schemaResolvedFromServiceAndCached() {
         scheduledActivity.setActivity(activityBuilder.withTask(UNRESOLVED_TASK_REF).build());
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
         
         resolver.resolve(scheduledActivity);
         
@@ -226,13 +225,13 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(schemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO);
+        verify(schemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO);
     }
     
     @Test
     public void compoundActivityReferenceFullyResolvedAndCached() {
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
-        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID))
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID))
                 .thenReturn(RESOLVED_COMPOUND_ACTIVITY_DEF);
 
         resolver.resolve(scheduledActivity);
@@ -243,7 +242,7 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(STUDY_ID, TASK_ID);
+        verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
     }
 
     @Test
@@ -251,10 +250,10 @@ public class ReferenceResolverTest {
         // Verify here that a skinny ref retrieves a compound activity definition, and then resolves all the 
         // unresolved references in that definition.
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
-        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID))
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID))
                 .thenReturn(UNRESOLVED_COMPOUND_ACTIVITY_DEF);
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
 
         resolver.resolve(scheduledActivity);
         
@@ -264,7 +263,7 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(STUDY_ID, TASK_ID);
+        verify(compoundActivityDefinitionService, times(1)).getCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
     }
     
     @Test
@@ -291,7 +290,7 @@ public class ReferenceResolverTest {
         // to fully resolve. 
         schemaReferences.put(SCHEMA_ID, RESOLVED_SCHEMA_REF);
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(UNRESOLVED_COMPOUND_ACTIVITY).build());
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
         
         resolver.resolve(scheduledActivity);
         
@@ -299,7 +298,7 @@ public class ReferenceResolverTest {
         assertEquals(RESOLVED_SCHEMA_REF, compoundActivity.getSchemaList().get(0));
         assertEquals(RESOLVED_SURVEY_REF, compoundActivity.getSurveyList().get(0));
         
-        verify(surveyService).getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false);
+        verify(surveyService).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false);
         verifyNoMoreInteractions(schemaService);
         verify(surveyReferences).get(SURVEY_GUID);
         verify(schemaReferences).get(SCHEMA_ID);
@@ -311,7 +310,7 @@ public class ReferenceResolverTest {
         // to fully resolve. 
         surveyReferences.put(SURVEY_GUID, RESOLVED_SURVEY_REF);
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(UNRESOLVED_COMPOUND_ACTIVITY).build());
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
         
         resolver.resolve(scheduledActivity);
         
@@ -320,7 +319,7 @@ public class ReferenceResolverTest {
         assertEquals(RESOLVED_SURVEY_REF, compoundActivity.getSurveyList().get(0));
         
         verifyNoMoreInteractions(surveyService);
-        verify(schemaService).getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO);
+        verify(schemaService).getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO);
         verify(surveyReferences).get(SURVEY_GUID);
         verify(schemaReferences).get(SCHEMA_ID);
     }
@@ -328,8 +327,8 @@ public class ReferenceResolverTest {
     @Test
     public void compoundActivityResolvedFromServiceAndCached() {
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(UNRESOLVED_COMPOUND_ACTIVITY).build());
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenReturn(SURVEY);
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO)).thenReturn(SCHEMA);
         
         resolver.resolve(scheduledActivity);
         
@@ -339,15 +338,15 @@ public class ReferenceResolverTest {
         
         resolver.resolve(scheduledActivity);
         
-        verify(compoundActivityDefinitionService, never()).getCompoundActivityDefinition(STUDY_ID, TASK_ID);
-        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false);
-        verify(schemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO);
+        verify(compoundActivityDefinitionService, never()).getCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
+        verify(surveyService, times(1)).getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false);
+        verify(schemaService, times(1)).getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO);
     }
     
     @Test
     public void unresolvableSurveyReturnedAsIs() {
         scheduledActivity.setActivity(activityBuilder.withSurvey(UNRESOLVED_SURVEY_REF).build());
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false)).thenThrow(new EntityNotFoundException(Survey.class));
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false)).thenThrow(new EntityNotFoundException(Survey.class));
         
         resolver.resolve(scheduledActivity);
         
@@ -357,7 +356,7 @@ public class ReferenceResolverTest {
     @Test
     public void unresolvableSchemaReturnedAsIs() {
         scheduledActivity.setActivity(activityBuilder.withTask(UNRESOLVED_TASK_REF).build());
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO)).thenThrow(new EntityNotFoundException(UploadSchema.class));
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO)).thenThrow(new EntityNotFoundException(UploadSchema.class));
         
         resolver.resolve(scheduledActivity);
         
@@ -377,7 +376,7 @@ public class ReferenceResolverTest {
     @Test
     public void unresolvableCompoundActivityReturnedAsIs() {
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
-        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID)).thenThrow(new EntityNotFoundException(CompoundActivityDefinition.class));
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID)).thenThrow(new EntityNotFoundException(CompoundActivityDefinition.class));
         
         resolver.resolve(scheduledActivity);
         
@@ -388,10 +387,10 @@ public class ReferenceResolverTest {
     @Test
     public void compoundActivityWithUnresolvableReferencesReturnedAsIs() {
         scheduledActivity.setActivity(activityBuilder.withCompoundActivity(COMPOUND_ACTIVITY_SKINNY_REF).build());
-        when(compoundActivityDefinitionService.getCompoundActivityDefinition(STUDY_ID, TASK_ID)).thenReturn(UNRESOLVED_COMPOUND_ACTIVITY_DEF);
-        when(surveyService.getSurveyMostRecentlyPublishedVersion(STUDY_ID, SURVEY_GUID, false))
+        when(compoundActivityDefinitionService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID)).thenReturn(UNRESOLVED_COMPOUND_ACTIVITY_DEF);
+        when(surveyService.getSurveyMostRecentlyPublishedVersion(TEST_APP_ID, SURVEY_GUID, false))
                 .thenThrow(new EntityNotFoundException(Survey.class));
-        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(STUDY_ID, SCHEMA_ID, CLIENT_INFO))
+        when(schemaService.getLatestUploadSchemaRevisionForAppVersion(TEST_APP_ID, SCHEMA_ID, CLIENT_INFO))
                 .thenThrow(new EntityNotFoundException(CompoundActivityDefinition.class));
         
         resolver.resolve(scheduledActivity);

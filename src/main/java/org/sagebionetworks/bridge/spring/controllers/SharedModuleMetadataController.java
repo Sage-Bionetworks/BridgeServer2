@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -171,7 +172,7 @@ public class SharedModuleMetadataController extends BaseController {
     private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
         String studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId)) {
+        if (!SHARED_APP_ID.equals(studyId)) {
             throw new UnauthorizedException();
         }
         return session;
@@ -180,7 +181,7 @@ public class SharedModuleMetadataController extends BaseController {
     private UserSession verifySharedDeveloperOrAdminAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         String studyId = session.getStudyIdentifier();
-        if (!BridgeConstants.SHARED_STUDY_ID_STRING.equals(studyId)) {
+        if (!SHARED_APP_ID.equals(studyId)) {
             throw new UnauthorizedException();
         }
         return session;

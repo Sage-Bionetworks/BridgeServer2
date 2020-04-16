@@ -11,6 +11,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -31,6 +32,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
@@ -129,7 +131,7 @@ public class CacheProviderMockTest {
         assertEquals(session.getSessionToken(), DECRYPTED_SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), "4f0937a5-6ebf-451b-84bc-fbf649b9e93c");
         assertEquals(session.getId(), "6gq4jGXLmAxVbLLmVifKN4");
-        assertEquals(session.getStudyIdentifier(), "api");
+        assertEquals(session.getStudyIdentifier(), TEST_APP_ID);
         
         StudyParticipant participant = session.getParticipant();
         assertEquals(participant.getFirstName(), "Bridge");
@@ -143,7 +145,7 @@ public class CacheProviderMockTest {
         
         assertEquals(ENCRYPTOR.decrypt(ENCRYPTED_SESSION_TOKEN), participant.getHealthCode());
         
-        SubpopulationGuid apiGuid = SubpopulationGuid.create("api");
+        SubpopulationGuid apiGuid = SubpopulationGuid.create(TEST_APP_ID);
         Map<SubpopulationGuid,ConsentStatus> consentStatuses = session.getConsentStatuses();
         ConsentStatus status = consentStatuses.get(apiGuid);
         assertEquals(status.getName(), "Default Consent Group");
@@ -224,11 +226,11 @@ public class CacheProviderMockTest {
     @Test
     public void getRequestInfoWithStudyIdentifier() throws Exception {
         String json = TestUtils.createJson("{'userId':'userId','timeZone':'UTC',"+
-                "'studyIdentifier':{'identifier':'api'},'type':'RequestInfo'}");
+                "'studyIdentifier':{'identifier':'"+TEST_APP_ID+"'},'type':'RequestInfo'}");
         when(jedisOps.get(REQUEST_INFO_KEY)).thenReturn(json);
         
         RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
-        assertEquals("api", returned.getStudyIdentifier());
+        assertEquals(returned.getStudyIdentifier(), TEST_APP_ID);
     }
 
     @Test
@@ -405,10 +407,10 @@ public class CacheProviderMockTest {
                 "'environment':'local',"+
                 "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'studyIdentifier':{'identifier':'api', 'type':'StudyIdentifier'},"+
+                "'studyIdentifier':{'identifier':'"+TEST_APP_ID+"', 'type':'StudyIdentifier'},"+
                 "'consentStatuses':{"+
-                    "'api':{'name':'Default Consent Group',"+
-                        "'subpopulationGuid':'api',"+
+                    "'"+TEST_APP_ID+"':{'name':'Default Consent Group',"+
+                        "'subpopulationGuid':'"+TEST_APP_ID+"',"+
                         "'required':true,"+
                         "'consented':false,"+
                         "'signedMostRecentConsent':true,"+

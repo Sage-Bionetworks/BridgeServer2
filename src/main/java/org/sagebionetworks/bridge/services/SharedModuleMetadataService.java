@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.AND_JOINER;
 
 import java.util.ArrayList;
@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.SharedModuleMetadataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -91,7 +90,7 @@ public class SharedModuleMetadataService {
             String schemaId = metadata.getSchemaId();
             int schemaRevision = metadata.getSchemaRevision();
             try {
-                uploadSchemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID_STRING, schemaId, schemaRevision);
+                uploadSchemaService.getUploadSchemaByIdAndRev(SHARED_APP_ID, schemaId, schemaRevision);
             } catch (EntityNotFoundException e) {
                 throw new BadRequestException("Upload schema " + schemaId + " referred does not exist: " + e);
             }
@@ -100,7 +99,7 @@ public class SharedModuleMetadataService {
             long createdOn = metadata.getSurveyCreatedOn();
 
             // Metadata does not have study information
-            Survey survey = surveyService.getSurvey(SHARED_STUDY_ID_STRING,
+            Survey survey = surveyService.getSurvey(SHARED_APP_ID,
                     new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false, false);
             if (survey == null) {
                 throw new BadRequestException("Survey " + surveyGuid + " referred does not exist.");    

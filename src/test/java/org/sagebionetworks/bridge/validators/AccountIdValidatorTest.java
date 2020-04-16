@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.testng.annotations.Test;
@@ -13,19 +14,19 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 public class AccountIdValidatorTest {
     @Test
     public void validAccountIdWithEmail() {
-        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com");
+        AccountId accountId = AccountId.forEmail(TEST_APP_ID, "email@email.com");
         Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
     }
 
     @Test
     public void validAccountIdWithPhone() {
-        AccountId accountId = AccountId.forPhone(TestConstants.TEST_STUDY_IDENTIFIER, TestConstants.PHONE);
+        AccountId accountId = AccountId.forPhone(TEST_APP_ID, TestConstants.PHONE);
         Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.PHONE), accountId);
     }
     
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void validatorUnsupportedType() {
-        AccountId accountId = AccountId.forEmail(TestConstants.TEST_STUDY_IDENTIFIER, "email@email.com");
+        AccountId accountId = AccountId.forEmail(TEST_APP_ID, "email@email.com");
         Validate.entityThrowingException(AccountIdValidator.getInstance(null), accountId);
     }
     

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,6 +24,6 @@ public class SharedAssessmentConfigController extends BaseController {
     
     @GetMapping("/v1/sharedassessments/{guid}/config")
     public AssessmentConfig getSharedAssessmentConfig(@PathVariable String guid) {
-        return service.getAssessmentConfig(SHARED_STUDY_ID_STRING, guid);
+        return service.getAssessmentConfig(SHARED_APP_ID, guid);
     }
 }

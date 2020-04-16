@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -332,17 +332,17 @@ public class UploadControllerTest extends Mockito {
     @Test
     public void getUploadByRecordId() throws Exception {
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        doReturn(TEST_STUDY_IDENTIFIER).when(mockResearcherSession).getStudyIdentifier();
+        doReturn(TEST_APP_ID).when(mockResearcherSession).getStudyIdentifier();
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
-        record.setStudyId(TEST_STUDY_IDENTIFIER);
+        record.setStudyId(TEST_APP_ID);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId(TEST_STUDY_IDENTIFIER);
+        upload.setStudyId(TEST_APP_ID);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -364,7 +364,7 @@ public class UploadControllerTest extends Mockito {
         when(mockResearcherSession.getStudyIdentifier()).thenReturn("researcher-study-id");
 
         HealthDataRecord record = HealthDataRecord.create();
-        record.setStudyId(TEST_STUDY_IDENTIFIER);
+        record.setStudyId(TEST_APP_ID);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);

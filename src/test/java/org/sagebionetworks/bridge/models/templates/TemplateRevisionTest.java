@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class TemplateRevisionTest {
     

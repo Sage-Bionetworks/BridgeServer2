@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -81,12 +81,12 @@ public class SchedulePlanControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
         
-        when(mockUserSession.getStudyIdentifier()).thenReturn(TEST_STUDY_IDENTIFIER);
+        when(mockUserSession.getStudyIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         
@@ -109,13 +109,13 @@ public class SchedulePlanControllerTest extends Mockito {
     public void getSchedulePlansForWorker() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(WORKER);
         SchedulePlan plan = createSchedulePlan();
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false))
+        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, false))
                 .thenReturn(Lists.newArrayList(plan));
         
-        ResourceList<SchedulePlan> result = controller.getSchedulePlansForWorker(TEST_STUDY_IDENTIFIER, false);
+        ResourceList<SchedulePlan> result = controller.getSchedulePlansForWorker(TEST_APP_ID, false);
         assertEquals(result.getItems().get(0), plan);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false);
+        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, false);
     }
 
     @Test
@@ -154,13 +154,13 @@ public class SchedulePlanControllerTest extends Mockito {
     @Test
     public void getSchedulePlansExcludeDeleted() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_STUDY_IDENTIFIER));
+        List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_APP_ID));
         
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false)).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, false)).thenReturn(plans);
         
         ResourceList<SchedulePlan> result = controller.getSchedulePlans(false);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false);
+        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, false);
         
         assertEquals(1, result.getItems().size());
         assertEquals(plans.get(0).getGuid(), result.getItems().get(0).getGuid());
@@ -169,12 +169,12 @@ public class SchedulePlanControllerTest extends Mockito {
     @Test
     public void getSchedulePlansIncludeDeleted() throws Exception {
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_STUDY_IDENTIFIER));
-        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true)).thenReturn(plans);
+        List<SchedulePlan> plans = ImmutableList.of(getSimpleSchedulePlan(TEST_APP_ID));
+        when(mockSchedulePlanService.getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, true)).thenReturn(plans);
         
         ResourceList<SchedulePlan> result = controller.getSchedulePlans(true);
         
-        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true);
+        verify(mockSchedulePlanService).getSchedulePlans(UNKNOWN_CLIENT, TEST_APP_ID, true);
         
         assertEquals(1, result.getItems().size());
         assertEquals(plans.get(0).getGuid(), result.getItems().get(0).getGuid());
@@ -182,14 +182,14 @@ public class SchedulePlanControllerTest extends Mockito {
     
     @Test
     public void getSchedulePlan() throws Exception {
-        SchedulePlan plan = getSimpleSchedulePlan(TEST_STUDY_IDENTIFIER);
+        SchedulePlan plan = getSimpleSchedulePlan(TEST_APP_ID);
         plan.setGuid("GGG");
         
-        when(mockSchedulePlanService.getSchedulePlan(TEST_STUDY_IDENTIFIER, "GGG")).thenReturn(plan);
+        when(mockSchedulePlanService.getSchedulePlan(TEST_APP_ID, "GGG")).thenReturn(plan);
         
         SchedulePlan result = controller.getSchedulePlan("GGG");
         
-        verify(mockSchedulePlanService).getSchedulePlan(TEST_STUDY_IDENTIFIER, "GGG");
+        verify(mockSchedulePlanService).getSchedulePlan(TEST_APP_ID, "GGG");
         assertEquals(result.getGuid(), plan.getGuid());
     }
     
@@ -208,7 +208,7 @@ public class SchedulePlanControllerTest extends Mockito {
         StatusMessage result = controller.deleteSchedulePlan("GGG", true);
         assertEquals(result, SchedulePlanController.DELETE_MSG);
         
-        verify(mockSchedulePlanService).deleteSchedulePlanPermanently(TEST_STUDY_IDENTIFIER, "GGG");
+        verify(mockSchedulePlanService).deleteSchedulePlanPermanently(TEST_APP_ID, "GGG");
     }
     
     @Test
@@ -216,7 +216,7 @@ public class SchedulePlanControllerTest extends Mockito {
         StatusMessage result = controller.deleteSchedulePlan("GGG", true);
         assertEquals(result, SchedulePlanController.DELETE_MSG);
         
-        verify(mockSchedulePlanService).deleteSchedulePlan(TEST_STUDY_IDENTIFIER, "GGG");
+        verify(mockSchedulePlanService).deleteSchedulePlan(TEST_APP_ID, "GGG");
     }
     
     private SchedulePlan createSchedulePlan() {

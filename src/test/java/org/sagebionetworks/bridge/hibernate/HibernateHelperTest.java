@@ -10,6 +10,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -40,7 +41,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 
@@ -377,7 +377,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
         
@@ -398,7 +398,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -419,7 +419,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -440,7 +440,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -461,7 +461,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -485,7 +485,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -510,7 +510,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
 
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
 
@@ -532,7 +532,7 @@ public class HibernateHelperTest {
         doThrow(pe).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        account.setStudyId(TEST_APP_ID);
         
         // This does not convert the exception, it hands it back.
         when(mockExceptionConverter.convert(pe, account)).thenReturn(pe);

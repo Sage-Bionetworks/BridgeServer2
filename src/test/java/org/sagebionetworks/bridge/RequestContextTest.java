@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
@@ -79,11 +79,11 @@ public class RequestContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerSubstudies(SUBSTUDIES)
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).withMetrics(metrics).withCallerRoles(ROLES)
+                .withCallerStudyId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
                 .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
 
         assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(context.getCallerStudyId(), TEST_APP_ID);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
@@ -100,14 +100,14 @@ public class RequestContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
+                .withCallerStudyId(TEST_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
                 .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
                 .withCallerClientInfo(clientInfo).build();
         
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
         assertEquals(copy.getId(), "did-change-this");
-        assertEquals(copy.getCallerStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(copy.getCallerStudyId(), TEST_APP_ID);
         assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);
         assertEquals(copy.getCallerUserId(), USER_ID);

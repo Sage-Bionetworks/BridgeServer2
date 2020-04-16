@@ -6,7 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -58,7 +58,7 @@ public class SchedulePlanServiceMockTest {
     @BeforeMethod
     public void before() {
         study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         study.setTaskIdentifiers(ImmutableSet.of("tapTest", "taskGuid", "CCC"));
         study.setDataGroups(ImmutableSet.of("AAA"));
         
@@ -76,7 +76,7 @@ public class SchedulePlanServiceMockTest {
         Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean())).thenReturn(survey1);
-        when(mockSurveyService.getSurvey(eq(TEST_STUDY_IDENTIFIER), any(), eq(false), eq(true))).thenReturn(survey2);
+        when(mockSurveyService.getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true))).thenReturn(survey2);
         surveyGuid1 = survey1.getGuid();
         surveyGuid2 = survey2.getGuid();
         
@@ -96,7 +96,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan schedulePlan = constructSchedulePlan();
         schedulePlan.setStrategy(null);
         
-        when(mockSchedulePlanDao.getSchedulePlan(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(schedulePlan);
+        when(mockSchedulePlanDao.getSchedulePlan(eq(TEST_APP_ID), any())).thenReturn(schedulePlan);
         
         // The key thing here is that we make it to validation.
         service.updateSchedulePlan(study, schedulePlan);
@@ -105,12 +105,12 @@ public class SchedulePlanServiceMockTest {
     @Test
     public void getSchedulePlan() {
         SchedulePlan schedulePlan = SchedulePlan.create();
-        when(mockSchedulePlanDao.getSchedulePlan(TEST_STUDY_IDENTIFIER, "oneGuid")).thenReturn(schedulePlan);
+        when(mockSchedulePlanDao.getSchedulePlan(TEST_APP_ID, "oneGuid")).thenReturn(schedulePlan);
         
-        SchedulePlan result = service.getSchedulePlan(TEST_STUDY_IDENTIFIER, "oneGuid");
+        SchedulePlan result = service.getSchedulePlan(TEST_APP_ID, "oneGuid");
         assertSame(result, schedulePlan);
         
-        verify(mockSchedulePlanDao).getSchedulePlan(TEST_STUDY_IDENTIFIER, "oneGuid");
+        verify(mockSchedulePlanDao).getSchedulePlan(TEST_APP_ID, "oneGuid");
     }
     
     @Test
@@ -121,7 +121,7 @@ public class SchedulePlanServiceMockTest {
         
         service.createSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TEST_STUDY_IDENTIFIER), any(), eq(false), eq(true));
+        verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -140,7 +140,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TEST_STUDY_IDENTIFIER), any(), eq(false), eq(true));
+        verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
@@ -171,7 +171,7 @@ public class SchedulePlanServiceMockTest {
         
         service.updateSchedulePlan(study, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
-        verify(mockSurveyService).getSurvey(eq(TEST_STUDY_IDENTIFIER), any(), eq(false), eq(true));
+        verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
@@ -272,37 +272,37 @@ public class SchedulePlanServiceMockTest {
     @Test
     public void getSchedulePlansExcludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false);
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, false);
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false);
     }
     
     @Test
     public void getSchedulePlansIncludeDeleted() throws Exception {
         List<SchedulePlan> plans = Lists.newArrayList(SchedulePlan.create());
-        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true)).thenReturn(plans);
+        when(mockSchedulePlanDao.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, true)).thenReturn(plans);
         
-        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true);
+        List<SchedulePlan> returned = service.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, true);
         assertEquals(returned, plans);
         
-        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_STUDY_IDENTIFIER, true);
+        verify(mockSchedulePlanDao).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, true);
     }
     
     @Test
     public void deleteSchedulePlan() {
-        service.deleteSchedulePlan(TEST_STUDY_IDENTIFIER, "planGuid");
+        service.deleteSchedulePlan(TEST_APP_ID, "planGuid");
         
-        verify(mockSchedulePlanDao).deleteSchedulePlan(TEST_STUDY_IDENTIFIER, "planGuid");
+        verify(mockSchedulePlanDao).deleteSchedulePlan(TEST_APP_ID, "planGuid");
     }
     
     @Test
     public void deleteSchedulePlanPermanently() {
-        service.deleteSchedulePlanPermanently(TEST_STUDY_IDENTIFIER, "planGuid");
+        service.deleteSchedulePlanPermanently(TEST_APP_ID, "planGuid");
         
-        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(TEST_STUDY_IDENTIFIER, "planGuid");
+        verify(mockSchedulePlanDao).deleteSchedulePlanPermanently(TEST_APP_ID, "planGuid");
     }
     
     private SchedulePlan constructorInvalidSchedulePlan() {
@@ -329,7 +329,7 @@ public class SchedulePlanServiceMockTest {
     }
     
     private SchedulePlan constructSimpleSchedulePlan() {
-        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_STUDY_IDENTIFIER);
+        SchedulePlan plan = TestUtils.getSimpleSchedulePlan(TEST_APP_ID);
         plan.setLabel("Label");
         plan.setGuid("BBB");
         plan.getStrategy().getAllPossibleSchedules().get(0).setExpires("P3D");

@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -455,8 +455,7 @@ public class GenericUploadFormatHandlerTest {
         schema.setRevision(SCHEMA_REV);
         schema.setFieldDefinitions(ImmutableList.copyOf(fieldDefVarargs));
 
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_IDENTIFIER, SCHEMA_ID, SCHEMA_REV)).thenReturn(
-                schema);
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, SCHEMA_ID, SCHEMA_REV)).thenReturn(schema);
     }
 
     // Makes a realistic info.json for the test.
@@ -483,7 +482,7 @@ public class GenericUploadFormatHandlerTest {
         context.setUnzippedDataFileMap(fileMap);
 
         // Handler expects the context to have these attributes, including the empty data map.
-        context.setStudy(TEST_STUDY_IDENTIFIER);
+        context.setStudy(TEST_APP_ID);
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setData(BridgeObjectMapper.get().createObjectNode());

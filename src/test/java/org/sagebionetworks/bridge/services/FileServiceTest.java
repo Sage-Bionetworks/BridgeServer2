@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
@@ -91,44 +91,44 @@ public class FileServiceTest extends Mockito {
     
     @Test
     public void getFilesExcludeDeleted() {
-        service.getFiles(TEST_STUDY_IDENTIFIER, 5, 30, false);
+        service.getFiles(TEST_APP_ID, 5, 30, false);
         
-        verify(mockFileDao).getFiles(TEST_STUDY_IDENTIFIER, 5, 30, false);
+        verify(mockFileDao).getFiles(TEST_APP_ID, 5, 30, false);
     }
 
     @Test
     public void getFilesIncludeDeleted() {
-        service.getFiles(TEST_STUDY_IDENTIFIER, 0, 25, true);
+        service.getFiles(TEST_APP_ID, 0, 25, true);
         
-        verify(mockFileDao).getFiles(TEST_STUDY_IDENTIFIER, 0, 25, true);
+        verify(mockFileDao).getFiles(TEST_APP_ID, 0, 25, true);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getFilesPageSizeTooSmall() {
-        service.getFiles(TEST_STUDY_IDENTIFIER, 0, 1, false);
+        service.getFiles(TEST_APP_ID, 0, 1, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getFilesPageSizeTooLarge() {
-        service.getFiles(TEST_STUDY_IDENTIFIER, 0, 1000, false);
+        service.getFiles(TEST_APP_ID, 0, 1000, false);
     }
     
     @Test
     public void getFile() {
         FileMetadata metadata = new FileMetadata();
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(metadata));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(metadata));
         
-        FileMetadata returned = service.getFile(TEST_STUDY_IDENTIFIER, GUID);
+        FileMetadata returned = service.getFile(TEST_APP_ID, GUID);
         assertSame(returned, metadata);
         
-        verify(mockFileDao).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockFileDao).getFile(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getFileNotFound() { 
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.empty());
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.getFile(TEST_STUDY_IDENTIFIER, GUID);
+        service.getFile(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -143,7 +143,7 @@ public class FileServiceTest extends Mockito {
         metadata.setGuid("garbage"); // ignored
         when(mockFileDao.createFile(any())).thenReturn(metadata);
         
-        FileMetadata returned = service.createFile(TEST_STUDY_IDENTIFIER, metadata);
+        FileMetadata returned = service.createFile(TEST_APP_ID, metadata);
         
         verify(mockFileDao).createFile(metadataCaptor.capture());
         FileMetadata captured = metadataCaptor.getValue();
@@ -153,7 +153,7 @@ public class FileServiceTest extends Mockito {
         assertEquals(captured.getVersion(), 0L);
         assertFalse(captured.isDeleted());
         assertEquals(captured.getGuid(), GUID);
-        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), TEST_APP_ID);
         assertEquals(captured.getCreatedOn(), TIMESTAMP);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
     }
@@ -162,25 +162,25 @@ public class FileServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*name is required.*")
     public void createFileValidated() {
         FileMetadata metadata = new FileMetadata();
-        service.createFile(TEST_STUDY_IDENTIFIER, metadata);
+        service.createFile(TEST_APP_ID, metadata);
     }
 
     @Test
     public void updateFile() {
         FileMetadata persisted = new FileMetadata();
         persisted.setCreatedOn(TIMESTAMP.minusDays(1));
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(persisted));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(persisted));
         when(mockFileDao.updateFile(any())).thenReturn(persisted);
         
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
         metadata.setGuid(GUID);
-        FileMetadata returned = service.updateFile(TEST_STUDY_IDENTIFIER, metadata);
+        FileMetadata returned = service.updateFile(TEST_APP_ID, metadata);
         assertEquals(returned, persisted);
         
         verify(mockFileDao).updateFile(metadataCaptor.capture());
         FileMetadata captured = metadataCaptor.getValue();
-        assertEquals(captured.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(captured.getStudyId(), TEST_APP_ID);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
         assertEquals(captured.getCreatedOn(), TIMESTAMP.minusDays(1));
     }
@@ -189,48 +189,48 @@ public class FileServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*name is required.*")
     public void updateFileValidated() {
         FileMetadata persisted = new FileMetadata();
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(persisted));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(persisted));
         
         FileMetadata metadata = new FileMetadata();
         metadata.setGuid(GUID);
-        service.updateFile(TEST_STUDY_IDENTIFIER, metadata);
+        service.updateFile(TEST_APP_ID, metadata);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void updateFileNoGuid() {
         FileMetadata metadata = new FileMetadata();
-        service.updateFile(TEST_STUDY_IDENTIFIER, metadata);
+        service.updateFile(TEST_APP_ID, metadata);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateFileMissing() { 
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.empty());
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
 
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
         metadata.setGuid(GUID);
-        service.updateFile(TEST_STUDY_IDENTIFIER, metadata);
+        service.updateFile(TEST_APP_ID, metadata);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateFileFilesEditingLogicallyDeletedFile() {
         FileMetadata persisted = new FileMetadata();
         persisted.setDeleted(true);
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(persisted));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(persisted));
 
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
         metadata.setGuid(GUID);
         metadata.setDeleted(true);
-        service.updateFile(TEST_STUDY_IDENTIFIER, metadata);
+        service.updateFile(TEST_APP_ID, metadata);
     }
     
     @Test
     public void deleteFile() {
         FileMetadata persisted = new FileMetadata();
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(persisted));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(persisted));
         
-        service.deleteFile(TEST_STUDY_IDENTIFIER, GUID);
+        service.deleteFile(TEST_APP_ID, GUID);
         
         verify(mockFileDao).updateFile(metadataCaptor.capture());
         assertTrue(metadataCaptor.getValue().isDeleted());
@@ -241,29 +241,29 @@ public class FileServiceTest extends Mockito {
     public void deleteFileAlreadyDeleted() {
         FileMetadata persisted = new FileMetadata();
         persisted.setDeleted(true);
-        when(mockFileDao.getFile(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(Optional.of(persisted));
+        when(mockFileDao.getFile(TEST_APP_ID, GUID)).thenReturn(Optional.of(persisted));
         
-        service.deleteFile(TEST_STUDY_IDENTIFIER, GUID);
+        service.deleteFile(TEST_APP_ID, GUID);
     }
     
     @Test
     public void deleteFilePermanently() {
-        service.deleteFilePermanently(TEST_STUDY_IDENTIFIER, GUID);
+        service.deleteFilePermanently(TEST_APP_ID, GUID);
         
-        verify(mockFileDao).deleteFilePermanently(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockFileDao).deleteFilePermanently(TEST_APP_ID, GUID);
     }
     
     @Test
     public void deleteAllStudyFiles() {
-        service.deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
+        service.deleteAllStudyFiles(TEST_APP_ID);
         
-        verify(mockFileDao).deleteAllStudyFiles(TEST_STUDY_IDENTIFIER);
+        verify(mockFileDao).deleteAllStudyFiles(TEST_APP_ID);
     }
     
     @Test
     public void getFileRevisions() {
         FileMetadata metadata = new FileMetadata();
-        doReturn(metadata).when(service).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
         FileRevision rev1 = new FileRevision();
         rev1.setFileGuid(GUID);
@@ -276,7 +276,7 @@ public class FileServiceTest extends Mockito {
         PagedResourceList<FileRevision> page = new PagedResourceList<>(ImmutableList.of(rev1, rev2), 2);
         when(mockFileRevisionDao.getFileRevisions(GUID, 100, 25)).thenReturn(page);
         
-        ResourceList<FileRevision> captured = service.getFileRevisions(TEST_STUDY_IDENTIFIER,GUID, 100, 25);
+        ResourceList<FileRevision> captured = service.getFileRevisions(TEST_APP_ID,GUID, 100, 25);
         assertEquals(2, captured.getItems().size());
         assertEquals(DOWNLOAD_URL_1, captured.getItems().get(0).getDownloadURL());
         assertEquals(DOWNLOAD_URL_2, captured.getItems().get(1).getDownloadURL());
@@ -287,29 +287,29 @@ public class FileServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class)
     public void getFileRevisionsPageSizeTooSmall() {
         FileMetadata metadata = new FileMetadata();
-        doReturn(metadata).when(service).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
-        service.getFileRevisions(TEST_STUDY_IDENTIFIER,GUID, 0, 1);
+        service.getFileRevisions(TEST_APP_ID,GUID, 0, 1);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getFileRevisionsSizeTooLarge() {
         FileMetadata metadata = new FileMetadata();
-        doReturn(metadata).when(service).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
-        service.getFileRevisions(TEST_STUDY_IDENTIFIER, GUID, 0, 1000);
+        service.getFileRevisions(TEST_APP_ID, GUID, 0, 1000);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = ".*FileMetadata not found.*")
     public void getFileRevisionsNotFound() { 
-        service.getFileRevisions(TEST_STUDY_IDENTIFIER, GUID, 0, 1000);
+        service.getFileRevisions(TEST_APP_ID, GUID, 0, 1000);
     }
     
     @Test
     public void createFileRevision() throws Exception {
         FileMetadata metadata = new FileMetadata();
-        doReturn(metadata).when(service).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
         URL url = new URL("https://" + UPLOAD_BUCKET);
         when(mockS3Client.generatePresignedUrl(any())).thenReturn(url);
@@ -319,7 +319,7 @@ public class FileServiceTest extends Mockito {
         revision.setFileGuid(GUID);
         revision.setMimeType("application/pdf");
         
-        FileRevision returned = service.createFileRevision(TEST_STUDY_IDENTIFIER, revision);
+        FileRevision returned = service.createFileRevision(TEST_APP_ID, revision);
         assertEquals(returned.getCreatedOn(), TIMESTAMP);
         assertEquals(returned.getStatus(), PENDING);
         assertEquals(returned.getUploadURL(), "https://" + UPLOAD_BUCKET);
@@ -345,14 +345,14 @@ public class FileServiceTest extends Mockito {
         revision.setMimeType("application/pdf");
         revision.setFileGuid(GUID);
         
-        service.createFileRevision(TEST_STUDY_IDENTIFIER, revision);
+        service.createFileRevision(TEST_APP_ID, revision);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createFileRevisionInvalid() { 
         FileRevision revision = new FileRevision();
         
-        service.createFileRevision(TEST_STUDY_IDENTIFIER, revision);
+        service.createFileRevision(TEST_APP_ID, revision);
     }
     
     @Test
@@ -363,7 +363,7 @@ public class FileServiceTest extends Mockito {
         service.setConfig(mockConfig);
         
         FileMetadata metadata = new FileMetadata();
-        doReturn(metadata).when(service).getFile(TEST_STUDY_IDENTIFIER, GUID);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
         URL url = new URL("https://" + UPLOAD_BUCKET);
         when(mockS3Client.generatePresignedUrl(any())).thenReturn(url);
@@ -373,7 +373,7 @@ public class FileServiceTest extends Mockito {
         revision.setFileGuid(GUID);
         revision.setMimeType("application/pdf");
         
-        FileRevision returned = service.createFileRevision(TEST_STUDY_IDENTIFIER, revision);
+        FileRevision returned = service.createFileRevision(TEST_APP_ID, revision);
         assertEquals(returned.getDownloadURL(), "http://docs-staging.sagebridge.org/oneGuid.1422319112486");
     }
         
@@ -387,7 +387,7 @@ public class FileServiceTest extends Mockito {
         
         when(mockS3Client.doesObjectExist(UPLOAD_BUCKET, GUID + "." + TIMESTAMP.getMillis())).thenReturn(true);
                 
-        service.finishFileRevision(TEST_STUDY_IDENTIFIER, GUID, TIMESTAMP);
+        service.finishFileRevision(TEST_APP_ID, GUID, TIMESTAMP);
         
         verify(mockFileRevisionDao).updateFileRevision(revisionCaptor.capture());
         assertNull(revisionCaptor.getValue().getUploadURL());
@@ -401,7 +401,7 @@ public class FileServiceTest extends Mockito {
     public void finishFileRevisionNotFound() {
         when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.empty());
         
-        service.finishFileRevision(TEST_STUDY_IDENTIFIER, GUID, TIMESTAMP);
+        service.finishFileRevision(TEST_APP_ID, GUID, TIMESTAMP);
     }
     
     @Test
@@ -412,7 +412,7 @@ public class FileServiceTest extends Mockito {
         when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.of(existing));
         when(mockS3Client.doesObjectExist(UPLOAD_BUCKET, GUID + "." + TIMESTAMP.getMillis())).thenReturn(false);
         try {
-            service.finishFileRevision(TEST_STUDY_IDENTIFIER, GUID, TIMESTAMP);
+            service.finishFileRevision(TEST_APP_ID, GUID, TIMESTAMP);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }

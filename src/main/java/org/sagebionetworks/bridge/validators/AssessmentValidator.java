@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import java.util.Map;
@@ -83,7 +83,7 @@ public class AssessmentValidator implements Validator {
         } else {
             String substudyId = null;
             String ownerId = null;
-            if (SHARED_STUDY_ID_STRING.equals(appId)) {
+            if (SHARED_APP_ID.equals(appId)) {
                 String[] parts = assessment.getOwnerId().split(":");
                 substudyId = parts[0];
                 ownerId = parts[1];

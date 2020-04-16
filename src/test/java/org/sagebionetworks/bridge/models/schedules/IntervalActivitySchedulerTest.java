@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asLong;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
@@ -62,7 +62,7 @@ public class IntervalActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(2))
             .withEvents(events).build();
@@ -91,7 +91,7 @@ public class IntervalActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withMinimumPerSchedule(8)
@@ -114,7 +114,7 @@ public class IntervalActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withEvents(events).build();
@@ -134,7 +134,7 @@ public class IntervalActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(2))
             .withEvents(events).build();
@@ -170,7 +170,7 @@ public class IntervalActivitySchedulerTest {
         schedule.setExpires("P2M");
         
         ScheduleContext context= new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+                .withStudyIdentifier(TEST_APP_ID)
                 .withInitialTimeZone(DateTimeZone.forOffsetHours(-7))
                 .withEndsOn(ENROLLMENT.plusDays(2)) // in UTC
                 .withHealthCode("AAA")
@@ -754,7 +754,7 @@ public class IntervalActivitySchedulerTest {
     
     private ScheduleContext getContext(DateTimeZone timeZone, DateTime endsOn) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(timeZone)
             .withEndsOn(endsOn)
             .withHealthCode("AAA")

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -23,7 +23,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -69,7 +68,7 @@ public class InitRecordHandlerTest {
                 (name, node) -> makeFileWithContent(name, node.toString())));
 
         // Contexts always include studyId.
-        context.setStudy(TEST_STUDY_IDENTIFIER);
+        context.setStudy(TEST_APP_ID);
 
         // And upload (with upload ID and health code).
         DynamoUpload2 upload = new DynamoUpload2();
@@ -141,7 +140,7 @@ public class InitRecordHandlerTest {
         assertEquals(record.getAppVersion(), APP_VERSION);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TestConstants.TEST_STUDY_IDENTIFIER);
+        assertEquals(record.getStudyId(), TEST_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);

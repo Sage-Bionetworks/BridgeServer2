@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.accounts;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.SharingOption;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;

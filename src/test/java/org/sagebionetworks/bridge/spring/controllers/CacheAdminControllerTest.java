@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -80,7 +80,7 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test
     public void listItems() throws Exception {
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
@@ -107,7 +107,7 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test
     public void removeItem() throws Exception {
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         StatusMessage result = controller.removeItem("cacheKey");

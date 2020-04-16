@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -225,10 +225,10 @@ public class FPHSControllerTest extends Mockito {
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         mockRequestBody(mockRequest, ImmutableList.of(id1, id2));
         
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(Study.create());
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(Study.create());
         
         UserSession session = setUserSession();
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         // Now when we have an admin user, we get back results
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());

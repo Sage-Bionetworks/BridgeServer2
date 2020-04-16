@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -13,7 +14,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 
 public class SubstudyPersistenceExceptionConverterTest {
@@ -39,7 +39,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        substudy.setStudyId(TEST_APP_ID);
         
         OptimisticLockException ole = new OptimisticLockException();
         
@@ -51,7 +51,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void genericConstraintViolationException() {
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        substudy.setStudyId(TEST_APP_ID);
 
         PersistenceException ex = new PersistenceException(cve);
         when(cve.getMessage()).thenReturn("This is some generic constraint violation message");
@@ -65,7 +65,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void usedByAccountsConstraintViolationException() {
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        substudy.setStudyId(TEST_APP_ID);
 
         PersistenceException ex = new PersistenceException(cve);
         when(cve.getMessage()).thenReturn("abc a foreign key constraint fails abc REFERENCES `Substudies`abc");

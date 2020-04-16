@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -356,7 +357,7 @@ public class TestUtils {
         topic.setName("Test Topic Name");
         topic.setShortName("Short Name");
         topic.setDescription("Test Description");
-        topic.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        topic.setStudyId(TEST_APP_ID);
         topic.setTopicARN("atopicArn");
         return topic;
     }
@@ -369,7 +370,7 @@ public class TestUtils {
                 .withImageData("image-data")
                 .withImageMimeType("image/png").build();
         return new IntentToParticipate.Builder()
-                .withStudyId(TestConstants.TEST_STUDY_IDENTIFIER)
+                .withStudyId(TEST_APP_ID)
                 .withScope(SharingScope.SPONSORS_AND_PARTNERS)
                 .withPhone(TestConstants.PHONE)
                 .withSubpopGuid("subpopGuid")

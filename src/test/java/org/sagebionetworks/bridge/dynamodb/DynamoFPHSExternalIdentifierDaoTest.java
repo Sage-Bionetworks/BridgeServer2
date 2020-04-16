@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifierDao.CONFIG_KEY_ADD_LIMIT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -64,7 +64,7 @@ public class DynamoFPHSExternalIdentifierDaoTest extends Mockito {
         dao.setConfig(bridgeConfig);
         
         // These have state and change; reset every test.
-        externalId = new DynamoExternalIdentifier(TEST_STUDY_IDENTIFIER, EXT_ID_STRING1);
+        externalId = new DynamoExternalIdentifier(TEST_APP_ID, EXT_ID_STRING1);
         fphsExternalId1 = new DynamoFPHSExternalIdentifier(EXT_ID_STRING1);
         fphsExternalId2 = new DynamoFPHSExternalIdentifier(EXT_ID_STRING2);
     }

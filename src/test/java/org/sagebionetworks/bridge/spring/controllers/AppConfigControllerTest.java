@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -55,7 +55,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class AppConfigControllerTest extends Mockito {
     
     private static final String GUID = "guid";
-    private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TEST_STUDY_IDENTIFIER);
+    private static final CacheKey CACHE_KEY = CacheKey.appConfigList(TEST_APP_ID);
     
     @InjectMocks
     @Spy
@@ -108,10 +108,10 @@ public class AppConfigControllerTest extends Mockito {
         appConfig.setVersion(1L);
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withLanguages(TestConstants.LANGUAGES)
@@ -142,17 +142,17 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
         
-        String string = controller.getStudyAppConfig("api");
+        String string = controller.getStudyAppConfig(TEST_APP_ID);
         AppConfig returnedValue = BridgeObjectMapper.get().readValue(string, AppConfig.class);
         assertEquals(returnedValue, appConfig);
         
         verify(mockService).getAppConfigForUser(contextCaptor.capture(), eq(true));
         CriteriaContext capturedContext = contextCaptor.getValue();
         
-        assertEquals(capturedContext.getStudyIdentifier(), TEST_STUDY_IDENTIFIER);
+        assertEquals(capturedContext.getStudyIdentifier(), TEST_APP_ID);
         assertEquals(capturedContext.getClientInfo().getAppName(), "Asthma");
         assertEquals(capturedContext.getClientInfo().getAppVersion(), new Integer(26));
         assertEquals(capturedContext.getLanguages(), ImmutableList.of("en"));
@@ -164,49 +164,49 @@ public class AppConfigControllerTest extends Mockito {
     public void getAppConfigs() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         List<AppConfig> list = ImmutableList.of(AppConfig.create(), AppConfig.create());
-        when(mockService.getAppConfigs(TEST_STUDY_IDENTIFIER, false)).thenReturn(list);
+        when(mockService.getAppConfigs(TEST_APP_ID, false)).thenReturn(list);
         
         ResourceList<AppConfig> results = controller.getAppConfigs("false");
         assertEquals(2, results.getItems().size());
         assertFalse((Boolean)results.getRequestParams().get("includeDeleted"));
-        verify(mockService).getAppConfigs(TEST_STUDY_IDENTIFIER, false);
+        verify(mockService).getAppConfigs(TEST_APP_ID, false);
     }
 
     @Test
     public void getAppConfig() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockService.getAppConfig(TEST_STUDY_IDENTIFIER, GUID)).thenReturn(appConfig);
+        when(mockService.getAppConfig(TEST_APP_ID, GUID)).thenReturn(appConfig);
         
         AppConfig result = controller.getAppConfig(GUID);
 
         assertEquals(appConfig.getGuid(), result.getGuid());
-        verify(mockService).getAppConfig(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).getAppConfig(TEST_APP_ID, GUID);
     }
 
     @Test
     public void createAppConfig() throws Exception {
         mockRequestBody(mockRequest, appConfig);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockService.createAppConfig(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(appConfig);
+        when(mockService.createAppConfig(eq(TEST_APP_ID), any())).thenReturn(appConfig);
         
         GuidVersionHolder result = controller.createAppConfig();
         
         assertEquals(result.getGuid(), GUID);
         assertEquals(result.getVersion(), new Long(1));
-        verify(mockService).createAppConfig(eq(TEST_STUDY_IDENTIFIER), any());
+        verify(mockService).createAppConfig(eq(TEST_APP_ID), any());
     }
     
     @Test
     public void updateAppConfig() throws Exception {
         mockRequestBody(mockRequest, appConfig);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
-        when(mockService.updateAppConfig(eq(TEST_STUDY_IDENTIFIER), any())).thenReturn(appConfig);
+        when(mockService.updateAppConfig(eq(TEST_APP_ID), any())).thenReturn(appConfig);
         
         GuidVersionHolder result = controller.updateAppConfig(GUID);
         
         assertEquals(result.getGuid(), GUID);
         assertEquals(result.getVersion(), new Long(1));
-        verify(mockService).updateAppConfig(eq(TEST_STUDY_IDENTIFIER), any());
+        verify(mockService).updateAppConfig(eq(TEST_APP_ID), any());
     }
     
     @Test
@@ -216,7 +216,7 @@ public class AppConfigControllerTest extends Mockito {
         StatusMessage message = controller.deleteAppConfig(GUID, null);
         assertEquals(message.getMessage(), "App config deleted.");
         
-        verify(mockService).deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).deleteAppConfig(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -226,7 +226,7 @@ public class AppConfigControllerTest extends Mockito {
         StatusMessage message = controller.deleteAppConfig(GUID, "false");
         assertEquals(message.getMessage(), "App config deleted.");
         
-        verify(mockService).deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).deleteAppConfig(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -236,7 +236,7 @@ public class AppConfigControllerTest extends Mockito {
         StatusMessage message = controller.deleteAppConfig(GUID, "true");
         assertEquals(message.getMessage(), "App config deleted.");
         
-        verify(mockService).deleteAppConfig(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).deleteAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -250,7 +250,7 @@ public class AppConfigControllerTest extends Mockito {
         StatusMessage message = controller.deleteAppConfig(GUID, "true");
         assertEquals(message.getMessage(), "App config deleted.");
         
-        verify(mockService).deleteAppConfigPermanently(TEST_STUDY_IDENTIFIER, GUID);
+        verify(mockService).deleteAppConfigPermanently(TEST_APP_ID, GUID);
     }
 
     @Test
@@ -259,12 +259,12 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);
-        when(mockStudyService.getStudy(TestConstants.TEST_STUDY_IDENTIFIER)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
         
-        controller.getStudyAppConfig(TestConstants.TEST_STUDY_IDENTIFIER);
+        controller.getStudyAppConfig(TEST_APP_ID);
         
-        verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:api:AppConfig:view");
+        verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:" + TEST_APP_ID + ":AppConfig:view");
     }
 
     @Test

@@ -1,13 +1,13 @@
 package org.sagebionetworks.bridge.models.assessments;
 
 import static org.sagebionetworks.bridge.TestConstants.APPLICATION_JSON;
-import static org.sagebionetworks.bridge.TestConstants.APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.CONTRIBUTORS;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CREATORS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PUBLISHERS;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_BASE_URL;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.testng.Assert.assertEquals;
@@ -27,13 +27,13 @@ public class HibernateAssessmentResourceTest {
     public void testFactoryMethod() {
         AssessmentResource dto = AssessmentResourceTest.createAssessmentResource();
         
-        HibernateAssessmentResource resource = HibernateAssessmentResource.create(dto, APP_ID, "assessmentId");
+        HibernateAssessmentResource resource = HibernateAssessmentResource.create(dto, TEST_APP_ID, "assessmentId");
         assertHibernateAssessmentResource(resource);
     }
     
     @Test
     public void testFactoryMethodWithNulls() {
-        HibernateAssessmentResource resource = HibernateAssessmentResource.create(new AssessmentResource(), APP_ID, null);
+        HibernateAssessmentResource resource = HibernateAssessmentResource.create(new AssessmentResource(), TEST_APP_ID, null);
         assertNull(resource.getGuid());
         assertNull(resource.getAssessmentId());
         assertNull(resource.getTitle());

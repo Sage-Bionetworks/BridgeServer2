@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -88,7 +88,7 @@ public class MasterSchedulerControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        mockSession.setStudyIdentifier(TEST_APP_ID);
         mockSession.setAuthenticated(true);
         mockSession.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);

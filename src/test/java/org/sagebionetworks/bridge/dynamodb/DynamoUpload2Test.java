@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.testng.Assert.assertNull;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -16,7 +17,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
@@ -45,7 +45,7 @@ public class DynamoUpload2Test {
         upload.setHealthCode("healthCode");
         upload.setRecordId("ABC");
         upload.setStatus(UploadStatus.SUCCEEDED);
-        upload.setStudyId(TestConstants.TEST_STUDY_IDENTIFIER);
+        upload.setStudyId(TEST_APP_ID);
         upload.setUploadDate(LocalDate.parse("2016-10-10"));
         upload.setUploadId("DEF");
         upload.setValidationMessageList(Lists.newArrayList("message 1", "message 2"));
@@ -64,7 +64,7 @@ public class DynamoUpload2Test {
         assertEquals(node.get("contentMd5").textValue(), "abc");
         assertEquals(node.get("contentType").textValue(), "application/json");
         assertEquals(node.get("filename").textValue(), "filename.zip");
-        assertEquals(node.get("studyId").textValue(), "api");
+        assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(node.get("version").longValue(), 2L);
         assertEquals(node.get("healthCode").textValue(), "healthCode");
         

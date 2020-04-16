@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.API_SUBPOP;
 import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.SHARED_SUBPOP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -81,7 +84,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         // Validate api study.
         Study study = createdStudyList.get(0);
         assertEquals(study.getName(), "Test Study");
-        assertEquals(study.getIdentifier(), BridgeConstants.API_STUDY_ID_STRING);
+        assertEquals(study.getIdentifier(), API_APP_ID);
         assertEquals(study.getSponsorName(), "Sage Bionetworks");
         assertEquals(study.getShortName(), "TestStudy");
         assertEquals(study.getMinAgeOfConsent(), 18);
@@ -95,7 +98,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         // Validate shared study. No need to test every attribute. Just validate the important attributes.
         Study sharedStudy = createdStudyList.get(1);
         assertEquals(sharedStudy.getName(), "Shared Module Library");
-        assertEquals(sharedStudy.getIdentifier(), BridgeConstants.SHARED_STUDY_ID_STRING);
+        assertEquals(sharedStudy.getIdentifier(), SHARED_APP_ID);
 
         // So it doesn't get out of sync, validate the study. However, default templates are set 
         // by the service. so those two errors are expected.
@@ -112,7 +115,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
                 subpopCaptor.capture(), eq(false), eq(false));
         
-        assertEquals(BridgeUtils.getRequestContext().getCallerStudyId(), BridgeConstants.API_STUDY_ID_STRING);
+        assertEquals(BridgeUtils.getRequestContext().getCallerStudyId(), API_APP_ID);
         assertTrue(BridgeUtils.getRequestContext().isInRole(SUPERADMIN));
         assertEquals(BridgeUtils.getRequestContext().getCallerUserId(), "DefaultStudyBootstrapper");
         

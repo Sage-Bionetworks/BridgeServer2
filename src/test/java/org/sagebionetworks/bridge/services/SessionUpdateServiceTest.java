@@ -4,7 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -21,7 +21,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -89,7 +88,7 @@ public class SessionUpdateServiceTest {
         session.setParticipant(EMPTY_PARTICIPANT);
 
         List<String> languages = ImmutableList.of("es");
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID)
                 .withLanguages(languages).build();
 
         // Execute test.
@@ -104,13 +103,13 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY_IDENTIFIER, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_APP_ID, context, HEALTH_CODE);
     }
 
     @Test
     public void updateExternalId() {
         UserSession session = new UserSession();
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "someExternalId");
+        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "someExternalId");
         
         service.updateExternalId(session, externalId);
         
@@ -127,7 +126,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setParticipant(EMPTY_PARTICIPANT);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
 
         // Execute test.
         service.updateParticipant(session, context, EMPTY_PARTICIPANT);
@@ -141,14 +140,14 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY_IDENTIFIER, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_APP_ID, context, HEALTH_CODE);
     }
     
     @Test
     public void updateParticipantWithConsentUpdate() {
         UserSession session = new UserSession();
         StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
                 
         when(mockConsentService.getConsentStatuses(context)).thenReturn(statuses);
@@ -172,7 +171,7 @@ public class SessionUpdateServiceTest {
         Set<String> dataGroups = Sets.newHashSet("data1");
         CriteriaContext context = new CriteriaContext.Builder()
                 .withUserDataGroups(dataGroups)
-                .withStudyIdentifier(TEST_STUDY_IDENTIFIER).build();
+                .withStudyIdentifier(TEST_APP_ID).build();
 
         // Execute test.
         service.updateDataGroups(session, context);
@@ -186,13 +185,13 @@ public class SessionUpdateServiceTest {
         assertSame(session.getConsentStatuses(), CONSENT_STATUS_MAP);
 
         // Verify notification service.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_STUDY_IDENTIFIER, context, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_APP_ID, context, HEALTH_CODE);
     }
 
     @Test
     public void updateStudy() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TestConstants.TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         
         service.updateStudy(session, "new-study");
         

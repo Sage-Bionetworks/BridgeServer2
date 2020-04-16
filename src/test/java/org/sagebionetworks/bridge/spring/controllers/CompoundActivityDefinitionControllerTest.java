@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -45,7 +45,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void setup() {
         // mock session
         UserSession mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        mockSession.setStudyIdentifier(TEST_APP_ID);
 
         // mock study service
         studyService = mock(StudyService.class);
@@ -87,12 +87,12 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // mock service - Service output should have both task ID and study ID so we can test that study ID is filtered
         // out
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.createCompoundActivityDefinition(eq(TEST_STUDY_IDENTIFIER), serviceInputCaptor.capture()))
+        when(defService.createCompoundActivityDefinition(eq(TEST_APP_ID), serviceInputCaptor.capture()))
                 .thenReturn(serviceOutput);
 
         // execute and validate
@@ -116,7 +116,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertEquals(result.getMessage(), "Compound activity definition has been deleted.");
 
         // verify call through to the service
-        verify(defService).deleteCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID);
+        verify(defService).deleteCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
         verifyZeroInteractions(studyService);
     }
@@ -125,10 +125,10 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void list() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
-        when(defService.getAllCompoundActivityDefinitionsInStudy(TEST_STUDY_IDENTIFIER)).thenReturn(
+        when(defService.getAllCompoundActivityDefinitionsInStudy(TEST_APP_ID)).thenReturn(
                 ImmutableList.of(serviceOutput));
 
         // execute and validate
@@ -150,10 +150,10 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
     public void get() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
-        when(defService.getCompoundActivityDefinition(TEST_STUDY_IDENTIFIER, TASK_ID)).thenReturn(serviceOutput);
+        when(defService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID)).thenReturn(serviceOutput);
 
         // execute and validate
         String result = controller.getCompoundActivityDefinition(TASK_ID);
@@ -175,12 +175,12 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_STUDY_IDENTIFIER);
+        serviceOutput.setStudyId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
                 CompoundActivityDefinition.class);
-        when(defService.updateCompoundActivityDefinition(eq(TEST_STUDY_IDENTIFIER), eq(TASK_ID),
+        when(defService.updateCompoundActivityDefinition(eq(TEST_APP_ID), eq(TASK_ID),
                 serviceInputCaptor.capture())).thenReturn(serviceOutput);
 
         // execute and validate

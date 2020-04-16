@@ -5,7 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
@@ -52,14 +52,14 @@ public class UploadSchemaServiceFromSurveyTest {
         // Mock dao to return schema with IOS_DATA type.
         UploadSchema oldSchema = makeBackwardsCompatibleSchemaForSurveyTests();
         oldSchema.setSchemaType(UploadSchemaType.IOS_DATA);
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
 
         // Set up test inputs
         Survey survey = makeSimpleSurvey();
 
         // execute - will throw
         try {
-            svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+            svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "Survey with identifier " + SURVEY_ID
@@ -76,14 +76,14 @@ public class UploadSchemaServiceFromSurveyTest {
         // Mock dao to return schema with wrong survey guid
         UploadSchema oldSchema = makeBackwardsCompatibleSchemaForSurveyTests();
         oldSchema.setSurveyGuid("wrong-guid");
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
 
         // Set up test inputs
         Survey survey = makeSimpleSurvey();
 
         // execute - will throw
         try {
-            svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+            svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
             fail("expected exception");
         } catch (BadRequestException ex) {
             assertEquals(ex.getMessage(), "Survey with identifier " + SURVEY_ID +
@@ -111,7 +111,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.createSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls
@@ -133,7 +133,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.createSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls
@@ -151,8 +151,8 @@ public class UploadSchemaServiceFromSurveyTest {
 
         // Mock dao to return old schema.
         UploadSchema oldSchema = makeBackwardsCompatibleSchemaForSurveyTests();
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
-        when(dao.getUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, SURVEY_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SURVEY_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         // Mock DAO. Capture input and return dummy output.
@@ -161,7 +161,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.createSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, true);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, true);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls
@@ -179,8 +179,8 @@ public class UploadSchemaServiceFromSurveyTest {
 
         // Mock dao to return old schema.
         UploadSchema oldSchema = makeBackwardsCompatibleSchemaForSurveyTests();
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
-        when(dao.getUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, SURVEY_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SURVEY_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         // Mock DAO. Capture input and return dummy output.
@@ -189,7 +189,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.updateSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls
@@ -228,8 +228,8 @@ public class UploadSchemaServiceFromSurveyTest {
 
         // Mock dao to return old schema.
         UploadSchema oldSchema = makeSchemaWithFields(oldSchemaFieldDef);
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
-        when(dao.getUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, SURVEY_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SURVEY_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         // Mock DAO. Capture input and return dummy output.
@@ -238,7 +238,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.updateSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls
@@ -271,8 +271,8 @@ public class UploadSchemaServiceFromSurveyTest {
 
         // Mock dao to return old schema.
         UploadSchema oldSchema = makeSchemaWithFields(oldSchemaFieldDef);
-        when(dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SURVEY_ID)).thenReturn(oldSchema);
-        when(dao.getUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, SURVEY_ID, SCHEMA_REV)).thenReturn(
+        when(dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SURVEY_ID)).thenReturn(oldSchema);
+        when(dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SURVEY_ID, SCHEMA_REV)).thenReturn(
                 oldSchema);
 
         // Mock DAO. Capture input and return dummy output.
@@ -281,7 +281,7 @@ public class UploadSchemaServiceFromSurveyTest {
         when(dao.createSchemaRevision(daoInputSchemaCaptor.capture())).thenReturn(daoOutputSchema);
 
         // set up test dao and execute
-        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_STUDY_IDENTIFIER, survey, false);
+        UploadSchema svcOutputSchema = svc.createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
         assertSame(svcOutputSchema, daoOutputSchema);
 
         // verify calls

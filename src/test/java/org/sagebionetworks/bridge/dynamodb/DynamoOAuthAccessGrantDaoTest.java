@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -30,7 +30,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
 
     static final String VENDOR_ID = "aVendorId";
     static final String OFFSET_KEY = "offsetKey";
-    static final String KEY = TEST_STUDY_IDENTIFIER + ":" + VENDOR_ID;
+    static final String KEY = TEST_APP_ID + ":" + VENDOR_ID;
     
     @Mock
     DynamoDBMapper mockMapper;
@@ -60,7 +60,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
         when(mockQueryPage.getResults()).thenReturn(grantList);
         when(mockMapper.queryPage(eq(DynamoOAuthAccessGrant.class), any())).thenReturn(mockQueryPage);
         
-        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_STUDY_IDENTIFIER, VENDOR_ID,
+        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_APP_ID, VENDOR_ID,
                 OFFSET_KEY, 5);
         assertEquals(grants.getItems().size(), 2);
         assertEquals(grants.getItems().get(0), grant1);
@@ -84,7 +84,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
         when(mockQueryPage.getResults()).thenReturn(grantList);
         when(mockMapper.queryPage(eq(DynamoOAuthAccessGrant.class), any())).thenReturn(mockQueryPage);
         
-        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_STUDY_IDENTIFIER, VENDOR_ID, null, 5);
+        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_APP_ID, VENDOR_ID, null, 5);
         assertEquals(grants.getItems().size(), 2);
         assertEquals(grants.getItems().get(0), grant1);
         assertEquals(grants.getItems().get(1), grant2);
@@ -111,7 +111,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
         when(mockQueryPage.getResults()).thenReturn(grantList);
         when(mockMapper.queryPage(eq(DynamoOAuthAccessGrant.class), any())).thenReturn(mockQueryPage);
         
-        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_STUDY_IDENTIFIER, VENDOR_ID,
+        ForwardCursorPagedResourceList<OAuthAccessGrant> grants = dao.getAccessGrants(TEST_APP_ID, VENDOR_ID,
                 OFFSET_KEY, 5);
         assertEquals(grants.getNextPageOffsetKey(), "lastRecordHealthCode");
     }    
@@ -121,7 +121,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
         DynamoOAuthAccessGrant grant = new DynamoOAuthAccessGrant();
         when(mockMapper.load(any())).thenReturn(grant);
         
-        OAuthAccessGrant result = dao.getAccessGrant(TEST_STUDY_IDENTIFIER, VENDOR_ID, HEALTH_CODE);
+        OAuthAccessGrant result = dao.getAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         assertSame(result, grant);
         
         verify(mockMapper).load(keyCaptor.capture());
@@ -136,7 +136,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
         grant.setVendorId(VENDOR_ID);
         grant.setHealthCode(HEALTH_CODE);
         
-        OAuthAccessGrant result = dao.saveAccessGrant(TEST_STUDY_IDENTIFIER, grant);
+        OAuthAccessGrant result = dao.saveAccessGrant(TEST_APP_ID, grant);
         assertSame(result, grant);
         
         verify(mockMapper).save(keyCaptor.capture());
@@ -147,7 +147,7 @@ public class DynamoOAuthAccessGrantDaoTest extends Mockito {
     
     @Test
     public void deleteAccessGrant() {
-        dao.deleteAccessGrant(TEST_STUDY_IDENTIFIER, VENDOR_ID, HEALTH_CODE);
+        dao.deleteAccessGrant(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         
         verify(mockMapper).delete(keyCaptor.capture());
         DynamoOAuthAccessGrant key = keyCaptor.getValue();

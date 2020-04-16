@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -105,11 +105,11 @@ public class DynamoUploadSchemaDaoMockTest {
                 indexHashKeyCaptor.capture(), eq(false));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TEST_STUDY_IDENTIFIER, false);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TEST_APP_ID, false);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
-        assertEquals(indexHashKey.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(indexHashKey.getStudyId(), TEST_APP_ID);
 
         // Verify DAO output
         assertSame(daoOutputSchemaList, mapperOutputSchemaList);
@@ -124,11 +124,11 @@ public class DynamoUploadSchemaDaoMockTest {
                 indexHashKeyCaptor.capture(), eq(true));
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TEST_STUDY_IDENTIFIER, true);
+        List<UploadSchema> daoOutputSchemaList = dao.getAllUploadSchemasAllRevisions(TEST_APP_ID, true);
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
-        assertEquals(indexHashKey.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(indexHashKey.getStudyId(), TEST_APP_ID);
 
         // Verify DAO output
         assertSame(daoOutputSchemaList, mapperOutputSchemaList);
@@ -169,13 +169,13 @@ public class DynamoUploadSchemaDaoMockTest {
         doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TEST_STUDY_IDENTIFIER,
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TEST_APP_ID,
                 SCHEMA_ID, true);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
         assertNull(mapperQuery.getQueryFilter());
 
@@ -193,13 +193,13 @@ public class DynamoUploadSchemaDaoMockTest {
         doReturn(mapperOutputSchemaList).when(dao).queryHelper(mapperQueryCaptor.capture());
 
         // execute
-        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TEST_STUDY_IDENTIFIER,
+        List<UploadSchema> daoOutputSchemaList = dao.getUploadSchemaAllRevisionsById(TEST_APP_ID,
                 SCHEMA_ID, false);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
         assertEquals(mapperQuery.getQueryFilter().toString(),
                 "{deleted={AttributeValueList: [{N: 1,}],ComparisonOperator: NE}}");
@@ -217,13 +217,13 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.load(mapperInputSchemaCaptor.capture())).thenReturn(mapperOutputSchema);
 
         // set up test dao and execute
-        UploadSchema daoOutputSchema = dao.getUploadSchemaByIdAndRevision(TEST_STUDY_IDENTIFIER, SCHEMA_ID,
+        UploadSchema daoOutputSchema = dao.getUploadSchemaByIdAndRevision(TEST_APP_ID, SCHEMA_ID,
                 SCHEMA_REV);
         assertSame(daoOutputSchema, mapperOutputSchema);
 
         // validate intermediate args
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
-        assertEquals(mapperInputSchema.getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(mapperInputSchema.getStudyId(), TEST_APP_ID);
         assertEquals(mapperInputSchema.getSchemaId(), SCHEMA_ID);
         assertEquals(mapperInputSchema.getRevision(), SCHEMA_REV);
     }
@@ -241,13 +241,13 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.queryPage(eq(DynamoUploadSchema.class), mapperQueryCaptor.capture())).thenReturn(queryResultPage);
 
         // execute
-        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SCHEMA_ID);
+        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID);
 
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
         assertEquals(mapperQuery.getLimit().intValue(), 1);
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_STUDY_IDENTIFIER);
+        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
 
         // Verify DAO output
@@ -264,7 +264,7 @@ public class DynamoUploadSchemaDaoMockTest {
         when(mapper.queryPage(eq(DynamoUploadSchema.class), any())).thenReturn(queryResultPage);
 
         // execute and validate result is null
-        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TEST_STUDY_IDENTIFIER, SCHEMA_ID);
+        UploadSchema daoOutputSchema = dao.getUploadSchemaLatestRevisionById(TEST_APP_ID, SCHEMA_ID);
         assertNull(daoOutputSchema);
 
         // query is already validated in getLatestById(). Don't bother checking again.

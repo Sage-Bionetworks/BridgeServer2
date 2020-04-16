@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
@@ -60,17 +60,17 @@ public class SharedAssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         return service.getAssessments(
-                SHARED_STUDY_ID_STRING, offsetByInt, pageSizeInt, tags, incDeletedBool);
+                SHARED_APP_ID, offsetByInt, pageSizeInt, tags, incDeletedBool);
     }
     
     @GetMapping("/v1/sharedassessments/{guid}")
     public Assessment getSharedAssessmentByGuid(@PathVariable String guid) {
-        return service.getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
+        return service.getAssessmentByGuid(SHARED_APP_ID, guid);
     }
     
     @GetMapping("/v1/sharedassessments/identifier:{identifier}")
     public Assessment getLatestSharedAssessment(@PathVariable String identifier) {
-        return service.getLatestAssessment(SHARED_STUDY_ID_STRING, identifier);
+        return service.getLatestAssessment(SHARED_APP_ID, identifier);
     }
 
     @GetMapping("/v1/sharedassessments/identifier:{identifier}/revisions/{revision}")
@@ -79,7 +79,7 @@ public class SharedAssessmentController extends BaseController {
         if (revisionInt < 1) {
             throw new BadRequestException(OFFSET_NOT_POSITIVE);
         }
-        return service.getAssessmentById(SHARED_STUDY_ID_STRING, identifier, revisionInt);
+        return service.getAssessmentById(SHARED_APP_ID, identifier, revisionInt);
     }
 
     @GetMapping("/v1/sharedassessments/{guid}/revisions")
@@ -94,7 +94,7 @@ public class SharedAssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         return service.getAssessmentRevisionsByGuid(
-                SHARED_STUDY_ID_STRING, guid, offsetByInt, pageSizeInt, incDeletedBool);
+                SHARED_APP_ID, guid, offsetByInt, pageSizeInt, incDeletedBool);
     }
 
     @GetMapping("/v1/sharedassessments/identifier:{identifier}/revisions")
@@ -109,7 +109,7 @@ public class SharedAssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         return service.getAssessmentRevisionsById(
-                SHARED_STUDY_ID_STRING, identifier, offsetByInt, pageSizeInt, incDeletedBool);
+                SHARED_APP_ID, identifier, offsetByInt, pageSizeInt, incDeletedBool);
     }
 
     @PostMapping("/v1/sharedassessments/{guid}")
@@ -131,9 +131,9 @@ public class SharedAssessmentController extends BaseController {
         getAuthenticatedSession(SUPERADMIN);
         
         if ("true".equals(physical)) {
-            service.deleteAssessmentPermanently(SHARED_STUDY_ID_STRING, guid);
+            service.deleteAssessmentPermanently(SHARED_APP_ID, guid);
         } else {
-            service.deleteAssessment(SHARED_STUDY_ID_STRING, guid);
+            service.deleteAssessment(SHARED_APP_ID, guid);
         }
         return new StatusMessage("Shared assessment deleted.");        
     }    

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -32,7 +32,7 @@ public class SmsControllerTest extends Mockito {
     private static final Study DUMMY_STUDY;
     static {
         DUMMY_STUDY = Study.create();
-        DUMMY_STUDY.setIdentifier(TEST_STUDY_IDENTIFIER);
+        DUMMY_STUDY.setIdentifier(TEST_APP_ID);
     }
 
     private SmsController controller;
@@ -43,7 +43,7 @@ public class SmsControllerTest extends Mockito {
     public void before() {
         // Mock study service.
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_STUDY_IDENTIFIER)).thenReturn(DUMMY_STUDY);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(DUMMY_STUDY);
 
         // Mock SMS service.
         mockParticipantService = mock(ParticipantService.class);
@@ -57,7 +57,7 @@ public class SmsControllerTest extends Mockito {
 
         // Mock get session.
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_STUDY_IDENTIFIER);
+        session.setStudyIdentifier(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
     }
     

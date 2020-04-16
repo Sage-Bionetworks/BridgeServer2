@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleType.ONCE;
@@ -60,7 +60,7 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(2))
             .withEvents(events).build();
@@ -87,7 +87,7 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withMinimumPerSchedule(8)
@@ -110,7 +110,7 @@ public class CronActivitySchedulerTest {
         schedule.addActivity(TestUtils.getActivity3());
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusDays(4))
             .withEvents(events).build();
@@ -304,7 +304,7 @@ public class CronActivitySchedulerTest {
         DateTime now = DateTime.parse("2016-05-12T17:13:13.044-07:00"); // later in a different timezone
 
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(initialTimeZone)
             .withStartsOn(now)
             .withEndsOn(now.plusDays(1))
@@ -325,7 +325,7 @@ public class CronActivitySchedulerTest {
     
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn)
             .withEvents(events).build();

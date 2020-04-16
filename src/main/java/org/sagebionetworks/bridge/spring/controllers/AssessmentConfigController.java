@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.UPDATES_TYPEREF;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
@@ -45,7 +45,7 @@ public class AssessmentConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         AssessmentConfig config = parseJson(AssessmentConfig.class);
@@ -58,7 +58,7 @@ public class AssessmentConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         Map<String, Map<String, JsonNode>> updates = parseJson(UPDATES_TYPEREF);

@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_STUDY_ID_STRING;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
 @Component("defaultStudyBootstrapper")
 public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
 
-    static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_STUDY_ID_STRING);
-    static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_STUDY_ID_STRING);
+    static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_APP_ID);
+    static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_APP_ID);
     
     /**
      * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
@@ -70,18 +70,18 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_STUDY_ID_STRING)
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudyId(API_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
                 .withCallerUserId("DefaultStudyBootstrapper").build());
 
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
-            studyService.getStudy(API_STUDY_ID_STRING);
+            studyService.getStudy(API_APP_ID);
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Test Study");
             study.setShortName("TestStudy");
-            study.setIdentifier(API_STUDY_ID_STRING);
+            study.setIdentifier(API_APP_ID);
             study.setReauthenticationEnabled(false);
             study.setSponsorName("Sage Bionetworks");
             study.setMinAgeOfConsent(18);
@@ -111,14 +111,14 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
         try {
-            studyService.getStudy(SHARED_STUDY_ID_STRING);
+            studyService.getStudy(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {
             Study study = Study.create();
             study.setName("Shared Module Library");
             study.setReauthenticationEnabled(false);
             study.setShortName("SharedLib");
             study.setSponsorName("Sage Bionetworks");
-            study.setIdentifier(SHARED_STUDY_ID_STRING);
+            study.setIdentifier(SHARED_APP_ID);
             study.setSupportEmail(config.get("admin.email"));
             study.setTechnicalEmail(config.get("admin.email"));
             study.setConsentNotificationEmail(config.get("admin.email"));

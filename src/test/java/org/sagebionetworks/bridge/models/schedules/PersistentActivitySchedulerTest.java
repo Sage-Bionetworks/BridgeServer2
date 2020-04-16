@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.asDT;
 import static org.sagebionetworks.bridge.models.schedules.ScheduleTestUtils.assertDates;
 import static org.testng.Assert.assertEquals;
@@ -133,7 +133,7 @@ public class PersistentActivitySchedulerTest {
     
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withStudyIdentifier(TEST_APP_ID)
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn.withZone(MSK))
             .withHealthCode("AAA")

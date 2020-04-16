@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -55,7 +55,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
@@ -82,7 +82,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
 
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
@@ -95,7 +95,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
@@ -107,7 +107,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
@@ -123,7 +123,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         String appId = session.getStudyIdentifier();
         
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
@@ -140,7 +140,7 @@ public class AssessmentResourceController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getStudyIdentifier();
 
-        if (SHARED_STUDY_ID_STRING.equals(appId)) {
+        if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);

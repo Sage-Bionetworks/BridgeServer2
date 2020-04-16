@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
@@ -38,7 +38,7 @@ public class StudyParticipantValidatorTest {
     
     private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "id");
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_APP_ID, "id");
     private Study study;
 
     private StudyParticipantValidator validator;
@@ -58,7 +58,7 @@ public class StudyParticipantValidatorTest {
         substudy = Substudy.create();
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         study.setHealthCodeExportEnabled(true);
         study.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
         study.setDataGroups(STUDY_DATA_GROUPS);
@@ -164,8 +164,8 @@ public class StudyParticipantValidatorTest {
     public void externalIdOnlyOK() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
 
-        when(externalIdService.getExternalId(TEST_STUDY_IDENTIFIER, "external-id"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "external-id")));
+        when(externalIdService.getExternalId(TEST_APP_ID, "external-id"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_APP_ID, "external-id")));
         
         validator = new StudyParticipantValidator(externalIdService, substudyService, study, true);
         Validate.entityThrowingException(validator, participant);

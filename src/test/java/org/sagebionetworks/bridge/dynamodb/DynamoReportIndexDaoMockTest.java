@@ -12,7 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -59,7 +59,7 @@ public class DynamoReportIndexDaoMockTest {
     private ArgumentCaptor<DynamoDBQueryExpression<DynamoReportIndex>> queryCaptor;
     
     private ReportDataKey KEY = new ReportDataKey.Builder()
-            .withIdentifier("report-name").withStudyIdentifier(TEST_STUDY_IDENTIFIER)
+            .withIdentifier("report-name").withStudyIdentifier(TEST_APP_ID)
             .withReportType(ReportType.STUDY).build();
 
     @BeforeMethod
@@ -154,7 +154,7 @@ public class DynamoReportIndexDaoMockTest {
         verify(mapper).save(saveIndexCaptor.capture(), saveExpressionCaptor.capture());
         
         DynamoReportIndex index = saveIndexCaptor.getValue();
-        assertEquals(index.getKey(), "api:STUDY");
+        assertEquals(index.getKey(), TEST_APP_ID + ":STUDY");
         assertEquals(index.getIdentifier(), updatedIndex.getIdentifier());
         assertEquals(index.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
         assertTrue(index.isPublic());
@@ -183,7 +183,7 @@ public class DynamoReportIndexDaoMockTest {
         when(mapper.query(eq(DynamoReportIndex.class), any())).thenReturn(results);
         
         ReportTypeResourceList<? extends ReportIndex> indices = dao.getIndices(
-                TEST_STUDY_IDENTIFIER, ReportType.PARTICIPANT);
+                TEST_APP_ID, ReportType.PARTICIPANT);
         
         assertEquals(indices.getItems().size(), 1);
         assertEquals(indices.getRequestParams().get("reportType"), ReportType.PARTICIPANT);
@@ -193,6 +193,6 @@ public class DynamoReportIndexDaoMockTest {
         DynamoDBQueryExpression<DynamoReportIndex> query = queryCaptor.getValue();
         DynamoReportIndex hashKey = query.getHashKeyValues();
         
-        assertEquals(hashKey.getKey(), "api:PARTICIPANT");
+        assertEquals(hashKey.getKey(), TEST_APP_ID + ":PARTICIPANT");
     }    
 }

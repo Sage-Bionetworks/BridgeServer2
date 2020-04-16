@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jsoup.safety.Whitelist.simpleText;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
@@ -143,11 +143,11 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         checkNotNull(resource);
         
-        Assessment assessment = assessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
         
         checkSharedOwnership(callerAppId, assessment.getGuid(), assessment.getOwnerId());
         
-        return updateResourceInternal(SHARED_STUDY_ID_STRING, assessmentId, assessment, resource);
+        return updateResourceInternal(SHARED_APP_ID, assessmentId, assessment, resource);
     }
     
     
@@ -208,7 +208,7 @@ public class AssessmentResourceService {
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         // Cannot import a resource unless you are member of the org that owns the assessment
         checkOwnership(appId, assessment.getOwnerId());
-        return copyResources(SHARED_STUDY_ID_STRING, appId, assessment, guids);
+        return copyResources(SHARED_APP_ID, appId, assessment, guids);
     }
     
     public List<AssessmentResource> publishAssessmentResources(String appId, String assessmentId, Set<String> guids) {
@@ -216,10 +216,10 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         
         // Must have published the assessment already before you move resources
-        Assessment assessment = assessmentService.getLatestAssessment(SHARED_STUDY_ID_STRING, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
         // Cannot publish a resource unless you are member of the org that owns the shared assessment
         checkSharedOwnership(appId, assessment.getGuid(), assessment.getOwnerId());
-        return copyResources(appId, SHARED_STUDY_ID_STRING, assessment, guids);
+        return copyResources(appId, SHARED_APP_ID, assessment, guids);
     }
     
     List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, Set<String> guids) {

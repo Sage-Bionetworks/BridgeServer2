@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.Optional;
@@ -27,7 +27,7 @@ public class IdentifierUpdateValidatorTest {
 
     private static final String UPDATED_EMAIL = "updated@email.com";
     private static final String UPDATED_EXTERNAL_ID = "updatedExternalId";
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, UPDATED_EXTERNAL_ID);
+    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_APP_ID, UPDATED_EXTERNAL_ID);
     
     @Mock
     private ExternalIdService externalIdService;
@@ -41,7 +41,7 @@ public class IdentifierUpdateValidatorTest {
         MockitoAnnotations.initMocks(this);
         
         study = Study.create();
-        study.setIdentifier(TEST_STUDY_IDENTIFIER);
+        study.setIdentifier(TEST_APP_ID);
         validator = new IdentifierUpdateValidator(study, externalIdService);
         
     }
@@ -56,7 +56,7 @@ public class IdentifierUpdateValidatorTest {
     @Test
     public void signInErrorsNestedSignIn() {
         // Sign in with no password
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, UPDATED_EXTERNAL_ID, null);
@@ -75,7 +75,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validEmailPasswordUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withPassword(PASSWORD).build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null, null);
@@ -84,7 +84,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validPhonePasswordUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withPhone(PHONE).withPassword(PASSWORD).build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null, null);
@@ -93,7 +93,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validReauthUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, UPDATED_EMAIL, null, null, null);
@@ -102,7 +102,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validSynapseExternalIdUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withPassword(PASSWORD).build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null, SYNAPSE_USER_ID);
@@ -111,7 +111,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void noUpdatesInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null, null);
@@ -121,7 +121,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validPhoneUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("4082588569", "US"), null, null);
@@ -130,11 +130,11 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void validExternalIdUpdate() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
-        when(externalIdService.getExternalId(TEST_STUDY_IDENTIFIER, "newExternalId"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "newExternalId")));
+        when(externalIdService.getExternalId(TEST_APP_ID, "newExternalId"))
+                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_APP_ID, "newExternalId")));
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "newExternalId", null);
         Validate.entityThrowingException(validator, update);
@@ -142,7 +142,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void phoneInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("12334578990", "US"), null, null);
@@ -151,7 +151,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void emailInvalidValue() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, "junk", null, null, null);
@@ -160,7 +160,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void synapseUserIdInvalidBlankValue() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).withPassword(PASSWORD)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null, "  ");
@@ -169,7 +169,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void synapseUserIdInvalidNonNumericalValue() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER).withEmail(EMAIL).withPassword(PASSWORD)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL).withPassword(PASSWORD)
                 .build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, null, "1asdf3");
@@ -178,7 +178,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void emailEmptyValue() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, "", null, null, null);
@@ -189,7 +189,7 @@ public class IdentifierUpdateValidatorTest {
     public void externalIdValidWithManagement() {
         when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
         
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, UPDATED_EXTERNAL_ID, null);
@@ -200,7 +200,7 @@ public class IdentifierUpdateValidatorTest {
     public void externalIdInvalidWithManagement() {
         when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
         
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, UPDATED_EXTERNAL_ID, null);
@@ -209,7 +209,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdCannotBeBlank() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_STUDY_IDENTIFIER)
+        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "", null);

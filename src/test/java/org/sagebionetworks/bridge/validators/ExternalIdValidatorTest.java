@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.mockito.Mock;
@@ -43,10 +43,10 @@ public class ExternalIdValidatorTest {
     public void validates() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudy-id"))
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).build());
+                .withCallerStudyId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_STUDY_IDENTIFIER, "substudy-id", false)).thenReturn(Substudy.create());
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "one-id");
+        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         id.setSubstudyId("substudy-id");
         
         Validate.entityThrowingException(validatorV4, id);
@@ -55,9 +55,9 @@ public class ExternalIdValidatorTest {
     @Test
     public void validatesV3() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).build());
+                .withCallerStudyId(TEST_APP_ID).build());
         
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "one-id");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         
         ExternalIdValidator validatorV3 = new ExternalIdValidator(substudyService, true);
         Validate.entityThrowingException(validatorV3, id);
@@ -65,53 +65,53 @@ public class ExternalIdValidatorTest {
     
     @Test
     public void identifierCannotBeNull() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, null);
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, null);
         assertValidatorMessage(validatorV4, id, "identifier", "cannot be null or blank");
     }
     
     @Test
     public void identifierCannotBeBlank() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "\t");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "\t");
         assertValidatorMessage(validatorV4, id, "identifier", "cannot be null or blank");
     }
     
     @Test
     public void identifierMustMatchPattern1() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "two words");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "two words");
         assertValidatorMessage(validatorV4, id, "identifier",
             "'two words' must contain only digits, letters, underscores and dashes");
     }
     
     @Test
     public void identifierMustMatchPattern2() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "<Funky>Markup");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "<Funky>Markup");
         assertValidatorMessage(validatorV4, id, "identifier",
             "'<Funky>Markup' must contain only digits, letters, underscores and dashes");
     }
 
     @Test
     public void identifierMustMatchPattern3() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "And a \ttab character");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "And a \ttab character");
         assertValidatorMessage(validatorV4, id, "identifier",
             "'And a \ttab character' must contain only digits, letters, underscores and dashes");
     }
     
     @Test
     public void substudyIdCannotBeNull() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "identifier");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
         assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
     }
     
     @Test
     public void substudyIdCannotBeBlank() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "identifier");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
         id.setSubstudyId("   ");
         assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
     }
     
     @Test
     public void substudyIdMustBeValid() {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "identifier");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
         id.setSubstudyId("not-real");
         assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
     }
@@ -120,10 +120,10 @@ public class ExternalIdValidatorTest {
     public void substudyIdCanBeAnythingForAdmins() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).build());
+                .withCallerStudyId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_STUDY_IDENTIFIER, "substudy-id", false)).thenReturn(Substudy.create());
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "one-id");
+        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         id.setSubstudyId("substudy-id");
         
         Validate.entityThrowingException(validatorV4, id);
@@ -133,10 +133,10 @@ public class ExternalIdValidatorTest {
     public void substudyIdMustMatchCallersSubstudies() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB"))
-                .withCallerStudyId(TEST_STUDY_IDENTIFIER).build());
+                .withCallerStudyId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_STUDY_IDENTIFIER, "substudy-id", false)).thenReturn(Substudy.create());
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "one-id");
+        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         id.setSubstudyId("substudy-id");
         
         assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
@@ -150,7 +150,7 @@ public class ExternalIdValidatorTest {
     @Test
     public void studyIdMustBeCallersStudyId() { 
         // This fails because we have not set a context with this study ID.
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_STUDY_IDENTIFIER, "one-id");
+        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         
         assertValidatorMessage(validatorV4, id, "studyId", "is not a valid study");
     }

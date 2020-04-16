@@ -9,7 +9,7 @@ import static org.jsoup.safety.Whitelist.simpleText;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
@@ -171,7 +171,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(callerAppId));
         checkNotNull(assessment);
         
-        Assessment existing = dao.getAssessment(SHARED_STUDY_ID_STRING, assessment.getGuid())
+        Assessment existing = dao.getAssessment(SHARED_APP_ID, assessment.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
@@ -179,7 +179,7 @@ public class AssessmentService {
 
         checkSharedOwnership(callerAppId, existing.getGuid(), existing.getOwnerId());
         
-        return updateAssessmentInternal(SHARED_STUDY_ID_STRING, assessment, existing);
+        return updateAssessmentInternal(SHARED_APP_ID, assessment, existing);
     }
     
     private Assessment updateAssessmentInternal(String appId, Assessment assessment, Assessment existing) {
@@ -288,7 +288,7 @@ public class AssessmentService {
         String ownerId = appId + ":" + assessmentToPublish.getOwnerId();
         String identifier = assessmentToPublish.getIdentifier();
         Assessment existing = getLatestInternal(
-                SHARED_STUDY_ID_STRING, identifier, true).orElse(null);
+                SHARED_APP_ID, identifier, true).orElse(null);
         if (existing != null && !existing.getOwnerId().equals(ownerId)) {
             throw new UnauthorizedException("Assessment exists in shared library under a different " 
                     +"owner (identifier = " + identifier + ")");
@@ -339,8 +339,8 @@ public class AssessmentService {
         }
         checkOwnership(appId, ownerId);
 
-        Assessment sharedAssessment = getAssessmentByGuid(SHARED_STUDY_ID_STRING, guid);
-        AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_STUDY_ID_STRING, guid);
+        Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
+        AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
         
         if (isNotBlank(newIdentifier)) {
             sharedAssessment.setIdentifier(newIdentifier);

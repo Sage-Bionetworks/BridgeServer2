@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.BridgeConstants.SHARED_STUDY_ID_STRING;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import java.util.List;
 
@@ -102,8 +102,7 @@ public class SharedModuleService {
             // Copy schema from shared to local.
             String schemaId = metadata.getSchemaId();
             int schemaRev = metadata.getSchemaRevision();
-            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(SHARED_STUDY_ID_STRING, schemaId,
-                    schemaRev);
+            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(SHARED_APP_ID, schemaId, schemaRev);
 
             // annotate with module ID and version
             schema.setModuleId(moduleId);
@@ -119,7 +118,7 @@ public class SharedModuleService {
             long sharedSurveyCreatedOn = metadata.getSurveyCreatedOn();
             GuidCreatedOnVersionHolder sharedSurveyKey = new GuidCreatedOnVersionHolderImpl(sharedSurveyGuid,
                     sharedSurveyCreatedOn);
-            Survey sharedSurvey = surveyService.getSurvey(SHARED_STUDY_ID_STRING, sharedSurveyKey, true, true);
+            Survey sharedSurvey = surveyService.getSurvey(SHARED_APP_ID, sharedSurveyKey, true, true);
 
             // annotate survey with module ID and version
             sharedSurvey.setModuleId(moduleId);

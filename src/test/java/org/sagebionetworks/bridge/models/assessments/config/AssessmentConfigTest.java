@@ -6,14 +6,11 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
-import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 
 public class AssessmentConfigTest {
     

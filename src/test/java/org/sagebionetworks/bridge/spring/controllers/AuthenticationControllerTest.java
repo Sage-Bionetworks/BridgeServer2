@@ -7,8 +7,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.REQUIRED_SIGNED_CURRENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CONTEXT;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_IDENTIFIER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
@@ -1244,7 +1244,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(SUPERADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        AccountId accountId = AccountId.forId(TEST_STUDY_IDENTIFIER, TEST_ACCOUNT_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_ACCOUNT_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
         
         Study newStudy = Study.create();
@@ -1272,7 +1272,7 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID))
-            .thenReturn(ImmutableList.of(TEST_STUDY_IDENTIFIER));
+            .thenReturn(ImmutableList.of(TEST_APP_ID));
         
         Study newStudy = Study.create();
         newStudy.setIdentifier("my-new-study");
