@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -314,8 +316,10 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) {
+    @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/requestInfo", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId)
+            throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
 
         // Verify it's in the same study as the researcher.
@@ -325,11 +329,12 @@ public class ParticipantController extends BaseController {
         } else if (!studyId.equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
-        return requestInfo;
+        return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
 
-    @GetMapping("/v3/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfo(@PathVariable String userId) {
+    @GetMapping(path = "/v3/participants/{userId}/requestInfo", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getRequestInfo(@PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         Study study = studyService.getStudy(session.getAppId());
 
@@ -340,7 +345,7 @@ public class ParticipantController extends BaseController {
         } else if (!study.getIdentifier().equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
-        return requestInfo;
+        return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
     
     @PostMapping("/v3/participants/{userId}")

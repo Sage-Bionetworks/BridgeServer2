@@ -45,6 +45,7 @@ public class RequestInfoTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
 
         assertEquals(node.get("userId").textValue(), "userId");
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("activitiesAccessedOn").textValue(), ACTIVITIES_REQUESTED_ON.withZone(MST).toString());
         assertEquals(node.get("uploadedOn").textValue(), UPLOADED_ON.withZone(MST).toString());
         assertEquals(node.get("languages").get(0).textValue(), "en");

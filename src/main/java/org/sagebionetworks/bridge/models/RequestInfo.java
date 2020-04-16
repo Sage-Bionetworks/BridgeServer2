@@ -18,10 +18,15 @@ import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeZoneAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.StringListConverter;
 import org.sagebionetworks.bridge.hibernate.StringSetConverter;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 /**
  * Information about the criteria and access times of requests from a specific user. Useful for 
@@ -31,7 +36,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @Table(name = "RequestInfos")
 @JsonDeserialize(builder = RequestInfo.Builder.class)
+@JsonFilter("filter")
 public final class RequestInfo {
+    public static final ObjectWriter REQUEST_INFO_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter",
+                    SimpleBeanPropertyFilter.serializeAllExcept("appId")));
     
     // By putting Hibernate annotations on the fields, we do not need to provide setter methods and
     // can continue using our Builder pattern.

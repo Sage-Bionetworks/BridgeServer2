@@ -1338,35 +1338,5 @@ public class AccountWorkflowServiceTest extends Mockito {
 
         verify(mockSmsService, times(2)).sendSmsMessage(any(), any());
     }
-    
-    @Test
-    public void serializeVerificationData() throws Exception { 
-        AccountWorkflowService.VerificationData data = new AccountWorkflowService.VerificationData(
-                TEST_APP_ID, null, ChannelType.PHONE, USER_ID, TIMESTAMP.getMillis());
-        
-        JsonNode node = BridgeObjectMapper.get().valueToTree(data);
-        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
-        assertEquals(node.get("type").textValue(), "phone");
-        assertEquals(node.get("userId").textValue(), USER_ID);
-        assertEquals(node.get("expiresOn").longValue(), TIMESTAMP.getMillis());
-        
-        AccountWorkflowService.VerificationData deser = BridgeObjectMapper.get().readValue(node.toString(),
-                AccountWorkflowService.VerificationData.class);
-        assertEquals(deser.getAppId(), TEST_APP_ID);
-        assertEquals(deser.getType(), ChannelType.PHONE);
-        assertEquals(deser.getUserId(), USER_ID);
-        assertEquals(deser.getExpiresOn(), TIMESTAMP.getMillis());
-    }
-    
-    @Test
-    public void restoreVerificationDataWithStudyId() throws Exception {
-        String json = TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'email','userId':'"+
-                USER_ID+"',"+"'expiresOn':1422319112486}");
-        AccountWorkflowService.VerificationData deser = BridgeObjectMapper.get().readValue(json,
-                AccountWorkflowService.VerificationData.class);
-        assertEquals(deser.getAppId(), TEST_APP_ID);
-        assertEquals(deser.getType(), ChannelType.EMAIL);
-        assertEquals(deser.getUserId(), USER_ID);
-        assertEquals(deser.getExpiresOn(), TIMESTAMP.getMillis());
-    }
+
 }

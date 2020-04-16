@@ -50,6 +50,7 @@ public class AccountSummaryTest {
         assertEquals(node.get("status").textValue(), "unverified");
         assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(node.get("studyIdentifier").get("identifier").textValue(), TEST_APP_ID);
+        assertEquals(node.get("studyIdentifier").get("type").textValue(), "StudyIdentifier");
         assertEquals(node.get("substudyIds").get(0).textValue(), "sub1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "sub2");
         assertEquals(node.get("externalId").textValue(), "externalId");

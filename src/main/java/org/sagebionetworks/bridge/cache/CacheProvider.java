@@ -144,7 +144,6 @@ public class CacheProvider {
             }
             return null;
         } catch (Throwable e) {
-            e.printStackTrace();
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
@@ -167,12 +166,13 @@ public class CacheProvider {
         }
     }
 
-    // During a transition period away from StudyIdentifier, we will need special handling to 
-    // ensure persisted sessions are retrieved correctly. This can be removed after a couple
-    // of days.
+    /**
+     * During a transition period away from StudyIdentifier, we will need special handling to
+     * ensure persisted sessions, subpopulations, are retrieved correctly. We can clear the 
+     * cache and then remove this code after a day (once all sessions have been refreshed or
+     * will be refreshed).
+     */
     private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
-        // This is also verified by newUserSessionDeserializes(), but this focuses only on 
-        // the study identifier
         JsonNode node = BridgeObjectMapper.get().readTree(ser);
         if (node.isArray()) {
             for (int i=0; i < node.size(); i++) {
@@ -287,7 +287,6 @@ public class CacheProvider {
     public <T> T getObject(CacheKey cacheKey, Class<T> clazz, int expireInSeconds) {
         checkNotNull(cacheKey);
         checkNotNull(clazz);
-        
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
