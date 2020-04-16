@@ -179,7 +179,7 @@ public abstract class BaseController {
         RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
         // If the user has already persisted languages, we'll use that instead of the Accept-Language header
         builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerStudyId(session.getAppId());
+        builder.withCallerAppId(session.getAppId());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
         builder.withCallerUserId(session.getParticipant().getId());

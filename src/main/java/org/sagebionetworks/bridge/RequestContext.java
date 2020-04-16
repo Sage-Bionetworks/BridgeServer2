@@ -17,7 +17,7 @@ public class RequestContext {
             ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
 
     private final String requestId;
-    private final String callerStudyId;
+    private final String callerAppId;
     private final Set<String> callerSubstudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
@@ -26,11 +26,11 @@ public class RequestContext {
     private final Metrics metrics;
     private final String callerIpAddress;
     
-    private RequestContext(Metrics metrics, String requestId, String callerStudyId, Set<String> callerSubstudies,
+    private RequestContext(Metrics metrics, String requestId, String callerAppId, Set<String> callerSubstudies,
             Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages,
             String callerIpAddress) {
         this.requestId = requestId;
-        this.callerStudyId = callerStudyId;
+        this.callerAppId = callerAppId;
         this.callerSubstudies = callerSubstudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
@@ -46,8 +46,8 @@ public class RequestContext {
     public String getId() {
         return requestId;
     }
-    public String getCallerStudyId() {
-        return callerStudyId;
+    public String getCallerAppId() {
+        return callerAppId;
     }
     public Set<String> getCallerSubstudies() {
         return callerSubstudies;
@@ -82,7 +82,7 @@ public class RequestContext {
         return new RequestContext.Builder()
             .withRequestId(requestId)
             .withCallerClientInfo(callerClientInfo)
-            .withCallerStudyId(callerStudyId)
+            .withCallerAppId(callerAppId)
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
             .withCallerSubstudies(callerSubstudies)
@@ -93,7 +93,7 @@ public class RequestContext {
     
     public static class Builder {
         private Metrics metrics;
-        private String callerStudyId;
+        private String callerAppId;
         private Set<String> callerSubstudies;
         private Set<Roles> callerRoles;
         private String requestId;
@@ -106,8 +106,8 @@ public class RequestContext {
             this.metrics = metrics;
             return this;
         }
-        public Builder withCallerStudyId(String studyId) {
-            this.callerStudyId = studyId;
+        public Builder withCallerAppId(String appId) {
+            this.callerAppId = appId;
             return this;
         }
         public Builder withCallerSubstudies(Set<String> callerSubstudies) {
@@ -158,14 +158,14 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
-            return new RequestContext(metrics, requestId, callerStudyId, callerSubstudies, callerRoles, callerUserId,
+            return new RequestContext(metrics, requestId, callerAppId, callerSubstudies, callerRoles, callerUserId,
                     callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
 
     @Override
     public String toString() {
-        return "RequestContext [requestId=" + requestId + ", callerStudyId=" + callerStudyId + ", callerSubstudies="
+        return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerSubstudies="
                 + callerSubstudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
                 + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
                 + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";

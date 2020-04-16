@@ -37,14 +37,14 @@ public class RequestContextTest {
         // Verify that minimal construction of a context works and returns a valid, if 
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
-        RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerStudyId(null)
+        RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerAppId(null)
                 .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null)
                 .withCallerLanguages(null).withCallerClientInfo(null).build();
         
         assertNotNull(nullContext.getId());
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
-        assertNull(nullContext.getCallerStudyId());
+        assertNull(nullContext.getCallerAppId());
         assertNull(nullContext.getCallerUserId());
         assertNotNull(nullContext.getMetrics());
         assertTrue(nullContext.getCallerLanguages().isEmpty());
@@ -64,7 +64,7 @@ public class RequestContextTest {
         assertNull(NULL_INSTANCE.getId());
         assertTrue(NULL_INSTANCE.getCallerSubstudies().isEmpty());
         assertTrue(NULL_INSTANCE.getCallerRoles().isEmpty());
-        assertNull(NULL_INSTANCE.getCallerStudyId());
+        assertNull(NULL_INSTANCE.getCallerAppId());
         assertNull(NULL_INSTANCE.getCallerUserId());
         assertNull(NULL_INSTANCE.getMetrics());
         assertTrue(NULL_INSTANCE.getCallerLanguages().isEmpty());
@@ -79,11 +79,11 @@ public class RequestContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerSubstudies(SUBSTUDIES)
-                .withCallerStudyId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
+                .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
                 .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
 
         assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerStudyId(), TEST_APP_ID);
+        assertEquals(context.getCallerAppId(), TEST_APP_ID);
         assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
@@ -100,14 +100,14 @@ public class RequestContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
-                .withCallerStudyId(TEST_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
+                .withCallerAppId(TEST_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
                 .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
                 .withCallerClientInfo(clientInfo).build();
         
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
         assertEquals(copy.getId(), "did-change-this");
-        assertEquals(copy.getCallerStudyId(), TEST_APP_ID);
+        assertEquals(copy.getCallerAppId(), TEST_APP_ID);
         assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);
         assertEquals(copy.getCallerUserId(), USER_ID);
