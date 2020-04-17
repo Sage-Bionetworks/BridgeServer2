@@ -84,7 +84,7 @@ public class SubpopulationService {
         checkNotNull(subpop);
 
         subpop.setGuidString(BridgeUtils.generateGuid());
-        subpop.setStudyIdentifier(study.getIdentifier());
+        subpop.setAppId(study.getIdentifier());
 
         Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
         
@@ -130,7 +130,7 @@ public class SubpopulationService {
         checkNotNull(study);
         checkNotNull(subpop);
         
-        subpop.setStudyIdentifier(study.getIdentifier());
+        subpop.setAppId(study.getIdentifier());
 
         // Verify this subpopulation is part of the study. Existing code also doesn't submit
         // this publication timestamp back to the server, so set if it doesn't exist.

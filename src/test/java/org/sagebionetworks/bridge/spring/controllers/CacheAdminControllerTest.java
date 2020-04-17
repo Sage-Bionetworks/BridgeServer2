@@ -80,7 +80,7 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test
     public void listItems() throws Exception {
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
@@ -107,7 +107,7 @@ public class CacheAdminControllerTest extends Mockito {
     
     @Test
     public void removeItem() throws Exception {
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         StatusMessage result = controller.removeItem("cacheKey");

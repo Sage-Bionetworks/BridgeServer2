@@ -249,7 +249,7 @@ public class ParticipantControllerTest extends Mockito {
 
         session = new UserSession(participant);
         session.setAuthenticated(true);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
@@ -539,20 +539,23 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantRequestInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_APP_ID).build();
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withAppId(TEST_APP_ID).build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
-        RequestInfo result = controller.getRequestInfo("userId");
+        String resultStr = controller.getRequestInfo("userId");
 
         // serialization was tested separately... just validate the object is there
-        assertEquals(result, requestInfo);
+        RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
+        assertEquals(result.getClientInfo(), requestInfo.getClientInfo());
+        assertNull(result.getAppId());
     }
 
     @Test
     public void getParticipantRequestInfoIsNullsafe() throws Exception {
         // There is no request info.
-        RequestInfo result = controller.getRequestInfo("userId");
+        String resultStr = controller.getRequestInfo("userId");
 
+        RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
         assertNotNull(result); // values are all null, but object is returned
     }
 
@@ -560,7 +563,7 @@ public class ParticipantControllerTest extends Mockito {
     public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withStudyIdentifier("some-other-study").build();
+                .withAppId("some-other-study").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
@@ -577,12 +580,14 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
-                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withStudyIdentifier(TEST_APP_ID).build();
+                .withTimeZone(DateTimeZone.forOffsetHours(-7)).withAppId(TEST_APP_ID).build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
-        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+        String resultStr = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
 
-        assertEquals(result, requestInfo);
+        RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
+        assertEquals(result.getClientInfo(), requestInfo.getClientInfo());
+        assertNull(result.getAppId());
     }
     
     @Test
@@ -590,8 +595,9 @@ public class ParticipantControllerTest extends Mockito {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
         session.setParticipant(participant);
         // There is no request info.
-        RequestInfo result = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+        String resultStr = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
 
+        RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
         assertNotNull(result); // values are all null, but object is returned
     }
     
@@ -602,7 +608,7 @@ public class ParticipantControllerTest extends Mockito {
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withStudyIdentifier("some-other-study").build();
+                .withAppId("some-other-study").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(study.getIdentifier(), "userId");

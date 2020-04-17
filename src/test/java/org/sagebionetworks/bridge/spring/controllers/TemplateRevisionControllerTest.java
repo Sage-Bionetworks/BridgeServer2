@@ -72,7 +72,7 @@ public class TemplateRevisionControllerTest extends Mockito {
         doReturn(response).when(controller).response();
         
         UserSession session = new UserSession(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
     }
 

@@ -89,7 +89,7 @@ public class NotificationRegistrationControllerTest extends Mockito {
         
         when(mockSession.getHealthCode()).thenReturn(HEALTH_CODE);
         when(mockSession.getParticipant()).thenReturn(PARTICIPANT);
-        when(mockSession.getStudyIdentifier()).thenReturn(TEST_APP_ID);
+        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
         
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
         doReturn(mockRequest).when(controller).request();

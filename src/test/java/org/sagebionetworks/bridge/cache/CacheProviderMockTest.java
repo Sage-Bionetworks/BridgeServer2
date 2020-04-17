@@ -32,7 +32,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
@@ -131,7 +130,7 @@ public class CacheProviderMockTest {
         assertEquals(session.getSessionToken(), DECRYPTED_SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), "4f0937a5-6ebf-451b-84bc-fbf649b9e93c");
         assertEquals(session.getId(), "6gq4jGXLmAxVbLLmVifKN4");
-        assertEquals(session.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(session.getAppId(), TEST_APP_ID);
         
         StudyParticipant participant = session.getParticipant();
         assertEquals(participant.getFirstName(), "Bridge");
@@ -223,16 +222,6 @@ public class CacheProviderMockTest {
         verify(jedisOps).get(REQUEST_INFO_KEY);
     }
     
-    @Test
-    public void getRequestInfoWithStudyIdentifier() throws Exception {
-        String json = TestUtils.createJson("{'userId':'userId','timeZone':'UTC',"+
-                "'studyIdentifier':{'identifier':'"+TEST_APP_ID+"'},'type':'RequestInfo'}");
-        when(jedisOps.get(REQUEST_INFO_KEY)).thenReturn(json);
-        
-        RequestInfo returned = cacheProvider.getRequestInfo(USER_ID);
-        assertEquals(returned.getStudyIdentifier(), TEST_APP_ID);
-    }
-
     @Test
     public void emptySetDoesNotDelete() {
         doReturn(Sets.newHashSet()).when(jedisOps).smembers(CACHE_KEY.toString());

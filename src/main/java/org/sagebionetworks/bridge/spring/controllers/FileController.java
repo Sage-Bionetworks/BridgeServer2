@@ -49,7 +49,7 @@ public class FileController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean includeDeletedBool = Boolean.valueOf(includeDeleted);
         
-        return fileService.getFiles(session.getStudyIdentifier(), offsetInt, pageSizeInt, includeDeletedBool);
+        return fileService.getFiles(session.getAppId(), offsetInt, pageSizeInt, includeDeletedBool);
     }
     
     @PostMapping("/v3/files")
@@ -58,7 +58,7 @@ public class FileController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         FileMetadata file = parseJson(FileMetadata.class);
-        FileMetadata updated = fileService.createFile(session.getStudyIdentifier(), file);
+        FileMetadata updated = fileService.createFile(session.getAppId(), file);
         
         return new GuidVersionHolder(updated.getGuid(), Long.valueOf(updated.getVersion()));
     }
@@ -67,7 +67,7 @@ public class FileController extends BaseController {
     public FileMetadata getFile(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        return fileService.getFile(session.getStudyIdentifier(), guid);
+        return fileService.getFile(session.getAppId(), guid);
     }
     
     @PostMapping("/v3/files/{guid}")
@@ -76,7 +76,7 @@ public class FileController extends BaseController {
         
         FileMetadata file = parseJson(FileMetadata.class);
         file.setGuid(guid);
-        FileMetadata updated = fileService.updateFile(session.getStudyIdentifier(), file);
+        FileMetadata updated = fileService.updateFile(session.getAppId(), file);
         
         return new GuidVersionHolder(updated.getGuid(), Long.valueOf(updated.getVersion()));
     }
@@ -87,9 +87,9 @@ public class FileController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            fileService.deleteFilePermanently(session.getStudyIdentifier(), guid);
+            fileService.deleteFilePermanently(session.getAppId(), guid);
         } else {
-            fileService.deleteFile(session.getStudyIdentifier(), guid);
+            fileService.deleteFile(session.getAppId(), guid);
         }
         return DELETE_MSG;
     }
@@ -102,7 +102,7 @@ public class FileController extends BaseController {
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 
-        return fileService.getFileRevisions(session.getStudyIdentifier(), guid, offsetInt, pageSizeInt);
+        return fileService.getFileRevisions(session.getAppId(), guid, offsetInt, pageSizeInt);
     }
     
     @PostMapping("/v3/files/{guid}/revisions")
@@ -114,7 +114,7 @@ public class FileController extends BaseController {
         FileRevision revision = parseJson(FileRevision.class);
         revision.setFileGuid(guid);
         
-        return fileService.createFileRevision(session.getStudyIdentifier(), revision);
+        return fileService.createFileRevision(session.getAppId(), revision);
     }
     
     @PostMapping("/v3/files/{guid}/revisions/{createdOn}")
@@ -123,7 +123,7 @@ public class FileController extends BaseController {
         
         DateTime createdOn = DateTime.parse(createdOnStr);
         
-        fileService.finishFileRevision(session.getStudyIdentifier(), guid, createdOn);
+        fileService.finishFileRevision(session.getAppId(), guid, createdOn);
         return UPLOAD_FINISHED_MSG;
     }
 }

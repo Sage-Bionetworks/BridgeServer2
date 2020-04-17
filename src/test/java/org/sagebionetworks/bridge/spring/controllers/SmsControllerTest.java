@@ -57,7 +57,7 @@ public class SmsControllerTest extends Mockito {
 
         // Mock get session.
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
     }
     

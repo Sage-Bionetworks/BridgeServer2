@@ -72,7 +72,7 @@ public class ScheduleController extends BaseController {
     
     private List<Schedule> getSchedulesInternal() {
         UserSession session = getAuthenticatedAndConsentedSession();
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
 

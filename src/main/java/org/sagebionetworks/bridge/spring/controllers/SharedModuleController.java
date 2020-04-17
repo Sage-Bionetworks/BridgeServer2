@@ -29,7 +29,7 @@ public class SharedModuleController extends BaseController {
     public SharedModuleImportStatus importModuleByIdAndVersion(@PathVariable String moduleId,
             @PathVariable int moduleVersion) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         return moduleService.importModuleByIdAndVersion(studyId, moduleId, moduleVersion);
     }
@@ -38,7 +38,7 @@ public class SharedModuleController extends BaseController {
     @PostMapping("/v3/sharedmodules/{moduleId}/import")
     public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(@PathVariable String moduleId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         return moduleService.importModuleByIdLatestPublishedVersion(studyId, moduleId);
     }

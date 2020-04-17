@@ -56,7 +56,7 @@ public class FPHSController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         ExternalIdentifier externalId = parseJson(ExternalIdentifier.class);
-        fphsService.registerExternalIdentifier(session.getStudyIdentifier(), session.getHealthCode(), externalId);
+        fphsService.registerExternalIdentifier(session.getAppId(), session.getHealthCode(), externalId);
 
         // The service saves the external identifier and saves this as an option. We also need 
         // to update the user's session.
@@ -78,7 +78,7 @@ public class FPHSController extends BaseController {
     public StatusMessage addExternalIdentifiers() {
         UserSession session = getAuthenticatedSession(ADMIN);
         
-        if (!FPHS_ID.equals(session.getStudyIdentifier())) {
+        if (!FPHS_ID.equals(session.getAppId())) {
             throw new UnauthorizedException("Cannot create identifiers in FPHS study.");
         }
         

@@ -154,7 +154,7 @@ public class SurveyControllerTest extends Mockito {
 
         // Set up a session that is returned as if the user is already signed in.
         session = new UserSession(participant);
-        session.setStudyIdentifier(studyId);
+        session.setAppId(studyId);
         session.setAuthenticated(true);
         
         // ... and setup session to report user consented, if needed.

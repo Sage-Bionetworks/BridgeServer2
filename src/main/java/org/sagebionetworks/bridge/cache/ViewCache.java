@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.cache;
 
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

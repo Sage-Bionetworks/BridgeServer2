@@ -45,7 +45,7 @@ public class CompoundActivityDefinitionController extends BaseController {
 
         CompoundActivityDefinition requestDef = parseJson(CompoundActivityDefinition.class);
         CompoundActivityDefinition createdDef = compoundActivityDefService.createCompoundActivityDefinition(
-                session.getStudyIdentifier(), requestDef);
+                session.getAppId(), requestDef);
         return PUBLIC_DEFINITION_WRITER.writeValueAsString(createdDef);
     }
 
@@ -54,7 +54,7 @@ public class CompoundActivityDefinitionController extends BaseController {
     public StatusMessage deleteCompoundActivityDefinition(@PathVariable String taskId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        compoundActivityDefService.deleteCompoundActivityDefinition(session.getStudyIdentifier(), taskId);
+        compoundActivityDefService.deleteCompoundActivityDefinition(session.getAppId(), taskId);
         return new StatusMessage("Compound activity definition has been deleted.");
     }
 
@@ -64,7 +64,7 @@ public class CompoundActivityDefinitionController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         List<CompoundActivityDefinition> defList = compoundActivityDefService.getAllCompoundActivityDefinitionsInStudy(
-                session.getStudyIdentifier());
+                session.getAppId());
         ResourceList<CompoundActivityDefinition> defResourceList = new ResourceList<>(defList);
         return PUBLIC_DEFINITION_WRITER.writeValueAsString(defResourceList);
     }
@@ -75,7 +75,7 @@ public class CompoundActivityDefinitionController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         CompoundActivityDefinition def = compoundActivityDefService.getCompoundActivityDefinition(
-                session.getStudyIdentifier(), taskId);
+                session.getAppId(), taskId);
         return PUBLIC_DEFINITION_WRITER.writeValueAsString(def);
     }
 
@@ -86,7 +86,7 @@ public class CompoundActivityDefinitionController extends BaseController {
 
         CompoundActivityDefinition requestDef = parseJson(CompoundActivityDefinition.class);
         CompoundActivityDefinition updatedDef = compoundActivityDefService.updateCompoundActivityDefinition(
-                session.getStudyIdentifier(), taskId, requestDef);
+                session.getAppId(), taskId, requestDef);
         return PUBLIC_DEFINITION_WRITER.writeValueAsString(updatedDef);
     }
 }

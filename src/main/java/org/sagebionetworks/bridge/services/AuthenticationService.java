@@ -241,7 +241,7 @@ public class AuthenticationService {
 
     public void signOut(final UserSession session) {
         if (session != null) {
-            AccountId accountId = AccountId.forId(session.getStudyIdentifier(), session.getId());
+            AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
             accountService.deleteReauthToken(accountId);
             // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
             // removed, but once the reauth token is removed from the user table, the reauth token will no 
@@ -478,7 +478,7 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setIpAddress(reqContext.getCallerIpAddress());
-        session.setStudyIdentifier(study.getIdentifier());
+        session.setAppId(study.getIdentifier());
         session.setReauthToken(account.getReauthToken());
         
         CriteriaContext newContext = updateContextFromSession(context, session);

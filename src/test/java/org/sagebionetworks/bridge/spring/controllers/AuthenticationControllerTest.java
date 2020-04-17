@@ -186,7 +186,7 @@ public class AuthenticationControllerTest extends Mockito {
         userSession.setSessionToken(TEST_SESSION_TOKEN);
         userSession.setParticipant(new StudyParticipant.Builder().withId(TEST_ACCOUNT_ID).build());
         userSession.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
-        userSession.setStudyIdentifier(TEST_STUDY_ID_STRING);
+        userSession.setAppId(TEST_STUDY_ID_STRING);
         
         study = new DynamoStudy();
         study.setIdentifier(TEST_STUDY_ID_STRING);
@@ -532,7 +532,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         RequestInfo requestInfo = requestInfoCaptor.getValue();
         assertEquals("spId", requestInfo.getUserId());
-        assertEquals(TEST_STUDY_ID_STRING, requestInfo.getStudyIdentifier());
+        assertEquals(TEST_STUDY_ID_STRING, requestInfo.getAppId());
         assertTrue(requestInfo.getSignedInOn() != null);
         assertEquals(TestConstants.USER_DATA_GROUPS, requestInfo.getUserDataGroups());
         assertNotNull(requestInfo.getSignedInOn());
@@ -1334,7 +1334,7 @@ public class AuthenticationControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         session.setSessionToken(TEST_SESSION_TOKEN);
-        session.setStudyIdentifier(TEST_STUDY_ID_STRING);
+        session.setAppId(TEST_STUDY_ID_STRING);
         if (status != null){
             session.setConsentStatuses(ImmutableMap.of(
                 SubpopulationGuid.create(status.getSubpopulationGuid()), status));    

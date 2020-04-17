@@ -133,7 +133,7 @@ public class ScheduledActivityController extends BaseController {
     public String getScheduledActivitiesByDateRange(@RequestParam String startTime, @RequestParam String endTime)
             throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         DateTime startsOnObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endsOnObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
@@ -198,7 +198,7 @@ public class ScheduledActivityController extends BaseController {
     private List<ScheduledActivity> getScheduledActivitiesInternalV3(String untilString, String offset,
             String daysAhead, String minimumPerScheduleString) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         DateTime endsOn = null;
         DateTimeZone requestTimeZone = null;
@@ -244,7 +244,7 @@ public class ScheduledActivityController extends BaseController {
         builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
-        builder.withStudyIdentifier(session.getStudyIdentifier());
+        builder.withStudyIdentifier(session.getAppId());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
         builder.withLanguages(getLanguages(session));
         builder.withClientInfo(reqContext.getCallerClientInfo());
@@ -261,7 +261,7 @@ public class ScheduledActivityController extends BaseController {
     }
 
     DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
-        accountService.editAccount(session.getStudyIdentifier(), session.getHealthCode(),
+        accountService.editAccount(session.getAppId(), session.getHealthCode(),
                 account -> account.setTimeZone(timeZone));
         sessionUpdateService.updateTimeZone(session, timeZone);
         return timeZone;

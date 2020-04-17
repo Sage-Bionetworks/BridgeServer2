@@ -44,7 +44,7 @@ public class TemplateRevisionController extends BaseController {
         int offsetInt = getIntOrDefault(offsetBy, 0);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return templateRevisionService.getTemplateRevisions(session.getStudyIdentifier(), guid, offsetInt, pageSizeInt);
+        return templateRevisionService.getTemplateRevisions(session.getAppId(), guid, offsetInt, pageSizeInt);
     }
     
     @PostMapping("/v3/templates/{guid}/revisions")
@@ -54,7 +54,7 @@ public class TemplateRevisionController extends BaseController {
         
         TemplateRevision revision = parseJson(TemplateRevision.class);
         
-        return templateRevisionService.createTemplateRevision(session.getStudyIdentifier(), guid, revision);
+        return templateRevisionService.createTemplateRevision(session.getAppId(), guid, revision);
     }
     
     @GetMapping("/v3/templates/{guid}/revisions/{createdOn}")
@@ -63,7 +63,7 @@ public class TemplateRevisionController extends BaseController {
         
         DateTime createdOnDate = getDateTimeOrDefault(createdOn, null);
         
-        return templateRevisionService.getTemplateRevision(session.getStudyIdentifier(), guid, createdOnDate);
+        return templateRevisionService.getTemplateRevision(session.getAppId(), guid, createdOnDate);
     }
     
     @PostMapping("/v3/templates/{guid}/revisions/{createdOn}/publish")
@@ -72,7 +72,7 @@ public class TemplateRevisionController extends BaseController {
         
         DateTime createdOnDate = getDateTimeOrDefault(createdOn, null);
         
-        templateRevisionService.publishTemplateRevision(session.getStudyIdentifier(), guid, createdOnDate);
+        templateRevisionService.publishTemplateRevision(session.getAppId(), guid, createdOnDate);
         
         return PUBLISHED_MSG;
     }

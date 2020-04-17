@@ -106,7 +106,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
         session.setInternalSessionToken("internalToken");
         session.setSessionToken("sessionToken");
         session.setReauthToken("reauthToken");
-        session.setStudyIdentifier("test");
+        session.setAppId("test");
         session.setConsentStatuses(Maps.newHashMap());
         
         ConsentRequiredException exception = new ConsentRequiredException(session);

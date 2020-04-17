@@ -44,7 +44,7 @@ public class SubpopulationController extends BaseController {
     public String getAllSubpopulations(@RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getStudyIdentifier(),
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getAppId(),
                 includeDeleted);
 
         return Subpopulation.SUBPOP_WRITER.writeValueAsString(new ResourceList<Subpopulation>(subpopulations));
@@ -54,7 +54,7 @@ public class SubpopulationController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSubpopulation() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
         subpop = subpopService.createSubpopulation(study, subpop);
@@ -65,7 +65,7 @@ public class SubpopulationController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}")
     public GuidVersionHolder updateSubpopulation(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
         subpop.setGuidString(guid);
@@ -80,7 +80,7 @@ public class SubpopulationController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
-        Subpopulation subpop = subpopService.getSubpopulation(session.getStudyIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(session.getAppId(), subpopGuid);
 
         return Subpopulation.SUBPOP_WRITER.writeValueAsString(subpop);
     }
@@ -92,9 +92,9 @@ public class SubpopulationController extends BaseController {
 
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         if (physical && session.isInRole(ADMIN)) {
-            subpopService.deleteSubpopulationPermanently(session.getStudyIdentifier(), subpopGuid);
+            subpopService.deleteSubpopulationPermanently(session.getAppId(), subpopGuid);
         } else {
-            subpopService.deleteSubpopulation(session.getStudyIdentifier(), subpopGuid);
+            subpopService.deleteSubpopulation(session.getAppId(), subpopGuid);
         }
         return DELETED_MSG;
     }

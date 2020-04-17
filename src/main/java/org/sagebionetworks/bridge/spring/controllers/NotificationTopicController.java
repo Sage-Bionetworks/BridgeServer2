@@ -41,7 +41,7 @@ public class NotificationTopicController extends BaseController {
     public ResourceList<NotificationTopic> getAllTopics(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        List<NotificationTopic> list = topicService.listTopics(session.getStudyIdentifier(), includeDeleted);
+        List<NotificationTopic> list = topicService.listTopics(session.getAppId(), includeDeleted);
 
         return new ResourceList<>(list);
     }
@@ -52,7 +52,7 @@ public class NotificationTopicController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         NotificationTopic topic = parseJson(NotificationTopic.class);
-        topic.setStudyId(session.getStudyIdentifier());
+        topic.setStudyId(session.getAppId());
         
         NotificationTopic saved = topicService.createTopic(topic);
         
@@ -63,7 +63,7 @@ public class NotificationTopicController extends BaseController {
     public NotificationTopic getTopic(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        return topicService.getTopic(session.getStudyIdentifier(), guid);
+        return topicService.getTopic(session.getAppId(), guid);
     }
     
     @PostMapping("/v3/topics/{guid}")
@@ -71,7 +71,7 @@ public class NotificationTopicController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         NotificationTopic topic = parseJson(NotificationTopic.class);
-        topic.setStudyId(session.getStudyIdentifier());
+        topic.setStudyId(session.getAppId());
         topic.setGuid(guid);
         
         NotificationTopic updated = topicService.updateTopic(topic);
@@ -85,9 +85,9 @@ public class NotificationTopicController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
         if (physical && session.isInRole(ADMIN)) {
-            topicService.deleteTopicPermanently(session.getStudyIdentifier(), guid);
+            topicService.deleteTopicPermanently(session.getAppId(), guid);
         } else {
-            topicService.deleteTopic(session.getStudyIdentifier(), guid);
+            topicService.deleteTopic(session.getAppId(), guid);
         }
         return DELETE_STATUS_MSG;
     }
@@ -99,7 +99,7 @@ public class NotificationTopicController extends BaseController {
         
         NotificationMessage message = parseJson(NotificationMessage.class);
         
-        topicService.sendNotification(session.getStudyIdentifier(), guid, message);
+        topicService.sendNotification(session.getAppId(), guid, message);
         
         return SEND_STATUS_MSG;
     }}

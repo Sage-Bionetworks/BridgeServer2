@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.accounts.VerificationData;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -50,8 +51,6 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.TriConsumer;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.joda.time.DateTime;
@@ -106,37 +105,6 @@ public class AccountWorkflowService {
     static final int VERIFY_OR_RESET_EXPIRE_IN_SECONDS = 60*60*2; // 2 hours
     static final int VERIFY_CACHE_IN_SECONDS = 60*60*24*30; // 30 days
     static final int SIGNIN_EXPIRE_IN_SECONDS = 60*60; // 1 hour
-
-    static class VerificationData {
-        private final String studyId;
-        private final String userId;
-        private final ChannelType type;
-        private final long expiresOn;
-        @JsonCreator
-        public VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("type") ChannelType type,
-                @JsonProperty("userId") String userId, @JsonProperty("createdOn") long expiresOn) {
-            checkArgument(isNotBlank(studyId));
-            checkArgument(isNotBlank(userId));
-            this.studyId = studyId;
-            this.userId = userId;
-            // On deployment, this value will be missing, and by inference is for email verifications
-            // in process, since phone verification won't have existed until the deployment.
-            this.type = (type == null) ? ChannelType.EMAIL : type;
-            this.expiresOn = expiresOn;
-        }
-        public String getStudyId() {
-            return studyId;
-        }
-        public String getUserId() {
-            return userId;
-        }
-        public ChannelType getType() {
-            return type;
-        }
-        public long getExpiresOn() {
-            return expiresOn;
-        }
-    }
 
     // Config values
     private int channelThrottleMaxRequests;
@@ -218,7 +186,11 @@ public class AccountWorkflowService {
         String sptoken = getNextToken();
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
         
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.EMAIL, userId, expiresOn));
+        saveVerification(sptoken, new VerificationData.Builder()
+                .withAppId(study.getIdentifier())
+                .withType(EMAIL)
+                .withUserId(userId)
+                .withExpiresOn(expiresOn).build());
 
         String oldUrl = getVerifyEmailURL(study, sptoken);
         String newUrl = getShortVerifyEmailURL(study, sptoken);
@@ -252,7 +224,11 @@ public class AccountWorkflowService {
         String sptoken = getNextPhoneToken();
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
-        saveVerification(sptoken, new VerificationData(study.getIdentifier(), ChannelType.PHONE, userId, expiresOn));
+        saveVerification(sptoken, new VerificationData.Builder()
+                .withAppId(study.getIdentifier())
+                .withType(PHONE)
+                .withUserId(userId)
+                .withExpiresOn(expiresOn).build());
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
@@ -299,7 +275,7 @@ public class AccountWorkflowService {
         if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
-        Study study = studyService.getStudy(data.getStudyId());
+        Study study = studyService.getStudy(data.getAppId());
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

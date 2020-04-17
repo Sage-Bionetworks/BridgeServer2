@@ -118,7 +118,7 @@ public class ConsentControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setSessionToken(ORIGINAL_SESSION_TOKEN);
         
         // The session token is just a marker to verify that we have retrieved an updated session.
@@ -217,7 +217,7 @@ public class ConsentControllerTest extends Mockito {
         String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
-        session.setStudyIdentifier(studyId);
+        session.setAppId(studyId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
@@ -244,7 +244,7 @@ public class ConsentControllerTest extends Mockito {
         String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the study session to match the subpopulation in the unconsented status map
-        session.setStudyIdentifier(studyId);
+        session.setAppId(studyId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);

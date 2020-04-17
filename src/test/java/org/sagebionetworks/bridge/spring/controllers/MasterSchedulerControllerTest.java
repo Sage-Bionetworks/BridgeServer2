@@ -88,7 +88,7 @@ public class MasterSchedulerControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         mockSession = new UserSession();
-        mockSession.setStudyIdentifier(TEST_APP_ID);
+        mockSession.setAppId(TEST_APP_ID);
         mockSession.setAuthenticated(true);
         mockSession.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);

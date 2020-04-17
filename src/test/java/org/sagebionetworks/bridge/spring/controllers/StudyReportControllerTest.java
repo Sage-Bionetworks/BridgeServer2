@@ -126,7 +126,7 @@ public class StudyReportControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build();
         
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         
@@ -209,7 +209,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test
     public void getStudyReportData() throws Exception {
         mockRequestBody(mockRequest, "{}");
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getAppId(),
                 REPORT_ID, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> result = controller.getStudyReport(REPORT_ID, START_DATE.toString(), END_DATE.toString());
@@ -219,7 +219,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test
     public void getStudyReportDataWithNoDates() throws Exception {
         mockRequestBody(mockRequest, "{}");
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getAppId(),
                 REPORT_ID, null, null);
         
         DateRangeResourceList<? extends ReportData>result = controller.getStudyReport(REPORT_ID, null, null);
@@ -247,7 +247,7 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteStudyReport(REPORT_ID);
         assertEquals(result, StudyReportController.DELETED_MSG);
         
-        verify(mockReportService).deleteStudyReport(session.getStudyIdentifier(), REPORT_ID);
+        verify(mockReportService).deleteStudyReport(session.getAppId(), REPORT_ID);
     }
     
     @Test
@@ -255,7 +255,7 @@ public class StudyReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteStudyReportRecord(REPORT_ID, "2014-05-10");
         assertEquals(result, StudyReportController.DELETED_DATA_MSG);
         
-        verify(mockReportService).deleteStudyReportRecord(session.getStudyIdentifier(), REPORT_ID, "2014-05-10");
+        verify(mockReportService).deleteStudyReportRecord(session.getAppId(), REPORT_ID, "2014-05-10");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -291,7 +291,7 @@ public class StudyReportControllerTest extends Mockito {
         index.setIdentifier(REPORT_ID);
         doReturn(index).when(mockReportService).getReportIndex(key);
         
-        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getStudyIdentifier(),
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getStudyReport(session.getAppId(),
                 REPORT_ID, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData>result = controller.getPublicStudyReport(
@@ -334,7 +334,7 @@ public class StudyReportControllerTest extends Mockito {
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(REPORT_ID);
         
-        doReturn(page).when(mockReportService).getStudyReportV4(session.getStudyIdentifier(), REPORT_ID, START_TIME,
+        doReturn(page).when(mockReportService).getStudyReportV4(session.getAppId(), REPORT_ID, START_TIME,
                 END_TIME, OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
         
         ForwardCursorPagedResourceList<ReportData> result = controller.getStudyReportV4(REPORT_ID,

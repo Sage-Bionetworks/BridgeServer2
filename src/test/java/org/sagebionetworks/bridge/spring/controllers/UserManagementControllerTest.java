@@ -112,7 +112,7 @@ public class UserManagementControllerTest extends Mockito {
                 .withId(USER_ID).withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
 
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
 
         sessionUpdateService = new SessionUpdateService();
@@ -160,7 +160,7 @@ public class UserManagementControllerTest extends Mockito {
         assertEquals(result.get("email").textValue(), EMAIL); // it's the session
 
         // This isn't in the session that is returned to the user, but verify it has been changed
-        assertEquals(session.getStudyIdentifier(), "originalStudy");
+        assertEquals(session.getAppId(), "originalStudy");
         assertEquals(signInCaptor.getValue().getStudyId(), API_APP_ID);
 
         verify(mockResponse).addCookie(cookieCaptor.capture());
@@ -212,7 +212,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockStudyService.getStudy("nextStudy")).thenReturn(nextStudy);
 
         controller.changeStudyForAdmin();
-        assertEquals(session.getStudyIdentifier(), "nextStudy");
+        assertEquals(session.getAppId(), "nextStudy");
         verify(mockCacheProvider).setUserSession(session);
     }
     

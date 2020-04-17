@@ -52,7 +52,7 @@ public class UploadSchemaController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public String createSchemaRevisionV4() throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         UploadSchema uploadSchema = parseJson(UploadSchema.class);
         UploadSchema createdSchema = uploadSchemaService.createSchemaRevisionV4(studyId, uploadSchema);
@@ -69,7 +69,7 @@ public class UploadSchemaController extends BaseController {
     @PostMapping(path="/v3/uploadschemas", produces={APPLICATION_JSON_UTF8_VALUE})
     public String createOrUpdateUploadSchema() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         UploadSchema uploadSchema = parseJson(UploadSchema.class);
         UploadSchema createdSchema = uploadSchemaService.createOrUpdateUploadSchema(studyId, uploadSchema);
@@ -82,9 +82,9 @@ public class UploadSchemaController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if (physical && session.isInRole(ADMIN)) {
-            uploadSchemaService.deleteUploadSchemaByIdPermanently(session.getStudyIdentifier(), schemaId);
+            uploadSchemaService.deleteUploadSchemaByIdPermanently(session.getAppId(), schemaId);
         } else {
-            uploadSchemaService.deleteUploadSchemaById(session.getStudyIdentifier(), schemaId);    
+            uploadSchemaService.deleteUploadSchemaById(session.getAppId(), schemaId);    
         }
         return DELETED_MSG;
     }
@@ -95,9 +95,9 @@ public class UploadSchemaController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if (physical && session.isInRole(ADMIN)) {
-            uploadSchemaService.deleteUploadSchemaByIdAndRevisionPermanently(session.getStudyIdentifier(), schemaId, revision);
+            uploadSchemaService.deleteUploadSchemaByIdAndRevisionPermanently(session.getAppId(), schemaId, revision);
         } else {
-            uploadSchemaService.deleteUploadSchemaByIdAndRevision(session.getStudyIdentifier(), schemaId, revision);
+            uploadSchemaService.deleteUploadSchemaByIdAndRevision(session.getAppId(), schemaId, revision);
         }
         return DELETED_REVISION_MSG;
     }
@@ -114,7 +114,7 @@ public class UploadSchemaController extends BaseController {
     @GetMapping(path="/v3/uploadschemas/{schemaId}/recent", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUploadSchema(@PathVariable String schemaId) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchema(studyId, schemaId);
         return PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema);
@@ -133,7 +133,7 @@ public class UploadSchemaController extends BaseController {
     public String getUploadSchemaAllRevisions(@PathVariable String schemaId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         List<UploadSchema> uploadSchemas = uploadSchemaService.getUploadSchemaAllRevisions(studyId, schemaId,
                 Boolean.valueOf(includeDeleted));
@@ -155,7 +155,7 @@ public class UploadSchemaController extends BaseController {
     public String getUploadSchemaByIdAndRev(@PathVariable String schemaId, @PathVariable int revision)
             throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         UploadSchema uploadSchema = uploadSchemaService.getUploadSchemaByIdAndRev(studyId, schemaId, revision);
         return PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema);
@@ -189,7 +189,7 @@ public class UploadSchemaController extends BaseController {
     public String getUploadSchemasForStudy(@RequestParam(defaultValue = "false") boolean includeDeleted)
             throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(studyId, Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> schemaResourceList = new ResourceList<>(schemaList);
@@ -210,7 +210,7 @@ public class UploadSchemaController extends BaseController {
     public String updateSchemaRevisionV4(@PathVariable String schemaId, @PathVariable int revision)
             throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         UploadSchema uploadSchema = parseJson(UploadSchema.class);
         UploadSchema updatedSchema = uploadSchemaService.updateSchemaRevisionV4(studyId, schemaId, revision,

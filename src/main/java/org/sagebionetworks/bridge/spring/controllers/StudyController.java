@@ -106,7 +106,7 @@ public class StudyController extends BaseController {
     public Study getCurrentStudy() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
-        return studyService.getStudy(session.getStudyIdentifier());
+        return studyService.getStudy(session.getAppId());
     }
     
     @PostMapping("/v3/studies/self")
@@ -114,7 +114,7 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
         Study studyUpdate = parseJson(Study.class);
-        studyUpdate.setIdentifier(session.getStudyIdentifier());
+        studyUpdate.setIdentifier(session.getAppId());
         studyUpdate = studyService.updateStudy(studyUpdate, session.isInRole(ADMIN));
         return new VersionHolder(studyUpdate.getVersion());
     }
@@ -212,7 +212,7 @@ public class StudyController extends BaseController {
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         // then create project and team and grant admin permission to current user and exporter
         List<String> userIds = Arrays.asList(parseJson(String[].class));
@@ -230,7 +230,7 @@ public class StudyController extends BaseController {
         // Finally, you cannot delete your own study because it locks this user out of their session.
         // This is true of *all* users in the study, btw. There is an action in the BSM that iterates 
         // through all the participants in a study and signs them out one-by-one.
-        if (session.getStudyIdentifier().equals(identifier)) {
+        if (session.getAppId().equals(identifier)) {
             throw new UnauthorizedException("Admin cannot delete the study they are associated with.");
         }
         if (getStudyWhitelist().contains(identifier)) {
@@ -246,7 +246,7 @@ public class StudyController extends BaseController {
     public CmsPublicKey getStudyPublicKeyAsPem() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        String pem = uploadCertificateService.getPublicKeyAsPem(session.getStudyIdentifier());
+        String pem = uploadCertificateService.getPublicKeyAsPem(session.getAppId());
 
         return new CmsPublicKey(pem);
     }
@@ -254,7 +254,7 @@ public class StudyController extends BaseController {
     @GetMapping("/v3/studies/self/emailStatus")
     public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
@@ -265,7 +265,7 @@ public class StudyController extends BaseController {
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyEmailType parsedType = parseEmailType(type);
-        studyService.sendVerifyEmail(session.getStudyIdentifier(), parsedType);
+        studyService.sendVerifyEmail(session.getAppId(), parsedType);
         return RESEND_EMAIL_MSG;
     }
 
@@ -298,7 +298,7 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/self/verifyEmail")
     public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
@@ -313,7 +313,7 @@ public class StudyController extends BaseController {
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
 
-        return uploadService.getStudyUploads(session.getStudyIdentifier(), startTimeObj, endTimeObj, pageSize,
+        return uploadService.getStudyUploads(session.getAppId(), startTimeObj, endTimeObj, pageSize,
                 offsetKey);
     }
 

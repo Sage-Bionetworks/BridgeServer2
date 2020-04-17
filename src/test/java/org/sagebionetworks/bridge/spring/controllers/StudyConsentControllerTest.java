@@ -71,7 +71,7 @@ public class StudyConsentControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setStudyIdentifier(STUDY_ID);
+        session.setAppId(STUDY_ID);
         session.setAuthenticated(true);
         
         when(mockSubpopService.getSubpopulation(STUDY_ID, SubpopulationGuid.create(GUID)))

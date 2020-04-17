@@ -54,7 +54,7 @@ public class UserDataDownloadControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(STUDY_ID).when(mockSession).getStudyIdentifier();
+        doReturn(STUDY_ID).when(mockSession).getAppId();
         doReturn(mockRequest).when(controller).request();
     }
     

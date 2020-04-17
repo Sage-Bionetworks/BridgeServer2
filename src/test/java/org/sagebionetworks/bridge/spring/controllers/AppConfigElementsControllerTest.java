@@ -76,7 +76,7 @@ public class AppConfigElementsControllerTest {
         MockitoAnnotations.initMocks(this);
 
         session = new UserSession(new StudyParticipant.Builder().build());
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);

@@ -171,7 +171,7 @@ public class SharedModuleMetadataController extends BaseController {
     // study (the study for the Shared Module Library).
     private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         if (!SHARED_APP_ID.equals(studyId)) {
             throw new UnauthorizedException();
         }
@@ -180,7 +180,7 @@ public class SharedModuleMetadataController extends BaseController {
     
     private UserSession verifySharedDeveloperOrAdminAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         if (!SHARED_APP_ID.equals(studyId)) {
             throw new UnauthorizedException();
         }

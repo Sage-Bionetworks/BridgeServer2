@@ -109,7 +109,7 @@ public class FPHSControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode("BBB").build();
         
         UserSession session = new UserSession(participant);
-        session.setStudyIdentifier(FPHS_ID);
+        session.setAppId(FPHS_ID);
         session.setAuthenticated(true);
         
         doReturn(session).when(controller).getSessionIfItExists();
@@ -228,7 +228,7 @@ public class FPHSControllerTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(Study.create());
         
         UserSession session = setUserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         // Now when we have an admin user, we get back results
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());

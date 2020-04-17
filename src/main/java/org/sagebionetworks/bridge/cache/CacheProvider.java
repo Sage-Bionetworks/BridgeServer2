@@ -166,23 +166,46 @@ public class CacheProvider {
         }
     }
 
-    // During a transition period away from StudyIdentifier, we will need special handling to 
-    // ensure persisted sessions are retrieved correctly. This can be removed after a couple
-    // of days.
+    /**
+     * During a transition period away from StudyIdentifier, we will need special handling to
+     * ensure persisted sessions, subpopulations, and subpopulation lists are deserialized 
+     * correctly. 
+     */
     private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
-        // This is also verified by newUserSessionDeserializes(), but this focuses only on 
-        // the study identifier
         JsonNode node = BridgeObjectMapper.get().readTree(ser);
-        JsonNode studyObj = node.get("studyIdentifier");
-        if (studyObj != null && studyObj.isObject()) {
-            JsonNode idObj = studyObj.get("identifier");
-            if (idObj != null) {
-                ((ObjectNode)node).put("studyIdentifier", idObj.textValue());    
+        if (node.isArray()) {
+            for (int i=0; i < node.size(); i++) {
+                adjustNode(node.get(i));
             }
+        } else {
+            adjustNode(node);
         }
         return node;
     }
+
+    private void adjustNode(JsonNode node) {
+        JsonNode child = seek(node, "studyIdentifier", "studyId");
+        if (child != null) {
+            if (child.isTextual()) {
+                ((ObjectNode)node).put("appId", child.textValue());
+            } else {
+                child = seek(child, "identifier");
+                if (child != null && child.isTextual()) {
+                    ((ObjectNode)node).put("appId", child.textValue());
+                }
+            }
+        }
+    }
     
+    private JsonNode seek(JsonNode node, String... propNames) {
+        for (int i=0; i < propNames.length; i++) {
+            if (node.has(propNames[i])) {
+                return node.get(propNames[i]);
+            }
+        }
+        return null;
+    }
+
     public void removeSession(UserSession session) {
         checkNotNull(session);
         checkNotNull(session.getSessionToken());
@@ -253,7 +276,8 @@ public class CacheProvider {
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
-                return BridgeObjectMapper.get().readValue(ser, typeRef);
+                JsonNode node = adjustJsonWithStudyIdentifier(ser);
+                return BridgeObjectMapper.get().readValue(node.toString(), typeRef);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);

@@ -117,7 +117,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockStudy);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
@@ -155,7 +155,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockStudy);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
@@ -193,7 +193,7 @@ public class IntentServiceTest {
         
         when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockStudy.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockStudy);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("subject");
@@ -248,7 +248,7 @@ public class IntentServiceTest {
                 TestConstants.PHONE);
         
         when(mockStudy.getIdentifier()).thenReturn("testStudy");
-        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockStudy);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
 
@@ -291,7 +291,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -328,7 +328,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withEmail(TestConstants.EMAIL)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -365,7 +365,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withSubpopGuid("AAA")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -377,7 +377,7 @@ public class IntentServiceTest {
                 .withOsName("Android")
                 .withPhone(TestConstants.PHONE)
                 .withScope(SharingScope.NO_SHARING)
-                .withStudyId(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withSubpopGuid("BBB")
                 .withConsentSignature(new ConsentSignature.Builder()
                         .withName("Test Name")
@@ -453,7 +453,7 @@ public class IntentServiceTest {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
-        when(mockStudyService.getStudy(intent.getStudyId())).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockStudy);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TEST_APP_ID, PHONE);
         

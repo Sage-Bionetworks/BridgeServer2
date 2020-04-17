@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -94,7 +96,7 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createSmsRegistration(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.createSmsRegistration(study, userId);
         return new StatusMessage("SMS notification registration created");
@@ -103,7 +105,7 @@ public class ParticipantController extends BaseController {
     @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         CriteriaContext context = getCriteriaContext(session);
         StudyParticipant participant = participantService.getSelfParticipant(study, context, consents);
@@ -114,7 +116,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/self")
     public JsonNode updateSelfParticipant() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
@@ -152,7 +154,7 @@ public class ParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(updatedParticipant.getDataGroups())
                 .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
-                .withStudyIdentifier(session.getStudyIdentifier())
+                .withStudyIdentifier(session.getAppId())
                 .build();
         
         sessionUpdateService.updateParticipant(session, context, updatedParticipant);
@@ -163,7 +165,7 @@ public class ParticipantController extends BaseController {
     @DeleteMapping("/v3/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         StudyParticipant participant = participantService.getParticipant(study, userId, false);
         if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
@@ -215,7 +217,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         IdentifierUpdate update = parseJson(IdentifierUpdate.class);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         CriteriaContext context = getCriteriaContext(session);
         
@@ -233,7 +235,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String endDate, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         return getParticipantsInternal(study, offsetBy, pageSize, emailFilter, phoneFilter, startDate,
                 endDate, startTime, endTime);
@@ -242,7 +244,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummaries() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return participantService.getPagedAccountSummaries(study, search);
@@ -275,7 +277,7 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public IdentifierHolder createParticipant() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
         return participantService.createParticipant(study, participant, true);
@@ -285,7 +287,7 @@ public class ParticipantController extends BaseController {
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
@@ -314,39 +316,42 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path="/v3/studies/{studyId}/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId) {
+    @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/requestInfo", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId)
+            throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
 
         // Verify it's in the same study as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!studyId.equals(requestInfo.getStudyIdentifier())) {
+        } else if (!studyId.equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
-        return requestInfo;
+        return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
 
-    @GetMapping("/v3/participants/{userId}/requestInfo")
-    public RequestInfo getRequestInfo(@PathVariable String userId) {
+    @GetMapping(path = "/v3/participants/{userId}/requestInfo", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getRequestInfo(@PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         // Verify it's in the same study as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!study.getIdentifier().equals(requestInfo.getStudyIdentifier())) {
+        } else if (!study.getIdentifier().equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
-        return requestInfo;
+        return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
     
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         StudyParticipant participant = parseJson(StudyParticipant.class);
  
@@ -361,7 +366,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.signUserOut(study, userId, deleteReauthToken);
 
@@ -371,7 +376,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.requestResetPassword(study, userId);
         
@@ -385,7 +390,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStart,
             scheduledOnEnd, offsetBy, offsetKey, pageSize);
@@ -397,7 +402,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         return getActivityHistoryV3Internal(study, userId, activityType, referentGuid, scheduledOnStart,
                 scheduledOnEnd, offsetKey, pageSize);
@@ -406,7 +411,7 @@ public class ParticipantController extends BaseController {
     @DeleteMapping("/v3/participants/{userId}/activities")
     public StatusMessage deleteActivities(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.deleteActivities(study, userId);
         
@@ -416,7 +421,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/resendEmailVerification")
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.resendVerification(study, ChannelType.EMAIL, userId);
         
@@ -426,7 +431,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/resendPhoneVerification")
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         participantService.resendVerification(study, ChannelType.PHONE, userId);
         
@@ -436,7 +441,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/{guid}/resendConsent")
     public StatusMessage resendConsentAgreement(@PathVariable String userId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         participantService.resendConsentAgreement(study, subpopGuid, userId);
@@ -447,7 +452,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
     public StatusMessage withdrawFromStudy(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
@@ -460,7 +465,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/{guid}/withdraw")
     public StatusMessage withdrawConsent(@PathVariable String userId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
@@ -476,7 +481,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
         DateTime endTimeDate = getDateTimeOrDefault(endTime, null);
@@ -487,7 +492,7 @@ public class ParticipantController extends BaseController {
     @GetMapping("/v3/participants/{userId}/notifications")
     public ResourceList<NotificationRegistration> getNotificationRegistrations(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         List<NotificationRegistration> registrations = participantService.listRegistrations(study, userId);
         
@@ -498,7 +503,7 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendNotification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         NotificationMessage message = parseJson(NotificationMessage.class);
         
@@ -514,7 +519,7 @@ public class ParticipantController extends BaseController {
     @GetMapping("/v3/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) {
         UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
-        Study study = studyService.getStudy(researcherSession.getStudyIdentifier());
+        Study study = studyService.getStudy(researcherSession.getAppId());
 
         return new ResourceList<>(participantService.getActivityEvents(study, userId));
     }

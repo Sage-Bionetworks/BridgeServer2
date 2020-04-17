@@ -63,7 +63,7 @@ public class ActivityEventControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();

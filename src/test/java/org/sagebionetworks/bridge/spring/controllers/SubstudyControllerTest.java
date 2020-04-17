@@ -70,7 +70,7 @@ public class SubstudyControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         session = new UserSession();
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
 
         controller.setSubstudyService(service);
 

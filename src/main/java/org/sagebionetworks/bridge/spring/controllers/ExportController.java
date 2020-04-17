@@ -31,7 +31,7 @@ public class ExportController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage startOnDemandExport() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        exportService.startOnDemandExport(session.getStudyIdentifier());
+        exportService.startOnDemandExport(session.getAppId());
         return new StatusMessage("Request submitted.");
     }
 }

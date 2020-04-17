@@ -58,7 +58,7 @@ public class DynamoSubpopulationTest {
         assertTrue(node.get("defaultGroup").booleanValue());
         assertTrue(node.get("autoSendConsentSuppressed").booleanValue());
         assertTrue(node.get("deleted").booleanValue()); // users do not see this flag, they never get deleted items
-        assertEquals(node.get("studyIdentifier").textValue(), "study-key");
+        assertEquals(node.get("appId").textValue(), "study-key");
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").longValue(), 3L);
         
@@ -79,7 +79,7 @@ public class DynamoSubpopulationTest {
         
         Subpopulation newSubpop = BridgeObjectMapper.get().treeToValue(node, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
-        newSubpop.setStudyIdentifier("study-key");
+        newSubpop.setAppId("study-key");
         
         assertEquals(newSubpop, subpop);
         
@@ -105,7 +105,7 @@ public class DynamoSubpopulationTest {
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setGuidString("guid");
-        subpop.setStudyIdentifier("study-key");
+        subpop.setAppId("study-key");
         subpop.setRequired(true);
         subpop.setDefaultGroup(true);
         subpop.setPublishedConsentCreatedOn(PUBLISHED_CONSENT_TIMESTAMP.getMillis());

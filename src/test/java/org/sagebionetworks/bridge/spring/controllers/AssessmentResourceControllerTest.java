@@ -73,7 +73,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
     }
     
     @Test
@@ -210,7 +210,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourcesRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, null, null, null);
@@ -219,7 +219,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void createAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.createAssessmentResource(ASSESSMENT_ID);
@@ -228,7 +228,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.getAssessmentResource(ASSESSMENT_ID, GUID);
@@ -237,7 +237,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
@@ -246,7 +246,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void deleteAssessmentResourceRejectsSharedAppContext() {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
@@ -267,7 +267,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void publishAssessmentResourceRejectsSharedAppContext() throws Exception {
-        session.setStudyIdentifier(SHARED_APP_ID);
+        session.setAppId(SHARED_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.publishAssessmentResource(ASSESSMENT_ID);

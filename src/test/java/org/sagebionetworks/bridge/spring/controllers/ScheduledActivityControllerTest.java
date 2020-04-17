@@ -185,7 +185,7 @@ public class ScheduledActivityControllerTest extends Mockito {
                 .withCreatedOn(ACCOUNT_CREATED_ON)
                 .withId(ID).build();
         session = new UserSession(participant);
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         
         when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
 
@@ -289,7 +289,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getLanguages(), LANGUAGES);
         assertEquals(requestInfo.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(requestInfo.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(requestInfo.getAppId(), TEST_APP_ID);
         assertEquals(requestInfo.getUserAgent(), USER_AGENT);
         assertEquals(requestInfo.getClientInfo(), CLIENT_INFO);
         assertNotNull(requestInfo.getActivitiesAccessedOn());
@@ -545,7 +545,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(requestInfo.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
         assertTrue(requestInfo.getActivitiesAccessedOn().isAfter(startsOn));
         assertNull(requestInfo.getSignedInOn());
-        assertEquals(requestInfo.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(requestInfo.getAppId(), TEST_APP_ID);
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), startsOn.getZone());

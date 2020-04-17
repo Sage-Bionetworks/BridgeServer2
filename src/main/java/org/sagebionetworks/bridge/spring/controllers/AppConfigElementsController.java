@@ -43,7 +43,7 @@ public class AppConfigElementsController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         
-        List<AppConfigElement> elements = service.getMostRecentElements(session.getStudyIdentifier(),
+        List<AppConfigElement> elements = service.getMostRecentElements(session.getAppId(),
                 includeDeletedFlag);
         
         return new ResourceList<AppConfigElement>(elements)
@@ -56,10 +56,10 @@ public class AppConfigElementsController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         AppConfigElement element = parseJson(AppConfigElement.class);
         
-        VersionHolder version = service.createElement(session.getStudyIdentifier(), element);
+        VersionHolder version = service.createElement(session.getAppId(), element);
 
         // App config elements are included in the app configs, so allow cache to update
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return version;
     }
     
@@ -68,7 +68,7 @@ public class AppConfigElementsController extends BaseController {
             @RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
-        List<AppConfigElement> elements = service.getElementRevisions(session.getStudyIdentifier(), id,
+        List<AppConfigElement> elements = service.getElementRevisions(session.getAppId(), id,
                 includeDeletedFlag);
         
         return new ResourceList<AppConfigElement>(elements)
@@ -79,7 +79,7 @@ public class AppConfigElementsController extends BaseController {
     public AppConfigElement getMostRecentElement(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        return service.getMostRecentElement(session.getStudyIdentifier(), id);
+        return service.getMostRecentElement(session.getAppId(), id);
     }
 
     @GetMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
@@ -89,7 +89,7 @@ public class AppConfigElementsController extends BaseController {
         if (revisionLong == null) {
             throw new BadRequestException("Revision is not a valid revision number");
         }
-        return service.getElementRevision(session.getStudyIdentifier(), id, revisionLong);
+        return service.getElementRevision(session.getAppId(), id, revisionLong);
     }
     
     @PostMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
@@ -104,10 +104,10 @@ public class AppConfigElementsController extends BaseController {
         element.setId(id);
         element.setRevision(revisionLong);
         
-        VersionHolder holder = service.updateElementRevision(session.getStudyIdentifier(), element);
+        VersionHolder holder = service.updateElementRevision(session.getAppId(), element);
 
         // App config elements are included in the app configs, so allow cache to update
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return holder;
     }
 
@@ -116,12 +116,12 @@ public class AppConfigElementsController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            service.deleteElementAllRevisionsPermanently(session.getStudyIdentifier(), id);
+            service.deleteElementAllRevisionsPermanently(session.getAppId(), id);
         } else {
-            service.deleteElementAllRevisions(session.getStudyIdentifier(), id);
+            service.deleteElementAllRevisions(session.getAppId(), id);
         }
         // App config elements are included in the app configs, so allow cache to update
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return new StatusMessage("App config element deleted.");
     }
 
@@ -136,12 +136,12 @@ public class AppConfigElementsController extends BaseController {
         }
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            service.deleteElementRevisionPermanently(session.getStudyIdentifier(), id, revisionLong);
+            service.deleteElementRevisionPermanently(session.getAppId(), id, revisionLong);
         } else {
-            service.deleteElementRevision(session.getStudyIdentifier(), id, revisionLong);
+            service.deleteElementRevision(session.getAppId(), id, revisionLong);
         }
         // App config elements are included in the app configs, so allow cache to update
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return new StatusMessage("App config element revision deleted.");
     }
     

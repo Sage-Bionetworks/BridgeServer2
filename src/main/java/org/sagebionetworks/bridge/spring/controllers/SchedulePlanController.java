@@ -56,7 +56,7 @@ public class SchedulePlanController extends BaseController {
     @GetMapping("/v3/scheduleplans")
     public ResourceList<SchedulePlan> getSchedulePlans(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
 
         // We don't filter plans when we return a list of all of them for developers.
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId,
@@ -68,7 +68,7 @@ public class SchedulePlanController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSchedulePlan() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
         SchedulePlan plan = schedulePlanService.createSchedulePlan(study, planForm);
@@ -78,7 +78,7 @@ public class SchedulePlanController extends BaseController {
     @GetMapping("/v3/scheduleplans/{guid}")
     public SchedulePlan getSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         return schedulePlanService.getSchedulePlan(studyId, guid);
     }
@@ -86,7 +86,7 @@ public class SchedulePlanController extends BaseController {
     @PostMapping("/v3/scheduleplans/{guid}")
     public GuidVersionHolder updateSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
         planForm.setGuid(guid);
@@ -99,7 +99,7 @@ public class SchedulePlanController extends BaseController {
     public StatusMessage deleteSchedulePlan(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        String studyId = session.getStudyIdentifier();
+        String studyId = session.getAppId();
         
         if (physical && session.isInRole(ADMIN)) {
             schedulePlanService.deleteSchedulePlanPermanently(studyId, guid);

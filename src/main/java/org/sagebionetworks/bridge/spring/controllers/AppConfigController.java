@@ -80,7 +80,7 @@ public class AppConfigController extends BaseController {
         
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
 
-        List<AppConfig> results = appConfigService.getAppConfigs(session.getStudyIdentifier(), includeDeletedFlag);
+        List<AppConfig> results = appConfigService.getAppConfigs(session.getAppId(), includeDeletedFlag);
 
         return new ResourceList<>(results).withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
@@ -92,8 +92,8 @@ public class AppConfigController extends BaseController {
         
         AppConfig appConfig = parseJson(AppConfig.class);
         
-        AppConfig created = appConfigService.createAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        AppConfig created = appConfigService.createAppConfig(session.getAppId(), appConfig);
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         
         return new GuidVersionHolder(created.getGuid(), created.getVersion());
     }
@@ -102,7 +102,7 @@ public class AppConfigController extends BaseController {
     public AppConfig getAppConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
-        return appConfigService.getAppConfig(session.getStudyIdentifier(), guid);
+        return appConfigService.getAppConfig(session.getAppId(), guid);
     }
 
     @PostMapping("/v3/appconfigs/{guid}")
@@ -112,8 +112,8 @@ public class AppConfigController extends BaseController {
         AppConfig appConfig = parseJson(AppConfig.class);
         appConfig.setGuid(guid);
         
-        AppConfig updated = appConfigService.updateAppConfig(session.getStudyIdentifier(), appConfig);
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        AppConfig updated = appConfigService.updateAppConfig(session.getAppId(), appConfig);
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
 
         return new GuidVersionHolder(updated.getGuid(), updated.getVersion());
     }
@@ -123,11 +123,11 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            appConfigService.deleteAppConfigPermanently(session.getStudyIdentifier(), guid);
+            appConfigService.deleteAppConfigPermanently(session.getAppId(), guid);
         } else {
-            appConfigService.deleteAppConfig(session.getStudyIdentifier(), guid);
+            appConfigService.deleteAppConfig(session.getAppId(), guid);
         }
-        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getStudyIdentifier()));
+        cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return new StatusMessage("App config deleted.");
     }
 

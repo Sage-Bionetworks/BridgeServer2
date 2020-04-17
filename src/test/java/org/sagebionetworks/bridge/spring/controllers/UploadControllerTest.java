@@ -144,7 +144,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(true).when(mockWorkerSession).isInRole(Roles.WORKER);
         
         doReturn("consented-user-health-code").when(mockConsentedUserSession).getHealthCode();
-        doReturn("consented-user-study-id").when(mockConsentedUserSession).getStudyIdentifier();
+        doReturn("consented-user-study-id").when(mockConsentedUserSession).getAppId();
         doReturn("userId").when(mockConsentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(mockConsentedUserSession).getParticipant();
         
@@ -332,7 +332,7 @@ public class UploadControllerTest extends Mockito {
     @Test
     public void getUploadByRecordId() throws Exception {
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        doReturn(TEST_APP_ID).when(mockResearcherSession).getStudyIdentifier();
+        doReturn(TEST_APP_ID).when(mockResearcherSession).getAppId();
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
@@ -361,7 +361,7 @@ public class UploadControllerTest extends Mockito {
     public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        when(mockResearcherSession.getStudyIdentifier()).thenReturn("researcher-study-id");
+        when(mockResearcherSession.getAppId()).thenReturn("researcher-study-id");
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setStudyId(TEST_APP_ID);

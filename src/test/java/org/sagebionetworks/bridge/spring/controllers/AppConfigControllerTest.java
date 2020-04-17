@@ -111,7 +111,7 @@ public class AppConfigControllerTest extends Mockito {
         study.setIdentifier(TEST_APP_ID);
         
         session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(TestConstants.USER_DATA_GROUPS)
                 .withLanguages(TestConstants.LANGUAGES)

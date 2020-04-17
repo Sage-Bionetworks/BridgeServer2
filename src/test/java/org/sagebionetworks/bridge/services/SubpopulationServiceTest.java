@@ -143,7 +143,7 @@ public class SubpopulationServiceTest {
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
-        subpop.setStudyIdentifier("junk-you-cannot-set");
+        subpop.setAppId("junk-you-cannot-set");
         subpop.setGuidString("cannot-set-guid");
         subpop.setDefaultGroup(false);
         
@@ -154,7 +154,7 @@ public class SubpopulationServiceTest {
         assertNotNull(result.getGuidString());
         assertNotEquals(result.getGuidString(), "cannot-set-guid");
         assertFalse(result.isDeleted());
-        assertEquals(result.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(result.getAppId(), TEST_APP_ID);
         
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
@@ -210,7 +210,7 @@ public class SubpopulationServiceTest {
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
-        subpop.setStudyIdentifier("junk-you-cannot-set");
+        subpop.setAppId("junk-you-cannot-set");
         subpop.setGuidString("guid");
         subpop.setDefaultGroup(false);
         subpop.setDeleted(true);
@@ -221,7 +221,7 @@ public class SubpopulationServiceTest {
         Subpopulation result = service.updateSubpopulation(study, subpop);
         assertEquals(result.getName(), "Name");
         assertEquals(result.getGuidString(), "guid");
-        assertEquals(result.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(result.getAppId(), TEST_APP_ID);
         
         verify(subpopDao).updateSubpopulation(subpop);
         verify(substudyService).getSubstudyIds(TEST_APP_ID);
@@ -438,7 +438,7 @@ public class SubpopulationServiceTest {
     
     private Subpopulation createSubpop(String name, Integer min, Integer max, String group) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
-        subpop.setStudyIdentifier(TEST_APP_ID);
+        subpop.setAppId(TEST_APP_ID);
         subpop.setName(name);
         subpop.setGuidString(BridgeUtils.generateGuid());
         

@@ -66,7 +66,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void importAssessment() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
@@ -81,7 +81,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void importAssessmentWithNewId() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
@@ -192,7 +192,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void updateSharedAssessment() throws Exception {
         // You do need a session for this call
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();

@@ -40,7 +40,7 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         activityEventService.publishCustomEvent(study, session.getHealthCode(),
                 activityEvent.getEventKey(), activityEvent.getTimestamp());
         
@@ -51,7 +51,7 @@ public class ActivityEventController extends BaseController {
     public String getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getStudyIdentifier(),
+        List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getAppId(),
                 session.getHealthCode());
         
         // I do not like the fact we are serializing in the controller, but that's the only way to access

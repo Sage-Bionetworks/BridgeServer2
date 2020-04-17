@@ -69,7 +69,7 @@ public class ParticipantReportController extends BaseController {
         LocalDate localStartDate = getLocalDateOrDefault(startDate, null);
         LocalDate localEndDate = getLocalDateOrDefault(endDate, null);
         
-        return reportService.getParticipantReport(session.getStudyIdentifier(), identifier, session.getHealthCode(),
+        return reportService.getParticipantReport(session.getAppId(), identifier, session.getHealthCode(),
                 localStartDate, localEndDate);
     }
 
@@ -83,7 +83,7 @@ public class ParticipantReportController extends BaseController {
         DateTime endTimeObj = getDateTimeOrDefault(endTime, null);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return reportService.getParticipantReportV4(session.getStudyIdentifier(), identifier, session.getHealthCode(),
+        return reportService.getParticipantReportV4(session.getAppId(), identifier, session.getHealthCode(),
                 startTimeObj, endTimeObj, offsetKey, pageSizeInt);
     }
 
@@ -95,7 +95,7 @@ public class ParticipantReportController extends BaseController {
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
+        reportService.saveParticipantReport(session.getAppId(), identifier, 
                 session.getHealthCode(), reportData);
         
         return new StatusMessage("Report data saved.");
@@ -108,7 +108,7 @@ public class ParticipantReportController extends BaseController {
     public ReportTypeResourceList<? extends ReportIndex> listParticipantReportIndices() {
         UserSession session = getAuthenticatedSession();
         
-        return reportService.getReportIndices(session.getStudyIdentifier(), ReportType.PARTICIPANT);
+        return reportService.getReportIndices(session.getAppId(), ReportType.PARTICIPANT);
     }
     
     @GetMapping("/v3/participants/reports/{identifier}/index")
@@ -117,7 +117,7 @@ public class ParticipantReportController extends BaseController {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(session.getStudyIdentifier()).build();
+                .withStudyIdentifier(session.getAppId()).build();
         
         return reportService.getReportIndex(key);
     }
@@ -128,7 +128,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        return getParticipantReportInternal(session.getStudyIdentifier(), userId, identifier, startDate,
+        return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate,
                 endDate);
     }
 
@@ -161,7 +161,7 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        return getParticipantReportInternalV4(session.getStudyIdentifier(), userId, identifier, startTime,
+        return getParticipantReportInternalV4(session.getAppId(), userId, identifier, startTime,
                 endTime, offsetKey, pageSize);
     }
 
@@ -199,7 +199,7 @@ public class ParticipantReportController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
@@ -208,7 +208,7 @@ public class ParticipantReportController extends BaseController {
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
+        reportService.saveParticipantReport(session.getAppId(), identifier, 
                 account.getHealthCode(), reportData);
         
         return new StatusMessage("Report data saved.");
@@ -232,7 +232,7 @@ public class ParticipantReportController extends BaseController {
         ReportData reportData = parseJson(node, ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getStudyIdentifier(), identifier, 
+        reportService.saveParticipantReport(session.getAppId(), identifier, 
                 healthCode, reportData);
         
         return new StatusMessage("Report data saved.");
@@ -247,13 +247,13 @@ public class ParticipantReportController extends BaseController {
             "/v3/participants/{userId}/reports/{identifier}" })
     public StatusMessage deleteParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);    
         }
-        reportService.deleteParticipantReport(session.getStudyIdentifier(), identifier, account.getHealthCode());
+        reportService.deleteParticipantReport(session.getAppId(), identifier, account.getHealthCode());
         
         return new StatusMessage("Report deleted.");
     }
@@ -265,13 +265,13 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportRecord(@PathVariable String userId, @PathVariable String identifier,
             @PathVariable String date) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        Study study = studyService.getStudy(session.getStudyIdentifier());
+        Study study = studyService.getStudy(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        reportService.deleteParticipantReportRecord(session.getStudyIdentifier(), identifier, date, account.getHealthCode());
+        reportService.deleteParticipantReportRecord(session.getAppId(), identifier, date, account.getHealthCode());
         
         return new StatusMessage("Report record deleted.");
     }
@@ -280,7 +280,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportIndex(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
-        reportService.deleteParticipantReportIndex(session.getStudyIdentifier(), identifier);
+        reportService.deleteParticipantReportIndex(session.getAppId(), identifier);
         
         return new StatusMessage("Report index deleted.");
     }

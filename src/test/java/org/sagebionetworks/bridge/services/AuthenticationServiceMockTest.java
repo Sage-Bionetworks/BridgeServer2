@@ -248,7 +248,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(session.getAppId(), TEST_APP_ID);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
@@ -328,7 +328,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getEnvironment(), Environment.PROD);
-        assertEquals(session.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(session.getAppId(), TEST_APP_ID);
 
         // updated context
         CriteriaContext updatedContext = contextCaptor.getValue();
@@ -424,7 +424,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void signOut() {
         UserSession session = new UserSession();
-        session.setStudyIdentifier(TEST_APP_ID);
+        session.setAppId(TEST_APP_ID);
         session.setReauthToken(TOKEN);
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
         service.signOut(session);
@@ -1279,7 +1279,7 @@ public class AuthenticationServiceMockTest {
         assertTrue(session.isAuthenticated());
         assertEquals(session.getEnvironment(), Environment.LOCAL);
         assertEquals(session.getIpAddress(), IP_ADDRESS);
-        assertEquals(session.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(session.getAppId(), TEST_APP_ID);
         assertEquals(session.getReauthToken(), REAUTH_TOKEN);
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         
