@@ -33,24 +33,24 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     }
     
     @Override
-    public Optional<FileMetadata> getFile(String studyId, String guid) {
-        checkNotNull(studyId);
+    public Optional<FileMetadata> getFile(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        Map<String, Object> params = ImmutableMap.of("studyId", studyId, "guid", guid);
+        Map<String, Object> params = ImmutableMap.of("studyId", appId, "guid", guid);
 
         List<FileMetadata> files = hibernateHelper.queryGet(FROM_FILE+WITH_GUID, params, null, null, FileMetadata.class);
         return (files.isEmpty()) ? Optional.empty() : Optional.of(files.get(0));
     }
 
     @Override
-    public PagedResourceList<FileMetadata> getFiles(String studyId, int offset, int limit, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public PagedResourceList<FileMetadata> getFiles(String appId, int offset, int limit, boolean includeDeleted) {
+        checkNotNull(appId);
         
         String countQuery = SELECT_COUNT+FROM_FILE + (!includeDeleted ? WO_DELETED : "");
         String getQuery = FROM_FILE + (!includeDeleted ? WO_DELETED : "") + ORDER_BY;
 
-        Map<String,Object> params = ImmutableMap.of("studyId", studyId);
+        Map<String,Object> params = ImmutableMap.of("studyId", appId);
         int count = hibernateHelper.queryCount(countQuery, params);
         
         List<FileMetadata> files = hibernateHelper.queryGet(getQuery, params, offset, limit, FileMetadata.class);
@@ -78,21 +78,21 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     }
 
     @Override
-    public void deleteFilePermanently(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteFilePermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
         FileMetadata file = hibernateHelper.getById(FileMetadata.class, guid);
-        if (file == null || !file.getStudyId().equals(studyId)) {
+        if (file == null || !file.getAppId().equals(appId)) {
             return;
         }
         hibernateHelper.deleteById(FileMetadata.class, guid);
     }
     
     @Override
-    public void deleteAllStudyFiles(String studyId) {
-        checkNotNull(studyId);
+    public void deleteAllStudyFiles(String appId) {
+        checkNotNull(appId);
         
-        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", studyId));   
+        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", appId));   
     }
 }

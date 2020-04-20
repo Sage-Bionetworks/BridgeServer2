@@ -135,7 +135,7 @@ public class FileServiceTest extends Mockito {
     public void createFile() {
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
-        metadata.setStudyId("garbage"); // ignored
+        metadata.setAppId("garbage"); // ignored
         metadata.setVersion(10L); // ignored
         metadata.setDeleted(true); // ignored
         metadata.setCreatedOn(new DateTime()); // ignored
@@ -153,7 +153,7 @@ public class FileServiceTest extends Mockito {
         assertEquals(captured.getVersion(), 0L);
         assertFalse(captured.isDeleted());
         assertEquals(captured.getGuid(), GUID);
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getCreatedOn(), TIMESTAMP);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
     }
@@ -180,7 +180,7 @@ public class FileServiceTest extends Mockito {
         
         verify(mockFileDao).updateFile(metadataCaptor.capture());
         FileMetadata captured = metadataCaptor.getValue();
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getModifiedOn(), TIMESTAMP);
         assertEquals(captured.getCreatedOn(), TIMESTAMP.minusDays(1));
     }
