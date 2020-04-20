@@ -250,7 +250,7 @@ public class AccountWorkflowService {
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
         checkNotNull(accountId);
         
-        Study study = studyService.getStudy(accountId.getStudyId());
+        Study study = studyService.getStudy(accountId.getAppId());
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             if (type == ChannelType.EMAIL) {
@@ -329,7 +329,7 @@ public class AccountWorkflowService {
      */
     public void requestResetPassword(Study study, boolean isStudyAdmin, AccountId accountId) {
         checkNotNull(accountId);
-        checkArgument(study.getIdentifier().equals(accountId.getStudyId()));
+        checkArgument(study.getIdentifier().equals(accountId.getAppId()));
         
         Account account = accountService.getAccount(accountId);
         // We are going to change the status of the account if this succeeds, so we must also

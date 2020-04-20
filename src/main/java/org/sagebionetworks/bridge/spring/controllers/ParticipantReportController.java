@@ -117,7 +117,7 @@ public class ParticipantReportController extends BaseController {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(session.getAppId()).build();
+                .withAppId(session.getAppId()).build();
         
         return reportService.getReportIndex(key);
     }

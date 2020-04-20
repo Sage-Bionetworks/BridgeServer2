@@ -1167,7 +1167,7 @@ public class ParticipantServiceTest extends Mockito {
         verify(accountService).deleteReauthToken(accountIdCaptor.capture());
         verify(cacheProvider).removeSessionByUserId(ID);
 
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_APP_ID);
+        assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
         assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
 
@@ -1592,7 +1592,7 @@ public class ParticipantServiceTest extends Mockito {
         assertNotNull(participant);
         
         verify(accountService).getAccount(accountIdCaptor.capture());
-        assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
+        assertEquals(accountIdCaptor.getValue().getAppId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getHealthCode(), ID);
     }
     
@@ -1606,7 +1606,7 @@ public class ParticipantServiceTest extends Mockito {
         assertNotNull(participant);
         
         verify(accountService).getAccount(accountIdCaptor.capture());
-        assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
+        assertEquals(accountIdCaptor.getValue().getAppId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getExternalId(), ID);
     }
     
@@ -1619,7 +1619,7 @@ public class ParticipantServiceTest extends Mockito {
         assertNotNull(participant);
         
         verify(accountService).getAccount(accountIdCaptor.capture());
-        assertEquals(accountIdCaptor.getValue().getStudyId(), STUDY.getIdentifier());
+        assertEquals(accountIdCaptor.getValue().getAppId(), STUDY.getIdentifier());
         assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
     
@@ -1761,7 +1761,7 @@ public class ParticipantServiceTest extends Mockito {
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         
         AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getStudyId(), STUDY.getIdentifier());
+        assertEquals(accountId.getAppId(), STUDY.getIdentifier());
         assertEquals(accountId.getEmail(), EMAIL);
     }
     
@@ -1774,7 +1774,7 @@ public class ParticipantServiceTest extends Mockito {
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
         
         AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getStudyId(), STUDY.getIdentifier());
+        assertEquals(accountId.getAppId(), STUDY.getIdentifier());
         assertEquals(accountId.getPhone(), PHONE);
     }
     

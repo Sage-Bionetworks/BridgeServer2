@@ -190,7 +190,7 @@ public class StudyReportControllerTest extends Mockito {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(REPORT_ID)
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         doReturn(index).when(mockReportService).getReportIndex(key);
         
@@ -283,7 +283,7 @@ public class StudyReportControllerTest extends Mockito {
     
     @Test
     public void canGetPublicStudyReport() throws Exception {
-        ReportDataKey key = new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID)
+        ReportDataKey key = new ReportDataKey.Builder().withAppId(TEST_APP_ID)
                 .withIdentifier(REPORT_ID).withReportType(STUDY).build();
         
         ReportIndex index = ReportIndex.create();
@@ -312,7 +312,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void privatePublicStudyReturns404() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);
@@ -327,7 +327,7 @@ public class StudyReportControllerTest extends Mockito {
     @Test
     public void getStudyReportV4() throws Exception {
         ReportDataKey key = new ReportDataKey.Builder().withIdentifier(REPORT_ID).withReportType(STUDY)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportIndex index = ReportIndex.create();
         index.setPublic(false);

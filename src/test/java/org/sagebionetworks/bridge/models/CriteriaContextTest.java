@@ -67,7 +67,7 @@ public class CriteriaContextTest {
                 .withUserId(USER_ID).build();
         
         AccountId accountId = context.getAccountId();
-        assertEquals(accountId.getStudyId(), TEST_APP_ID);
+        assertEquals(accountId.getAppId(), TEST_APP_ID);
         assertEquals(accountId.getId(), USER_ID);
     }
 }

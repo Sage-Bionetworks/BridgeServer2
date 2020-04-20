@@ -49,9 +49,9 @@ public class DynamoReportDataDaoTest extends Mockito {
     static final String REPORT_ID = "aReportId";
     static final String OFFSET_KEY = "anOffsetKey";
     static final ReportDataKey STUDY_REPORT_KEY = new ReportDataKey.Builder().withIdentifier(REPORT_ID)
-            .withReportType(STUDY).withStudyIdentifier(TEST_APP_ID).build();
+            .withReportType(STUDY).withAppId(TEST_APP_ID).build();
     static final ReportDataKey PARTICIPANT_REPORT_KEY = new ReportDataKey.Builder().withIdentifier(REPORT_ID)
-            .withHealthCode(HEALTH_CODE).withReportType(PARTICIPANT).withStudyIdentifier(TEST_APP_ID).build();
+            .withHealthCode(HEALTH_CODE).withReportType(PARTICIPANT).withAppId(TEST_APP_ID).build();
     
     DynamoReportData report0;
     DynamoReportData report1;

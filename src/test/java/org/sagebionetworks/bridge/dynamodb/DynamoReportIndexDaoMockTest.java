@@ -59,7 +59,7 @@ public class DynamoReportIndexDaoMockTest {
     private ArgumentCaptor<DynamoDBQueryExpression<DynamoReportIndex>> queryCaptor;
     
     private ReportDataKey KEY = new ReportDataKey.Builder()
-            .withIdentifier("report-name").withStudyIdentifier(TEST_APP_ID)
+            .withIdentifier("report-name").withAppId(TEST_APP_ID)
             .withReportType(ReportType.STUDY).build();
 
     @BeforeMethod

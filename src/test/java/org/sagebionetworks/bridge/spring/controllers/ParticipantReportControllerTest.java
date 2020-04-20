@@ -436,7 +436,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         verify(mockReportService).getReportIndex(reportDataKeyCaptor.capture());
         ReportDataKey key = reportDataKeyCaptor.getValue();
-        assertEquals(key.getStudyId(), TEST_APP_ID);
+        assertEquals(key.getAppId(), TEST_APP_ID);
         assertEquals(key.getIdentifier(), REPORT_ID);
         assertEquals(key.getReportType(), PARTICIPANT);
     }

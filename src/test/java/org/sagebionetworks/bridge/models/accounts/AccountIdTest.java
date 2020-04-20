@@ -45,17 +45,17 @@ public class AccountIdTest {
     
     @Test
     public void testToString() {
-        assertEquals(AccountId.forId(TEST_APP_ID, "user-id").toString(), "AccountId [studyId="+TEST_APP_ID+", credential=user-id]");
+        assertEquals(AccountId.forId(TEST_APP_ID, "user-id").toString(), "AccountId [appId="+TEST_APP_ID+", credential=user-id]");
         
-        assertEquals(AccountId.forPhone(TEST_APP_ID, PHONE).toString(), "AccountId [studyId="+TEST_APP_ID+", credential=Phone [regionCode=US, number=9712486796]]");
+        assertEquals(AccountId.forPhone(TEST_APP_ID, PHONE).toString(), "AccountId [appId="+TEST_APP_ID+", credential=Phone [regionCode=US, number=9712486796]]");
         
-        assertEquals(AccountId.forEmail(TEST_APP_ID, "email").toString(), "AccountId [studyId="+TEST_APP_ID+", credential=email]");
+        assertEquals(AccountId.forEmail(TEST_APP_ID, "email").toString(), "AccountId [appId="+TEST_APP_ID+", credential=email]");
         
-        assertEquals(AccountId.forHealthCode(TEST_APP_ID, "DEF-GHI").toString(), "AccountId [studyId="+TEST_APP_ID+", credential=HEALTH_CODE]");
+        assertEquals(AccountId.forHealthCode(TEST_APP_ID, "DEF-GHI").toString(), "AccountId [appId="+TEST_APP_ID+", credential=HEALTH_CODE]");
         
-        assertEquals(AccountId.forExternalId(TEST_APP_ID, "EXTID").toString(), "AccountId [studyId="+TEST_APP_ID+", credential=EXTID]");
+        assertEquals(AccountId.forExternalId(TEST_APP_ID, "EXTID").toString(), "AccountId [appId="+TEST_APP_ID+", credential=EXTID]");
         
-        assertEquals(AccountId.forSynapseUserId(TEST_APP_ID, SYNAPSE_USER_ID).toString(), "AccountId [studyId="+TEST_APP_ID+", credential="+SYNAPSE_USER_ID+"]");
+        assertEquals(AccountId.forSynapseUserId(TEST_APP_ID, SYNAPSE_USER_ID).toString(), "AccountId [appId="+TEST_APP_ID+", credential="+SYNAPSE_USER_ID+"]");
     }
     
     @Test
@@ -154,7 +154,7 @@ public class AccountIdTest {
         AccountId id = AccountId.forId("test-study", "id");
         
         AccountId accountId = id.getUnguardedAccountId();
-        assertEquals(accountId.getStudyId(), "test-study");
+        assertEquals(accountId.getAppId(), "test-study");
         assertEquals(accountId.getId(), "id");
         assertNull(accountId.getEmail());
         assertNull(accountId.getPhone());
@@ -164,7 +164,7 @@ public class AccountIdTest {
     }
 
     @Test
-    public void canDeserialize() throws Exception {
+    public void canDeserializeWithStudyProperty() throws Exception {
         String json = TestUtils.createJson("{'study':'"+TEST_APP_ID+"'," +
                 "'email': '"+EMAIL+"'," +
                 "'healthCode': 'someHealthCode', "+
@@ -175,7 +175,28 @@ public class AccountIdTest {
         
         AccountId identifier = BridgeObjectMapper.get().readValue(json, AccountId.class);
         
-        assertEquals(identifier.getStudyId(), TEST_APP_ID);
+        assertEquals(identifier.getAppId(), TEST_APP_ID);
+        assertEquals(identifier.getEmail(), EMAIL);
+        assertEquals(identifier.getExternalId(), "someExternalId");
+        assertEquals(identifier.getHealthCode(), "someHealthCode");
+        assertEquals(identifier.getSynapseUserId(), "synapseUserId");
+        assertEquals(identifier.getPhone().getNumber(), PHONE.getNumber());
+        assertEquals(identifier.getPhone().getRegionCode(), PHONE.getRegionCode());
+    }
+
+    @Test
+    public void canDeserializeWithAppIdProperty() throws Exception {
+        String json = TestUtils.createJson("{'email': '"+EMAIL+"'," +
+                "'appId':'"+TEST_APP_ID+"'," +
+                "'healthCode': 'someHealthCode', "+
+                "'externalId': 'someExternalId', "+
+                "'synapseUserId': 'synapseUserId', "+
+                "'phone': {'number': '"+PHONE.getNumber()+"', "+
+                "'regionCode':'"+PHONE.getRegionCode()+"'}}");
+        
+        AccountId identifier = BridgeObjectMapper.get().readValue(json, AccountId.class);
+        
+        assertEquals(identifier.getAppId(), TEST_APP_ID);
         assertEquals(identifier.getEmail(), EMAIL);
         assertEquals(identifier.getExternalId(), "someExternalId");
         assertEquals(identifier.getHealthCode(), "someHealthCode");

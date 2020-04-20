@@ -299,7 +299,7 @@ public class AuthenticationService {
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
-                    + accountId.getStudyId() + "'");
+                    + accountId.getAppId() + "'");
         }
     }
     
