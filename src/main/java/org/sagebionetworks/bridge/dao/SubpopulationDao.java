@@ -29,13 +29,13 @@ public interface SubpopulationDao {
      * @param includeDeleted
      *      if true, return logically deleted subpopulations. If false, do not return them.
      */
-    List<Subpopulation> getSubpopulations(String studyId, boolean createDefault, boolean includeDeleted);
+    List<Subpopulation> getSubpopulations(String appId, boolean createDefault, boolean includeDeleted);
     
     /**
      * Get a specific subpopulation. This always returns the subpopulation whether it is logically deleted or not. 
      * @return subpopulation
      */
-    Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid);
+    Subpopulation getSubpopulation(String appId, SubpopulationGuid subpopGuid);
     
     /**
      * Update a subpopulation.
@@ -45,11 +45,11 @@ public interface SubpopulationDao {
     /**
      * Logically delete a subpopulation. You cannot logically delete the default subpopulation for a study. 
      */
-    void deleteSubpopulation(String studyId, SubpopulationGuid subpopGuid);
+    void deleteSubpopulation(String appId, SubpopulationGuid subpopGuid);
     
     /**
      * Delete a subpopulation permanently. 
      */
-    void deleteSubpopulationPermanently(String studyId, SubpopulationGuid subpopGuid);
+    void deleteSubpopulationPermanently(String appId, SubpopulationGuid subpopGuid);
     
 }
