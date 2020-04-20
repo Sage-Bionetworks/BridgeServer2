@@ -405,14 +405,14 @@ public class CriteriaScheduleStrategyTest {
 
     private Schedule getScheduleFromStrategy(ClientInfo info) {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-study")
+                .withStudyIdentifier(TEST_APP_ID)
                 .withClientInfo(info).build();
         return strategy.getScheduleForUser(PLAN, context);
     }
     
     private Schedule getScheduleFromStrategy(Set<String> dataGroups) {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("test-study")
+                .withStudyIdentifier(TEST_APP_ID)
                 .withUserDataGroups(dataGroups).build();
         return strategy.getScheduleForUser(PLAN, context);
     }

@@ -199,7 +199,7 @@ public class UploadControllerTest extends Mockito {
         upload.setHealthCode(HEALTH_CODE);
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();
-        doReturn("studyId").when(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
+        doReturn(TEST_APP_ID).when(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
 
         // execute and validate
         String result = controller.uploadComplete(UPLOAD_ID, false, false);
@@ -207,7 +207,7 @@ public class UploadControllerTest extends Mockito {
 
         // verify back-end calls
         verify(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
-        verify(mockUploadService).uploadComplete(eq("studyId"),
+        verify(mockUploadService).uploadComplete(eq(TEST_APP_ID),
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals(upload.getHealthCode(), HEALTH_CODE);

@@ -42,6 +42,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -966,11 +967,11 @@ public class ScheduledActivityServiceMockTest {
         
         SchedulePlan voiceActivityPlan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         List<SchedulePlan> schedulePlans = Lists.newArrayList(voiceActivityPlan);
-        when(schedulePlanService.getSchedulePlans(info, "test-study", false)).thenReturn(schedulePlans);
+        when(schedulePlanService.getSchedulePlans(info, TEST_APP_ID, false)).thenReturn(schedulePlans);
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withClientInfo(info)
-            .withStudyIdentifier("test-study")
+            .withStudyIdentifier(TEST_APP_ID)
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
                 .withEndsOn(startsOn.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
                 .withInitialTimeZone(timeZone)
@@ -1008,7 +1009,7 @@ public class ScheduledActivityServiceMockTest {
                 .withAccountCreatedOn(NOW.minusDays(3))
                 .withHealthCode("healthCode")
                 .withEndsOn(NOW.plusDays(3))
-                .withStudyIdentifier("studyId").build();
+                .withStudyIdentifier(TEST_APP_ID).build();
         
         Activity activity = new Activity.Builder().withLabel("Label").withSurvey("surveyId", "guid", null).build();
         

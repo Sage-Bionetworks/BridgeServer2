@@ -1051,7 +1051,7 @@ public class ConsentServiceMockTest {
         account.setEmail(EMAIL);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
-        AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
+        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, "substudyId", ID);
         as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));

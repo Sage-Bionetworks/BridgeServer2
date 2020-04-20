@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -43,10 +44,9 @@ public class StudyConsentControllerTest extends Mockito {
     private static final String GUID = "guid";
     private static final String DATETIME_STRING = DateTime.now().toString();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(GUID);
-    private static final String STUDY_ID = "test-study";
     private static final Study STUDY = new DynamoStudy();
     static {
-        STUDY.setIdentifier("test-study");
+        STUDY.setIdentifier(TEST_APP_ID);
     }
 
     @Mock
@@ -71,10 +71,10 @@ public class StudyConsentControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession();
-        session.setAppId(STUDY_ID);
+        session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
         
-        when(mockSubpopService.getSubpopulation(STUDY_ID, SubpopulationGuid.create(GUID)))
+        when(mockSubpopService.getSubpopulation(TEST_APP_ID, SubpopulationGuid.create(GUID)))
                 .thenReturn(mockSubpopulation);
         
         doReturn(mockRequest).when(controller).request();
@@ -165,7 +165,7 @@ public class StudyConsentControllerTest extends Mockito {
     public void publishConsentV2() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
         
         StatusMessage result = controller.publishConsentV2(GUID, DATETIME_STRING);
         assertEquals(result.getMessage(), "Consent document set as active.");

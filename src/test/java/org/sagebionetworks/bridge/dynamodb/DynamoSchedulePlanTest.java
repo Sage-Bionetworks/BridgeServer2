@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -37,7 +38,7 @@ public class DynamoSchedulePlanTest {
         plan.setLabel("Label");
         plan.setGuid("guid");
         plan.setModifiedOn(datetime.getMillis());
-        plan.setStudyKey("test-study");
+        plan.setStudyKey(TEST_APP_ID);
         plan.setVersion(2L);
         plan.setDeleted(true);
         plan.setStrategy(strategy);

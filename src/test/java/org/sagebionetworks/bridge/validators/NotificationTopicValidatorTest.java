@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import org.springframework.validation.Validator;
@@ -20,7 +21,7 @@ public class NotificationTopicValidatorTest {
         topic.setGuid("ABC-DEF");
         topic.setName("Test Topic");
         topic.setShortName("Test");
-        topic.setStudyId("test-study");
+        topic.setStudyId(TEST_APP_ID);
         topic.setTopicARN("topic:arn");
     }
     

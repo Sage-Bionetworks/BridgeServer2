@@ -52,6 +52,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -249,7 +250,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -267,7 +268,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -285,7 +286,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -303,7 +304,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
