@@ -43,7 +43,7 @@ public class ExternalIdValidatorTest {
     public void validates() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudy-id"))
-                .withCallerStudyId(TEST_APP_ID).build());
+                .withCallerAppId(TEST_APP_ID).build());
         
         when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
@@ -55,7 +55,7 @@ public class ExternalIdValidatorTest {
     @Test
     public void validatesV3() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_APP_ID).build());
+                .withCallerAppId(TEST_APP_ID).build());
         
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         
@@ -120,7 +120,7 @@ public class ExternalIdValidatorTest {
     public void substudyIdCanBeAnythingForAdmins() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
-                .withCallerStudyId(TEST_APP_ID).build());
+                .withCallerAppId(TEST_APP_ID).build());
         
         when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
@@ -133,7 +133,7 @@ public class ExternalIdValidatorTest {
     public void substudyIdMustMatchCallersSubstudies() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB"))
-                .withCallerStudyId(TEST_APP_ID).build());
+                .withCallerAppId(TEST_APP_ID).build());
         
         when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");

@@ -72,15 +72,15 @@ public class ExternalIdService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
 
-        String studyId = BridgeUtils.getRequestContext().getCallerStudyId();
-        return externalIdDao.getExternalIds(studyId, offsetKey, pageSize, idFilter, assignmentFilter);
+        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        return externalIdDao.getExternalIds(appId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
     public void createExternalId(ExternalIdentifier externalId, boolean isV3) {
         checkNotNull(externalId);
         
-        String studyId = BridgeUtils.getRequestContext().getCallerStudyId();
-        externalId.setStudyId(studyId);
+        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        externalId.setStudyId(appId);
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error
@@ -95,7 +95,7 @@ public class ExternalIdService {
         // Note that this external ID must be unique across the whole study, not just a substudy, or else
         // it cannot be used to identify the substudy, and that's a significant purpose behind the 
         // association of the two
-        if (externalIdDao.getExternalId(studyId, externalId.getIdentifier()).isPresent()) {
+        if (externalIdDao.getExternalId(appId, externalId.getIdentifier()).isPresent()) {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", externalId.getIdentifier());
         }
         externalIdDao.createExternalId(externalId);

@@ -30,7 +30,7 @@ public class ExternalIdValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ExternalIdentifier extId = (ExternalIdentifier)object;
 
-        String callerStudyId = BridgeUtils.getRequestContext().getCallerStudyId();
+        String callerAppId = BridgeUtils.getRequestContext().getCallerAppId();
         Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
         
         if (StringUtils.isBlank(extId.getIdentifier())) {
@@ -52,7 +52,7 @@ public class ExternalIdValidator implements Validator {
         }
         if (StringUtils.isBlank(extId.getStudyId())) {
             errors.rejectValue("studyId", "cannot be null or blank");
-        } else if (!extId.getStudyId().equals(callerStudyId)) {
+        } else if (!extId.getStudyId().equals(callerAppId)) {
             errors.rejectValue("studyId", "is not a valid study");
         }
     }

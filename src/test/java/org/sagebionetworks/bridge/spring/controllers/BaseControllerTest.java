@@ -812,7 +812,7 @@ public class BaseControllerTest extends Mockito {
     public void getSessionPopulatesTheRequestContext() {
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
         assertNotNull(context.getId());
-        assertNull(context.getCallerStudyId());
+        assertNull(context.getCallerAppId());
         assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
         assertFalse(context.isAdministrator());
         BridgeUtils.setRequestContext(context);
@@ -832,7 +832,7 @@ public class BaseControllerTest extends Mockito {
         
         context = BridgeUtils.getRequestContext();
         assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerStudyId(), TEST_APP_ID);
+        assertEquals(context.getCallerAppId(), TEST_APP_ID);
         assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
         assertTrue(context.isAdministrator());
         assertTrue(context.isInRole(DEVELOPER));

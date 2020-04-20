@@ -114,7 +114,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
                 subpopCaptor.capture(), eq(false), eq(false));
         
-        assertEquals(BridgeUtils.getRequestContext().getCallerStudyId(), API_APP_ID);
+        assertEquals(BridgeUtils.getRequestContext().getCallerAppId(), API_APP_ID);
         assertTrue(BridgeUtils.getRequestContext().isInRole(SUPERADMIN));
         assertEquals(BridgeUtils.getRequestContext().getCallerUserId(), "DefaultStudyBootstrapper");
         

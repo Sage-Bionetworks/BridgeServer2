@@ -55,7 +55,7 @@ public class ExternalIdServiceTest {
         MockitoAnnotations.initMocks(this);
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_APP_ID).build());
+                .withCallerAppId(TEST_APP_ID).build());
         study = Study.create();
         study.setIdentifier(TEST_APP_ID);
         extId = ExternalIdentifier.create(TEST_APP_ID, ID);
@@ -149,7 +149,7 @@ public class ExternalIdServiceTest {
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_APP_ID)
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerSubstudies(SUBSTUDIES).build());
         
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID,
@@ -165,7 +165,7 @@ public class ExternalIdServiceTest {
         extId.setSubstudyId(null); // not set by caller
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_APP_ID)
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID, "anotherSubstudy")).build());
         
         externalIdService.createExternalId(extId, false);
@@ -205,7 +205,7 @@ public class ExternalIdServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyOutsideSubstudiesThrows() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerStudyId(TEST_APP_ID)
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerSubstudies(SUBSTUDIES).build());        
         extId.setSubstudyId("someOtherId");
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
