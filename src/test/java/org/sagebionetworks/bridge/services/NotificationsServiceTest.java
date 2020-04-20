@@ -50,7 +50,7 @@ public class NotificationsServiceTest {
     private static final String OS_NAME = "iPhone OS";
     private static final String PLATFORM_ARN = "arn:platform";
 
-    private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withStudyIdentifier(STUDY_ID)
+    private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withAppId(STUDY_ID)
             .withUserId(USER_ID).build();
 
     @Mock

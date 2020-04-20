@@ -78,7 +78,7 @@ public class ActivitySchedulerTest {
         Map<String,DateTime> empty = Maps.newHashMap();
         
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1))
             .withEvents(empty).build();
@@ -86,7 +86,7 @@ public class ActivitySchedulerTest {
         assertEquals(scheduledActivities.size(), 0);
         
         context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withInitialTimeZone(PST)
             .withEndsOn(NOW.plusWeeks(1)).build();
         scheduledActivities = schedule.getScheduler().getScheduledActivities(plan, context);
@@ -459,7 +459,7 @@ public class ActivitySchedulerTest {
     }
 
     private ScheduleContext getContext(DateTimeZone zone, DateTime endsOn) {
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_APP_ID)
+        return new ScheduleContext.Builder().withAppId(TEST_APP_ID)
             .withInitialTimeZone(zone).withEndsOn(endsOn).withHealthCode("healthCode").withEvents(events).build();
     }
     

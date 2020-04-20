@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableSet;
 
 public final class CriteriaContext {
     
-    private final String studyId;
+    private final String appId;
     private final String healthCode;
     private final String userId;
     private final ClientInfo clientInfo;
@@ -22,9 +22,9 @@ public final class CriteriaContext {
     // This set has ordered keys (most to least preferential)
     private final List<String> languages;
     
-    private CriteriaContext(String studyId, String healthCode, String userId, ClientInfo clientInfo,
+    private CriteriaContext(String appId, String healthCode, String userId, ClientInfo clientInfo,
             Set<String> userDataGroups, Set<String> userSubstudyIds, List<String> languages) {
-        this.studyId = studyId;
+        this.appId = appId;
         this.healthCode = healthCode;
         this.userId = userId;
         this.clientInfo = clientInfo;
@@ -34,7 +34,7 @@ public final class CriteriaContext {
     }
     
     public AccountId getAccountId() {
-        return AccountId.forId(studyId, userId);
+        return AccountId.forId(appId, userId);
     }
 
     /**
@@ -52,8 +52,8 @@ public final class CriteriaContext {
         return userSubstudyIds;
     }
     
-    public String getStudyIdentifier() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     
     public String getHealthCode() {
@@ -77,7 +77,7 @@ public final class CriteriaContext {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, healthCode, userId, clientInfo, userDataGroups, userSubstudyIds, languages);
+        return Objects.hash(appId, healthCode, userId, clientInfo, userDataGroups, userSubstudyIds, languages);
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class CriteriaContext {
         return (Objects.equals(clientInfo, other.clientInfo) &&
                 Objects.equals(userDataGroups, other.userDataGroups) &&
                 Objects.equals(userSubstudyIds, other.userSubstudyIds) &&
-                Objects.equals(studyId, other.studyId) && 
+                Objects.equals(appId, other.appId) && 
                 Objects.equals(healthCode, other.healthCode) && 
                 Objects.equals(userId, other.userId) &&
                 Objects.equals(languages, other.languages));
@@ -98,13 +98,13 @@ public final class CriteriaContext {
 
     @Override
     public String toString() {
-        return "CriteriaContext [studyId=" + studyId + ", userId=" + userId + ", clientInfo=" + clientInfo
+        return "CriteriaContext [appId=" + appId + ", userId=" + userId + ", clientInfo=" + clientInfo
                 + ", userDataGroups=" + userDataGroups + ", userSubstudies=" + userSubstudyIds + ", languages="
                 + languages + "]";
     }
 
     public static class Builder {
-        private String studyId;
+        private String appId;
         private String healthCode;
         private String userId;
         private ClientInfo clientInfo;
@@ -112,8 +112,8 @@ public final class CriteriaContext {
         private Set<String> userSubstudyIds;
         private List<String> languages;
 
-        public Builder withStudyIdentifier(String studyId) {
-            this.studyId = studyId;
+        public Builder withAppId(String appId) {
+            this.appId = appId;
             return this;
         }
         public Builder withHealthCode(String healthCode) {
@@ -142,7 +142,7 @@ public final class CriteriaContext {
         }
 
         public Builder withContext(CriteriaContext context) {
-            this.studyId = context.studyId;
+            this.appId = context.appId;
             this.healthCode = context.healthCode;
             this.userId = context.userId;
             this.clientInfo = context.clientInfo;
@@ -153,11 +153,11 @@ public final class CriteriaContext {
         }
 
         public CriteriaContext build() {
-            checkNotNull(studyId, "studyId cannot be null");
+            checkNotNull(appId, "appId cannot be null");
             if (clientInfo == null) {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
-            return new CriteriaContext(studyId, healthCode, userId, clientInfo, userDataGroups,
+            return new CriteriaContext(appId, healthCode, userId, clientInfo, userDataGroups,
                     userSubstudyIds, languages);
         }
     }

@@ -173,7 +173,7 @@ public class ScheduledActivityServiceDuplicateTest {
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
                 .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
-                .withStudyIdentifier("test-study")
+                .withAppId("test-study")
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
                 .withUserId("6m7Yj31Pp41yjvoyU5y6RE");

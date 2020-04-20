@@ -115,7 +115,7 @@ public class AppConfigService {
     public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
         checkNotNull(context);
 
-        List<AppConfig> appConfigs = getAppConfigs(context.getStudyIdentifier(), false);
+        List<AppConfig> appConfigs = getAppConfigs(context.getAppId(), false);
 
         List<AppConfig> matches = CriteriaUtils.filterByCriteria(context, appConfigs,
                 comparingLong(AppConfig::getCreatedOn));
@@ -134,12 +134,12 @@ public class AppConfigService {
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolveSurvey(context.getStudyIdentifier(), surveyReference))
+            .map(surveyReference -> resolveSurvey(context.getAppId(), surveyReference))
             .collect(Collectors.toList()));
         
         ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
         for (ConfigReference configRef : matched.getConfigReferences()) {
-            AppConfigElement element = retrieveConfigElement(context.getStudyIdentifier(), configRef, matched.getGuid());
+            AppConfigElement element = retrieveConfigElement(context.getAppId(), configRef, matched.getGuid());
             if (element != null) {
                 builder.put(configRef.getId(), element.getData());    
             }

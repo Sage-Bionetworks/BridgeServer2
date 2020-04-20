@@ -372,7 +372,7 @@ public class SubpopulationServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
 
@@ -391,7 +391,7 @@ public class SubpopulationServiceTest {
 
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
@@ -420,7 +420,7 @@ public class SubpopulationServiceTest {
     
     private CriteriaContext createContext() {
         return new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withUserDataGroups(CRITERIA.getAllOfGroups())
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
                 .build();
@@ -429,7 +429,7 @@ public class SubpopulationServiceTest {
     private CriteriaContext criteriaContext(int version, String tag) {
         CriteriaContext.Builder builder = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
-                .withStudyIdentifier(TEST_APP_ID);
+                .withAppId(TEST_APP_ID);
         if (tag != null) {
             builder.withUserDataGroups(ImmutableSet.of(tag));    
         }

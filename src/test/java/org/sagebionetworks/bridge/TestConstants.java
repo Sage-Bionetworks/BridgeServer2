@@ -56,7 +56,7 @@ public class TestConstants {
 
     public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
-            .withUserId("user-id").withStudyIdentifier(TEST_APP_ID).build();
+            .withUserId("user-id").withAppId(TEST_APP_ID).build();
 
     public static final int TIMEOUT = 10000;
     public static final String TEST_BASE_URL = "http://localhost:3333";

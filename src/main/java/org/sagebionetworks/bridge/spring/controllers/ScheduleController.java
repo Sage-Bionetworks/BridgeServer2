@@ -78,7 +78,7 @@ public class ScheduleController extends BaseController {
 
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
-                .withStudyIdentifier(studyId)
+                .withAppId(studyId)
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withClientInfo(clientInfo).build();

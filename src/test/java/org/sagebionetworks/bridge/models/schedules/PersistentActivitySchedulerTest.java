@@ -133,7 +133,7 @@ public class PersistentActivitySchedulerTest {
     
     private ScheduleContext getContext(DateTime endsOn) {
         return new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn.withZone(MSK))
             .withHealthCode("AAA")

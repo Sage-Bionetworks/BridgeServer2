@@ -207,7 +207,7 @@ public class AppConfigServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         
@@ -241,7 +241,7 @@ public class AppConfigServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setSurveyReferences(null);
@@ -280,7 +280,7 @@ public class AppConfigServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig = setupConfigsForUser();
         appConfig.setGuid("abc-def");
@@ -300,7 +300,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserMatchesMultipleAppConfigs() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig1 = AppConfig.create();
         appConfig1.setLabel("AppConfig1");
@@ -326,7 +326,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserSurveyDoesNotExist() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         
@@ -340,7 +340,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserSurveyIdentifierAlreadySet() throws Exception {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
         appConfig2.setSurveyReferences(Lists.newArrayList(new SurveyReference("anIdentifier", "guid", DateTime.now())));
@@ -355,7 +355,7 @@ public class AppConfigServiceTest {
     public void getAppConfigForUserThrowsException() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         setupConfigsForUser();
         service.getAppConfigForUser(context, true);
@@ -365,7 +365,7 @@ public class AppConfigServiceTest {
     public void getAppCOnfigForUserReturnsNull() {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/21 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         setupConfigsForUser();
         AppConfig result = service.getAppConfigForUser(context, false);
@@ -382,7 +382,7 @@ public class AppConfigServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("iPhone/6 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         setupConfigsForUser();
         AppConfig appConfig = service.getAppConfigForUser(context, true);

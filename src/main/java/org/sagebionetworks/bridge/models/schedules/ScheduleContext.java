@@ -131,8 +131,8 @@ public final class ScheduleContext {
         private DateTime accountCreatedOn;
         private CriteriaContext.Builder contextBuilder = new CriteriaContext.Builder();
         
-        public Builder withStudyIdentifier(String studyId) {
-            contextBuilder.withStudyIdentifier(studyId);
+        public Builder withAppId(String appId) {
+            contextBuilder.withAppId(appId);
             return this;
         }
         public Builder withHealthCode(String healthCode) {

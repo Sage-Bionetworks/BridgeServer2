@@ -56,7 +56,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
     // We only care about ClientInfo (which is automatically populated to ClientInfo.UNKNOWN_CLIENT) and study ID.
     private static final ScheduleContext SCHEDULE_CONTEXT = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).build();
 
     private CompoundActivityDefinitionService mockCompoundActivityDefinitionService;
     private SchedulePlanService mockSchedulePlanService;
