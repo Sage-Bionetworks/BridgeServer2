@@ -24,8 +24,8 @@ public class SubstudyValidator implements Validator {
         } else if (!substudy.getId().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
             errors.rejectValue("id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
         }
-        if (isBlank(substudy.getStudyId())) {
-            errors.rejectValue("studyId", "is required");
+        if (isBlank(substudy.getAppId())) {
+            errors.rejectValue("appId", "is required");
         }
         if (isBlank(substudy.getName())) {
             errors.rejectValue("name", "is required");

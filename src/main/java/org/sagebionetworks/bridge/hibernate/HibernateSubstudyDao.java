@@ -26,10 +26,10 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public List<Substudy> getSubstudies(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<Substudy> getSubstudies(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
-        Map<String,Object> parameters = ImmutableMap.of("studyId", studyId);
+        Map<String,Object> parameters = ImmutableMap.of("studyId", appId);
         String query = "from HibernateSubstudy as substudy where studyId=:studyId";
         if (!includeDeleted) {
             query += " and deleted != 1";
@@ -39,11 +39,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public Substudy getSubstudy(String studyId, String id) {
-        checkNotNull(studyId);
+    public Substudy getSubstudy(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
 
-        SubstudyId substudyId = new SubstudyId(studyId, id);
+        SubstudyId substudyId = new SubstudyId(appId, id);
         return hibernateHelper.getById(HibernateSubstudy.class, substudyId);
     }
     
@@ -64,11 +64,11 @@ public class HibernateSubstudyDao implements SubstudyDao {
     }
 
     @Override
-    public void deleteSubstudyPermanently(String studyId, String id) {
-        checkNotNull(studyId);
+    public void deleteSubstudyPermanently(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        SubstudyId substudyId = new SubstudyId(studyId, id);
+        SubstudyId substudyId = new SubstudyId(appId, id);
         hibernateHelper.deleteById(HibernateSubstudy.class, substudyId);
     }
 }

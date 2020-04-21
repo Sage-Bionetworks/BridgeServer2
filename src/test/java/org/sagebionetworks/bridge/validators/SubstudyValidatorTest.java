@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -14,7 +16,7 @@ public class SubstudyValidatorTest {
     public void valid() {
         substudy = Substudy.create();
         substudy.setId("id");
-        substudy.setStudyId("study-id");
+        substudy.setAppId(TEST_APP_ID);
         substudy.setName("name");
         
         Validate.entityThrowingException(VALIDATOR, substudy);
@@ -41,8 +43,8 @@ public class SubstudyValidatorTest {
     }
 
     @Test
-    public void studyIdIsRequired() {
+    public void appIdIsRequired() {
         substudy = Substudy.create();
-        TestUtils.assertValidatorMessage(VALIDATOR, substudy, "studyId", "is required");
+        TestUtils.assertValidatorMessage(VALIDATOR, substudy, "appId", "is required");
     }
 }

@@ -31,7 +31,7 @@ public class DynamoNotificationTopicTest {
         topic.setGuid("ABC");
         topic.setName("My Test Topic");
         topic.setShortName("Test Topic");
-        topic.setStudyId(TEST_APP_ID);
+        topic.setAppId(TEST_APP_ID);
         topic.setTopicARN("aTopicARN");
         topic.setDescription("A description.");
         topic.setCreatedOn(TIMESTAMP);
@@ -72,7 +72,7 @@ public class DynamoNotificationTopicTest {
         assertEquals(deser.getGuid(), "ABC");
         assertEquals(deser.getName(), "My Test Topic");
         assertEquals(deser.getShortName(), "Test Topic");
-        assertNull(deser.getStudyId(), TEST_APP_ID);
+        assertNull(deser.getAppId(), TEST_APP_ID);
         assertEquals(deser.getDescription(), "A description.");
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
         assertEquals(deser.getModifiedOn(), TIMESTAMP);

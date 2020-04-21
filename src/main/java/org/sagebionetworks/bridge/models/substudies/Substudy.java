@@ -16,8 +16,8 @@ public interface Substudy extends BridgeEntity {
     String getId();
     void setId(String id);
     
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
     
     String getName();
     void setName(String name);

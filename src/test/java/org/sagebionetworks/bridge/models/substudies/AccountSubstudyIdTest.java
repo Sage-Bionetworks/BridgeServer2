@@ -5,7 +5,6 @@ import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
 
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 

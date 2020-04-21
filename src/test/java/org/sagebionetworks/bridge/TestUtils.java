@@ -357,7 +357,7 @@ public class TestUtils {
         topic.setName("Test Topic Name");
         topic.setShortName("Short Name");
         topic.setDescription("Test Description");
-        topic.setStudyId(TEST_APP_ID);
+        topic.setAppId(TEST_APP_ID);
         topic.setTopicARN("atopicArn");
         return topic;
     }

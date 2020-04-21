@@ -131,7 +131,7 @@ public class DynamoNotificationTopicDaoTest {
         DynamoNotificationTopic captured = topicCaptor.getValue();
         assertEquals(captured.getName(), topic.getName());
         assertEquals(captured.getDescription(), topic.getDescription());
-        assertEquals(captured.getStudyId(), topic.getStudyId());
+        assertEquals(captured.getAppId(), topic.getAppId());
         assertEquals(captured.getTopicARN(), TOPIC_ARN);
         assertEquals(captured.getGuid(), topic.getGuid());
         assertTrue(captured.getCreatedOn() > 0);
@@ -182,11 +182,11 @@ public class DynamoNotificationTopicDaoTest {
         
         verify(mockMapper, times(2)).delete(topicCaptor.capture());
         NotificationTopic captured = topicCaptor.getAllValues().get(0);
-        assertEquals(captured.getStudyId(), topic1.getStudyId());
+        assertEquals(captured.getAppId(), topic1.getAppId());
         assertEquals(captured.getGuid(), topic1.getGuid());
         
         captured = topicCaptor.getAllValues().get(1);
-        assertEquals(captured.getStudyId(), topic2.getStudyId());
+        assertEquals(captured.getAppId(), topic2.getAppId());
         assertEquals(captured.getGuid(), topic2.getGuid());
         
         verify(mockSnsClient, times(2)).deleteTopic(deleteTopicRequestCaptor.capture());
@@ -235,7 +235,7 @@ public class DynamoNotificationTopicDaoTest {
         
         verify(mockMapper).delete(topicCaptor.capture());
         NotificationTopic capturedTopic = topicCaptor.getValue();
-        assertEquals(capturedTopic.getStudyId(), TEST_APP_ID);
+        assertEquals(capturedTopic.getAppId(), TEST_APP_ID);
         assertEquals(capturedTopic.getGuid(), "anything");
     }
 
@@ -267,13 +267,13 @@ public class DynamoNotificationTopicDaoTest {
         doReturn(topic).when(mockMapper).load(any());
         
         NotificationTopic updated = dao.getTopic(TEST_APP_ID, topic.getGuid());
-        assertEquals(updated.getStudyId(), TEST_APP_ID);
+        assertEquals(updated.getAppId(), TEST_APP_ID);
         assertEquals(updated.getGuid(), "topicGuid");
         assertNull(updated.getCriteria());
         
         verify(mockMapper).load(topicCaptor.capture());
         DynamoNotificationTopic capturedTopic = topicCaptor.getValue();
-        assertEquals(capturedTopic.getStudyId(), updated.getStudyId());
+        assertEquals(capturedTopic.getAppId(), updated.getAppId());
         assertEquals(capturedTopic.getGuid(), updated.getGuid());
     }
     
@@ -292,7 +292,7 @@ public class DynamoNotificationTopicDaoTest {
 
         // Execute and validate.
         NotificationTopic result = dao.getTopic(TEST_APP_ID, GUID_WITH_CRITERIA);
-        assertEquals(result.getStudyId(), TEST_APP_ID);
+        assertEquals(result.getAppId(), TEST_APP_ID);
         assertEquals(result.getGuid(), GUID_WITH_CRITERIA);
         assertCriteria(GUID_WITH_CRITERIA, result.getCriteria());
     }
@@ -341,7 +341,7 @@ public class DynamoNotificationTopicDaoTest {
         
         DynamoDBQueryExpression<DynamoNotificationTopic> capturedQuery = queryExpressionCaptor.getValue();
         DynamoNotificationTopic capturedTopic = capturedQuery.getHashKeyValues();
-        assertEquals(capturedTopic.getStudyId(), TEST_APP_ID);
+        assertEquals(capturedTopic.getAppId(), TEST_APP_ID);
         assertNull(capturedTopic.getGuid());
         assertNull(capturedQuery.getQueryFilter()); // deleted are not being filtered out
     }
