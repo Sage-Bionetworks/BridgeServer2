@@ -165,11 +165,11 @@ public class SubpopulationServiceTest {
     @Test
     public void createDefaultSubpopulationWhereNoConsents() {
         Study study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
         Subpopulation subpop = Subpopulation.create();
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         subpop.setGuid(defaultGuid);
         
         ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
@@ -191,9 +191,9 @@ public class SubpopulationServiceTest {
     @Test
     public void createDefaultSubpopulationWhereConsentsExist() {
         Study study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_APP_ID);
         
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         Subpopulation subpop = Subpopulation.create();
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of(new DynamoStudyConsent1()));
         when(subpopDao.createDefaultSubpopulation(study.getIdentifier())).thenReturn(subpop);

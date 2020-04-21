@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import java.util.LinkedHashSet;
@@ -16,7 +17,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public class StudyAndUsersTest {
-    private static final String TEST_STUDY_ID = "test-study-id";
     private static final String TEST_STUDY_NAME = "test=study-name";
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
@@ -32,7 +32,7 @@ public class StudyAndUsersTest {
         String json = "{\n" +
                 "\t\"adminIds\": [\"3346407\", \"3348228\"],\n" +
                 "\t\"study\": {\n" +
-                "\t  \"identifier\": \"test-study-id\",\n" +
+                "\t  \"identifier\": \""+TEST_APP_ID+"\",\n" +
                 "\t  \"supportEmail\": \"test+user@email.com\",\n" +
                 "\t  \"name\": \"test=study-name\",\n" +
                 "\t  \"active\": \"true\"\n" +
@@ -57,7 +57,7 @@ public class StudyAndUsersTest {
 
         Study study = new DynamoStudy();
         study.setActive(true);
-        study.setIdentifier(TEST_STUDY_ID);
+        study.setIdentifier(TEST_APP_ID);
         study.setName(TEST_STUDY_NAME);
         study.setSupportEmail(TEST_USER_EMAIL);
 

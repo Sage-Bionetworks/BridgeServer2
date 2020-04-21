@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -37,7 +38,7 @@ public class DynamoHealthCodeDaoTest {
     public void successfullyRetrieveStudyId() {
         DynamoHealthCode code = new DynamoHealthCode();
         code.setCode("healthCode");
-        code.setStudyIdentifier("studyId");
+        code.setStudyIdentifier(TEST_APP_ID);
         code.setVersion(1L);
         when(mapper.load(any())).thenReturn(code);
         
@@ -45,7 +46,7 @@ public class DynamoHealthCodeDaoTest {
         
         verify(mapper).load(codeCaptor.capture());
         
-        assertEquals(result, "studyId");
+        assertEquals(result, TEST_APP_ID);
         assertEquals(codeCaptor.getValue().getCode(), "healthCode");
     }
     

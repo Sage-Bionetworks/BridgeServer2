@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -33,7 +34,7 @@ public class SubpopulationValidatorTest {
         subpop.setDescription("Description");
         subpop.setDefaultGroup(true);
         subpop.setRequired(true);
-        subpop.setAppId("test-study");
+        subpop.setAppId(TEST_APP_ID);
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
         subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
@@ -78,7 +79,7 @@ public class SubpopulationValidatorTest {
     @Test
     public void emptyListsOK() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setAppId("test-study");
+        subpop.setAppId(TEST_APP_ID);
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of());
@@ -92,7 +93,7 @@ public class SubpopulationValidatorTest {
     @Test
     public void nullListsOK() {
         Subpopulation subpop = Subpopulation.create();
-        subpop.setAppId("test-study");
+        subpop.setAppId(TEST_APP_ID);
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(null);

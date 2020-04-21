@@ -2,12 +2,14 @@ package org.sagebionetworks.bridge.crypto;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertNotNull;
 
 import java.io.File;
 import java.nio.file.Files;
 
 import com.google.common.base.Charsets;
+
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.springframework.core.io.ClassPathResource;
 import org.testng.annotations.Test;
@@ -28,17 +30,17 @@ public class CmsEncryptorCacheLoaderTest {
 
         // mock S3 helper
         S3Helper s3Helper = mock(S3Helper.class);
-        when(s3Helper.readS3FileAsString(CmsEncryptorCacheLoader.CERT_BUCKET, "test-study.pem")).thenReturn(
-                certString);
-        when(s3Helper.readS3FileAsString(CmsEncryptorCacheLoader.PRIV_KEY_BUCKET, "test-study.pem")).thenReturn(
-                privKeyString);
+        when(s3Helper.readS3FileAsString(CmsEncryptorCacheLoader.CERT_BUCKET, TEST_APP_ID + ".pem"))
+                .thenReturn(certString);
+        when(s3Helper.readS3FileAsString(CmsEncryptorCacheLoader.PRIV_KEY_BUCKET, TEST_APP_ID + ".pem"))
+                .thenReturn(privKeyString);
 
         // set up cache loader
         CmsEncryptorCacheLoader testCacheLoader = new CmsEncryptorCacheLoader();
         testCacheLoader.setS3CmsHelper(s3Helper);
 
         // execute and validate
-        CmsEncryptor retVal = testCacheLoader.load("test-study");
+        CmsEncryptor retVal = testCacheLoader.load(TEST_APP_ID);
         assertNotNull(retVal);
     }
 }
