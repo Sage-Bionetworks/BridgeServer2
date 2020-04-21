@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public class DynamoNotificationTopic implements NotificationTopic {
 
     private String guid;
-    private String studyId;
+    private String appId;
     private String name;
     private String shortName;
     private String description;
@@ -27,15 +27,15 @@ public class DynamoNotificationTopic implements NotificationTopic {
     private Criteria criteria;
     private boolean deleted;
     
-    @DynamoDBHashKey
+    @DynamoDBHashKey(attributeName = "studyId")
     @Override
     @JsonIgnore
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     @DynamoDBRangeKey
     @Override

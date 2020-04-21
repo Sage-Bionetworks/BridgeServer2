@@ -25,12 +25,12 @@ public interface NotificationTopic extends BridgeEntity, HasCriteria {
     void setGuid(String guid);
     
     /**
-     * The study the topic belongs to.
+     * The app the topic belongs to.
      */
-    String getStudyId();
+    String getAppId();
     
-    /** @see #getStudyId */
-    void setStudyId(String studyId);
+    /** @see #getAppId */
+    void setAppId(String appId);
     
     /**
      * The name of this topic (visible to study developers and researchers to identify 

@@ -5,8 +5,6 @@ import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
-
 public class AccountSubstudyTest {
 
     @Test

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 import static org.testng.Assert.assertEquals;
@@ -44,7 +45,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class NotificationsServiceTest {
-    private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
     private static final String GUID = "ABC-DEF-GHI-JKL";
     private static final String OS_NAME = "iPhone OS";
