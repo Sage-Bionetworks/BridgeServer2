@@ -75,25 +75,25 @@ public class FileService {
         this.s3Client = s3Client;
     }
     
-    public PagedResourceList<FileMetadata> getFiles(String studyId, int offset, int pageSize, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public PagedResourceList<FileMetadata> getFiles(String appId, int offset, int pageSize, boolean includeDeleted) {
+        checkNotNull(appId);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return fileMetadataDao.getFiles(studyId, offset, pageSize, includeDeleted);
+        return fileMetadataDao.getFiles(appId, offset, pageSize, includeDeleted);
     }
     
-    public FileMetadata getFile(String studyId, String guid) {
-        checkNotNull(studyId);
+    public FileMetadata getFile(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        return fileMetadataDao.getFile(studyId, guid)
+        return fileMetadataDao.getFile(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(FileMetadata.class));
     }
     
-    public FileMetadata createFile(String studyId, FileMetadata metadata) {
-        checkNotNull(studyId);
+    public FileMetadata createFile(String appId, FileMetadata metadata) {
+        checkNotNull(appId);
         checkNotNull(metadata);
         
         Validate.entityThrowingException(FileMetadataValidator.INSTANCE, metadata);
@@ -103,36 +103,36 @@ public class FileService {
         metadata.setVersion(0);
         metadata.setDeleted(false);
         metadata.setGuid(generateGuid());
-        metadata.setStudyId(studyId);
+        metadata.setAppId(appId);
         metadata.setCreatedOn(timestamp);
         metadata.setModifiedOn(timestamp);
         return fileMetadataDao.createFile(metadata);
     }
     
-    public FileMetadata updateFile(String studyId, FileMetadata metadata) {
-        checkNotNull(studyId);
+    public FileMetadata updateFile(String appId, FileMetadata metadata) {
+        checkNotNull(appId);
         checkNotNull(metadata);
         
         if (isBlank(metadata.getGuid())) {
             throw new BadRequestException("File has no guid");
         }
-        FileMetadata existing = getFile(studyId, metadata.getGuid());
+        FileMetadata existing = getFile(appId, metadata.getGuid());
         if (existing.isDeleted() && metadata.isDeleted()) {
             throw new EntityNotFoundException(FileMetadata.class);
         }
         Validate.entityThrowingException(FileMetadataValidator.INSTANCE, metadata);
         
-        metadata.setStudyId(studyId);
+        metadata.setAppId(appId);
         metadata.setModifiedOn(getDateTime());
         metadata.setCreatedOn(existing.getCreatedOn());
         return fileMetadataDao.updateFile(metadata);
     }
     
-    public void deleteFile(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteFile(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        FileMetadata existing = getFile(studyId, guid);
+        FileMetadata existing = getFile(appId, guid);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(FileMetadata.class);
         }        
@@ -141,17 +141,17 @@ public class FileService {
         fileMetadataDao.updateFile(existing);
     }
     
-    public void deleteFilePermanently(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteFilePermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        fileMetadataDao.deleteFilePermanently(studyId, guid);
+        fileMetadataDao.deleteFilePermanently(appId, guid);
     }
     
-    public void deleteAllStudyFiles(String studyId) {
-        checkNotNull(studyId);
+    public void deleteAllStudyFiles(String appId) {
+        checkNotNull(appId);
         
-        fileMetadataDao.deleteAllStudyFiles(studyId);
+        fileMetadataDao.deleteAllStudyFiles(appId);
     }
     
     public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {
@@ -161,9 +161,9 @@ public class FileService {
         return fileRevisionDao.getFileRevision(guid, createdOn);
     }
     
-    public PagedResourceList<FileRevision> getFileRevisions(String studyId, String guid, int offset, int pageSize) {
+    public PagedResourceList<FileRevision> getFileRevisions(String appId, String guid, int offset, int pageSize) {
         // Will throw if the file doesn't exist in the caller's study
-        getFile(studyId, guid);
+        getFile(appId, guid);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -175,11 +175,11 @@ public class FileService {
         return revisions;
     }
     
-    public FileRevision createFileRevision(String studyId, FileRevision revision) {
+    public FileRevision createFileRevision(String appId, FileRevision revision) {
         Validate.entityThrowingException(INSTANCE, revision);
         
         // Will throw if the file doesn't exist in the caller's study
-        getFile(studyId, revision.getFileGuid());
+        getFile(appId, revision.getFileGuid());
         
         // Set system properties.
         revision.setCreatedOn(getDateTime());
@@ -204,7 +204,7 @@ public class FileService {
         return revision;
     }
     
-    public void finishFileRevision(String studyId, String fileGuid, DateTime createdOn) {
+    public void finishFileRevision(String appId, String fileGuid, DateTime createdOn) {
         FileRevision existing = fileRevisionDao.getFileRevision(fileGuid, createdOn)
                 .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
         

@@ -281,7 +281,7 @@ public abstract class BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
                 .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-                .withStudyIdentifier(session.getAppId())
+                .withAppId(session.getAppId())
                 .build();
 
             sessionUpdateService.updateLanguage(session, newContext);
@@ -292,7 +292,7 @@ public abstract class BaseController {
     CriteriaContext getCriteriaContext(String studyId) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
-            .withStudyIdentifier(studyId)
+            .withAppId(studyId)
             .withLanguages(reqContext.getCallerLanguages())
             .withClientInfo(reqContext.getCallerClientInfo())
             .build();
@@ -309,7 +309,7 @@ public abstract class BaseController {
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
             .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
-            .withStudyIdentifier(session.getAppId())
+            .withAppId(session.getAppId())
             .build();
     }
     

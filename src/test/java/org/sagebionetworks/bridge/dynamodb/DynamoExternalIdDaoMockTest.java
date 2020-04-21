@@ -249,7 +249,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -267,7 +267,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -285,7 +285,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 
@@ -303,7 +303,7 @@ public class DynamoExternalIdDaoMockTest {
         setupQueryOfStrings(ImmutableList.of("AAA", "BBB", "CCC"), ImmutableList.of("DDD", "EEE"));
 
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> result = dao
-                .getExternalIds("studyId", null, pageSize, null, false);
+                .getExternalIds(TEST_APP_ID, null, pageSize, null, false);
 
         assertEquals(result.getRequestParams().get("pageSize"), pageSize);
 

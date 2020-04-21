@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
@@ -31,7 +32,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -45,7 +46,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -83,7 +84,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -96,7 +97,7 @@ public class ReportDataValidatorTest {
     public void keyIsValidated() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -114,7 +115,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -135,7 +136,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier("test-study").build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);

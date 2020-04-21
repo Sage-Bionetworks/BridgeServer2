@@ -169,7 +169,7 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)
@@ -199,7 +199,7 @@ public class DynamoScheduledActivityDaoMockTest {
         Map<String, DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withInitialTimeZone(PACIFIC_TIME_ZONE)
             .withEndsOn(endsOn)

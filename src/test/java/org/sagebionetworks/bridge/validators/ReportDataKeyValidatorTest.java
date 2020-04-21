@@ -14,7 +14,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void validStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withIdentifier("foo")
                 .withReportType(ReportType.STUDY).build();
         
@@ -24,7 +24,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void validParticipantKey() {
         ReportDataKey key = new ReportDataKey.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withHealthCode("ABC")
                 .withIdentifier("foo")
                 .withReportType(ReportType.PARTICIPANT).build();
@@ -35,7 +35,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void reportTypeMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID).withHealthCode("ABC")
+            new ReportDataKey.Builder().withAppId(TEST_APP_ID).withHealthCode("ABC")
                     .withIdentifier("foo").build();
             
         }, "reportType", "is required");
@@ -44,7 +44,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void healthCodeMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID).withIdentifier("foo")
+            new ReportDataKey.Builder().withAppId(TEST_APP_ID).withIdentifier("foo")
                     .withReportType(ReportType.PARTICIPANT).build();
         }, "healthCode", "is required for participant reports");
     }
@@ -52,7 +52,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void identifierMissing() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID)
+            new ReportDataKey.Builder().withAppId(TEST_APP_ID)
                     .withReportType(ReportType.STUDY).build();
         }, "identifier", "cannot be missing or blank");
     }
@@ -60,7 +60,7 @@ public class ReportDataKeyValidatorTest {
     @Test
     public void identifierInvalid() {
         test(() -> {
-            new ReportDataKey.Builder().withStudyIdentifier(TEST_APP_ID).withIdentifier("My Report")
+            new ReportDataKey.Builder().withAppId(TEST_APP_ID).withIdentifier("My Report")
                     .withReportType(ReportType.STUDY).build();
         }, "identifier", "can only contain letters, numbers, underscore and dash");
     }

@@ -120,7 +120,7 @@ public class SignInTest {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail("email")
                 .withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TEST_APP_ID);
+        assertEquals(accountId.getAppId(), TEST_APP_ID);
         assertEquals(accountId.getEmail(), "email");
     }
     
@@ -129,7 +129,7 @@ public class SignInTest {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withPhone(TestConstants.PHONE).withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TEST_APP_ID);
+        assertEquals(accountId.getAppId(), TEST_APP_ID);
         assertEquals(accountId.getPhone().getNumber(), TestConstants.PHONE.getNumber());
     }
     
@@ -138,7 +138,7 @@ public class SignInTest {
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withExternalId("external-id").withPassword("password").build();
         AccountId accountId = signIn.getAccountId();
-        assertEquals(accountId.getStudyId(), TEST_APP_ID);
+        assertEquals(accountId.getAppId(), TEST_APP_ID);
         assertEquals(accountId.getExternalId(), "external-id");
     }
     

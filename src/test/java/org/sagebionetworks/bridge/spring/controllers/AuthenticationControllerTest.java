@@ -779,7 +779,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getAppId());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
     
@@ -807,7 +807,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.PHONE), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getAppId());
         assertEquals(TestConstants.PHONE, deser.getPhone());
     }
     
@@ -1018,7 +1018,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier());
+        assertEquals(TEST_STUDY_ID_STRING, context.getAppId());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());
@@ -1271,7 +1271,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID))
+        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_APP_ID));
         
         Study newStudy = Study.create();

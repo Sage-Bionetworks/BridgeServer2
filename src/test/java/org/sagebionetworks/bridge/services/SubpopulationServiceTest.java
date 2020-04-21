@@ -165,11 +165,11 @@ public class SubpopulationServiceTest {
     @Test
     public void createDefaultSubpopulationWhereNoConsents() {
         Study study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
         Subpopulation subpop = Subpopulation.create();
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         subpop.setGuid(defaultGuid);
         
         ArgumentCaptor<StudyConsentForm> captor = ArgumentCaptor.forClass(StudyConsentForm.class);
@@ -191,9 +191,9 @@ public class SubpopulationServiceTest {
     @Test
     public void createDefaultSubpopulationWhereConsentsExist() {
         Study study = new DynamoStudy();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_APP_ID);
         
-        SubpopulationGuid defaultGuid = SubpopulationGuid.create("test-study");
+        SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         Subpopulation subpop = Subpopulation.create();
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of(new DynamoStudyConsent1()));
         when(subpopDao.createDefaultSubpopulation(study.getIdentifier())).thenReturn(subpop);
@@ -372,7 +372,7 @@ public class SubpopulationServiceTest {
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
 
@@ -391,7 +391,7 @@ public class SubpopulationServiceTest {
 
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .build();
         List<Subpopulation> results = service.getSubpopulationsForUser(context);
         assertTrue(results.isEmpty());
@@ -420,7 +420,7 @@ public class SubpopulationServiceTest {
     
     private CriteriaContext createContext() {
         return new CriteriaContext.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withUserDataGroups(CRITERIA.getAllOfGroups())
                 .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
                 .build();
@@ -429,7 +429,7 @@ public class SubpopulationServiceTest {
     private CriteriaContext criteriaContext(int version, String tag) {
         CriteriaContext.Builder builder = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/"+version+" (Unknown iPhone; iPhone OS/9.0.2) BridgeSDK/4"))
-                .withStudyIdentifier(TEST_APP_ID);
+                .withAppId(TEST_APP_ID);
         if (tag != null) {
             builder.withUserDataGroups(ImmutableSet.of(tag));    
         }

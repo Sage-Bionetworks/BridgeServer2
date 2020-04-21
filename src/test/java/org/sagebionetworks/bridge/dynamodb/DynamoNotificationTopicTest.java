@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -30,7 +31,7 @@ public class DynamoNotificationTopicTest {
         topic.setGuid("ABC");
         topic.setName("My Test Topic");
         topic.setShortName("Test Topic");
-        topic.setStudyId("test-study");
+        topic.setStudyId(TEST_APP_ID);
         topic.setTopicARN("aTopicARN");
         topic.setDescription("A description.");
         topic.setCreatedOn(TIMESTAMP);
@@ -71,7 +72,7 @@ public class DynamoNotificationTopicTest {
         assertEquals(deser.getGuid(), "ABC");
         assertEquals(deser.getName(), "My Test Topic");
         assertEquals(deser.getShortName(), "Test Topic");
-        assertNull(deser.getStudyId(), "test-study");
+        assertNull(deser.getStudyId(), TEST_APP_ID);
         assertEquals(deser.getDescription(), "A description.");
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
         assertEquals(deser.getModifiedOn(), TIMESTAMP);

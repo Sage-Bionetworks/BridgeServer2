@@ -213,7 +213,7 @@ public class TemplateService {
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
-            .withStudyIdentifier(study.getIdentifier())
+            .withAppId(study.getIdentifier())
             .build();
 
         Template template = getTemplateForUser(study, context, type)
@@ -228,7 +228,7 @@ public class TemplateService {
         checkNotNull(type);
 
         ResourceList<Template> results = (ResourceList<Template>)templateDao.getTemplates(
-                context.getStudyIdentifier(), type, null, null, false);
+                context.getAppId(), type, null, null, false);
         for (Template template : results.getItems()) {
             loadCriteria(template);
         }
@@ -243,7 +243,7 @@ public class TemplateService {
         String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             // Specified default may not exist, log as integrity violation, but continue
-            Optional<Template> optional = templateDao.getTemplate(context.getStudyIdentifier(), defaultGuid);
+            Optional<Template> optional = templateDao.getTemplate(context.getAppId(), defaultGuid);
             if (optional.isPresent()) {
                 return optional;
             }

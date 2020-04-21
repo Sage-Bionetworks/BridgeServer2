@@ -192,7 +192,7 @@ public class StudyReportController extends BaseController {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(STUDY)
-                .withStudyIdentifier(session.getAppId()).build();
+                .withAppId(session.getAppId()).build();
         
         return reportService.getReportIndex(key);
     }
@@ -209,7 +209,7 @@ public class StudyReportController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withReportType(STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(session.getAppId()).build();
+                .withAppId(session.getAppId()).build();
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(identifier);
         
@@ -222,7 +222,7 @@ public class StudyReportController extends BaseController {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(STUDY)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         
         ReportIndex index = reportService.getReportIndex(key);
         if (index == null || !index.isPublic()) {

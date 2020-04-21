@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -29,7 +30,6 @@ import org.sagebionetworks.bridge.services.UserDataDownloadService;
 public class UserDataDownloadControllerTest extends Mockito {
     private static final String START_DATE = "2015-08-15";
     private static final String END_DATE = "2015-08-19";
-    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "test-user-id";
     private static final String EMAIL = "email@email.com";
 
@@ -54,7 +54,7 @@ public class UserDataDownloadControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         doReturn(mockSession).when(controller).getAuthenticatedAndConsentedSession();
-        doReturn(STUDY_ID).when(mockSession).getAppId();
+        doReturn(TEST_APP_ID).when(mockSession).getAppId();
         doReturn(mockRequest).when(controller).request();
     }
     
@@ -76,7 +76,7 @@ public class UserDataDownloadControllerTest extends Mockito {
         StatusMessage result = controller.requestUserData();
         assertEquals(result, ACCEPTED_MSG);
 
-        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(TEST_APP_ID), eq(USER_ID), dateRangeCaptor.capture());
         
         // validate args sent to mock service
         DateRange dateRange = dateRangeCaptor.getValue();
@@ -95,7 +95,7 @@ public class UserDataDownloadControllerTest extends Mockito {
         StatusMessage result = controller.requestUserData();
         assertEquals(result, ACCEPTED_MSG);
 
-        verify(mockService).requestUserData(eq(STUDY_ID), eq(USER_ID), dateRangeCaptor.capture());
+        verify(mockService).requestUserData(eq(TEST_APP_ID), eq(USER_ID), dateRangeCaptor.capture());
         
         // validate args sent to mock service
         DateRange dateRange = dateRangeCaptor.getValue();

@@ -152,7 +152,7 @@ public class AppConfigControllerTest extends Mockito {
         verify(mockService).getAppConfigForUser(contextCaptor.capture(), eq(true));
         CriteriaContext capturedContext = contextCaptor.getValue();
         
-        assertEquals(capturedContext.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(capturedContext.getAppId(), TEST_APP_ID);
         assertEquals(capturedContext.getClientInfo().getAppName(), "Asthma");
         assertEquals(capturedContext.getClientInfo().getAppVersion(), new Integer(26));
         assertEquals(capturedContext.getLanguages(), ImmutableList.of("en"));

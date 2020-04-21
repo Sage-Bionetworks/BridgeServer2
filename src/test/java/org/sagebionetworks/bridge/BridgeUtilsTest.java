@@ -93,12 +93,12 @@ public class BridgeUtilsTest {
     @Test
     public void mapSubstudyMemberships() {
         Account account = Account.create();
-        AccountSubstudy substudy1 = AccountSubstudy.create("studyId", "subA", "accountId");
-        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        AccountSubstudy substudy1 = AccountSubstudy.create(TEST_APP_ID, "subA", "accountId");
+        AccountSubstudy substudy2 = AccountSubstudy.create(TEST_APP_ID, "subB", "accountId");
         substudy2.setExternalId("extB");
-        AccountSubstudy substudy3 = AccountSubstudy.create("studyId", "subC", "accountId");
+        AccountSubstudy substudy3 = AccountSubstudy.create(TEST_APP_ID, "subC", "accountId");
         substudy3.setExternalId("extC");
-        AccountSubstudy substudy4 = AccountSubstudy.create("studyId", "subD", "accountId");
+        AccountSubstudy substudy4 = AccountSubstudy.create(TEST_APP_ID, "subD", "accountId");
         account.setAccountSubstudies(ImmutableSet.of(substudy1, substudy2, substudy3, substudy4));
         
         Map<String, String> results = BridgeUtils.mapSubstudyMemberships(account);
@@ -112,7 +112,7 @@ public class BridgeUtilsTest {
     @Test
     public void mapSubstudyMembershipsOneEntry() {
         Account account = Account.create();
-        AccountSubstudy substudy2 = AccountSubstudy.create("studyId", "subB", "accountId");
+        AccountSubstudy substudy2 = AccountSubstudy.create(TEST_APP_ID, "subB", "accountId");
         substudy2.setExternalId("extB");
         account.setAccountSubstudies(ImmutableSet.of(substudy2));
         
@@ -371,7 +371,7 @@ public class BridgeUtilsTest {
         Account account = Account.create();
         Set<AccountSubstudy> accountSubstudies = Arrays.asList(substudyIds)
                 .stream().map((id) -> {
-            return AccountSubstudy.create("studyId", id, "accountId");
+            return AccountSubstudy.create(TEST_APP_ID, id, "accountId");
         }).collect(BridgeCollectors.toImmutableSet());
         account.setAccountSubstudies(accountSubstudies);
         return account;
@@ -442,40 +442,40 @@ public class BridgeUtilsTest {
     public void parseAccountId() {
         // Identifier has upper-case letter to ensure we don't downcase or otherwise change it.
         AccountId accountId = BridgeUtils.parseAccountId("test", "IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "externalid:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getExternalId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "externalId:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getExternalId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "healthcode:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getHealthCode(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "healthCode:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getHealthCode(), "IdentifierA9");
         
         // Unrecognized prefix is just part of the userId
         accountId = BridgeUtils.parseAccountId("test", "unk:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getId(), "unk:IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "synapseUserId:IdentifierA10");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA10");
         
         accountId = BridgeUtils.parseAccountId("test", "synapseuserid:IdentifierA11");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA11");
         
         accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
     }
     
@@ -487,7 +487,7 @@ public class BridgeUtilsTest {
         Study study = Study.create();
         study.setName("name1");
         study.setShortName("shortName");
-        study.setIdentifier("identifier1");
+        study.setIdentifier(TEST_APP_ID);
         study.setSponsorName("sponsorName1");
         study.setSupportEmail("supportEmail1");
         study.setTechnicalEmail("technicalEmail1");
@@ -499,7 +499,7 @@ public class BridgeUtilsTest {
         
         assertEquals(map.get("studyName"), "name2");
         assertEquals(map.get("studyShortName"), "shortName");
-        assertEquals(map.get("studyId"), "identifier2");
+        assertEquals(map.get("studyId"), TEST_APP_ID);
         assertEquals(map.get("sponsorName"), "sponsorName2");
         assertEquals(map.get("supportEmail"), "supportEmail2");
         assertEquals(map.get("technicalEmail"), "technicalEmail2");

@@ -14,21 +14,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public final class ReportDataKey implements BridgeEntity {
     
-    private final String studyId;
+    private final String appId;
     private final String identifier;
     private final String healthCode;
     private final ReportType reportType;
     
-    private ReportDataKey(String healthCode, String identifier, String studyId, ReportType reportType) {
-        this.studyId = studyId;
+    private ReportDataKey(String healthCode, String identifier, String appId, ReportType reportType) {
+        this.appId = appId;
         this.identifier = identifier;
         this.healthCode = healthCode;
         this.reportType = reportType;
     }
     
     @JsonIgnore
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
     public String getIdentifier() {
@@ -47,24 +47,24 @@ public final class ReportDataKey implements BridgeEntity {
     @JsonIgnore
     public String getKeyString() {
         return (healthCode != null) ?
-                String.format("%s:%s:%s", healthCode, identifier, studyId) :
-                String.format("%s:%s", identifier, studyId);
+                String.format("%s:%s:%s", healthCode, identifier, appId) :
+                String.format("%s:%s", identifier, appId);
     }
     
     @JsonIgnore
     public String getIndexKeyString() {
-        return String.format("%s:%s", studyId, reportType.name());
+        return String.format("%s:%s", appId, reportType.name());
     }
     
     @Override
     public String toString() {
-        return "ReportDataKey [studyId=" + studyId + ", identifier=" + identifier
+        return "ReportDataKey [appId=" + appId + ", identifier=" + identifier
                 + ", healthCode=[REDACTED], reportType=" + reportType + "]";
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(healthCode, identifier, studyId, reportType);
+        return Objects.hash(healthCode, identifier, appId, reportType);
     }
 
     @Override
@@ -75,17 +75,17 @@ public final class ReportDataKey implements BridgeEntity {
             return false;
         ReportDataKey other = (ReportDataKey) obj;
         return Objects.equals(healthCode, other.healthCode) && Objects.equals(identifier, other.identifier)
-                && Objects.equals(studyId, other.studyId) && Objects.equals(reportType, other.reportType);
+                && Objects.equals(appId, other.appId) && Objects.equals(reportType, other.reportType);
     }
     
     public static class Builder {
-        private String studyId;
+        private String appId;
         private String identifier;
         private String healthCode;
         private ReportType reportType;
         
-        public Builder withStudyIdentifier(String studyId) {
-            this.studyId = studyId;
+        public Builder withAppId(String appId) {
+            this.appId = appId;
             return this;
         }
         public Builder withIdentifier(String identifier) {
@@ -101,7 +101,7 @@ public final class ReportDataKey implements BridgeEntity {
             return this;
         }
         public ReportDataKey build() {
-            return new ReportDataKey(healthCode, identifier, studyId, reportType);
+            return new ReportDataKey(healthCode, identifier, appId, reportType);
         }
     }
     

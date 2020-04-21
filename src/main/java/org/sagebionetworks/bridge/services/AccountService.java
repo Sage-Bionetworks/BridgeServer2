@@ -71,9 +71,9 @@ public class AccountService {
     
     /**
      * Search for all accounts across studies that have the same Synapse user ID in common, 
-     * and return a list of the study IDs where these accounts are found.
+     * and return a list of the app IDs where these accounts are found.
      */
-    public List<String> getStudyIdsForUser(String synapseUserId) {
+    public List<String> getAppIdsForUser(String synapseUserId) {
         if (StringUtils.isBlank(synapseUserId)) {
             throw new BadRequestException("Account does not have a Synapse user");
         }

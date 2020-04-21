@@ -299,7 +299,7 @@ public class AuthenticationService {
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
-                    + accountId.getStudyId() + "'");
+                    + accountId.getAppId() + "'");
         }
     }
     
@@ -414,7 +414,7 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getStudyIdentifier(), account.getId());
+            clearSession(context.getAppId(), account.getId());
             Study study = studyService.getStudy(signIn.getStudyId());
             session = getSessionFromAccount(study, context, account);
 

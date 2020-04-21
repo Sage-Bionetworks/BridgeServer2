@@ -249,7 +249,7 @@ public class AuthenticationController extends BaseController {
     @PostMapping({"/v3/auth/resendEmailVerification", "/api/v1/auth/resendEmailVerification"})
     public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
-        getStudyOrThrowException(accountId.getUnguardedAccountId().getStudyId());
+        getStudyOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.EMAIL, accountId);
         return new StatusMessage("If registered with the study, we'll email you instructions on how to verify your account.");
@@ -269,7 +269,7 @@ public class AuthenticationController extends BaseController {
         AccountId accountId = parseJson(AccountId.class);
         
         // Must be here to get the correct exception if study property is missing
-        getStudyOrThrowException(accountId.getUnguardedAccountId().getStudyId());
+        getStudyOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.PHONE, accountId);
         return new StatusMessage("If registered with the study, we'll send an SMS message to your phone.");
@@ -332,7 +332,7 @@ public class AuthenticationController extends BaseController {
         // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withUserId(account.getId())
-            .withStudyIdentifier(targetStudy.getIdentifier())
+            .withAppId(targetStudy.getIdentifier())
             .build();
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);

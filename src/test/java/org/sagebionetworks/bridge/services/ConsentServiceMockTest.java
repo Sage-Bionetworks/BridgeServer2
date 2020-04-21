@@ -101,7 +101,7 @@ public class ConsentServiceMockTest {
             .withId(ID).withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.TRUE)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder().withUserId(PARTICIPANT.getId())
-            .withStudyIdentifier(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).build();
 
     @Spy
     private ConsentService consentService;
@@ -1051,7 +1051,7 @@ public class ConsentServiceMockTest {
         account.setEmail(EMAIL);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
-        AccountSubstudy as = AccountSubstudy.create("studyId", "substudyId", ID);
+        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, "substudyId", ID);
         as.setExternalId("anExternalId");
         account.getAccountSubstudies().add(as);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));

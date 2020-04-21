@@ -71,10 +71,10 @@ public class ReportServiceTest {
     private static final int PAGE_SIZE = 75;
     
     private static final ReportDataKey STUDY_REPORT_DATA_KEY = new ReportDataKey.Builder()
-            .withReportType(ReportType.STUDY).withStudyIdentifier(TEST_APP_ID).withIdentifier(IDENTIFIER).build();
+            .withReportType(ReportType.STUDY).withAppId(TEST_APP_ID).withIdentifier(IDENTIFIER).build();
     
     private static final ReportDataKey PARTICIPANT_REPORT_DATA_KEY = new ReportDataKey.Builder()
-            .withReportType(ReportType.PARTICIPANT).withStudyIdentifier(TEST_APP_ID).withHealthCode(HEALTH_CODE)
+            .withReportType(ReportType.PARTICIPANT).withAppId(TEST_APP_ID).withHealthCode(HEALTH_CODE)
             .withIdentifier(IDENTIFIER).build();
     
     private static final ReportData CANNED_REPORT = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
@@ -204,7 +204,7 @@ public class ReportServiceTest {
     public void getReportIndex() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(IDENTIFIER).withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(IDENTIFIER);
@@ -295,7 +295,7 @@ public class ReportServiceTest {
         assertEquals(retrieved.getData().get("field2").asText(), "Name");
         
         verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(IDENTIFIER).build(), null);
     }
@@ -325,7 +325,7 @@ public class ReportServiceTest {
         
         verify(mockReportIndexDao).addIndex(new ReportDataKey.Builder()
                 .withHealthCode(HEALTH_CODE)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(IDENTIFIER).build(), null);
     }
@@ -364,7 +364,7 @@ public class ReportServiceTest {
         verifyNoMoreInteractions(mockReportDataDao);
         
         ReportDataKey key = reportDataKeyCaptor.getValue();
-        assertEquals(key.getStudyId(), TEST_APP_ID);
+        assertEquals(key.getAppId(), TEST_APP_ID);
         assertEquals(key.getIdentifier(), IDENTIFIER);
     }
     
@@ -420,7 +420,7 @@ public class ReportServiceTest {
     @Test
     public void deleteStudyReportRecordValidatesStudyId() {
         invalid(() -> service.deleteStudyReportRecord(null, IDENTIFIER, START_DATE.toString()),
-                "studyId", "is required");        
+                "appId", "is required");        
     }
     
     @Test
@@ -487,7 +487,7 @@ public class ReportServiceTest {
     @Test
     public void getStudyReportDataNoStudy() {
         invalid(() -> service.getStudyReport(null, IDENTIFIER, START_DATE, END_DATE),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -499,7 +499,7 @@ public class ReportServiceTest {
     @Test
     public void getParticipantReportDataNoStudy() {
         invalid(() -> service.getParticipantReport(null, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE),
-                "studyId", "is required");
+                "appId", "is required");
     }
 
     @Test
@@ -517,7 +517,7 @@ public class ReportServiceTest {
     @Test
     public void saveStudyReportDataNoStudy() {
         invalid(() -> service.saveStudyReport(null, IDENTIFIER, CANNED_REPORT),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -534,7 +534,7 @@ public class ReportServiceTest {
     @Test
     public void saveParticipantReportDataNoStudy() {
         invalid(() -> service.saveParticipantReport(null, IDENTIFIER, HEALTH_CODE, CANNED_REPORT),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -557,7 +557,7 @@ public class ReportServiceTest {
     @Test
     public void deleteStudyReportNoStudy() {
         invalid(() -> service.deleteStudyReport(null, IDENTIFIER),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -569,7 +569,7 @@ public class ReportServiceTest {
     @Test
     public void deleteParticipantReportNoStudy() {
         invalid(() -> service.deleteParticipantReport(null, IDENTIFIER, HEALTH_CODE), 
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -671,7 +671,7 @@ public class ReportServiceTest {
         
         ReportDataKey key = reportDataKeyCaptor.getValue();
         assertEquals(key.getHealthCode(), HEALTH_CODE);
-        assertEquals(key.getStudyId(), TEST_APP_ID);
+        assertEquals(key.getAppId(), TEST_APP_ID);
         assertEquals(key.getReportType(), ReportType.PARTICIPANT);
         assertEquals(key.getIdentifier(), IDENTIFIER);
     }
@@ -696,7 +696,7 @@ public class ReportServiceTest {
                 eq(OFFSET_KEY), eq(PAGE_SIZE));
         
         ReportDataKey key = reportDataKeyCaptor.getValue();
-        assertEquals(key.getStudyId(), TEST_APP_ID);
+        assertEquals(key.getAppId(), TEST_APP_ID);
         assertEquals(key.getReportType(), ReportType.STUDY);
         assertEquals(key.getIdentifier(), IDENTIFIER);
     }
@@ -875,7 +875,7 @@ public class ReportServiceTest {
                    .withHealthCode("dummy-value") 
                    .withReportType(ReportType.PARTICIPANT)
                    .withIdentifier(IDENTIFIER)
-                   .withStudyIdentifier(TEST_APP_ID).build();
+                   .withAppId(TEST_APP_ID).build();
         setupMismatchedSubstudies(key);
         
         service.deleteParticipantReportIndex(TEST_APP_ID, IDENTIFIER);

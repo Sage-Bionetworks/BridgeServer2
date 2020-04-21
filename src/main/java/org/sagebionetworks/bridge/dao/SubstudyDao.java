@@ -7,14 +7,14 @@ import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 public interface SubstudyDao {
     
-    List<Substudy> getSubstudies(String studyId, boolean includeDeleted);
+    List<Substudy> getSubstudies(String appId, boolean includeDeleted);
     
-    Substudy getSubstudy(String studyId, String id);
+    Substudy getSubstudy(String appId, String id);
     
     VersionHolder createSubstudy(Substudy substudy);
     
     VersionHolder updateSubstudy(Substudy substudy);
     
-    void deleteSubstudyPermanently(String studyId, String id);
+    void deleteSubstudyPermanently(String appId, String id);
 
 }

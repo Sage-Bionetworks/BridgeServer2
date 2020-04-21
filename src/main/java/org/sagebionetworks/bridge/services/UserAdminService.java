@@ -135,7 +135,7 @@ public class UserAdminService {
             // We don't filter users by any of these filtering criteria in the admin API.
             CriteriaContext context = new CriteriaContext.Builder()
                     .withUserId(identifier.getIdentifier())
-                    .withStudyIdentifier(study.getIdentifier()).build();
+                    .withAppId(study.getIdentifier()).build();
             
             if (consentUser) {
                 String name = String.format("[Signature for %s]", updatedParticipant.getEmail());

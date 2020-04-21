@@ -19,7 +19,7 @@ public class ScheduleContextValidatorTest {
     public void validContext() {
         // The minimum you need to have a valid schedule context.
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("test-id")
+            .withAppId("test-id")
             .withClientInfo(ClientInfo.UNKNOWN_CLIENT)
             .withEndsOn(DateTime.now().plusDays(2))
             .withInitialTimeZone(DateTimeZone.forOffsetHours(-3))
@@ -33,7 +33,7 @@ public class ScheduleContextValidatorTest {
     
     @Test
     public void requiredFields() {
-        ScheduleContext context = new ScheduleContext.Builder().withStudyIdentifier("test").build();
+        ScheduleContext context = new ScheduleContext.Builder().withAppId("test").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
             fail("Should have thrown exception");
@@ -49,7 +49,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void endsOnAfterNow() {
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id")
+            .withAppId("study-id")
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
         try {
@@ -65,7 +65,7 @@ public class ScheduleContextValidatorTest {
         // Setting this two days past the maximum. Will always fail.
         DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withStudyIdentifier("study-id").withInitialTimeZone(DateTimeZone.UTC)
+            .withAppId("study-id").withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -78,7 +78,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void minimumActivitiesAreGreaterThanZero() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("study-id")
+                .withAppId("study-id")
                 .withMinimumPerSchedule(-1).build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -91,7 +91,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void minimumActivitiesAreNotGreaterThanMax() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier("study-id")
+                .withAppId("study-id")
                 .withMinimumPerSchedule(ScheduleContextValidator.MAX_MIN_ACTIVITY_COUNT + 1).build();
         try {
             Validate.nonEntityThrowingException(validator, context);

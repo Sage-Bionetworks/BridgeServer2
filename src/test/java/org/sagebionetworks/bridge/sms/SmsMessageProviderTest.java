@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.sms;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -22,7 +23,7 @@ public class SmsMessageProviderTest {
         Study study = Study.create();
         study.setName("Name");
         study.setShortName("ShortName");
-        study.setIdentifier("id");
+        study.setIdentifier(TEST_APP_ID);
         study.setSponsorName("SponsorName");
         study.setSupportEmail("support@email.com");
         study.setTechnicalEmail("tech@email.com");
@@ -58,7 +59,7 @@ public class SmsMessageProviderTest {
         // BridgeUtils.studyTemplateVariables() has been called
         assertEquals(provider.getTokenMap().get("studyName"), "Name");
         assertEquals(provider.getTokenMap().get("studyShortName"), "ShortName");
-        assertEquals(provider.getTokenMap().get("studyId"), "id");
+        assertEquals(provider.getTokenMap().get("studyId"), TEST_APP_ID);
         assertEquals(provider.getTokenMap().get("sponsorName"), "SponsorName");
         assertEquals(provider.getTokenMap().get("supportEmail"), "support@email.com");
         assertEquals(provider.getTokenMap().get("technicalEmail"), "tech@email.com");

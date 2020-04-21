@@ -823,7 +823,7 @@ public class StudyControllerTest extends Mockito {
         mockStudy("Study A", "studyA", false);
         
         List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
-        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
@@ -853,7 +853,7 @@ public class StudyControllerTest extends Mockito {
         
         // This user is only associated to the API study, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
-        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
+        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
         String jsonString = controller.getStudyMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");

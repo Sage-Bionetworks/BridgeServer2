@@ -61,7 +61,7 @@ public class AppConfigController extends BaseController {
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(reqContext.getCallerLanguages())
                 .withClientInfo(reqContext.getCallerClientInfo())
-                .withStudyIdentifier(study.getIdentifier())
+                .withAppId(study.getIdentifier())
                 .build();
         
         CacheKey cacheKey = getCriteriaContextCacheKey(context);
@@ -135,12 +135,12 @@ public class AppConfigController extends BaseController {
         ClientInfo info = context.getClientInfo();
         String appVersion = info.getAppVersion() == null ? "0" : Integer.toString(info.getAppVersion());
         String osName = info.getOsName() == null ? "" : info.getOsName();
-        String studyId = context.getStudyIdentifier();
+        String appId = context.getAppId();
         // Languages. We don't provide a UI to create filtering criteria for these, but if they are 
         // set through our API, and they are included in the Accept-Language header, we will filter on 
         // them, so it's important they be part of the key
         String langs = BridgeUtils.SPACE_JOINER.join(context.getLanguages());
         
-        return CacheKey.viewKey(AppConfig.class, appVersion, osName, langs, studyId);
+        return CacheKey.viewKey(AppConfig.class, appVersion, osName, langs, appId);
     }
 }

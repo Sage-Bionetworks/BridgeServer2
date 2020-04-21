@@ -93,11 +93,11 @@ public class HibernateAccountDao implements AccountDao {
         if (unguarded.getId() != null) {
             account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
             // Enforce the study membership of the accountId
-            if (account == null || !account.getStudyId().equals(accountId.getStudyId())) {
+            if (account == null || !account.getStudyId().equals(accountId.getAppId())) {
                 return Optional.empty();
             }
         } else {
-            QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getStudyId(), accountId, null, false);
+            QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getAppId(), accountId, null, false);
             List<HibernateAccount> accountList = hibernateHelper.queryGet(
                     builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
             if (accountList.isEmpty()) {
