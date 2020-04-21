@@ -1271,7 +1271,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        when(mockAccountService.getStudyIdsForUser(SYNAPSE_USER_ID))
+        when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_APP_ID));
         
         Study newStudy = Study.create();

@@ -134,27 +134,27 @@ public class AccountServiceTest extends Mockito {
         List<String> studies = ImmutableList.of("study1", "study2");
         when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(studies);
 
-        List<String> returnVal = service.getStudyIdsForUser(SYNAPSE_USER_ID);
+        List<String> returnVal = service.getAppIdsForUser(SYNAPSE_USER_ID);
         assertEquals(returnVal, studies);
         verify(mockAccountDao).getStudyIdsForUser(SYNAPSE_USER_ID);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
             "Account does not have a Synapse user")
-    public void getStudyIdsForUser_NullSynapseUserId() {
-        service.getStudyIdsForUser(null);
+    public void getAppIdsForUser_NullSynapseUserId() {
+        service.getAppIdsForUser(null);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
             "Account does not have a Synapse user")
-    public void getStudyIdsForUser_EmptySynapseUserId() {
-        service.getStudyIdsForUser("");
+    public void getAppIdsForUser_EmptySynapseUserId() {
+        service.getAppIdsForUser("");
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
             "Account does not have a Synapse user")
-    public void getStudyIdsForUser_BlankSynapseUserId() {
-        service.getStudyIdsForUser("   ");
+    public void getAppIdsForUser_BlankSynapseUserId() {
+        service.getAppIdsForUser("   ");
     }
 
     @Test
