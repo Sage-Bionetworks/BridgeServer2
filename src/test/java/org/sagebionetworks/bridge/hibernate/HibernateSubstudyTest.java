@@ -23,7 +23,7 @@ public class HibernateSubstudyTest {
     public void canSerialize() throws Exception {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
-        substudy.setStudyId(TEST_APP_ID);
+        substudy.setAppId(TEST_APP_ID);
         substudy.setName("name");
         substudy.setDeleted(true);
         substudy.setCreatedOn(CREATED_ON);

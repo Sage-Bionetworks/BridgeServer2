@@ -29,11 +29,11 @@ public class SubstudyService {
         this.substudyDao = substudyDao;
     }
     
-    public Substudy getSubstudy(String studyId, String id, boolean throwsException) {
-        checkNotNull(studyId);
+    public Substudy getSubstudy(String appId, String id, boolean throwsException) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        Substudy substudy = substudyDao.getSubstudy(studyId, id);
+        Substudy substudy = substudyDao.getSubstudy(appId, id);
         if (throwsException && substudy == null) {
             throw new EntityNotFoundException(Substudy.class);
         }
@@ -41,26 +41,26 @@ public class SubstudyService {
     }
     
     /**
-     * Get the list of active substudy IDs for this study (used to validate criteria 
+     * Get the list of active substudy IDs for this app (used to validate criteria 
      * objects throughout the system). Calling this method is preferred to getSubstudies() 
      * so we can provide a cache for these infrequently changing identifiers.
      */
-    public Set<String> getSubstudyIds(String studyId) {
-        return getSubstudies(studyId, false).stream()
+    public Set<String> getSubstudyIds(String appId) {
+        return getSubstudies(appId, false).stream()
                 .map(Substudy::getId).collect(BridgeCollectors.toImmutableSet());
     }
     
-    public List<Substudy> getSubstudies(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<Substudy> getSubstudies(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
-        return substudyDao.getSubstudies(studyId, includeDeleted);
+        return substudyDao.getSubstudies(appId, includeDeleted);
     }
     
-    public VersionHolder createSubstudy(String studyId, Substudy substudy) {
-        checkNotNull(studyId);
+    public VersionHolder createSubstudy(String appId, Substudy substudy) {
+        checkNotNull(appId);
         checkNotNull(substudy);
         
-        substudy.setStudyId(studyId);
+        substudy.setAppId(appId);
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
         substudy.setVersion(null);
@@ -69,7 +69,7 @@ public class SubstudyService {
         substudy.setCreatedOn(timestamp);
         substudy.setModifiedOn(timestamp);
         
-        Substudy existing = substudyDao.getSubstudy(studyId, substudy.getId());
+        Substudy existing = substudyDao.getSubstudy(appId, substudy.getId());
         if (existing != null) {
             throw new EntityAlreadyExistsException(Substudy.class,
                     ImmutableMap.of("id", existing.getId()));
@@ -77,14 +77,14 @@ public class SubstudyService {
         return substudyDao.createSubstudy(substudy);
     }
 
-    public VersionHolder updateSubstudy(String studyId, Substudy substudy) {
-        checkNotNull(studyId);
+    public VersionHolder updateSubstudy(String appId, Substudy substudy) {
+        checkNotNull(appId);
         checkNotNull(substudy);
 
-        substudy.setStudyId(studyId);
+        substudy.setAppId(appId);
         Validate.entityThrowingException(SubstudyValidator.INSTANCE, substudy);
         
-        Substudy existing = getSubstudy(studyId, substudy.getId(), true);
+        Substudy existing = getSubstudy(appId, substudy.getId(), true);
         if (substudy.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Substudy.class);
         }
@@ -94,22 +94,22 @@ public class SubstudyService {
         return substudyDao.updateSubstudy(substudy);
     }
     
-    public void deleteSubstudy(String studyId, String id) {
-        checkNotNull(studyId);
+    public void deleteSubstudy(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        Substudy existing = getSubstudy(studyId, id, true);
+        Substudy existing = getSubstudy(appId, id, true);
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
         substudyDao.updateSubstudy(existing);
     }
     
-    public void deleteSubstudyPermanently(String studyId, String id) {
-        checkNotNull(studyId);
+    public void deleteSubstudyPermanently(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
         // Throws exception if the element does not exist.
-        getSubstudy(studyId, id, true);
-        substudyDao.deleteSubstudyPermanently(studyId, id);
+        getSubstudy(appId, id, true);
+        substudyDao.deleteSubstudyPermanently(appId, id);
     }
 }

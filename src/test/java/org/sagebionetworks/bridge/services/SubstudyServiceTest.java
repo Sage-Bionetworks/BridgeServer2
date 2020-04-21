@@ -114,7 +114,7 @@ public class SubstudyServiceTest {
         Substudy substudy = Substudy.create();
         substudy.setId("oneId");
         substudy.setName("oneName");
-        substudy.setStudyId("junk");
+        substudy.setAppId("junk");
         substudy.setVersion(10L);
         substudy.setDeleted(true);
         DateTime timestamp = DateTime.now().minusHours(2);
@@ -131,7 +131,7 @@ public class SubstudyServiceTest {
         Substudy persisted = substudyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
-        assertEquals(persisted.getStudyId(), TEST_APP_ID);
+        assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertNull(persisted.getVersion());
         assertFalse(persisted.isDeleted());
         assertNotEquals(persisted.getCreatedOn(), timestamp);
@@ -164,7 +164,7 @@ public class SubstudyServiceTest {
         when(substudyDao.updateSubstudy(any())).thenReturn(VERSION_HOLDER);
 
         Substudy substudy = Substudy.create();
-        substudy.setStudyId("wrongStudyId");
+        substudy.setAppId("wrongStudyId");
         substudy.setId("oneId");
         substudy.setName("newName");
         
@@ -174,7 +174,7 @@ public class SubstudyServiceTest {
         verify(substudyDao).updateSubstudy(substudyCaptor.capture());
         
         Substudy returnedValue = substudyCaptor.getValue();
-        assertEquals(returnedValue.getStudyId(), TEST_APP_ID);
+        assertEquals(returnedValue.getAppId(), TEST_APP_ID);
         assertEquals(returnedValue.getId(), "oneId");
         assertEquals(returnedValue.getName(), "newName");
         assertNotNull(returnedValue.getCreatedOn());

@@ -11,7 +11,7 @@ import javax.persistence.Embeddable;
 public final class SubstudyId implements Serializable {
     
     @Column(name = "studyId")
-    private String studyId;
+    private String appId;
 
     @Column(name = "id")
     private String id;
@@ -19,13 +19,13 @@ public final class SubstudyId implements Serializable {
     public SubstudyId() {
     }
  
-    public SubstudyId(String studyId, String id) {
-        this.studyId = studyId;
+    public SubstudyId(String appId, String id) {
+        this.appId = appId;
         this.id = id;
     }
     
     public String getStudyId() {
-        return studyId;
+        return appId;
     }
     
     public String getId() {
@@ -34,7 +34,7 @@ public final class SubstudyId implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, id);
+        return Objects.hash(appId, id);
     }
 
     @Override
@@ -44,6 +44,6 @@ public final class SubstudyId implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
         SubstudyId other = (SubstudyId) obj;
-        return Objects.equals(studyId, other.studyId) && Objects.equals(id, other.id);
+        return Objects.equals(appId, other.appId) && Objects.equals(id, other.id);
     }
 }
