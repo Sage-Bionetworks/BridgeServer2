@@ -9,14 +9,14 @@ public interface SchedulePlanDao {
 
     List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier, boolean includeDeleted);
     
-    SchedulePlan getSchedulePlan(String studyIdentifier, String guid);
+    SchedulePlan getSchedulePlan(String appId, String guid);
     
-    SchedulePlan createSchedulePlan(String studyIdentifier, SchedulePlan plan);
+    SchedulePlan createSchedulePlan(String appId, SchedulePlan plan);
     
-    SchedulePlan updateSchedulePlan(String studyIdentifier, SchedulePlan plan);
+    SchedulePlan updateSchedulePlan(String appId, SchedulePlan plan);
     
-    void deleteSchedulePlan(String studyIdentifier, String guid);
+    void deleteSchedulePlan(String appId, String guid);
     
-    void deleteSchedulePlanPermanently(String studyIdentifier, String guid);
+    void deleteSchedulePlanPermanently(String appId, String guid);
     
 }

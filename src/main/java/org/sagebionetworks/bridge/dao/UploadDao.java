@@ -18,8 +18,8 @@ public interface UploadDao {
      *
      * @param uploadRequest
      *         upload request from user
-     * @param studyId
-     *         the study of the user
+     * @param appId
+     *         the app of the user account
      * @param healthCode
      *         user's health code
      * @param originalUploadId
@@ -47,7 +47,7 @@ public interface UploadDao {
     /**
      * Get the uploads for an entire study in the indicated time range.
      */
-    ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull String studyId,
+    ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull String appId,
             @Nonnull DateTime startTime, @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
 
     /**

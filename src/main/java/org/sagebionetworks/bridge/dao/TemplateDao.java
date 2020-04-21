@@ -9,16 +9,16 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 public interface TemplateDao {
     
-    PagedResourceList<? extends Template> getTemplates(String studyId, TemplateType type, Integer offset,
-            Integer limit, boolean includeDeleted);
+    PagedResourceList<? extends Template> getTemplates(String appId, TemplateType type, Integer offset, Integer limit,
+            boolean includeDeleted);
 
-    Optional<Template> getTemplate(String studyId, String guid);
+    Optional<Template> getTemplate(String appId, String guid);
     
     void createTemplate(Template template, Consumer<Template> consumer);
     
     void updateTemplate(Template template);
     
-    void deleteTemplatePermanently(String studyId, String guid);
+    void deleteTemplatePermanently(String appId, String guid);
     
-    void deleteTemplatesForStudy(String studyId);
+    void deleteTemplatesForStudy(String appId);
 }
