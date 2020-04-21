@@ -62,8 +62,8 @@ public class UploadSchemaControllerTest extends Mockito {
         assertGet(UploadSchemaController.class, "getUploadSchema");
         assertGet(UploadSchemaController.class, "getUploadSchemaAllRevisions");
         assertGet(UploadSchemaController.class, "getUploadSchemaByIdAndRev");
-        assertGet(UploadSchemaController.class, "getUploadSchemaByStudyAndSchemaAndRev");
-        assertGet(UploadSchemaController.class, "getUploadSchemasForStudy");
+        assertGet(UploadSchemaController.class, "getUploadSchemaByAppAndSchemaAndRev");
+        assertGet(UploadSchemaController.class, "getUploadSchemasForApp");
         assertPost(UploadSchemaController.class, "updateSchemaRevisionV4");
     }
     
