@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertContentType;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.PASSWORD_DESCRIPTION;
@@ -75,12 +76,12 @@ public class ApplicationControllerTest extends Mockito {
         controller.setViewCache(viewCache);
         
         study = Study.create();
-        study.setIdentifier("test-study");
+        study.setIdentifier(TEST_APP_ID);
         study.setName("<Test Study>");
         study.setSupportEmail("support@email.com");
         study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
-        doReturn(study).when(studyService).getStudy("test-study");
+        doReturn(study).when(studyService).getStudy(TEST_APP_ID);
     }
     
     @Test
@@ -108,27 +109,27 @@ public class ApplicationControllerTest extends Mockito {
     
     @Test
     public void verifyEmailWorks() throws Exception {
-        String templateName = controller.verifyEmail(model, "test-study");
+        String templateName = controller.verifyEmail(model, TEST_APP_ID);
         
         assertEquals(templateName, "verifyEmail");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         verify(model).addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy("test-study");
+        verify(studyService).getStudy(TEST_APP_ID);
     }
 
     @Test
     public void verifyStudyEmailWorks() throws Exception {
-        String templateName = controller.verifyStudyEmail(model, "test-study");
+        String templateName = controller.verifyStudyEmail(model, TEST_APP_ID);
 
         assertEquals(templateName, "verifyStudyEmail");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(studyService).getStudy("test-study");
+        verify(studyService).getStudy(TEST_APP_ID);
     }
 
     @Test
     public void resetPasswordWorks() throws Exception {
-        String templateName = controller.resetPassword(model, "test-study");
+        String templateName = controller.resetPassword(model, TEST_APP_ID);
         
         assertEquals(templateName, "resetPassword");
         String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
@@ -136,7 +137,7 @@ public class ApplicationControllerTest extends Mockito {
         verify(model).addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
         verify(model).addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
-        verify(studyService).getStudy("test-study");
+        verify(studyService).getStudy(TEST_APP_ID);
     }
 
     @Test
@@ -144,11 +145,11 @@ public class ApplicationControllerTest extends Mockito {
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
         
-        String templateName = controller.startSessionWithQueryParam(model, "test-study");
+        String templateName = controller.startSessionWithQueryParam(model, TEST_APP_ID);
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy("test-study");
+        verify(studyService).getStudy(TEST_APP_ID);
     }
 
     @Test
@@ -156,17 +157,17 @@ public class ApplicationControllerTest extends Mockito {
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
         
-        String templateName = controller.startSessionWithPath(model, "test-study");
+        String templateName = controller.startSessionWithPath(model, TEST_APP_ID);
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy("test-study");
+        verify(studyService).getStudy(TEST_APP_ID);
     }
     
     @Test
     public void androidAppLinks() throws Exception {
         DynamoStudy study2 = new DynamoStudy();
-        study2.setIdentifier("test-study2");
+        study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();
@@ -192,7 +193,7 @@ public class ApplicationControllerTest extends Mockito {
     @Test
     public void appleAppLinks() throws Exception {
         DynamoStudy study2 = new DynamoStudy();
-        study2.setIdentifier("test-study2");
+        study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();

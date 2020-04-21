@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -57,7 +58,7 @@ public class ABTestScheduleStrategyTest {
     
     @Test
     public void testScheduleCollector() {
-        SchedulePlan plan = TestUtils.getABTestSchedulePlan("test-study");
+        SchedulePlan plan = TestUtils.getABTestSchedulePlan(TEST_APP_ID);
         
         List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
         assertEquals(schedules.size(), 3);

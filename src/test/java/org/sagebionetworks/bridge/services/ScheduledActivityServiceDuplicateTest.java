@@ -4,6 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -173,7 +174,7 @@ public class ScheduledActivityServiceDuplicateTest {
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
                 .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
-                .withAppId("test-study")
+                .withAppId(TEST_APP_ID)
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
                 .withUserId("6m7Yj31Pp41yjvoyU5y6RE");
@@ -248,7 +249,7 @@ public class ScheduledActivityServiceDuplicateTest {
             .put("activity:6966c3d7-0949-43a8-804e-efc25d0f83e2:finished", new DateTime(1471742129501L, DateTimeZone.UTC))
             .put("activity:71c00390-19a6-4ece-a2f2-c1300daf3d63:finished", new DateTime(1473284085378L, DateTimeZone.UTC))
             .put("activity:bea8fd5d-7622-451f-a727-f9e37f00e1be:finished", new DateTime(1471742129501L, DateTimeZone.UTC)).build();
-        doReturn(events).when(activityEventService).getActivityEventMap("test-study", HEALTH_CODE);
+        doReturn(events).when(activityEventService).getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
         contextBuilder.withAccountCreatedOn(enrollment.minusDays(3));
         contextBuilder.withInitialTimeZone(zone);
         return contextBuilder.build();

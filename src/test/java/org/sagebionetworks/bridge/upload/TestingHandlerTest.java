@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
@@ -19,7 +20,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 
 public class TestingHandlerTest {
     private static final String TEST_FILENAME = "test-filename";
-    private static final String TEST_STUDY_ID = "test-study";
     private static final String TEST_UPLOAD_ID = "test-upload";
 
     @Test
@@ -82,7 +82,7 @@ public class TestingHandlerTest {
         verifyZeroInteractions(mockValidator);
 
         UploadValidationContext testContext = testContextCaptor.getValue();
-        assertEquals(testContext.getStudy(), TEST_STUDY_ID);
+        assertEquals(testContext.getStudy(), TEST_APP_ID);
         assertEquals(testContext.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testContext.getUpload().getFilename(), TEST_FILENAME);
     }
@@ -112,7 +112,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy(), TEST_STUDY_ID);
+        assertEquals(testHandlerArg.getStudy(), TEST_APP_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -152,7 +152,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy(), TEST_STUDY_ID);
+        assertEquals(testHandlerArg.getStudy(), TEST_APP_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -164,14 +164,14 @@ public class TestingHandlerTest {
         // context.getUpload().getFilename(), so get those ready
 
         DynamoStudy study = TestUtils.getValidStudy(TestingHandlerTest.class);
-        study.setIdentifier(TEST_STUDY_ID);
+        study.setIdentifier(TEST_APP_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
         upload.setFilename(TEST_FILENAME);
 
         UploadValidationContext mockContext = new UploadValidationContext();
-        mockContext.setStudy(TEST_STUDY_ID);
+        mockContext.setStudy(TEST_APP_ID);
         mockContext.setUpload(upload);
         return mockContext;
     }

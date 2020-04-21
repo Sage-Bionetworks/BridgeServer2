@@ -9,6 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -26,6 +28,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
@@ -43,8 +46,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
-    private static final String STUDY_ID = "test-study";
-    private static final String HEALTH_CODE = "BBB";
     private static final DateTime ACTIVITIES_RETRIEVED = DateTime.parse("2017-05-27T00:00:00.000Z");
     private static final DateTime ENROLLMENT = DateTime.parse("2017-05-28T00:00:00.000Z");
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-26T00:00:00.000Z");
@@ -154,7 +155,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, HEALTH_CODE);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
         assertEquals(results.get("activities_retrieved"), ACTIVITIES_RETRIEVED);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
@@ -173,7 +174,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, HEALTH_CODE);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
         assertEquals(results.get("study_start_date"), ENROLLMENT);
@@ -192,7 +193,7 @@ public class ActivityEventServiceTest {
         map.put("activities_retrieved", ACTIVITIES_RETRIEVED);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, HEALTH_CODE);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
         assertEquals(results.get("activities_retrieved"), ACTIVITIES_RETRIEVED);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
@@ -210,19 +211,19 @@ public class ActivityEventServiceTest {
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
         
         Study study = Study.create();
-        study.setIdentifier(STUDY_ID);
-        when(mockStudyService.getStudy(STUDY_ID)).thenReturn(study);
+        study.setIdentifier(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
         
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(CREATED_ON).build();
-        when(mockParticipantService.getParticipant(study, "healthcode:BBB", false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(study, "healthcode:" + HEALTH_CODE, false)).thenReturn(studyParticipant);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(STUDY_ID, HEALTH_CODE);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
         assertEquals(results.get("created_on"), CREATED_ON);
         assertEquals(results.get("study_start_date"), CREATED_ON);
         assertEquals(results.size(), 2);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
-        verify(mockStudyService).getStudy(STUDY_ID);
+        verify(mockStudyService).getStudy(TEST_APP_ID);
         verify(mockParticipantService).getParticipant(study, "healthcode:"+HEALTH_CODE, false);
     }
     
@@ -246,7 +247,7 @@ public class ActivityEventServiceTest {
     @Test
     public void badGetDoesntCallDao() {
         try {
-            activityEventService.getActivityEventMap(STUDY_ID, null);
+            activityEventService.getActivityEventMap(TEST_APP_ID, null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);

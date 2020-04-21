@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -13,6 +14,7 @@ import com.google.common.collect.Lists;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
@@ -87,7 +89,7 @@ public class DynamoCompoundActivityDefinitionTest {
 
         // start with JSON
         String jsonText = "{\n" +
-                "   \"studyId\":\"test-study\",\n" +
+                "   \"studyId\":\""+TEST_APP_ID+"\",\n" +
                 "   \"taskId\":\"test-task\",\n" +
                 "   \"schemaList\":[\n" +
                 BridgeObjectMapper.get().writeValueAsString(FOO_SCHEMA) + ",\n" +
@@ -103,7 +105,7 @@ public class DynamoCompoundActivityDefinitionTest {
         // convert to POJO - deserialize it as the base type, so we know it works with the base type
         DynamoCompoundActivityDefinition def = (DynamoCompoundActivityDefinition) BridgeObjectMapper.get().readValue(
                 jsonText, CompoundActivityDefinition.class);
-        assertEquals(def.getStudyId(), "test-study");
+        assertEquals(def.getStudyId(), TEST_APP_ID);
         assertEquals(def.getTaskId(), "test-task");
         assertEquals(def.getVersion().longValue(), 42);
 
@@ -120,7 +122,7 @@ public class DynamoCompoundActivityDefinitionTest {
         // convert back to JSON
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(def, JsonNode.class);
         assertEquals(jsonNode.size(), 6);
-        assertEquals(jsonNode.get("studyId").textValue(), "test-study");
+        assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(jsonNode.get("taskId").textValue(), "test-task");
         assertEquals(jsonNode.get("version").intValue(), 42);
         assertEquals(jsonNode.get("type").textValue(), "CompoundActivityDefinition");

@@ -70,7 +70,7 @@ public class UploadSchemaValidatorTest {
         schema.setName("happy schema 2");
         schema.setRevision(1);
         schema.setSchemaId("happy-schema-2");
-        schema.setStudyId("test-study");
+        schema.setStudyId(TEST_APP_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
 
         // test field def list
