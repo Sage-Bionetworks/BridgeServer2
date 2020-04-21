@@ -89,19 +89,19 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getAllUploadSchemasAllRevisions(String studyId, boolean includeDeleted) {
+    public List<UploadSchema> getAllUploadSchemasAllRevisions(String appId, boolean includeDeleted) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
-        hashKey.setAppId(studyId);
+        hashKey.setAppId(appId);
         return indexHelper(STUDY_ID_INDEX_NAME, hashKey, includeDeleted);
     }
 
     /** {@inheritDoc} */
     @Override
-    public List<UploadSchema> getUploadSchemaAllRevisionsById(String studyId, String schemaId,
+    public List<UploadSchema> getUploadSchemaAllRevisionsById(String appId, String schemaId,
             boolean includeDeleted) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setAppId(studyId);
+        key.setAppId(appId);
         key.setSchemaId(schemaId);
 
         // Get all revisions, in reverse sort order (highest first)
@@ -120,9 +120,9 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public UploadSchema getUploadSchemaByIdAndRevision(String studyId, String schemaId, int revision) {
+    public UploadSchema getUploadSchemaByIdAndRevision(String appId, String schemaId, int revision) {
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setAppId(studyId);
+        key.setAppId(appId);
         key.setSchemaId(schemaId);
         key.setRevision(revision);
 
@@ -131,10 +131,10 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
 
     /** {@inheritDoc} */
     @Override
-    public UploadSchema getUploadSchemaLatestRevisionById(String studyId, String schemaId) {
+    public UploadSchema getUploadSchemaLatestRevisionById(String appId, String schemaId) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setAppId(studyId);
+        key.setAppId(appId);
         key.setSchemaId(schemaId);
 
         // Get the latest revision. This is accomplished by scanning the range key backwards.

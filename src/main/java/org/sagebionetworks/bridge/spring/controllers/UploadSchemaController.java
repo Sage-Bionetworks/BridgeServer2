@@ -61,7 +61,7 @@ public class UploadSchemaController extends BaseController {
 
     /**
      * Play controller for POST /researcher/v1/uploadSchema/:schemaId. This API creates an upload schema, using the
-     * study for the current service endpoint and the schema of the specified schema. If the schema already exists,
+     * app for the current service endpoint and the schema of the specified schema. If the schema already exists,
      * this method updates it instead.
      *
      * @return Play result, with the created or updated schema in JSON format
@@ -142,7 +142,7 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
+     * Fetches the upload schema for the specified app, schema ID, and revision. If no schema is found, this API
      * throws a 404 exception.
      *
      * @param schemaId
@@ -162,18 +162,19 @@ public class UploadSchemaController extends BaseController {
     }
 
     /**
-     * Cross-study worker API to get the upload schema for the specified study, schema ID, and revision.
+     * Cross-app worker API to get the upload schema for the specified app, schema ID, and revision.
      *
      * @param appId
-     *         study the schema lives in
+     *         app/study the schema lives in
      * @param schemaId
      *         schema to fetch
      * @param revision
      *         schema revision to fetch
      * @return the requested schema revision
      */
-    @GetMapping("/v3/studies/{appId}/uploadschemas/{schemaId}/revisions/{revision}")
-    public UploadSchema getUploadSchemaByStudyAndSchemaAndRev(@PathVariable String appId,
+    @GetMapping(path = {"/v1/apps/{appId}/uploadschemas/{schemaId}/revisions/{revision}",
+            "/v3/studies/{appId}/uploadschemas/{schemaId}/revisions/{revision}"})
+    public UploadSchema getUploadSchemaByAppAndSchemaAndRev(@PathVariable String appId,
             @PathVariable String schemaId, @PathVariable int revision) {
         getAuthenticatedSession(WORKER);
         return uploadSchemaService.getUploadSchemaByIdAndRev(appId, schemaId, revision);
@@ -181,17 +182,17 @@ public class UploadSchemaController extends BaseController {
 
     /**
      * Play controller for GET /v3/uploadschemas. This API fetches the most recent revision of all upload 
-     * schemas for the current study. 
+     * schemas for the current app. 
      * 
-     * @return Play result with list of schemas for this study
+     * @return Play result with list of schemas for this app
      */
     @GetMapping(path="/v3/uploadschemas", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getUploadSchemasForStudy(@RequestParam(defaultValue = "false") boolean includeDeleted)
+    public String getUploadSchemasForApp(@RequestParam(defaultValue = "false") boolean includeDeleted)
             throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         String appId = session.getAppId();
 
-        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForStudy(appId, Boolean.valueOf(includeDeleted));
+        List<UploadSchema> schemaList = uploadSchemaService.getUploadSchemasForApp(appId, Boolean.valueOf(includeDeleted));
         ResourceList<UploadSchema> schemaResourceList = new ResourceList<>(schemaList);
         return PUBLIC_SCHEMA_WRITER.writeValueAsString(schemaResourceList);
     }

@@ -205,7 +205,7 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, WORKER);
-        UploadSchema result = controller.getUploadSchemaByStudyAndSchemaAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1);
+        UploadSchema result = controller.getUploadSchemaByAppAndSchemaAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1);
 
         // Unlike the other methods, this also returns study ID
         assertEquals(result.getSchemaId(), TEST_SCHEMA_ID);
@@ -216,12 +216,12 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getSchemasForStudyNoDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_APP_ID, false)).thenReturn(ImmutableList.of(
+        when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, false)).thenReturn(ImmutableList.of(
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
-        String result = controller.getUploadSchemasForStudy(false);
+        String result = controller.getUploadSchemasForApp(false);
 
         JsonNode resultNode = BridgeObjectMapper.get().readTree(result);
         assertEquals(resultNode.get("type").textValue(), "ResourceList");
@@ -239,14 +239,14 @@ public class UploadSchemaControllerTest extends Mockito {
     public void getSchemasForStudyIncludeDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_APP_ID, true))
+        when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, true))
                 .thenReturn(ImmutableList.of(makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
-        controller.getUploadSchemasForStudy(true);
+        controller.getUploadSchemasForApp(true);
         
-        verify(mockSvc).getUploadSchemasForStudy(TEST_APP_ID, true);
+        verify(mockSvc).getUploadSchemasForApp(TEST_APP_ID, true);
     }
     
     @Test

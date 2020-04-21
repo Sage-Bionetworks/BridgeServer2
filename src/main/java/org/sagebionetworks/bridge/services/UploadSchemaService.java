@@ -59,7 +59,7 @@ public class UploadSchemaService {
      * that rev + 1.
      */
     public UploadSchema createSchemaRevisionV4(String appId, UploadSchema schema) {
-        // Controller guarantees valid studyId and non-null uploadSchema
+        // Controller guarantees valid appId and non-null uploadSchema
         checkNotNull(appId, "appId must be non-null");
         checkNotNull(schema, "uploadSchema must be non-null");
 
@@ -71,7 +71,7 @@ public class UploadSchemaService {
             schema.setRevision(oldRev + 1);
         }
 
-        // Set study. This enforces that you can't create schemas outside of your study.
+        // Set app. This enforces that you can't create schemas outside of your app.
         schema.setAppId(appId);
 
         // validate schema
@@ -94,7 +94,7 @@ public class UploadSchemaService {
      * </p>
      */
     public UploadSchema createOrUpdateUploadSchema(String appId, UploadSchema schema) {
-        // Controller guarantees valid studyId and non-null uploadSchema
+        // Controller guarantees valid appId and non-null uploadSchema
         checkNotNull(appId, "appId must be non-null");
         checkNotNull(schema, "uploadSchema must be non-null");
 
@@ -107,7 +107,7 @@ public class UploadSchemaService {
         }
         schema.setRevision(oldRev + 1);
 
-        // Set study. This enforces that you can't create schemas outside of your study.
+        // Set app. This enforces that you can't create schemas outside of your app.
         schema.setAppId(appId);
 
         // validate schema
@@ -202,7 +202,7 @@ public class UploadSchemaService {
     // Helper method to add survey fields to schemas. This is useful so we have the same attributes for newly created
     // schemas, as well as setting them into updated schemas.
     private static void addSurveySchemaMetadata(UploadSchema schema, Survey survey) {
-        // No need to set rev or version unless updating an existing rev. Study is always taken care of by the APIs.
+        // No need to set rev or version unless updating an existing rev. App is always taken care of by the APIs.
         schema.setName(survey.getName());
         schema.setSchemaId(survey.getIdentifier());
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
@@ -249,7 +249,7 @@ public class UploadSchemaService {
     }
     
     /**
-     * Service handler for deleting an upload schema with the specified study, schema ID, and revision. If the schema
+     * Service handler for deleting an upload schema with the specified app, schema ID, and revision. If the schema
      * doesn't exist, this API throws an EntityNotFoundException.
      */
     public void deleteUploadSchemaByIdAndRevision(String appId, String schemaId, int rev) {
@@ -277,8 +277,8 @@ public class UploadSchemaService {
         return uploadSchemaDao.getAllUploadSchemasAllRevisions(appId, includeDeleted);
     }
 
-    /** Service handler for fetching the most recent revision of all upload schemas in a study. */
-    public List<UploadSchema> getUploadSchemasForStudy(String appId, boolean includeDeleted) {
+    /** Service handler for fetching the most recent revision of all upload schemas in a app. */
+    public List<UploadSchema> getUploadSchemasForApp(String appId, boolean includeDeleted) {
         // Get all schemas. No simple query for just latest schemas.
         List<UploadSchema> allSchemasAllRevisions = getAllUploadSchemasAllRevisions(appId, includeDeleted);
 
@@ -296,7 +296,7 @@ public class UploadSchemaService {
     }
 
     /**
-     * Service handler for fetching upload schemas. This method fetches an upload schema for the specified study and
+     * Service handler for fetching upload schemas. This method fetches an upload schema for the specified app and
      * schema ID. If there is more than one revision of the schema, this fetches the latest revision. If the schema
      * doesn't exist, this handler throws an InvalidEntityException.
      */
@@ -349,7 +349,7 @@ public class UploadSchemaService {
 
     /**
      * Service handler for fetching upload schemas. This method fetches all revisions of an an upload schema for
-     * the specified study and schema ID. If the schema doesn't exist, this handler throws an EntityNotFoundException.
+     * the specified app and schema ID. If the schema doesn't exist, this handler throws an EntityNotFoundException.
      */
     public List<UploadSchema> getUploadSchemaAllRevisions(String appId, String schemaId, boolean includeDeleted) {
         if (StringUtils.isBlank(schemaId)) {
@@ -364,7 +364,7 @@ public class UploadSchemaService {
     }
 
     /**
-     * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
+     * Fetches the upload schema for the specified app, schema ID, and revision. If no schema is found, this API
      * throws an EntityNotFoundException
      */
     public UploadSchema getUploadSchemaByIdAndRev(String appId, String schemaId, int revision) {
@@ -376,7 +376,7 @@ public class UploadSchemaService {
     }
 
     /**
-     * Fetches the upload schema for the specified study, schema ID, and revision. If no schema is found, this API
+     * Fetches the upload schema for the specified app, schema ID, and revision. If no schema is found, this API
      * returns null.
      */
     public UploadSchema getUploadSchemaByIdAndRevNoThrow(String appId, String schemaId,
@@ -443,7 +443,7 @@ public class UploadSchemaService {
      */
     public UploadSchema updateSchemaRevisionV4(String appId, String schemaId, int revision,
             UploadSchema schemaToUpdate) {
-        // Controller guarantees valid studyId and non-null uploadSchema
+        // Controller guarantees valid appId and non-null uploadSchema
         checkNotNull(appId, "appId must be non-null");
         checkNotNull(schemaToUpdate, "uploadSchema must be non-null");
 
@@ -459,7 +459,7 @@ public class UploadSchemaService {
                     "and cannot be modified.");
         }
 
-        // Set study ID, schema ID, and revision. This ensures we are updating the correct schema in the correct study.
+        // Set app ID, schema ID, and revision. This ensures we are updating the correct schema in the correct app.
         schemaToUpdate.setAppId(appId);
         schemaToUpdate.setSchemaId(schemaId);
         schemaToUpdate.setRevision(revision);
@@ -507,7 +507,7 @@ public class UploadSchemaService {
 
         // If we have any errors, concat them together and throw a 400 bad request.
         if (!errorMessageList.isEmpty()) {
-            throw new BadRequestException("Can't update study " + appId + " schema " + schemaId +
+            throw new BadRequestException("Can't update app " + appId + " schema " + schemaId +
                     " revision " + revision + ": " + BridgeUtils.SEMICOLON_SPACE_JOINER.join(errorMessageList));
         }
 
