@@ -22,8 +22,8 @@ public interface AppConfig extends BridgeEntity, HasCriteria {
         return new DynamoAppConfig();
     }
 
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
     
     String getLabel();
     void setLabel(String label);

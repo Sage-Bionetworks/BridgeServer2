@@ -126,7 +126,7 @@ public class AppConfigServiceTest {
         AppConfig savedAppConfig = AppConfig.create();
         savedAppConfig.setLabel("AppConfig");
         savedAppConfig.setGuid(GUID);
-        savedAppConfig.setStudyId(TEST_APP_ID);
+        savedAppConfig.setAppId(TEST_APP_ID);
         savedAppConfig.setCriteria(Criteria.create());
         savedAppConfig.setCreatedOn(TIMESTAMP.getMillis());
         savedAppConfig.setModifiedOn(TIMESTAMP.getMillis());
@@ -412,7 +412,7 @@ public class AppConfigServiceTest {
         assertEquals(returnValue.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(returnValue.getGuid(), GUID);
         assertEquals(returnValue.getLabel(), newConfig.getLabel());
-        assertEquals(returnValue.getStudyId(), TEST_APP_ID);
+        assertEquals(returnValue.getAppId(), TEST_APP_ID);
         assertEquals(returnValue.getClientData(), TestUtils.getClientData());
         assertEquals(returnValue.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(returnValue.getSchemaReferences(), SCHEMA_REF_LIST);
@@ -426,7 +426,7 @@ public class AppConfigServiceTest {
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getLabel(), newConfig.getLabel());
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getClientData().toString(), TestUtils.getClientData().toString());
         assertEquals(captured.getSurveyReferences(), SURVEY_REF_LIST);
         assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);

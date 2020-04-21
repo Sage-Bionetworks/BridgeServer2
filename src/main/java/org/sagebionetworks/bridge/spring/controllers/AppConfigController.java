@@ -52,9 +52,10 @@ public class AppConfigController extends BaseController {
         this.viewCache = viewCache;
     }
 
-    @GetMapping(path="/v3/studies/{studyId}/appconfig", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getStudyAppConfig(@PathVariable String studyId) {
-        Study study = studyService.getStudy(studyId);
+    @GetMapping(path = { "/v1/apps/{appId}/appconfig", "/v3/studies/{appId}/appconfig" }, 
+            produces = { APPLICATION_JSON_UTF8_VALUE })
+    public String getStudyAppConfig(@PathVariable String appId) {
+        Study study = studyService.getStudy(appId);
         
         RequestContext reqContext = BridgeUtils.getRequestContext();
         
