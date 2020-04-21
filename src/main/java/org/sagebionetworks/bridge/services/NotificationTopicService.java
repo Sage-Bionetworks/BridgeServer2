@@ -71,17 +71,17 @@ public class NotificationTopicService {
         this.snsClient = snsClient;
     }
     
-    public List<NotificationTopic> listTopics(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<NotificationTopic> listTopics(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
-        return topicDao.listTopics(studyId, includeDeleted);
+        return topicDao.listTopics(appId, includeDeleted);
     }
     
-    public NotificationTopic getTopic(String studyId, String guid) {
-        checkNotNull(studyId);
+    public NotificationTopic getTopic(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        return topicDao.getTopic(studyId, guid);
+        return topicDao.getTopic(appId, guid);
     }
     
     public NotificationTopic createTopic(NotificationTopic topic) {
@@ -100,37 +100,37 @@ public class NotificationTopicService {
         return topicDao.updateTopic(topic);
     }
     
-    public void deleteTopic(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteTopic(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        topicDao.deleteTopic(studyId, guid);
+        topicDao.deleteTopic(appId, guid);
     }
     
-    public void deleteTopicPermanently(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteTopicPermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        topicDao.deleteTopicPermanently(studyId, guid);
+        topicDao.deleteTopicPermanently(appId, guid);
     }
     
     /**
-     * Delete all the topics in the study permanently.
+     * Delete all the topics in the app permanently.
      */
-    public void deleteAllTopics(String studyId) {
-        checkNotNull(studyId);
+    public void deleteAllTopics(String appId) {
+        checkNotNull(appId);
         
-        topicDao.deleteAllTopics(studyId);
+        topicDao.deleteAllTopics(appId);
     }
     
-    public void sendNotification(String studyId, String guid, NotificationMessage message) {
-        checkNotNull(studyId);
+    public void sendNotification(String appId, String guid, NotificationMessage message) {
+        checkNotNull(appId);
         checkNotNull(guid);
         checkNotNull(message);
         
         Validate.entityThrowingException(NotificationMessageValidator.INSTANCE, message);
         
-        NotificationTopic topic = getTopic(studyId, guid);
+        NotificationTopic topic = getTopic(appId, guid);
         
         PublishRequest request = new PublishRequest().withTopicArn(topic.getTopicARN())
                 .withSubject(message.getSubject()).withMessage(message.getMessage());
@@ -138,8 +138,9 @@ public class NotificationTopicService {
         snsClient.publish(request);
     }
     
-    public List<SubscriptionStatus> currentSubscriptionStatuses(String studyId, String healthCode, String registrationGuid) {
-        checkNotNull(studyId);
+    public List<SubscriptionStatus> currentSubscriptionStatuses(String appId, String healthCode,
+            String registrationGuid) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
         
@@ -148,7 +149,7 @@ public class NotificationTopicService {
         Set<String> subscribedTopicGuids = subscriptionDao.listSubscriptions(registration)
                 .stream().map(TopicSubscription::getTopicGuid).collect(Collectors.toSet());
         
-        List<NotificationTopic> topics = topicDao.listTopics(studyId, false);
+        List<NotificationTopic> topics = topicDao.listTopics(appId, false);
         List<SubscriptionStatus> statuses = Lists.newArrayListWithCapacity(topics.size());
         for (NotificationTopic topic : topics) {
             boolean isCurrentlySubscribed = subscribedTopicGuids.contains(topic.getGuid());
@@ -163,19 +164,19 @@ public class NotificationTopicService {
      * match the criteria context will be subscribed. All other topics will be unsubscribed. This only considers
      * criteria-managed subscriptions. Manually-managed subscriptions will be untouched.
      */
-    public void manageCriteriaBasedSubscriptions(String studyId, CriteriaContext context, String healthCode) {
-        checkNotNull(studyId);
+    public void manageCriteriaBasedSubscriptions(String appId, CriteriaContext context, String healthCode) {
+        checkNotNull(appId);
         checkNotNull(context);
         checkNotNull(healthCode);
         checkArgument(isNotBlank(healthCode));
 
-        // Check study for topics. Only consider topics with criteria. Include logically deleted topics 
+        // Check app for topics. Only consider topics with criteria. Include logically deleted topics 
         // so that if they are undeleted, the user's subscription state is correct
-        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId, true);
+        List<NotificationTopic> allTopicList = topicDao.listTopics(appId, true);
         List<NotificationTopic> criteriaTopicList = allTopicList.stream()
                 .filter(topic -> topic.getCriteria() != null).collect(Collectors.toList());
         if (criteriaTopicList.isEmpty()) {
-            // Short cut: No topics in the study means nothing to manage.
+            // Short cut: No topics in the app means nothing to manage.
             return;
         }
 
@@ -200,8 +201,8 @@ public class NotificationTopicService {
      * Unsubscribe the given registration from all topics. This is generally used before deleting a registration, to
      * clean up any orphaned subscriptions.
      */
-    public void unsubscribeAll(String studyId, String healthCode, String registrationGuid) {
-        checkNotNull(studyId);
+    public void unsubscribeAll(String appId, String healthCode, String registrationGuid) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
 
@@ -217,7 +218,7 @@ public class NotificationTopicService {
         for (TopicSubscription oneSubscription : subscriptionList) {
             String topicGuid = oneSubscription.getTopicGuid();
             try {
-                NotificationTopic topic = topicDao.getTopic(studyId, topicGuid);
+                NotificationTopic topic = topicDao.getTopic(appId, topicGuid);
                 subscriptionDao.unsubscribe(registration, topic);
             } catch (RuntimeException ex) {
                 LOG.error("Error unsubscribing registration " + registrationGuid + " from topic " + topicGuid + ": " +
@@ -232,19 +233,19 @@ public class NotificationTopicService {
      * unsubscribed. Note that this only affects manual subscription topics. Topics managed by criteria are ignored by
      * this method.
      */
-    public List<SubscriptionStatus> subscribe(String studyId, String healthCode, String registrationGuid,
+    public List<SubscriptionStatus> subscribe(String appId, String healthCode, String registrationGuid,
             Set<String> desiredTopicGuidSet) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
         checkNotNull(healthCode);
         checkNotNull(registrationGuid);
         checkNotNull(desiredTopicGuidSet);
 
         // This API can only subscribe/unsubscribe from topics that aren't managed by criteria.
-        List<NotificationTopic> allTopicList = topicDao.listTopics(studyId, false);
+        List<NotificationTopic> allTopicList = topicDao.listTopics(appId, false);
         List<NotificationTopic> manualSubscriptionTopicList = allTopicList.stream()
                 .filter(topic -> topic.getCriteria() == null).collect(Collectors.toList());
         if (manualSubscriptionTopicList.isEmpty()) {
-            // Short cut: No topics in the study means nothing to manage.
+            // Short cut: No topics in the app means nothing to manage.
             return ImmutableList.of();
         }
 

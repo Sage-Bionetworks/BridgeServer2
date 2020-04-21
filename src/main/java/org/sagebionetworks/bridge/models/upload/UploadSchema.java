@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.schema.UploadSchemaKey;
 @JsonDeserialize(as = DynamoUploadSchema.class)
 public interface UploadSchema extends BridgeEntity {
     ObjectWriter PUBLIC_SCHEMA_WRITER = BridgeObjectMapper.get().writer(new SimpleFilterProvider().addFilter("filter",
-                    SimpleBeanPropertyFilter.serializeAllExcept("studyId")));
+                    SimpleBeanPropertyFilter.serializeAllExcept("studyId", "appId")));
 
     /** Creates an UploadSchema using a concrete implementation. */
     static UploadSchema create() {
@@ -126,13 +126,19 @@ public interface UploadSchema extends BridgeEntity {
     void setSurveyCreatedOn(Long surveyCreatedOn);
 
     /**
-     * Study ID that this schema lives in. This is not exposed to the callers of the upload schema API, but is
-     * available here for internal usage.
+     * App ID that this schema lives in. This is not exposed to the callers of the upload schema API, 
+     * but is available here for internal usage.
+     */
+    String getAppId();
+
+    /** @see #getAppId */
+    void setAppId(String appId);
+    
+    /**
+     * Workers receive back the studyId property and so this must be maintained 
+     * through migration to the user of appId.
      */
     String getStudyId();
-
-    /** @see #getStudyId */
-    void setStudyId(String studyId);
     
     /**
      * Is this schema revision marked as deleted?

@@ -62,8 +62,8 @@ public class UploadSchemaControllerTest extends Mockito {
         assertGet(UploadSchemaController.class, "getUploadSchema");
         assertGet(UploadSchemaController.class, "getUploadSchemaAllRevisions");
         assertGet(UploadSchemaController.class, "getUploadSchemaByIdAndRev");
-        assertGet(UploadSchemaController.class, "getUploadSchemaByStudyAndSchemaAndRev");
-        assertGet(UploadSchemaController.class, "getUploadSchemasForStudy");
+        assertGet(UploadSchemaController.class, "getUploadSchemaByAppAndSchemaAndRev");
+        assertGet(UploadSchemaController.class, "getUploadSchemasForApp");
         assertPost(UploadSchemaController.class, "updateSchemaRevisionV4");
     }
     
@@ -205,23 +205,23 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, WORKER);
-        UploadSchema result = controller.getUploadSchemaByStudyAndSchemaAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1);
+        UploadSchema result = controller.getUploadSchemaByAppAndSchemaAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1);
 
         // Unlike the other methods, this also returns study ID
         assertEquals(result.getSchemaId(), TEST_SCHEMA_ID);
-        assertEquals(result.getStudyId(), TEST_APP_ID);
+        assertEquals(result.getAppId(), TEST_APP_ID);
     }
 
     @Test
     public void getSchemasForStudyNoDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_APP_ID, false)).thenReturn(ImmutableList.of(
+        when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, false)).thenReturn(ImmutableList.of(
                 makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
-        String result = controller.getUploadSchemasForStudy(false);
+        String result = controller.getUploadSchemasForApp(false);
 
         JsonNode resultNode = BridgeObjectMapper.get().readTree(result);
         assertEquals(resultNode.get("type").textValue(), "ResourceList");
@@ -232,21 +232,21 @@ public class UploadSchemaControllerTest extends Mockito {
 
         UploadSchema resultSchema = BridgeObjectMapper.get().treeToValue(itemListNode.get(0), UploadSchema.class);
         assertEquals(resultSchema.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(resultSchema.getStudyId());
+        assertNull(resultSchema.getAppId());
     }
 
     @Test
     public void getSchemasForStudyIncludeDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
-        when(mockSvc.getUploadSchemasForStudy(TEST_APP_ID, true))
+        when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, true))
                 .thenReturn(ImmutableList.of(makeUploadSchemaForOutput()));
 
         // setup, execute, and validate
         UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, RESEARCHER);
-        controller.getUploadSchemasForStudy(true);
+        controller.getUploadSchemasForApp(true);
         
-        verify(mockSvc).getUploadSchemasForStudy(TEST_APP_ID, true);
+        verify(mockSvc).getUploadSchemasForApp(TEST_APP_ID, true);
     }
     
     @Test
@@ -278,17 +278,17 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchema returnedSchema3 = BridgeObjectMapper.get().treeToValue(itemsNode.get(0), UploadSchema.class);
         assertEquals(returnedSchema3.getRevision(), 3);
         assertEquals(returnedSchema3.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema3.getStudyId());
+        assertNull(returnedSchema3.getAppId());
 
         UploadSchema returnedSchema2 = BridgeObjectMapper.get().treeToValue(itemsNode.get(1), UploadSchema.class);
         assertEquals(returnedSchema2.getRevision(), 2);
         assertEquals(returnedSchema2.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema2.getStudyId());
+        assertNull(returnedSchema2.getAppId());
 
         UploadSchema returnedSchema1 = BridgeObjectMapper.get().treeToValue(itemsNode.get(2), UploadSchema.class);
         assertEquals(returnedSchema1.getRevision(), 1);
         assertEquals(returnedSchema1.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema1.getStudyId());
+        assertNull(returnedSchema1.getAppId());
     }
 
     @Test
@@ -398,7 +398,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // Also, (most) method results don't include study ID
         UploadSchema schema = BridgeObjectMapper.get().readValue(result, UploadSchema.class);
         assertEquals(schema.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(schema.getStudyId());
+        assertNull(schema.getAppId());
     }
 
     private static void assertSchemaInArgCaptor(ArgumentCaptor<UploadSchema> argCaptor) {

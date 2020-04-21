@@ -53,7 +53,7 @@ public class DynamoUploadSchema implements UploadSchema {
     private UploadSchemaType schemaType;
     private String surveyGuid;
     private Long surveyCreatedOn;
-    private String studyId;
+    private String appId;
     private Long version;
     private boolean deleted;
 
@@ -87,7 +87,7 @@ public class DynamoUploadSchema implements UploadSchema {
     @DynamoDBHashKey
     @JsonIgnore
     public String getKey() {
-        if (StringUtils.isBlank(studyId)) {
+        if (StringUtils.isBlank(appId)) {
             // No study ID means we can't generate a key. However, we should still return null, because this case might
             // still come up (such as querying by secondary index), and we don't want to crash.
             return null;
@@ -96,7 +96,7 @@ public class DynamoUploadSchema implements UploadSchema {
             // Similarly here.
             return null;
         }
-        return String.format("%s:%s", studyId, schemaId);
+        return String.format("%s:%s", appId, schemaId);
     }
 
     /**
@@ -115,7 +115,7 @@ public class DynamoUploadSchema implements UploadSchema {
         Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty study ID");
         Preconditions.checkArgument(!parts[1].isEmpty(), "key has empty schema ID");
 
-        this.studyId = parts[0];
+        this.appId = parts[0];
         this.schemaId = parts[1];
     }
 
@@ -253,7 +253,7 @@ public class DynamoUploadSchema implements UploadSchema {
     @JsonIgnore
     @Override
     public UploadSchemaKey getSchemaKey() {
-        return new UploadSchemaKey.Builder().withStudyId(studyId).withSchemaId(schemaId).withRevision(rev).build();
+        return new UploadSchemaKey.Builder().withStudyId(appId).withSchemaId(schemaId).withRevision(rev).build();
     }
 
     /** {@inheritDoc} */
@@ -307,16 +307,28 @@ public class DynamoUploadSchema implements UploadSchema {
      */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
-    /** @see #getStudyId */
+    /** @see #getAppId */
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+    
+    // Currently exposed to workers
+    @DynamoDBIgnore
+    @Override
+    public String getStudyId() {
+        return appId;
     }
 
+    // Currently exposed to workers
+    public void setStudyId(String studyId) {
+        this.appId = studyId;
+    }
+    
     /**
      * <p>
      * Version number of a particular schema revision. This is used to detect concurrent modification. Callers should

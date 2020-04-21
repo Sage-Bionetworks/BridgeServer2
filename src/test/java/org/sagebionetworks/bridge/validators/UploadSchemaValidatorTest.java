@@ -70,7 +70,7 @@ public class UploadSchemaValidatorTest {
         schema.setName("happy schema 2");
         schema.setRevision(1);
         schema.setSchemaId("happy-schema-2");
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
 
         // test field def list
@@ -197,21 +197,21 @@ public class UploadSchemaValidatorTest {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void validateNullStudyId() {
         UploadSchema schema = makeValidSchema();
-        schema.setStudyId(null);
+        schema.setAppId(null);
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void validateEmptyStudyId() {
         UploadSchema schema = makeValidSchema();
-        schema.setStudyId("");
+        schema.setAppId("");
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void validateBlankStudyId() {
         UploadSchema schema = makeValidSchema();
-        schema.setStudyId("   ");
+        schema.setAppId("   ");
         Validate.entityThrowingException(UploadSchemaValidator.INSTANCE, schema);
     }
 
@@ -291,7 +291,7 @@ public class UploadSchemaValidatorTest {
         schema.setName("valid schema");
         schema.setRevision(1);
         schema.setSchemaId("valid-schema");
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
         return schema;
     }

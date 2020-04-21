@@ -21,7 +21,7 @@ public class NotificationTopicValidatorTest {
         topic.setGuid("ABC-DEF");
         topic.setName("Test Topic");
         topic.setShortName("Test");
-        topic.setStudyId(TEST_APP_ID);
+        topic.setAppId(TEST_APP_ID);
         topic.setTopicARN("topic:arn");
     }
     
@@ -31,9 +31,9 @@ public class NotificationTopicValidatorTest {
     }
     
     @Test
-    public void studyIdRequired() {
-        topic.setStudyId(null);
-        assertValidatorMessage(VALIDATOR, topic, "studyId", " is required");
+    public void appIdRequired() {
+        topic.setAppId(null);
+        assertValidatorMessage(VALIDATOR, topic, "appId", " is required");
     }
     
     @Test
