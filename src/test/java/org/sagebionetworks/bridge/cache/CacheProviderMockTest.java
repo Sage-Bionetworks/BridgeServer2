@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
@@ -61,8 +62,7 @@ public class CacheProviderMockTest {
     private static final CacheKey CACHE_KEY = CacheKey.study("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String REQUEST_INFO_KEY = "userId:request-info";
-    private static final String STUDY_ID = "studyId";
-    private static final String STUDY_ID_KEY = "studyId:study";
+    private static final String STUDY_ID_KEY = TEST_APP_ID + ":study";
     private static final String USER_ID = "userId";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
@@ -588,7 +588,7 @@ public class CacheProviderMockTest {
     @Test
     public void setStudy() throws Exception {
         Study study = Study.create();
-        study.setIdentifier(STUDY_ID);
+        study.setIdentifier(TEST_APP_ID);
         String ser = BridgeObjectMapper.get().writeValueAsString(study);
 
         when(jedisOps.setex(any(), anyInt(), any())).thenReturn("OK");
@@ -601,12 +601,12 @@ public class CacheProviderMockTest {
     @Test
     public void getStudy() throws Exception {
         Study study = Study.create();
-        study.setIdentifier(STUDY_ID);
+        study.setIdentifier(TEST_APP_ID);
         String ser = BridgeObjectMapper.get().writeValueAsString(study);
 
         when(jedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
 
-        Study returned = cacheProvider.getStudy(STUDY_ID);
+        Study returned = cacheProvider.getStudy(TEST_APP_ID);
         assertEquals(study, returned);
 
         verify(jedisOps).get(STUDY_ID_KEY);
@@ -615,7 +615,7 @@ public class CacheProviderMockTest {
 
     @Test
     public void removeStudy() {
-        cacheProvider.removeStudy(STUDY_ID);
+        cacheProvider.removeStudy(TEST_APP_ID);
         verify(jedisOps).del(STUDY_ID_KEY);
     }
 }

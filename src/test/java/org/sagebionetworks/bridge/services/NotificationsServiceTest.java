@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 import static org.testng.Assert.assertEquals;
@@ -43,14 +44,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class NotificationsServiceTest {
-    private static final String STUDY_ID = "test-study";
     private static final String USER_ID = "user-id";
     private static final String HEALTH_CODE = "ABC";
     private static final String GUID = "ABC-DEF-GHI-JKL";
     private static final String OS_NAME = "iPhone OS";
     private static final String PLATFORM_ARN = "arn:platform";
 
-    private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withAppId(STUDY_ID)
+    private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withAppId(TEST_APP_ID)
             .withUserId(USER_ID).build();
 
     @Mock
@@ -94,7 +94,7 @@ public class NotificationsServiceTest {
         map.put(OS_NAME, PLATFORM_ARN);
         doReturn(map).when(mockStudy).getPushNotificationARNs();
      
-        doReturn(mockStudy).when(mockStudyService).getStudy(STUDY_ID);
+        doReturn(mockStudy).when(mockStudyService).getStudy(TEST_APP_ID);
     }
 
     @Test
@@ -127,12 +127,12 @@ public class NotificationsServiceTest {
         doReturn(registration).when(mockRegistrationDao).createPushNotificationRegistration(PLATFORM_ARN, registration);
 
         // Execute and validate.
-        NotificationRegistration result = service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
+        NotificationRegistration result = service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
         verify(mockRegistrationDao).createPushNotificationRegistration(PLATFORM_ARN, registration);
         assertEquals(result, registration);
 
         // We also manage criteria-based topics.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(STUDY_ID, DUMMY_CONTEXT, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_APP_ID, DUMMY_CONTEXT, HEALTH_CODE);
     }
 
     @Test
@@ -147,12 +147,12 @@ public class NotificationsServiceTest {
         when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
-        NotificationRegistration result = service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
+        NotificationRegistration result = service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
         verify(mockRegistrationDao).createRegistration(registration);
         assertEquals(result, registration);
 
         // We also manage criteria-based topics.
-        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(STUDY_ID, DUMMY_CONTEXT, HEALTH_CODE);
+        verify(mockNotificationTopicService).manageCriteriaBasedSubscriptions(TEST_APP_ID, DUMMY_CONTEXT, HEALTH_CODE);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -163,7 +163,7 @@ public class NotificationsServiceTest {
         when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
-        service.createRegistration(STUDY_ID, DUMMY_CONTEXT, getSmsNotificationRegistration());
+        service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, getSmsNotificationRegistration());
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -176,7 +176,7 @@ public class NotificationsServiceTest {
         // Execute and validate.
         NotificationRegistration registration = getSmsNotificationRegistration();
         registration.setEndpoint("+14255550123");
-        service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
+        service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
     }
 
     @Test
@@ -185,7 +185,7 @@ public class NotificationsServiceTest {
         registration.setOsName(OS_NAME);
         doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
-        NotificationRegistration result = service.updateRegistration(STUDY_ID, registration);
+        NotificationRegistration result = service.updateRegistration(TEST_APP_ID, registration);
         verify(mockRegistrationDao).updateRegistration(registration);
         assertEquals(result, registration);
     }
@@ -203,22 +203,22 @@ public class NotificationsServiceTest {
                 pushNotificationRegistration, smsNotificationRegistration));
 
         // Execute.
-        service.deleteAllRegistrations(STUDY_ID, HEALTH_CODE);
+        service.deleteAllRegistrations(TEST_APP_ID, HEALTH_CODE);
 
         // Verify dependencies.
-        verify(mockNotificationTopicService).unsubscribeAll(STUDY_ID, HEALTH_CODE,
+        verify(mockNotificationTopicService).unsubscribeAll(TEST_APP_ID, HEALTH_CODE,
                 "push-notification-registration");
         verify(mockRegistrationDao).deleteRegistration(HEALTH_CODE, "push-notification-registration");
 
-        verify(mockNotificationTopicService).unsubscribeAll(STUDY_ID, HEALTH_CODE,
+        verify(mockNotificationTopicService).unsubscribeAll(TEST_APP_ID, HEALTH_CODE,
                 "sms-notification-registration");
         verify(mockRegistrationDao).deleteRegistration(HEALTH_CODE, "sms-notification-registration");
     }
     
     @Test
     public void deleteRegistration() {
-        service.deleteRegistration(STUDY_ID, HEALTH_CODE, GUID);
-        verify(mockNotificationTopicService).unsubscribeAll(STUDY_ID, HEALTH_CODE, GUID);
+        service.deleteRegistration(TEST_APP_ID, HEALTH_CODE, GUID);
+        verify(mockNotificationTopicService).unsubscribeAll(TEST_APP_ID, HEALTH_CODE, GUID);
         verify(mockRegistrationDao).deleteRegistration(HEALTH_CODE, GUID);
     }
     
@@ -228,7 +228,7 @@ public class NotificationsServiceTest {
         registration.setOsName("iOS");
         doReturn(registration).when(mockRegistrationDao).createPushNotificationRegistration(PLATFORM_ARN, registration);
 
-        NotificationRegistration result = service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
+        NotificationRegistration result = service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
         assertEquals(result.getOsName(), OperatingSystem.IOS);
     }
     
@@ -238,7 +238,7 @@ public class NotificationsServiceTest {
         registration.setOsName("iOS");
         doReturn(registration).when(mockRegistrationDao).updateRegistration(registration);
         
-        NotificationRegistration result = service.updateRegistration(STUDY_ID, registration);
+        NotificationRegistration result = service.updateRegistration(TEST_APP_ID, registration);
         assertEquals(result.getOsName(), OperatingSystem.IOS);
     }
     
@@ -247,7 +247,7 @@ public class NotificationsServiceTest {
         NotificationRegistration registration = getNotificationRegistration();
         registration.setOsName(OperatingSystem.ANDROID);
 
-        service.createRegistration(STUDY_ID, DUMMY_CONTEXT, registration);
+        service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
     }
 
     @Test
@@ -261,7 +261,7 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = getNotificationMessage();
         
-        service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
+        service.sendNotificationToUser(TEST_APP_ID, HEALTH_CODE, message);
         
         verify(mockSnsClient).publish(requestCaptor.capture());
         
@@ -277,7 +277,7 @@ public class NotificationsServiceTest {
         
         NotificationMessage message = getNotificationMessage();
         try {
-            service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
+            service.sendNotificationToUser(TEST_APP_ID, HEALTH_CODE, message);
             fail("Should have thrown exception.");
         } catch(BadRequestException e) {
             assertEquals(e.getMessage(), "Participant has not registered to receive push notifications.");
@@ -299,7 +299,7 @@ public class NotificationsServiceTest {
             .thenThrow(new InvalidParameterException("bad parameter"));
         
         NotificationMessage message = getNotificationMessage();
-        Set<String> erroredNotifications = service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
+        Set<String> erroredNotifications = service.sendNotificationToUser(TEST_APP_ID, HEALTH_CODE, message);
         assertEquals(erroredNotifications.size(), 1);
         assertEquals(Iterables.getFirst(erroredNotifications, null), "registrationGuid2");        
     }
@@ -317,7 +317,7 @@ public class NotificationsServiceTest {
         doThrow(new InvalidParameterException("bad parameter")).when(mockSnsClient).publish(any());
         
         NotificationMessage message = getNotificationMessage();
-        service.sendNotificationToUser(STUDY_ID, HEALTH_CODE, message);
+        service.sendNotificationToUser(TEST_APP_ID, HEALTH_CODE, message);
     }
 
     private static NotificationRegistration getSmsNotificationRegistration() {

@@ -195,7 +195,7 @@ public class UploadSchemaTest {
     @Test
     public void schemaKeyObject() {
         DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setStudyId("test-study");
+        schema.setStudyId(TEST_APP_ID);
         schema.setSchemaId("test-schema");
         schema.setRevision(7);
         assertEquals(schema.getSchemaKey().toString(), "test-study-test-schema-v7");
@@ -245,7 +245,7 @@ public class UploadSchemaTest {
         assertEquals(uploadSchema.getRevision(), 3);
         assertEquals(uploadSchema.getSchemaId(), "test-schema");
         assertEquals(uploadSchema.getSchemaType(), UploadSchemaType.IOS_SURVEY);
-        assertEquals(uploadSchema.getStudyId(), "test-study");
+        assertEquals(uploadSchema.getStudyId(), TEST_APP_ID);
         assertEquals(uploadSchema.getSurveyGuid(), "survey-guid");
         assertEquals(uploadSchema.getSurveyCreatedOn().longValue(), surveyCreatedOnMillis);
         assertTrue(uploadSchema.isDeleted());
@@ -268,7 +268,7 @@ public class UploadSchemaTest {
         assertEquals(barFieldDef.getType(), UploadFieldType.STRING);
 
         // Add study ID and verify that it doesn't get leaked into the JSON
-        uploadSchema.setStudyId("test-study");
+        uploadSchema.setStudyId(TEST_APP_ID);
 
         // convert back to JSON - Note that we do this weird thing converting it to a string then reading it into a
         // JsonNode. This is because elsewhere, when we test PUBLIC_SCHEMA_WRITER, we have to do the same thing, and
@@ -283,7 +283,7 @@ public class UploadSchemaTest {
         assertEquals(jsonNode.get("revision").intValue(), 3);
         assertEquals(jsonNode.get("schemaId").textValue(), "test-schema");
         assertEquals(jsonNode.get("schemaType").textValue(), "ios_survey");
-        assertEquals(jsonNode.get("studyId").textValue(), "test-study");
+        assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(jsonNode.get("surveyGuid").textValue(), "survey-guid");
         assertEquals(jsonNode.get("type").textValue(), "UploadSchema");
         assertTrue(jsonNode.get("deleted").booleanValue());
@@ -324,7 +324,7 @@ public class UploadSchemaTest {
 
         // Public JSON is missing studyId, but is otherwise identical to the non-public (internal worker) JSON.
         assertFalse(publicJsonNode.has("studyId"));
-        ((ObjectNode) publicJsonNode).put("studyId", "test-study");
+        ((ObjectNode) publicJsonNode).put("studyId", TEST_APP_ID);
         assertEquals(Sets.newHashSet(publicJsonNode.fieldNames()), Sets.newHashSet(jsonNode.fieldNames()));
     }
 

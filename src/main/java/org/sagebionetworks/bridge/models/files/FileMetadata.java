@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.files;
 
 import java.util.Objects;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -19,7 +20,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @Table(name = "FileMetadata")
 public final class FileMetadata implements BridgeEntity {
     @JsonIgnore
-    private String studyId;
+    @Column(name = "studyId")
+    private String appId;
     private String name;
     @Id
     private String guid;
@@ -32,11 +34,11 @@ public final class FileMetadata implements BridgeEntity {
     @Version
     private long version;
     
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     public String getName() {
         return name;
@@ -84,7 +86,7 @@ public final class FileMetadata implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, deleted, description, guid, name, createdOn, modifiedOn, version);
+        return Objects.hash(appId, deleted, description, guid, name, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -93,7 +95,7 @@ public final class FileMetadata implements BridgeEntity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         FileMetadata other = (FileMetadata) obj;
-        return (Objects.equals(studyId, other.studyId) &&
+        return (Objects.equals(appId, other.appId) &&
                 Objects.equals(deleted, other.deleted) && 
                 Objects.equals(description, other.description) &&
                 Objects.equals(guid, other.guid) &&
@@ -104,7 +106,7 @@ public final class FileMetadata implements BridgeEntity {
     }
     @Override
     public String toString() {
-        return "FileMetadata [studyId=" + studyId + ", name=" + name + ", guid=" + guid + ", description=" + description
+        return "FileMetadata [appId=" + appId + ", name=" + name + ", guid=" + guid + ", description=" + description
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", deleted=" + deleted + ", version="
                 + version + "]";
     }

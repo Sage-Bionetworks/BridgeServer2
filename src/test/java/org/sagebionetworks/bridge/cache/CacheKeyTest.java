@@ -155,7 +155,7 @@ public class CacheKeyTest {
         CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TEST_APP_ID);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
-        CacheKey publicKey = CacheKey.study("studyId");
+        CacheKey publicKey = CacheKey.study(TEST_APP_ID);
         assertTrue(CacheKey.isPublic(publicKey.toString()));
     }
 }

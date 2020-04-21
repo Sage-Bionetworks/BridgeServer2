@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -40,7 +41,7 @@ public class UploadViewTest {
         record.setPhoneInfo("phoneInfo");
         record.setSchemaId("schema-id");
         record.setSchemaRevision(5);
-        record.setStudyId("studyId");
+        record.setStudyId(TEST_APP_ID);
         record.setUploadDate(LocalDate.parse("2016-10-10"));
         record.setUploadId("upload-id");
         record.setUploadedOn(REQUESTED_ON.getMillis());
@@ -88,7 +89,7 @@ public class UploadViewTest {
         assertEquals(recordNode.get("phoneInfo").textValue(), "phoneInfo");
         assertEquals(recordNode.get("schemaId").textValue(), "schema-id");
         assertEquals(recordNode.get("schemaRevision").intValue(), 5);
-        assertEquals(recordNode.get("studyId").textValue(), "studyId");
+        assertEquals(recordNode.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(recordNode.get("uploadDate").textValue(), "2016-10-10");
         assertEquals(recordNode.get("uploadId").textValue(), "upload-id");
         assertEquals(recordNode.get("uploadedOn").textValue(), REQUESTED_ON.toString());

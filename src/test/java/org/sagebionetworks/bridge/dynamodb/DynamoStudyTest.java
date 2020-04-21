@@ -176,9 +176,9 @@ public class DynamoStudyTest {
         assertEquals(automaticCustomEventsNode.get("3-days-after-enrollment").textValue(), "P3D");
 
         JsonNode appleLink = node.get("appleAppLinks").get(0);
-        assertEquals("studyId", appleLink.get("appID").textValue());
-        assertEquals("/appId/", appleLink.get("paths").get(0).textValue());
-        assertEquals("/appId/*", appleLink.get("paths").get(1).textValue());
+        assertEquals(appleLink.get("appID").textValue(), "studyId");
+        assertEquals(appleLink.get("paths").get(0).textValue(), "/appId/");
+        assertEquals(appleLink.get("paths").get(1).textValue(), "/appId/*");
         
         JsonNode androidLink = node.get("androidAppLinks").get(0);
         assertEquals(androidLink.get("namespace").textValue(), "namespace");

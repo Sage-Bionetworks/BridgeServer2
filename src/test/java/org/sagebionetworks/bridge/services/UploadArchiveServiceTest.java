@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -55,7 +56,7 @@ public class UploadArchiveServiceTest {
         archiveService.setMaxZipEntrySize(1000000);
 
         // Encrypt some data, so our tests have something to work with.
-        encryptedData = archiveService.encrypt("test-study", PLAIN_TEXT_DATA);
+        encryptedData = archiveService.encrypt(TEST_APP_ID, PLAIN_TEXT_DATA);
     }
 
     @Test
@@ -81,12 +82,12 @@ public class UploadArchiveServiceTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void encryptNullBytes() {
-        archiveService.encrypt("test-study", null);
+        archiveService.encrypt(TEST_APP_ID, null);
     }
 
     @Test
     public void decryptSuccess() {
-        byte[] decryptedData = archiveService.decrypt("test-study", encryptedData);
+        byte[] decryptedData = archiveService.decrypt(TEST_APP_ID, encryptedData);
         assertEquals(decryptedData, PLAIN_TEXT_DATA);
     }
 
@@ -94,7 +95,7 @@ public class UploadArchiveServiceTest {
     public void decryptGarbageData() {
         String garbageStr = "This is not encrypted data.";
         byte[] garbageData = garbageStr.getBytes(Charsets.UTF_8);
-        archiveService.decrypt("test-study", garbageData);
+        archiveService.decrypt(TEST_APP_ID, garbageData);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -114,7 +115,7 @@ public class UploadArchiveServiceTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void decryptBytesNullBytes() {
-        archiveService.decrypt("test-study", (byte[]) null);
+        archiveService.decrypt(TEST_APP_ID, (byte[]) null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -140,7 +141,7 @@ public class UploadArchiveServiceTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void decryptStreamNullBytes() {
-        archiveService.decrypt("test-study", (InputStream) null);
+        archiveService.decrypt(TEST_APP_ID, (InputStream) null);
     }
 
     @Test
@@ -150,7 +151,7 @@ public class UploadArchiveServiceTest {
         byte[] encryptedBytes = Files.readAllBytes(archiveFile.toPath());
 
         // decrypt
-        byte[] decryptedData = archiveService.decrypt("test-study", encryptedBytes);
+        byte[] decryptedData = archiveService.decrypt(TEST_APP_ID, encryptedBytes);
         assertNotNull(decryptedData);
         assertTrue(decryptedData.length > 0);
 
