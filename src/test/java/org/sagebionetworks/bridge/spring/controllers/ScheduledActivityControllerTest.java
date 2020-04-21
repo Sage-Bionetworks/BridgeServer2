@@ -280,7 +280,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getLanguages(), LANGUAGES);
         assertEquals(critContext.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(critContext.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(critContext.getAppId(), TEST_APP_ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
@@ -557,7 +557,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         assertEquals(context.getAccountCreatedOn(), ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC));
         
         CriteriaContext critContext = context.getCriteriaContext();
-        assertEquals(critContext.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(critContext.getAppId(), TEST_APP_ID);
         assertEquals(critContext.getHealthCode(), HEALTH_CODE);
         assertEquals(critContext.getUserId(), ID);
         assertEquals(critContext.getClientInfo(), CLIENT_INFO);

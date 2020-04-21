@@ -171,7 +171,7 @@ public class TemplateServiceTest extends Mockito {
     }
     
     private CriteriaContext makeContext(String lang) {
-        return new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).withLanguages(ImmutableList.of(lang))
+        return new CriteriaContext.Builder().withAppId(TEST_APP_ID).withLanguages(ImmutableList.of(lang))
                 .build();
     }
     

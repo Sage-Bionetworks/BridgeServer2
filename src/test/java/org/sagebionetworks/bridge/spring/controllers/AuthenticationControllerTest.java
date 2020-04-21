@@ -1018,7 +1018,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).phoneSignIn(contextCaptor.capture(), signInCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, context.getStudyIdentifier());
+        assertEquals(TEST_STUDY_ID_STRING, context.getAppId());
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, captured.getStudyId());

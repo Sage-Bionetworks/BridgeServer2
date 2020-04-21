@@ -154,7 +154,7 @@ public class ParticipantController extends BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(updatedParticipant.getDataGroups())
                 .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
-                .withStudyIdentifier(session.getAppId())
+                .withAppId(session.getAppId())
                 .build();
         
         sessionUpdateService.updateParticipant(session, context, updatedParticipant);

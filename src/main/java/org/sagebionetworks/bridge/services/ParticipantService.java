@@ -214,7 +214,7 @@ public class ParticipantService {
         }
         Set<String> substudyIds = BridgeUtils.collectSubstudyIds(account);
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getIdentifier())
+                .withAppId(study.getIdentifier())
                 .withUserId(userId)
                 .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
@@ -256,7 +256,7 @@ public class ParticipantService {
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
-            copyHistoryToParticipant(builder, account, context.getStudyIdentifier());
+            copyHistoryToParticipant(builder, account, context.getAppId());
         }
         return builder.build();
     }
@@ -290,7 +290,7 @@ public class ParticipantService {
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
             CriteriaContext context = new CriteriaContext.Builder()
-                .withStudyIdentifier(study.getIdentifier())
+                .withAppId(study.getIdentifier())
                 .withUserId(account.getId())
                 .withHealthCode(account.getHealthCode())
                 .withUserDataGroups(account.getDataGroups())
@@ -959,7 +959,7 @@ public class ParticipantService {
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
         return new CriteriaContext.Builder()
-            .withStudyIdentifier(study.getIdentifier())
+            .withAppId(study.getIdentifier())
             .withHealthCode(participant.getHealthCode())
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)

@@ -244,7 +244,7 @@ public class ScheduledActivityController extends BaseController {
         builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
-        builder.withStudyIdentifier(session.getAppId());
+        builder.withAppId(session.getAppId());
         builder.withAccountCreatedOn(session.getParticipant().getCreatedOn());
         builder.withLanguages(getLanguages(session));
         builder.withClientInfo(reqContext.getCallerClientInfo());

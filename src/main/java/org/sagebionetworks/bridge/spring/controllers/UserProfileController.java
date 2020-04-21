@@ -173,7 +173,7 @@ public class UserProfileController extends BaseController {
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
                 .withUserSubstudyIds(updated.getSubstudyIds())
-                .withStudyIdentifier(session.getAppId())
+                .withAppId(session.getAppId())
                 .build();
         
         sessionUpdateService.updateDataGroups(session, context);

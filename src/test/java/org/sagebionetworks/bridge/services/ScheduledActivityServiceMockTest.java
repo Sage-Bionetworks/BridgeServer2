@@ -239,7 +239,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnBeforeNow() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC).withEndsOn(NOW.minusSeconds(1)).build());
     }
@@ -247,7 +247,7 @@ public class ScheduledActivityServiceMockTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void rejectsEndsOnTooFarInFuture() {
         service.getScheduledActivities(study, new ScheduleContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withAccountCreatedOn(ENROLLMENT.minusHours(2))
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(NOW.plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS).plusSeconds(1)).build());
@@ -294,7 +294,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void missingEnrollmentEventIsSuppliedFromAccountCreatedOn() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
@@ -308,7 +308,7 @@ public class ScheduledActivityServiceMockTest {
     @Test
     public void surveysAreResolved() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withInitialTimeZone(DateTimeZone.UTC)
                 .withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(ENDS_ON)
@@ -970,7 +970,7 @@ public class ScheduledActivityServiceMockTest {
         
         ScheduleContext context = new ScheduleContext.Builder()
             .withClientInfo(info)
-            .withStudyIdentifier("test-study")
+            .withAppId("test-study")
             .withUserDataGroups(Sets.newHashSet("parkinson","test_user"))
                 .withEndsOn(startsOn.plusDays(1).withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59))
                 .withInitialTimeZone(timeZone)
@@ -1008,7 +1008,7 @@ public class ScheduledActivityServiceMockTest {
                 .withAccountCreatedOn(NOW.minusDays(3))
                 .withHealthCode("healthCode")
                 .withEndsOn(NOW.plusDays(3))
-                .withStudyIdentifier("studyId").build();
+                .withAppId("studyId").build();
         
         Activity activity = new Activity.Builder().withLabel("Label").withSurvey("surveyId", "guid", null).build();
         
@@ -1332,7 +1332,7 @@ public class ScheduledActivityServiceMockTest {
         when(schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false)).thenReturn(Lists.newArrayList(plan));
         
         ScheduleContext context = new ScheduleContext.Builder()
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withUserId("userId")
                 .withStartsOn(startsOn)
                 .withAccountCreatedOn(enrollment)
@@ -1397,7 +1397,7 @@ public class ScheduledActivityServiceMockTest {
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", ENROLLMENT);
         
-        return new ScheduleContext.Builder().withStudyIdentifier(TEST_APP_ID)
+        return new ScheduleContext.Builder().withAppId(TEST_APP_ID)
                 .withInitialTimeZone(DateTimeZone.UTC).withStartsOn(NOW).withAccountCreatedOn(ENROLLMENT.minusHours(2))
                 .withEndsOn(endsOn).withHealthCode(HEALTH_CODE).withUserId(USER_ID).withEvents(events);
     }

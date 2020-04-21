@@ -51,7 +51,7 @@ public class NotificationTopicServiceTest {
     private static final String CRITERIA_GROUP_1 = "criteria-group-1";
     private static final String CRITERIA_GROUP_2 = "criteria-group-2";
     private static final CriteriaContext EMPTY_CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).build();
     private static final String HEALTH_CODE = "health-code";
 
     private static final NotificationTopic CRITERIA_TOPIC_1;

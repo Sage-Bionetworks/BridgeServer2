@@ -754,7 +754,7 @@ public class ParticipantControllerTest extends Mockito {
 
         verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
         CriteriaContext context = contextCaptor.getValue();
-        assertEquals(context.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(context.getAppId(), TEST_APP_ID);
         assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
