@@ -19,8 +19,8 @@ public class NotificationTopicValidator implements Validator {
     public void validate(Object object, Errors errors) {
         NotificationTopic topic = (NotificationTopic)object;
         
-        if (isBlank(topic.getStudyId())) {
-            errors.rejectValue("studyId", "is required");
+        if (isBlank(topic.getAppId())) {
+            errors.rejectValue("appId", "is required");
         }
 
         if (isBlank(topic.getName())) {

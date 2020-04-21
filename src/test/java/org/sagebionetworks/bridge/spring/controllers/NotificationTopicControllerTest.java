@@ -146,12 +146,12 @@ public class NotificationTopicControllerTest extends Mockito {
         when(mockTopicService.getTopic(TEST_APP_ID, GUID)).thenReturn(getNotificationTopic());
 
         NotificationTopic result = controller.getTopic(GUID);
-        // Serialize and deserialize to verify studyId is not included
+        // Serialize and deserialize to verify appId is not included
         NotificationTopic topic = MAPPER.readValue(MAPPER.writeValueAsString(result), NotificationTopic.class);
         
         assertEquals(topic.getName(), "Test Topic Name");
         assertEquals(topic.getGuid(), GUID);
-        assertNull(topic.getStudyId());
+        assertNull(topic.getAppId());
         assertNull(topic.getTopicARN());
     }
 
@@ -232,7 +232,7 @@ public class NotificationTopicControllerTest extends Mockito {
         topic.setName("Test Topic Name");
         topic.setShortName("Short Name");
         topic.setDescription("Test Description");
-        topic.setStudyId(TEST_APP_ID);
+        topic.setAppId(TEST_APP_ID);
         topic.setTopicARN("atopicArn");
         return topic;
     }

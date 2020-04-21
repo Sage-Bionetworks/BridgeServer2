@@ -52,7 +52,7 @@ public class NotificationTopicController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         NotificationTopic topic = parseJson(NotificationTopic.class);
-        topic.setStudyId(session.getAppId());
+        topic.setAppId(session.getAppId());
         
         NotificationTopic saved = topicService.createTopic(topic);
         
@@ -71,7 +71,7 @@ public class NotificationTopicController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         NotificationTopic topic = parseJson(NotificationTopic.class);
-        topic.setStudyId(session.getAppId());
+        topic.setAppId(session.getAppId());
         topic.setGuid(guid);
         
         NotificationTopic updated = topicService.updateTopic(topic);
