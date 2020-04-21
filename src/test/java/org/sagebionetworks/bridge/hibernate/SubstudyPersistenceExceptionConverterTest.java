@@ -39,7 +39,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TEST_APP_ID);
+        substudy.setAppId(TEST_APP_ID);
         
         OptimisticLockException ole = new OptimisticLockException();
         
@@ -51,7 +51,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void genericConstraintViolationException() {
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TEST_APP_ID);
+        substudy.setAppId(TEST_APP_ID);
 
         PersistenceException ex = new PersistenceException(cve);
         when(cve.getMessage()).thenReturn("This is some generic constraint violation message");
@@ -65,7 +65,7 @@ public class SubstudyPersistenceExceptionConverterTest {
     @Test
     public void usedByAccountsConstraintViolationException() {
         HibernateSubstudy substudy = new HibernateSubstudy();
-        substudy.setStudyId(TEST_APP_ID);
+        substudy.setAppId(TEST_APP_ID);
 
         PersistenceException ex = new PersistenceException(cve);
         when(cve.getMessage()).thenReturn("abc a foreign key constraint fails abc REFERENCES `Substudies`abc");

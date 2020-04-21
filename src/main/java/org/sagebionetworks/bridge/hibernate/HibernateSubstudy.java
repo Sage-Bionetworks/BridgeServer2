@@ -22,7 +22,7 @@ public class HibernateSubstudy implements Substudy {
     @Id
     private String id;
     @Id
-    private String studyId;
+    private String appId;
     private String name;
     private boolean deleted;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -44,13 +44,13 @@ public class HibernateSubstudy implements Substudy {
 
     @JsonIgnore
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }    
     @Override
     public String getName() {
