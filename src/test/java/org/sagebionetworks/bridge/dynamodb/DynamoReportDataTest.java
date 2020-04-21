@@ -30,7 +30,7 @@ public class DynamoReportDataTest {
         
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("ABC")
                 .withIdentifier("foo").withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ObjectNode objNode = JsonNodeFactory.instance.objectNode();
         objNode.put("a", true);

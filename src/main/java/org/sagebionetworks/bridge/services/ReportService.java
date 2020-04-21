@@ -96,7 +96,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -121,7 +121,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -147,7 +147,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -172,7 +172,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -198,7 +198,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -229,7 +229,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -253,7 +253,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -275,7 +275,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -311,7 +311,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -333,7 +333,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -354,7 +354,7 @@ public class ReportService {
                 .withHealthCode("dummy-value") 
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         
         ReportIndex index = reportIndexDao.getIndex(key);
         if (!canAccess(index)) {
@@ -374,7 +374,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(index.getIdentifier())
-                .withStudyIdentifier(studyId).build();
+                .withAppId(studyId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex existingIndex = reportIndexDao.getIndex(key);

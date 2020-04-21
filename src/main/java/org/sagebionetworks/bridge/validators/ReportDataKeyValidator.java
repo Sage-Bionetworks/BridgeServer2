@@ -23,8 +23,8 @@ public class ReportDataKeyValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ReportDataKey key = (ReportDataKey)object;
         
-        if (key.getStudyId() == null) {
-            errors.rejectValue("studyId", "is required");
+        if (key.getAppId() == null) {
+            errors.rejectValue("appId", "is required");
         }
         if (key.getReportType() == null) {
             errors.rejectValue("reportType", "is required");

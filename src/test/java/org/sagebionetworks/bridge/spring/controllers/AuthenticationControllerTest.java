@@ -779,7 +779,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getAppId());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
     
@@ -807,7 +807,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).resendVerification(eq(ChannelType.PHONE), accountIdCaptor.capture());
         AccountId deser = accountIdCaptor.getValue();
-        assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
+        assertEquals(TEST_STUDY_ID_STRING, deser.getAppId());
         assertEquals(TestConstants.PHONE, deser.getPhone());
     }
     

@@ -22,7 +22,7 @@ public class ReportDataKeyTest {
     @Test
     public void constructParticipantKey() {
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode")
-                .withStudyIdentifier(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
+                .withAppId(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
                 .withIdentifier("report").build();
 
         assertEquals(key.getKeyString(), "healthCode:report:" + TEST_APP_ID);
@@ -35,7 +35,7 @@ public class ReportDataKeyTest {
     @Test
     public void constructStudyKey() {
         ReportDataKey key = new ReportDataKey.Builder().withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_APP_ID).withIdentifier("report").build();
+                .withAppId(TEST_APP_ID).withIdentifier("report").build();
         
         // This was constructed, the date is valid. It's not part of the key, it's validated in the builder
         // so validation errors are combined with key validation errors.
@@ -49,7 +49,7 @@ public class ReportDataKeyTest {
     @Test
     public void canConstructKeyWithoutValidatingDate() {
         ReportDataKey key = new ReportDataKey.Builder().withReportType(ReportType.PARTICIPANT)
-                .withStudyIdentifier(TEST_APP_ID).withHealthCode("AAA").withIdentifier("report").build();
+                .withAppId(TEST_APP_ID).withHealthCode("AAA").withIdentifier("report").build();
         
         assertEquals(key.getKeyString(), "AAA:report:" + TEST_APP_ID);
         assertEquals(key.getIndexKeyString(), TEST_APP_ID + ":PARTICIPANT");
@@ -63,7 +63,7 @@ public class ReportDataKeyTest {
         // NOTE: Although we use @JsonIgnore annotations, we never serialize this value and return it via the API,
         // so arguably none of this is necessary.
         ReportDataKey key = new ReportDataKey.Builder().withHealthCode("healthCode")
-                .withStudyIdentifier(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
+                .withAppId(TEST_APP_ID).withReportType(ReportType.PARTICIPANT)
                 .withIdentifier("report").build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(key);

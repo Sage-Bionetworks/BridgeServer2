@@ -18,38 +18,38 @@ import com.google.common.collect.Sets;
  */
 public final class AccountId implements BridgeEntity {
     
-    public final static AccountId forId(String studyId, String id) {
-        checkNotNull(studyId);
+    public final static AccountId forId(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
-        return new AccountId(studyId, id, null, null, null, null, null, true);
+        return new AccountId(appId, id, null, null, null, null, null, true);
     }
-    public final static AccountId forEmail(String studyId, String email) {
-        checkNotNull(studyId);
+    public final static AccountId forEmail(String appId, String email) {
+        checkNotNull(appId);
         checkNotNull(email);
-        return new AccountId(studyId, null, email, null, null, null, null, true);
+        return new AccountId(appId, null, email, null, null, null, null, true);
     }
-    public final static AccountId forPhone(String studyId, Phone phone) {
-        checkNotNull(studyId);
+    public final static AccountId forPhone(String appId, Phone phone) {
+        checkNotNull(appId);
         checkNotNull(phone);
-        return new AccountId(studyId, null, null, phone, null, null, null, true);
+        return new AccountId(appId, null, null, phone, null, null, null, true);
     }
-    public final static AccountId forHealthCode(String studyId, String healthCode) {
-        checkNotNull(studyId);
+    public final static AccountId forHealthCode(String appId, String healthCode) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
-        return new AccountId(studyId, null, null, null, healthCode, null, null, true);
+        return new AccountId(appId, null, null, null, healthCode, null, null, true);
     }
-    public final static AccountId forExternalId(String studyId, String externalId) {
-        checkNotNull(studyId);
+    public final static AccountId forExternalId(String appId, String externalId) {
+        checkNotNull(appId);
         checkNotNull(externalId);
-        return new AccountId(studyId, null, null, null, null, externalId, null, true);
+        return new AccountId(appId, null, null, null, null, externalId, null, true);
     }
-    public final static AccountId forSynapseUserId(String studyId, String synapseUserId) {
-        checkNotNull(studyId);
+    public final static AccountId forSynapseUserId(String appId, String synapseUserId) {
+        checkNotNull(appId);
         checkNotNull(synapseUserId);
-        return new AccountId(studyId, null, null, null, null, null, synapseUserId, true);
+        return new AccountId(appId, null, null, null, null, null, synapseUserId, true);
     }
 
-    private final String studyId;
+    private final String appId;
     private final String id;
     private final String email;
     private final Phone phone;
@@ -59,16 +59,16 @@ public final class AccountId implements BridgeEntity {
     private final boolean usePreconditions;
 
     @JsonCreator
-    private AccountId(@JsonProperty("study") String studyId, @JsonProperty("id") String id,
-            @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
-            @JsonProperty("healthCode") String healthCode, @JsonProperty("externalId") String externalId,
-            @JsonProperty("synapseUserId") String synapseUserId) {
-        this(studyId, id, email, phone, healthCode, externalId, synapseUserId, true);
+    private AccountId(@JsonProperty("study") String study, @JsonProperty("appId") String appId,
+            @JsonProperty("id") String id, @JsonProperty("email") String email, 
+            @JsonProperty("phone") Phone phone, @JsonProperty("healthCode") String healthCode, 
+            @JsonProperty("externalId") String externalId, @JsonProperty("synapseUserId") String synapseUserId) {
+        this((appId != null) ? appId : study, id, email, phone, healthCode, externalId, synapseUserId, true);
     }
     
-    private AccountId(String studyId, String id, String email, Phone phone, String healthCode,
+    private AccountId(String appId, String id, String email, Phone phone, String healthCode,
             String externalId, String synapseUserId, boolean usePreconditions) {
-        this.studyId = studyId;
+        this.appId = appId;
         this.id = id;
         this.email = email;
         this.phone = phone;
@@ -82,11 +82,11 @@ public final class AccountId implements BridgeEntity {
     // then trying to retrieve a different value. Force a failure in this case until you get to 
     // the DAO where these values are checked to determine the type of database query.
     
-    public String getStudyId() {
-        if (usePreconditions && studyId == null) {
-            throw new NullPointerException("AccountId.studyId is null");
+    public String getAppId() {
+        if (usePreconditions && appId == null) {
+            throw new NullPointerException("AccountId.appId is null");
         }
-        return studyId;
+        return appId;
     }
     public String getId() {
         if (usePreconditions && id == null) {
@@ -125,12 +125,12 @@ public final class AccountId implements BridgeEntity {
         return synapseUserId;
     }
     public AccountId getUnguardedAccountId() {
-        return new AccountId(this.studyId, this.id, this.email, this.phone, this.healthCode, this.externalId,
+        return new AccountId(this.appId, this.id, this.email, this.phone, this.healthCode, this.externalId,
                 this.synapseUserId, false);
     }
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, email, id, phone, healthCode, externalId, synapseUserId, usePreconditions);
+        return Objects.hash(appId, email, id, phone, healthCode, externalId, synapseUserId, usePreconditions);
     }
     
     @Override
@@ -140,7 +140,7 @@ public final class AccountId implements BridgeEntity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         AccountId other = (AccountId) obj;
-        return Objects.equals(studyId, other.studyId) &&
+        return Objects.equals(appId, other.appId) &&
                 Objects.equals(email, other.email) && 
                 Objects.equals(id, other.id) &&
                 Objects.equals(phone, other.phone) &&
@@ -152,7 +152,7 @@ public final class AccountId implements BridgeEntity {
     @Override
     public String toString() {
         Set<Object> keys = Sets.newHashSet(id, email, phone, externalId, synapseUserId, (healthCode==null) ? null : "HEALTH_CODE");
-        return "AccountId [studyId=" + studyId + ", credential=" + Joiner.on(", ").skipNulls().join(keys) + "]";
+        return "AccountId [appId=" + appId + ", credential=" + Joiner.on(", ").skipNulls().join(keys) + "]";
     }
     
 }

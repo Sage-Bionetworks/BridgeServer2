@@ -757,7 +757,7 @@ public class AuthenticationServiceMockTest {
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals(captured.getId(), "user-id");
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
     }
     
     @Test
@@ -775,7 +775,7 @@ public class AuthenticationServiceMockTest {
         
         AccountId captured = accountIdCaptor.getValue();
         assertEquals(captured.getExternalId(), EXTERNAL_ID);
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
     }
     
     @Test
@@ -965,7 +965,7 @@ public class AuthenticationServiceMockTest {
         
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.EMAIL), accountIdCaptor.capture());
         
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_APP_ID);
+        assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
         assertEquals(accountIdCaptor.getValue().getEmail(), RECIPIENT_EMAIL);
     }
 
@@ -993,7 +993,7 @@ public class AuthenticationServiceMockTest {
         
         verify(accountWorkflowService).resendVerificationToken(eq(ChannelType.PHONE), accountIdCaptor.capture());
         
-        assertEquals(accountIdCaptor.getValue().getStudyId(), TEST_APP_ID);
+        assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
         assertEquals(accountIdCaptor.getValue().getPhone(), TestConstants.PHONE);
     }
     

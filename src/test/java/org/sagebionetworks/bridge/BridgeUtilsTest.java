@@ -442,40 +442,40 @@ public class BridgeUtilsTest {
     public void parseAccountId() {
         // Identifier has upper-case letter to ensure we don't downcase or otherwise change it.
         AccountId accountId = BridgeUtils.parseAccountId("test", "IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "externalid:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getExternalId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "externalId:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getExternalId(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "healthcode:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getHealthCode(), "IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "healthCode:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getHealthCode(), "IdentifierA9");
         
         // Unrecognized prefix is just part of the userId
         accountId = BridgeUtils.parseAccountId("test", "unk:IdentifierA9");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getId(), "unk:IdentifierA9");
         
         accountId = BridgeUtils.parseAccountId("test", "synapseUserId:IdentifierA10");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA10");
         
         accountId = BridgeUtils.parseAccountId("test", "synapseuserid:IdentifierA11");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA11");
         
         accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
-        assertEquals(accountId.getStudyId(), "test");
+        assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
     }
     

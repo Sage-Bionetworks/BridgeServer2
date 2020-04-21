@@ -32,7 +32,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -46,7 +46,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -84,7 +84,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -97,7 +97,7 @@ public class ReportDataValidatorTest {
     public void keyIsValidated() {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -115,7 +115,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
@@ -136,7 +136,7 @@ public class ReportDataValidatorTest {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier("foo")
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         
         ReportData data = ReportData.create();
         data.setReportDataKey(key);
