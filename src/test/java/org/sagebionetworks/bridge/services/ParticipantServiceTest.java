@@ -165,7 +165,7 @@ public class ParticipantServiceTest extends Mockito {
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withUserId(ID).withStudyIdentifier(TEST_APP_ID).build();
+            .withUserId(ID).withAppId(TEST_APP_ID).build();
     private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID)
@@ -781,7 +781,7 @@ public class ParticipantServiceTest extends Mockito {
                 registrationCaptor.capture());
 
         CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(criteriaContext.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(criteriaContext.getAppId(), TEST_APP_ID);
         assertEquals(criteriaContext.getUserId(), ID);
         assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
@@ -1060,7 +1060,7 @@ public class ParticipantServiceTest extends Mockito {
         verify(consentService).getConsentStatuses(criteriaContextCaptor.capture(), same(account));
 
         CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(criteriaContext.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(criteriaContext.getAppId(), TEST_APP_ID);
         assertEquals(criteriaContext.getUserId(), ID);
         assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);

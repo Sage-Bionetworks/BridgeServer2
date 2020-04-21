@@ -18,20 +18,20 @@ public interface UploadSchemaDao {
     /** Deletes the given schemas by removing them from the database. */
     void deleteUploadSchemasPermanently(List<UploadSchema> schemaList);
 
-    /** Returns all revisions of all schemas in the specified study. */
-    List<UploadSchema> getAllUploadSchemasAllRevisions(String studyId, boolean includeDeleted);
+    /** Returns all revisions of all schemas in the specified app. */
+    List<UploadSchema> getAllUploadSchemasAllRevisions(String appId, boolean includeDeleted);
 
     /** Fetch all revisions of a single upload schema. */
-    List<UploadSchema> getUploadSchemaAllRevisionsById(String studyId, String schemaId, boolean includeDeleted);
+    List<UploadSchema> getUploadSchemaAllRevisionsById(String appId, String schemaId, boolean includeDeleted);
 
-    /** Fetches the upload schema for the specified study, schema ID, and revision. */
-    UploadSchema getUploadSchemaByIdAndRevision(String studyId, String schemaId, int revision);
+    /** Fetches the upload schema for the specified app, schema ID, and revision. */
+    UploadSchema getUploadSchemaByIdAndRevision(String appId, String schemaId, int revision);
 
     /**
      * DAO method for fetching upload schemas. This method fetches an upload schema for the specified study and schema
      * ID. If there is more than one revision of the schema, this fetches the latest revision.
      */
-    UploadSchema getUploadSchemaLatestRevisionById(String studyId, String schemaId);
+    UploadSchema getUploadSchemaLatestRevisionById(String appId, String schemaId);
 
     /** Updates the given schema revision as is. Detects and throws ConcurrentModificationExceptions. */
     UploadSchema updateSchemaRevision(UploadSchema schema);

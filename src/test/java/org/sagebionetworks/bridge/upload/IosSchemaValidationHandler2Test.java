@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -42,13 +43,12 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class IosSchemaValidationHandler2Test {
     private static final String TEST_HEALTHCODE = "test-healthcode";
-    private static final String TEST_STUDY_ID = "test-study";
     private static final String TEST_UPLOAD_DATE_STRING = "2015-04-13";
     private static final String TEST_UPLOAD_ID = "test-upload";
     private static final DateTime MOCK_NOW = DateTime.parse("2016-05-06T16:36:59.747-0700");
 
     private static final Map<String, Map<String, Integer>> DEFAULT_SCHEMA_REV_MAP =
-            ImmutableMap.of(TEST_STUDY_ID, ImmutableMap.of("schema-rev-test", 2));
+            ImmutableMap.of(TEST_APP_ID, ImmutableMap.of("schema-rev-test", 2));
 
     private UploadValidationContext context;
     private IosSchemaValidationHandler2 handler;
@@ -73,7 +73,7 @@ public class IosSchemaValidationHandler2Test {
         record.setData(BridgeObjectMapper.get().createObjectNode());
 
         context = new UploadValidationContext();
-        context.setStudy(TEST_STUDY_ID);
+        context.setStudy(TEST_APP_ID);
         context.setUpload(upload);
         context.setHealthDataRecord(record);
 
@@ -85,7 +85,7 @@ public class IosSchemaValidationHandler2Test {
         // To test backwards compatibility, survey schema should include both the old style fields and the new
         // "answers" field.
         UploadSchema surveySchema = UploadSchema.create();
-        surveySchema.setStudyId(TEST_STUDY_ID);
+        surveySchema.setStudyId(TEST_APP_ID);
         surveySchema.setSchemaId("test-survey");
         surveySchema.setRevision(1);
         surveySchema.setName("iOS Survey");
@@ -121,7 +121,7 @@ public class IosSchemaValidationHandler2Test {
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         UploadSchema nonSurveySchema = UploadSchema.create();
-        nonSurveySchema.setStudyId(TEST_STUDY_ID);
+        nonSurveySchema.setStudyId(TEST_APP_ID);
         nonSurveySchema.setSchemaId("non-survey");
         nonSurveySchema.setRevision(1);
         nonSurveySchema.setName("Non-Survey");
@@ -132,9 +132,9 @@ public class IosSchemaValidationHandler2Test {
 
         // mock upload schema service
         UploadSchemaService mockSchemaService = mock(UploadSchemaService.class);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_ID, "test-survey", 1))
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, "test-survey", 1))
                 .thenReturn(surveySchema);
-        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_STUDY_ID, "non-survey", 1))
+        when(mockSchemaService.getUploadSchemaByIdAndRevNoThrow(TEST_APP_ID, "non-survey", 1))
                 .thenReturn(nonSurveySchema);
 
         // mock upload file helper

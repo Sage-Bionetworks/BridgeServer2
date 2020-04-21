@@ -6,15 +6,15 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 
 public interface FileMetadataDao {
-    PagedResourceList<FileMetadata> getFiles(String studyId, int offset, int limit, boolean includeDeleted);
+    PagedResourceList<FileMetadata> getFiles(String appId, int offset, int limit, boolean includeDeleted);
 
-    Optional<FileMetadata> getFile(String studyId, String guid);
+    Optional<FileMetadata> getFile(String appId, String guid);
     
     FileMetadata createFile(FileMetadata file);
     
     FileMetadata updateFile(FileMetadata file);
     
-    void deleteFilePermanently(String studyId, String guid);
+    void deleteFilePermanently(String appId, String guid);
     
-    void deleteAllStudyFiles(String studyId);
+    void deleteAllStudyFiles(String appId);
 }

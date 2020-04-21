@@ -420,7 +420,7 @@ public class ReportServiceTest {
     @Test
     public void deleteStudyReportRecordValidatesStudyId() {
         invalid(() -> service.deleteStudyReportRecord(null, IDENTIFIER, START_DATE.toString()),
-                "studyId", "is required");        
+                "appId", "is required");        
     }
     
     @Test
@@ -487,7 +487,7 @@ public class ReportServiceTest {
     @Test
     public void getStudyReportDataNoStudy() {
         invalid(() -> service.getStudyReport(null, IDENTIFIER, START_DATE, END_DATE),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -499,7 +499,7 @@ public class ReportServiceTest {
     @Test
     public void getParticipantReportDataNoStudy() {
         invalid(() -> service.getParticipantReport(null, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE),
-                "studyId", "is required");
+                "appId", "is required");
     }
 
     @Test
@@ -517,7 +517,7 @@ public class ReportServiceTest {
     @Test
     public void saveStudyReportDataNoStudy() {
         invalid(() -> service.saveStudyReport(null, IDENTIFIER, CANNED_REPORT),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -534,7 +534,7 @@ public class ReportServiceTest {
     @Test
     public void saveParticipantReportDataNoStudy() {
         invalid(() -> service.saveParticipantReport(null, IDENTIFIER, HEALTH_CODE, CANNED_REPORT),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -557,7 +557,7 @@ public class ReportServiceTest {
     @Test
     public void deleteStudyReportNoStudy() {
         invalid(() -> service.deleteStudyReport(null, IDENTIFIER),
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test
@@ -569,7 +569,7 @@ public class ReportServiceTest {
     @Test
     public void deleteParticipantReportNoStudy() {
         invalid(() -> service.deleteParticipantReport(null, IDENTIFIER, HEALTH_CODE), 
-                "studyId", "is required");
+                "appId", "is required");
     }
     
     @Test

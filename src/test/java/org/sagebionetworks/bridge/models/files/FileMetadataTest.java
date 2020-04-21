@@ -26,7 +26,7 @@ public class FileMetadataTest extends Mockito {
     @Test
     public void canSerialize() throws Exception { 
         FileMetadata metadata = new FileMetadata();
-        metadata.setStudyId(TEST_APP_ID);
+        metadata.setAppId(TEST_APP_ID);
         metadata.setName("oneName");
         metadata.setGuid(GUID);
         metadata.setDescription("oneDescription");
@@ -47,7 +47,7 @@ public class FileMetadataTest extends Mockito {
         assertNull(node.get("studyId"));
         
         FileMetadata deser = BridgeObjectMapper.get().readValue(node.toString(), FileMetadata.class);
-        assertNull(deser.getStudyId());
+        assertNull(deser.getAppId());
         assertEquals(deser.getName(), "oneName");
         assertEquals(deser.getGuid(), GUID);
         assertEquals(deser.getDescription(), "oneDescription");

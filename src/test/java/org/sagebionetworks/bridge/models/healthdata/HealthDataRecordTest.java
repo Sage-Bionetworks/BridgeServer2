@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -307,7 +308,7 @@ public class HealthDataRecordTest {
                 "   \"rawDataAttachmentId\":\"raw.zip\",\n" +
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
-                "   \"studyId\":\"json study\",\n" +
+                "   \"studyId\":\""+TEST_APP_ID+"\",\n" +
                 "   \"synapseExporterStatus\":\"not_exported\",\n" +
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
@@ -332,7 +333,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getRawDataAttachmentId(), "raw.zip");
         assertEquals(record.getSchemaId(), "json schema");
         assertEquals(record.getSchemaRevision().intValue(), 3);
-        assertEquals(record.getStudyId(), "json study");
+        assertEquals(record.getStudyId(), TEST_APP_ID);
         assertEquals(record.getSynapseExporterStatus(), HealthDataRecord.ExporterStatus.NOT_EXPORTED);
         assertEquals(record.getUploadDate().toString(ISODateTimeFormat.date()), "2014-02-12");
         assertEquals(record.getUploadId(), "json upload");
@@ -366,7 +367,7 @@ public class HealthDataRecordTest {
         assertEquals(jsonMap.get("rawDataAttachmentId"), "raw.zip");
         assertEquals(jsonMap.get("schemaId"), "json schema");
         assertEquals(jsonMap.get("schemaRevision"), 3);
-        assertEquals(jsonMap.get("studyId"), "json study");
+        assertEquals(jsonMap.get("studyId"), TEST_APP_ID);
         assertEquals(jsonMap.get("synapseExporterStatus"), "not_exported");
         assertEquals(jsonMap.get("uploadDate"), "2014-02-12");
         assertEquals(jsonMap.get("uploadId"), "json upload");

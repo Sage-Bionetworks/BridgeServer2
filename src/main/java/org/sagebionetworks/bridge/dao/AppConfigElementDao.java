@@ -7,16 +7,16 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
 public interface AppConfigElementDao {
     
-    List<AppConfigElement> getMostRecentElements(String studyId, boolean includeDeleted);
+    List<AppConfigElement> getMostRecentElements(String appId, boolean includeDeleted);
     
-    AppConfigElement getMostRecentElement(String studyId, String id);
+    AppConfigElement getMostRecentElement(String appId, String id);
 
-    List<AppConfigElement> getElementRevisions(String studyId, String id, boolean includeDeleted);
+    List<AppConfigElement> getElementRevisions(String appId, String id, boolean includeDeleted);
     
-    AppConfigElement getElementRevision(String studyId, String id, long revision);
+    AppConfigElement getElementRevision(String appId, String id, long revision);
     
     VersionHolder saveElementRevision(AppConfigElement element);
     
-    void deleteElementRevisionPermanently(String studyId, String id, long revision);
+    void deleteElementRevisionPermanently(String appId, String id, long revision);
 
 }

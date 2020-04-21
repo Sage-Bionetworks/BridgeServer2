@@ -332,7 +332,7 @@ public class AuthenticationController extends BaseController {
         // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withUserId(account.getId())
-            .withStudyIdentifier(targetStudy.getIdentifier())
+            .withAppId(targetStudy.getIdentifier())
             .build();
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);

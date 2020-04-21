@@ -133,7 +133,7 @@ public class AuthenticationServiceMockTest {
     private static final Map<SubpopulationGuid, ConsentStatus> UNCONSENTED_STATUS_MAP = new ImmutableMap.Builder<SubpopulationGuid, ConsentStatus>()
             .put(SUBPOP_GUID, UNCONSENTED_STATUS).build();
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
@@ -224,7 +224,7 @@ public class AuthenticationServiceMockTest {
         setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withLanguages(LANGUAGES)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
@@ -299,7 +299,7 @@ public class AuthenticationServiceMockTest {
         setIpAddress(IP_ADDRESS);
         
         CriteriaContext context = new CriteriaContext.Builder()
-            .withStudyIdentifier(TEST_APP_ID)
+            .withAppId(TEST_APP_ID)
             .withLanguages(LANGUAGES)
             .withClientInfo(ClientInfo.fromUserAgentCache("app/13")).build();
         
@@ -944,7 +944,7 @@ public class AuthenticationServiceMockTest {
         Account mockAccount = mock(Account.class);
 
         CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
         TestUtils.mockEditAccount(accountService, mockAccount);
         doReturn(mockAccount).when(accountService).getAccount(any());
         
@@ -1260,7 +1260,7 @@ public class AuthenticationServiceMockTest {
         
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
@@ -1294,7 +1294,7 @@ public class AuthenticationServiceMockTest {
 
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
 
         Account account = Account.create();
 
@@ -1320,7 +1320,7 @@ public class AuthenticationServiceMockTest {
 
         setIpAddress(IP_ADDRESS);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
 
         Account account = Account.create();
 
@@ -1347,7 +1347,7 @@ public class AuthenticationServiceMockTest {
             expectedExceptionsMessageRegExp="Account not found.")
     public void getSessionNotFound() {
         CriteriaContext context = new CriteriaContext.Builder().withUserId(USER_ID)
-                .withStudyIdentifier(TEST_APP_ID).build();        
+                .withAppId(TEST_APP_ID).build();        
         
         service.getSession(study, context);
     }

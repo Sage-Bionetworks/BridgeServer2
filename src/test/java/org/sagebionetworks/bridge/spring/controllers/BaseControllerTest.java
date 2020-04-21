@@ -386,7 +386,7 @@ public class BaseControllerTest extends Mockito {
         
         CriteriaContext context = controller.getCriteriaContext(TEST_APP_ID);
         
-        assertEquals(context.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(context.getAppId(), TEST_APP_ID);
         assertEquals(context.getLanguages(), ImmutableList.of("en"));
         assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
     }
@@ -409,7 +409,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
-        assertEquals(context.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(context.getAppId(), TEST_APP_ID);
     }
 
     @Test

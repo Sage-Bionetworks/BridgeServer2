@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
@@ -17,12 +18,12 @@ public class HibernateAccountSubstudyTest {
     
     @Test
     public void test() {
-        HibernateAccountSubstudy accountSubstudy = new HibernateAccountSubstudy("studyId", "substudyId", "accountId");
+        HibernateAccountSubstudy accountSubstudy = new HibernateAccountSubstudy(TEST_APP_ID, "substudyId", "accountId");
         
         // not yet used, but coming very shortly
         accountSubstudy.setExternalId("externalId");
         
-        assertEquals(accountSubstudy.getStudyId(), "studyId");
+        assertEquals(accountSubstudy.getStudyId(), TEST_APP_ID);
         assertEquals(accountSubstudy.getSubstudyId(), "substudyId");
         assertEquals(accountSubstudy.getAccountId(), "accountId");
         assertEquals(accountSubstudy.getExternalId(), "externalId");
