@@ -392,7 +392,7 @@ public class ScheduledActivityService {
     }
 
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
-        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getStudyIdentifier(),
+        Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getAppId(),
                 context.getCriteriaContext().getHealthCode());
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
@@ -408,7 +408,7 @@ public class ScheduledActivityService {
         List<ScheduledActivity> scheduledActivities = new ArrayList<>();
 
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(context.getCriteriaContext().getClientInfo(),
-                context.getCriteriaContext().getStudyIdentifier(), false);
+                context.getCriteriaContext().getAppId(), false);
         
         AppConfig appConfig = appConfigService.getAppConfigForUser(context.getCriteriaContext(), false);
         Map<String, SurveyReference> surveyReferences = (appConfig == null) ? ImmutableMap.of()
@@ -418,7 +418,7 @@ public class ScheduledActivityService {
 
         ReferenceResolver resolver = new ReferenceResolver(compoundActivityDefinitionService, schemaService,
                 surveyService, surveyReferences, schemaReferences, context.getCriteriaContext().getClientInfo(),
-                context.getCriteriaContext().getStudyIdentifier());
+                context.getCriteriaContext().getAppId());
         
         for (SchedulePlan plan : plans) {
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);

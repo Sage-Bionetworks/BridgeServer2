@@ -88,7 +88,7 @@ public class SessionUpdateServiceTest {
         session.setParticipant(EMPTY_PARTICIPANT);
 
         List<String> languages = ImmutableList.of("es");
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID)
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID)
                 .withLanguages(languages).build();
 
         // Execute test.
@@ -126,7 +126,7 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setParticipant(EMPTY_PARTICIPANT);
 
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
 
         // Execute test.
         service.updateParticipant(session, context, EMPTY_PARTICIPANT);
@@ -147,7 +147,7 @@ public class SessionUpdateServiceTest {
     public void updateParticipantWithConsentUpdate() {
         UserSession session = new UserSession();
         StudyParticipant participant = new StudyParticipant.Builder().build();
-        CriteriaContext context = new CriteriaContext.Builder().withStudyIdentifier(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
                 
         when(mockConsentService.getConsentStatuses(context)).thenReturn(statuses);
@@ -171,7 +171,7 @@ public class SessionUpdateServiceTest {
         Set<String> dataGroups = Sets.newHashSet("data1");
         CriteriaContext context = new CriteriaContext.Builder()
                 .withUserDataGroups(dataGroups)
-                .withStudyIdentifier(TEST_APP_ID).build();
+                .withAppId(TEST_APP_ID).build();
 
         // Execute test.
         service.updateDataGroups(session, context);

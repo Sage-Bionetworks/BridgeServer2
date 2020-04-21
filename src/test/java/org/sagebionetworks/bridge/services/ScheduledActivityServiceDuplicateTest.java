@@ -24,7 +24,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
@@ -175,7 +174,7 @@ public class ScheduledActivityServiceDuplicateTest {
         contextBuilder = new ScheduleContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("Lilly/25 (iPhone Simulator; iPhone OS/9.3) BridgeSDK/12"))
                 .withStartsOn(ACTIVITIES_LAST_RETRIEVED_ON)
-                .withStudyIdentifier(TEST_APP_ID)
+                .withAppId(TEST_APP_ID)
                 .withEndsOn(DateTime.now(MSK).plusDays(4))
                 .withHealthCode("d8bc3e0e-51b6-4ead-9b82-33a8fde88c6f")
                 .withUserId("6m7Yj31Pp41yjvoyU5y6RE");

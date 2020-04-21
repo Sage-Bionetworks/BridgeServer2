@@ -151,7 +151,7 @@ public class NotificationsService {
         }
 
         // Manage notifications, if necessary.
-        notificationTopicService.manageCriteriaBasedSubscriptions(context.getStudyIdentifier(), context,
+        notificationTopicService.manageCriteriaBasedSubscriptions(context.getAppId(), context,
                 registration.getHealthCode());
 
         return createdRegistration;

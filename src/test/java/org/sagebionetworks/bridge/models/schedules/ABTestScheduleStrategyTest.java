@@ -92,7 +92,7 @@ public class ABTestScheduleStrategyTest {
         List<Schedule> schedules = Lists.newArrayList();
         for (String healthCode : healthCodes) {
             ScheduleContext context = new ScheduleContext.Builder()
-                    .withStudyIdentifier(study.getIdentifier())
+                    .withAppId(study.getIdentifier())
                     .withHealthCode(healthCode).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
