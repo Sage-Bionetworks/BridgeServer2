@@ -82,7 +82,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromStudyAndSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId(TEST_APP_ID);
+        ddbUploadSchema.setAppId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("test");
         assertEquals(ddbUploadSchema.getKey(), TEST_APP_ID + ":test");
     }
@@ -97,7 +97,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromEmptyStudy() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("");
+        ddbUploadSchema.setAppId("");
         ddbUploadSchema.setSchemaId("test");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -105,7 +105,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromBlankStudy() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId("   ");
+        ddbUploadSchema.setAppId("   ");
         ddbUploadSchema.setSchemaId("test");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -113,14 +113,14 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromNullSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId(TEST_APP_ID);
+        ddbUploadSchema.setAppId(TEST_APP_ID);
         assertNull(ddbUploadSchema.getKey());
     }
 
     @Test
     public void getKeyFromEmptySchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId(TEST_APP_ID);
+        ddbUploadSchema.setAppId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -128,7 +128,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyFromBlankSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId(TEST_APP_ID);
+        ddbUploadSchema.setAppId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("   ");
         assertNull(ddbUploadSchema.getKey());
     }
@@ -137,6 +137,7 @@ public class UploadSchemaTest {
     public void getStudyAndSchemaFromKey() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setKey(TEST_APP_ID + ":test");
+        assertEquals(ddbUploadSchema.getAppId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getStudyId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getSchemaId(), "test");
     }
@@ -174,7 +175,7 @@ public class UploadSchemaTest {
     @Test
     public void getKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
-        ddbUploadSchema.setStudyId(TEST_APP_ID);
+        ddbUploadSchema.setAppId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("test:schema");
         assertEquals(ddbUploadSchema.getKey(), TEST_APP_ID + ":test:schema");
     }
@@ -183,6 +184,7 @@ public class UploadSchemaTest {
     public void setKeyWithColonsInSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setKey(TEST_APP_ID + ":test:schema");
+        assertEquals(ddbUploadSchema.getAppId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getStudyId(), TEST_APP_ID);
         assertEquals(ddbUploadSchema.getSchemaId(), "test:schema");
     }
@@ -195,14 +197,23 @@ public class UploadSchemaTest {
     @Test
     public void schemaKeyObject() {
         DynamoUploadSchema schema = new DynamoUploadSchema();
-        schema.setStudyId("test-study");
+        schema.setAppId("test-study");
         schema.setSchemaId("test-schema");
         schema.setRevision(7);
         assertEquals(schema.getSchemaKey().toString(), "test-study-test-schema-v7");
     }
 
     @Test
-    public void testSerialization() throws Exception {
+    public void testSerializationWithAppId() throws Exception {
+        testSerialization("appId");
+    }
+    
+    @Test
+    public void testSerializationWithStudyId() throws Exception {
+        testSerialization("studyId");
+    }
+    
+    public void testSerialization(String appIdField) throws Exception {
         String surveyCreatedOnStr = "2016-04-27T19:00:00.002-0700";
         long surveyCreatedOnMillis = DateTime.parse(surveyCreatedOnStr).getMillis();
 
@@ -218,7 +229,7 @@ public class UploadSchemaTest {
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
-                "   \"studyId\":\"test-study\",\n" +
+                "   \""+appIdField+"\":\"test-study\",\n" +
                 "   \"deleted\":true,\n"+
                 "   \"surveyGuid\":\"survey-guid\",\n" +
                 "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +
@@ -245,6 +256,7 @@ public class UploadSchemaTest {
         assertEquals(uploadSchema.getRevision(), 3);
         assertEquals(uploadSchema.getSchemaId(), "test-schema");
         assertEquals(uploadSchema.getSchemaType(), UploadSchemaType.IOS_SURVEY);
+        assertEquals(uploadSchema.getAppId(), "test-study");
         assertEquals(uploadSchema.getStudyId(), "test-study");
         assertEquals(uploadSchema.getSurveyGuid(), "survey-guid");
         assertEquals(uploadSchema.getSurveyCreatedOn().longValue(), surveyCreatedOnMillis);
@@ -268,7 +280,7 @@ public class UploadSchemaTest {
         assertEquals(barFieldDef.getType(), UploadFieldType.STRING);
 
         // Add study ID and verify that it doesn't get leaked into the JSON
-        uploadSchema.setStudyId("test-study");
+        uploadSchema.setAppId("test-study");
 
         // convert back to JSON - Note that we do this weird thing converting it to a string then reading it into a
         // JsonNode. This is because elsewhere, when we test PUBLIC_SCHEMA_WRITER, we have to do the same thing, and
@@ -276,7 +288,7 @@ public class UploadSchemaTest {
         // for consistency in tests, we should do it the same way every time.
         String convertedJson = BridgeObjectMapper.get().writeValueAsString(uploadSchema);
         JsonNode jsonNode = BridgeObjectMapper.get().readTree(convertedJson);
-        assertEquals(jsonNode.size(), 15);
+        assertEquals(jsonNode.size(), 16);
         assertEquals(jsonNode.get("moduleId").textValue(), MODULE_ID);
         assertEquals(jsonNode.get("moduleVersion").intValue(), MODULE_VERSION);
         assertEquals(jsonNode.get("name").textValue(), "Test Schema");
@@ -324,7 +336,9 @@ public class UploadSchemaTest {
 
         // Public JSON is missing studyId, but is otherwise identical to the non-public (internal worker) JSON.
         assertFalse(publicJsonNode.has("studyId"));
+        assertFalse(publicJsonNode.has("appId"));
         ((ObjectNode) publicJsonNode).put("studyId", "test-study");
+        ((ObjectNode) publicJsonNode).put("appId", "test-study");
         assertEquals(Sets.newHashSet(publicJsonNode.fieldNames()), Sets.newHashSet(jsonNode.fieldNames()));
     }
 

@@ -85,7 +85,7 @@ public class IosSchemaValidationHandler2Test {
         // To test backwards compatibility, survey schema should include both the old style fields and the new
         // "answers" field.
         UploadSchema surveySchema = UploadSchema.create();
-        surveySchema.setStudyId(TEST_STUDY_ID);
+        surveySchema.setAppId(TEST_STUDY_ID);
         surveySchema.setSchemaId("test-survey");
         surveySchema.setRevision(1);
         surveySchema.setName("iOS Survey");
@@ -121,7 +121,7 @@ public class IosSchemaValidationHandler2Test {
                         .withType(UploadFieldType.ATTACHMENT_JSON_BLOB).build()));
 
         UploadSchema nonSurveySchema = UploadSchema.create();
-        nonSurveySchema.setStudyId(TEST_STUDY_ID);
+        nonSurveySchema.setAppId(TEST_STUDY_ID);
         nonSurveySchema.setSchemaId("non-survey");
         nonSurveySchema.setRevision(1);
         nonSurveySchema.setName("Non-Survey");

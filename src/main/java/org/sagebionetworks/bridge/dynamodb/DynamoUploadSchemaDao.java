@@ -91,7 +91,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Override
     public List<UploadSchema> getAllUploadSchemasAllRevisions(String studyId, boolean includeDeleted) {
         DynamoUploadSchema hashKey = new DynamoUploadSchema();
-        hashKey.setStudyId(studyId);
+        hashKey.setAppId(studyId);
         return indexHelper(STUDY_ID_INDEX_NAME, hashKey, includeDeleted);
     }
 
@@ -101,7 +101,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
             boolean includeDeleted) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId);
+        key.setAppId(studyId);
         key.setSchemaId(schemaId);
 
         // Get all revisions, in reverse sort order (highest first)
@@ -122,7 +122,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     @Override
     public UploadSchema getUploadSchemaByIdAndRevision(String studyId, String schemaId, int revision) {
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId);
+        key.setAppId(studyId);
         key.setSchemaId(schemaId);
         key.setRevision(revision);
 
@@ -134,7 +134,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
     public UploadSchema getUploadSchemaLatestRevisionById(String studyId, String schemaId) {
         // Make hash key.
         DynamoUploadSchema key = new DynamoUploadSchema();
-        key.setStudyId(studyId);
+        key.setAppId(studyId);
         key.setSchemaId(schemaId);
 
         // Get the latest revision. This is accomplished by scanning the range key backwards.

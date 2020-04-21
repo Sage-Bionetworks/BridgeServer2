@@ -209,7 +209,7 @@ public class UploadSchemaControllerTest extends Mockito {
 
         // Unlike the other methods, this also returns study ID
         assertEquals(result.getSchemaId(), TEST_SCHEMA_ID);
-        assertEquals(result.getStudyId(), TEST_APP_ID);
+        assertEquals(result.getAppId(), TEST_APP_ID);
     }
 
     @Test
@@ -232,7 +232,7 @@ public class UploadSchemaControllerTest extends Mockito {
 
         UploadSchema resultSchema = BridgeObjectMapper.get().treeToValue(itemListNode.get(0), UploadSchema.class);
         assertEquals(resultSchema.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(resultSchema.getStudyId());
+        assertNull(resultSchema.getAppId());
     }
 
     @Test
@@ -278,17 +278,17 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchema returnedSchema3 = BridgeObjectMapper.get().treeToValue(itemsNode.get(0), UploadSchema.class);
         assertEquals(returnedSchema3.getRevision(), 3);
         assertEquals(returnedSchema3.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema3.getStudyId());
+        assertNull(returnedSchema3.getAppId());
 
         UploadSchema returnedSchema2 = BridgeObjectMapper.get().treeToValue(itemsNode.get(1), UploadSchema.class);
         assertEquals(returnedSchema2.getRevision(), 2);
         assertEquals(returnedSchema2.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema2.getStudyId());
+        assertNull(returnedSchema2.getAppId());
 
         UploadSchema returnedSchema1 = BridgeObjectMapper.get().treeToValue(itemsNode.get(2), UploadSchema.class);
         assertEquals(returnedSchema1.getRevision(), 1);
         assertEquals(returnedSchema1.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(returnedSchema1.getStudyId());
+        assertNull(returnedSchema1.getAppId());
     }
 
     @Test
@@ -398,7 +398,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // Also, (most) method results don't include study ID
         UploadSchema schema = BridgeObjectMapper.get().readValue(result, UploadSchema.class);
         assertEquals(schema.getSchemaId(), TEST_SCHEMA_ID);
-        assertNull(schema.getStudyId());
+        assertNull(schema.getAppId());
     }
 
     private static void assertSchemaInArgCaptor(ArgumentCaptor<UploadSchema> argCaptor) {

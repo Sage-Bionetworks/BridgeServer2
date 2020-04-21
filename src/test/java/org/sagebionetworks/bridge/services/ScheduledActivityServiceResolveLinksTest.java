@@ -84,7 +84,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Mock schema service to provide a concrete schema. Schema only cares about ID and rev.
         UploadSchema schema = UploadSchema.create();
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 

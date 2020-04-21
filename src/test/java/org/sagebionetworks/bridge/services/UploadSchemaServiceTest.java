@@ -135,7 +135,7 @@ public class UploadSchemaServiceTest {
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
+        assertEquals(daoInputSchema.getAppId(), TEST_APP_ID);
         assertEquals(daoInputSchema.getRevision(), expectedRev);
 
         // Validate DAO input is also svcOutput.
@@ -219,7 +219,7 @@ public class UploadSchemaServiceTest {
 
             // Validate we set key parameters when passing the schema to the DAO, including study ID and rev.
             UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-            assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
+            assertEquals(daoInputSchema.getAppId(), TEST_APP_ID);
             assertEquals(daoInputSchema.getRevision(), expectedRev.intValue());
 
             // Validate DAO input is also svcOutput.
@@ -975,7 +975,7 @@ public class UploadSchemaServiceTest {
 
         // Validate we set key parameters when passing the schema to the DAO, including study ID, schema ID, and rev.
         UploadSchema daoInputSchema = daoInputSchemaCaptor.getValue();
-        assertEquals(daoInputSchema.getStudyId(), TEST_APP_ID);
+        assertEquals(daoInputSchema.getAppId(), TEST_APP_ID);
         assertEquals(daoInputSchema.getSchemaId(), SCHEMA_ID);
         assertEquals(daoInputSchema.getRevision(), SCHEMA_REV);
 

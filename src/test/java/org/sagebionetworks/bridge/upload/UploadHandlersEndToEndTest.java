@@ -368,7 +368,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SURVEY_SCHEMA_REV);
         schema.setSchemaId(SURVEY_ID);
         schema.setSchemaType(UploadSchemaType.IOS_SURVEY);
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
         schema.setSurveyGuid(SURVEY_GUID);
         schema.setSurveyCreatedOn(SURVEY_CREATED_ON_MILLIS);
 
@@ -559,7 +559,7 @@ public class UploadHandlersEndToEndTest {
         schema.setRevision(SCHEMA_REV);
         schema.setSchemaId(SCHEMA_ID);
         schema.setSchemaType(UploadSchemaType.IOS_DATA);
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
 
         // set up upload files
         String cccTxtContent = "Blob file";

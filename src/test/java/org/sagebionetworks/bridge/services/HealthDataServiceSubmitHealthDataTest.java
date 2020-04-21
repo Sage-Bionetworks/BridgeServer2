@@ -95,7 +95,7 @@ public class HealthDataServiceSubmitHealthDataTest {
     public void before() throws Exception {
         // Mock Schema Service.
         schema = UploadSchema.create();
-        schema.setStudyId(TEST_APP_ID);
+        schema.setAppId(TEST_APP_ID);
         schema.setSchemaId(SCHEMA_ID);
         schema.setRevision(SCHEMA_REV);
 
