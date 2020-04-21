@@ -109,7 +109,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
-        assertEquals(indexHashKey.getStudyId(), TEST_APP_ID);
+        assertEquals(indexHashKey.getAppId(), TEST_APP_ID);
 
         // Verify DAO output
         assertSame(daoOutputSchemaList, mapperOutputSchemaList);
@@ -128,7 +128,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // validate index hash key
         DynamoUploadSchema indexHashKey = indexHashKeyCaptor.getValue();
-        assertEquals(indexHashKey.getStudyId(), TEST_APP_ID);
+        assertEquals(indexHashKey.getAppId(), TEST_APP_ID);
 
         // Verify DAO output
         assertSame(daoOutputSchemaList, mapperOutputSchemaList);
@@ -175,7 +175,7 @@ public class DynamoUploadSchemaDaoMockTest {
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(mapperQuery.getHashKeyValues().getAppId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
         assertNull(mapperQuery.getQueryFilter());
 
@@ -199,7 +199,7 @@ public class DynamoUploadSchemaDaoMockTest {
         // validate query
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(mapperQuery.getHashKeyValues().getAppId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
         assertEquals(mapperQuery.getQueryFilter().toString(),
                 "{deleted={AttributeValueList: [{N: 1,}],ComparisonOperator: NE}}");
@@ -223,7 +223,7 @@ public class DynamoUploadSchemaDaoMockTest {
 
         // validate intermediate args
         DynamoUploadSchema mapperInputSchema = mapperInputSchemaCaptor.getValue();
-        assertEquals(mapperInputSchema.getStudyId(), TEST_APP_ID);
+        assertEquals(mapperInputSchema.getAppId(), TEST_APP_ID);
         assertEquals(mapperInputSchema.getSchemaId(), SCHEMA_ID);
         assertEquals(mapperInputSchema.getRevision(), SCHEMA_REV);
     }
@@ -247,7 +247,7 @@ public class DynamoUploadSchemaDaoMockTest {
         DynamoDBQueryExpression<DynamoUploadSchema> mapperQuery = mapperQueryCaptor.getValue();
         assertFalse(mapperQuery.isScanIndexForward());
         assertEquals(mapperQuery.getLimit().intValue(), 1);
-        assertEquals(mapperQuery.getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(mapperQuery.getHashKeyValues().getAppId(), TEST_APP_ID);
         assertEquals(mapperQuery.getHashKeyValues().getSchemaId(), SCHEMA_ID);
 
         // Verify DAO output

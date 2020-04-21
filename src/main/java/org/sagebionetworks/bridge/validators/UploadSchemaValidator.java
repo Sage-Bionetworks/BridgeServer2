@@ -91,9 +91,9 @@ public class UploadSchemaValidator implements Validator {
                 errors.rejectValue("schemaType", "is required");
             }
 
-            // study ID
-            if (StringUtils.isBlank(uploadSchema.getStudyId())) {
-                errors.rejectValue("studyId", "is required");
+            // app ID
+            if (StringUtils.isBlank(uploadSchema.getAppId())) {
+                errors.rejectValue("appId", "is required");
             }
 
             // fieldDefinitions
