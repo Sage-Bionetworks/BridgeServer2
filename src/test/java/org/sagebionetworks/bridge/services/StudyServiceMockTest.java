@@ -707,7 +707,7 @@ public class StudyServiceMockTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockStudyDao).deleteStudy(study);
-        verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
+        verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
                 study.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(study.getIdentifier());
         verify(mockTopicService).deleteAllTopics(study.getIdentifier());
@@ -1626,7 +1626,7 @@ public class StudyServiceMockTest extends Mockito {
 
         verify(mockStudyDao).deleteStudy(updatedStudy);
         verify(mockCompoundActivityDefinitionService)
-                .deleteAllCompoundActivityDefinitionsInStudy(updatedStudy.getIdentifier());
+                .deleteAllCompoundActivityDefinitionsInApp(updatedStudy.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(updatedStudy.getIdentifier());
         verify(mockTopicService).deleteAllTopics(updatedStudy.getIdentifier());
     }

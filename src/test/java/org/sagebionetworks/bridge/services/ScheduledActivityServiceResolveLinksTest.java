@@ -70,7 +70,7 @@ public class ScheduledActivityServiceResolveLinksTest {
         // Mock compound activity definition service. This compound activity contains a schema ref with an unresolved
         // revision, and a survey reference with no createdOn (published survey).
         CompoundActivityDefinition compoundActivityDefinition = CompoundActivityDefinition.create();
-        compoundActivityDefinition.setStudyId(TEST_APP_ID);
+        compoundActivityDefinition.setAppId(TEST_APP_ID);
         compoundActivityDefinition.setTaskId(COMPOUND_ACTIVITY_REF_TASK_ID);
         compoundActivityDefinition.setSchemaList(ImmutableList.of(new SchemaReference(SCHEMA_ID, null)));
         compoundActivityDefinition.setSurveyList(ImmutableList.of(new SurveyReference(SURVEY_ID, SURVEY_GUID, null)));

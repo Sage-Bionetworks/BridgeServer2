@@ -631,7 +631,7 @@ public class StudyService {
 
             // delete study data
             templateService.deleteTemplatesForStudy(existing.getIdentifier());
-            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInStudy(
+            compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());

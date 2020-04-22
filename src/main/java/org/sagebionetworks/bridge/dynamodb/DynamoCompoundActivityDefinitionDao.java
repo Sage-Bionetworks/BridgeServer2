@@ -48,11 +48,11 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public void deleteCompoundActivityDefinition(String studyId, String taskId) {
+    public void deleteCompoundActivityDefinition(String appId, String taskId) {
         // For whatever reason, DynamoDBMapper requires you to load the object before you delete it. It seems like you
         // can't use Delete Expressions to make this a single atomic request.
         DynamoCompoundActivityDefinition loadedDef = (DynamoCompoundActivityDefinition) getCompoundActivityDefinition(
-                studyId, taskId);
+                appId, taskId);
 
         // Call DDB to delete.
         try {
@@ -65,9 +65,9 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public void deleteAllCompoundActivityDefinitionsInStudy(String studyId) {
-        // First, query for all defs in a study.
-        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
+    public void deleteAllCompoundActivityDefinitionsInApp(String appId) {
+        // First, query for all defs in a app.
+        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(appId);
 
         // Then, batch delete.
         List<DynamoDBMapper.FailedBatch> failedBatchList = mapper.batchDelete(ddbDefList);
@@ -76,19 +76,19 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(String studyId) {
-        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(studyId);
+    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInApp(String appId) {
+        List<DynamoCompoundActivityDefinition> ddbDefList = getAllHelper(appId);
 
         // because of generics wonkiness, we need to convert this to a list of parent class CompoundActivityDefinition
         return ImmutableList.copyOf(ddbDefList);
     }
 
-    // Helper method for getting all defs in a study. Returns the raw results using a list of the implementation type.
+    // Helper method for getting all defs in a app. Returns the raw results using a list of the implementation type.
     // This enables us to bulk load and batch delete.
-    private List<DynamoCompoundActivityDefinition> getAllHelper(String studyId) {
+    private List<DynamoCompoundActivityDefinition> getAllHelper(String appId) {
         // query expression
         DynamoCompoundActivityDefinition ddbHashKey = new DynamoCompoundActivityDefinition();
-        ddbHashKey.setStudyId(studyId);
+        ddbHashKey.setAppId(appId);
         DynamoDBQueryExpression<DynamoCompoundActivityDefinition> ddbQueryExpr =
                 new DynamoDBQueryExpression<DynamoCompoundActivityDefinition>().withHashKeyValues(ddbHashKey);
 
@@ -100,10 +100,10 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
     /** {@inheritDoc} */
     @Override
-    public CompoundActivityDefinition getCompoundActivityDefinition(String studyId, String taskId) {
+    public CompoundActivityDefinition getCompoundActivityDefinition(String appId, String taskId) {
         // create key object
         DynamoCompoundActivityDefinition ddbDef = new DynamoCompoundActivityDefinition();
-        ddbDef.setStudyId(studyId);
+        ddbDef.setAppId(appId);
         ddbDef.setTaskId(taskId);
 
         // Call DDB mapper. Throw exception if null.
@@ -127,7 +127,7 @@ public class DynamoCompoundActivityDefinitionDao implements CompoundActivityDefi
 
         // Call get() to verify the def exists. This will throw an EntityNotFoundException if it doesn't exist.
         String taskId = compoundActivityDefinition.getTaskId();
-        getCompoundActivityDefinition(compoundActivityDefinition.getStudyId(), taskId);
+        getCompoundActivityDefinition(compoundActivityDefinition.getAppId(), taskId);
 
         // Call DDB mapper to save.
         try {

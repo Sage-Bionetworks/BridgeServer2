@@ -21,7 +21,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @JsonDeserialize(as = DynamoCompoundActivityDefinition.class)
 public interface CompoundActivityDefinition extends BridgeEntity {
     ObjectWriter PUBLIC_DEFINITION_WRITER = BridgeObjectMapper.get().writer(new SimpleFilterProvider().addFilter("filter",
-            SimpleBeanPropertyFilter.serializeAllExcept("studyId")));
+            SimpleBeanPropertyFilter.serializeAllExcept("appId")));
 
     /** Convenience method for creating a CompoundActivityDefinition using a concrete implementation. */
     static CompoundActivityDefinition create() {
@@ -42,13 +42,13 @@ public interface CompoundActivityDefinition extends BridgeEntity {
     void setSchemaList(List<SchemaReference> schemaList);
 
     /**
-     * Compound activity definitions (and task identifiers) are namespaced to studies. As such, it's important for a
-     * definition to know its study.
+     * Compound activity definitions (and task identifiers) are namespaced to apps. As such, it's important for a
+     * definition to know its app.
      */
-    String getStudyId();
+    String getAppId();
 
-    /** @see #getStudyId */
-    void setStudyId(String studyId);
+    /** @see #getAppId */
+    void setAppId(String appId);
 
     /** List of surveys in this activity definition. */
     List<SurveyReference> getSurveyList();
