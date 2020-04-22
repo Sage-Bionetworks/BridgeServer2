@@ -84,7 +84,7 @@ public class UploadServiceCreateUploadMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of());
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST)).thenReturn(ImmutableList.of());
 
         // mock upload DAOs. (The tests will mock the calls, since they vary with each test.)
         mockUploadDao = mock(UploadDao.class);
@@ -182,7 +182,7 @@ public class UploadServiceCreateUploadMockTest {
         // mock config with dupe study whitelist
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST))
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST))
                 .thenReturn(ImmutableList.of(TEST_APP_ID));
         svc.setConfig(mockConfig);
 

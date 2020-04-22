@@ -90,15 +90,15 @@ public class DynamoUploadDao implements UploadDao {
     
     /** {@inheritDoc} */
     @Override
-    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String studyId,
+    public Upload createUpload(@Nonnull UploadRequest uploadRequest, @Nonnull String appId,
             @Nonnull String healthCode, @Nullable String originalUploadId) {
         checkNotNull(uploadRequest, "Upload request is null");
-        checkNotNull(studyId, "Study identifier is null");
+        checkNotNull(appId, "App ID is null");
         checkArgument(StringUtils.isNotBlank(healthCode), "Health code is null or blank");        
 
         // Always write new uploads to the new upload table.
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, healthCode);
-        upload.setStudyId(studyId);
+        upload.setAppId(appId);
         upload.setRequestedOn(DateUtils.getCurrentMillisFromEpoch());
 
         if (originalUploadId != null) {
@@ -123,13 +123,13 @@ public class DynamoUploadDao implements UploadDao {
         if (upload != null) {
             // Very old uploads (2+ years ago) did not have studyId set; for these we must do 
             // a lookup in the legacy DynamoHealthCode table.
-            if (upload.getStudyId() == null) { 
-                String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
-                if (studyId == null) {
+            if (upload.getAppId() == null) { 
+                String appId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+                if (appId == null) {
                     throw new EntityNotFoundException(DynamoStudy.class,
-                            "Study not found for upload. User may have been deleted from system.");
+                            "App not found for upload. User may have been deleted from system.");
                 }
-                upload.setStudyId(studyId);
+                upload.setAppId(appId);
             }
             return upload;
         }
@@ -191,7 +191,7 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public ForwardCursorPagedResourceList<Upload> getStudyUploads(String studyId, DateTime startTime,
+    public ForwardCursorPagedResourceList<Upload> getAppUploads(String studyId, DateTime startTime,
             DateTime endTime, int pageSize, String offsetKey) {
         checkNotNull(studyId);
 
@@ -251,14 +251,14 @@ public class DynamoUploadDao implements UploadDao {
     /**
      * Create a query for records applying the filter values if they exist.
      */
-    private DynamoDBQueryExpression<DynamoUpload2> createCountQuery(String studyId, DateTime startTime, DateTime endTime) {
+    private DynamoDBQueryExpression<DynamoUpload2> createCountQuery(String appId, DateTime startTime, DateTime endTime) {
         Condition rangeKeyCondition = new Condition()
                 .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
                 .withAttributeValueList(new AttributeValue().withN(String.valueOf(startTime.getMillis())),
                         new AttributeValue().withN(String.valueOf(endTime.getMillis())));
 
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId(studyId);
+        upload.setAppId(appId);
 
         DynamoDBQueryExpression<DynamoUpload2> query = new DynamoDBQueryExpression<>();
         query.withIndexName(STUDY_ID_REQUESTED_ON_INDEX);

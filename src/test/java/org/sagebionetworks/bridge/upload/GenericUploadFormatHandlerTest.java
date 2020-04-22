@@ -482,7 +482,7 @@ public class GenericUploadFormatHandlerTest {
         context.setUnzippedDataFileMap(fileMap);
 
         // Handler expects the context to have these attributes, including the empty data map.
-        context.setStudy(TEST_APP_ID);
+        context.setAppId(TEST_APP_ID);
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setData(BridgeObjectMapper.get().createObjectNode());

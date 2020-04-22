@@ -121,11 +121,11 @@ public interface HealthDataRecord extends BridgeEntity {
     /** @see #getSchemaRevision */
     void setSchemaRevision(Integer schemaRevision);
 
-    /** Study ID that the health data record lives in. */
-    String getStudyId();
+    /** App ID that the health data record lives in. */
+    String getAppId();
 
-    /** @see #getStudyId */
-    void setStudyId(String studyId);
+    /** @see #getAppId */
+    void setAppId(String appId);
 
     /** Calendar date the health data was uploaded. This is generally filled in by the Bridge server. */
     LocalDate getUploadDate();

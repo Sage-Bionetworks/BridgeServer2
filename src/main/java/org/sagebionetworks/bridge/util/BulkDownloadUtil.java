@@ -87,7 +87,7 @@ public class BulkDownloadUtil {
         // process uploads
         for (UploadObject uploadObj : uploads) {
             UploadValidationContext ctx = new UploadValidationContext();
-            ctx.setStudy(uploadObj.studyId);
+            ctx.setAppId(uploadObj.studyId);
             ctx.setUpload(uploadObj.metadata);
 
             // Make temp dir within temp dir.
@@ -160,7 +160,7 @@ public class BulkDownloadUtil {
         System.out.println("Downloading files from S3 and cross-referencing study ID from health code...");
         List<UploadObject> uploads = new ArrayList<>();
         for (DynamoUpload2 oneUploadMetadata : uploadMetadataList) {
-            String studyId = oneUploadMetadata.getStudyId();
+            String studyId = oneUploadMetadata.getAppId();
 
             uploads.add(new UploadObject(oneUploadMetadata, studyId));
         }

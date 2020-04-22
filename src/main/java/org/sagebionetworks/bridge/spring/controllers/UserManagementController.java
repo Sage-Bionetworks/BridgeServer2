@@ -45,7 +45,7 @@ public class UserManagementController extends BaseController {
     public JsonNode signInForSuperAdmin() {
         SignIn originSignIn = parseJson(SignIn.class);
         
-        // Adjust the sign in so it is always done against the API study.
+        // Adjust the sign in so it is always done against the API app.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
                 .withStudy(API_APP_ID).build();        
         
@@ -80,10 +80,10 @@ public class UserManagementController extends BaseController {
 
         // The only part of this payload we care about is the study property
         SignIn signIn = parseJson(SignIn.class);
-        String studyId = signIn.getStudyId();
+        String appId = signIn.getStudyId();
 
         // Verify it's correct
-        Study study = studyService.getStudy(studyId);
+        Study study = studyService.getStudy(appId);
         sessionUpdateService.updateStudy(session, study.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
@@ -106,16 +106,16 @@ public class UserManagementController extends BaseController {
     }
 
     /**
-     * admin api used to create consent/not-consent user for given study
+     * Admin api used to create consent/not-consent user for given app
      * nearly identical to createUser() one
-     * @param studyId
+     * @param appId
      * @return
      */
-    @PostMapping("/v3/studies/{studyId}/users")
+    @PostMapping(path = {"/v1/apps/{appId}/users", "/v3/studies/{appId}/users"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithStudyId(@PathVariable String studyId) {
+    public StatusMessage createUserWithStudyId(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
-        Study study = studyService.getStudy(studyId);
+        Study study = studyService.getStudy(appId);
         
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);

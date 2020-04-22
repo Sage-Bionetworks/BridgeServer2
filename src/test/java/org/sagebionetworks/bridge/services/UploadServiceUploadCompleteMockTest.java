@@ -44,7 +44,7 @@ public class UploadServiceUploadCompleteMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST)).thenReturn(ImmutableList.of());
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST)).thenReturn(ImmutableList.of());
 
         // set up mocks - The actual behavior will vary with each test.
         mockS3Client = mock(AmazonS3.class);

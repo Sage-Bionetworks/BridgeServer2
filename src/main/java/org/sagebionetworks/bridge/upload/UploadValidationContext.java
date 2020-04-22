@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableList;
 /** This class encapsulates data read and generated during the process of upload validation. */
 public class UploadValidationContext {
     private String healthCode;
-    private String study;
+    private String appId;
     private Upload upload;
     private boolean success = true;
     private List<String> messageList = new ArrayList<>();
@@ -37,16 +37,16 @@ public class UploadValidationContext {
     }
 
     /**
-     * This is the study that the upload lives in and is validated against. This is made available by the upload
+     * This is the app that the upload lives in and is validated against. This is made available by the upload
      * validation service and is initially set by the upload validation task factory.
      */
-    public String getStudy() {
-        return study;
+    public String getAppId() {
+        return appId;
     }
 
-    /** @see #getStudy */
-    public void setStudy(String study) {
-        this.study = study;
+    /** @see #getAppId */
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
     /**
@@ -198,7 +198,7 @@ public class UploadValidationContext {
     public UploadValidationContext shallowCopy() {
         UploadValidationContext copy = new UploadValidationContext();
         copy.healthCode = this.healthCode;
-        copy.study = this.study;
+        copy.appId = this.appId;
         copy.upload = this.upload;
         copy.success = this.success;
         copy.tempDir = this.tempDir;

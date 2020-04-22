@@ -74,7 +74,7 @@ public class UploadValidationTaskTest {
         upload.setUploadId("test-upload");
 
         ctx = new UploadValidationContext();
-        ctx.setStudy(study.getIdentifier());
+        ctx.setAppId(study.getIdentifier());
         ctx.setUpload(upload);
 
         // Set up other pre-reqs
@@ -223,7 +223,7 @@ public class UploadValidationTaskTest {
         record.setId(recordId);
         record.setSchemaId(SCHEMA_ID);
         record.setSchemaRevision(SCHEMA_REV);
-        record.setStudyId(TEST_APP_ID);
+        record.setAppId(TEST_APP_ID);
         record.setUploadDate(UPLOAD_DATE);
         record.setUploadedOn(UPLOADED_ON);
         record.setUploadId(UPLOAD_ID);

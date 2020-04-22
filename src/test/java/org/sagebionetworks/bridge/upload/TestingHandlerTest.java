@@ -82,7 +82,7 @@ public class TestingHandlerTest {
         verifyZeroInteractions(mockValidator);
 
         UploadValidationContext testContext = testContextCaptor.getValue();
-        assertEquals(testContext.getStudy(), TEST_APP_ID);
+        assertEquals(testContext.getAppId(), TEST_APP_ID);
         assertEquals(testContext.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testContext.getUpload().getFilename(), TEST_FILENAME);
     }
@@ -112,7 +112,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy(), TEST_APP_ID);
+        assertEquals(testHandlerArg.getAppId(), TEST_APP_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -152,7 +152,7 @@ public class TestingHandlerTest {
                 UploadValidationContext.class);
         verify(mockTestHandler).handle(testHandlerArgCaptor.capture());
         UploadValidationContext testHandlerArg = testHandlerArgCaptor.getValue();
-        assertEquals(testHandlerArg.getStudy(), TEST_APP_ID);
+        assertEquals(testHandlerArg.getAppId(), TEST_APP_ID);
         assertEquals(testHandlerArg.getUpload().getUploadId(), TEST_UPLOAD_ID);
         assertEquals(testHandlerArg.getUpload().getFilename(), TEST_FILENAME);
 
@@ -160,7 +160,7 @@ public class TestingHandlerTest {
     }
 
     private static UploadValidationContext mockContext() {
-        // Testing handler may call context.getStudy().getIdentifier(), context.getUpload().getUploadId(), and
+        // Testing handler may call context.getAppId().getIdentifier(), context.getUpload().getUploadId(), and
         // context.getUpload().getFilename(), so get those ready
 
         DynamoStudy study = TestUtils.getValidStudy(TestingHandlerTest.class);
@@ -171,7 +171,7 @@ public class TestingHandlerTest {
         upload.setFilename(TEST_FILENAME);
 
         UploadValidationContext mockContext = new UploadValidationContext();
-        mockContext.setStudy(TEST_APP_ID);
+        mockContext.setAppId(TEST_APP_ID);
         mockContext.setUpload(upload);
         return mockContext;
     }

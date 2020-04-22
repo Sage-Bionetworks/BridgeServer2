@@ -132,7 +132,7 @@ public class UploadServiceMockTest {
         svc.setS3UploadClient(mockS3UploadClient);
         
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(UPLOAD_BUCKET_NAME);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST))
+        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST))
                 .thenReturn(ImmutableList.of("whitelisted-study"));
         svc.setConfig(mockConfig);
     }
@@ -290,8 +290,8 @@ public class UploadServiceMockTest {
         
         ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<>(results, MOCK_OFFSET_KEY)
             .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        doReturn(pagedList).when(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        doReturn(pagedList).when(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         
         // Mock the record returned from the validation status record
         doReturn("schema-id").when(mockRecord).getSchemaId();
@@ -318,10 +318,10 @@ public class UploadServiceMockTest {
         setupUploadMocks();
         
         // Now verify the study uploads works
-        ForwardCursorPagedResourceList<UploadView> returned = svc.getStudyUploads(TEST_APP_ID,
+        ForwardCursorPagedResourceList<UploadView> returned = svc.getAppUploads(TEST_APP_ID,
                 START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         
-        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        verify(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         validateUploadMocks(returned, MOCK_OFFSET_KEY);
     }
 
@@ -329,9 +329,9 @@ public class UploadServiceMockTest {
     public void canGetStudyUploadsWithoutPageSize() throws Exception {
         setupUploadMocks();
 
-        svc.getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, null, null);
+        svc.getAppUploads(TEST_APP_ID, START_TIME, END_TIME, null, null);
 
-        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        verify(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
     }
 
     private void validateUploadMocks(ForwardCursorPagedResourceList<UploadView> returned, String expectedOffsetKey) {

@@ -74,7 +74,7 @@ public class TranscribeConsentHandlerTest {
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
         inputRecord = HealthDataRecord.create();
         context = new UploadValidationContext();
-        context.setStudy(TEST_APP_ID);
+        context.setAppId(TEST_APP_ID);
         context.setHealthCode(HEALTH_CODE);
         context.setHealthDataRecord(inputRecord);
     }
