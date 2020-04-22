@@ -5,13 +5,13 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -26,7 +26,6 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -65,9 +64,7 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
-    static final String CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST = "upload.dupe.app.whitelist";
 
-    private Set<String> dupeAppsWhitelist;
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
@@ -88,11 +85,6 @@ public class UploadService {
     @Autowired
     final void setConfig(BridgeConfig config) {
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
-
-        // This is the set of app IDs where we ignore dedupe logic. This configuration exists (1) for integration
-        // tests, where we always upload the same files over and over and (2) for studies where it's valid and expected
-        // for apps to always submit the same files over and over again.
-        dupeAppsWhitelist = ImmutableSet.copyOf(config.getList(CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST));
     }
 
     /**
@@ -164,8 +156,9 @@ public class UploadService {
         String originalUploadId = null;
         UploadStatus originalUploadStatus = null;
 
-        // Dedupe logic gated on whitelist.
-        if (!dupeAppsWhitelist.contains(appId)) {
+        // Do not execute dedupe logic on test/API app, because integration tests submit the 
+        // same uploads over and over again with each test run.
+        if (!API_APP_ID.equals(appId)) {
             try {
                 originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5,
                         uploadRequestedOn);

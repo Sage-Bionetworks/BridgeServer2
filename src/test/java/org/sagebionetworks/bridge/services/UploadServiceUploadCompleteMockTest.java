@@ -15,7 +15,6 @@ import static org.testng.Assert.fail;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.google.common.collect.ImmutableList;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -44,7 +43,6 @@ public class UploadServiceUploadCompleteMockTest {
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_APP_WHITELIST)).thenReturn(ImmutableList.of());
 
         // set up mocks - The actual behavior will vary with each test.
         mockS3Client = mock(AmazonS3.class);
