@@ -17,8 +17,8 @@ public interface AppConfigElement extends BridgeEntity {
     String getKey();
     
     
-    void setStudyId(String studyId);
-    String getStudyId();
+    void setAppId(String appId);
+    String getAppId();
     
     void setId(String id);
     String getId();

@@ -37,7 +37,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     
     private static final DynamoAppConfig KEY = new DynamoAppConfig();
     static {
-        KEY.setStudyId(TEST_APP_ID);
+        KEY.setAppId(TEST_APP_ID);
         KEY.setGuid(GUID);
     }
     
@@ -82,7 +82,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         // Regardless of the state of the deleted flag
         assertNull(query.getQueryFilter());
     }
@@ -100,7 +100,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         verify(mockMapper).query(eq(DynamoAppConfig.class), queryCaptor.capture());
         
         DynamoDBQueryExpression<DynamoAppConfig> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         
         // where the deleted flag is not set to 1 (deleted)
         Condition condition = query.getQueryFilter().get("deleted");
@@ -161,7 +161,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_APP_ID);
+        config.setAppId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setCriteria(criteria);
         
@@ -189,7 +189,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_APP_ID);
+        config.setAppId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true); // can be deleted as part of an update
         config.setCriteria(criteria);
@@ -215,7 +215,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
         criteria.setLanguage("fr");
         
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_APP_ID);
+        config.setAppId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(false); // can be undeleted as part of an update
         config.setCriteria(criteria);
@@ -238,7 +238,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigLogicallyDeleted() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_APP_ID);
+        config.setAppId(TEST_APP_ID);
         config.setGuid(GUID);
         config.setDeleted(true);
         config.setCriteria(Criteria.create());
@@ -253,7 +253,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateAppConfigNotFound() {
         AppConfig config = AppConfig.create();
-        config.setStudyId(TEST_APP_ID);
+        config.setAppId(TEST_APP_ID);
         config.setGuid(GUID);
         
         dao.updateAppConfig(config);
@@ -262,7 +262,7 @@ public class DynamoAppConfigDaoTest extends Mockito {
     @Test
     public void deleteAppConfig() {
         DynamoAppConfig saved = new DynamoAppConfig();
-        saved.setStudyId(TEST_APP_ID);
+        saved.setAppId(TEST_APP_ID);
         saved.setGuid(GUID);
         saved.setCriteria(Criteria.create());
         when(mockMapper.load(KEY)).thenReturn(saved);

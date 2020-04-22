@@ -38,12 +38,12 @@ public class DynamoAppConfigDao implements AppConfigDao {
         this.criteriaDao = criteriaDao;
     }
     
-    DynamoAppConfig loadAppConfig(String studyId, String guid) {
-        checkNotNull(studyId);
+    DynamoAppConfig loadAppConfig(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
         DynamoAppConfig key = new DynamoAppConfig();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
         key.setGuid(guid);
         
         DynamoAppConfig config = mapper.load(key);
@@ -53,11 +53,11 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return config;
     }
     
-    public List<AppConfig> getAppConfigs(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<AppConfig> getAppConfigs(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
         DynamoAppConfig key = new DynamoAppConfig();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
 
         DynamoDBQueryExpression<DynamoAppConfig> query = new DynamoDBQueryExpression<DynamoAppConfig>()
                 .withHashKeyValues(key);
@@ -76,8 +76,8 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return list;
     }
     
-    public AppConfig getAppConfig(String studyId, String guid) {
-        DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
+    public AppConfig getAppConfig(String appId, String guid) {
+        DynamoAppConfig appConfig = loadAppConfig(appId, guid);
         if (appConfig == null) {
             throw new EntityNotFoundException(AppConfig.class);
         }
@@ -99,7 +99,7 @@ public class DynamoAppConfigDao implements AppConfigDao {
     public AppConfig updateAppConfig(AppConfig appConfig) {
         checkNotNull(appConfig);
         
-        DynamoAppConfig saved = loadAppConfig(appConfig.getStudyId(), appConfig.getGuid());
+        DynamoAppConfig saved = loadAppConfig(appConfig.getAppId(), appConfig.getGuid());
         // If it doesn't exist, or it's deleted and not being undeleted, then return 404
         if (saved == null || (appConfig.isDeleted() && saved.isDeleted())) {
             throw new EntityNotFoundException(AppConfig.class);
@@ -111,11 +111,11 @@ public class DynamoAppConfigDao implements AppConfigDao {
         return appConfig;
     }
     
-    public void deleteAppConfig(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteAppConfig(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        AppConfig appConfig = loadAppConfig(studyId, guid);
+        AppConfig appConfig = loadAppConfig(appId, guid);
         if (appConfig == null || appConfig.isDeleted()) {
             throw new EntityNotFoundException(AppConfig.class);
         }
@@ -123,11 +123,11 @@ public class DynamoAppConfigDao implements AppConfigDao {
         mapper.save(appConfig);
     }
     
-    public void deleteAppConfigPermanently(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteAppConfigPermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(guid);
         
-        DynamoAppConfig appConfig = loadAppConfig(studyId, guid);
+        DynamoAppConfig appConfig = loadAppConfig(appId, guid);
         if (appConfig == null) {
             throw new EntityNotFoundException(AppConfig.class);
         }

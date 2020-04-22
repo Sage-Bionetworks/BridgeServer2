@@ -238,19 +238,19 @@ public class CacheProvider {
 
     public void setStudy(Study study) {
         checkNotNull(study);
-        CacheKey redisKey = CacheKey.study(study.getIdentifier());
+        CacheKey redisKey = CacheKey.app(study.getIdentifier());
         setObject(redisKey, study, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public Study getStudy(String identifier) {
         checkNotNull(identifier);
-        CacheKey redisKey = CacheKey.study(identifier);
+        CacheKey redisKey = CacheKey.app(identifier);
         return getObject(redisKey, Study.class, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public void removeStudy(String identifier) {
         checkNotNull(identifier);
-        CacheKey redisKey = CacheKey.study(identifier);
+        CacheKey redisKey = CacheKey.app(identifier);
         removeObject(redisKey);
     }
 

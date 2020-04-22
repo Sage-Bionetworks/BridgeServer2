@@ -58,10 +58,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class CacheProviderMockTest {
-    private static final CacheKey CACHE_KEY = CacheKey.study("key");
+    private static final CacheKey CACHE_KEY = CacheKey.app("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String REQUEST_INFO_KEY = "userId:request-info";
-    private static final String STUDY_ID_KEY = TEST_APP_ID + ":study";
+    private static final String STUDY_ID_KEY = TEST_APP_ID + ":App";
     private static final String USER_ID = "userId";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
@@ -90,14 +90,14 @@ public class CacheProviderMockTest {
         String json = BridgeObjectMapper.get().writeValueAsString(study);
         assertTrue(json != null && json.length() > 0);
 
-        final CacheKey cacheKey = CacheKey.study(study.getIdentifier());
+        final CacheKey cacheKey = CacheKey.app(study.getIdentifier());
         simpleCacheProvider.setObject(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(cachedString, json);
 
         // Remove something that's not the key
-        final CacheKey brokenCacheKey = CacheKey.study(study.getIdentifier()+"2");
+        final CacheKey brokenCacheKey = CacheKey.app(study.getIdentifier()+"2");
         simpleCacheProvider.removeObject(brokenCacheKey);
         cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(cachedString, json);

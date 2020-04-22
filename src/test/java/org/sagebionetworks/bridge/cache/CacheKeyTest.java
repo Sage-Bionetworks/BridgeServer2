@@ -117,7 +117,7 @@ public class CacheKeyTest {
     
     @Test
     public void study() {
-        assertEquals(CacheKey.study(TEST_APP_ID).toString(), TEST_APP_ID + ":study");
+        assertEquals(CacheKey.app(TEST_APP_ID).toString(), TEST_APP_ID + ":App");
     }    
     
     @Test
@@ -155,7 +155,7 @@ public class CacheKeyTest {
         CacheKey privateKey = CacheKey.reauthTokenLookupKey("a", TEST_APP_ID);
         assertFalse(CacheKey.isPublic(privateKey.toString()));
         
-        CacheKey publicKey = CacheKey.study(TEST_APP_ID);
+        CacheKey publicKey = CacheKey.app(TEST_APP_ID);
         assertTrue(CacheKey.isPublic(publicKey.toString()));
     }
 }

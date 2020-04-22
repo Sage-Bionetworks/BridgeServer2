@@ -92,7 +92,7 @@ public class DynamoAppConfigTest {
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig appConfig = AppConfig.create();
-        appConfig.setStudyId(STUDY_ID);
+        appConfig.setAppId(STUDY_ID);
         appConfig.setLabel(LABEL);
         appConfig.setCriteria(criteria);
         appConfig.setCreatedOn(TIMESTAMP.getMillis());
@@ -162,7 +162,7 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
-        assertNull(deser.getStudyId());
+        assertNull(deser.getAppId());
         
         assertEquals(deser.getClientData(), clientData);
         assertEquals(deser.getConfigElements().get("config1"), clientData);

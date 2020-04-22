@@ -56,7 +56,7 @@ public class DynamoAppConfig implements AppConfig {
         }
     }    
 
-    private String studyId;
+    private String appId;
     private String label;
     private String guid;
     private Criteria criteria;
@@ -73,15 +73,15 @@ public class DynamoAppConfig implements AppConfig {
     private boolean deleted;
     
     @JsonIgnore
-    @DynamoDBHashKey
+    @DynamoDBHashKey(attributeName = "studyId")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String studyId) {
+        this.appId = studyId;
     }
     
     @Override
@@ -248,7 +248,7 @@ public class DynamoAppConfig implements AppConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, studyId,
+        return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, appId,
                 surveyReferences, configReferences, fileReferences, version, deleted);
     }
 
@@ -266,13 +266,13 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
                 && Objects.equals(getConfigReferences(), other.getConfigReferences())
                 && Objects.equals(getFileReferences(), other.getFileReferences())
-                && Objects.equals(studyId, other.studyId) && Objects.equals(version, other.version)
+                && Objects.equals(appId, other.appId) && Objects.equals(version, other.version)
                 && Objects.equals(deleted, other.deleted);
     }
 
     @Override
     public String toString() {
-        return "DynamoAppConfig [studyId=" + studyId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
+        return "DynamoAppConfig [appId=" + appId + ", label=" + label + ", guid=" + guid + ", criteria=" + criteria
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
                 + ", surveyReferences=" + getSurveyReferences() + ", schemaReferences=" + getSchemaReferences()
                 + ", configReferences=" + getConfigReferences() + ", fileReferences=" + getFileReferences()

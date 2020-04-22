@@ -37,9 +37,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
     
     @Override
-    public List<AppConfigElement> getMostRecentElements(String studyId, boolean includeDeleted) {
+    public List<AppConfigElement> getMostRecentElements(String appId, boolean includeDeleted) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
                 .withIndexName(STUDY_ID_INDEX_NAME)
@@ -77,9 +77,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public AppConfigElement getMostRecentElement(String studyId, String id) {
+    public AppConfigElement getMostRecentElement(String appId, String id) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
         key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
@@ -94,9 +94,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public List<AppConfigElement> getElementRevisions(String studyId, String id, boolean includeDeleted) {
+    public List<AppConfigElement> getElementRevisions(String appId, String id, boolean includeDeleted) {
         DynamoAppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
         key.setId(id);        
 
         DynamoDBQueryExpression<DynamoAppConfigElement> query = new DynamoDBQueryExpression<DynamoAppConfigElement>()
@@ -117,9 +117,9 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public AppConfigElement getElementRevision(String studyId, String id, long revision) {
+    public AppConfigElement getElementRevision(String appId, String id, long revision) {
         AppConfigElement key = new DynamoAppConfigElement();
-        key.setStudyId(studyId);
+        key.setAppId(appId);
         key.setId(id);
         key.setRevision(revision);
         
