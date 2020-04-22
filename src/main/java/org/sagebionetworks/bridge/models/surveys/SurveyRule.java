@@ -75,7 +75,7 @@ public final class SurveyRule {
      * If the rule condition is true, advanced to the question or information screen indicated by the 
      * identifier. Do not evaluate further rules in the list of rules. The identifier must be later 
      * in the list of survey questions (you cannot backtrack). If the rule is false, continue 
-     * evaluating rules or continue with the next question it the study.
+     * evaluating rules or continue with the next question it the app.
      */
     @JsonProperty("skipTo")
     public String getSkipToTarget() {
@@ -84,7 +84,7 @@ public final class SurveyRule {
     /**
      * If the rule condition is true, stop evaluating rules and end the survey immediately. Existing 
      * survey answers should be sent to the survey. If the rule is false, continue evaluating rules or 
-     * continue with the next question it the study.
+     * continue with the next question it the app.
      */
     public Boolean getEndSurvey() {
         return endSurvey;

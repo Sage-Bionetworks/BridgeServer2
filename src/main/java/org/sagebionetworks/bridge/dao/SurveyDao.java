@@ -62,7 +62,7 @@ public interface SurveyDao {
     Survey getSurvey(String appId, GuidCreatedOnVersionHolder keys, boolean includeElements);
 
     /**
-     * Helper method to get the survey guid for the given study and survey identifier. Returns null if no such survey
+     * Helper method to get the survey guid for the given app and survey identifier. Returns null if no such survey
      * exists. Primarily used to check identifier uniqueness.
      */
     String getSurveyGuidForIdentifier(String appId, String surveyId);
@@ -86,12 +86,12 @@ public interface SurveyDao {
     Survey getSurveyMostRecentlyPublishedVersion(String appId, String guid, boolean includeElements);
     
     /**
-     * Get the most recent version of each survey in the study, that has been published. 
+     * Get the most recent version of each survey in the app, that has been published. 
      */
     List<Survey> getAllSurveysMostRecentlyPublishedVersion(String appId, boolean includeDeleted);
     
     /**
-     * Get the most recent version of each survey in the study, whether published or not.
+     * Get the most recent version of each survey in the app, whether published or not.
      */
     List<Survey> getAllSurveysMostRecentVersion(String appId, boolean includeDeleted);
     

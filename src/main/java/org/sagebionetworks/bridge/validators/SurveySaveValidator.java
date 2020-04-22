@@ -68,8 +68,8 @@ public class SurveySaveValidator implements Validator {
         if (StringUtils.isBlank(survey.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         }
-        if (StringUtils.isBlank(survey.getStudyIdentifier())) {
-            errors.rejectValue("studyIdentifier", "is required");
+        if (StringUtils.isBlank(survey.getAppId())) {
+            errors.rejectValue("appId", "is required");
         }
         if (StringUtils.isBlank(survey.getGuid())) {
             errors.rejectValue("guid", "is required");

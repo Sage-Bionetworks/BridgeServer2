@@ -125,7 +125,7 @@ public class SharedModuleService {
             sharedSurvey.setModuleVersion(moduleVersion);
 
             // Survey keys don't include study ID. Instead, we need to set the study ID directly in the survey object.
-            sharedSurvey.setStudyIdentifier(studyId);
+            sharedSurvey.setAppId(studyId);
             Survey localSurvey = surveyService.createSurvey(sharedSurvey);
             GuidCreatedOnVersionHolder localSurveyKey = new GuidCreatedOnVersionHolderImpl(localSurvey.getGuid(),
                     localSurvey.getCreatedOn());

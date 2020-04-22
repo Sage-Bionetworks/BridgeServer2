@@ -99,7 +99,7 @@ public class DynamoSurveyDaoMockTest {
         // set up survey
         survey = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         survey.setIdentifier(SURVEY_ID);
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
 
         // mock schema dao
         UploadSchema schema = UploadSchema.create();
@@ -135,7 +135,7 @@ public class DynamoSurveyDaoMockTest {
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
 
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         assertFalse(query.isConsistentRead());
         assertEquals(query.getLimit().intValue(), 1);
 
@@ -241,7 +241,7 @@ public class DynamoSurveyDaoMockTest {
     public void updateSurveyUndeleteExistingDeletedOK() {
         DynamoSurvey existing = new DynamoSurvey(SURVEY_GUID, SURVEY_CREATED_ON);
         existing.setIdentifier(SURVEY_ID);
-        existing.setStudyIdentifier(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setDeleted(true);
         existing.setPublished(false);
         
