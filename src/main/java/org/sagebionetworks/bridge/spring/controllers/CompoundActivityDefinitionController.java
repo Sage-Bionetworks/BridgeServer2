@@ -58,12 +58,12 @@ public class CompoundActivityDefinitionController extends BaseController {
         return new StatusMessage("Compound activity definition has been deleted.");
     }
 
-    /** List all compound activity definitions in a study. */
+    /** List all compound activity definitions in a app. */
     @GetMapping(path="/v3/compoundactivitydefinitions", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getAllCompoundActivityDefinitionsInStudy() throws JsonProcessingException, IOException {
+    public String getAllCompoundActivityDefinitionsInApp() throws JsonProcessingException, IOException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
-        List<CompoundActivityDefinition> defList = compoundActivityDefService.getAllCompoundActivityDefinitionsInStudy(
+        List<CompoundActivityDefinition> defList = compoundActivityDefService.getAllCompoundActivityDefinitionsInApp(
                 session.getAppId());
         ResourceList<CompoundActivityDefinition> defResourceList = new ResourceList<>(defList);
         return PUBLIC_DEFINITION_WRITER.writeValueAsString(defResourceList);

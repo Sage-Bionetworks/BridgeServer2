@@ -21,11 +21,11 @@ public class CompoundActivityDefinitionValidator implements Validator {
 
     /**
      * <p>
-     * Compound activity definition must have a task ID that's in the study's task ID list, and it must have at least
+     * Compound activity definition must have a task ID that's in the app's task ID list, and it must have at least
      * one schema or at least one survey.
      * </p>
      * <p>
-     * Study ID need not be specified, as the DAO will fill this in before saving it to the back-end store.
+     * App ID need not be specified, as the DAO will fill this in before saving it to the back-end store.
      * </p>
      */
     @Override
@@ -37,9 +37,9 @@ public class CompoundActivityDefinitionValidator implements Validator {
         } else {
             CompoundActivityDefinition compoundActivityDef = (CompoundActivityDefinition) target;
 
-            // studyId must be specified
-            if (isBlank(compoundActivityDef.getStudyId())) {
-                errors.rejectValue("studyId", "must be specified");
+            // appId must be specified
+            if (isBlank(compoundActivityDef.getAppId())) {
+                errors.rejectValue("appId", "must be specified");
             }
 
             // taskIdentifier must be specified and must be in the Study's list

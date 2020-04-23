@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -86,9 +85,9 @@ public class DynamoCompoundActivityDefinitionTest {
     public void serialize() throws Exception {
         // Use schema and survey refs so this test doesn't depend on those implementations.
 
-        // start with JSON
+        // start with JSON. The appId is added in the controller and does not need to be
+        // part of the serialization test.
         String jsonText = "{\n" +
-                "   \"studyId\":\""+TEST_APP_ID+"\",\n" +
                 "   \"taskId\":\"test-task\",\n" +
                 "   \"schemaList\":[\n" +
                 BridgeObjectMapper.get().writeValueAsString(FOO_SCHEMA) + ",\n" +
@@ -104,7 +103,6 @@ public class DynamoCompoundActivityDefinitionTest {
         // convert to POJO - deserialize it as the base type, so we know it works with the base type
         DynamoCompoundActivityDefinition def = (DynamoCompoundActivityDefinition) BridgeObjectMapper.get().readValue(
                 jsonText, CompoundActivityDefinition.class);
-        assertEquals(def.getStudyId(), TEST_APP_ID);
         assertEquals(def.getTaskId(), "test-task");
         assertEquals(def.getVersion().longValue(), 42);
 
@@ -120,8 +118,7 @@ public class DynamoCompoundActivityDefinitionTest {
 
         // convert back to JSON
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(def, JsonNode.class);
-        assertEquals(jsonNode.size(), 6);
-        assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(jsonNode.size(), 5);
         assertEquals(jsonNode.get("taskId").textValue(), "test-task");
         assertEquals(jsonNode.get("version").intValue(), 42);
         assertEquals(jsonNode.get("type").textValue(), "CompoundActivityDefinition");

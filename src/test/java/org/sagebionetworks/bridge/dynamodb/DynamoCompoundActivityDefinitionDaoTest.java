@@ -34,13 +34,13 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     
     static DynamoCompoundActivityDefinition KEYS = new DynamoCompoundActivityDefinition();
     static {
-        KEYS.setStudyId(TEST_APP_ID);
+        KEYS.setAppId(TEST_APP_ID);
         KEYS.setTaskId(TASK_ID);
     }
     
     static DynamoCompoundActivityDefinition COMPOUND_ACTIVITY_DEF = new DynamoCompoundActivityDefinition();
     static {
-        COMPOUND_ACTIVITY_DEF.setStudyId(TEST_APP_ID);
+        COMPOUND_ACTIVITY_DEF.setAppId(TEST_APP_ID);
         COMPOUND_ACTIVITY_DEF.setTaskId(TASK_ID);
     }
     
@@ -70,7 +70,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     @Test
     public void createCompoundActivityDefinition() {
         DynamoCompoundActivityDefinition def = new DynamoCompoundActivityDefinition();
-        def.setStudyId(TEST_APP_ID);
+        def.setAppId(TEST_APP_ID);
         def.setTaskId(TASK_ID);
         def.setVersion(1L);
         
@@ -105,17 +105,17 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
     }
 
     @Test
-    public void deleteAllCompoundActivityDefinitionsInStudy() {
+    public void deleteAllCompoundActivityDefinitionsInApp() {
         when(mockMapper.query(eq(DynamoCompoundActivityDefinition.class),
                 queryCaptor.capture())).thenReturn(mockQueryList);
         
-        dao.deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
+        dao.deleteAllCompoundActivityDefinitionsInApp(TEST_APP_ID);
         
         verify(mockMapper).batchDelete(mockQueryList);
     }
 
     @Test(expectedExceptions = BridgeServiceException.class)
-    public void deleteAllCompoundActivityDefinitionsInStudyWithErrors() {
+    public void deleteAllCompoundActivityDefinitionsInAppWithErrors() {
         when(mockMapper.query(eq(DynamoCompoundActivityDefinition.class),
                 queryCaptor.capture())).thenReturn(mockQueryList);
         
@@ -130,24 +130,24 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         when(mockFailedBatchList.iterator()).thenReturn(ImmutableList.of(failure1, failure2).iterator());
         when(mockMapper.batchDelete(mockQueryList)).thenReturn(mockFailedBatchList);
         
-        dao.deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
+        dao.deleteAllCompoundActivityDefinitionsInApp(TEST_APP_ID);
         
         verify(mockMapper).batchDelete(mockQueryList);
     }
     
     @Test
-    public void getAllCompoundActivityDefinitionsInStudy() {
+    public void getAllCompoundActivityDefinitionsInApp() {
         List<DynamoCompoundActivityDefinition> defList = ImmutableList.of(
                 new DynamoCompoundActivityDefinition(),
                 new DynamoCompoundActivityDefinition());
         when(mockQueryList.toArray()).thenReturn(defList.toArray());
         when(mockMapper.query(eq(DynamoCompoundActivityDefinition.class), any())).thenReturn(mockQueryList);
         
-        List<CompoundActivityDefinition> results = dao.getAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
+        List<CompoundActivityDefinition> results = dao.getAllCompoundActivityDefinitionsInApp(TEST_APP_ID);
         assertEquals(results.size(), 2);
         
         verify(mockMapper).query(any(), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyId(), TEST_APP_ID);
+        assertEquals(queryCaptor.getValue().getHashKeyValues().getAppId(), TEST_APP_ID);
     }
 
     @Test
@@ -159,7 +159,7 @@ public class DynamoCompoundActivityDefinitionDaoTest extends Mockito {
         
         verify(mockMapper).load(defCaptor.capture());
         CompoundActivityDefinition def = defCaptor.getValue();
-        assertEquals(def.getStudyId(), TEST_APP_ID);
+        assertEquals(def.getAppId(), TEST_APP_ID);
         assertEquals(def.getTaskId(), TASK_ID);
     }
 

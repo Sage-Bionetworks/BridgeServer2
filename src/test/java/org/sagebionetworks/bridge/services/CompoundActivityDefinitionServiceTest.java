@@ -69,7 +69,7 @@ public class CompoundActivityDefinitionServiceTest {
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(serviceInput, daoInput);
-        assertEquals(daoInput.getStudyId(), TEST_APP_ID);
+        assertEquals(daoInput.getAppId(), TEST_APP_ID);
 
         // Validate that the service result is the same as the dao result.
         assertSame(serviceResult, daoResult);
@@ -162,10 +162,10 @@ public class CompoundActivityDefinitionServiceTest {
     @Test
     public void deleteAll() {
         // execute
-        service.deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
+        service.deleteAllCompoundActivityDefinitionsInApp(TEST_APP_ID);
 
         // verify dao
-        verify(dao).deleteAllCompoundActivityDefinitionsInStudy(TEST_APP_ID);
+        verify(dao).deleteAllCompoundActivityDefinitionsInApp(TEST_APP_ID);
     }
 
     // LIST
@@ -174,10 +174,10 @@ public class CompoundActivityDefinitionServiceTest {
     public void list() {
         // mock dao
         List<CompoundActivityDefinition> daoResultList = ImmutableList.of(makeValidDef());
-        when(dao.getAllCompoundActivityDefinitionsInStudy(TEST_APP_ID)).thenReturn(daoResultList);
+        when(dao.getAllCompoundActivityDefinitionsInApp(TEST_APP_ID)).thenReturn(daoResultList);
 
         // execute
-        List<CompoundActivityDefinition> serviceResultList = service.getAllCompoundActivityDefinitionsInStudy(
+        List<CompoundActivityDefinition> serviceResultList = service.getAllCompoundActivityDefinitionsInApp(
                 TEST_APP_ID);
 
         // Validate that the service result is the same as the dao result.
@@ -246,7 +246,7 @@ public class CompoundActivityDefinitionServiceTest {
         // validate dao input - It's the same as the service input, but we also set the study ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(daoInput, serviceInput);
-        assertEquals(daoInput.getStudyId(), TEST_APP_ID);
+        assertEquals(daoInput.getAppId(), TEST_APP_ID);
         assertEquals(daoInput.getTaskId(), TASK_ID);
 
         // Validate that the service result is the same as the dao result.

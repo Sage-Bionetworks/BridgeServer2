@@ -67,29 +67,29 @@ public class CompoundActivityDefinitionValidatorTest {
     }
 
     @Test
-    public void nullStudyId() {
-        blankStudyId(null);
+    public void nullAppId() {
+        blankAppId(null);
     }
 
     @Test
-    public void emptyStudyId() {
-        blankStudyId("");
+    public void emptyAppId() {
+        blankAppId("");
     }
 
     @Test
-    public void blankStudyId() {
-        blankStudyId("   ");
+    public void blankAppId() {
+        blankAppId("   ");
     }
 
-    private static void blankStudyId(String studyId) {
+    private static void blankAppId(String appId) {
         CompoundActivityDefinition def = makeValidDef();
-        def.setStudyId(studyId);
+        def.setAppId(appId);
 
         try {
             Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, def);
             fail("expected exception");
         } catch (InvalidEntityException ex) {
-            assertTrue(ex.getMessage().contains("studyId must be specified"));
+            assertTrue(ex.getMessage().contains("appId must be specified"));
         }
     }
 
@@ -138,7 +138,7 @@ public class CompoundActivityDefinitionValidatorTest {
 
     private static CompoundActivityDefinition makeValidDef() {
         CompoundActivityDefinition def = CompoundActivityDefinition.create();
-        def.setStudyId(TEST_APP_ID);
+        def.setAppId(TEST_APP_ID);
         def.setTaskId(TASK_ID);
         def.setSchemaList(SCHEMA_LIST);
         def.setSurveyList(SURVEY_LIST);
