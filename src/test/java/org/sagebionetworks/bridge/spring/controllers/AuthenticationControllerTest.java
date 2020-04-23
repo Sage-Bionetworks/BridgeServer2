@@ -1163,7 +1163,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test
     public void oauthSignIn() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_STUDY_ID_STRING, "synapse", "authToken", "callbackUrl");
         mockRequestBody(mockRequest, token);
         
         when(mockAuthService.oauthSignIn(any(), any())).thenReturn(userSession);

@@ -35,15 +35,15 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
     
     @Override
-    public ForwardCursorPagedResourceList<OAuthAccessGrant> getAccessGrants(String studyId, String vendorId,
+    public ForwardCursorPagedResourceList<OAuthAccessGrant> getAccessGrants(String appId, String vendorId,
             String offsetKey, int pageSize) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
         checkArgument(isNotBlank(vendorId));
         
         int pageSizeWithIndicatorRecord = pageSize+1;
         
         DynamoOAuthAccessGrant grantKey = new DynamoOAuthAccessGrant();
-        grantKey.setKey(getGrantKey(studyId, vendorId));
+        grantKey.setKey(getGrantKey(appId, vendorId));
 
         DynamoDBQueryExpression<DynamoOAuthAccessGrant> query = new DynamoDBQueryExpression<DynamoOAuthAccessGrant>()
                 .withHashKeyValues(grantKey)
@@ -74,44 +74,44 @@ public class DynamoOAuthAccessGrantDao implements OAuthAccessGrantDao {
     }
     
     @Override
-    public OAuthAccessGrant getAccessGrant(String studyId, String vendorId, String healthCode) {
-        checkNotNull(studyId);
+    public OAuthAccessGrant getAccessGrant(String appId, String vendorId, String healthCode) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(vendorId));
         checkArgument(isNotBlank(healthCode));
         
         DynamoOAuthAccessGrant grantKey = new DynamoOAuthAccessGrant();
-        grantKey.setKey(getGrantKey(studyId, vendorId));
+        grantKey.setKey(getGrantKey(appId, vendorId));
         grantKey.setHealthCode(healthCode);
         
         return mapper.load(grantKey);
     }
 
     @Override
-    public OAuthAccessGrant saveAccessGrant(String studyId, OAuthAccessGrant grant) {
-        checkNotNull(studyId);
+    public OAuthAccessGrant saveAccessGrant(String appId, OAuthAccessGrant grant) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(grant.getVendorId()));
         checkArgument(isNotBlank(grant.getHealthCode()));
         
-        ((DynamoOAuthAccessGrant)grant).setKey(getGrantKey(studyId, grant.getVendorId()));
+        ((DynamoOAuthAccessGrant)grant).setKey(getGrantKey(appId, grant.getVendorId()));
         mapper.save(grant);
         
         return grant;
     }
 
     @Override
-    public void deleteAccessGrant(String studyId, String vendorId, String healthCode) {
-        checkNotNull(studyId);
+    public void deleteAccessGrant(String appId, String vendorId, String healthCode) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(vendorId));
         checkArgument(isNotBlank(healthCode));
         
         DynamoOAuthAccessGrant grantKey = new DynamoOAuthAccessGrant();
-        grantKey.setKey(getGrantKey(studyId, vendorId));
+        grantKey.setKey(getGrantKey(appId, vendorId));
         grantKey.setHealthCode(healthCode);
         
         mapper.delete(grantKey);
     }
 
-    private String getGrantKey(String studyId, String vendorId) {
-        return studyId + ":" + vendorId;
+    private String getGrantKey(String appId, String vendorId) {
+        return appId + ":" + vendorId;
     }
 }

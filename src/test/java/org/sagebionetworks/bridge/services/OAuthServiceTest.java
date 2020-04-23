@@ -54,8 +54,8 @@ public class OAuthServiceTest {
     private static final Set<String> SCOPE_SET = ImmutableSet.copyOf(SCOPE_LIST);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             INTROSPECT_URL);
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
-    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, null, null);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(null, TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken NO_AUTH_TOKEN = new OAuthAuthorizationToken(null, TEST_APP_ID, VENDOR_ID, null, null);
     
     @Spy
     private OAuthService service;

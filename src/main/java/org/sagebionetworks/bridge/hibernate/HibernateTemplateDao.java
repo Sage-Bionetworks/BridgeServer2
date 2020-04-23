@@ -32,12 +32,12 @@ public class HibernateTemplateDao implements TemplateDao {
     private static final String SELECT_COUNT = "SELECT count(guid) ";
     
     private static final String GET_ALL = "FROM HibernateTemplate as template " + 
-            "WHERE templateType = :templateType AND studyId = :studyId ORDER BY createdOn DESC";
+            "WHERE templateType = :templateType AND studyId = :appId ORDER BY createdOn DESC";
     
     private static final String GET_ACTIVE = "FROM HibernateTemplate as template " + 
-            "WHERE templateType = :templateType AND studyId = :studyId AND deleted = 0 ORDER BY createdOn DESC";
+            "WHERE templateType = :templateType AND studyId = :appId AND deleted = 0 ORDER BY createdOn DESC";
     
-    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE studyId = :studyId";
+    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE studyId = :appId";
     
     private HibernateHelper hibernateHelper;
     
@@ -47,12 +47,12 @@ public class HibernateTemplateDao implements TemplateDao {
     }
     
     @Override
-    public PagedResourceList<? extends Template> getTemplates(String studyId, TemplateType type,
+    public PagedResourceList<? extends Template> getTemplates(String appId, TemplateType type,
             Integer offset, Integer pageSize, boolean includeDeleted) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
         checkNotNull(type);
         
-        ImmutableMap<String, Object> params = ImmutableMap.of(TEMPLATE_TYPE, type, "studyId", studyId);
+        ImmutableMap<String, Object> params = ImmutableMap.of(TEMPLATE_TYPE, type, "appId", appId);
         String countQuery = SELECT_COUNT + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         String getQuery = SELECT_TEMPLATE + ((!includeDeleted) ? GET_ACTIVE : GET_ALL);
         
@@ -69,11 +69,11 @@ public class HibernateTemplateDao implements TemplateDao {
     }
     
     @Override
-    public Optional<Template> getTemplate(String studyId, String guid) { 
+    public Optional<Template> getTemplate(String appId, String guid) { 
         checkNotNull(guid);
         
         Template template = hibernateHelper.getById(HibernateTemplate.class, guid);
-        if (template != null && !template.getStudyId().equals(studyId)) {
+        if (template != null && !template.getAppId().equals(appId)) {
             return Optional.empty();
         }
         return Optional.ofNullable(template);
@@ -94,17 +94,17 @@ public class HibernateTemplateDao implements TemplateDao {
     }
 
     @Override
-    public void deleteTemplatePermanently(String studyId, String guid) {
+    public void deleteTemplatePermanently(String appId, String guid) {
         checkNotNull(guid);
         
-        Optional<Template> template = getTemplate(studyId, guid);
+        Optional<Template> template = getTemplate(appId, guid);
         if (template.isPresent()) {
             hibernateHelper.deleteById(HibernateTemplate.class, guid);    
         }
     }
     
     @Override
-    public void deleteTemplatesForStudy(String studyId) {
-        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("studyId", studyId));
+    public void deleteTemplatesForApp(String appId) {
+        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("appId", appId));
     }
 }

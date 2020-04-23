@@ -182,9 +182,9 @@ public class StudyServiceMockTest extends Mockito {
         service.setBridgeConfig(mockBridgeConfig); // this has to be set again after being mocked
 
         // Mock templates
-        service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
+        service.setAppEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
                 "Verify your study email"));
-        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
+        service.setAppEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new StudyValidator());
         
@@ -1667,8 +1667,8 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test
     public void defaultsAreUsedWhenNotProvided() throws Exception {
-        service.setStudyEmailVerificationTemplate(TEMPLATE_RESOURCE);
-        service.setStudyEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
+        service.setAppEmailVerificationTemplate(TEMPLATE_RESOURCE);
+        service.setAppEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
         
         study = TestUtils.getValidStudy(StudyServiceMockTest.class);
         study.setPasswordPolicy(null);

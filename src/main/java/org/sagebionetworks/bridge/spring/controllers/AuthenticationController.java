@@ -345,7 +345,7 @@ public class AuthenticationController extends BaseController {
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
-        Study study = studyService.getStudy(token.getStudyId());
+        Study study = studyService.getStudy(token.getAppId());
         CriteriaContext context = getCriteriaContext(study.getIdentifier());
         
         UserSession session = authenticationService.oauthSignIn(context, token);

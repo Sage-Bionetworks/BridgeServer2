@@ -420,25 +420,25 @@ public class TestUtils {
         return runSchedulerForActivities(getSchedulePlans(context.getCriteriaContext().getAppId()), context);
     }
 
-    public static List<SchedulePlan> getSchedulePlans(String studyId) {
+    public static List<SchedulePlan> getSchedulePlans(String appId) {
         List<SchedulePlan> plans = Lists.newArrayListWithCapacity(3);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
         plan.setStrategy(getStrategy("P3D", getActivity1()));
-        plan.setStudyKey(studyId);
+        plan.setStudyKey(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         plan.setStrategy(getStrategy("P1D", getActivity2()));
-        plan.setStudyKey(studyId);
+        plan.setStudyKey(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
         plan.setStrategy(getStrategy("P2D", getActivity3()));
-        plan.setStudyKey(studyId);
+        plan.setStudyKey(appId);
         plans.add(plan);
 
         return plans;
@@ -458,7 +458,7 @@ public class TestUtils {
         return new Activity.Builder().withLabel("Activity3").withGuid("AAA").withTask("tapTest").build();
     }
 
-    public static SchedulePlan getSimpleSchedulePlan(String studyId) {
+    public static SchedulePlan getSimpleSchedulePlan(String appId) {
         Schedule schedule = new Schedule();
         schedule.setScheduleType(ScheduleType.RECURRING);
         schedule.setCronTrigger("0 0 8 ? * TUE *");
@@ -474,7 +474,7 @@ public class TestUtils {
         plan.setLabel("Simple Test Plan");
         plan.setGuid("GGG");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(studyId);
+        plan.setStudyKey(appId);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -543,7 +543,7 @@ public class TestUtils {
         return study;
     }
 
-    public static SchedulePlan getABTestSchedulePlan(String studyId) {
+    public static SchedulePlan getABTestSchedulePlan(String appId) {
         Schedule schedule1 = new Schedule();
         schedule1.setScheduleType(ScheduleType.RECURRING);
         schedule1.setCronTrigger("0 0 8 ? * TUE *");
@@ -572,7 +572,7 @@ public class TestUtils {
         plan.setGuid("AAA");
         plan.setLabel("Test A/B Schedule");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(studyId);
+        plan.setStudyKey(appId);
 
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(40, schedule1);

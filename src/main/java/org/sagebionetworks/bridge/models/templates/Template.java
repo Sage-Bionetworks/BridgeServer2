@@ -18,8 +18,8 @@ public interface Template extends BridgeEntity, HasCriteria {
         return new HibernateTemplate();
     }
     
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
 
     String getGuid();
     void setGuid(String guid);

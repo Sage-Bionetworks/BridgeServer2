@@ -64,7 +64,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @BeforeMethod
     public void setUp() throws Exception {
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
-                "conf/study-defaults/consent-page.xhtml").getFile()));
+                "conf/app-defaults/consent-page.xhtml").getFile()));
         
         study = new DynamoStudy();
         study.setName("Test Study (Sage)");

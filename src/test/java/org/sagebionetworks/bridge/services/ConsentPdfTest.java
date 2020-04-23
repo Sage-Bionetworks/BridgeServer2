@@ -38,7 +38,7 @@ public class ConsentPdfTest {
     public void before() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP);
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
-                "conf/study-defaults/consent-page.xhtml").getFile()));
+                "conf/app-defaults/consent-page.xhtml").getFile()));
         
         study = new DynamoStudy();
         study.setName("Study Name");

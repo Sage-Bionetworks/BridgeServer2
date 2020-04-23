@@ -202,7 +202,7 @@ class OAuthProviderService {
         } else if (!SYNAPSE_VENDOR_ID.equals(authToken.getVendorId())) {
             throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
         }
-        if (authToken.getStudyId() == null) {
+        if (authToken.getAppId() == null) {
             throw new BadRequestException("Study ID required");
         }
         if (authToken.getAuthToken() == null) {
@@ -233,7 +233,7 @@ class OAuthProviderService {
         String synapseUserId = jwt.getBody().get(SYNAPSE_USERID_KEY, String.class);
         
         if (synapseUserId != null) {
-            return AccountId.forSynapseUserId(authToken.getStudyId(), synapseUserId);
+            return AccountId.forSynapseUserId(authToken.getAppId(), synapseUserId);
         }
         return null;
     }

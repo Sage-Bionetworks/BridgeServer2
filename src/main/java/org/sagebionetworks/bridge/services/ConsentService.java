@@ -83,7 +83,7 @@ public class ConsentService {
     private UrlShortenerService urlShortenerService;
     private TemplateService templateService;
     
-    @Value("classpath:conf/study-defaults/consent-page.xhtml")
+    @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.xmlTemplateWithSignatureBlock = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }

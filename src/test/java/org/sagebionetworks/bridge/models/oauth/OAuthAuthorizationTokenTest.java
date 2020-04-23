@@ -19,10 +19,10 @@ public class OAuthAuthorizationTokenTest {
 
     @Test
     public void canSerialize() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId", "authToken", "callbackUrl");
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId", "authToken", "callbackUrl");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(token);
-        assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("vendorId").textValue(), "vendorId");
         assertEquals(node.get("authToken").textValue(), "authToken");
         assertEquals(node.get("callbackUrl").textValue(), "callbackUrl");
@@ -30,7 +30,7 @@ public class OAuthAuthorizationTokenTest {
         assertEquals(node.size(), 5);
         
         OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(node.toString(), OAuthAuthorizationToken.class);
-        assertEquals(deser.getStudyId(), TEST_APP_ID);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
         assertEquals(deser.getVendorId(), "vendorId");
         assertEquals(deser.getAuthToken(), "authToken");
         assertEquals(deser.getCallbackUrl(), "callbackUrl");

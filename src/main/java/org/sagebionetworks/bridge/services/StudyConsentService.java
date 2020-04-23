@@ -101,7 +101,7 @@ public class StudyConsentService {
     private String publicationsBucket = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
     private String fullPageTemplate;
     
-    @Value("classpath:conf/study-defaults/consent-page.xhtml")
+    @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.fullPageTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }

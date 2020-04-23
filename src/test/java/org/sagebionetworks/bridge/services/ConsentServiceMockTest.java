@@ -146,7 +146,7 @@ public class ConsentServiceMockTest {
         MockitoAnnotations.initMocks(this);
 
         String documentString = IOUtils.toString(
-                new FileInputStream(new ClassPathResource("conf/study-defaults/consent-page.xhtml").getFile()));
+                new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()));
 
         consentService.setAccountService(accountService);
         consentService.setSendMailService(sendMailService);
