@@ -74,8 +74,8 @@ public class OAuthProviderServiceTest extends Mockito {
     private static final String USER_ID = "26FWFL";
     private static final String VENDOR_ID = "vendorId";
     private static final String SYNAPSE_ID = "synapse";
-    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(null, TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
-    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(null, TEST_APP_ID, SYNAPSE_ID, AUTH_TOKEN_STRING, CALLBACK_VALUE);
+    private static final OAuthAuthorizationToken AUTH_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, VENDOR_ID, AUTH_TOKEN_STRING, null);
+    private static final OAuthAuthorizationToken SIGNIN_TOKEN = new OAuthAuthorizationToken(TEST_APP_ID, SYNAPSE_ID, AUTH_TOKEN_STRING, CALLBACK_VALUE);
     private static final OAuthProvider PROVIDER = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT, CALLBACK_URL,
             null);
     private static final OAuthProvider PROVIDER_WITH_INTROSPECT = new OAuthProvider(CLIENT_ID, SECRET, ENDPOINT,
@@ -220,14 +220,14 @@ public class OAuthProviderServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallWithoutAuthTokenRefreshes() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, null, VENDOR_ID, null, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null, null);
         
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void makeAccessGrantCallAuthAndRefreshTokenMissing() throws Exception {
-        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, null, VENDOR_ID, null, null);
+        OAuthAuthorizationToken emptyPayload = new OAuthAuthorizationToken(null, VENDOR_ID, null, null);
         service.requestAccessGrant(PROVIDER, emptyPayload);
     }
     
@@ -405,25 +405,25 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInNoVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, null, AUTH_TOKEN_STRING, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, null, AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInWrongVendor() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "google", AUTH_TOKEN_STRING, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "google", AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignNoStudyId() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, null, SYNAPSE_ID, AUTH_TOKEN_STRING, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, SYNAPSE_ID, AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignNoCode() {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, SYNAPSE_ID, null, null);
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, SYNAPSE_ID, null, null);
         service.oauthSignIn(token);
     }
     

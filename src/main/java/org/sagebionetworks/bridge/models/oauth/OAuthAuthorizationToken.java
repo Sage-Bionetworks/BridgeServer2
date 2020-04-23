@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.oauth;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,10 +16,10 @@ public final class OAuthAuthorizationToken {
     private final String callbackUrl;
 
     @JsonCreator
-    public OAuthAuthorizationToken(@JsonProperty("study") String studyId, @JsonProperty("appId") String appId,
+    public OAuthAuthorizationToken(@JsonProperty("appId") @JsonAlias("study") String appId,
             @JsonProperty("vendorId") String vendorId, @JsonProperty("authToken") String authToken,
             @JsonProperty("callbackUrl") String callbackUrl) {
-        this.appId = (appId != null) ? appId : studyId;
+        this.appId = appId;
         this.vendorId = vendorId;
         this.authToken = authToken;
         this.callbackUrl = callbackUrl;

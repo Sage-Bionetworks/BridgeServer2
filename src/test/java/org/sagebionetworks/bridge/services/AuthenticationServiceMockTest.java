@@ -1436,7 +1436,7 @@ public class AuthenticationServiceMockTest {
     
    @Test
    public void oauthSignIn() { 
-       OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId",
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId",
                "authToken", "callbackUrl");
        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
@@ -1457,7 +1457,7 @@ public class AuthenticationServiceMockTest {
    
    @Test(expectedExceptions = EntityNotFoundException.class)
    public void oauthSignInNotFoundWrongToken() {
-       OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId",
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId",
                "authToken", "callbackUrl");
        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
@@ -1467,7 +1467,7 @@ public class AuthenticationServiceMockTest {
 
    @Test(expectedExceptions = EntityNotFoundException.class)
    public void oauthSignInNotFoundNoToken() {
-       OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId",
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId",
                "authToken", "callbackUrl");
        
        service.oauthSignIn(CONTEXT, token);
@@ -1475,7 +1475,7 @@ public class AuthenticationServiceMockTest {
    
    @Test(expectedExceptions = UnauthorizedException.class)
    public void oauthSignInNotAnAdministrativeUser() {
-       OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId",
+       OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId",
                "authToken", "callbackUrl");
        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);

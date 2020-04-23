@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.oauth;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -19,7 +20,7 @@ public class OAuthAuthorizationTokenTest {
 
     @Test
     public void canSerialize() throws Exception {
-        OAuthAuthorizationToken token = new OAuthAuthorizationToken(null, TEST_APP_ID, "vendorId", "authToken", "callbackUrl");
+        OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId", "authToken", "callbackUrl");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(token);
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
@@ -36,5 +37,15 @@ public class OAuthAuthorizationTokenTest {
         assertEquals(deser.getCallbackUrl(), "callbackUrl");
         
         assertEquals(deser, token);
+    }
+    
+    @Test
+    public void canDeserializeStudy() throws Exception {
+        String json = TestUtils.createJson("{'study':'test-study',"+
+                "'vendorId':'vendorId','authToken':'authToken',"+
+                "'callbackUrl':'callbackUrl'}");
+        
+        OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(json, OAuthAuthorizationToken.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
     }
 }
