@@ -113,7 +113,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test
     public void createSurvey() {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         SurveyElement element = new DynamoSurveyElement();
         survey.getElements().add(element);
 
@@ -136,7 +136,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test
     public void createSurveyConditionalCheckFailedException() {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         mockSurveyMapper(survey);
         mockSurveyElementMapper();
         when(mockSurveyElementMapper.query(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementQueryList);
@@ -154,7 +154,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test(expectedExceptions = BridgeServiceException.class)
     public void createSurveyUnknownException() {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         doThrow(new IllegalArgumentException("")).when(mockSurveyMapper).save(any());
         
         dao.createSurvey(survey);
@@ -315,7 +315,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test
     public void deleteSurveyPermanently() {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid(GUID);
         survey.setIdentifier(SURVEY_ID);
         mockSurveyMapper(survey);
@@ -342,7 +342,7 @@ public class DynamoSurveyDaoTest extends Mockito {
                 .deleteUploadSchemaByIdPermanently(any(), any());        
         
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid(GUID);
         survey.setIdentifier(SURVEY_ID);
         mockSurveyMapper(survey);
@@ -422,7 +422,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
         assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getS(), SURVEY_ID);
@@ -453,7 +453,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         assertFalse(query.isScanIndexForward());
         
         assertEquals(query.getQueryFilter().size(), 1);
-        verifyStudyIdQueryCondition(query);
+        verifyAppIdQueryCondition(query);
     }
     
     @Test
@@ -468,7 +468,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
         
         assertEquals(query.getQueryFilter().size(), 2);
-        verifyStudyIdQueryCondition(query);
+        verifyAppIdQueryCondition(query);
         verifyIsDeletedQueryCondition(query);
     }
     
@@ -488,7 +488,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         assertFalse(query.isScanIndexForward());
         
         assertEquals(query.getQueryFilter().size(), 2);
-        verifyStudyIdQueryCondition(query);
+        verifyAppIdQueryCondition(query);
         verifyIsDeletedQueryCondition(query);
     }
     
@@ -508,7 +508,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         assertEquals(query.getHashKeyValues().getGuid(), GUID);
         
         assertEquals(query.getQueryFilter().size(), 3);
-        verifyStudyIdQueryCondition(query);
+        verifyAppIdQueryCondition(query);
         verifyIsDeletedQueryCondition(query);
         verifyPublishedQueryCondition(query);
         
@@ -558,7 +558,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         
         assertEquals(query.getQueryFilter().size(), 1);
         verifyPublishedQueryCondition(query);
@@ -609,7 +609,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
 
         assertNull(query.getQueryFilter());
     }
@@ -629,8 +629,8 @@ public class DynamoSurveyDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = 
-            "Calculated the need to query by secondary index, but study identifier is not set")
-    public void secondaryIndexRequiresStudyIdWithStudyIdentifier() {
+            "Calculated the need to query by secondary index, but appId is not set")
+    public void secondaryIndexRequiresAppIdWithAppId() {
         dao.getAllSurveysMostRecentVersion(null, true);
     }
     
@@ -681,7 +681,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Test
     public void getSurveyIncludeElementsByIdentifer() {
         DynamoSurvey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid(GUID);
         survey.setIdentifier(SURVEY_ID);
         survey.setCreatedOn(TIMESTAMP);
@@ -701,7 +701,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
@@ -719,7 +719,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     public void getSurveyExcludeElementsByIdentifier() {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setGuid(GUID);
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setIdentifier(SURVEY_ID);
         survey.setCreatedOn(TIMESTAMP);
         mockSurveyMapper(survey);
@@ -753,7 +753,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
@@ -782,7 +782,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
@@ -812,7 +812,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
@@ -845,7 +845,7 @@ public class DynamoSurveyDaoTest extends Mockito {
 
         verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
@@ -908,16 +908,16 @@ public class DynamoSurveyDaoTest extends Mockito {
         assertEquals(deletedCond.getAttributeValueList().get(0).getN(), "0");
     }
 
-    private void verifyStudyIdQueryCondition(DynamoDBQueryExpression<DynamoSurvey> query) {
-        Condition studyIdCond = query.getQueryFilter().get("studyKey");
-        assertEquals(studyIdCond.getComparisonOperator(), EQ.name());
-        assertEquals(studyIdCond.getAttributeValueList().get(0).getS(), TEST_APP_ID);
+    private void verifyAppIdQueryCondition(DynamoDBQueryExpression<DynamoSurvey> query) {
+        Condition appIdCond = query.getQueryFilter().get("studyKey");
+        assertEquals(appIdCond.getComparisonOperator(), EQ.name());
+        assertEquals(appIdCond.getAttributeValueList().get(0).getS(), TEST_APP_ID);
     }
     
     private void verifyPublishedQueryCondition(DynamoDBQueryExpression<DynamoSurvey> query) {
-        Condition studyIdCond = query.getQueryFilter().get("published");
-        assertEquals(studyIdCond.getComparisonOperator(), EQ.name());
-        assertEquals(studyIdCond.getAttributeValueList().get(0).getN(), "1");
+        Condition appIdCond = query.getQueryFilter().get("published");
+        assertEquals(appIdCond.getComparisonOperator(), EQ.name());
+        assertEquals(appIdCond.getAttributeValueList().get(0).getN(), "1");
     }
     
     private void verifyCreatedOnQueryCondition(DynamoDBQueryExpression<DynamoSurvey> query) {

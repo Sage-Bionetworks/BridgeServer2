@@ -17,8 +17,8 @@ public interface Survey extends GuidCreatedOnVersionHolder, BridgeEntity  {
         return new DynamoSurvey();
     }
 
-    String getStudyIdentifier();
-    void setStudyIdentifier(String studyIdentifier);
+    String getAppId();
+    void setAppId(String appId);
     
     String getGuid();
     void setGuid(String guid);

@@ -94,7 +94,7 @@ public class ScheduledActivityServiceResolveLinksTest {
 
         // Similarly, mock Survey.
         Survey survey = Survey.create();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setIdentifier(SURVEY_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(SURVEY_CREATED_ON_MILLIS);

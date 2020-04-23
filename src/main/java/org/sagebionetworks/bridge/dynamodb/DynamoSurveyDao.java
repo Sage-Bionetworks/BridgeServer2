@@ -54,7 +54,7 @@ public class DynamoSurveyDao implements SurveyDao {
         
         boolean skipElements;
         String surveyGuid;
-        String studyIdentifier;
+        String appId;
         long createdOn;
         boolean published;
         boolean notDeleted;
@@ -67,8 +67,8 @@ public class DynamoSurveyDao implements SurveyDao {
             this.surveyGuid = surveyGuid;
             return this;
         }
-        QueryBuilder setStudy(String studyIdentifier) {
-            this.studyIdentifier = studyIdentifier;
+        QueryBuilder setAppId(String appId) {
+            this.appId = appId;
             return this;
         }
         QueryBuilder setCreatedOn(long createdOn) {
@@ -111,8 +111,8 @@ public class DynamoSurveyDao implements SurveyDao {
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withScanIndexForward(false);
             query.withHashKeyValues(new DynamoSurvey(surveyGuid, createdOn));    
-            if (studyIdentifier != null) {
-                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, equalsString(studyIdentifier));
+            if (appId != null) {
+                query.withQueryFilterEntry(STUDY_KEY_PROPERTY, equalsString(appId));
             }
             if (createdOn != 0L) {
                 query.withRangeKeyCondition(CREATED_ON_PROPERTY, equalsNumber(Long.toString(createdOn)));
@@ -127,11 +127,11 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         
         private List<DynamoSurvey> queryBySecondaryIndex() {
-            if (studyIdentifier == null) {
-                throw new IllegalStateException("Calculated the need to query by secondary index, but study identifier is not set");
+            if (appId == null) {
+                throw new IllegalStateException("Calculated the need to query by secondary index, but appId is not set");
             }
             DynamoSurvey hashKey = new DynamoSurvey();
-            hashKey.setStudyIdentifier(studyIdentifier);
+            hashKey.setAppId(appId);
             
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withHashKeyValues(hashKey);
@@ -147,11 +147,11 @@ public class DynamoSurveyDao implements SurveyDao {
         }
         
         private List<DynamoSurvey> queryBySurveyIdentifier() {
-            if (studyIdentifier == null) {
-                throw new IllegalStateException("Querying by survey identifier, but study identifier is not set");
+            if (appId == null) {
+                throw new IllegalStateException("Querying by survey identifier, but appId is not set");
             }
             DynamoSurvey hashKey = new DynamoSurvey();
-            hashKey.setStudyIdentifier(studyIdentifier);
+            hashKey.setAppId(appId);
             DynamoDBQueryExpression<DynamoSurvey> query = new DynamoDBQueryExpression<DynamoSurvey>();
             query.withHashKeyValues(hashKey);
             query.withConsistentRead(false);
@@ -256,7 +256,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
     @Override
     public Survey createSurvey(Survey survey) {
-        checkNotNull(survey.getStudyIdentifier(), "Survey study identifier is null");
+        checkNotNull(survey.getAppId(), "Survey appId is null");
         if (survey.getGuid() == null) {
             survey.setGuid(generateGuid());
         }
@@ -271,7 +271,7 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public Survey publishSurvey(String studyId, Survey survey, boolean newSchemaRev) {
+    public Survey publishSurvey(String appId, Survey survey, boolean newSchemaRev) {
         if (!survey.isPublished()) {
             // update survey
             survey.setPublished(true);
@@ -279,7 +279,7 @@ public class DynamoSurveyDao implements SurveyDao {
 
             // make schema from survey
             if (!survey.getUnmodifiableQuestionList().isEmpty()) {
-                UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(studyId, survey, newSchemaRev);
+                UploadSchema schema = uploadSchemaService.createUploadSchemaFromSurvey(appId, survey, newSchemaRev);
                 survey.setSchemaRevision(schema.getRevision());
             }
 
@@ -293,8 +293,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey updateSurvey(String studyIdentifier, Survey survey) {
-        Survey existing = getSurvey(studyIdentifier, survey, false);
+    public Survey updateSurvey(String appId, Survey survey) {
+        Survey existing = getSurvey(appId, survey, false);
         
         // copy over mutable fields
         existing.setName(survey.getName());
@@ -313,8 +313,8 @@ public class DynamoSurveyDao implements SurveyDao {
     }
     
     @Override
-    public Survey versionSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        DynamoSurvey existing = (DynamoSurvey)getSurvey(studyIdentifier, keys, true);
+    public Survey versionSurvey(String appId, GuidCreatedOnVersionHolder keys) {
+        DynamoSurvey existing = (DynamoSurvey)getSurvey(appId, keys, true);
         DynamoSurvey copy = new DynamoSurvey(existing);
         copy.setPublished(false);
         copy.setDeleted(false);
@@ -338,15 +338,15 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public void deleteSurveyPermanently(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
-        Survey existing = getSurvey(studyIdentifier, keys, false);
+    public void deleteSurveyPermanently(String appId, GuidCreatedOnVersionHolder keys) {
+        Survey existing = getSurvey(appId, keys, false);
 
         if (existing != null) {
             deleteAllElements(existing.getGuid(), existing.getCreatedOn());
             surveyMapper.delete(existing);
             // Delete the schemas as well, or they accumulate.
             try {
-                uploadSchemaService.deleteUploadSchemaByIdPermanently(existing.getStudyIdentifier(), existing.getIdentifier());
+                uploadSchemaService.deleteUploadSchemaByIdPermanently(existing.getAppId(), existing.getIdentifier());
             } catch(EntityNotFoundException e) {
                 // This is OK. Just means this survey wasn't published.
             }
@@ -354,32 +354,32 @@ public class DynamoSurveyDao implements SurveyDao {
     }
 
     @Override
-    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid, boolean includeDeleted) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(includeDeleted).getAll();
+    public List<Survey> getSurveyAllVersions(String appId, String guid, boolean includeDeleted) {
+        return new QueryBuilder().setAppId(appId).setSurvey(guid).setDeleted(includeDeleted).getAll();
     }
     
     @Override
-    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(guid).setDeleted(false).getOne();
+    public Survey getSurveyMostRecentVersion(String appId, String guid) {
+        return new QueryBuilder().setAppId(appId).setSurvey(guid).setDeleted(false).getOne();
     }
 
     @Override
-    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid, boolean includeElements) {
-        return new QueryBuilder().setStudy(studyIdentifier).isPublished().setSurvey(guid).setDeleted(false)
+    public Survey getSurveyMostRecentlyPublishedVersion(String appId, String guid, boolean includeElements) {
+        return new QueryBuilder().setAppId(appId).isPublished().setSurvey(guid).setDeleted(false)
                 .setSkipElements(!includeElements).getOne();
     }
     
     // secondary index query (not survey GUID) 
     @Override
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier, boolean includeDeleted) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).isPublished().setDeleted(includeDeleted).getAll();
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String appId, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setAppId(appId).isPublished().setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
     
     // secondary index query (not survey GUID)
     @Override
-    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier, boolean includeDeleted) {
-        List<Survey> surveys = new QueryBuilder().setStudy(studyIdentifier).setDeleted(includeDeleted).getAll();
+    public List<Survey> getAllSurveysMostRecentVersion(String appId, boolean includeDeleted) {
+        List<Survey> surveys = new QueryBuilder().setAppId(appId).setDeleted(includeDeleted).getAll();
         return findMostRecentVersions(surveys);
     }
     
@@ -389,17 +389,17 @@ public class DynamoSurveyDao implements SurveyDao {
      * version (not a specific timestamped version), this method should be rarely called.
      */
     @Override
-    public Survey getSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements) {
-        return new QueryBuilder().setStudy(studyIdentifier).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
+    public Survey getSurvey(String appId, GuidCreatedOnVersionHolder keys, boolean includeElements) {
+        return new QueryBuilder().setAppId(appId).setSurvey(keys.getGuid()).setCreatedOn(keys.getCreatedOn())
                 .setSkipElements(!includeElements).getOne();
     }
 
     /** {@inheritDoc} */
     @Override
-    public String getSurveyGuidForIdentifier(String studyId, String surveyId) {
+    public String getSurveyGuidForIdentifier(String appId, String surveyId) {
         // Hash key.
         DynamoSurvey hashKey = new DynamoSurvey();
-        hashKey.setStudyIdentifier(studyId);
+        hashKey.setAppId(appId);
 
         // Range key.
         Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.EQ)

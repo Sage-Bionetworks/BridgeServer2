@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 @DynamoDBTable(tableName = "Survey")
 @JsonFilter("filter")
 public class DynamoSurvey implements Survey {
-    private String studyKey;
+    private String appId;
     private String guid;
     private long createdOn;
     private long modifiedOn;
@@ -63,7 +63,7 @@ public class DynamoSurvey implements Survey {
      */
     public DynamoSurvey(DynamoSurvey survey) {
         this();
-        setStudyIdentifier(survey.getStudyIdentifier());
+        setAppId(survey.getAppId());
         setGuid(survey.getGuid());
         setCreatedOn(survey.getCreatedOn());
         setModifiedOn(survey.getModifiedOn());
@@ -86,13 +86,13 @@ public class DynamoSurvey implements Survey {
     @DynamoDBAttribute(attributeName = "studyKey")
     @DynamoDBIndexHashKey(attributeName = "studyKey", globalSecondaryIndexName = "studyKey-identifier-index")
     @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyKey-identifier-index")
-    public String getStudyIdentifier() {
-        return studyKey;
+    public String getAppId() {
+        return appId;
     }
 
     @Override
-    public void setStudyIdentifier(String studyKey) {
-        this.studyKey = studyKey;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
     @Override
@@ -262,7 +262,7 @@ public class DynamoSurvey implements Survey {
 
     @Override
     public final int hashCode() {
-        return Objects.hash(studyKey, guid, createdOn, modifiedOn, copyrightNotice, moduleId, moduleVersion, version,
+        return Objects.hash(appId, guid, createdOn, modifiedOn, copyrightNotice, moduleId, moduleVersion, version,
                 name, identifier,
                 published, deleted, schemaRevision, elements);
     }
@@ -275,7 +275,7 @@ public class DynamoSurvey implements Survey {
             return false;
         }
         final DynamoSurvey that = (DynamoSurvey) obj;
-        return Objects.equals(this.studyKey, that.studyKey)
+        return Objects.equals(this.appId, that.appId)
                 && Objects.equals(this.guid, that.guid)
                 && Objects.equals(this.createdOn, that.createdOn)
                 && Objects.equals(this.modifiedOn, that.modifiedOn)
@@ -294,9 +294,9 @@ public class DynamoSurvey implements Survey {
     @Override
     public String toString() {
         return String.format(
-                "DynamoSurvey [studyKey=%s, guid=%s, createdOn=%s, modifiedOn=%s, copyrightNotice=%s, moduleId=%s, " +
+                "DynamoSurvey [appId=%s, guid=%s, createdOn=%s, modifiedOn=%s, copyrightNotice=%s, moduleId=%s, " +
                         "moduleVersion=%d, version=%s, name=%s, identifier=%s, published=%s, deleted=%s, " +
-                        "schemaRevision=%s, elements=%s]", studyKey, guid, createdOn, modifiedOn, copyrightNotice,
+                        "schemaRevision=%s, elements=%s]", appId, guid, createdOn, modifiedOn, copyrightNotice,
                 moduleId, moduleVersion, version, name, identifier, published, deleted, schemaRevision, elements);
     }
 }
