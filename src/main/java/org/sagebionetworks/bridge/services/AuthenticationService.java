@@ -516,8 +516,8 @@ public class AuthenticationService {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }
         
-        clearSession(authToken.getStudyId(), account.getId());
-        Study study = studyService.getStudy(authToken.getStudyId());
+        clearSession(authToken.getAppId(), account.getId());
+        Study study = studyService.getStudy(authToken.getAppId());
         UserSession session = getSessionFromAccount(study, context, account);
         cacheProvider.setUserSession(session);
         

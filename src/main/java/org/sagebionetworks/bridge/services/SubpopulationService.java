@@ -64,7 +64,7 @@ public class SubpopulationService {
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
-    @Value("classpath:conf/study-defaults/consent-body.xhtml")
+    @Value("classpath:conf/app-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }

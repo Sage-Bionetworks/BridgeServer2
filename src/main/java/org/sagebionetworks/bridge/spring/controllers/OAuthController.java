@@ -46,24 +46,26 @@ public class OAuthController extends BaseController {
         return service.requestAccessToken(study, session.getHealthCode(), authToken);
     }
     
-    @GetMapping("/v3/studies/{studyId}/oauth/{vendorId}")
-    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(@PathVariable String studyId,
+    @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}", 
+            "/v3/studies/{appId}/oauth/{vendorId}"})
+    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(@PathVariable String appId,
             @PathVariable String vendorId, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(studyId);
+        Study study = studyService.getStudy(appId);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
         return service.getHealthCodesGrantingAccess(study, vendorId, pageSizeInt, offsetKey);
     }
     
-    @GetMapping("/v3/studies/{studyId}/oauth/{vendorId}/{healthCode}")
-    public OAuthAccessToken getAccessToken(@PathVariable String studyId, @PathVariable String vendorId,
+    @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}/{healthCode}", 
+            "/v3/studies/{appId}/oauth/{vendorId}/{healthCode}"})
+    public OAuthAccessToken getAccessToken(@PathVariable String appId, @PathVariable String vendorId,
             @PathVariable String healthCode) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(studyId);
+        Study study = studyService.getStudy(appId);
         return service.getAccessToken(study, vendorId, healthCode);
     }
 }

@@ -85,7 +85,7 @@ import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component("studyService")
-@PropertySource("classpath:conf/study-defaults/sms-messages.properties")
+@PropertySource("classpath:conf/app-defaults/sms-messages.properties")
 public class StudyService {
     private static final Logger LOG = LoggerFactory.getLogger(StudyService.class);
 
@@ -129,18 +129,18 @@ public class StudyService {
     private FileService fileService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per study
-    private String studyEmailVerificationTemplate;
-    private String studyEmailVerificationTemplateSubject;
+    private String appEmailVerificationTemplate;
+    private String appEmailVerificationTemplateSubject;
     
-    @Value("classpath:conf/templates/study-email-verification.txt")
-    final void setStudyEmailVerificationTemplate(org.springframework.core.io.Resource resource)
+    @Value("classpath:conf/templates/app-email-verification.txt")
+    final void setAppEmailVerificationTemplate(org.springframework.core.io.Resource resource)
             throws IOException {
-        this.studyEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
+        this.appEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/templates/study-email-verification-subject.txt")
-    final void setStudyEmailVerificationTemplateSubject(
+    @Value("classpath:conf/templates/app-email-verification-subject.txt")
+    final void setAppEmailVerificationTemplateSubject(
             org.springframework.core.io.Resource resource) throws IOException {
-        this.studyEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
+        this.appEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(),
                 StandardCharsets.UTF_8);
     }
     
@@ -707,8 +707,8 @@ public class StudyService {
         String shortUrl = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
         
         TemplateRevision revision = TemplateRevision.create();
-        revision.setSubject(studyEmailVerificationTemplateSubject);
-        revision.setDocumentContent(studyEmailVerificationTemplate);
+        revision.setSubject(appEmailVerificationTemplateSubject);
+        revision.setDocumentContent(appEmailVerificationTemplate);
         revision.setMimeType(HTML);
 
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(study).withTemplateRevision(revision)

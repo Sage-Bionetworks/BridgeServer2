@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -22,7 +23,7 @@ import org.sagebionetworks.bridge.models.templates.TemplateType;
 public final class HibernateTemplate implements Template {
 
     private String guid;
-    private String studyId;
+    private String appId;
     private TemplateType type;
     private String name;
     private String description;
@@ -35,12 +36,13 @@ public final class HibernateTemplate implements Template {
     
     @JsonIgnore
     @Override
-    public String getStudyId() { 
-        return studyId;
+    @Column(name = "studyId")
+    public String getAppId() { 
+        return appId;
     }
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     @Id
     @Override

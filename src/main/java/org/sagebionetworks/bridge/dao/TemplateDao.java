@@ -20,5 +20,5 @@ public interface TemplateDao {
     
     void deleteTemplatePermanently(String appId, String guid);
     
-    void deleteTemplatesForStudy(String appId);
+    void deleteTemplatesForApp(String appId);
 }

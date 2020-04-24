@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
@@ -59,11 +60,11 @@ public final class AccountId implements BridgeEntity {
     private final boolean usePreconditions;
 
     @JsonCreator
-    private AccountId(@JsonProperty("study") String study, @JsonProperty("appId") String appId,
+    private AccountId(@JsonAlias("study") @JsonProperty("appId") String appId,
             @JsonProperty("id") String id, @JsonProperty("email") String email, 
             @JsonProperty("phone") Phone phone, @JsonProperty("healthCode") String healthCode, 
             @JsonProperty("externalId") String externalId, @JsonProperty("synapseUserId") String synapseUserId) {
-        this((appId != null) ? appId : study, id, email, phone, healthCode, externalId, synapseUserId, true);
+        this(appId, id, email, phone, healthCode, externalId, synapseUserId, true);
     }
     
     private AccountId(String appId, String id, String email, Phone phone, String healthCode,

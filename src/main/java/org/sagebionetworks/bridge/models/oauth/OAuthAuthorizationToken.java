@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.oauth;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -9,22 +10,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * The payload of the authorization token that is sent by the client to retrieve an OAuth 2.0 access token. 
  */
 public final class OAuthAuthorizationToken {
-    private final String studyId;
+    private final String appId;
     private final String vendorId;
     private final String authToken;
     private final String callbackUrl;
 
     @JsonCreator
-    public OAuthAuthorizationToken(@JsonProperty("study") String studyId, @JsonProperty("vendorId") String vendorId,
-            @JsonProperty("authToken") String authToken, @JsonProperty("callbackUrl") String callbackUrl) {
-        this.studyId = studyId;
+    public OAuthAuthorizationToken(@JsonProperty("appId") @JsonAlias("study") String appId,
+            @JsonProperty("vendorId") String vendorId, @JsonProperty("authToken") String authToken,
+            @JsonProperty("callbackUrl") String callbackUrl) {
+        this.appId = appId;
         this.vendorId = vendorId;
         this.authToken = authToken;
         this.callbackUrl = callbackUrl;
     }
     
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     
     public String getVendorId() {
@@ -41,7 +43,7 @@ public final class OAuthAuthorizationToken {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, authToken, vendorId, callbackUrl);
+        return Objects.hash(appId, authToken, vendorId, callbackUrl);
     }
 
     @Override
@@ -51,7 +53,7 @@ public final class OAuthAuthorizationToken {
         if (obj == null || getClass() != obj.getClass())
             return false;
         OAuthAuthorizationToken other = (OAuthAuthorizationToken) obj;
-        return Objects.equals(studyId, other.studyId) &&
+        return Objects.equals(appId, other.appId) &&
                Objects.equals(authToken, other.authToken) && 
                Objects.equals(vendorId, other.vendorId) &&
                Objects.equals(callbackUrl, other.callbackUrl);
@@ -59,7 +61,7 @@ public final class OAuthAuthorizationToken {
 
     @Override
     public String toString() {
-        return "OAuthAuthorizationToken [studyId = " + studyId + ", vendorId=" + vendorId + ", authToken=" + authToken
+        return "OAuthAuthorizationToken [appId = " + appId + ", vendorId=" + vendorId + ", authToken=" + authToken
                 + ", callbackUrl=" + callbackUrl + "]";
     }
 }

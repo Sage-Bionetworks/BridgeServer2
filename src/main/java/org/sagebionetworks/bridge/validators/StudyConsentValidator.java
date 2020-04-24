@@ -30,7 +30,7 @@ public class StudyConsentValidator implements Validator {
 
     private String consentBodyTemplate;
 
-    @Value("classpath:conf/study-defaults/consent-page.xhtml")
+    @Value("classpath:conf/app-defaults/consent-page.xhtml")
     public final void setConsentBodyTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.consentBodyTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }

@@ -360,7 +360,7 @@ public class TemplateServiceTest extends Mockito {
 
         Template template = Template.create();
         template.setGuid(GUID1);
-        template.setStudyId(TEST_APP_ID);
+        template.setAppId(TEST_APP_ID);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(template));
         
         Template result = service.getTemplate(TEST_APP_ID, GUID1);
@@ -406,7 +406,7 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(holder.getGuid(), GUID1);
         assertEquals(holder.getVersion(), new Long(10));
         
-        assertEquals(template.getStudyId(), TEST_APP_ID);
+        assertEquals(template.getAppId(), TEST_APP_ID);
         assertFalse(template.isDeleted());
         assertEquals(template.getVersion(), 10);
         assertEquals(template.getGuid(), GUID1);
@@ -457,13 +457,13 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
         
         Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
         
         Template template = Template.create();
-        template.setStudyId("some-other-study-id");
+        template.setAppId("some-other-study-id");
         template.setGuid(GUID1);
         template.setName("Test");
         // Change these... they will be changed back
@@ -476,7 +476,7 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(result.getGuid(), GUID1);
         assertEquals(result.getVersion(), new Long(10));
         
-        assertEquals(template.getStudyId(), TEST_APP_ID);
+        assertEquals(template.getAppId(), TEST_APP_ID);
         assertEquals(template.getGuid(), GUID1);
         assertEquals(template.getVersion(), 10);
         // cannot be changed by an update.
@@ -501,7 +501,7 @@ public class TemplateServiceTest extends Mockito {
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setGuid(GUID1);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
@@ -520,12 +520,12 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateTemplateFailsIfDeleted() { 
         Template existing = Template.create();
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setDeleted(true);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
         
         Template template = Template.create();
-        template.setStudyId(TEST_APP_ID);
+        template.setAppId(TEST_APP_ID);
         template.setGuid(GUID1);
         template.setDeleted(true);
         
@@ -544,7 +544,7 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void deleteTemplate() {
         Template existing = Template.create();
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
@@ -561,7 +561,7 @@ public class TemplateServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteTemplateLogicallyDeleted() { 
         Template existing = Template.create();
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setGuid(GUID1);
         existing.setDeleted(true);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
@@ -579,7 +579,7 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void deleteTemplatePermanently() {
         Template existing = Template.create();
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
@@ -604,7 +604,7 @@ public class TemplateServiceTest extends Mockito {
         Template existing = Template.create();
         existing.setTemplateType(EMAIL_RESET_PASSWORD);
         existing.setCreatedOn(TIMESTAMP);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setDeleted(false);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
         
@@ -621,7 +621,7 @@ public class TemplateServiceTest extends Mockito {
     public void cannotLogicallyDeleteDefaultTemplate() {
         study.getDefaultTemplates().put(EMAIL_ACCOUNT_EXISTS.name().toLowerCase(), GUID1);
         Template existing = Template.create();
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setGuid(GUID1);
         existing.setTemplateType(EMAIL_ACCOUNT_EXISTS);
         when(mockTemplateDao.getTemplate(TEST_APP_ID, GUID1)).thenReturn(Optional.of(existing));
@@ -682,6 +682,6 @@ public class TemplateServiceTest extends Mockito {
     public void deleteTemplatesForStudy() {
         service.deleteTemplatesForStudy(TEST_APP_ID);
         
-        verify(mockTemplateDao).deleteTemplatesForStudy(TEST_APP_ID);
+        verify(mockTemplateDao).deleteTemplatesForApp(TEST_APP_ID);
     }
 }

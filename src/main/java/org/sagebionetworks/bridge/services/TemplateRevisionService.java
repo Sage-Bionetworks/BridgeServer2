@@ -37,9 +37,9 @@ public class TemplateRevisionService {
         this.templateRevisionDao = templateRevisionDao;
     }
     
-    public PagedResourceList<? extends TemplateRevision> getTemplateRevisions(String studyId,
+    public PagedResourceList<? extends TemplateRevision> getTemplateRevisions(String appId,
             String templateGuid, Integer offset, Integer pageSize) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
         checkNotNull(templateGuid);
         
         if (offset == null) {
@@ -54,23 +54,23 @@ public class TemplateRevisionService {
             throw new BadRequestException("pageSize must be in range 1-" + API_MAXIMUM_PAGE_SIZE);
         }
         
-        // verify the template GUID is in the user's study.
-        templateDao.getTemplate(studyId, templateGuid)
+        // verify the template GUID is in the user's app.
+        templateDao.getTemplate(appId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         return templateRevisionDao.getTemplateRevisions(templateGuid, offset, pageSize);
     }
     
-    public CreatedOnHolder createTemplateRevision(String studyId, String templateGuid, TemplateRevision revision) {
-        checkNotNull(studyId);
+    public CreatedOnHolder createTemplateRevision(String appId, String templateGuid, TemplateRevision revision) {
+        checkNotNull(appId);
         checkNotNull(templateGuid);
         checkNotNull(revision);
         
         DateTime createdOn = getDateTime();
         String storagePath = templateGuid + "." + createdOn.getMillis();
 
-        // verify the template GUID is in the user's study.
-        Template template = templateDao.getTemplate(studyId, templateGuid)
+        // verify the template GUID is in the user's app.
+        Template template = templateDao.getTemplate(appId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         revision.setCreatedOn(createdOn);
@@ -86,12 +86,12 @@ public class TemplateRevisionService {
         return new CreatedOnHolder(createdOn);
     }
     
-    public TemplateRevision getTemplateRevision(String studyId, String templateGuid, DateTime createdOn) {
-        checkNotNull(studyId);
+    public TemplateRevision getTemplateRevision(String appId, String templateGuid, DateTime createdOn) {
+        checkNotNull(appId);
         checkNotNull(templateGuid);
         
         // verify the template GUID is in the user's study.
-        templateDao.getTemplate(studyId, templateGuid)
+        templateDao.getTemplate(appId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         TemplateRevision revision = templateRevisionDao.getTemplateRevision(templateGuid, createdOn)
@@ -100,12 +100,12 @@ public class TemplateRevisionService {
         return revision;
     }
     
-    public void publishTemplateRevision(String studyId, String templateGuid, DateTime createdOn) {
-        checkNotNull(studyId);
+    public void publishTemplateRevision(String appId, String templateGuid, DateTime createdOn) {
+        checkNotNull(appId);
         checkNotNull(templateGuid);
         checkNotNull(createdOn);
         
-        Template template = templateDao.getTemplate(studyId, templateGuid)
+        Template template = templateDao.getTemplate(appId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         templateRevisionDao.getTemplateRevision(templateGuid, createdOn)
