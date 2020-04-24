@@ -154,7 +154,7 @@ public class AuthenticationServiceMockTest {
     @Mock
     private ParticipantService participantService;
     @Mock
-    private StudyService studyService;
+    private AppService appService;
     @Mock
     private PasswordResetValidator passwordResetValidator;
     @Mock
@@ -197,7 +197,7 @@ public class AuthenticationServiceMockTest {
         account.setId(USER_ID);
 
         doReturn(SESSION_TOKEN).when(service).getGuid();
-        doReturn(app).when(studyService).getStudy(TEST_APP_ID);
+        doReturn(app).when(appService).getApp(TEST_APP_ID);
     }
     
     @AfterMethod
@@ -1370,7 +1370,7 @@ public class AuthenticationServiceMockTest {
     @Test
     public void resetPassword() {
         PasswordResetValidator validator = new PasswordResetValidator();
-        validator.setStudyService(studyService);
+        validator.setAppService(appService);
         service.setPasswordResetValidator(validator);
         
         PasswordReset reset = new PasswordReset(PASSWORD, TOKEN, TEST_APP_ID);
@@ -1381,7 +1381,7 @@ public class AuthenticationServiceMockTest {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void resetPasswordInvalid() {
         PasswordResetValidator validator = new PasswordResetValidator();
-        validator.setStudyService(studyService);
+        validator.setAppService(appService);
         service.setPasswordResetValidator(validator);
         
         PasswordReset reset = new PasswordReset(PASSWORD, null, TEST_APP_ID);

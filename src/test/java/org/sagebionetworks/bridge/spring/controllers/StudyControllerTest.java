@@ -79,7 +79,7 @@ import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
@@ -107,7 +107,7 @@ public class StudyControllerTest extends Mockito {
     UploadCertificateService mockUploadCertService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     EmailVerificationService mockVerificationService;
@@ -158,8 +158,8 @@ public class StudyControllerTest extends Mockito {
         app.setActive(true);
      
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
-        when(mockStudyService.createSynapseProjectTeam(any(), any())).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.createSynapseProjectTeam(any(), any())).thenReturn(app);
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(VERIFIED);
         when(mockUploadCertService.getPublicKeyAsPem(TEST_APP_ID)).thenReturn(PEM_TEXT);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
@@ -224,8 +224,8 @@ public class StudyControllerTest extends Mockito {
 
         controller.deleteStudy("not-protected", false);
 
-        verify(mockStudyService).deleteStudy("not-protected", false);
-        verifyNoMoreInteractions(mockStudyService);
+        verify(mockAppService).deleteApp("not-protected", false);
+        verifyNoMoreInteractions(mockAppService);
     }
 
     @Test
@@ -234,8 +234,8 @@ public class StudyControllerTest extends Mockito {
 
         controller.deleteStudy("not-protected", true);
 
-        verify(mockStudyService).deleteStudy("not-protected", true);
-        verifyNoMoreInteractions(mockStudyService);
+        verify(mockAppService).deleteApp("not-protected", true);
+        verifyNoMoreInteractions(mockAppService);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -251,7 +251,7 @@ public class StudyControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deactivateStudyThrowsGoodException() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
-        doThrow(new EntityNotFoundException(App.class)).when(mockStudyService).deleteStudy("not-protected",
+        doThrow(new EntityNotFoundException(App.class)).when(mockAppService).deleteApp("not-protected",
                 false);
 
         controller.deleteStudy("not-protected", false);
@@ -290,13 +290,13 @@ public class StudyControllerTest extends Mockito {
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         ArgumentCaptor<StudyAndUsers> argumentCaptor = ArgumentCaptor.forClass(StudyAndUsers.class);
-        when(mockStudyService.createStudyAndUsers(argumentCaptor.capture())).thenReturn(app);
+        when(mockAppService.createAppAndUsers(argumentCaptor.capture())).thenReturn(app);
 
         // execute
         VersionHolder result = controller.createStudyAndUsers();
         
         // verify
-        verify(mockStudyService, times(1)).createStudyAndUsers(any());
+        verify(mockAppService, times(1)).createAppAndUsers(any());
         StudyAndUsers capObj = argumentCaptor.getValue();
         assertEquals(capObj.getStudy(), app);
         assertEquals(capObj.getUsers(), mockUsers);
@@ -317,8 +317,8 @@ public class StudyControllerTest extends Mockito {
         SynapseProjectIdTeamIdHolder result = controller.createSynapse();
 
         // verify
-        verify(mockStudyService).getStudy(TEST_APP_ID);
-        verify(mockStudyService).createSynapseProjectTeam(mockUserIds, app);
+        verify(mockAppService).getApp(TEST_APP_ID);
+        verify(mockAppService).createSynapseProjectTeam(mockUserIds, app);
 
         assertEquals(result.getProjectId(), TEST_PROJECT_ID);
         assertEquals(result.getTeamId(), TEST_TEAM_ID);
@@ -388,8 +388,8 @@ public class StudyControllerTest extends Mockito {
         StatusMessage result = controller.resendVerifyEmail(CONSENT_NOTIFICATION.toString().toLowerCase());
         assertEquals(result, RESEND_EMAIL_MSG);
 
-        // Verify call to StudyService
-        verify(mockStudyService).sendVerifyEmail(TEST_APP_ID, CONSENT_NOTIFICATION);
+        // Verify call to AppService
+        verify(mockAppService).sendVerifyEmail(TEST_APP_ID, CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -419,8 +419,8 @@ public class StudyControllerTest extends Mockito {
                 CONSENT_NOTIFICATION.toString().toLowerCase());
         assertEquals(result, CONSENT_EMAIL_VERIFIED_MSG);
 
-        // Verify call to StudyService
-        verify(mockStudyService).verifyEmail(TEST_APP_ID, DUMMY_VERIFICATION_TOKEN, CONSENT_NOTIFICATION);
+        // Verify call to AppService
+        verify(mockAppService).verifyEmail(TEST_APP_ID, DUMMY_VERIFICATION_TOKEN, CONSENT_NOTIFICATION);
     }
 
     @Test
@@ -461,7 +461,7 @@ public class StudyControllerTest extends Mockito {
         ForwardCursorPagedResourceList<UploadView> result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         
         verify(mockUploadService).getStudyUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
-        verify(mockStudyService, never()).getStudy(TEST_APP_ID);
+        verify(mockAppService, never()).getApp(TEST_APP_ID);
         // in other words, it's the object we mocked out from the service, we were returned the value.
         assertNull(result.getRequestParams().get("offsetBy"));
         assertNull(result.getTotal());
@@ -533,7 +533,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void getSummaryStudiesWithFormatWorks() throws Exception {
         List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockStudyService).getStudies();
+        doReturn(studies).when(mockAppService).getApps();
         
         String result = controller.getAllStudies("summary", null);
         ResourceList<App> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<App>>() {});
@@ -545,7 +545,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void getSummaryStudiesWithSummaryWorks() throws Exception {
         List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockStudyService).getStudies();
+        doReturn(studies).when(mockAppService).getApps();
         
         String result = controller.getAllStudies(null, "true");
 
@@ -562,7 +562,7 @@ public class StudyControllerTest extends Mockito {
         testStudy2.setName("test_study_2");
 
         List<App> studies = ImmutableList.of(testStudy1, testStudy2);
-        doReturn(studies).when(mockStudyService).getStudies();
+        doReturn(studies).when(mockAppService).getApps();
 
         String result = controller.getAllStudies("summary", null);
 
@@ -580,7 +580,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void getFullStudiesWorks() throws Exception {
         List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockStudyService).getStudies();
+        doReturn(studies).when(mockAppService).getApps();
         
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
@@ -598,7 +598,7 @@ public class StudyControllerTest extends Mockito {
         
         App created = App.create();
         created.setVersion(3L);
-        when(mockStudyService.updateStudy(any(), anyBoolean())).thenReturn(created);
+        when(mockAppService.updateApp(any(), anyBoolean())).thenReturn(created);
         
         App app = App.create();
         app.setName("value to seek");
@@ -607,7 +607,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder holder = controller.updateStudy(TEST_APP_ID);
         assertEquals(holder.getVersion(), Long.valueOf(3L));
         
-        verify(mockStudyService).updateStudy(studyCaptor.capture(), eq(true));
+        verify(mockAppService).updateApp(studyCaptor.capture(), eq(true));
         assertEquals(studyCaptor.getValue().getName(), "value to seek");
     }
     
@@ -624,7 +624,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void getStudy() throws Exception {
         App retrieved = App.create();
-        when(mockStudyService.getStudy("some-study", true)).thenReturn(retrieved);
+        when(mockAppService.getApp("some-study", true)).thenReturn(retrieved);
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN, WORKER);
         
         App result = controller.getStudy("some-study");
@@ -665,7 +665,7 @@ public class StudyControllerTest extends Mockito {
         app3.setName("study3");
         app3.setActive(false);
         List<App> studies = ImmutableList.of(app1, app2, app3);
-        when(mockStudyService.getStudies()).thenReturn(studies);
+        when(mockAppService.getApps()).thenReturn(studies);
         
         String json = controller.getAllStudies("summary", null);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -691,7 +691,7 @@ public class StudyControllerTest extends Mockito {
         app3.setName("study3");
         app3.setActive(false);
         List<App> studies = ImmutableList.of(app1, app2, app3);
-        when(mockStudyService.getStudies()).thenReturn(studies);
+        when(mockAppService.getApps()).thenReturn(studies);
         
         String json = controller.getAllStudies(null, null);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -720,7 +720,7 @@ public class StudyControllerTest extends Mockito {
 
         App created = App.create();
         created.setVersion(3L);
-        when(mockStudyService.createStudy(any())).thenReturn(created);
+        when(mockAppService.createApp(any())).thenReturn(created);
         
         App newApp = App.create();
         newApp.setName("some study");
@@ -729,7 +729,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder keys = controller.createStudy();
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
-        verify(mockStudyService).createStudy(newApp);
+        verify(mockAppService).createApp(newApp);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -748,7 +748,7 @@ public class StudyControllerTest extends Mockito {
         
         App created = App.create();
         created.setVersion(3L);
-        when(mockStudyService.createStudyAndUsers(any())).thenReturn(created);
+        when(mockAppService.createAppAndUsers(any())).thenReturn(created);
         
         App newApp = App.create();
         newApp.setName("some study");
@@ -761,7 +761,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder keys = controller.createStudyAndUsers();
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
-        verify(mockStudyService).createStudyAndUsers(studyAndUsersCaptor.capture());
+        verify(mockAppService).createAppAndUsers(studyAndUsersCaptor.capture());
         
         StudyAndUsers captured =  studyAndUsersCaptor.getValue();
         assertEquals(captured.getAdminIds(), ImmutableList.of("admin1", "admin2"));
@@ -804,7 +804,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.deleteStudy("delete-study", true);
         
-        verify(mockStudyService).deleteStudy("delete-study", Boolean.TRUE);
+        verify(mockAppService).deleteApp("delete-study", Boolean.TRUE);
     }
     
     @Test
@@ -849,7 +849,7 @@ public class StudyControllerTest extends Mockito {
         App appC = mockStudy("Study C", "studyC", true);
         App appB = mockStudy("Study B", "studyB", true);
         App appA = mockStudy("Study A", "studyA", false);
-        when(mockStudyService.getStudies()).thenReturn(ImmutableList.of(appA, appB, appC, appD));
+        when(mockAppService.getApps()).thenReturn(ImmutableList.of(appA, appB, appC, appD));
         
         // This user is only associated to the API study, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
@@ -885,7 +885,7 @@ public class StudyControllerTest extends Mockito {
         app.setName(name);
         app.setIdentifier(identifier);
         app.setActive(active);
-        when(mockStudyService.getStudy(identifier)).thenReturn(app);
+        when(mockAppService.getApp(identifier)).thenReturn(app);
         return app;
     }
     

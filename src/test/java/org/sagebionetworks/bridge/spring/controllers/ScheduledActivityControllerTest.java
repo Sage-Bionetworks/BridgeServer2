@@ -72,7 +72,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class ScheduledActivityControllerTest extends Mockito {
@@ -113,7 +113,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     ScheduledActivityService mockScheduledActivityService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -190,7 +190,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         when(mockScheduledActivityService.getScheduledActivities(eq(APP), any(ScheduleContext.class))).thenReturn(list);
 
         APP.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(APP);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         when(mockBridgeConfig.getEnvironment()).thenReturn(UAT);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();

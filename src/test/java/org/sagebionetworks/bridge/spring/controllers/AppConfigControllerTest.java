@@ -50,7 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AppConfigService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class AppConfigControllerTest extends Mockito {
     
@@ -71,7 +71,7 @@ public class AppConfigControllerTest extends Mockito {
     private AppConfigService mockService;
     
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private CacheProvider mockCacheProvider;
@@ -142,7 +142,7 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
         
         String string = controller.getStudyAppConfig(TEST_APP_ID);
@@ -259,7 +259,7 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
         
         controller.getStudyAppConfig(TEST_APP_ID);

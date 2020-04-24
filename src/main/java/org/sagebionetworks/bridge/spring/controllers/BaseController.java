@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
@@ -65,7 +65,7 @@ public abstract class BaseController {
 
     AccountService accountService;
 
-    StudyService studyService;
+    AppService appService;
 
     AuthenticationService authenticationService;
     
@@ -84,8 +84,8 @@ public abstract class BaseController {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -188,7 +188,7 @@ public abstract class BaseController {
         
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         Set<Roles> userRoles = session.getParticipant().getRoles();
         boolean userHasRoles = !userRoles.isEmpty();
         if (app.isParticipantIpLockingEnabled() || userHasRoles) {

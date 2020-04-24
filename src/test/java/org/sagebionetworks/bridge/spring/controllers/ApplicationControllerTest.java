@@ -39,13 +39,13 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UrlShortenerService;
 
 public class ApplicationControllerTest extends Mockito {
 
     @Mock
-    StudyService studyService;
+    AppService appService;
     
     @Mock
     AuthenticationService authenticationService;
@@ -81,7 +81,7 @@ public class ApplicationControllerTest extends Mockito {
         app.setSupportEmail("support@email.com");
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
-        doReturn(app).when(studyService).getStudy(TEST_APP_ID);
+        doReturn(app).when(appService).getApp(TEST_APP_ID);
     }
     
     @Test
@@ -115,7 +115,7 @@ public class ApplicationControllerTest extends Mockito {
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
         verify(model).addAttribute(STUDY_ID, app.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -124,7 +124,7 @@ public class ApplicationControllerTest extends Mockito {
 
         assertEquals(templateName, "verifyStudyEmail");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class ApplicationControllerTest extends Mockito {
         verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
         verify(model).addAttribute(STUDY_ID, app.getIdentifier());
         verify(model).addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -149,7 +149,7 @@ public class ApplicationControllerTest extends Mockito {
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, app.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -161,7 +161,7 @@ public class ApplicationControllerTest extends Mockito {
         assertEquals(templateName, "startSession");
         verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(model).addAttribute(STUDY_ID, app.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
     
     @Test
@@ -170,7 +170,7 @@ public class ApplicationControllerTest extends Mockito {
         study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(app, study2)).when(studyService).getStudies();
+        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
         
         app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK);
         app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_2);
@@ -196,7 +196,7 @@ public class ApplicationControllerTest extends Mockito {
         study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(app, study2)).when(studyService).getStudies();
+        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
         
         app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK);
         app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_2);

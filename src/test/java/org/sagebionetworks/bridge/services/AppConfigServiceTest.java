@@ -72,7 +72,7 @@ public class AppConfigServiceTest {
     private AppConfigDao mockDao;
     
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private AppConfigElementService mockAppConfigElementService;
@@ -392,7 +392,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void createAppConfig() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
         when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
         when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
@@ -438,7 +438,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void updateAppConfig() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         AppConfig oldConfig = setupAppConfig();
         oldConfig.setCreatedOn(0);
@@ -459,14 +459,14 @@ public class AppConfigServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createAppConfigValidates() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         service.createAppConfig(TEST_APP_ID, AppConfig.create());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateAppConfigValidates() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         AppConfig oldConfig = setupAppConfig();
         service.updateAppConfig(TEST_APP_ID, oldConfig);

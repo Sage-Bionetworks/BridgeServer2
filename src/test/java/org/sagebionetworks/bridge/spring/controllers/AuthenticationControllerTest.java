@@ -87,7 +87,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -128,7 +128,7 @@ public class AuthenticationControllerTest extends Mockito {
     AccountService mockAccountService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -192,8 +192,8 @@ public class AuthenticationControllerTest extends Mockito {
         app = new DynamoApp();
         app.setIdentifier(TEST_APP_ID);
         app.setDataGroups(USER_DATA_GROUPS);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
-        when(mockStudyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(App.class));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp((String)null)).thenThrow(new EntityNotFoundException(App.class));
         
         doReturn(metrics).when(controller).getMetrics();
         doReturn(mockRequest).when(controller).request();
@@ -909,7 +909,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void requestResetPasswordNoStudy() throws Exception {
-        when(mockStudyService.getStudy((String) any())).thenThrow(new EntityNotFoundException(App.class));
+        when(mockAppService.getApp((String) any())).thenThrow(new EntityNotFoundException(App.class));
         
         mockRequestBody(mockRequest, new SignIn.Builder().withEmail(TEST_EMAIL).build());
         
@@ -1054,7 +1054,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
         mockRequestBody(mockRequest, badPhoneSignIn);
         
-        when(mockStudyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(App.class));
+        when(mockAppService.getApp((String)any())).thenThrow(new EntityNotFoundException(App.class));
         
         controller.phoneSignIn();
     }
@@ -1213,7 +1213,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
+        when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         UserSession session = new UserSession();
         session.setSessionToken("new-session-token");
@@ -1260,7 +1260,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
+        when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         JsonNode node = controller.changeApp();
         // Note that we reuse the session here, as we did in an initial implementation for cross-study
@@ -1287,7 +1287,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
+        when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         controller.changeApp();
     }
@@ -1304,7 +1304,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
+        when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         controller.changeApp();
     }

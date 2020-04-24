@@ -46,7 +46,7 @@ public class SchedulePlanController extends BaseController {
     public ResourceList<SchedulePlan> getSchedulePlansForWorker(@PathVariable String studyId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         getAuthenticatedSession(WORKER);
-        App app = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
                 app.getIdentifier(), includeDeleted);
@@ -68,7 +68,7 @@ public class SchedulePlanController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSchedulePlan() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
         SchedulePlan plan = schedulePlanService.createSchedulePlan(app, planForm);
@@ -86,7 +86,7 @@ public class SchedulePlanController extends BaseController {
     @PostMapping("/v3/scheduleplans/{guid}")
     public GuidVersionHolder updateSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
         planForm.setGuid(guid);

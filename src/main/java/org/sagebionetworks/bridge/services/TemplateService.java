@@ -70,7 +70,7 @@ public class TemplateService {
     private TemplateDao templateDao;
     private TemplateRevisionDao templateRevisionDao;
     private CriteriaDao criteriaDao;
-    private StudyService studyService;
+    private AppService appService;
     private SubstudyService substudyService;
     
     private String defaultEmailVerificationTemplate;
@@ -105,8 +105,8 @@ public class TemplateService {
         this.criteriaDao = criteriaDao;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     @Autowired
     final void setSubstudyService(SubstudyService substudyService) {
@@ -355,7 +355,7 @@ public class TemplateService {
         template.setTemplateType(existing.getTemplateType());
         template.setCreatedOn(existing.getCreatedOn());
         
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
@@ -403,7 +403,7 @@ public class TemplateService {
     }
 
     private boolean isDefaultTemplate(Template template, String appId) {
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         String defaultGuid = app.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
         
         return (template.getGuid().equals(defaultGuid));

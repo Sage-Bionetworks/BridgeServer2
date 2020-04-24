@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.App;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,11 +14,11 @@ import org.springframework.validation.Validator;
 @Component
 public class PasswordResetValidator implements Validator {
 
-    private StudyService studyService;
+    private AppService appService;
     
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Override
@@ -43,7 +43,7 @@ public class PasswordResetValidator implements Validator {
             return;
         }
         // This logic is now duplicated with StudyParticipant validation.
-        App app = studyService.getStudy(passwordReset.getAppId());
+        App app = appService.getApp(passwordReset.getAppId());
         PasswordPolicy passwordPolicy = app.getPasswordPolicy();
         String password = passwordReset.getPassword();
         ValidatorUtils.validatePassword(errors, passwordPolicy, password);

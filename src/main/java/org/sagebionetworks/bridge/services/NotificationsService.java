@@ -44,7 +44,7 @@ public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
     private ParticipantService participantService;
-    private StudyService studyService;
+    private AppService appService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
     private AmazonSNSClient snsClient;
@@ -56,8 +56,8 @@ public class NotificationsService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -127,7 +127,7 @@ public class NotificationsService {
         checkNotNull(registration);
 
         adjustToCanonicalOsNameIfNeeded(registration);
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
 
         NotificationRegistration createdRegistration;

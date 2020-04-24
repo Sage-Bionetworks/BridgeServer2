@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
@@ -56,7 +57,7 @@ public final class DynamoApp implements App {
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
     private boolean participantIpLockingEnabled;
-    private boolean studyIdExcludedInExport;
+    private boolean appIdExcludedInExport;
     private String supportEmail;
     private Long synapseDataAccessTeamId;
     private String synapseProjectId;
@@ -238,15 +239,21 @@ public final class DynamoApp implements App {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBAttribute(attributeName = "studyIdExcludedInExport")
     @Override
-    public boolean isStudyIdExcludedInExport() {
-        return studyIdExcludedInExport;
+    public boolean isAppIdExcludedInExport() {
+        return appIdExcludedInExport;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setStudyIdExcludedInExport(boolean studyIdExcludedInExport) {
-        this.studyIdExcludedInExport = studyIdExcludedInExport;
+    public void setAppIdExcludedInExport(boolean studyIdExcludedInExport) {
+        this.appIdExcludedInExport = studyIdExcludedInExport;
+    }
+    
+    // for backwards compatibility, we must continue to expose this property
+    public boolean isStudyIdExcludedInExport() {
+        return appIdExcludedInExport;
     }
 
     /** {@inheritDoc} */
@@ -608,7 +615,7 @@ public final class DynamoApp implements App {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, participantIpLockingEnabled, studyIdExcludedInExport,
+                autoVerificationEmailSuppressed, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
                 consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
@@ -631,7 +638,7 @@ public final class DynamoApp implements App {
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
                 && Objects.equals(participantIpLockingEnabled, other.participantIpLockingEnabled)
-                && Objects.equals(studyIdExcludedInExport, other.studyIdExcludedInExport)
+                && Objects.equals(appIdExcludedInExport, other.appIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
                 && Objects.equals(uploadMetadataFieldDefinitions, other.uploadMetadataFieldDefinitions)
                 && Objects.equals(uploadValidationStrictness, other.uploadValidationStrictness)
@@ -689,7 +696,7 @@ public final class DynamoApp implements App {
                         + "reauthenticationEnabled=%s, autoVerificationPhoneSuppressed=%s, verifyChannelOnSignInEnabled=%s, "
                         + "defaultTemplates=%s]",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, studyIdExcludedInExport,
+                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
                 activityEventKeys, dataGroups, passwordPolicy, strictUploadValidationEnabled, healthCodeExportEnabled,

@@ -21,7 +21,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /**
@@ -53,13 +53,13 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
     private static final Joiner ERROR_MESSAGE_JOINER = Joiner.on("; ");
 
-    private StudyService studyService;
+    private AppService appService;
     private UploadSchemaService uploadSchemaService;
 
     /** Study service, used to fetch configuration for if strict validation is enabled for the given study. */
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
 
     /** Upload Schema Service, used to get the schema to validate against the upload. */
@@ -146,7 +146,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * unit tests.
      */
     UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {
-        App app = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
 
         // First check UploadValidationStrictness.
         UploadValidationStrictness uploadValidationStrictness = app.getUploadValidationStrictness();

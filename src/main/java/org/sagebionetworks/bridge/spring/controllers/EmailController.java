@@ -45,7 +45,7 @@ public class EmailController extends BaseController {
             if (studyId == null) {
                 throw new BadRequestException("Study not found.");
             }
-            App app = studyService.getStudy(studyId);
+            App app = appService.getApp(studyId);
             
             // MailChimp submits email as data[email]
             String email = request().getParameter("data[email]");

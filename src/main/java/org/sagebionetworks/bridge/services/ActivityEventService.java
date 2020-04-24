@@ -34,7 +34,7 @@ public class ActivityEventService {
 
     private ActivityEventDao activityEventDao;
     private ParticipantService participantService;
-    private StudyService studyService;
+    private AppService appService;
     
     @Autowired
     final void setActivityEventDao(ActivityEventDao activityEventDao) {
@@ -47,8 +47,8 @@ public class ActivityEventService {
     }
     
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     /**
@@ -180,7 +180,7 @@ public class ActivityEventService {
         DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
         DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
         if (createdOn == null) {
-            App app = studyService.getStudy(studyId);
+            App app = appService.getApp(studyId);
             StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
             publishCreatedOnEvent(healthCode, createdOn);

@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SmsService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class SmsControllerTest extends Mockito {
     private static final String MESSAGE_ID = "my-message-id";
@@ -42,8 +42,8 @@ public class SmsControllerTest extends Mockito {
     @BeforeMethod
     public void before() {
         // Mock study service.
-        StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(DUMMY_APP);
+        AppService mockAppService = mock(AppService.class);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(DUMMY_APP);
 
         // Mock SMS service.
         mockParticipantService = mock(ParticipantService.class);
@@ -53,7 +53,7 @@ public class SmsControllerTest extends Mockito {
         controller = spy(new SmsController());
         controller.setParticipantService(mockParticipantService);
         controller.setSmsService(mockSmsService);
-        controller.setStudyService(mockStudyService);
+        controller.setAppService(mockAppService);
 
         // Mock get session.
         UserSession session = new UserSession();

@@ -68,7 +68,7 @@ public class IntentServiceTest {
     SendMailService mockSendMailService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     SubpopulationService mockSubpopService;
@@ -117,7 +117,7 @@ public class IntentServiceTest {
         
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockApp.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockApp);
+        when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
@@ -155,7 +155,7 @@ public class IntentServiceTest {
         
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockApp.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockApp);
+        when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("this-is-a-link");
@@ -193,7 +193,7 @@ public class IntentServiceTest {
         
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockApp.getInstallLinks()).thenReturn(installLinks);
-        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockApp);
+        when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("subject");
@@ -248,7 +248,7 @@ public class IntentServiceTest {
                 TestConstants.PHONE);
         
         when(mockApp.getIdentifier()).thenReturn("testStudy");
-        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockApp);
+        when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
 
@@ -274,7 +274,7 @@ public class IntentServiceTest {
         service.submitIntentToParticipate(intent);
         
         // None of this happens...
-        verifyNoMoreInteractions(mockStudyService);
+        verifyNoMoreInteractions(mockAppService);
         verifyNoMoreInteractions(mockSubpopService);
         verifyNoMoreInteractions(mockCacheProvider);
         verifyNoMoreInteractions(mockSmsService);
@@ -453,7 +453,7 @@ public class IntentServiceTest {
         IntentToParticipate intent = TestUtils.getIntentToParticipate(TIMESTAMP).build();
         
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
-        when(mockStudyService.getStudy(intent.getAppId())).thenReturn(mockApp);
+        when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         
         CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TEST_APP_ID, PHONE);
         

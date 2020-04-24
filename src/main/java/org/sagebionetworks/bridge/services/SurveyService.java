@@ -48,7 +48,7 @@ public class SurveyService {
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
     private SharedModuleMetadataService sharedModuleMetadataService;
-    private StudyService studyService;
+    private AppService appService;
 
     @Autowired
     final void setSurveyDao(SurveyDao surveyDao) {
@@ -71,8 +71,8 @@ public class SurveyService {
     }
 
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     public Survey getSurvey(String appId, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
@@ -111,7 +111,7 @@ public class SurveyService {
         }
         Set<String> dataGroups = Collections.emptySet();
         if (survey.getAppId() != null) {
-            App app = studyService.getStudy(survey.getAppId());
+            App app = appService.getApp(survey.getAppId());
             dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
@@ -145,7 +145,7 @@ public class SurveyService {
         
         Set<String> dataGroups = Collections.emptySet();
         if (survey.getAppId() != null) {
-            App app = studyService.getStudy(survey.getAppId());
+            App app = appService.getApp(survey.getAppId());
             dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);

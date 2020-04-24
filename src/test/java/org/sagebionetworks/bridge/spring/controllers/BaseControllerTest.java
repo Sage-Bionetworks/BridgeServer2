@@ -86,7 +86,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class BaseControllerTest extends Mockito {
 
@@ -100,7 +100,7 @@ public class BaseControllerTest extends Mockito {
     private AccountService mockAccountService;
 
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
 
     @Mock
     private AuthenticationService mockAuthenticationService;
@@ -184,7 +184,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         UserSession returnedSession = controller.getAuthenticatedAndConsentedSession();
         assertEquals(session, returnedSession);
@@ -204,7 +204,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         controller.getAuthenticatedAndConsentedSession();
     }
@@ -219,7 +219,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         UserSession retrievedSession = controller.getAuthenticatedSession(Roles.DEVELOPER);
         assertEquals(session, retrievedSession);
@@ -235,7 +235,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         controller.getAuthenticatedSession(Roles.DEVELOPER);
     }
@@ -249,7 +249,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         controller.getAuthenticatedSession(Roles.DEVELOPER);
     }
@@ -269,7 +269,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         session.setAuthenticated(false);
         
         controller.getAuthenticatedSession();
@@ -285,7 +285,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.RESEARCHER);
         assertEquals(session, retrievedSession);
@@ -300,7 +300,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.RESEARCHER);
         assertEquals(session, retrievedSession);
@@ -316,7 +316,7 @@ public class BaseControllerTest extends Mockito {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
         when(mockAuthenticationService.getSession(SESSION_TOKEN)).thenReturn(session);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         UserSession retrievedSession = controller.getSessionEitherConsentedOrInRole(Roles.DEVELOPER, Roles.ADMIN);
         assertEquals(session, retrievedSession);
@@ -629,7 +629,7 @@ public class BaseControllerTest extends Mockito {
         doReturn(session).when(controller).getSessionIfItExists();
 
         // Mock study.
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Single arg success.
         assertNotNull(controller.getAuthenticatedSession(Roles.RESEARCHER));
@@ -744,7 +744,7 @@ public class BaseControllerTest extends Mockito {
         app.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -762,7 +762,7 @@ public class BaseControllerTest extends Mockito {
         app.setParticipantIpLockingEnabled(true);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute, should throw
         controller.getAuthenticatedSession(false);
@@ -780,7 +780,7 @@ public class BaseControllerTest extends Mockito {
         app.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
@@ -802,7 +802,7 @@ public class BaseControllerTest extends Mockito {
         app.setParticipantIpLockingEnabled(false);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute, should succeed
         controller.getAuthenticatedSession(false);
@@ -826,7 +826,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         controller.getAuthenticatedSession(false);
         
@@ -848,7 +848,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         UserSession returned = controller.getAuthenticatedSession(false, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -861,7 +861,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
@@ -876,7 +876,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         controller.getAuthenticatedSession(true, Roles.DEVELOPER);
     }
@@ -891,7 +891,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);
@@ -907,7 +907,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         UserSession returned = controller.getAuthenticatedSession(true, Roles.DEVELOPER);
         assertEquals(session, returned);

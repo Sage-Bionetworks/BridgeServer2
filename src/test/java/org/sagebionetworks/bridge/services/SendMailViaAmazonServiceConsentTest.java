@@ -52,7 +52,7 @@ public class SendMailViaAmazonServiceConsentTest {
             .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
     private AmazonSimpleEmailServiceClient emailClient;
-    private StudyService studyService;
+    private AppService appService;
     private StudyConsentService studyConsentService;
     private EmailVerificationService emailVerificationService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
@@ -76,8 +76,8 @@ public class SendMailViaAmazonServiceConsentTest {
         revision.setDocumentContent("Body of Template");
         revision.setMimeType(MimeType.HTML);
         
-        studyService = mock(StudyService.class);
-        when(studyService.getStudy(app.getIdentifier())).thenReturn(app);
+        appService = mock(AppService.class);
+        when(appService.getApp(app.getIdentifier())).thenReturn(app);
         
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);

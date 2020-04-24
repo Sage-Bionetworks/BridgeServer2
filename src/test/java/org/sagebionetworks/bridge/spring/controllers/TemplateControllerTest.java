@@ -40,7 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.Template;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.TemplateService;
 
 public class TemplateControllerTest extends Mockito {
@@ -55,7 +55,7 @@ public class TemplateControllerTest extends Mockito {
     HttpServletResponse mockResponse;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @InjectMocks
     @Spy
@@ -82,7 +82,7 @@ public class TemplateControllerTest extends Mockito {
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
     }
 
     @Test

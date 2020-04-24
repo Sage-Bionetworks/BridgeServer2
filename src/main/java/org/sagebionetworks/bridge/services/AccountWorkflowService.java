@@ -112,7 +112,7 @@ public class AccountWorkflowService {
 
     // Dependent services
     private SmsService smsService;
-    private StudyService studyService;
+    private AppService appService;
     private SendMailService sendMailService;
     private AccountService accountService;
     private CacheProvider cacheProvider;
@@ -132,8 +132,8 @@ public class AccountWorkflowService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
 
     @Autowired
@@ -250,7 +250,7 @@ public class AccountWorkflowService {
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
         checkNotNull(accountId);
         
-        App app = studyService.getStudy(accountId.getAppId());
+        App app = appService.getApp(accountId.getAppId());
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             if (type == ChannelType.EMAIL) {
@@ -275,7 +275,7 @@ public class AccountWorkflowService {
         if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
-        App app = studyService.getStudy(data.getAppId());
+        App app = appService.getApp(data.getAppId());
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
@@ -439,7 +439,7 @@ public class AccountWorkflowService {
         cacheProvider.removeObject(emailCacheKey);
         cacheProvider.removeObject(phoneCacheKey);
         
-        App app = studyService.getStudy(passwordReset.getAppId());
+        App app = appService.getApp(passwordReset.getAppId());
         ChannelType channelType = null;
         AccountId accountId = null;
         if (email != null) {
@@ -528,7 +528,7 @@ public class AccountWorkflowService {
         // We use the study so it's existence is verified. We retrieve the account so we verify it
         // exists as well. If the token is returned to the server, we can safely use the credentials 
         // in the persisted SignIn object.
-        App app = studyService.getStudy(signIn.getAppId());
+        App app = appService.getApp(signIn.getAppId());
 
         // Do we want the same flag for phone? Do we want to eliminate this flag?
         if (channelType == EMAIL && !app.isEmailSignInEnabled()) {

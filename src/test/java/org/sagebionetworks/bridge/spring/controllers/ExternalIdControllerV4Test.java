@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ExternalIdControllerV4Test extends Mockito {
 
@@ -50,7 +50,7 @@ public class ExternalIdControllerV4Test extends Mockito {
     ExternalIdService mockService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
     AuthenticationService mockAuthService;
@@ -148,7 +148,7 @@ public class ExternalIdControllerV4Test extends Mockito {
     @Test
     public void deleteExternalIdentifier() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         StatusMessage result = controller.deleteExternalIdentifier("externalId");
         assertEquals(result.getMessage(), "External identifier deleted.");
@@ -165,7 +165,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void generatePassword() throws Exception {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
         GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");

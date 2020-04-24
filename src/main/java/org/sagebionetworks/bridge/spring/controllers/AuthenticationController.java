@@ -74,7 +74,7 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getAppId());
+        App app = appService.getApp(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -113,7 +113,7 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getAppId());
+        App app = appService.getApp(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -135,7 +135,7 @@ public class AuthenticationController extends BaseController {
         SignIn signIn = parseJson(SignIn.class);
         getMetrics().setAppId(signIn.getAppId());
 
-        App app = studyService.getStudy(signIn.getAppId());
+        App app = appService.getApp(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
 
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -161,7 +161,7 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getAppId());
+        App app = appService.getApp(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -280,7 +280,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
-        App app = studyService.getStudy(signIn.getAppId());
+        App app = appService.getApp(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         authenticationService.requestResetPassword(app, false, signIn);
@@ -309,7 +309,7 @@ public class AuthenticationController extends BaseController {
         // Retrieve the desired app
         SignIn signIn = parseJson(SignIn.class);
         String targetAppId = signIn.getAppId();
-        App targetApp = studyService.getStudy(targetAppId);
+        App targetApp = appService.getApp(targetAppId);
 
         // Cross app administrator can switch to any app. Implement this here because clients 
         // cannot tell who is a cross-app administrator once they've switched studies.
@@ -346,7 +346,7 @@ public class AuthenticationController extends BaseController {
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
-        App app = studyService.getStudy(token.getAppId());
+        App app = appService.getApp(token.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
         
         UserSession session = authenticationService.oauthSignIn(context, token);
@@ -356,7 +356,7 @@ public class AuthenticationController extends BaseController {
     }
     
     private App getAppOrThrowException(String appId) {
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         verifySupportedVersionOrThrowException(app);
         return app;
     }

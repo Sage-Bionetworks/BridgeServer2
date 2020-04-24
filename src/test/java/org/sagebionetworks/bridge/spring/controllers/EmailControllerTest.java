@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class EmailControllerTest extends Mockito {
 
@@ -38,7 +38,7 @@ public class EmailControllerTest extends Mockito {
     private static final AccountId ACCOUNT_ID = AccountId.forEmail(TEST_APP_ID, EMAIL_ADDRESS);
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
     AccountService mockAccountService;
@@ -73,7 +73,7 @@ public class EmailControllerTest extends Mockito {
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
     }
 
     private void mockContext(String... values) {

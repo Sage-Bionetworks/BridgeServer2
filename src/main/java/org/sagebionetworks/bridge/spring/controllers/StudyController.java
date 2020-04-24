@@ -106,7 +106,7 @@ public class StudyController extends BaseController {
     public App getCurrentStudy() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
-        return studyService.getStudy(session.getAppId());
+        return appService.getApp(session.getAppId());
     }
     
     @PostMapping("/v3/studies/self")
@@ -115,7 +115,7 @@ public class StudyController extends BaseController {
 
         App appUpdate = parseJson(App.class);
         appUpdate.setIdentifier(session.getAppId());
-        appUpdate = studyService.updateStudy(appUpdate, session.isInRole(ADMIN));
+        appUpdate = appService.updateApp(appUpdate, session.isInRole(ADMIN));
         return new VersionHolder(appUpdate.getVersion());
     }
 
@@ -125,7 +125,7 @@ public class StudyController extends BaseController {
         
         App appUpdate = parseJson(App.class);
         appUpdate.setIdentifier(identifier);
-        appUpdate = studyService.updateStudy(appUpdate, true);
+        appUpdate = appService.updateApp(appUpdate, true);
         return new VersionHolder(appUpdate.getVersion());
     }
 
@@ -134,7 +134,7 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
-        return studyService.getStudy(identifier, true);
+        return appService.getApp(identifier, true);
     }
 
     // You can get a truncated view of studies with either format=summary or summary=true;
@@ -144,7 +144,7 @@ public class StudyController extends BaseController {
     public String getAllStudies(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary) throws Exception {        
         
-        List<App> studies = studyService.getStudies();
+        List<App> studies = appService.getApps();
         if ("summary".equals(format) || "true".equals(summary)) {
             // then only return active study as summary
             List<App> activeStudiesSummary = studies.stream()
@@ -175,11 +175,11 @@ public class StudyController extends BaseController {
         // "cross-study admin" and can see all studies and can switch between all studies, 
         // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
-            stream = studyService.getStudies().stream()
+            stream = appService.getApps().stream()
                 .filter(s -> s.isActive());
         } else {
             stream = studyIds.stream()
-                .map(id -> studyService.getStudy(id))
+                .map(id -> appService.getApp(id))
                 .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
         }
         List<App> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
@@ -192,7 +192,7 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(SUPERADMIN);
 
         App app = parseJson(App.class);
-        app = studyService.createStudy(app);
+        app = appService.createApp(app);
         return new VersionHolder(app.getVersion());
     }
 
@@ -202,7 +202,7 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(SUPERADMIN);
 
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
-        App app = studyService.createStudyAndUsers(studyAndUsers);
+        App app = appService.createAppAndUsers(studyAndUsers);
 
         return new VersionHolder(app.getVersion());
     }
@@ -212,11 +212,11 @@ public class StudyController extends BaseController {
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // then create project and team and grant admin permission to current user and exporter
         List<String> userIds = Arrays.asList(parseJson(String[].class));
-        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), app);
+        appService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), app);
 
         return new SynapseProjectIdTeamIdHolder(app.getSynapseProjectId(), app.getSynapseDataAccessTeamId());
     }
@@ -237,7 +237,7 @@ public class StudyController extends BaseController {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
         
-        studyService.deleteStudy(identifier, Boolean.valueOf(physical));
+        appService.deleteApp(identifier, Boolean.valueOf(physical));
 
         return DELETED_MSG;
     }
@@ -254,7 +254,7 @@ public class StudyController extends BaseController {
     @GetMapping("/v3/studies/self/emailStatus")
     public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         EmailVerificationStatus status = emailVerificationService.getEmailStatus(app.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
@@ -265,7 +265,7 @@ public class StudyController extends BaseController {
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyEmailType parsedType = parseEmailType(type);
-        studyService.sendVerifyEmail(session.getAppId(), parsedType);
+        appService.sendVerifyEmail(session.getAppId(), parsedType);
         return RESEND_EMAIL_MSG;
     }
 
@@ -277,7 +277,7 @@ public class StudyController extends BaseController {
     public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
             @RequestParam(required = false) String type) {
         StudyEmailType parsedType = parseEmailType(type);
-        studyService.verifyEmail(identifier, token, parsedType);
+        appService.verifyEmail(identifier, token, parsedType);
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
@@ -298,7 +298,7 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/self/verifyEmail")
     public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(app.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
