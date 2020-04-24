@@ -47,9 +47,9 @@ public class UserManagementController extends BaseController {
         
         // Adjust the sign in so it is always done against the API study.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
-                .withStudy(API_APP_ID).build();        
+                .withAppId(API_APP_ID).build();        
         
-        App app = studyService.getStudy(signIn.getStudyId());
+        App app = studyService.getStudy(signIn.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
         // We do not check consent, but do verify this is an administrator
@@ -61,7 +61,7 @@ public class UserManagementController extends BaseController {
         }
         
         // Now act as if the user is in the study that was requested
-        sessionUpdateService.updateStudy(session, originSignIn.getStudyId());
+        sessionUpdateService.updateStudy(session, originSignIn.getAppId());
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
@@ -80,7 +80,7 @@ public class UserManagementController extends BaseController {
 
         // The only part of this payload we care about is the study property
         SignIn signIn = parseJson(SignIn.class);
-        String studyId = signIn.getStudyId();
+        String studyId = signIn.getAppId();
 
         // Verify it's correct
         App app = studyService.getStudy(studyId);

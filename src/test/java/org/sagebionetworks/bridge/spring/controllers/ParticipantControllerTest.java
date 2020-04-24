@@ -152,10 +152,10 @@ public class ParticipantControllerTest extends Mockito {
             ENABLED, TEST_APP_ID, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_APP_ID).withEmail(EMAIL)
+            .withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_APP_ID).withPhone(PHONE)
+            .withAppId(TEST_APP_ID).withPhone(PHONE)
             .withPassword(PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             PHONE, null, null);

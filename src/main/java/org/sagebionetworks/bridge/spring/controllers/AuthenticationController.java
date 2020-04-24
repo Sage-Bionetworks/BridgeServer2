@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
-import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
+import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
+import static org.sagebionetworks.bridge.BridgeConstants.APP_ID_PROPERTY;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
@@ -54,7 +55,7 @@ public class AuthenticationController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestEmailSignIn() { 
         SignIn signInRequest = parseJson(SignIn.class);
-        getMetrics().setStudy(signInRequest.getStudyId());
+        getMetrics().setAppId(signInRequest.getAppId());
 
         String userId = accountWorkflowService.requestEmailSignIn(signInRequest);
         if (userId != null) {
@@ -68,12 +69,12 @@ public class AuthenticationController extends BaseController {
     public JsonNode emailSignIn() { 
         SignIn signInRequest = parseJson(SignIn.class);
 
-        if (isBlank(signInRequest.getStudyId())) {
-            throw new BadRequestException("Study identifier is required.");
+        if (isBlank(signInRequest.getAppId())) {
+            throw new BadRequestException("App ID is required.");
         }
-        getMetrics().setStudy(signInRequest.getStudyId());
+        getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getStudyId());
+        App app = studyService.getStudy(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -93,7 +94,7 @@ public class AuthenticationController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestPhoneSignIn() {
         SignIn signInRequest = parseJson(SignIn.class);
-        getMetrics().setStudy(signInRequest.getStudyId());
+        getMetrics().setAppId(signInRequest.getAppId());
 
         String userId = accountWorkflowService.requestPhoneSignIn(signInRequest);
         if (userId != null) {
@@ -107,12 +108,12 @@ public class AuthenticationController extends BaseController {
     public JsonNode phoneSignIn() {
         SignIn signInRequest = parseJson(SignIn.class);
 
-        if (isBlank(signInRequest.getStudyId())) {
-            throw new BadRequestException("Study identifier is required.");
+        if (isBlank(signInRequest.getAppId())) {
+            throw new BadRequestException("App ID is required.");
         }
-        getMetrics().setStudy(signInRequest.getStudyId());
+        getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getStudyId());
+        App app = studyService.getStudy(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -132,9 +133,9 @@ public class AuthenticationController extends BaseController {
     @PostMapping("/v4/auth/signIn")
     public JsonNode signIn() {
         SignIn signIn = parseJson(SignIn.class);
-        getMetrics().setStudy(signIn.getStudyId());
+        getMetrics().setAppId(signIn.getAppId());
 
-        App app = studyService.getStudy(signIn.getStudyId());
+        App app = studyService.getStudy(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
 
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -155,12 +156,12 @@ public class AuthenticationController extends BaseController {
     public JsonNode reauthenticate() {
         SignIn signInRequest = parseJson(SignIn.class);
 
-        if (isBlank(signInRequest.getStudyId())) {
-            throw new BadRequestException("Study identifier is required.");
+        if (isBlank(signInRequest.getAppId())) {
+            throw new BadRequestException("App ID is required.");
         }
-        getMetrics().setStudy(signInRequest.getStudyId());
+        getMetrics().setAppId(signInRequest.getAppId());
 
-        App app = studyService.getStudy(signInRequest.getStudyId());
+        App app = studyService.getStudy(signInRequest.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
@@ -230,9 +231,9 @@ public class AuthenticationController extends BaseController {
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
         
-        String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
-        getMetrics().setStudy(studyId);
-        App app = getStudyOrThrowException(studyId);
+        String appId = JsonUtils.asText(node, APP_ID_PROPERTY, STUDY_PROPERTY);
+        getMetrics().setAppId(appId);
+        App app = getAppOrThrowException(appId);
         authenticationService.signUp(app, participant);
         return new StatusMessage("Signed up.");
     }
@@ -249,10 +250,10 @@ public class AuthenticationController extends BaseController {
     @PostMapping({"/v3/auth/resendEmailVerification", "/api/v1/auth/resendEmailVerification"})
     public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
-        getStudyOrThrowException(accountId.getUnguardedAccountId().getAppId());
+        getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.EMAIL, accountId);
-        return new StatusMessage("If registered with the study, we'll email you instructions on how to verify your account.");
+        return new StatusMessage("If registered with the app, we'll email you instructions on how to verify your account.");
     }
 
     @PostMapping("/v3/auth/verifyPhone")
@@ -268,62 +269,62 @@ public class AuthenticationController extends BaseController {
     public StatusMessage resendPhoneVerification() {
         AccountId accountId = parseJson(AccountId.class);
         
-        // Must be here to get the correct exception if study property is missing
-        getStudyOrThrowException(accountId.getUnguardedAccountId().getAppId());
+        // Must be here to get the correct exception if app property is missing
+        getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.PHONE, accountId);
-        return new StatusMessage("If registered with the study, we'll send an SMS message to your phone.");
+        return new StatusMessage("If registered with the app, we'll send an SMS message to your phone.");
     }
 
     @PostMapping({"/v3/auth/requestResetPassword", "/api/v1/auth/requestResetPassword"})
     public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
-        App app = studyService.getStudy(signIn.getStudyId());
+        App app = studyService.getStudy(signIn.getAppId());
         verifySupportedVersionOrThrowException(app);
         
         authenticationService.requestResetPassword(app, false, signIn);
 
-        return new StatusMessage("If registered with the study, we'll send you instructions on how to change your password.");
+        return new StatusMessage("If registered with the app, we'll send you instructions on how to change your password.");
     }
     
     @PostMapping({"/v3/auth/resetPassword", "/api/v1/auth/resetPassword"})
     public StatusMessage resetPassword() {
         PasswordReset passwordReset = parseJson(PasswordReset.class);
-        getStudyOrThrowException(passwordReset.getStudyIdentifier());
+        getAppOrThrowException(passwordReset.getAppId());
         authenticationService.resetPassword(passwordReset);
         return new StatusMessage("Password has been changed.");
     }
     
-    @PostMapping("/v3/auth/study")
-    public JsonNode changeStudy() {
+    @PostMapping(path = {"/v3/auth/app", "/v3/auth/study"})
+    public JsonNode changeApp() {
         UserSession session = getAuthenticatedSession();
         
         // To switch studies, the account must be an administrative account with a Synapse User ID
         StudyParticipant participant = session.getParticipant(); 
         if (participant.getRoles().isEmpty()) {
-            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+            throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
         
-        // Retrieve the desired study
+        // Retrieve the desired app
         SignIn signIn = parseJson(SignIn.class);
-        String targetStudyId = signIn.getStudyId();
-        App targetApp = studyService.getStudy(targetStudyId);
+        String targetAppId = signIn.getAppId();
+        App targetApp = studyService.getStudy(targetAppId);
 
-        // Cross study administrator can switch to any study. Implement this here because clients 
-        // cannot tell who is a cross-study administrator once they've switched studies.
+        // Cross app administrator can switch to any app. Implement this here because clients 
+        // cannot tell who is a cross-app administrator once they've switched studies.
         if (session.isInRole(SUPERADMIN)) {
             sessionUpdateService.updateStudy(session, targetApp.getIdentifier());
             return UserSessionInfo.toJSON(session);
         }
-        // Otherwise, verify the user has access to this study
+        // Otherwise, verify the user has access to this app
         if (participant.getSynapseUserId() == null) {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
-        AccountId accountId = AccountId.forSynapseUserId(targetStudyId, participant.getSynapseUserId());
+        AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
         Account account = accountService.getAccount(accountId);
         if (account == null) {
-            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+            throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
         
         // Make the switch
@@ -354,8 +355,8 @@ public class AuthenticationController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
-    private App getStudyOrThrowException(String studyId) {
-        App app = studyService.getStudy(studyId);
+    private App getAppOrThrowException(String appId) {
+        App app = studyService.getStudy(appId);
         verifySupportedVersionOrThrowException(app);
         return app;
     }

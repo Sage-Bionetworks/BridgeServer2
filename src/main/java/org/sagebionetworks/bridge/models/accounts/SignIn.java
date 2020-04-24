@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(builder = SignIn.Builder.class)
@@ -13,13 +13,13 @@ public final class SignIn implements BridgeEntity {
     private final Phone phone;
     private final String externalId;
     private final String password;
-    private final String studyId;
+    private final String appId;
     private final String token;
     private final String reauthToken;
     
-    private SignIn(String studyId, String email, Phone phone, String externalId, String password, String token,
+    private SignIn(String appId, String email, Phone phone, String externalId, String password, String token,
             String reauthToken) {
-        this.studyId = studyId;
+        this.appId = appId;
         this.email = email;
         this.phone = phone;
         this.externalId = externalId;
@@ -28,11 +28,8 @@ public final class SignIn implements BridgeEntity {
         this.reauthToken = reauthToken;
     }
     
-    // Serializing this property as study allows us to use SignIn to construct the JSON payload that we 
-    // are accepting from clients, which is useful for tests to avoid manually constructing the JSON string.
-    @JsonProperty("study")
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     
     public String getEmail() {
@@ -62,11 +59,11 @@ public final class SignIn implements BridgeEntity {
     @JsonIgnore
     public AccountId getAccountId() {
         if (email != null) {
-            return AccountId.forEmail(studyId, email);
+            return AccountId.forEmail(appId, email);
         } else if (phone != null) {
-            return AccountId.forPhone(studyId, phone);
+            return AccountId.forPhone(appId, phone);
         } else if (externalId != null) {
-            return AccountId.forExternalId(studyId, externalId);
+            return AccountId.forExternalId(appId, externalId);
         }
         throw new IllegalArgumentException("SignIn not constructed with enough information to retrieve an account");
     }
@@ -77,7 +74,7 @@ public final class SignIn implements BridgeEntity {
         private Phone phone;
         private String externalId;
         private String password;
-        private String studyId;
+        private String appId;
         private String token;
         private String reauthToken;
         
@@ -86,7 +83,7 @@ public final class SignIn implements BridgeEntity {
             this.phone = signIn.phone;
             this.externalId = signIn.externalId;
             this.password = signIn.password;
-            this.studyId = signIn.studyId;
+            this.appId = signIn.appId;
             this.token = signIn.token;
             this.reauthToken = signIn.reauthToken;
             return this;
@@ -111,8 +108,9 @@ public final class SignIn implements BridgeEntity {
             this.password = password;
             return this;
         }
-        public Builder withStudy(String study) {
-            this.studyId = study;
+        @JsonAlias("study")
+        public Builder withAppId(String appId) {
+            this.appId = appId;
             return this;
         }
         public Builder withToken(String token) {
@@ -125,7 +123,7 @@ public final class SignIn implements BridgeEntity {
         }
         public SignIn build() {
             String identifier = (username != null) ? username : email;
-            return new SignIn(studyId, identifier, phone, externalId, password, token, reauthToken);
+            return new SignIn(appId, identifier, phone, externalId, password, token, reauthToken);
         }
     }
 }

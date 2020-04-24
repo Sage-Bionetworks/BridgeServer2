@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
+import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -868,7 +868,7 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*" + STUDY_ACCESS_EXCEPTION_MSG + ".*")
+            expectedExceptionsMessageRegExp = ".*" + APP_ACCESS_EXCEPTION_MSG + ".*")
     public void getStudyMembershipsForNonAdminUsers() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(EMAIL)

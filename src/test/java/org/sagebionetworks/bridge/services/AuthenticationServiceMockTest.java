@@ -104,18 +104,18 @@ public class AuthenticationServiceMockTest {
     private static final String REAUTH_TOKEN = "GHI-JKL";
     private static final String USER_ID = "user-id";
     private static final String PASSWORD = "Password~!1";
-    private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withEmail(RECIPIENT_EMAIL).build();
-    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
+    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
             .withToken(TOKEN).build();
-    private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
 
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
+    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
             .withPassword(PASSWORD).build();
-    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
-    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL)
             .withReauthToken(TOKEN).build();
 
     private static final CacheKey CACHE_KEY_EMAIL_SIGNIN = CacheKey.emailSignInRequest(SIGN_IN_WITH_EMAIL);
@@ -552,7 +552,7 @@ public class AuthenticationServiceMockTest {
     public void emailSignIn_WrongEmail() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
 
-        SignIn wrongEmailSignIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail("wrong-email@email.com")
+        SignIn wrongEmailSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail("wrong-email@email.com")
                 .withToken(TOKEN).build();
         service.emailSignIn(CONTEXT, wrongEmailSignIn);
     }
@@ -700,14 +700,14 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void requestResetInvalid() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE)
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE)
                 .withEmail(RECIPIENT_EMAIL).build();
         service.requestResetPassword(app, false, signIn);
     }
     
     @Test
     public void requestResetPassword() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(RECIPIENT_EMAIL).build();
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(RECIPIENT_EMAIL).build();
         
         service.requestResetPassword(app, false, signIn);
         
@@ -837,7 +837,7 @@ public class AuthenticationServiceMockTest {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE).withToken("ABC DEF")
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE).withToken("ABC DEF")
                 .build();
         service.phoneSignIn(CONTEXT, signIn);
     }
@@ -852,7 +852,7 @@ public class AuthenticationServiceMockTest {
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate. Just verify that it succeeds and doesn't throw. Details are tested in above tests.
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(TestConstants.PHONE)
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(TestConstants.PHONE)
                 .withToken(TOKEN_UNFORMATTED).build();
         service.phoneSignIn(CONTEXT, signIn);
     }
@@ -880,7 +880,7 @@ public class AuthenticationServiceMockTest {
     public void phoneSignIn_WrongPhone() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
 
-        SignIn wrongPhoneSignIn = new SignIn.Builder().withStudy(TEST_APP_ID)
+        SignIn wrongPhoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID)
                 .withPhone(new Phone("4082588569", "US")).withToken(TOKEN).build();
         service.phoneSignIn(CONTEXT, wrongPhoneSignIn);
     }

@@ -88,13 +88,13 @@ public class AccountWorkflowServiceTest extends Mockito {
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, TestConstants.PHONE);
-    private static final SignIn SIGN_IN_REQUEST_WITH_PHONE = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_REQUEST_WITH_PHONE = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).build();
-    private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_REQUEST_WITH_EMAIL = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withEmail(EMAIL).build();
-    private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_WITH_PHONE = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withToken(TOKEN).build();
-    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withEmail(EMAIL).withStudy(TEST_APP_ID)
+    private static final SignIn SIGN_IN_WITH_EMAIL = new SignIn.Builder().withEmail(EMAIL).withAppId(TEST_APP_ID)
             .withToken(TOKEN).build();
 
     private static final CacheKey PHONE_TOKEN_CACHE_KEY = CacheKey.verificationToken(PHONE_TOKEN);
@@ -1191,7 +1191,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void emailSignInRequestMissingEmail() {
-        SignIn signInRequest = new SignIn.Builder().withStudy(TEST_APP_ID).withToken(TOKEN).build();
+        SignIn signInRequest = new SignIn.Builder().withAppId(TEST_APP_ID).withToken(TOKEN).build();
         
         service.requestEmailSignIn(signInRequest);
     }

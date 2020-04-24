@@ -36,14 +36,14 @@ public class PasswordResetValidator implements Validator {
         if (StringUtils.isBlank(passwordReset.getPassword())) {
             errors.rejectValue("password", "is required");
         }
-        if (StringUtils.isBlank(passwordReset.getStudyIdentifier())) {
+        if (StringUtils.isBlank(passwordReset.getAppId())) {
             errors.rejectValue("study", "is required");
         }
         if (errors.hasErrors()) {
             return;
         }
         // This logic is now duplicated with StudyParticipant validation.
-        App app = studyService.getStudy(passwordReset.getStudyIdentifier());
+        App app = studyService.getStudy(passwordReset.getAppId());
         PasswordPolicy passwordPolicy = app.getPasswordPolicy();
         String password = passwordReset.getPassword();
         ValidatorUtils.validatePassword(errors, passwordPolicy, password);

@@ -313,7 +313,7 @@ public class AuthenticationService {
             accountWorkflowService.requestResetPassword(app, isStudyAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Request reset password request for unregistered email in study '"+signIn.getStudyId()+"'");
+            LOG.info("Request reset password request for unregistered email in study '"+signIn.getAppId()+"'");
         }
     }
 
@@ -415,7 +415,7 @@ public class AuthenticationService {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
             clearSession(context.getAppId(), account.getId());
-            App app = studyService.getStudy(signIn.getStudyId());
+            App app = studyService.getStudy(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.

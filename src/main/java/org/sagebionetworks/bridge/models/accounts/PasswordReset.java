@@ -2,23 +2,24 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PasswordReset implements BridgeEntity {
 
     private final String password;
     private final String sptoken;
-    private final String studyIdentifier;
+    private final String appId;
     
     public PasswordReset(@JsonProperty("password") String password, @JsonProperty("sptoken") String sptoken,
-            @JsonProperty("study") String studyId) {
+            @JsonAlias("study") @JsonProperty("appId") String appId) {
         this.password = password;
         this.sptoken = sptoken;
-        this.studyIdentifier = studyId;
+        this.appId = appId;
     }
     
-    public String getStudyIdentifier() {
-        return studyIdentifier;
+    public String getAppId() {
+        return appId;
     }
     
     public String getPassword() {

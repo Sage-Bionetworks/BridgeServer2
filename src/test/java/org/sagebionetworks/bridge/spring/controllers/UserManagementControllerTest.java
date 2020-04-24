@@ -149,7 +149,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockBridgeConfig.getEnvironment()).thenReturn(LOCAL);
         when(mockBridgeConfig.get("domain")).thenReturn("localhost");
 
-        SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
+        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
                 .withPassword(PASSWORD).build();
         mockRequestBody(mockRequest, signIn);
 
@@ -161,7 +161,7 @@ public class UserManagementControllerTest extends Mockito {
 
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals(session.getAppId(), "originalStudy");
-        assertEquals(signInCaptor.getValue().getStudyId(), API_APP_ID);
+        assertEquals(signInCaptor.getValue().getAppId(), API_APP_ID);
 
         verify(mockResponse).addCookie(cookieCaptor.capture());
         
@@ -180,7 +180,7 @@ public class UserManagementControllerTest extends Mockito {
         // We look specifically for an account in the API study
         doReturn(mockApp).when(mockStudyService).getStudy(API_APP_ID);
         
-        SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
+        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
                 .withPassword("password").build();
         mockRequestBody(mockRequest, signIn);
 
@@ -204,7 +204,7 @@ public class UserManagementControllerTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
-        SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
+        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
 
         App nextApp = App.create();
@@ -222,7 +222,7 @@ public class UserManagementControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
+        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
         
         controller.changeStudyForAdmin();

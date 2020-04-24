@@ -20,25 +20,25 @@ public class BridgeConstants {
     
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
 
-    public static final String STUDY_ACCESS_EXCEPTION_MSG = "Account does not have access to that study.";
+    public static final String APP_ACCESS_EXCEPTION_MSG = "Account does not have access to that app.";
     
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
     public static final String SYNAPSE_OAUTH_CLIENT_ID = "synapse.oauth.client.id";
     public static final String SYNAPSE_OAUTH_URL = "synapse.oauth.url";
     public static final int SYNAPSE_TIMEOUT = 10000;
     
-    public static final String MAX_USERS_ERROR = "While study is in evaluation mode, it may not exceed %s accounts.";
+    public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
     public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
 
-    // Study ID for the test study, used in local tests and most integ tests.
+    // App ID for the test app, used in local tests and most integ tests.
     public static final String API_APP_ID = "api";
 
     /** A common string constraint we place on model identifiers. */
     public static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
 
-    // Study ID used for the Shared Module Library
+    // App ID used for the Shared Module Library
     public static final String SHARED_APP_ID = "shared";
 
     /** A common string constraint Synapse places on model identifiers. */
@@ -76,6 +76,8 @@ public class BridgeConstants {
     public static final int DUPE_RECORDS_MAX_COUNT = 10;
 
     public static final String STUDY_PROPERTY = "study";
+    
+    public static final String APP_ID_PROPERTY = "appId";
 
     public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
@@ -95,7 +97,7 @@ public class BridgeConstants {
     public static final int APP_LINKS_EXPIRE_IN_SECONDS = 3* 60;
     
     // 1 minute
-    public static final int BRIDGE_STUDY_EMAIL_STATUS_IN_SECONDS = 60;
+    public static final int BRIDGE_APP_EMAIL_STATUS_IN_SECONDS = 60;
     
     // 15 seconds
     public static final int REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS = 15;

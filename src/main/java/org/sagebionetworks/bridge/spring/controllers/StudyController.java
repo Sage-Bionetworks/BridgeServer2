@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toList;
-import static org.sagebionetworks.bridge.BridgeConstants.STUDY_ACCESS_EXCEPTION_MSG;
+import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -166,7 +166,7 @@ public class StudyController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         if (session.getParticipant().getRoles().isEmpty()) {
-            throw new UnauthorizedException(STUDY_ACCESS_EXCEPTION_MSG);
+            throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
         List<String> studyIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
         

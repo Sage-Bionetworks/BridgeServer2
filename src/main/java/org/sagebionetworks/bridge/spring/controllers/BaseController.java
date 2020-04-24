@@ -346,7 +346,7 @@ public abstract class BaseController {
         if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
-            metrics.setStudy(session.getAppId());
+            metrics.setAppId(session.getAppId());
         }
     }
     

@@ -166,11 +166,11 @@ public class ParticipantServiceTest extends Mockito {
     private static final DateTime END_DATE = START_DATE.plusDays(1);
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withUserId(ID).withAppId(TEST_APP_ID).build();
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+    private static final SignIn EMAIL_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
-    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID)
+    private static final SignIn PHONE_PASSWORD_SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID)
             .withPhone(TestConstants.PHONE).withPassword(PASSWORD).build();
-    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+    private static final SignIn REAUTH_REQUEST = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withReauthToken("ASDF").build();
     
     @Spy
@@ -1909,7 +1909,7 @@ public class ParticipantServiceTest extends Mockito {
             participantService.createParticipant(APP, PARTICIPANT, false);
             fail("Should have thrown exception");
         } catch(LimitExceededException e) {
-            assertEquals(e.getMessage(), "While study is in evaluation mode, it may not exceed 10 accounts.");
+            assertEquals(e.getMessage(), "While app is in evaluation mode, it may not exceed 10 accounts.");
         }
     }
     
