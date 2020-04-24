@@ -18,7 +18,7 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -94,20 +94,20 @@ public class StudyAndUsersValidator implements Validator {
             }
         }
         
-        Study study = studyAndUsers.getStudy();
-        if (study == null) {
+        App app = studyAndUsers.getStudy();
+        if (app == null) {
             errors.rejectValue("study", "cannot be null");
         } else {
             errors.pushNestedPath("study");
             try {
-                BridgeUtils.toSynapseFriendlyName(study.getName());    
+                BridgeUtils.toSynapseFriendlyName(app.getName());    
             } catch(NullPointerException | IllegalArgumentException e) {
                 errors.rejectValue("name", "is an invalid Synapse project name");
             }
-            if (StringUtils.isBlank(study.getSponsorName())) {
+            if (StringUtils.isBlank(app.getSponsorName())) {
                 errors.rejectValue("sponsorName", "is required");
             }
-            if (StringUtils.isBlank(study.getIdentifier())) {
+            if (StringUtils.isBlank(app.getIdentifier())) {
                 errors.rejectValue("identifier", "is required");
             }
             errors.popNestedPath();

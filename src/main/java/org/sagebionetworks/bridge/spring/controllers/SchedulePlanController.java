@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 
 @CrossOrigin
@@ -46,10 +46,10 @@ public class SchedulePlanController extends BaseController {
     public ResourceList<SchedulePlan> getSchedulePlansForWorker(@PathVariable String studyId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         getAuthenticatedSession(WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = studyService.getStudy(studyId);
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
-                study.getIdentifier(), includeDeleted);
+                app.getIdentifier(), includeDeleted);
         return new ResourceList<>(plans);
     }
 
@@ -68,10 +68,10 @@ public class SchedulePlanController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSchedulePlan() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
-        SchedulePlan plan = schedulePlanService.createSchedulePlan(study, planForm);
+        SchedulePlan plan = schedulePlanService.createSchedulePlan(app, planForm);
         return new GuidVersionHolder(plan.getGuid(), plan.getVersion());
     }
 
@@ -86,11 +86,11 @@ public class SchedulePlanController extends BaseController {
     @PostMapping("/v3/scheduleplans/{guid}")
     public GuidVersionHolder updateSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         DynamoSchedulePlan planForm = DynamoSchedulePlan.fromJson(parseJson(JsonNode.class));
         planForm.setGuid(guid);
-        SchedulePlan plan = schedulePlanService.updateSchedulePlan(study, planForm);
+        SchedulePlan plan = schedulePlanService.updateSchedulePlan(app, planForm);
         
         return new GuidVersionHolder(plan.getGuid(), plan.getVersion());
     }

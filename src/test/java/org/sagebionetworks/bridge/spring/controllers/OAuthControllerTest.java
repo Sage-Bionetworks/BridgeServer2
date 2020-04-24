@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.OAuthService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -63,7 +63,7 @@ public class OAuthControllerTest extends Mockito {
     OAuthService mockOauthService;
     
     @Mock
-    Study mockStudy;
+    App mockApp;
     
     @Mock
     StudyService mockStudyService;
@@ -91,8 +91,8 @@ public class OAuthControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockStudy);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockStudy);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockApp);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockApp);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -135,14 +135,14 @@ public class OAuthControllerTest extends Mockito {
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
                 null);
-        when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
+        when(mockOauthService.requestAccessToken(eq(mockApp), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
         OAuthAccessToken result = controller.requestAccessToken(VENDOR_ID);
         
         assertEquals(result, accessToken);
         
-        verify(mockOauthService).requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), authTokenCaptor.capture());
+        verify(mockOauthService).requestAccessToken(eq(mockApp), eq(HEALTH_CODE), authTokenCaptor.capture());
         OAuthAuthorizationToken captured = authTokenCaptor.getValue();
         assertEquals(captured.getAuthToken(), AUTH_TOKEN);
         assertEquals(captured.getVendorId(), VENDOR_ID);
@@ -155,7 +155,7 @@ public class OAuthControllerTest extends Mockito {
         
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
                 null);
-        when(mockOauthService.requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), any()))
+        when(mockOauthService.requestAccessToken(eq(mockApp), eq(HEALTH_CODE), any()))
                 .thenReturn(accessToken);
         
         OAuthAccessToken result = controller.requestAccessToken(VENDOR_ID);
@@ -164,7 +164,7 @@ public class OAuthControllerTest extends Mockito {
         // verify that the time zone is preserved
         assertEquals(result.getExpiresOn().toString(), "2017-11-28T14:20:22.123-03:00");
         
-        verify(mockOauthService).requestAccessToken(eq(mockStudy), eq(HEALTH_CODE), authTokenCaptor.capture());
+        verify(mockOauthService).requestAccessToken(eq(mockApp), eq(HEALTH_CODE), authTokenCaptor.capture());
         OAuthAuthorizationToken captured = authTokenCaptor.getValue();
         assertNull(captured.getAuthToken());
         assertEquals(captured.getVendorId(), VENDOR_ID);
@@ -177,13 +177,13 @@ public class OAuthControllerTest extends Mockito {
         
         ForwardCursorPagedResourceList<String> page = new ForwardCursorPagedResourceList<>(HEALTH_CODE_LIST,
                 NEXT_PAGE_OFFSET_KEY);
-        when(mockOauthService.getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, API_DEFAULT_PAGE_SIZE,
+        when(mockOauthService.getHealthCodesGrantingAccess(mockApp, VENDOR_ID, API_DEFAULT_PAGE_SIZE,
                 null)).thenReturn(page);
         
         ForwardCursorPagedResourceList<String> result = controller.getHealthCodesGrantingAccess(TEST_APP_ID,
                 VENDOR_ID, null, null);
         
-        verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID,
+        verify(mockOauthService).getHealthCodesGrantingAccess(mockApp, VENDOR_ID,
                 BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
         
         assertEquals(result.getItems(), HEALTH_CODE_LIST);
@@ -205,12 +205,12 @@ public class OAuthControllerTest extends Mockito {
         
         ForwardCursorPagedResourceList<String> page = new ForwardCursorPagedResourceList<>(HEALTH_CODE_LIST,
                 NEXT_PAGE_OFFSET_KEY).withRequestParam(OFFSET_KEY, OFFSET_KEY);
-        when(mockOauthService.getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY)).thenReturn(page);
+        when(mockOauthService.getHealthCodesGrantingAccess(mockApp, VENDOR_ID, 20, OFFSET_KEY)).thenReturn(page);
         
         ForwardCursorPagedResourceList<String> result = controller.getHealthCodesGrantingAccess(TEST_APP_ID,
                 VENDOR_ID, OFFSET_KEY, "20");
         
-        verify(mockOauthService).getHealthCodesGrantingAccess(mockStudy, VENDOR_ID, 20, OFFSET_KEY);
+        verify(mockOauthService).getHealthCodesGrantingAccess(mockApp, VENDOR_ID, 20, OFFSET_KEY);
         
         assertEquals(result.getItems(), HEALTH_CODE_LIST);
         assertEquals(result.getNextPageOffsetKey(), NEXT_PAGE_OFFSET_KEY);
@@ -232,7 +232,7 @@ public class OAuthControllerTest extends Mockito {
         OAuthAccessToken accessToken = new OAuthAccessToken(VENDOR_ID, ACCESS_TOKEN, EXPIRES_ON, PROVIDER_USER_ID,
                 null);
         
-        when(mockOauthService.getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
+        when(mockOauthService.getAccessToken(mockApp, VENDOR_ID, HEALTH_CODE)).thenReturn(accessToken);
         
         OAuthAccessToken result = controller.getAccessToken(TEST_APP_ID, VENDOR_ID, HEALTH_CODE);
         
@@ -240,6 +240,6 @@ public class OAuthControllerTest extends Mockito {
         // verify that the time zone is preserved
         assertEquals(result.getExpiresOn().toString(), "2017-11-28T14:20:22.123-03:00");
         
-        verify(mockOauthService).getAccessToken(mockStudy, VENDOR_ID, HEALTH_CODE);
+        verify(mockOauthService).getAccessToken(mockApp, VENDOR_ID, HEALTH_CODE);
     }
 }

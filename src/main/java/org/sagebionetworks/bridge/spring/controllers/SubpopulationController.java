@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.SubpopulationService;
@@ -54,10 +54,10 @@ public class SubpopulationController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSubpopulation() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
-        subpop = subpopService.createSubpopulation(study, subpop);
+        subpop = subpopService.createSubpopulation(app, subpop);
 
         return new GuidVersionHolder(subpop.getGuidString(), subpop.getVersion());
     }
@@ -65,12 +65,12 @@ public class SubpopulationController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}")
     public GuidVersionHolder updateSubpopulation(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
         subpop.setGuidString(guid);
 
-        subpop = subpopService.updateSubpopulation(study, subpop);
+        subpop = subpopService.updateSubpopulation(app, subpop);
 
         return new GuidVersionHolder(subpop.getGuidString(), subpop.getVersion());
     }

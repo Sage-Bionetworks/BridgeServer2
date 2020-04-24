@@ -56,7 +56,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -80,7 +80,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
@@ -168,7 +168,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
     
-    Study study;
+    App app;
     
     UserSession userSession;
     
@@ -188,11 +188,11 @@ public class AuthenticationControllerTest extends Mockito {
         userSession.setInternalSessionToken(TEST_INTERNAL_SESSION_ID);
         userSession.setAppId(TEST_STUDY_ID_STRING);
         
-        study = new DynamoStudy();
-        study.setIdentifier(TEST_STUDY_ID_STRING);
-        study.setDataGroups(TestConstants.USER_DATA_GROUPS);
-        when(mockStudyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(study);
-        when(mockStudyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(Study.class));
+        app = new DynamoApp();
+        app.setIdentifier(TEST_STUDY_ID_STRING);
+        app.setDataGroups(TestConstants.USER_DATA_GROUPS);
+        when(mockStudyService.getStudy(TEST_STUDY_ID_STRING)).thenReturn(app);
+        when(mockStudyService.getStudy((String)null)).thenThrow(new EntityNotFoundException(App.class));
         
         doReturn(metrics).when(controller).getMetrics();
         doReturn(mockRequest).when(controller).request();
@@ -258,7 +258,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockJson("{'study':'study-key','email':'email@email.com','token':'ABC'}");
         
         userSession.setAuthenticated(true);
-        study.setIdentifier("study-test");
+        app.setIdentifier("study-test");
         doReturn(userSession).when(mockAuthService).emailSignIn(any(CriteriaContext.class), any(SignIn.class));
         
         JsonNode node = controller.emailSignIn();
@@ -460,7 +460,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage result = controller.signUp();
         assertEquals(result.getMessage(), "Signed up.");
         
-        verify(mockAuthService).signUp(eq(study), participantCaptor.capture());
+        verify(mockAuthService).signUp(eq(app), participantCaptor.capture());
         
         StudyParticipant persistedParticipant = participantCaptor.getValue();
         assertEquals(persistedParticipant.getFirstName(), originalParticipant.getFirstName());
@@ -486,7 +486,7 @@ public class AuthenticationControllerTest extends Mockito {
         node.put("study", TEST_STUDY_ID_STRING);
 
         // min app version is 20 (which is higher than 14)
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
 
         // Setup and execute. This will throw.
         mockRequestBody(mockRequest, node);
@@ -540,7 +540,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // validate signIn
         ArgumentCaptor<SignIn> signInCaptor = ArgumentCaptor.forClass(SignIn.class);
-        verify(mockAuthService).signIn(same(study), any(), signInCaptor.capture());
+        verify(mockAuthService).signIn(same(app), any(), signInCaptor.capture());
 
         SignIn signIn = signInCaptor.getValue();
         assertEquals(TEST_EMAIL, signIn.getEmail());
@@ -677,7 +677,7 @@ public class AuthenticationControllerTest extends Mockito {
         String json = TestUtils.createJson("{'study':'" + TEST_STUDY_ID_STRING + 
                 "','email':'email@email.com','password':'bar'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.signInV3();
     }
@@ -752,7 +752,7 @@ public class AuthenticationControllerTest extends Mockito {
                 "','email':'email@email.com','password':'bar'}");
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
         
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.emailSignIn();
     }
@@ -765,7 +765,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         mockRequestBody(mockRequest, BridgeObjectMapper.get().readTree(json));
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(USER_AGENT_STRING);
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.phoneSignIn();
     }
@@ -773,7 +773,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void resendEmailVerificationWorks() throws Exception {
         mockSignInWithEmailPayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.resendEmailVerification();
         
@@ -786,7 +786,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test(expectedExceptions = UnsupportedVersionException.class)
     public void resendEmailVerificationAppVersionDisabled() throws Exception {
         mockSignInWithEmailPayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.resendEmailVerification();
     }
@@ -801,7 +801,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void resendPhoneVerificationWorks() throws Exception {
         mockSignInWithPhonePayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.resendPhoneVerification();
         
@@ -814,7 +814,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test(expectedExceptions = UnsupportedVersionException.class)
     public void resendPhoneVerificationAppVersionDisabled() throws Exception {
         mockSignInWithPhonePayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.resendPhoneVerification();
     }
@@ -836,7 +836,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void resetPassword() throws Exception {
         mockResetPasswordRequest();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.resetPassword();
         
@@ -851,7 +851,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test(expectedExceptions = UnsupportedVersionException.class)
     public void resetPasswordAppVersionDisabled() throws Exception {
         mockResetPasswordRequest();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20);
         
         controller.resetPassword();
     }
@@ -865,11 +865,11 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void requestResetPasswordWithEmail() throws Exception {
         mockSignInWithEmailPayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.requestResetPassword();
         
-        verify(mockAuthService).requestResetPassword(eq(study), eq(false), signInCaptor.capture());
+        verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TEST_EMAIL, deser.getEmail());
@@ -878,11 +878,11 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void requestResetPasswordWithPhone() throws Exception {
         mockSignInWithPhonePayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
         controller.requestResetPassword();
         
-        verify(mockAuthService).requestResetPassword(eq(study), eq(false), signInCaptor.capture());
+        verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_STUDY_ID_STRING, deser.getStudyId());
         assertEquals(TestConstants.PHONE.getNumber(), deser.getPhone().getNumber());
@@ -891,14 +891,14 @@ public class AuthenticationControllerTest extends Mockito {
     @Test(expectedExceptions = UnsupportedVersionException.class)
     public void requestResetPasswordAppVersionDisabled() throws Exception {
         mockSignInWithEmailPayload();
-        study.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20); // blocked
+        app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 20); // blocked
         
         controller.requestResetPassword();
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void requestResetPasswordNoStudy() throws Exception {
-        when(mockStudyService.getStudy((String) any())).thenThrow(new EntityNotFoundException(Study.class));
+        when(mockStudyService.getStudy((String) any())).thenThrow(new EntityNotFoundException(App.class));
         
         mockRequestBody(mockRequest, new SignIn.Builder().withEmail(TEST_EMAIL).build());
         
@@ -917,7 +917,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage result = controller.signUp();
         assertEquals(result.getMessage(), "Signed up.");
         
-        verify(mockAuthService).signUp(eq(study), participantCaptor.capture());
+        verify(mockAuthService).signUp(eq(app), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
@@ -936,7 +936,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage result = controller.signUp();
         assertEquals(result.getMessage(), "Signed up.");
         
-        verify(mockAuthService).signUp(eq(study), participantCaptor.capture());
+        verify(mockAuthService).signUp(eq(app), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
@@ -955,7 +955,7 @@ public class AuthenticationControllerTest extends Mockito {
         StatusMessage result = controller.signUp();
         assertEquals(result.getMessage(), "Signed up.");
         
-        verify(mockAuthService).signUp(eq(study), participantCaptor.capture());
+        verify(mockAuthService).signUp(eq(app), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(TEST_EMAIL, captured.getEmail());
         assertEquals(TEST_PASSWORD, captured.getPassword());
@@ -1043,7 +1043,7 @@ public class AuthenticationControllerTest extends Mockito {
                 .withPhone(TestConstants.PHONE).withToken(TEST_TOKEN).build();
         mockRequestBody(mockRequest, badPhoneSignIn);
         
-        when(mockStudyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(Study.class));
+        when(mockStudyService.getStudy((String)any())).thenThrow(new EntityNotFoundException(App.class));
         
         controller.phoneSignIn();
     }
@@ -1200,20 +1200,20 @@ public class AuthenticationControllerTest extends Mockito {
         AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
-        Study newStudy = Study.create();
-        newStudy.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+        App newApp = App.create();
+        newApp.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
 
         UserSession session = new UserSession();
         session.setSessionToken("new-session-token");
-        when(mockAuthService.getSessionFromAccount(eq(newStudy), any(), eq(account))).thenReturn(session);
+        when(mockAuthService.getSessionFromAccount(eq(newApp), any(), eq(account))).thenReturn(session);
         
         JsonNode node = controller.changeStudy();
         assertEquals(node.get("sessionToken").textValue(), "new-session-token");
 
         InOrder inOrder = Mockito.inOrder(mockAuthService, mockCacheProvider);
         inOrder.verify(mockAuthService).signOut(userSession);
-        inOrder.verify(mockAuthService).getSessionFromAccount(eq(newStudy), any(), eq(account));
+        inOrder.verify(mockAuthService).getSessionFromAccount(eq(newApp), any(), eq(account));
         inOrder.verify(mockCacheProvider).setUserSession(session);
     }
     
@@ -1247,16 +1247,16 @@ public class AuthenticationControllerTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_ACCOUNT_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
         
-        Study newStudy = Study.create();
-        newStudy.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+        App newApp = App.create();
+        newApp.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
 
         JsonNode node = controller.changeStudy();
         // Note that we reuse the session here, as we did in an initial implementation for cross-study
         // administrators.
         assertEquals(node.get("sessionToken").textValue(), "session-token");
         
-        verify(mockSessionUpdateService).updateStudy(userSession, newStudy.getIdentifier());
+        verify(mockSessionUpdateService).updateStudy(userSession, newApp.getIdentifier());
         
         verify(mockAuthService, never()).signOut(any());
         verify(mockAuthService, never()).getSessionFromAccount(any(), any(), any());
@@ -1274,9 +1274,9 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
             .thenReturn(ImmutableList.of(TEST_APP_ID));
         
-        Study newStudy = Study.create();
-        newStudy.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+        App newApp = App.create();
+        newApp.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
 
         controller.changeStudy();
     }
@@ -1291,9 +1291,9 @@ public class AuthenticationControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
-        Study newStudy = Study.create();
-        newStudy.setIdentifier("my-new-study");
-        when(mockStudyService.getStudy("my-new-study")).thenReturn(newStudy);
+        App newApp = App.create();
+        newApp.setIdentifier("my-new-study");
+        when(mockStudyService.getStudy("my-new-study")).thenReturn(newApp);
 
         controller.changeStudy();
     }

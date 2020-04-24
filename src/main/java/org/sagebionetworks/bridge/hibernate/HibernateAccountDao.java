@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -73,7 +73,7 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
+    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
         hibernateHelper.create(account, afterPersistConsumer);
     }
 
@@ -180,8 +180,8 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
-        QueryBuilder builder = makeQuery(SUMMARY_QUERY, study.getIdentifier(), null, search, false);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
+        QueryBuilder builder = makeQuery(SUMMARY_QUERY, app.getIdentifier(), null, search, false);
 
         // Get page of accounts.
         List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
@@ -190,7 +190,7 @@ public class HibernateAccountDao implements AccountDao {
                 .map(this::unmarshallAccountSummary).collect(Collectors.toList());
 
         // Get count of accounts.
-        builder = makeQuery(COUNT_QUERY, study.getIdentifier(), null, search, true);
+        builder = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
         int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         
         // Package results and return.

@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;
 import org.sagebionetworks.bridge.upload.UploadValidationTaskFactory;
@@ -22,7 +22,7 @@ public class UploadValidationServiceTest {
         // test strategy is to verify that execution flows through to these dependencies.
 
         // inputs
-        Study study = TestUtils.getValidStudy(UploadValidationServiceTest.class);
+        App app = TestUtils.getValidStudy(UploadValidationServiceTest.class);
         Upload upload = new DynamoUpload2();
 
         // mock task
@@ -30,7 +30,7 @@ public class UploadValidationServiceTest {
 
         // mock task factory
         UploadValidationTaskFactory mockTaskFactory = mock(UploadValidationTaskFactory.class);
-        when(mockTaskFactory.newTask(study.getIdentifier(), upload)).thenReturn(mockTask);
+        when(mockTaskFactory.newTask(app.getIdentifier(), upload)).thenReturn(mockTask);
 
         // mock async thread pool
         ExecutorService mockExecutor = mock(ExecutorService.class);
@@ -41,7 +41,7 @@ public class UploadValidationServiceTest {
         svc.setTaskFactory(mockTaskFactory);
 
         // execute
-        svc.validateUpload(study.getIdentifier(), upload);
+        svc.validateUpload(app.getIdentifier(), upload);
 
         // validate
         verify(mockExecutor).execute(mockTask);

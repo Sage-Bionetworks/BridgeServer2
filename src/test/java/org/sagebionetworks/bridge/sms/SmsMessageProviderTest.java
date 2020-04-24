@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.PublishRequest;
@@ -20,14 +20,14 @@ public class SmsMessageProviderTest {
     @Test
     public void test() {
         // Set up dependencies
-        Study study = Study.create();
-        study.setName("Name");
-        study.setShortName("ShortName");
-        study.setIdentifier(TEST_APP_ID);
-        study.setSponsorName("SponsorName");
-        study.setSupportEmail("support@email.com");
-        study.setTechnicalEmail("tech@email.com");
-        study.setConsentNotificationEmail("consent@email.com,consent2@email.com");
+        App app = App.create();
+        app.setName("Name");
+        app.setShortName("ShortName");
+        app.setIdentifier(TEST_APP_ID);
+        app.setSponsorName("SponsorName");
+        app.setSupportEmail("support@email.com");
+        app.setTechnicalEmail("tech@email.com");
+        app.setConsentNotificationEmail("consent@email.com,consent2@email.com");
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("${studyShortName} ${url} ${supportEmail} ${expirationPeriod}");
@@ -36,7 +36,7 @@ public class SmsMessageProviderTest {
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-            .withStudy(study)
+            .withStudy(app)
             .withPhone(TestConstants.PHONE)
             .withTemplateRevision(revision)
             .withTransactionType()
@@ -50,7 +50,7 @@ public class SmsMessageProviderTest {
         PublishRequest request = provider.getSmsRequest();
         assertEquals(request.getMessage(), expectedMessage);
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue(),
-                study.getShortName());
+                app.getShortName());
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue(),
                 "Transactional");
         
@@ -69,13 +69,13 @@ public class SmsMessageProviderTest {
     @Test
     public void defaultsShortNameToBridge() {
         // Set up dependencies
-        Study study = Study.create();
+        App app = App.create();
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("${studyShortName} ${url} ${supportEmail}");
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-            .withStudy(study)
+            .withStudy(app)
             .withPhone(TestConstants.PHONE)
             .withTemplateRevision(revision)
             .withPromotionType()
@@ -87,7 +87,7 @@ public class SmsMessageProviderTest {
     @Test
     public void nullTokenMapEntryDoesntBreakMap() {
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(Study.create())
+                .withStudy(App.create())
                 .withPhone(TestConstants.PHONE)
                 .withTemplateRevision(TemplateRevision.create())
                 .withPromotionType()
@@ -100,7 +100,7 @@ public class SmsMessageProviderTest {
     @Test
     public void canConstructPromotionalMessage() {
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(Study.create())
+                .withStudy(App.create())
                 .withPhone(TestConstants.PHONE)
                 .withTemplateRevision(TemplateRevision.create())
                 .withPromotionType().build();

@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
@@ -75,7 +75,7 @@ public class StrictValidationHandlerTest {
         handler.setUploadSchemaService(mockSchemaService);
 
         // mock study service - this is to get the shouldThrow (strictUploadValidationEnabled) flag
-        DynamoStudy testStudy = new DynamoStudy();
+        DynamoApp testStudy = new DynamoApp();
         testStudy.setUploadValidationStrictness(uploadValidationStrictness);
 
         StudyService mockStudyService = mock(StudyService.class);

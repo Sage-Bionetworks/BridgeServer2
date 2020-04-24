@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -78,7 +78,7 @@ public class SmsServiceTest {
     private ParticipantService mockParticipantService;
     private UploadSchemaService mockSchemaService;
     private AmazonSNSClient mockSnsClient;
-    private Study study;
+    private App app;
     private SmsService svc;
 
     @BeforeClass
@@ -99,9 +99,9 @@ public class SmsServiceTest {
         when(mockSnsClient.publish(any())).thenReturn(new PublishResult().withMessageId(MESSAGE_ID));
 
         // Mock study service. This is only used to get the study short name.
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        study.setShortName(STUDY_SHORT_NAME);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        app.setShortName(STUDY_SHORT_NAME);
 
         // Mock other DAOs and services.
         mockHealthDataService = mock(HealthDataService.class);
@@ -130,7 +130,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -161,7 +161,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -187,7 +187,7 @@ public class SmsServiceTest {
     public void sendSmsMessage_NullUserIdOkay() throws Exception {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -208,7 +208,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -229,7 +229,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -251,7 +251,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -288,7 +288,7 @@ public class SmsServiceTest {
         revision.setDocumentContent(randomAlphabetic(601));
         
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();

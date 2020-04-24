@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.UrlShortenerService;
 
 /**
@@ -74,27 +74,27 @@ public class ApplicationController extends BaseController {
     
     @GetMapping({"/mobile/verifyStudyEmail.html", "/vse"})
     public String verifyStudyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
-        Study study = studyService.getStudy(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
+        App app = studyService.getStudy(studyId);
+        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         return "verifyStudyEmail";
     }
     
     @GetMapping({"/mobile/verifyEmail.html", "/ve"})
     public String verifyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
-        Study study = studyService.getStudy(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        model.addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
-        model.addAttribute(STUDY_ID, study.getIdentifier());
+        App app = studyService.getStudy(studyId);
+        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        model.addAttribute(STUDY_ID, app.getIdentifier());
         return "verifyEmail";
     }
     
     @GetMapping({"/mobile/resetPassword.html", "/rp"})
     public String resetPassword(Model model, @RequestParam(name="study", required=false) String studyId) {
-        Study study = studyService.getStudy(studyId);
-        String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        model.addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
-        model.addAttribute(STUDY_ID, study.getIdentifier());
+        App app = studyService.getStudy(studyId);
+        String passwordDescription = BridgeUtils.passwordPolicyDescription(app.getPasswordPolicy());
+        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        model.addAttribute(STUDY_ID, app.getIdentifier());
         model.addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
         return "resetPassword";
     }
@@ -102,9 +102,9 @@ public class ApplicationController extends BaseController {
     /* Full URL to phone will include email and token, but these are not required for the error page. */
     @GetMapping({"/mobile/{studyId}/startSession.html", "/s/{studyId}"})
     public String startSessionWithPath(Model model, @PathVariable String studyId) {
-        Study study = studyService.getStudy(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        model.addAttribute(STUDY_ID, study.getIdentifier());
+        App app = studyService.getStudy(studyId);
+        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(STUDY_ID, app.getIdentifier());
         return "startSession";
     }
     
@@ -112,9 +112,9 @@ public class ApplicationController extends BaseController {
     @GetMapping("/mobile/startSession.html")
     public String startSessionWithQueryParam(Model model,
             @RequestParam(name = "study", required = false) String studyId) {
-        Study study = studyService.getStudy(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        model.addAttribute(STUDY_ID, study.getIdentifier());
+        App app = studyService.getStudy(studyId);
+        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(STUDY_ID, app.getIdentifier());
         return "startSession";
     }
     
@@ -126,9 +126,9 @@ public class ApplicationController extends BaseController {
         CacheKey cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
         String json = viewCache.getView(cacheKey, () -> {
             AndroidAppLinkList links = new AndroidAppLinkList();
-            List<Study> studies = studyService.getStudies();
-            for(Study study : studies) {
-                for (AndroidAppLink link : study.getAndroidAppLinks()) {
+            List<App> studies = studyService.getStudies();
+            for(App app : studies) {
+                for (AndroidAppLink link : app.getAndroidAppLinks()) {
                     links.add(new AndroidAppSiteAssociation(link));
                 }
             }
@@ -145,9 +145,9 @@ public class ApplicationController extends BaseController {
         CacheKey cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);
         String json = viewCache.getView(cacheKey, () -> {
             List<AppleAppLink> links = Lists.newArrayList();
-            List<Study> studies = studyService.getStudies();
-            for(Study study : studies) {
-                links.addAll(study.getAppleAppLinks());
+            List<App> studies = studyService.getStudies();
+            for(App app : studies) {
+                links.addAll(app.getAppleAppLinks());
             }
             return new AppleAppSiteAssociation(links);
         });

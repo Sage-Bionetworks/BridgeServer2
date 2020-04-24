@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 public class DynamoStudyDaoTest extends Mockito {
 
@@ -37,10 +37,10 @@ public class DynamoStudyDaoTest extends Mockito {
     DynamoDBMapper mockMapper;
     
     @Mock
-    PaginatedScanList<DynamoStudy> mockScanList;
+    PaginatedScanList<DynamoApp> mockScanList;
     
     @Captor
-    ArgumentCaptor<Study> studyCaptor;
+    ArgumentCaptor<App> studyCaptor;
     
     @InjectMocks
     DynamoStudyDao dao;
@@ -56,7 +56,7 @@ public class DynamoStudyDaoTest extends Mockito {
     
     @Test
     public void doesIdentifierExistSucceeds() {
-        DynamoStudy saved = new DynamoStudy();
+        DynamoApp saved = new DynamoApp();
         when(mockMapper.load(any())).thenReturn(saved);
         
         boolean returned = dao.doesIdentifierExist(TEST_APP_ID);
@@ -64,8 +64,8 @@ public class DynamoStudyDaoTest extends Mockito {
         
         verify(mockMapper).load(studyCaptor.capture());
         
-        Study study = studyCaptor.getValue();
-        assertEquals(study.getIdentifier(), TEST_APP_ID);
+        App app = studyCaptor.getValue();
+        assertEquals(app.getIdentifier(), TEST_APP_ID);
     }
     
     @Test
@@ -76,14 +76,14 @@ public class DynamoStudyDaoTest extends Mockito {
     
     @Test
     public void getStudy() {
-        DynamoStudy saved = new DynamoStudy();
+        DynamoApp saved = new DynamoApp();
         doReturn(saved).when(mockMapper).load(any());
         
-        Study result = dao.getStudy(TEST_APP_ID);
+        App result = dao.getStudy(TEST_APP_ID);
         assertSame(result, saved);
         
         verify(mockMapper).load(studyCaptor.capture());
-        Study key = studyCaptor.getValue();
+        App key = studyCaptor.getValue();
         assertEquals(key.getIdentifier(), TEST_APP_ID);
     }
     
@@ -94,94 +94,94 @@ public class DynamoStudyDaoTest extends Mockito {
     
     @Test
     public void getStudies() {
-        List<Study> saved = ImmutableList.of(Study.create(), Study.create());
+        List<App> saved = ImmutableList.of(App.create(), App.create());
         when(mockScanList.toArray()).thenReturn(saved.toArray());
-        when(mockMapper.scan(eq(DynamoStudy.class), any(DynamoDBScanExpression.class))).thenReturn(mockScanList);
+        when(mockMapper.scan(eq(DynamoApp.class), any(DynamoDBScanExpression.class))).thenReturn(mockScanList);
         
-        List<Study> result = dao.getStudies();
+        List<App> result = dao.getStudies();
         assertEquals(result.size(), 2);
         assertEquals(result, saved);
 
-        verify(mockMapper).scan(eq(DynamoStudy.class), any(DynamoDBScanExpression.class));
+        verify(mockMapper).scan(eq(DynamoApp.class), any(DynamoDBScanExpression.class));
     }
     
     @Test
     public void createStudy() {
-        Study study = Study.create();
+        App app = App.create();
         
-        dao.createStudy(study);
+        dao.createStudy(app);
         
-        verify(mockMapper).save(study);
+        verify(mockMapper).save(app);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void createStudyFailsIfVersionPresent() {
-        Study study = Study.create();
-        study.setVersion(2L);
+        App app = App.create();
+        app.setVersion(2L);
         
-        dao.createStudy(study);
+        dao.createStudy(app);
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createStudyConditionalCheckFailedException() {
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).save(any());
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         
-        dao.createStudy(study);
+        dao.createStudy(app);
     }
     
     @Test
     public void updateStudy() {
-        Study study = Study.create();
-        study.setVersion(2L);
+        App app = App.create();
+        app.setVersion(2L);
         
-        dao.updateStudy(study);
+        dao.updateStudy(app);
         
-        verify(mockMapper).save(study);
+        verify(mockMapper).save(app);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void updateStudyWithoutVersionFails() {
-        Study study = Study.create();
+        App app = App.create();
         
-        dao.updateStudy(study);
+        dao.updateStudy(app);
     }
     
     @Test(expectedExceptions = ConcurrentModificationException.class)
     public void updateStudyConditionalCheckFailedException() {
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).save(any());
         
-        Study study = Study.create();
-        study.setVersion(2L);
+        App app = App.create();
+        app.setVersion(2L);
 
-        dao.updateStudy(study);
+        dao.updateStudy(app);
     }
     
     @Test
     public void deleteStudy() {
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         
-        dao.deleteStudy(study);
+        dao.deleteStudy(app);
         
-        verify(mockMapper).delete(study);
+        verify(mockMapper).delete(app);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteStudyRespectsWhitelist() {
-        Study study = Study.create();
-        study.setIdentifier("whitelisted-study");
+        App app = App.create();
+        app.setIdentifier("whitelisted-study");
         
-        dao.deleteStudy(study);
+        dao.deleteStudy(app);
     }
     
     @Test
     public void deactivateStudy() {
-        Study study = Study.create();
-        study.setActive(true);
-        study.setVersion(2L);
-        when(mockMapper.load(any())).thenReturn(study);
+        App app = App.create();
+        app.setActive(true);
+        app.setVersion(2L);
+        when(mockMapper.load(any())).thenReturn(app);
         
         dao.deactivateStudy(TEST_APP_ID);
         
@@ -191,10 +191,10 @@ public class DynamoStudyDaoTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deactivateStudyRespectsWhitelist() {
-        Study study = Study.create();
-        study.setActive(true);
-        study.setVersion(2L);
-        when(mockMapper.load(any())).thenReturn(study);
+        App app = App.create();
+        app.setActive(true);
+        app.setVersion(2L);
+        when(mockMapper.load(any())).thenReturn(app);
         
         dao.deactivateStudy("whitelisted-study");
     }    

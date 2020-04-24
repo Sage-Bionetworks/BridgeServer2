@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.validators.SignInValidator;
@@ -102,7 +102,7 @@ public class UserAdminService {
      * through all subpopulations in the study and consents the user to all required consents. This should 
      * allow the user to make calls without receiving a 412 response. 
      * 
-     * @param study
+     * @param app
      *            the study of the target user
      * @param participant
      *            sign up information for the target user
@@ -115,13 +115,13 @@ public class UserAdminService {
      *
      * @return UserSession for the newly created user
      */
-    public UserSession createUser(Study study, StudyParticipant participant, SubpopulationGuid subpopGuid,
+    public UserSession createUser(App app, StudyParticipant participant, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
-        checkNotNull(study, "Study cannot be null");
+        checkNotNull(app, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
         // Validate study + email or phone. This is the minimum we need to create a functional account.
-        SignIn signIn = new SignIn.Builder().withStudy(study.getIdentifier()).withEmail(participant.getEmail())
+        SignIn signIn = new SignIn.Builder().withStudy(app.getIdentifier()).withEmail(participant.getEmail())
                 .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
         
@@ -129,13 +129,13 @@ public class UserAdminService {
         try {
             // This used to hard-code the admin role to allow assignment of roles; now it must actually be called by an 
             // admin user (previously this was only checked in the related controller method).
-            identifier = participantService.createParticipant(study, participant, false);
-            StudyParticipant updatedParticipant = participantService.getParticipant(study, identifier.getIdentifier(), false);
+            identifier = participantService.createParticipant(app, participant, false);
+            StudyParticipant updatedParticipant = participantService.getParticipant(app, identifier.getIdentifier(), false);
             
             // We don't filter users by any of these filtering criteria in the admin API.
             CriteriaContext context = new CriteriaContext.Builder()
                     .withUserId(identifier.getIdentifier())
-                    .withAppId(study.getIdentifier()).build();
+                    .withAppId(app.getIdentifier()).build();
             
             if (consentUser) {
                 String name = String.format("[Signature for %s]", updatedParticipant.getEmail());
@@ -143,13 +143,13 @@ public class UserAdminService {
                         .withBirthdate("1989-08-19").withSignedOn(DateUtils.getCurrentMillisFromEpoch()).build();
                 
                 if (subpopGuid != null) {
-                    consentService.consentToResearch(study, subpopGuid, updatedParticipant, signature, NO_SHARING, false);
+                    consentService.consentToResearch(app, subpopGuid, updatedParticipant, signature, NO_SHARING, false);
                 } else {
                     Map<SubpopulationGuid,ConsentStatus> statuses = consentService.getConsentStatuses(context);
                     for (ConsentStatus consentStatus : statuses.values()) {
                         if (consentStatus.isRequired()) {
                             SubpopulationGuid guid = SubpopulationGuid.create(consentStatus.getSubpopulationGuid());
-                            consentService.consentToResearch(study, guid, updatedParticipant, signature, NO_SHARING, false);
+                            consentService.consentToResearch(app, guid, updatedParticipant, signature, NO_SHARING, false);
                         }
                     }
                 }
@@ -158,7 +158,7 @@ public class UserAdminService {
                 // We do ignore consent state here as our intention may be to create a user who is signed in but not
                 // consented.
                 try {
-                    return authenticationService.signIn(study, context, signIn);    
+                    return authenticationService.signIn(app, context, signIn);    
                 } catch(ConsentRequiredException e) {
                     return e.getUserSession();
                 }
@@ -166,14 +166,14 @@ public class UserAdminService {
             }
             // Return a session *without* signing in because we have 3 sign in pathways that we want to test. In this case
             // we're creating a session but not authenticating you which is only a thing that's useful for tests.
-            UserSession session = authenticationService.getSession(study, context);
+            UserSession session = authenticationService.getSession(app, context);
             session.setAuthenticated(false);
             return session;
         } catch(RuntimeException e) {
             // Created the account, but failed to process the account properly. To avoid leaving behind a bunch of test
             // accounts, delete this account.
             if (identifier != null) {
-                deleteUser(study, identifier.getIdentifier());    
+                deleteUser(app, identifier.getIdentifier());    
             }
             throw e;
         }
@@ -182,16 +182,16 @@ public class UserAdminService {
     /**
      * Delete the target user.
      *
-     * @param study
+     * @param app
      *      target user's study
      * @param id
      *      target user's ID
      */
-    public void deleteUser(Study study, String id) {
-        checkNotNull(study);
+    public void deleteUser(App app, String id) {
+        checkNotNull(app);
         checkArgument(StringUtils.isNotBlank(id));
         
-        AccountId accountId = AccountId.forId(study.getIdentifier(), id);
+        AccountId accountId = AccountId.forId(app.getIdentifier(), id);
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
@@ -201,7 +201,7 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
-            notificationsService.deleteAllRegistrations(study.getIdentifier(), healthCode);
+            notificationsService.deleteAllRegistrations(app.getIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);

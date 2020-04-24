@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 
 @CrossOrigin
@@ -71,10 +71,10 @@ public class ExternalIdControllerV4 extends BaseController {
     @DeleteMapping("/v4/externalids/{externalId}")
     public StatusMessage deleteExternalIdentifier(@PathVariable String externalId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(study.getIdentifier(), externalId);
-        externalIdService.deleteExternalIdPermanently(study, externalIdentifier);
+        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), externalId);
+        externalIdService.deleteExternalIdPermanently(app, externalIdentifier);
         
         return new StatusMessage("External identifier deleted.");
     }
@@ -86,7 +86,7 @@ public class ExternalIdControllerV4 extends BaseController {
         
         Boolean createAccountBool = Boolean.valueOf(createAccount);
         
-        Study study = studyService.getStudy(session.getAppId());
-        return authenticationService.generatePassword(study, externalId, createAccountBool);
+        App app = studyService.getStudy(session.getAppId());
+        return authenticationService.generatePassword(app, externalId, createAccountBool);
     }
 }

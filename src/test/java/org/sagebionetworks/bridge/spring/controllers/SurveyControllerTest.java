@@ -56,7 +56,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.SurveyService;
@@ -136,8 +136,8 @@ public class SurveyControllerTest extends Mockito {
         }).when(mockCacheProvider).removeObject(any());
         viewCache.setCacheProvider(mockCacheProvider);
         
-        Study study = Study.create();
-        doReturn(study).when(mockStudyService).getStudy(any(String.class));
+        App app = App.create();
+        doReturn(app).when(mockStudyService).getStudy(any(String.class));
         controller.setViewCache(viewCache);
         
         doReturn(mockRequest).when(controller).request();

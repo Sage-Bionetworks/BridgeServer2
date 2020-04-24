@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -57,7 +57,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     DefaultStudyBootstrapper defaultStudyBootstrapper;
     
     @Captor
-    ArgumentCaptor<Study> studyCaptor;
+    ArgumentCaptor<App> studyCaptor;
 
     @Captor
     ArgumentCaptor<SubpopulationGuid> subpopCaptor;
@@ -78,31 +78,31 @@ public class DefaultStudyBootstrapperTest extends Mockito {
 
         verify(mockStudyService, times(2)).createStudy(studyCaptor.capture());
 
-        List<Study> createdStudyList = studyCaptor.getAllValues();
+        List<App> createdStudyList = studyCaptor.getAllValues();
 
         // Validate api study.
-        Study study = createdStudyList.get(0);
-        assertEquals(study.getName(), "Test Study");
-        assertEquals(study.getIdentifier(), API_APP_ID);
-        assertEquals(study.getSponsorName(), "Sage Bionetworks");
-        assertEquals(study.getShortName(), "TestStudy");
-        assertEquals(study.getMinAgeOfConsent(), 18);
-        assertEquals(study.getConsentNotificationEmail(), "bridge-testing+consent@sagebase.org");
-        assertEquals(study.getTechnicalEmail(), "bridge-testing+technical@sagebase.org");
-        assertEquals(study.getSupportEmail(), "support@sagebridge.org");
-        assertEquals(study.getUserProfileAttributes(), Sets.newHashSet("can_be_recontacted"));
-        assertEquals(study.getPasswordPolicy(), new PasswordPolicy(2, false, false, false, false));
-        assertTrue(study.isEmailVerificationEnabled());
+        App app = createdStudyList.get(0);
+        assertEquals(app.getName(), "Test Study");
+        assertEquals(app.getIdentifier(), API_APP_ID);
+        assertEquals(app.getSponsorName(), "Sage Bionetworks");
+        assertEquals(app.getShortName(), "TestStudy");
+        assertEquals(app.getMinAgeOfConsent(), 18);
+        assertEquals(app.getConsentNotificationEmail(), "bridge-testing+consent@sagebase.org");
+        assertEquals(app.getTechnicalEmail(), "bridge-testing+technical@sagebase.org");
+        assertEquals(app.getSupportEmail(), "support@sagebridge.org");
+        assertEquals(app.getUserProfileAttributes(), Sets.newHashSet("can_be_recontacted"));
+        assertEquals(app.getPasswordPolicy(), new PasswordPolicy(2, false, false, false, false));
+        assertTrue(app.isEmailVerificationEnabled());
 
         // Validate shared study. No need to test every attribute. Just validate the important attributes.
-        Study sharedStudy = createdStudyList.get(1);
-        assertEquals(sharedStudy.getName(), "Shared Module Library");
-        assertEquals(sharedStudy.getIdentifier(), SHARED_APP_ID);
+        App sharedApp = createdStudyList.get(1);
+        assertEquals(sharedApp.getName(), "Shared Module Library");
+        assertEquals(sharedApp.getIdentifier(), SHARED_APP_ID);
 
         // So it doesn't get out of sync, validate the study. However, default templates are set 
         // by the service. so those two errors are expected.
         try {
-            Validate.entityThrowingException(new StudyValidator(), study);    
+            Validate.entityThrowingException(new StudyValidator(), app);    
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().keySet().size(), 2);
             assertEquals(e.getErrors().get("verifyEmailTemplate").size(), 1);

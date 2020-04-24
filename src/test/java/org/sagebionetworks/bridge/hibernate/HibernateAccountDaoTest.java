@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
 public class HibernateAccountDaoTest extends Mockito {
@@ -95,7 +95,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Mock
     private HibernateHelper mockHibernateHelper;
 
-    private Study study;
+    private App app;
     private HibernateAccountDao dao;
 
     @BeforeClass
@@ -123,10 +123,10 @@ public class HibernateAccountDaoTest extends Mockito {
         dao = spy(new HibernateAccountDao());
         dao.setHibernateHelper(mockHibernateHelper);
 
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        study.setReauthenticationEnabled(true);
-        study.setEmailVerificationEnabled(true);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        app.setReauthenticationEnabled(true);
+        app.setEmailVerificationEnabled(true);
     }
 
     @AfterMethod
@@ -150,7 +150,7 @@ public class HibernateAccountDaoTest extends Mockito {
         Account account = makeValidGenericAccount();
 
         // execute - We generate a new account ID.
-        dao.createAccount(study, account, null);
+        dao.createAccount(app, account, null);
         
         verify(mockHibernateHelper).create(eq(account), any());
     }
@@ -470,7 +470,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5).build();
 
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(study, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
         assertEquals(accountSummaryResourceList.getRequestParams().get("offsetBy"), 10);
         assertEquals(accountSummaryResourceList.getRequestParams().get("pageSize"), 5);
         assertEquals(accountSummaryResourceList.getTotal(), (Integer) 12);
@@ -518,7 +518,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 any(), eq(HibernateAccountSubstudy.class))).thenReturn(list);
 
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(study, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
 
         // substudy B is not there
@@ -560,7 +560,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 .withAllOfGroups(Sets.newHashSet("a", "b")).withNoneOfGroups(Sets.newHashSet("c", "d"))
                 .withLanguage("de").withStartTime(startDate).withEndTime(endDate).build();
 
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(study, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(paramsMap.size(), 10);
@@ -630,7 +630,7 @@ public class HibernateAccountDaoTest extends Mockito {
             BridgeUtils.setRequestContext(context);
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
-            dao.getPagedAccountSummaries(study, search);
+            dao.getPagedAccountSummaries(app, search);
 
             verify(mockHibernateHelper).queryCount(eq(expCountQuery), paramCaptor.capture());
             Map<String, Object> params = paramCaptor.getValue();
@@ -669,7 +669,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5)
                 .withEmailFilter(EMAIL).withPhoneFilter(PHONE.getNationalFormat()).withLanguage("de")
                 .withStartTime(startDate).withEndTime(endDate).build();
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(study, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(paramsMap.size(), 10);

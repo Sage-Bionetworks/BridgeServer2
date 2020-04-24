@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.file.FileHelper;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -35,14 +35,14 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setHealthDataService(healthDataService);
 
         // inputs
-        Study study = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
+        App app = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
         Upload upload = Upload.create();
         upload.setHealthCode(HEALTH_CODE);
 
         // execute and validate
-        UploadValidationTask task = taskFactory.newTask(study.getIdentifier(), upload);
+        UploadValidationTask task = taskFactory.newTask(app.getIdentifier(), upload);
         assertEquals(task.getContext().getHealthCode(), HEALTH_CODE);
-        assertSame(task.getContext().getStudy(), study.getIdentifier());
+        assertSame(task.getContext().getStudy(), app.getIdentifier());
         assertSame(task.getContext().getUpload(), upload);
 
         assertSame(task.getFileHelper(), fileHelper);

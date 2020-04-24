@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,7 +40,7 @@ public class DynamoStudyDao implements StudyDao {
     final void setDynamoDbClient(AmazonDynamoDB client, DynamoNamingHelper dynamoNamingHelper) {
         DynamoDBMapperConfig mapperConfig = new DynamoDBMapperConfig.Builder().withSaveBehavior(SaveBehavior.UPDATE)
                 .withConsistentReads(ConsistentReads.CONSISTENT)
-                .withTableNameOverride(dynamoNamingHelper.getTableNameOverride(DynamoStudy.class)).build();
+                .withTableNameOverride(dynamoNamingHelper.getTableNameOverride(DynamoApp.class)).build();
         mapper = new DynamoDBMapper(client, mapperConfig);
     }
     
@@ -51,68 +51,68 @@ public class DynamoStudyDao implements StudyDao {
 
     @Override
     public boolean doesIdentifierExist(String identifier) {
-        DynamoStudy study = new DynamoStudy();
+        DynamoApp study = new DynamoApp();
         study.setIdentifier(identifier);
         return (mapper.load(study) != null);
     }
     
     @Override
-    public Study getStudy(String identifier) {
+    public App getStudy(String identifier) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
         
-        DynamoStudy study = new DynamoStudy();
-        study.setIdentifier(identifier);
-        study = mapper.load(study);
-        if (study == null) {
-            throw new EntityNotFoundException(Study.class, "Study '"+identifier+"' not found.");
+        DynamoApp app = new DynamoApp();
+        app.setIdentifier(identifier);
+        app = mapper.load(app);
+        if (app == null) {
+            throw new EntityNotFoundException(App.class, "Study '"+identifier+"' not found.");
         }
-        return study;
+        return app;
     }
     
     @Override
-    public List<Study> getStudies() {
+    public List<App> getStudies() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         // get all studies including deactivated ones
-        List<DynamoStudy> mappings = mapper.scan(DynamoStudy.class, scan);
+        List<DynamoApp> mappings = mapper.scan(DynamoApp.class, scan);
 
-        return new ArrayList<Study>(mappings);
+        return new ArrayList<App>(mappings);
     }
 
     @Override
-    public Study createStudy(Study study) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkArgument(study.getVersion() == null, "%s has a version; may not be new", "study");
+    public App createStudy(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
+        checkArgument(app.getVersion() == null, "%s has a version; may not be new", "study");
         try {
-            mapper.save(study);
+            mapper.save(app);
         } catch(ConditionalCheckFailedException e) { // in the create scenario, this should be a hash key clash.
-            throw new EntityAlreadyExistsException(Study.class, "identifier", study.getIdentifier());
+            throw new EntityAlreadyExistsException(App.class, "identifier", app.getIdentifier());
         }
-        return study;
+        return app;
     }
 
     @Override
-    public Study updateStudy(Study study) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
-        checkNotNull(study.getVersion(), Validate.CANNOT_BE_NULL, "study version");
+    public App updateStudy(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(app.getVersion(), Validate.CANNOT_BE_NULL, "study version");
         try {
-            mapper.save(study);
+            mapper.save(app);
         } catch(ConditionalCheckFailedException e) {
-            throw new ConcurrentModificationException(study);
+            throw new ConcurrentModificationException(app);
         }
-        return study;
+        return app;
     }
 
     @Override
-    public void deleteStudy(Study study) {
-        checkNotNull(study, Validate.CANNOT_BE_BLANK, "study");
+    public void deleteStudy(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_BLANK, "study");
 
-        String studyId = study.getIdentifier();
+        String studyId = app.getIdentifier();
         if (studyWhitelist.contains(studyId)) {
             throw new UnauthorizedException(studyId + " is protected by whitelist.");
         }
 
-        mapper.delete(study);
+        mapper.delete(app);
     }
 
     @Override
@@ -123,9 +123,9 @@ public class DynamoStudyDao implements StudyDao {
             throw new UnauthorizedException(studyId + " is protected by whitelist.");
         }
 
-        Study study = getStudy(studyId);
-        study.setActive(false);
+        App app = getStudy(studyId);
+        app.setActive(false);
 
-        updateStudy(study);
+        updateStudy(app);
     }
 }

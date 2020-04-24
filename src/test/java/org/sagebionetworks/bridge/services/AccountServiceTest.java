@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -176,26 +176,26 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void authenticate() throws Exception {
-        Study study = Study.create();
+        App app = App.create();
         Account account = mockGetAccountById(ACCOUNT_ID, false);
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
         doNothing().when(service).verifyPassword(any(), any());
 
-        Account returnVal = service.authenticate(study, SIGN_IN);
+        Account returnVal = service.authenticate(app, SIGN_IN);
         assertEquals(returnVal, account);
         verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
     }
 
     @Test
     public void reauthenticate() throws Exception {
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
         
         Account account = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, "reauthToken", ROTATIONS))
                 .thenReturn(Optional.of(mockSecret));
 
-        Account returnVal = service.reauthenticate(study, SIGN_IN);
+        Account returnVal = service.reauthenticate(app, SIGN_IN);
         assertEquals(returnVal, account);
         verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
     }
@@ -210,8 +210,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void createAccount() {
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         
         Account account = Account.create();
         account.setId(USER_ID);
@@ -221,8 +221,8 @@ public class AccountServiceTest extends Mockito {
         account.setStudyId("wrong-study");
         Consumer<Account> consumer = (oneAccount) -> {};
 
-        service.createAccount(study, account, consumer);
-        verify(mockAccountDao).createAccount(eq(study), accountCaptor.capture(), eq(consumer));
+        service.createAccount(app, account, consumer);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture(), eq(consumer));
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
@@ -306,12 +306,12 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void getPagedAccountSummaries() {
-        Study study = Study.create();
-        when(mockAccountDao.getPagedAccountSummaries(study, EMPTY_SEARCH)).thenReturn(mockAccountSummaries);
+        App app = App.create();
+        when(mockAccountDao.getPagedAccountSummaries(app, EMPTY_SEARCH)).thenReturn(mockAccountSummaries);
 
-        PagedResourceList<AccountSummary> returnVal = service.getPagedAccountSummaries(study, EMPTY_SEARCH);
+        PagedResourceList<AccountSummary> returnVal = service.getPagedAccountSummaries(app, EMPTY_SEARCH);
         assertEquals(returnVal, mockAccountSummaries);
-        verify(mockAccountDao).getPagedAccountSummaries(study, EMPTY_SEARCH);
+        verify(mockAccountDao).getPagedAccountSummaries(app, EMPTY_SEARCH);
     }
 
     @Test
@@ -483,9 +483,9 @@ public class AccountServiceTest extends Mockito {
     public void authenticateSuccessWithHealthCode() throws Exception {
         mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        Account account = service.authenticate(study, PASSWORD_SIGNIN);
+        Account account = service.authenticate(app, PASSWORD_SIGNIN);
         assertEquals(account.getId(), USER_ID);
         assertEquals(account.getStudyId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
@@ -498,12 +498,12 @@ public class AccountServiceTest extends Mockito {
     // touch the reauth token
     @Test
     public void authenticateSuccessNoReauthentication() throws Exception {
-        Study study = Study.create();
-        study.setReauthenticationEnabled(false);
+        App app = App.create();
+        app.setReauthenticationEnabled(false);
 
         mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
 
-        Account account = service.authenticate(study, PASSWORD_SIGNIN);
+        Account account = service.authenticate(app, PASSWORD_SIGNIN);
         // not incremented by reauthentication
         assertEquals(account.getVersion(), 1);
 
@@ -516,9 +516,9 @@ public class AccountServiceTest extends Mockito {
     public void authenticateAccountNotFound() throws Exception {
         when(mockAccountDao.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -527,9 +527,9 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setStatus(UNVERIFIED);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     @Test(expectedExceptions = AccountDisabledException.class)
@@ -537,18 +537,18 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setStatus(DISABLED);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateAccountHasNoPassword() throws Exception {
         mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     // branch coverage
@@ -557,18 +557,18 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
         persistedAccount.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticateBadPassword() throws Exception {
         mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
 
-        Study study = Study.create();
+        App app = App.create();
 
-        service.authenticate(study, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+        service.authenticate(app, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
                 .withPassword("wrong password").build());
     }
 
@@ -580,10 +580,10 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
                 .thenReturn(Optional.of(secret));
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        Account account = service.reauthenticate(study, REAUTH_SIGNIN);
+        Account account = service.reauthenticate(app, REAUTH_SIGNIN);
         assertEquals(account.getId(), USER_ID);
         assertEquals(account.getStudyId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
@@ -600,11 +600,11 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void reauthenticationDisabled() throws Exception {
-        Study study = Study.create();
-        study.setReauthenticationEnabled(false);
+        App app = App.create();
+        app.setReauthenticationEnabled(false);
 
         try {
-            service.reauthenticate(study, REAUTH_SIGNIN);
+            service.reauthenticate(app, REAUTH_SIGNIN);
             fail("Should have thrown exception");
         } catch (UnauthorizedException e) {
             // expected exception
@@ -616,11 +616,11 @@ public class AccountServiceTest extends Mockito {
     // branch coverage
     @Test
     public void reauthenticationFlagNull() {
-        Study study = Study.create();
-        study.setReauthenticationEnabled(null);
+        App app = App.create();
+        app.setReauthenticationEnabled(null);
 
         try {
-            service.reauthenticate(study, REAUTH_SIGNIN);
+            service.reauthenticate(app, REAUTH_SIGNIN);
             fail("Should have thrown exception");
         } catch (UnauthorizedException e) {
             // expected exception
@@ -633,10 +633,10 @@ public class AccountServiceTest extends Mockito {
     public void reauthenticateAccountNotFound() throws Exception {
         when(mockAccountDao.getAccount(REAUTH_SIGNIN.getAccountId())).thenReturn(Optional.empty());
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(study, REAUTH_SIGNIN);
+        service.reauthenticate(app, REAUTH_SIGNIN);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -648,10 +648,10 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
                 .thenReturn(Optional.of(secret));
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(study, REAUTH_SIGNIN);
+        service.reauthenticate(app, REAUTH_SIGNIN);
     }
 
     @Test(expectedExceptions = AccountDisabledException.class)
@@ -663,10 +663,10 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
                 .thenReturn(Optional.of(secret));
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(study, REAUTH_SIGNIN);
+        service.reauthenticate(app, REAUTH_SIGNIN);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -676,10 +676,10 @@ public class AccountServiceTest extends Mockito {
 
         // it has no record in the secrets table
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(study, REAUTH_SIGNIN);
+        service.reauthenticate(app, REAUTH_SIGNIN);
     }
 
     // This throws ENFE if password fails, so this just verifies a negative case (account status
@@ -689,21 +689,21 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
         persistedAccount.setStatus(DISABLED);
 
-        Study study = Study.create();
+        App app = App.create();
 
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
                 .withPassword("bad password").build();
-        service.authenticate(study, signIn);
+        service.authenticate(app, signIn);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void reauthenticateBadReauthToken() throws Exception {
         mockGetAccountById(ACCOUNT_ID, false);
 
-        Study study = Study.create();
-        study.setReauthenticationEnabled(true);
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(study, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+        service.reauthenticate(app, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
                 .withReauthToken("wrong reauth token").build());
     }
 
@@ -754,12 +754,12 @@ public class AccountServiceTest extends Mockito {
         Account account = mockGetAccountById(ACCOUNT_ID, true);
         account.setStudyId("wrong-study");
 
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
 
-        service.createAccount(study, account, null);
+        service.createAccount(app, account, null);
 
-        verify(mockAccountDao).createAccount(eq(study), accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture(), eq(null));
 
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
@@ -853,11 +853,11 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
         persistedAccount.setEmailVerified(false);
 
-        Study study = Study.create();
-        study.setVerifyChannelOnSignInEnabled(true);
-        study.setEmailVerificationEnabled(true);
+        App app = App.create();
+        app.setVerifyChannelOnSignInEnabled(true);
+        app.setEmailVerificationEnabled(true);
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -866,13 +866,13 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_PHONE, true);
         persistedAccount.setPhoneVerified(null);
 
-        Study study = Study.create();
-        study.setVerifyChannelOnSignInEnabled(true);
+        App app = App.create();
+        app.setVerifyChannelOnSignInEnabled(true);
 
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
         SignIn phoneSignIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(PHONE)
                 .withPassword(DUMMY_PASSWORD).build();
-        service.authenticate(study, phoneSignIn);
+        service.authenticate(app, phoneSignIn);
     }
     
     @Test
@@ -881,10 +881,10 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
         persistedAccount.setEmailVerified(false);
 
-        Study study = Study.create();
-        study.setEmailVerificationEnabled(false);
+        App app = App.create();
+        app.setEmailVerificationEnabled(false);
 
-        service.authenticate(study, PASSWORD_SIGNIN); 
+        service.authenticate(app, PASSWORD_SIGNIN); 
     }
 
     @Test
@@ -893,10 +893,10 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(PASSWORD_SIGNIN.getAccountId(), true); 
         persistedAccount.setEmailVerified(false);
 
-        Study study = Study.create();
-        study.setVerifyChannelOnSignInEnabled(false);
+        App app = App.create();
+        app.setVerifyChannelOnSignInEnabled(false);
 
-        service.authenticate(study, PASSWORD_SIGNIN);
+        service.authenticate(app, PASSWORD_SIGNIN);
     }
     
     @Test
@@ -908,11 +908,11 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(phoneSignIn.getAccountId(), true);
         persistedAccount.setPhoneVerified(null);
         
-        Study study = Study.create();
-        study.setVerifyChannelOnSignInEnabled(false);
+        App app = App.create();
+        app.setVerifyChannelOnSignInEnabled(false);
 
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough. 
-        service.authenticate(study, phoneSignIn);
+        service.authenticate(app, phoneSignIn);
     }
     
     @Test

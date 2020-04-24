@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -187,12 +187,12 @@ public class AppConfigService {
         
         appConfig.setAppId(appId);
         
-        Study study = studyService.getStudy(appId);
+        App app = studyService.getStudy(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, study.getDataGroups(), substudyIds, true);
+                fileService, app.getDataGroups(), substudyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -221,12 +221,12 @@ public class AppConfigService {
         
         appConfig.setAppId(appId);
         
-        Study study = studyService.getStudy(appId);
+        App app = studyService.getStudy(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, study.getDataGroups(), substudyIds, false);
+                fileService, app.getDataGroups(), substudyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.

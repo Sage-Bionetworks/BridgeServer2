@@ -50,7 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -79,7 +79,7 @@ public class UserManagementControllerTest extends Mockito {
     BridgeConfig mockBridgeConfig;
 
     @Mock
-    Study mockStudy;
+    App mockApp;
 
     @Mock
     HttpServletRequest mockRequest;
@@ -121,9 +121,9 @@ public class UserManagementControllerTest extends Mockito {
 
         doReturn(session).when(mockUserAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(mockAuthService).getSession(any(String.class));
-        doReturn(mockStudy).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(mockApp).when(mockStudyService).getStudy(TEST_APP_ID);
 
-        when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
+        when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(null).when(controller).getMetrics();
 
         doReturn(mockRequest).when(controller).request();
@@ -143,7 +143,7 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void signInForSuperadmin() throws Exception {
         // We look specifically for an account in the API study
-        doReturn(mockStudy).when(mockStudyService).getStudy(API_APP_ID);
+        doReturn(mockApp).when(mockStudyService).getStudy(API_APP_ID);
         
         // Set environment to local in order to test that cookies are set
         when(mockBridgeConfig.getEnvironment()).thenReturn(LOCAL);
@@ -153,7 +153,7 @@ public class UserManagementControllerTest extends Mockito {
                 .withPassword(PASSWORD).build();
         mockRequestBody(mockRequest, signIn);
 
-        when(mockAuthService.signIn(eq(mockStudy), any(CriteriaContext.class), signInCaptor.capture()))
+        when(mockAuthService.signIn(eq(mockApp), any(CriteriaContext.class), signInCaptor.capture()))
                 .thenReturn(session);
 
         JsonNode result = controller.signInForSuperAdmin();
@@ -178,7 +178,7 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void signInForAdminNotASuperAdmin() throws Exception {
         // We look specifically for an account in the API study
-        doReturn(mockStudy).when(mockStudyService).getStudy(API_APP_ID);
+        doReturn(mockApp).when(mockStudyService).getStudy(API_APP_ID);
         
         SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
                 .withPassword("password").build();
@@ -186,7 +186,7 @@ public class UserManagementControllerTest extends Mockito {
 
         // But this person is actually a worker, not an admin
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER)).build());
-        when(mockAuthService.signIn(eq(mockStudy), any(CriteriaContext.class), signInCaptor.capture()))
+        when(mockAuthService.signIn(eq(mockApp), any(CriteriaContext.class), signInCaptor.capture()))
                 .thenReturn(session);
 
         try {
@@ -207,9 +207,9 @@ public class UserManagementControllerTest extends Mockito {
         SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
 
-        Study nextStudy = Study.create();
-        nextStudy.setIdentifier("nextStudy");
-        when(mockStudyService.getStudy("nextStudy")).thenReturn(nextStudy);
+        App nextApp = App.create();
+        nextApp.setIdentifier("nextStudy");
+        when(mockStudyService.getStudy("nextStudy")).thenReturn(nextApp);
 
         controller.changeStudyForAdmin();
         assertEquals(session.getAppId(), "nextStudy");
@@ -285,6 +285,6 @@ public class UserManagementControllerTest extends Mockito {
         StatusMessage result = controller.deleteUser(USER_ID);
         assertEquals(result, UserManagementController.DELETED_MSG);
 
-        verify(mockUserAdminService).deleteUser(mockStudy, USER_ID);
+        verify(mockUserAdminService).deleteUser(mockApp, USER_ID);
     }
 }

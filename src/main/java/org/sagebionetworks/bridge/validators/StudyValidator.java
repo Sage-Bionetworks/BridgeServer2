@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.upload.UploadFieldSize;
 import org.sagebionetworks.bridge.upload.UploadUtil;
@@ -62,28 +62,28 @@ public class StudyValidator implements Validator {
     
     @Override
     public boolean supports(Class<?> clazz) {
-        return Study.class.isAssignableFrom(clazz);
+        return App.class.isAssignableFrom(clazz);
     }
 
     @Override
     public void validate(Object obj, Errors errors) {
-        Study study = (Study)obj;
-        if (isBlank(study.getIdentifier())) {
+        App app = (App)obj;
+        if (isBlank(app.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         } else {
-            if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
+            if (!app.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
                 errors.rejectValue("identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
             }
-            if (study.getIdentifier().length() < 2) {
+            if (app.getIdentifier().length() < 2) {
                 errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
-        if (study.getActivityEventKeys().stream()
+        if (app.getActivityEventKeys().stream()
                 .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
             errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
         }
-        if (study.getAutomaticCustomEvents() != null) {
-            for (Map.Entry<String, String> entry : study.getAutomaticCustomEvents().entrySet()) {
+        if (app.getAutomaticCustomEvents() != null) {
+            for (Map.Entry<String, String> entry : app.getAutomaticCustomEvents().entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
                 
@@ -95,7 +95,7 @@ public class StudyValidator implements Validator {
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
                 
                 String originEventKey = autoEventSpec.getLeft();
-                if (!specifiesValidEventKey(study.getActivityEventKeys(), originEventKey)) {
+                if (!specifiesValidEventKey(app.getActivityEventKeys(), originEventKey)) {
                     errors.rejectValue("automaticCustomEvents["+key+"]", "'" + originEventKey + "' is not a valid custom or system event ID");
                 }
                 String periodString = autoEventSpec.getRight();
@@ -106,30 +106,30 @@ public class StudyValidator implements Validator {
                 }
             }
         }
-        if (isBlank(study.getName())) {
+        if (isBlank(app.getName())) {
             errors.rejectValue("name", "is required");
         }
-        if (study.isReauthenticationEnabled() == null) {
+        if (app.isReauthenticationEnabled() == null) {
             errors.rejectValue("reauthenticationEnabled", "is required");
         }
-        if (study.getShortName() != null && study.getShortName().length() > 10) {
+        if (app.getShortName() != null && app.getShortName().length() > 10) {
             errors.rejectValue("shortName", "must be 10 characters or less");
         }
-        if (isBlank(study.getSponsorName())) {
+        if (isBlank(app.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
         }
-        if (isBlank(study.getSupportEmail())) {
+        if (isBlank(app.getSupportEmail())) {
             errors.rejectValue("supportEmail", "is required");
         } else {
-            validateEmail(errors, study.getSupportEmail(), "supportEmail");
+            validateEmail(errors, app.getSupportEmail(), "supportEmail");
         }
-        validateEmail(errors, study.getTechnicalEmail(), "technicalEmail");
-        validateEmail(errors, study.getConsentNotificationEmail(), "consentNotificationEmail");
+        validateEmail(errors, app.getTechnicalEmail(), "technicalEmail");
+        validateEmail(errors, app.getConsentNotificationEmail(), "consentNotificationEmail");
 
         // uploadMetadatafieldDefinitions
-        List<UploadFieldDefinition> uploadMetadataFieldDefList = study.getUploadMetadataFieldDefinitions();
+        List<UploadFieldDefinition> uploadMetadataFieldDefList = app.getUploadMetadataFieldDefinitions();
         if (!uploadMetadataFieldDefList.isEmpty()) {
-            UploadFieldDefinitionListValidator.INSTANCE.validate(study.getUploadMetadataFieldDefinitions(), errors,
+            UploadFieldDefinitionListValidator.INSTANCE.validate(app.getUploadMetadataFieldDefinitions(), errors,
                     "uploadMetadataFieldDefinitions");
 
             // Check max size for metadata fields.
@@ -144,24 +144,24 @@ public class StudyValidator implements Validator {
             }
         }
         // These *should* be set if they are null, with defaults
-        if (study.getPasswordPolicy() == null) {
+        if (app.getPasswordPolicy() == null) {
             errors.rejectValue("passwordPolicy", "is required");
         } else {
             errors.pushNestedPath("passwordPolicy");
-            PasswordPolicy policy = study.getPasswordPolicy();
+            PasswordPolicy policy = app.getPasswordPolicy();
             if (!isInRange(policy.getMinLength(), 2)) {
                 errors.rejectValue("minLength", "must be 2-"+PasswordPolicy.FIXED_MAX_LENGTH+" characters");
             }
             errors.popNestedPath();
         }
-        if (study.getMinAgeOfConsent() < 0) {
+        if (app.getMinAgeOfConsent() < 0) {
             errors.rejectValue("minAgeOfConsent", "must be zero (no minimum age of consent) or higher");
         }
-        if (study.getAccountLimit() < 0) {
+        if (app.getAccountLimit() < 0) {
             errors.rejectValue("accountLimit", "must be zero (no limit set) or higher");
         }
         
-        for (String userProfileAttribute : study.getUserProfileAttributes()) {
+        for (String userProfileAttribute : app.getUserProfileAttributes()) {
             if (RESERVED_ATTR_NAMES.contains(userProfileAttribute)) {
                 String msg = String.format("'%s' conflicts with existing user profile property", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
@@ -172,19 +172,19 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("userProfileAttributes", msg);
             }
         }
-        validateDataGroupNamesAndFitForSynapseExport(errors, study.getDataGroups());
+        validateDataGroupNamesAndFitForSynapseExport(errors, app.getDataGroups());
 
         // emailVerificationEnabled=true (public study):
         //     externalIdValidationEnabled and externalIdRequiredOnSignup can vary independently
         // emailVerificationEnabled=false:
         //     externalIdValidationEnabled and externalIdRequiredOnSignup must both be true
-        if (!study.isEmailVerificationEnabled() && !study.isExternalIdRequiredOnSignup()) {
+        if (!app.isEmailVerificationEnabled() && !app.isExternalIdRequiredOnSignup()) {
             errors.rejectValue("externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
         }
 
         // Links in installedLinks are length-constrained by SMS.
-        if (!study.getInstallLinks().isEmpty()) {
-            for (Map.Entry<String,String> entry : study.getInstallLinks().entrySet()) {
+        if (!app.getInstallLinks().isEmpty()) {
+            for (Map.Entry<String,String> entry : app.getInstallLinks().entrySet()) {
                 if (isBlank(entry.getValue())) {
                     errors.rejectValue("installLinks", "cannot be blank");
                 } else if (entry.getValue().length() > BridgeConstants.APP_LINK_MAX_LENGTH) {
@@ -194,7 +194,7 @@ public class StudyValidator implements Validator {
             }
         }        
         
-        for (Map.Entry<String, OAuthProvider> entry : study.getOAuthProviders().entrySet()) {
+        for (Map.Entry<String, OAuthProvider> entry : app.getOAuthProviders().entrySet()) {
             String fieldName = "oauthProviders["+entry.getKey()+"]";
             OAuthProvider provider = entry.getValue();
             if (provider == null) {
@@ -218,8 +218,8 @@ public class StudyValidator implements Validator {
         }
         
         // app link configuration is not required, but if it is provided, we validate it
-        if (study.getAppleAppLinks() != null && !study.getAppleAppLinks().isEmpty()) {
-            validateAppLinks(errors, "appleAppLinks", study.getAppleAppLinks(), (AppleAppLink link) -> {
+        if (app.getAppleAppLinks() != null && !app.getAppleAppLinks().isEmpty()) {
+            validateAppLinks(errors, "appleAppLinks", app.getAppleAppLinks(), (AppleAppLink link) -> {
                 if (isBlank(link.getAppId())) {
                     errors.rejectValue("appID", "cannot be blank or null");
                 }
@@ -236,8 +236,8 @@ public class StudyValidator implements Validator {
                 return link.getAppId();
             });
         }
-        if (study.getAndroidAppLinks() != null && !study.getAndroidAppLinks().isEmpty()) {
-            validateAppLinks(errors, "androidAppLinks", study.getAndroidAppLinks(), (AndroidAppLink link) -> {
+        if (app.getAndroidAppLinks() != null && !app.getAndroidAppLinks().isEmpty()) {
+            validateAppLinks(errors, "androidAppLinks", app.getAndroidAppLinks(), (AndroidAppLink link) -> {
                 if (isBlank(link.getNamespace())) {
                     errors.rejectValue("namespace", "cannot be blank or null");
                 }

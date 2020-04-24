@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -208,22 +208,22 @@ public class TemplateService {
         defaultTemplatesMap.put(SMS_VERIFY_PHONE, Triple.of(null, defaultVerifyPhoneSmsTemplate, TEXT));
     }
     
-    public TemplateRevision getRevisionForUser(Study study, TemplateType type) {
+    public TemplateRevision getRevisionForUser(App app, TemplateType type) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
-            .withAppId(study.getIdentifier())
+            .withAppId(app.getIdentifier())
             .build();
 
-        Template template = getTemplateForUser(study, context, type)
+        Template template = getTemplateForUser(app, context, type)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         return templateRevisionDao.getTemplateRevision(template.getGuid(), template.getPublishedCreatedOn())
                 .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
     }
     
     @SuppressWarnings("unchecked")
-    Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
+    Optional<Template> getTemplateForUser(App app, CriteriaContext context, TemplateType type) {
         checkNotNull(context);
         checkNotNull(type);
 
@@ -240,7 +240,7 @@ public class TemplateService {
             return Optional.of(templateMatches.get(0));
         }
         // If not, fall back to the default specified for this app, if it exists. 
-        String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
+        String defaultGuid = app.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             // Specified default may not exist, log as integrity violation, but continue
             Optional<Template> optional = templateDao.getTemplate(context.getAppId(), defaultGuid);
@@ -301,7 +301,7 @@ public class TemplateService {
         return template;
     }
 
-    public GuidVersionHolder createTemplate(Study study, Template template) {
+    public GuidVersionHolder createTemplate(App app, Template template) {
         TemplateRevision revision = TemplateRevision.create();
         if (template.getTemplateType() != null) {
             Triple<String,String,MimeType> triple = defaultTemplatesMap.get(template.getTemplateType());
@@ -310,16 +310,16 @@ public class TemplateService {
             revision.setMimeType(triple.getRight());
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
 
         String templateGuid = generateGuid();
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
 
-        template.setAppId(study.getIdentifier());
+        template.setAppId(app.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);
@@ -355,10 +355,10 @@ public class TemplateService {
         template.setTemplateType(existing.getTemplateType());
         template.setCreatedOn(existing.getCreatedOn());
         
-        Study study = studyService.getStudy(appId);
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        App app = studyService.getStudy(appId);
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
 
         if (template.isDeleted() && isDefaultTemplate(template, appId)) {
@@ -403,8 +403,8 @@ public class TemplateService {
     }
 
     private boolean isDefaultTemplate(Template template, String appId) {
-        Study study = studyService.getStudy(appId);
-        String defaultGuid = study.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
+        App app = studyService.getStudy(appId);
+        String defaultGuid = app.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
         
         return (template.getGuid().equals(defaultGuid));
     }

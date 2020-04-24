@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -104,14 +104,14 @@ public class SurveyServiceMockTest {
     
     SurveyService service;
     
-    Study study;
+    App app;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
-        study = TestUtils.getValidStudy(SurveyServiceMockTest.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = TestUtils.getValidStudy(SurveyServiceMockTest.class);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -629,7 +629,7 @@ public class SurveyServiceMockTest {
     
     @Test
     public void updateSurveyValidatesDataGroups() {
-        study.setDataGroups(ImmutableSet.of("groupA", "groupB", "groupC"));
+        app.setDataGroups(ImmutableSet.of("groupA", "groupB", "groupC"));
         Survey existing = Survey.create();
         existing.setAppId(TEST_APP_ID);
         

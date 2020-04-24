@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -225,20 +225,20 @@ public class StudyConsentServiceMockTest extends Mockito {
         when(mockDao.getConsent(SUBPOP_GUID, CREATED_ON)).thenReturn(consent);
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenReturn(DOCUMENT);
         
-        Study study = Study.create();
+        App app = App.create();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SUBPOP_GUID);
         
         service.setConsentTemplate(new ByteArrayResource("<doc>${consent.body}</doc>".getBytes()));
         
-        StudyConsentView result = service.publishConsent(study, subpop, CREATED_ON);
+        StudyConsentView result = service.publishConsent(app, subpop, CREATED_ON);
         assertEquals(result.getDocumentContent(), DOCUMENT + SIGNATURE_BLOCK);
         assertEquals(result.getCreatedOn(), CREATED_ON);
         assertEquals(result.getSubpopulationGuid(), SUBPOP_GUID.getGuid());
         assertEquals(result.getStudyConsent(), consent);
         
-        verify(mockSubpopService).updateSubpopulation(eq(study), subpopCaptor.capture());
+        verify(mockSubpopService).updateSubpopulation(eq(app), subpopCaptor.capture());
         assertEquals(subpopCaptor.getValue().getPublishedConsentCreatedOn(), CREATED_ON);
 
         verify(mockS3Client, times(2)).putObject(requestCaptor.capture());
@@ -259,12 +259,12 @@ public class StudyConsentServiceMockTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void publishConsentNotFound() throws Exception {
-        Study study = Study.create();
+        App app = App.create();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SUBPOP_GUID);
         
-        service.publishConsent(study, subpop, CREATED_ON);
+        service.publishConsent(app, subpop, CREATED_ON);
     }
 
     @Test
@@ -310,12 +310,12 @@ public class StudyConsentServiceMockTest extends Mockito {
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenReturn(DOCUMENT);
         doThrow(new IOException("Test message")).when(service).writeBytesToPublicS3(any(), any(), any(), any());
         
-        Study study = Study.create();
+        App app = App.create();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SUBPOP_GUID);
         
-        service.publishConsent(study, subpop, CREATED_ON);
+        service.publishConsent(app, subpop, CREATED_ON);
     }
     
     @Test(expectedExceptions = BridgeServiceException.class, expectedExceptionsMessageRegExp = "java.io.IOException")
@@ -325,12 +325,12 @@ public class StudyConsentServiceMockTest extends Mockito {
         consent.setSubpopulationGuid(SUBPOP_GUID.getGuid());
         when(mockDao.getConsent(SUBPOP_GUID, CREATED_ON)).thenReturn(consent);
         when(mockS3Helper.readS3FileAsString(CONSENT_BUCKET, consent.getStoragePath())).thenThrow(new IOException());
-        Study study = Study.create();
+        App app = App.create();
         
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SUBPOP_GUID);
         
-        service.publishConsent(study, subpop, CREATED_ON);
+        service.publishConsent(app, subpop, CREATED_ON);
     }
     
     @Test

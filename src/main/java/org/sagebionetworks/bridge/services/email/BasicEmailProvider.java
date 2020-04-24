@@ -17,7 +17,7 @@ import javax.mail.util.ByteArrayDataSource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.ImmutableMap;
@@ -33,9 +33,9 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     private final List<MimeBodyPart> attachments;
     private final EmailType type;
     
-    private BasicEmailProvider(Study study, String overrideSenderEmail, Map<String,String> tokenMap,
+    private BasicEmailProvider(App app, String overrideSenderEmail, Map<String,String> tokenMap,
             Set<String> recipientEmails, TemplateRevision revision, List<MimeBodyPart> attachments, EmailType type) {
-        super(study);
+        super(app);
         this.overrideSenderEmail = overrideSenderEmail;
         this.recipientEmails = recipientEmails;
         this.tokenMap = tokenMap;
@@ -102,7 +102,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     }
 
     public static class Builder {
-        private Study study;
+        private App app;
         private String overrideSenderEmail;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
@@ -110,8 +110,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private TemplateRevision revision;
         private EmailType type;
 
-        public Builder withStudy(Study study) {
-            this.study = study;
+        public Builder withStudy(App app) {
+            this.app = app;
             return this;
         }
 
@@ -166,14 +166,14 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
 
         public BasicEmailProvider build() {
-            checkNotNull(study);
+            checkNotNull(app);
             checkNotNull(revision);
             
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             
-            return new BasicEmailProvider(study, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails,
+            return new BasicEmailProvider(app, overrideSenderEmail, ImmutableMap.copyOf(tokenMap), recipientEmails,
                     revision, attachments, type);
         }
     }

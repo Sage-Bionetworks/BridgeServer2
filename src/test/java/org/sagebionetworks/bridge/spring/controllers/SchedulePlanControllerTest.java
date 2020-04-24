@@ -34,7 +34,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -43,7 +43,7 @@ import org.sagebionetworks.bridge.models.schedules.ABTestScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -74,17 +74,17 @@ public class SchedulePlanControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<SchedulePlan> schedulePlanCaptor;
     
-    Study study;
+    App app;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        study = new DynamoStudy();
-        study.setIdentifier(TEST_APP_ID);
+        app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
         
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
         
         when(mockUserSession.getAppId()).thenReturn(TEST_APP_ID);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
@@ -123,13 +123,13 @@ public class SchedulePlanControllerTest extends Mockito {
         SchedulePlan plan = createSchedulePlan();
         mockRequestBody(mockRequest, plan);
         
-        when(mockSchedulePlanService.createSchedulePlan(eq(study), any())).thenReturn(plan);
+        when(mockSchedulePlanService.createSchedulePlan(eq(app), any())).thenReturn(plan);
         
         GuidVersionHolder holder = controller.createSchedulePlan();
         assertEquals(holder.getGuid(), GUID);
         assertEquals(holder.getVersion(), VERSION);
         
-        verify(mockSchedulePlanService).createSchedulePlan(eq(study), schedulePlanCaptor.capture());
+        verify(mockSchedulePlanService).createSchedulePlan(eq(app), schedulePlanCaptor.capture());
         SchedulePlan savedPlan = schedulePlanCaptor.getValue();
         assertEquals(plan, savedPlan);
     }
@@ -139,13 +139,13 @@ public class SchedulePlanControllerTest extends Mockito {
         SchedulePlan plan = createSchedulePlan();
         mockRequestBody(mockRequest, plan);
         
-        when(mockSchedulePlanService.updateSchedulePlan(eq(study), any())).thenReturn(plan);
+        when(mockSchedulePlanService.updateSchedulePlan(eq(app), any())).thenReturn(plan);
         
         GuidVersionHolder holder = controller.updateSchedulePlan(plan.getGuid());
         assertEquals(holder.getGuid(), GUID);
         assertEquals(holder.getVersion(), VERSION);
         
-        verify(mockSchedulePlanService).updateSchedulePlan(eq(study), schedulePlanCaptor.capture());
+        verify(mockSchedulePlanService).updateSchedulePlan(eq(app), schedulePlanCaptor.capture());
         
         SchedulePlan savedPlan = schedulePlanCaptor.getValue();
         assertEquals(plan, savedPlan);
@@ -198,7 +198,7 @@ public class SchedulePlanControllerTest extends Mockito {
         StatusMessage result = controller.deleteSchedulePlan("GGG", false);
         assertEquals(result, SchedulePlanController.DELETE_MSG);
         
-        verify(mockSchedulePlanService).deleteSchedulePlan(study.getIdentifier(), "GGG");
+        verify(mockSchedulePlanService).deleteSchedulePlan(app.getIdentifier(), "GGG");
     }
     
     @Test

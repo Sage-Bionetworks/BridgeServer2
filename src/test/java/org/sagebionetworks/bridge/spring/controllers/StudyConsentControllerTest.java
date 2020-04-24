@@ -24,12 +24,12 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -44,9 +44,9 @@ public class StudyConsentControllerTest extends Mockito {
     private static final String GUID = "guid";
     private static final String DATETIME_STRING = DateTime.now().toString();
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(GUID);
-    private static final Study STUDY = new DynamoStudy();
+    private static final App APP = new DynamoApp();
     static {
-        STUDY.setIdentifier(TEST_APP_ID);
+        APP.setIdentifier(TEST_APP_ID);
     }
 
     @Mock
@@ -165,12 +165,12 @@ public class StudyConsentControllerTest extends Mockito {
     public void publishConsentV2() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(APP);
         
         StatusMessage result = controller.publishConsentV2(GUID, DATETIME_STRING);
         assertEquals(result.getMessage(), "Consent document set as active.");
 
-        verify(mockStudyConsentService).publishConsent(STUDY, mockSubpopulation,
+        verify(mockStudyConsentService).publishConsent(APP, mockSubpopulation,
                 DateTime.parse(DATETIME_STRING).getMillis());
     }
 }

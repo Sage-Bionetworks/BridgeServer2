@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -57,7 +57,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -119,7 +119,7 @@ public class UserProfileControllerTest extends Mockito {
     
     UserSession session;
     
-    Study study;
+    App app;
     
     @Spy
     @InjectMocks
@@ -129,14 +129,14 @@ public class UserProfileControllerTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        study = new DynamoStudy();
-        study.setIdentifier(TEST_APP_ID);
-        study.setDataGroups(USER_DATA_GROUPS);
-        study.setUserProfileAttributes(TEST_STUDY_ATTRIBUTES);
+        app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
+        app.setDataGroups(USER_DATA_GROUPS);
+        app.setUserProfileAttributes(TEST_STUDY_ATTRIBUTES);
 
         when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
-        when(mockStudyService.getStudy((String)any())).thenReturn(study);
+        when(mockStudyService.getStudy((String)any())).thenReturn(app);
         
         ViewCache viewCache = new ViewCache();
         viewCache.setCachePeriod(BRIDGE_VIEW_EXPIRE_IN_SECONDS);
@@ -183,12 +183,12 @@ public class UserProfileControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withLastName("Last")
                 .withFirstName("First").withEmail(EMAIL).withAttributes(attributes).build();
         
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(app, USER_ID, false);
         
         String result = controller.getUserProfile();
         JsonNode node = BridgeObjectMapper.get().readTree(result);
         
-        verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, USER_ID, false);
         
         assertEquals(node.get("firstName").textValue(), "First");
         assertEquals("Last", node.get("lastName").textValue());
@@ -206,12 +206,12 @@ public class UserProfileControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).withAttributes(attributes)
                 .build();
         
-        doReturn(participant).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(participant).when(mockParticipantService).getParticipant(app, USER_ID, false);
         
         String result = controller.getUserProfile();
         JsonNode node = BridgeObjectMapper.get().readTree(result);
         
-        verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, USER_ID, false);
         
         assertFalse(node.has("firstName"));
         assertFalse(node.has("lastName"));
@@ -240,7 +240,7 @@ public class UserProfileControllerTest extends Mockito {
                 .withFirstName("First")
                 .withLastName("Last").build();
         
-        doReturn(participant, updatedParticipant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant, updatedParticipant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
         
         // This has a field that should not be passed to the StudyParticipant, because it didn't exist before
         // (externalId)
@@ -255,9 +255,9 @@ public class UserProfileControllerTest extends Mockito {
                 
         // Verify that existing user information (health code) has been retrieved and used when updating session
         InOrder inOrder = inOrder(mockParticipantService);
-        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, false);
-        inOrder.verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
-        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, true);
+        inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, false);
+        inOrder.verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
+        inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, true);
         
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals(persisted.getHealthCode(), "existingHealthCode");
@@ -281,7 +281,7 @@ public class UserProfileControllerTest extends Mockito {
                 .withId(USER_ID)
                 .withSubstudyIds(USER_SUBSTUDY_IDS) // which includes substudyA
                 .withFirstName("First").build();
-        doReturn(existing).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(existing).when(mockParticipantService).getParticipant(app, USER_ID, false);
         session.setParticipant(existing);
         
         Set<String> dataGroupSet = ImmutableSet.of("group1");
@@ -292,7 +292,7 @@ public class UserProfileControllerTest extends Mockito {
         assertEquals(result.get("firstName").textValue(), "First");
         assertEquals(result.get("dataGroups").get(0).textValue(), "group1");
         
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
         
         StudyParticipant participant = participantCaptor.getValue();
@@ -316,8 +316,8 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     public void invalidDataGroupsRejected() throws Exception {
         StudyParticipant existing = new StudyParticipant.Builder().withFirstName("First").build();
-        doReturn(existing).when(mockParticipantService).getParticipant(study, USER_ID, false);
-        doThrow(new InvalidEntityException("Invalid data groups")).when(mockParticipantService).updateParticipant(eq(study),
+        doReturn(existing).when(mockParticipantService).getParticipant(app, USER_ID, false);
+        doThrow(new InvalidEntityException("Invalid data groups")).when(mockParticipantService).updateParticipant(eq(app),
                 any());
         
         mockRequestBody(mockRequest, "{\"dataGroups\":[\"completelyInvalidGroup\"]}");
@@ -355,7 +355,7 @@ public class UserProfileControllerTest extends Mockito {
                 .withId(USER_ID)
                 .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withFirstName("First").build();
-        doReturn(existing).when(mockParticipantService).getParticipant(study, USER_ID, false);
+        doReturn(existing).when(mockParticipantService).getParticipant(app, USER_ID, false);
         session.setParticipant(existing);
         
         mockRequestBody(mockRequest, "{}");
@@ -364,7 +364,7 @@ public class UserProfileControllerTest extends Mockito {
         
         assertEquals(result.get("firstName").textValue(), "First");
         
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         
         StudyParticipant updated = participantCaptor.getValue();
         assertEquals(updated.getId(), USER_ID);

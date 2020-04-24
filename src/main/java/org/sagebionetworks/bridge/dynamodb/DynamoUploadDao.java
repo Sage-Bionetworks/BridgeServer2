@@ -126,7 +126,7 @@ public class DynamoUploadDao implements UploadDao {
             if (upload.getStudyId() == null) { 
                 String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
                 if (studyId == null) {
-                    throw new EntityNotFoundException(DynamoStudy.class,
+                    throw new EntityNotFoundException(DynamoApp.class,
                             "Study not found for upload. User may have been deleted from system.");
                 }
                 upload.setStudyId(studyId);

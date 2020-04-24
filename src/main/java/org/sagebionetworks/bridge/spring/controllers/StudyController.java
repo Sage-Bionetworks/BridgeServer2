@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.models.studies.Study.STUDY_LIST_WRITER;
+import static org.sagebionetworks.bridge.models.studies.App.STUDY_LIST_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.Arrays;
@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.EmailVerificationStatusHolder;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.studies.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -67,9 +67,9 @@ public class StudyController extends BaseController {
 
     static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
 
-    private final Comparator<Study> STUDY_COMPARATOR = new Comparator<Study>() {
-        public int compare(Study study1, Study study2) {
-            return study1.getName().compareToIgnoreCase(study2.getName());
+    private final Comparator<App> STUDY_COMPARATOR = new Comparator<App>() {
+        public int compare(App app1, App app2) {
+            return app1.getName().compareToIgnoreCase(app2.getName());
         }
     };
 
@@ -103,7 +103,7 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping("/v3/studies/self")
-    public Study getCurrentStudy() {
+    public App getCurrentStudy() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
         return studyService.getStudy(session.getAppId());
@@ -113,24 +113,24 @@ public class StudyController extends BaseController {
     public VersionHolder updateStudyForDeveloperOrAdmin() {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
-        Study studyUpdate = parseJson(Study.class);
-        studyUpdate.setIdentifier(session.getAppId());
-        studyUpdate = studyService.updateStudy(studyUpdate, session.isInRole(ADMIN));
-        return new VersionHolder(studyUpdate.getVersion());
+        App appUpdate = parseJson(App.class);
+        appUpdate.setIdentifier(session.getAppId());
+        appUpdate = studyService.updateStudy(appUpdate, session.isInRole(ADMIN));
+        return new VersionHolder(appUpdate.getVersion());
     }
 
     @PostMapping("/v3/studies/{identifier}")
     public VersionHolder updateStudy(@PathVariable String identifier) {
         getAuthenticatedSession(SUPERADMIN);
         
-        Study studyUpdate = parseJson(Study.class);
-        studyUpdate.setIdentifier(identifier);
-        studyUpdate = studyService.updateStudy(studyUpdate, true);
-        return new VersionHolder(studyUpdate.getVersion());
+        App appUpdate = parseJson(App.class);
+        appUpdate.setIdentifier(identifier);
+        appUpdate = studyService.updateStudy(appUpdate, true);
+        return new VersionHolder(appUpdate.getVersion());
     }
 
     @GetMapping("/v3/studies/{identifier}")
-    public Study getStudy(@PathVariable String identifier) {
+    public App getStudy(@PathVariable String identifier) {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
         // since only admin and worker can call this method, we need to return all studies including deactivated ones
@@ -144,13 +144,13 @@ public class StudyController extends BaseController {
     public String getAllStudies(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary) throws Exception {        
         
-        List<Study> studies = studyService.getStudies();
+        List<App> studies = studyService.getStudies();
         if ("summary".equals(format) || "true".equals(summary)) {
             // then only return active study as summary
-            List<Study> activeStudiesSummary = studies.stream()
+            List<App> activeStudiesSummary = studies.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
             Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
-            ResourceList<Study> summaries = new ResourceList<Study>(activeStudiesSummary)
+            ResourceList<App> summaries = new ResourceList<App>(activeStudiesSummary)
                     .withRequestParam("summary", true);
             return STUDY_LIST_WRITER.writeValueAsString(summaries);  
         }
@@ -170,7 +170,7 @@ public class StudyController extends BaseController {
         }
         List<String> studyIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
         
-        Stream<Study> stream = null;
+        Stream<App> stream = null;
         // In our current study permissions model, an admin in the API study is a 
         // "cross-study admin" and can see all studies and can switch between all studies, 
         // so check for this condition.
@@ -182,8 +182,8 @@ public class StudyController extends BaseController {
                 .map(id -> studyService.getStudy(id))
                 .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
         }
-        List<Study> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
-        return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<Study>(studies));
+        List<App> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
+        return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<App>(studies));
     }
 
     @PostMapping("/v3/studies")
@@ -191,9 +191,9 @@ public class StudyController extends BaseController {
     public VersionHolder createStudy() {
         getAuthenticatedSession(SUPERADMIN);
 
-        Study study = parseJson(Study.class);
-        study = studyService.createStudy(study);
-        return new VersionHolder(study.getVersion());
+        App app = parseJson(App.class);
+        app = studyService.createStudy(app);
+        return new VersionHolder(app.getVersion());
     }
 
     @PostMapping("/v3/studies/init")
@@ -202,9 +202,9 @@ public class StudyController extends BaseController {
         getAuthenticatedSession(SUPERADMIN);
 
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
-        Study study = studyService.createStudyAndUsers(studyAndUsers);
+        App app = studyService.createStudyAndUsers(studyAndUsers);
 
-        return new VersionHolder(study.getVersion());
+        return new VersionHolder(app.getVersion());
     }
 
     @PostMapping("/v3/studies/self/synapseProject")
@@ -212,13 +212,13 @@ public class StudyController extends BaseController {
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current study
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         // then create project and team and grant admin permission to current user and exporter
         List<String> userIds = Arrays.asList(parseJson(String[].class));
-        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), study);
+        studyService.createSynapseProjectTeam(ImmutableList.copyOf(userIds), app);
 
-        return new SynapseProjectIdTeamIdHolder(study.getSynapseProjectId(), study.getSynapseDataAccessTeamId());
+        return new SynapseProjectIdTeamIdHolder(app.getSynapseProjectId(), app.getSynapseDataAccessTeamId());
     }
 
     // since only admin can delete study, no need to check if return results should contain deactivated ones
@@ -254,9 +254,9 @@ public class StudyController extends BaseController {
     @GetMapping("/v3/studies/self/emailStatus")
     public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
-        EmailVerificationStatus status = emailVerificationService.getEmailStatus(study.getSupportEmail());
+        EmailVerificationStatus status = emailVerificationService.getEmailStatus(app.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
     }
 
@@ -298,9 +298,9 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/self/verifyEmail")
     public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
-        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(study.getSupportEmail());
+        EmailVerificationStatus status = emailVerificationService.verifyEmailAddress(app.getSupportEmail());
         return new EmailVerificationStatusHolder(status);
     }
 

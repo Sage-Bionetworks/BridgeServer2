@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 @CrossOrigin
 @RestController
@@ -45,7 +45,7 @@ public class EmailController extends BaseController {
             if (studyId == null) {
                 throw new BadRequestException("Study not found.");
             }
-            Study study = studyService.getStudy(studyId);
+            App app = studyService.getStudy(studyId);
             
             // MailChimp submits email as data[email]
             String email = request().getParameter("data[email]");
@@ -57,12 +57,12 @@ public class EmailController extends BaseController {
             }
             
             // This should always return a healthCode under normal circumstances.
-            AccountId accountId = AccountId.forEmail(study.getIdentifier(), email);
+            AccountId accountId = AccountId.forEmail(app.getIdentifier(), email);
             String healthCode = accountService.getHealthCodeForAccount(accountId);
             if (healthCode == null) {
                 throw new BadRequestException("Email not found.");
             }
-            accountService.editAccount(study.getIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
+            accountService.editAccount(app.getIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {

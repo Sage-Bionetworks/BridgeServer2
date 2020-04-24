@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -73,10 +73,10 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setStudy(signInRequest.getStudyId());
 
-        Study study = studyService.getStudy(signInRequest.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        App app = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(app);
         
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
         UserSession session = null;
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
@@ -112,10 +112,10 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setStudy(signInRequest.getStudyId());
 
-        Study study = studyService.getStudy(signInRequest.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        App app = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(app);
         
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
         
         UserSession session = null;
         try {
@@ -134,14 +134,14 @@ public class AuthenticationController extends BaseController {
         SignIn signIn = parseJson(SignIn.class);
         getMetrics().setStudy(signIn.getStudyId());
 
-        Study study = studyService.getStudy(signIn.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        App app = studyService.getStudy(signIn.getStudyId());
+        verifySupportedVersionOrThrowException(app);
 
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
         UserSession session;
         try {
-            session = authenticationService.signIn(study, context, signIn);
+            session = authenticationService.signIn(app, context, signIn);
         } catch (ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;
@@ -160,13 +160,13 @@ public class AuthenticationController extends BaseController {
         }
         getMetrics().setStudy(signInRequest.getStudyId());
 
-        Study study = studyService.getStudy(signInRequest.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        App app = studyService.getStudy(signInRequest.getStudyId());
+        verifySupportedVersionOrThrowException(app);
         
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
         UserSession session;
         try {
-            session = authenticationService.reauthenticate(study, context, signInRequest);
+            session = authenticationService.reauthenticate(app, context, signInRequest);
         } catch (ConsentRequiredException e) {
             setCookieAndRecordMetrics(e.getUserSession());
             throw e;
@@ -232,8 +232,8 @@ public class AuthenticationController extends BaseController {
         
         String studyId = JsonUtils.asText(node, STUDY_PROPERTY);
         getMetrics().setStudy(studyId);
-        Study study = getStudyOrThrowException(studyId);
-        authenticationService.signUp(study, participant);
+        App app = getStudyOrThrowException(studyId);
+        authenticationService.signUp(app, participant);
         return new StatusMessage("Signed up.");
     }
 
@@ -279,10 +279,10 @@ public class AuthenticationController extends BaseController {
     public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
-        Study study = studyService.getStudy(signIn.getStudyId());
-        verifySupportedVersionOrThrowException(study);
+        App app = studyService.getStudy(signIn.getStudyId());
+        verifySupportedVersionOrThrowException(app);
         
-        authenticationService.requestResetPassword(study, false, signIn);
+        authenticationService.requestResetPassword(app, false, signIn);
 
         return new StatusMessage("If registered with the study, we'll send you instructions on how to change your password.");
     }
@@ -308,12 +308,12 @@ public class AuthenticationController extends BaseController {
         // Retrieve the desired study
         SignIn signIn = parseJson(SignIn.class);
         String targetStudyId = signIn.getStudyId();
-        Study targetStudy = studyService.getStudy(targetStudyId);
+        App targetApp = studyService.getStudy(targetStudyId);
 
         // Cross study administrator can switch to any study. Implement this here because clients 
         // cannot tell who is a cross-study administrator once they've switched studies.
         if (session.isInRole(SUPERADMIN)) {
-            sessionUpdateService.updateStudy(session, targetStudy.getIdentifier());
+            sessionUpdateService.updateStudy(session, targetApp.getIdentifier());
             return UserSessionInfo.toJSON(session);
         }
         // Otherwise, verify the user has access to this study
@@ -332,10 +332,10 @@ public class AuthenticationController extends BaseController {
         // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withUserId(account.getId())
-            .withAppId(targetStudy.getIdentifier())
+            .withAppId(targetApp.getIdentifier())
             .build();
         
-        UserSession newSession = authenticationService.getSessionFromAccount(targetStudy, context, account);
+        UserSession newSession = authenticationService.getSessionFromAccount(targetApp, context, account);
         cacheProvider.setUserSession(newSession);
         
         return UserSessionInfo.toJSON(newSession);
@@ -345,8 +345,8 @@ public class AuthenticationController extends BaseController {
     public JsonNode oauthSignIn() {
         OAuthAuthorizationToken token = parseJson(OAuthAuthorizationToken.class);
         
-        Study study = studyService.getStudy(token.getAppId());
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        App app = studyService.getStudy(token.getAppId());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
         
         UserSession session = authenticationService.oauthSignIn(context, token);
         setCookieAndRecordMetrics(session);
@@ -354,9 +354,9 @@ public class AuthenticationController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
-    private Study getStudyOrThrowException(String studyId) {
-        Study study = studyService.getStudy(studyId);
-        verifySupportedVersionOrThrowException(study);
-        return study;
+    private App getStudyOrThrowException(String studyId) {
+        App app = studyService.getStudy(studyId);
+        verifySupportedVersionOrThrowException(app);
+        return app;
     }
 }

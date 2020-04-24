@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
@@ -39,7 +39,7 @@ public class StudyValidatorTest {
     private static final String PACKAGE_NAME = "package_name";
     private static final String FINGERPRINTS = "sha256_cert_fingerprints";
 
-    private DynamoStudy study;
+    private DynamoApp study;
     
     @BeforeMethod
     public void createValidStudy() {
