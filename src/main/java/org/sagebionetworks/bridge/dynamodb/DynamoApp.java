@@ -10,6 +10,7 @@ import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedJson;
@@ -252,6 +253,7 @@ public final class DynamoApp implements App {
     }
     
     // for backwards compatibility, we must continue to expose this property
+    @DynamoDBIgnore
     public boolean isStudyIdExcludedInExport() {
         return appIdExcludedInExport;
     }

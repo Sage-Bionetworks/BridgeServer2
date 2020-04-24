@@ -98,8 +98,8 @@ public class AppServiceTest extends Mockito {
     private static final long BRIDGE_STAFF_TEAM_ID = 2468L;
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
     private static final String TEST_NAME_SCOPING_TOKEN = "qwerty";
-    private static final String TEST_PROJECT_NAME = "Test App AppServiceMockTest Project " + TEST_NAME_SCOPING_TOKEN;
-    private static final String TEST_TEAM_NAME = "Test App AppServiceMockTest Access Team " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_PROJECT_NAME = "Test App AppServiceTest Project " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_TEAM_NAME = "Test App AppServiceTest Access Team " + TEST_NAME_SCOPING_TOKEN;
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
@@ -305,7 +305,7 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(eq(VER_CACHE_KEY), verificationDataCaptor.capture(),
                 eq(AppService.VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS));
         JsonNode verificationData = BridgeObjectMapper.get().readTree(verificationDataCaptor.getValue());
-        assertEquals(verificationData.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(verificationData.get("appId").textValue(), TEST_APP_ID);
         assertEquals(verificationData.get("email").textValue(), consentNotificationEmail);
 
         // Verify sent email.
@@ -1188,7 +1188,7 @@ public class AppServiceTest extends Mockito {
         service.createAppAndUsers(mockStudyAndUsers);
     }
 
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a project ID.")
+    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "App already has a project ID.")
     public void createStudyAndUsersProjectIdExists() throws SynapseException {
         // mock
         App app = getTestStudy();
@@ -1291,7 +1291,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(retApp.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
     }
 
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a team ID.")
+    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "App already has a team ID.")
     public void createSynapseProjectTeamAccessTeamIdExists() throws SynapseException {
         // mock
         App app = getTestStudy();
@@ -1593,7 +1593,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(UploadValidationStrictness.REPORT, newApp.getUploadValidationStrictness());
 
         assertEquals(newApp.getIdentifier(), app.getIdentifier());
-        assertEquals(newApp.getName(), "Test Study [StudyServiceMockTest]");
+        assertEquals(newApp.getName(), "Test App [AppServiceTest]");
         assertEquals(newApp.getMinAgeOfConsent(), 18);
         assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
