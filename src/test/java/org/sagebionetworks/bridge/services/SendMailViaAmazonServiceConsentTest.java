@@ -18,13 +18,13 @@ import org.apache.commons.io.IOUtils;
 import org.mockito.ArgumentCaptor;
 
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -56,7 +56,7 @@ public class SendMailViaAmazonServiceConsentTest {
     private StudyConsentService studyConsentService;
     private EmailVerificationService emailVerificationService;
     private ArgumentCaptor<SendRawEmailRequest> argument;
-    private Study study;
+    private App app;
     private String consentBodyTemplate;
     private Subpopulation subpopulation;
     private TemplateRevision revision;
@@ -66,10 +66,10 @@ public class SendMailViaAmazonServiceConsentTest {
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
                 "conf/app-defaults/consent-page.xhtml").getFile()));
         
-        study = new DynamoStudy();
-        study.setName("Test Study (Sage)");
-        study.setIdentifier(TEST_APP_ID);
-        study.setSupportEmail(SUPPORT_EMAIL);
+        app = new DynamoApp();
+        app.setName("Test Study (Sage)");
+        app.setIdentifier(TEST_APP_ID);
+        app.setSupportEmail(SUPPORT_EMAIL);
 
         revision = TemplateRevision.create();
         revision.setSubject("Subject of Template");
@@ -77,7 +77,7 @@ public class SendMailViaAmazonServiceConsentTest {
         revision.setMimeType(MimeType.HTML);
         
         studyService = mock(StudyService.class);
-        when(studyService.getStudy(study.getIdentifier())).thenReturn(study);
+        when(studyService.getStudy(app.getIdentifier())).thenReturn(app);
         
         emailClient = mock(AmazonSimpleEmailServiceClient.class);
         argument = ArgumentCaptor.forClass(SendRawEmailRequest.class);
@@ -111,11 +111,11 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+        ConsentPdf consentPdf = new ConsentPdf(app, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -152,11 +152,11 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent,
+        ConsentPdf consentPdf = new ConsentPdf(app, PARTICIPANT, consent,
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -199,11 +199,11 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+        ConsentPdf consentPdf = new ConsentPdf(app, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -227,11 +227,11 @@ public class SendMailViaAmazonServiceConsentTest {
         
         String htmlTemplate = studyConsentService.getActiveConsent(subpopulation).getDocumentContent();
 
-        ConsentPdf consentPdf = new ConsentPdf(study, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
+        ConsentPdf consentPdf = new ConsentPdf(app, PARTICIPANT, consent, SharingScope.SPONSORS_AND_PARTNERS,
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();

@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -117,32 +117,32 @@ public class IntentService {
         }
         
         // validate study exists
-        Study study = studyService.getStudy(intent.getAppId());
+        App app = studyService.getStudy(intent.getAppId());
 
         // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());
-        subpopService.getSubpopulation(study.getIdentifier(), guid);
+        subpopService.getSubpopulation(app.getIdentifier(), guid);
         
         // validate it has not yet been submitted
         // the validator has ensured that phone or email, but not both, have been provided;
         CacheKey cacheKey = (intent.getPhone() == null) ?
-                CacheKey.itp(guid, study.getIdentifier(), intent.getEmail()) :
-                CacheKey.itp(guid, study.getIdentifier(), intent.getPhone());
+                CacheKey.itp(guid, app.getIdentifier(), intent.getEmail()) :
+                CacheKey.itp(guid, app.getIdentifier(), intent.getPhone());
 
         if (cacheProvider.getObject(cacheKey, IntentToParticipate.class) == null) {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
             
             // send an app store link to download the app, if we have something to send.
-            if (!study.getInstallLinks().isEmpty()) {
-                String url = getInstallLink(intent.getOsName(), study.getInstallLinks());
+            if (!app.getInstallLinks().isEmpty()) {
+                String url = getInstallLink(intent.getOsName(), app.getInstallLinks());
                 
                 if (intent.getPhone() != null) {
                     // The URL being sent does not expire. We send with a transaction delivery type because
                     // this is a critical step in onboarding through this workflow and message needs to be 
                     // sent immediately after consenting.
-                    TemplateRevision revision = templateService.getRevisionForUser(study, SMS_APP_INSTALL_LINK);
+                    TemplateRevision revision = templateService.getRevisionForUser(app, SMS_APP_INSTALL_LINK);
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                            .withStudy(study)
+                            .withStudy(app)
                             .withTemplateRevision(revision)
                             .withTransactionType()
                             .withPhone(intent.getPhone())
@@ -151,9 +151,9 @@ public class IntentService {
                     // SMS Service.
                     smsService.sendSmsMessage(null, provider);
                 } else {
-                    TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_APP_INSTALL_LINK);
+                    TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_APP_INSTALL_LINK);
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                            .withStudy(study)
+                            .withStudy(app)
                             .withTemplateRevision(revision)
                             .withRecipientEmail(intent.getEmail())
                             .withType(EmailType.APP_INSTALL)
@@ -165,7 +165,7 @@ public class IntentService {
         }
     }
     
-    public boolean registerIntentToParticipate(Study study, Account account) {
+    public boolean registerIntentToParticipate(App app, Account account) {
         Phone phone = account.getPhone();
         String email = account.getEmail();
         // Somehow, this is being called but the user has no phone number.
@@ -174,17 +174,17 @@ public class IntentService {
         }
         boolean consentsUpdated = false;
         StudyParticipant participant = null;
-        List<Subpopulation> subpops = subpopService.getSubpopulations(study.getIdentifier(), false);
+        List<Subpopulation> subpops = subpopService.getSubpopulations(app.getIdentifier(), false);
         for (Subpopulation subpop : subpops) {
             CacheKey cacheKey = (phone == null) ?
-                    CacheKey.itp(subpop.getGuid(), study.getIdentifier(), email) :
-                    CacheKey.itp(subpop.getGuid(), study.getIdentifier(), phone);
+                    CacheKey.itp(subpop.getGuid(), app.getIdentifier(), email) :
+                    CacheKey.itp(subpop.getGuid(), app.getIdentifier(), phone);
             IntentToParticipate intent = cacheProvider.getObject(cacheKey, IntentToParticipate.class);
             if (intent != null) {
                 if (participant == null) {
-                    participant = participantService.getParticipant(study, account.getId(), true);
+                    participant = participantService.getParticipant(app, account.getId(), true);
                 }
-                consentService.consentToResearch(study, subpop.getGuid(), participant, 
+                consentService.consentToResearch(app, subpop.getGuid(), participant, 
                         intent.getConsentSignature(), intent.getScope(), true);
                 cacheProvider.removeObject(cacheKey);
                 consentsUpdated = true;

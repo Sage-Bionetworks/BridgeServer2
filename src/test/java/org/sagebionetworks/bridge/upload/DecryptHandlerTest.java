@@ -20,7 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
@@ -39,7 +39,7 @@ public class DecryptHandlerTest {
         fileHelper.writeBytes(dataFile, dataFileContent);
 
         // inputs
-        DynamoStudy study = TestUtils.getValidStudy(DecryptHandlerTest.class);
+        DynamoApp study = TestUtils.getValidStudy(DecryptHandlerTest.class);
 
         UploadValidationContext ctx = new UploadValidationContext();
         ctx.setStudy(study.getIdentifier());

@@ -34,7 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -106,7 +106,7 @@ public class SmsService {
      */
     public void sendSmsMessage(String userId, SmsMessageProvider provider) {
         checkNotNull(provider);
-        Study study = provider.getStudy();
+        App app = provider.getStudy();
         Phone recipientPhone = provider.getPhone();
         String message = provider.getFormattedMessage();
 
@@ -120,7 +120,7 @@ public class SmsService {
         PublishResult result = snsClient.publish(provider.getSmsRequest());
         messageId = result.getMessageId();
 
-        LOG.info("Sent SMS message, study=" + study.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
+        LOG.info("Sent SMS message, study=" + app.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
                 BridgeUtils.getRequestContext().getId());
 
         // Log SMS message.
@@ -131,12 +131,12 @@ public class SmsService {
         smsMessage.setMessageBody(message);
         smsMessage.setMessageId(messageId);
         smsMessage.setSmsType(provider.getSmsTypeEnum());
-        smsMessage.setStudyId(study.getIdentifier());
+        smsMessage.setStudyId(app.getIdentifier());
 
         // Fetch participant, if it exists.
         StudyParticipant participant = null;
         if (userId != null) {
-            participant = participantService.getParticipant(study, userId, false);
+            participant = participantService.getParticipant(app, userId, false);
         }
 
         // Finish logging SMS message.
@@ -148,7 +148,7 @@ public class SmsService {
 
         // If we have a participant, make a health data.
         if (participant != null) {
-            initMessageLogSchema(study.getIdentifier());
+            initMessageLogSchema(app.getIdentifier());
 
             // Set sentOn w/ user's time zone, if it exists.
             DateTime sentOnWithTimeZone;
@@ -171,7 +171,7 @@ public class SmsService {
                     .withCreatedOn(sentOnWithTimeZone).withSchemaId(MESSAGE_LOG_SCHEMA_ID)
                     .withSchemaRevision(MESSAGE_LOG_SCHEMA_REV).withData(healthDataNode).build();
             try {
-                healthDataService.submitHealthData(study.getIdentifier(), participant, healthData);
+                healthDataService.submitHealthData(app.getIdentifier(), participant, healthData);
             } catch (IOException | UploadValidationException ex) {
                 throw new BridgeServiceException(ex);
             }

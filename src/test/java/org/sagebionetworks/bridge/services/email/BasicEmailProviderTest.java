@@ -16,7 +16,7 @@ import javax.mail.internet.MimeBodyPart;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.Sets;
@@ -25,14 +25,14 @@ public class BasicEmailProviderTest {
     @Test
     public void test() throws Exception {
         // Set up dependencies
-        Study study = Study.create();
-        study.setName("Name");
-        study.setShortName("ShortName");
-        study.setIdentifier("id");
-        study.setSponsorName("SponsorName");
-        study.setSupportEmail("support@email.com");
-        study.setTechnicalEmail("tech@email.com");
-        study.setConsentNotificationEmail("consent@email.com,consent2@email.com");
+        App app = App.create();
+        app.setName("Name");
+        app.setShortName("ShortName");
+        app.setIdentifier("id");
+        app.setSponsorName("SponsorName");
+        app.setSupportEmail("support@email.com");
+        app.setTechnicalEmail("tech@email.com");
+        app.setConsentNotificationEmail("consent@email.com,consent2@email.com");
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
@@ -42,7 +42,7 @@ public class BasicEmailProviderTest {
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-            .withStudy(study)
+            .withStudy(app)
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withTemplateRevision(revision)
@@ -72,9 +72,9 @@ public class BasicEmailProviderTest {
     @Test
     public void withOverrideSenderEmail() {
         // Set up dependencies
-        Study study = Study.create();
-        study.setName("Study Name");
-        study.setSupportEmail("email@email.com");
+        App app = App.create();
+        app.setName("Study Name");
+        app.setSupportEmail("email@email.com");
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
@@ -83,7 +83,7 @@ public class BasicEmailProviderTest {
 
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
-                .withOverrideSenderEmail("example@example.com").withStudy(study).build();
+                .withOverrideSenderEmail("example@example.com").withStudy(app).build();
 
         // Check provider attributes
         assertEquals(provider.getPlainSenderEmail(), "example@example.com");
@@ -98,7 +98,7 @@ public class BasicEmailProviderTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
                 .withRecipientEmail("email@email.com")
-                .withOverrideSenderEmail("example@example.com").withStudy(Study.create()).build();
+                .withOverrideSenderEmail("example@example.com").withStudy(App.create()).build();
         
         Map<String,String> tokenMap = provider.getTokenMap();
         assertNull(tokenMap.get("supportName"));
@@ -116,7 +116,7 @@ public class BasicEmailProviderTest {
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
                 .withTemplateRevision(revision)
-                .withStudy(Study.create()).build();
+                .withStudy(App.create()).build();
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         

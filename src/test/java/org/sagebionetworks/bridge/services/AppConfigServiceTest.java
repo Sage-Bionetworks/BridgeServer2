@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
@@ -114,7 +114,7 @@ public class AppConfigServiceTest {
     @InjectMocks
     private AppConfigService service;
 
-    private Study study;
+    private App app;
     
     @BeforeMethod
     public void before() {
@@ -135,8 +135,8 @@ public class AppConfigServiceTest {
      
         when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
         
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
     }
     
     @AfterMethod
@@ -392,7 +392,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void createAppConfig() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
         when(mockSchemaService.getUploadSchemaByIdAndRev(any(), any(), anyInt())).thenReturn(mockUploadSchema);
         when(mockSurveyService.getSurvey(any(), any(), anyBoolean(), anyBoolean())).thenReturn(mockSurvey);
         when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(mockConfigElement);
@@ -438,7 +438,7 @@ public class AppConfigServiceTest {
     
     @Test
     public void updateAppConfig() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
 
         AppConfig oldConfig = setupAppConfig();
         oldConfig.setCreatedOn(0);
@@ -459,14 +459,14 @@ public class AppConfigServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createAppConfigValidates() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
         
         service.createAppConfig(TEST_APP_ID, AppConfig.create());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateAppConfigValidates() {
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
         
         AppConfig oldConfig = setupAppConfig();
         service.updateAppConfig(TEST_APP_ID, oldConfig);

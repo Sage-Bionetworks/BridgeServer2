@@ -43,7 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -96,10 +96,10 @@ public class FPHSControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         controller.setSessionUpdateService(sessionUpdateService);
         
-        Study study = Study.create();
-        study.setIdentifier(FPHS_ID);
+        App app = App.create();
+        app.setIdentifier(FPHS_ID);
 
-        when(mockStudyService.getStudy(FPHS_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(FPHS_ID)).thenReturn(app);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -225,7 +225,7 @@ public class FPHSControllerTest extends Mockito {
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         mockRequestBody(mockRequest, ImmutableList.of(id1, id2));
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(Study.create());
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(App.create());
         
         UserSession session = setUserSession();
         session.setAppId(TEST_APP_ID);

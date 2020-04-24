@@ -22,14 +22,14 @@ import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 @DynamoDBTable(tableName = "Study")
 @BridgeTypeName("Study")
 @JsonFilter("filter")
-public final class DynamoStudy implements Study {
+public final class DynamoApp implements App {
     
     public static class AppleLinksMarshaller extends ListMarshaller<AppleAppLink> {
         private static final TypeReference<List<AppleAppLink>> FIELD_LIST_TYPE =
@@ -94,7 +94,7 @@ public final class DynamoStudy implements Study {
     private List<AndroidAppLink> androidAppLinks;
     private Map<String, String> defaultTemplates;
 
-    public DynamoStudy() {
+    public DynamoApp() {
         automaticCustomEvents = new HashMap<>();
         uploadMetadataFieldDefinitions = new ArrayList<>();
         profileAttributes = new HashSet<>();
@@ -625,7 +625,7 @@ public final class DynamoStudy implements Study {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        DynamoStudy other = (DynamoStudy) obj;
+        DynamoApp other = (DynamoApp) obj;
 
         return (Objects.equals(identifier, other.identifier)
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)

@@ -78,7 +78,7 @@ import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
@@ -492,7 +492,7 @@ public class TestUtils {
         return strategy;
     }
 
-    public static DynamoStudy getValidStudy(Class<?> clazz) {
+    public static DynamoApp getValidStudy(Class<?> clazz) {
         String id = TestUtils.randomName(clazz);
 
         Map<String,String> pushNotificationARNs = Maps.newHashMap();
@@ -500,7 +500,7 @@ public class TestUtils {
         pushNotificationARNs.put(OperatingSystem.ANDROID, "arn:android:"+id);
 
         // This study will save without further modification.
-        DynamoStudy study = new DynamoStudy();
+        DynamoApp study = new DynamoApp();
         study.setName("Test Study ["+clazz.getSimpleName()+"]");
         study.setShortName("ShortName");
         study.setAutoVerificationEmailSuppressed(true);

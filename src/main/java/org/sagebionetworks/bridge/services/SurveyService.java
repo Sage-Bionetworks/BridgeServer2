@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
@@ -111,8 +111,8 @@ public class SurveyService {
         }
         Set<String> dataGroups = Collections.emptySet();
         if (survey.getAppId() != null) {
-            Study study = studyService.getStudy(survey.getAppId());
-            dataGroups = study.getDataGroups();
+            App app = studyService.getStudy(survey.getAppId());
+            dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
 
@@ -145,8 +145,8 @@ public class SurveyService {
         
         Set<String> dataGroups = Collections.emptySet();
         if (survey.getAppId() != null) {
-            Study study = studyService.getStudy(survey.getAppId());
-            dataGroups = study.getDataGroups();
+            App app = studyService.getStudy(survey.getAppId());
+            dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
         

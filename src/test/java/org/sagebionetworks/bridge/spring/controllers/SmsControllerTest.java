@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SmsService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -29,10 +29,10 @@ public class SmsControllerTest extends Mockito {
     private static final StudyParticipant PARTICIPANT_WITH_PHONE = new StudyParticipant.Builder().withId(USER_ID)
             .withPhone(PHONE).build();
 
-    private static final Study DUMMY_STUDY;
+    private static final App DUMMY_APP;
     static {
-        DUMMY_STUDY = Study.create();
-        DUMMY_STUDY.setIdentifier(TEST_APP_ID);
+        DUMMY_APP = App.create();
+        DUMMY_APP.setIdentifier(TEST_APP_ID);
     }
 
     private SmsController controller;
@@ -43,7 +43,7 @@ public class SmsControllerTest extends Mockito {
     public void before() {
         // Mock study service.
         StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(DUMMY_STUDY);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(DUMMY_APP);
 
         // Mock SMS service.
         mockParticipantService = mock(ParticipantService.class);
@@ -69,7 +69,7 @@ public class SmsControllerTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getMostRecentMessage_ParticipantWithNoPhone() {
-        when(mockParticipantService.getParticipant(DUMMY_STUDY, USER_ID, false)).thenReturn(
+        when(mockParticipantService.getParticipant(DUMMY_APP, USER_ID, false)).thenReturn(
                 PARTICIPANT_WITH_NO_PHONE);
         controller.getMostRecentMessage(USER_ID);
     }
@@ -77,7 +77,7 @@ public class SmsControllerTest extends Mockito {
     @Test
     public void getMostRecentMessage_ParticipantWithPhone() throws Exception {
         // Mock participant service.
-        when(mockParticipantService.getParticipant(DUMMY_STUDY, USER_ID, false)).thenReturn(
+        when(mockParticipantService.getParticipant(DUMMY_APP, USER_ID, false)).thenReturn(
                 PARTICIPANT_WITH_PHONE);
 
         // Setup test. This method is a passthrough for SmsMessage, so just verify one attribute.

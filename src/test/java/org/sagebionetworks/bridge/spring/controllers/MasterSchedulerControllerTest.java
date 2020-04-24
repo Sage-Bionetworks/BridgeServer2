@@ -41,7 +41,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.MasterSchedulerService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -79,7 +79,7 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     MasterSchedulerConfig mockConfig;
     
-    Study study;
+    App app;
     
     UserSession mockSession; 
     

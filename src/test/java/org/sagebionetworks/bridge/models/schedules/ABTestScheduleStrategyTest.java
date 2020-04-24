@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,11 +39,11 @@ public class ABTestScheduleStrategyTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private ArrayList<String> healthCodes;
-    private Study study;
+    private App app;
 
     @BeforeMethod
     public void before() {
-        study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
         healthCodes = Lists.newArrayList();
         for (int i = 0; i < 1000; i++) {
             healthCodes.add(BridgeUtils.generateGuid());
@@ -92,7 +92,7 @@ public class ABTestScheduleStrategyTest {
         List<Schedule> schedules = Lists.newArrayList();
         for (String healthCode : healthCodes) {
             ScheduleContext context = new ScheduleContext.Builder()
-                    .withAppId(study.getIdentifier())
+                    .withAppId(app.getIdentifier())
                     .withHealthCode(healthCode).build();
             Schedule schedule = plan.getStrategy().getScheduleForUser(plan, context);
             schedules.add(schedule);
@@ -132,7 +132,7 @@ public class ABTestScheduleStrategyTest {
         // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(app.getIdentifier());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

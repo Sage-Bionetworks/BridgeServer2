@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
@@ -40,24 +40,24 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldType;
  * Main functionality we want to verify in this test is that study can be serialized with all values, 
  * but filtered in the API to exclude read-only studies when exposed to researchers.
  */
-public class DynamoStudyTest {
+public class DynamoAppTest {
     private static final List<AppleAppLink> APPLE_APP_LINKS = Lists.newArrayList(TestConstants.APPLE_APP_LINK);
     private static final List<AndroidAppLink> ANDROID_APP_LINKS = Lists.newArrayList(TestConstants.ANDROID_APP_LINK);
 
     @Test
     public void automaticCustomEventsIsNeverNull() {
         // Starts as empty
-        Study study = Study.create();
-        assertTrue(study.getAutomaticCustomEvents().isEmpty());
+        App app = App.create();
+        assertTrue(app.getAutomaticCustomEvents().isEmpty());
 
         // Set value works
         Map<String, String> dummyMap = ImmutableMap.of("3-days-after-enrollment", "P3D");
-        study.setAutomaticCustomEvents(dummyMap);
-        assertEquals(study.getAutomaticCustomEvents(), dummyMap);
+        app.setAutomaticCustomEvents(dummyMap);
+        assertEquals(app.getAutomaticCustomEvents(), dummyMap);
 
         // Set to null makes it empty again
-        study.setAutomaticCustomEvents(null);
-        assertTrue(study.getAutomaticCustomEvents().isEmpty());
+        app.setAutomaticCustomEvents(null);
+        assertTrue(app.getAutomaticCustomEvents().isEmpty());
     }
 
     @Test
@@ -68,41 +68,41 @@ public class DynamoStudyTest {
                 .withType(UploadFieldType.ATTACHMENT_V2).build());
 
         // starts as empty
-        Study study = new DynamoStudy();
-        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+        App app = new DynamoApp();
+        assertTrue(app.getUploadMetadataFieldDefinitions().isEmpty());
 
         // set value works
-        study.setUploadMetadataFieldDefinitions(fieldDefList);
-        assertEquals(study.getUploadMetadataFieldDefinitions(), fieldDefList);
+        app.setUploadMetadataFieldDefinitions(fieldDefList);
+        assertEquals(app.getUploadMetadataFieldDefinitions(), fieldDefList);
 
         // set to null makes it empty again
-        study.setUploadMetadataFieldDefinitions(null);
-        assertTrue(study.getUploadMetadataFieldDefinitions().isEmpty());
+        app.setUploadMetadataFieldDefinitions(null);
+        assertTrue(app.getUploadMetadataFieldDefinitions().isEmpty());
     }
 
     @Test
     public void reauthenticationEnabled() {
         // Starts as null.
-        Study study = Study.create();
-        assertNull(study.isReauthenticationEnabled());
+        App app = App.create();
+        assertNull(app.isReauthenticationEnabled());
 
         // Set to true.
-        study.setReauthenticationEnabled(true);
-        assertTrue(study.isReauthenticationEnabled());
+        app.setReauthenticationEnabled(true);
+        assertTrue(app.isReauthenticationEnabled());
 
         // Set to false.
-        study.setReauthenticationEnabled(false);
-        assertFalse(study.isReauthenticationEnabled());
+        app.setReauthenticationEnabled(false);
+        assertFalse(app.isReauthenticationEnabled());
 
         // Set back to null.
-        study.setReauthenticationEnabled(null);
-        assertNull(study.isReauthenticationEnabled());
+        app.setReauthenticationEnabled(null);
+        assertNull(app.isReauthenticationEnabled());
     }
 
     @Test
     public void equalsHashCode() {
         // studyIdentifier is derived from the identifier
-        EqualsVerifier.forClass(DynamoStudy.class).allFieldsShouldBeUsed()
+        EqualsVerifier.forClass(DynamoApp.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS)
             .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())
             .withPrefabValues(JsonFactory.class, new JsonFactory(), new JsonFactory()).verify();
@@ -111,12 +111,12 @@ public class DynamoStudyTest {
     @Test
     public void testToString() {
         // Basic test that toString doesn't crash.
-        assertNotNull(Study.create().toString());
+        assertNotNull(App.create().toString());
     }
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
-        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
         
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
                 OAuthProviderTest.CALLBACK_URL, null);
@@ -210,21 +210,21 @@ public class DynamoStudyTest {
         assertEquals(defaultTemplates.get("email_account_exists").textValue(), "ABC-DEF");
         
         // Deserialize back to a POJO and verify.
-        final Study deserStudy = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
-        assertEquals(deserStudy, study);
+        final App deserApp = BridgeObjectMapper.get().readValue(node.toString(), App.class);
+        assertEquals(deserApp, study);
     }
     
     @Test
     public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
-        final DynamoStudy study = TestUtils.getValidStudy(DynamoStudyTest.class);
+        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
         study.setVersion(2L);
 
         final String json = BridgeObjectMapper.get().writeValueAsString(study);
         BridgeObjectMapper.get().readTree(json);
 
         // Deserialize back to a POJO and verify.
-        final Study deserStudy = BridgeObjectMapper.get().readValue(json, Study.class);
-        assertEquals(deserStudy, study);
+        final App deserApp = BridgeObjectMapper.get().readValue(json, App.class);
+        assertEquals(deserApp, study);
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

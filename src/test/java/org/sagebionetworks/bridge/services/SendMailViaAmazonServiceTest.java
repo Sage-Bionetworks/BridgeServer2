@@ -13,7 +13,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 
@@ -27,7 +27,7 @@ public class SendMailViaAmazonServiceTest {
     
     private SendMailViaAmazonService service;
     
-    private Study study;
+    private App app;
     
     @Mock
     private AmazonSimpleEmailServiceClient emailClient;
@@ -42,9 +42,9 @@ public class SendMailViaAmazonServiceTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        study = Study.create();
-        study.setName("Name");
-        study.setSupportEmail(SUPPORT_EMAIL);
+        app = App.create();
+        app.setName("Name");
+        app.setSupportEmail(SUPPORT_EMAIL);
         
         service = new SendMailViaAmazonService();
         service.setEmailClient(emailClient);
@@ -61,7 +61,7 @@ public class SendMailViaAmazonServiceTest {
         revision.setMimeType(HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withTemplateRevision(revision)
                 .build();
@@ -84,7 +84,7 @@ public class SendMailViaAmazonServiceTest {
         revision.setMimeType(MimeType.HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withTemplateRevision(revision)
                 .build();

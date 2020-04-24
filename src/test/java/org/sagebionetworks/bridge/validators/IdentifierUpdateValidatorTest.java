@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 
 public class IdentifierUpdateValidatorTest {
@@ -32,7 +32,7 @@ public class IdentifierUpdateValidatorTest {
     @Mock
     private ExternalIdService externalIdService;
 
-    private Study study; 
+    private App app; 
     
     private IdentifierUpdateValidator validator;
     
@@ -40,9 +40,9 @@ public class IdentifierUpdateValidatorTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        validator = new IdentifierUpdateValidator(study, externalIdService);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        validator = new IdentifierUpdateValidator(app, externalIdService);
         
     }
     
@@ -187,7 +187,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdValidWithManagement() {
-        when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
+        when(externalIdService.getExternalId(app.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.of(EXT_ID));
         
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();
@@ -198,7 +198,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void externalIdInvalidWithManagement() {
-        when(externalIdService.getExternalId(study.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
+        when(externalIdService.getExternalId(app.getIdentifier(), UPDATED_EXTERNAL_ID)).thenReturn(Optional.empty());
         
         SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
                 .withEmail(EMAIL).withReauthToken("asdf").build();

@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
 
@@ -236,16 +236,16 @@ public class CacheProvider {
         }
     }
 
-    public void setStudy(Study study) {
-        checkNotNull(study);
-        CacheKey redisKey = CacheKey.app(study.getIdentifier());
-        setObject(redisKey, study, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+    public void setStudy(App app) {
+        checkNotNull(app);
+        CacheKey redisKey = CacheKey.app(app.getIdentifier());
+        setObject(redisKey, app, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
-    public Study getStudy(String identifier) {
+    public App getStudy(String identifier) {
         checkNotNull(identifier);
         CacheKey redisKey = CacheKey.app(identifier);
-        return getObject(redisKey, Study.class, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        return getObject(redisKey, App.class, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     public void removeStudy(String identifier) {

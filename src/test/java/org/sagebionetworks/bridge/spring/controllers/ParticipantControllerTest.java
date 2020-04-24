@@ -80,7 +80,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoScheduledActivity;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -111,7 +111,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -232,7 +232,7 @@ public class ParticipantControllerTest extends Mockito {
     
     UserSession session;
 
-    Study study;
+    App app;
 
     StudyParticipant participant;
 
@@ -240,9 +240,9 @@ public class ParticipantControllerTest extends Mockito {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        study = new DynamoStudy();
-        study.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
-        study.setIdentifier(TEST_APP_ID);
+        app = new DynamoApp();
+        app.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
+        app.setIdentifier(TEST_APP_ID);
 
         participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withSubstudyIds(CALLER_SUBS)
                 .withId(USER_ID).build();
@@ -253,14 +253,14 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
 
         List<AccountSummary> summaries = ImmutableList.of(SUMMARY, SUMMARY, SUMMARY);
         PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 30).withRequestParam("offsetBy", 10)
                 .withRequestParam("pageSize", 20).withRequestParam("startTime", START_TIME)
                 .withRequestParam("endTime", END_TIME).withRequestParam("emailFilter", "foo");
 
-        when(mockParticipantService.getPagedAccountSummaries(eq(study), any())).thenReturn(page);
+        when(mockParticipantService.getPagedAccountSummaries(eq(app), any())).thenReturn(page);
 
         SessionUpdateService sessionUpdateService = new SessionUpdateService();
         sessionUpdateService.setCacheProvider(mockCacheProvider);
@@ -327,7 +327,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(result.getMessage(), "SMS notification registration created");
 
         // Verify dependent services.
-        verify(mockParticipantService).createSmsRegistration(study, USER_ID);
+        verify(mockParticipantService).createSmsRegistration(app, USER_ID);
     }
 
     @SuppressWarnings("deprecation")
@@ -340,7 +340,7 @@ public class ParticipantControllerTest extends Mockito {
 
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search.getOffsetBy(), 10);
@@ -363,7 +363,7 @@ public class ParticipantControllerTest extends Mockito {
 
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search.getOffsetBy(), 10);
         assertEquals(search.getPageSize(), 20);
@@ -383,11 +383,11 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void getParticipant() throws Exception {
-        study.setHealthCodeExportEnabled(true);
+        app.setHealthCodeExportEnabled(true);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
 
-        when(mockParticipantService.getParticipant(study, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
 
         String json = controller.getParticipant(USER_ID, true);
         JsonNode node = MAPPER.readTree(json);
@@ -398,15 +398,15 @@ public class ParticipantControllerTest extends Mockito {
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
 
-        verify(mockParticipantService).getParticipant(study, USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, USER_ID, true);
     }
 
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
-        study.setHealthCodeExportEnabled(false);
+        app.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getParticipant(study, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
 
         String json = controller.getParticipant(USER_ID, true);
 
@@ -418,7 +418,7 @@ public class ParticipantControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantWhereHealthCodeIsPrevented() throws Exception {
-        study.setHealthCodeExportEnabled(false);
+        app.setHealthCodeExportEnabled(false);
         
         controller.getParticipant("healthCode:"+USER_ID, true);
     }
@@ -429,7 +429,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(RESEARCHER, ADMIN)).build();
         session.setParticipant(participant);
         
-        study.setHealthCodeExportEnabled(false);
+        app.setHealthCodeExportEnabled(false);
         
         controller.getParticipant("healthCode:"+USER_ID, true);
     }
@@ -441,11 +441,11 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
         
         // Health codes are disabled
-        study.setHealthCodeExportEnabled(false);
+        app.setHealthCodeExportEnabled(false);
         
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getParticipant(study, "healthCode:" + USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "healthCode:" + USER_ID, true)).thenReturn(studyParticipant);
         
         // You can still retrieve the user with a health code
         String result = controller.getParticipantForWorker(TEST_APP_ID, "healthCode:"+USER_ID, true);
@@ -457,13 +457,13 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.signOut(USER_ID, false);
         assertEquals(result.getMessage(), "User signed out.");
 
-        verify(mockParticipantService).signUserOut(study, USER_ID, false);
+        verify(mockParticipantService).signUserOut(app, USER_ID, false);
     }
 
     
     @Test
     public void updateParticipant() throws Exception {
-        study.getUserProfileAttributes().add("can_be_recontacted");
+        app.getUserProfileAttributes().add("can_be_recontacted");
         String json = createJson("{'firstName':'firstName'," + "'lastName':'lastName'," + "'email':'email@email.com',"
                 + "'externalId':'externalId'," + "'password':'newUserPassword',"
                 + "'sharingScope':'sponsors_and_partners'," + "'notifyByEmail':true,"
@@ -476,7 +476,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(result.getMessage(), "Participant updated.");
 
         // Both the caller roles and the caller's substudies are passed to participantService
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
 
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(participant.getId(), USER_ID);
@@ -498,7 +498,7 @@ public class ParticipantControllerTest extends Mockito {
         controller.getParticipants(null, null, null, null, null, null, null, null);
 
         // paging with defaults
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search.getOffsetBy(), 0);
@@ -514,14 +514,14 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void createParticipant() throws Exception {
         IdentifierHolder holder = setUpCreateParticipant();
-        doReturn(holder).when(mockParticipantService).createParticipant(eq(study), any(StudyParticipant.class),
+        doReturn(holder).when(mockParticipantService).createParticipant(eq(app), any(StudyParticipant.class),
                 eq(true));
 
         IdentifierHolder result = controller.createParticipant();
 
         assertEquals(result.getIdentifier(), USER_ID);
 
-        verify(mockParticipantService).createParticipant(eq(study), participantCaptor.capture(), eq(true));
+        verify(mockParticipantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
 
         StudyParticipant participant = participantCaptor.getValue();
         assertEquals(participant.getFirstName(), "firstName");
@@ -571,7 +571,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantRequestInfoForWorkerOnly() throws Exception {
-        controller.getRequestInfoForWorker(study.getIdentifier(), USER_ID);
+        controller.getRequestInfoForWorker(app.getIdentifier(), USER_ID);
     }
     
     @Test
@@ -583,7 +583,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withTimeZone(DateTimeZone.forOffsetHours(-7)).withAppId(TEST_APP_ID).build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
-        String resultStr = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+        String resultStr = controller.getRequestInfoForWorker(app.getIdentifier(), "userId");
 
         RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
         assertEquals(result.getClientInfo(), requestInfo.getClientInfo());
@@ -595,7 +595,7 @@ public class ParticipantControllerTest extends Mockito {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(WORKER)).build();
         session.setParticipant(participant);
         // There is no request info.
-        String resultStr = controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+        String resultStr = controller.getRequestInfoForWorker(app.getIdentifier(), "userId");
 
         RequestInfo result = BridgeObjectMapper.get().readValue(resultStr, RequestInfo.class);
         assertNotNull(result); // values are all null, but object is returned
@@ -611,13 +611,13 @@ public class ParticipantControllerTest extends Mockito {
                 .withAppId("some-other-study").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
-        controller.getRequestInfoForWorker(study.getIdentifier(), "userId");
+        controller.getRequestInfoForWorker(app.getIdentifier(), "userId");
     }
     
     private IdentifierHolder setUpCreateParticipant() throws Exception {
         IdentifierHolder holder = new IdentifierHolder(USER_ID);
 
-        study.getUserProfileAttributes().add("phone");
+        app.getUserProfileAttributes().add("phone");
         String json = createJson("{'firstName':'firstName'," + "'lastName':'lastName'," + "'email':'email@email.com',"
                 + "'externalId':'externalId'," + "'password':'newUserPassword',"
                 + "'sharingScope':'sponsors_and_partners'," + "'notifyByEmail':true,"
@@ -634,7 +634,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.updateParticipant("id1");
         assertEquals(result.getMessage(), "Participant updated.");
 
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
 
         StudyParticipant persisted = participantCaptor.getValue();
         assertEquals(persisted.getId(), "id1");
@@ -645,11 +645,11 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
 
-        when(mockParticipantService.getSelfParticipant(eq(study), any(), eq(false))).thenReturn(studyParticipant);
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
 
         String result = controller.getSelfParticipant(false);
 
-        verify(mockParticipantService).getSelfParticipant(eq(study), contextCaptor.capture(), eq(false));
+        verify(mockParticipantService).getSelfParticipant(eq(app), contextCaptor.capture(), eq(false));
         assertEquals(contextCaptor.getValue().getUserId(), USER_ID);
 
         StudyParticipant deserParticipant = MAPPER.readValue(result, StudyParticipant.class);
@@ -675,11 +675,11 @@ public class ParticipantControllerTest extends Mockito {
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test")
                 .withConsentHistories(consentHistories).build();
 
-        when(mockParticipantService.getSelfParticipant(eq(study), any(), eq(true))).thenReturn(studyParticipant);
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
 
         String result = controller.getSelfParticipant(true);
 
-        verify(mockParticipantService).getSelfParticipant(eq(study), any(), eq(true));
+        verify(mockParticipantService).getSelfParticipant(eq(app), any(), eq(true));
 
         JsonNode nodeParticipant = MAPPER.readTree(result);
         JsonNode nodeHistory = nodeParticipant.get("consentHistories").get("guid").get(0);
@@ -723,7 +723,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
         session.setIpAddress(IP_ADDRESS); // if this is not the same as request, you get an authentication error
 
-        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
 
         String json = MAPPER.writeValueAsString(participant);
         mockRequestBody(mockRequest, json);
@@ -737,10 +737,10 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockCacheProvider).setUserSession(any());
         
         InOrder inOrder = inOrder(mockParticipantService);
-        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, false);
         // No roles are passed in this method, and the substudies of the user are passed
-        inOrder.verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
-        inOrder.verify(mockParticipantService).getParticipant(study, USER_ID, true);
+        inOrder.verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
+        inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, true);
         
         // Just test the different types and verify they are there.
         StudyParticipant captured = participantCaptor.getValue();
@@ -786,7 +786,7 @@ public class ParticipantControllerTest extends Mockito {
                 .withDataGroups(ImmutableSet.of("group1", "group2")).withAttributes(attrs)
                 .withLanguages(ImmutableList.of("en")).withStatus(AccountStatus.DISABLED).withExternalId("POWERS")
                 .build();
-        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
 
         String json = createJson("{'externalId':'simpleStringChange'," + "'sharingScope':'no_sharing',"
                 + "'notifyByEmail':false," + "'attributes':{'baz':'belgium'}," + "'languages':['fr'],"
@@ -796,7 +796,7 @@ public class ParticipantControllerTest extends Mockito {
         JsonNode result = controller.updateSelfParticipant();
         assertEquals("UserSessionInfo", result.get("type").asText());
 
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(captured.getId(), USER_ID);
         assertEquals(captured.getFirstName(), "firstName");
@@ -816,14 +816,14 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void participantUpdateSelfCannotToggleSharingWhenUnconsented() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(NO_SHARING).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
 
         String json = createJson("{'sharingScope':'all_qualified_researchers'}");
         mockRequestBody(mockRequest, json);
 
         controller.updateSelfParticipant();
 
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         assertEquals(participantCaptor.getValue().getSharingScope(), NO_SHARING);
     }
 
@@ -833,14 +833,14 @@ public class ParticipantControllerTest extends Mockito {
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         
         StudyParticipant participant = new StudyParticipant.Builder().withSharingScope(ALL_QUALIFIED_RESEARCHERS).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
 
         String json = createJson("{}");
         mockRequestBody(mockRequest, json);
 
         controller.updateSelfParticipant();
 
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         assertEquals(participantCaptor.getValue().getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
     }
     
@@ -849,7 +849,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.requestResetPassword(USER_ID);
         assertEquals(result.getMessage(), "Request to reset password sent to user.");
 
-        verify(mockParticipantService).requestResetPassword(study, USER_ID);
+        verify(mockParticipantService).requestResetPassword(app, USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -866,7 +866,7 @@ public class ParticipantControllerTest extends Mockito {
         // All values should be copied over here.
         StudyParticipant participant = TestUtils.getStudyParticipant(ParticipantControllerTest.class);
         participant = new StudyParticipant.Builder().copyOf(participant).withId(USER_ID).build();
-        doReturn(participant).when(mockParticipantService).getParticipant(eq(study), eq(USER_ID), anyBoolean());
+        doReturn(participant).when(mockParticipantService).getParticipant(eq(app), eq(USER_ID), anyBoolean());
 
         // Now change to some other ID
         participant = new StudyParticipant.Builder().copyOf(participant).withId("someOtherId").build();
@@ -877,7 +877,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(result.get("type").asText(), "UserSessionInfo");
 
         // verify the object is passed to service, one field is sufficient
-        verify(mockParticipantService).updateParticipant(eq(study), participantCaptor.capture());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
 
         // The ID was changed back to the session's participant user ID, not the one provided.
         StudyParticipant captured = participantCaptor.getValue();
@@ -886,7 +886,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void canGetActivityHistoryV2() throws Exception {
-        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(study),
+        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(app),
                 eq(USER_ID), eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
 
         JsonNode result = controller.getActivityHistoryV2(USER_ID, ACTIVITY_GUID, START_TIME.toString(),
@@ -903,7 +903,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(page.getRequestParams().get("pageSize"), 77);
         assertEquals(page.getRequestParams().get("offsetKey"), "200");
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ACTIVITY_GUID),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(ACTIVITY_GUID),
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
         assertTrue(START_TIME.isEqual(startsOnCaptor.getValue()));
         assertTrue(END_TIME.isEqual(endsOnCaptor.getValue()));
@@ -911,7 +911,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void canGetActivityHistoryV2WithOffsetKey() throws Exception {
-        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(study),
+        doReturn(createActivityResultsV2("200", 77)).when(mockParticipantService).getActivityHistory(eq(app),
                 eq(USER_ID), eq(ACTIVITY_GUID), any(), any(), eq("200"), eq(77));
 
         JsonNode result = controller.getActivityHistoryV2(USER_ID, ACTIVITY_GUID, START_TIME.toString(),
@@ -927,7 +927,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(page.getRequestParams().get("pageSize"), 77);
         assertEquals(page.getRequestParams().get("offsetKey"), "200");
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ACTIVITY_GUID),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(ACTIVITY_GUID),
                 startsOnCaptor.capture(), endsOnCaptor.capture(), eq("200"), eq(77));
         assertTrue(START_TIME.isEqual(startsOnCaptor.getValue()));
         assertTrue(END_TIME.isEqual(endsOnCaptor.getValue()));
@@ -936,7 +936,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void canGetActivityV2WithNullValues() throws Exception {
         doReturn(createActivityResultsV2(null, API_DEFAULT_PAGE_SIZE)).when(mockParticipantService).getActivityHistory(
-                eq(study), eq(USER_ID), eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
+                eq(app), eq(USER_ID), eq(ACTIVITY_GUID), any(), any(), eq(null), eq(API_DEFAULT_PAGE_SIZE));
 
         JsonNode result = controller.getActivityHistoryV2(USER_ID, ACTIVITY_GUID, null, null, null, null, null);
         ForwardCursorPagedResourceList<ScheduledActivity> page = MAPPER.readValue(result.toString(),
@@ -948,7 +948,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(page.getItems().size(), 1); // have not mocked out these items, but the list is there.
         assertEquals(page.getRequestParams().get("pageSize"), API_DEFAULT_PAGE_SIZE);
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ACTIVITY_GUID), eq(null), eq(null),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(ACTIVITY_GUID), eq(null), eq(null),
                 eq(null), eq(API_DEFAULT_PAGE_SIZE));
     }
 
@@ -957,7 +957,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.deleteActivities(USER_ID);
         assertEquals(result.getMessage(), "Scheduled activities deleted.");
 
-        verify(mockParticipantService).deleteActivities(study, USER_ID);
+        verify(mockParticipantService).deleteActivities(app, USER_ID);
     }
 
     @Test
@@ -965,7 +965,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendEmailVerification(USER_ID);
         assertEquals(result.getMessage(), "Email verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(study, ChannelType.EMAIL, USER_ID);
+        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, USER_ID);
     }
 
     @Test
@@ -973,7 +973,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendPhoneVerification(USER_ID);
         assertEquals(result.getMessage(), "Phone verification request has been resent to user.");
 
-        verify(mockParticipantService).resendVerification(study, ChannelType.PHONE, USER_ID);
+        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, USER_ID);
     }
 
     @Test
@@ -981,7 +981,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.resendConsentAgreement(USER_ID, SUBPOP_GUID.getGuid());
         assertEquals(result.getMessage(), "Consent agreement resent to user.");
 
-        verify(mockParticipantService).resendConsentAgreement(study, SUBPOP_GUID, USER_ID);
+        verify(mockParticipantService).resendConsentAgreement(app, SUBPOP_GUID, USER_ID);
     }
 
     @Test
@@ -993,7 +993,7 @@ public class ParticipantControllerTest extends Mockito {
 
             controller.withdrawFromStudy(USER_ID);
 
-            verify(mockParticipantService).withdrawFromStudy(study, USER_ID, new Withdrawal("Because, reasons."),
+            verify(mockParticipantService).withdrawFromStudy(app, USER_ID, new Withdrawal("Because, reasons."),
                     20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -1009,7 +1009,7 @@ public class ParticipantControllerTest extends Mockito {
 
             controller.withdrawConsent(USER_ID, SUBPOP_GUID.getGuid());
 
-            verify(mockParticipantService).withdrawConsent(study, USER_ID, SUBPOP_GUID,
+            verify(mockParticipantService).withdrawConsent(app, USER_ID, SUBPOP_GUID,
                     new Withdrawal("Because, reasons."), 20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();
@@ -1026,12 +1026,12 @@ public class ParticipantControllerTest extends Mockito {
         ForwardCursorPagedResourceList<? extends Upload> uploads = new ForwardCursorPagedResourceList<>(list, "abc")
                 .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE).withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, USER_ID, startTime, endTime, 10, "abc");
+        doReturn(uploads).when(mockParticipantService).getUploads(app, USER_ID, startTime, endTime, 10, "abc");
 
         ForwardCursorPagedResourceList<UploadView> result = controller.getUploads(USER_ID, startTime.toString(),
                 endTime.toString(), 10, "abc");
 
-        verify(mockParticipantService).getUploads(study, USER_ID, startTime, endTime, 10, "abc");
+        verify(mockParticipantService).getUploads(app, USER_ID, startTime, endTime, 10, "abc");
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
         assertEquals(result.getRequestParams().get("startTime"), startTime.toString());
@@ -1044,17 +1044,17 @@ public class ParticipantControllerTest extends Mockito {
 
         ForwardCursorPagedResourceList<Upload> uploads = new ForwardCursorPagedResourceList<>(list, null)
                 .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE);
-        doReturn(uploads).when(mockParticipantService).getUploads(study, USER_ID, null, null, null, null);
+        doReturn(uploads).when(mockParticipantService).getUploads(app, USER_ID, null, null, null, null);
 
         controller.getUploads(USER_ID, null, null, null, null);
 
-        verify(mockParticipantService).getUploads(study, USER_ID, null, null, null, null);
+        verify(mockParticipantService).getUploads(app, USER_ID, null, null, null, null);
     }
 
     @Test
     public void getNotificationRegistrations() throws Exception {
         List<NotificationRegistration> list = ImmutableList.of();
-        doReturn(list).when(mockParticipantService).listRegistrations(study, USER_ID);
+        doReturn(list).when(mockParticipantService).listRegistrations(app, USER_ID);
 
         ResourceList<NotificationRegistration> result = controller.getNotificationRegistrations(USER_ID);
 
@@ -1062,7 +1062,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(node.get("items").size(), 0);
         assertEquals(node.get("type").asText(), "ResourceList");
 
-        verify(mockParticipantService).listRegistrations(study, USER_ID);
+        verify(mockParticipantService).listRegistrations(app, USER_ID);
     }
 
     @Test
@@ -1073,7 +1073,7 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(result.getMessage(), "Message has been sent to external notification service.");
 
-        verify(mockParticipantService).sendNotification(eq(study), eq(USER_ID), messageCaptor.capture());
+        verify(mockParticipantService).sendNotification(eq(app), eq(USER_ID), messageCaptor.capture());
 
         NotificationMessage captured = messageCaptor.getValue();
         assertEquals(captured.getSubject(), "a subject");
@@ -1083,7 +1083,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void sendMessageWithSomeErrors() throws Exception {
         Set<String> erroredRegistrations = ImmutableSet.of("123", "456");
-        when(mockParticipantService.sendNotification(study, USER_ID, NOTIFICATION_MESSAGE))
+        when(mockParticipantService.sendNotification(app, USER_ID, NOTIFICATION_MESSAGE))
                 .thenReturn(erroredRegistrations);
         mockRequestBody(mockRequest, NOTIFICATION_MESSAGE);
 
@@ -1099,13 +1099,13 @@ public class ParticipantControllerTest extends Mockito {
         DateTime start = DateTime.now();
         DateTime end = DateTime.now();
 
-        controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring", "phoneSubstring",
+        controller.getParticipantsForWorker(app.getIdentifier(), "10", "20", "emailSubstring", "phoneSubstring",
                 start.toString(), end.toString(), null, null);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantForWorkerOnly() throws Exception {
-        controller.getParticipantForWorker(study.getIdentifier(), USER_ID, true);
+        controller.getParticipantForWorker(app.getIdentifier(), USER_ID, true);
     }
 
     @SuppressWarnings("deprecation")
@@ -1114,16 +1114,16 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(Roles.WORKER)).build());
 
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
 
-        JsonNode result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
+        JsonNode result = controller.getParticipantsForWorker(app.getIdentifier(), "10", "20", "emailSubstring",
                 "phoneSubstring", START_TIME.toString(), END_TIME.toString(), null, null);
 
         verifyPagedResourceListParameters(result);
 
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search.getOffsetBy(), 10);
@@ -1142,16 +1142,16 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(Roles.WORKER)).build());
 
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
 
-        JsonNode result = controller.getParticipantsForWorker(study.getIdentifier(), "10", "20", "emailSubstring",
+        JsonNode result = controller.getParticipantsForWorker(app.getIdentifier(), "10", "20", "emailSubstring",
                 "phoneSubstring", null, null, START_TIME.toString(), END_TIME.toString());
 
         verifyPagedResourceListParameters(result);
 
         // DateTime instances don't seem to be equal unless you use the library's equality methods, which
         // verification does not do. So capture and compare that way.
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search.getOffsetBy(), 10);
@@ -1172,22 +1172,22 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode(HEALTH_CODE)
                 .build();
 
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, USER_ID, true)).thenReturn(foundParticipant);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(foundParticipant);
 
-        String result = controller.getParticipantForWorker(study.getIdentifier(), USER_ID, true);
+        String result = controller.getParticipantForWorker(app.getIdentifier(), USER_ID, true);
 
         JsonNode participantNode = MAPPER.readTree(result);
         assertEquals(participantNode.get("healthCode").textValue(), HEALTH_CODE);
         assertNull(participantNode.get("encryptedHealthCode"));
         assertEquals(participantNode.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).getParticipant(study, USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, USER_ID, true);
     }
 
     @Test
     public void getActivityHistoryV3() throws Exception {
-        doReturn(createActivityResultsV2("offsetKey", 15)).when(mockParticipantService).getActivityHistory(eq(study),
+        doReturn(createActivityResultsV2("offsetKey", 15)).when(mockParticipantService).getActivityHistory(eq(app),
                 eq(USER_ID), eq(ActivityType.SURVEY), eq("referentGuid"), any(), any(), eq("offsetKey"), eq(15));
 
         String result = controller.getActivityHistoryV3(USER_ID, "surveys", "referentGuid", START_TIME.toString(),
@@ -1202,7 +1202,7 @@ public class ParticipantControllerTest extends Mockito {
                 FORWARD_CURSOR_PAGED_ACTIVITIES_REF);
         assertEquals((int) page.getRequestParams().get("pageSize"), 15);
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ActivityType.SURVEY),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(ActivityType.SURVEY),
                 eq("referentGuid"), startTimeCaptor.capture(), endTimeCaptor.capture(), eq("offsetKey"), eq(15));
         assertEquals(startTimeCaptor.getValue().toString(), START_TIME.toString());
         assertEquals(endTimeCaptor.getValue().toString(), END_TIME.toString());
@@ -1212,7 +1212,7 @@ public class ParticipantControllerTest extends Mockito {
     public void getActivityHistoryV3DefaultsToNulls() throws Exception {
         controller.getActivityHistoryV3(USER_ID, "badtypes", null, null, null, null, null);
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(null), eq(null),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(null), eq(null),
                 startTimeCaptor.capture(), endTimeCaptor.capture(), eq(null),
                 eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         assertNull(startTimeCaptor.getValue());
@@ -1223,13 +1223,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithPhone() throws Exception {
         mockRequestBody(mockRequest, PHONE_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
+        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
         verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
         assertEquals(sessionCaptor.getValue().getId(), participant.getId());
@@ -1245,13 +1245,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithEmail() throws Exception {
         mockRequestBody(mockRequest, EMAIL_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
+        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
@@ -1265,13 +1265,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithExternalId() throws Exception {
         mockRequestBody(mockRequest, EXTID_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
+        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
@@ -1285,13 +1285,13 @@ public class ParticipantControllerTest extends Mockito {
     public void updateIdentifiersWithSynapseUserId() throws Exception {
         mockRequestBody(mockRequest, SYNAPSE_ID_UPDATE);
 
-        when(mockParticipantService.updateIdentifiers(eq(study), any(), any())).thenReturn(participant);
+        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
 
         JsonNode result = controller.updateIdentifiers();
 
         assertEquals(result.get("id").textValue(), USER_ID);
 
-        verify(mockParticipantService).updateIdentifiers(eq(study), contextCaptor.capture(),
+        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
                 identifierUpdateCaptor.capture());
 
         IdentifierUpdate update = identifierUpdateCaptor.getValue();
@@ -1314,11 +1314,11 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(studyParticipant);
 
         controller.getParticipant(USER_ID, false);
 
-        verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, USER_ID, false);
     }
 
     @Test
@@ -1328,12 +1328,12 @@ public class ParticipantControllerTest extends Mockito {
 
         StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(USER_ID).build();
 
-        when(mockStudyService.getStudy(study.getIdentifier())).thenReturn(study);
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(foundParticipant);
+        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(foundParticipant);
 
-        controller.getParticipantForWorker(study.getIdentifier(), USER_ID, false);
+        controller.getParticipantForWorker(app.getIdentifier(), USER_ID, false);
 
-        verify(mockParticipantService).getParticipant(study, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, USER_ID, false);
     }
 
     @Test
@@ -1346,7 +1346,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.sendSmsMessageForWorker(TEST_APP_ID, USER_ID);
 
         assertEquals(result.getMessage(), "Message sent.");
-        verify(mockParticipantService).sendSmsMessage(eq(study), eq(USER_ID), templateCaptor.capture());
+        verify(mockParticipantService).sendSmsMessage(eq(app), eq(USER_ID), templateCaptor.capture());
 
         SmsTemplate resultTemplate = templateCaptor.getValue();
         assertEquals(resultTemplate.getMessage(), "This is a message");
@@ -1359,11 +1359,11 @@ public class ParticipantControllerTest extends Mockito {
         DynamoActivityEvent anEvent = new DynamoActivityEvent();
         anEvent.setEventId("event-id");
         List<ActivityEvent> events = ImmutableList.of(anEvent);
-        when(mockParticipantService.getActivityEvents(study, USER_ID)).thenReturn(events);
+        when(mockParticipantService.getActivityEvents(app, USER_ID)).thenReturn(events);
 
         ResourceList<ActivityEvent> result = controller.getActivityEventsForWorker(TEST_APP_ID, USER_ID);
 
-        verify(mockParticipantService).getActivityEvents(study, USER_ID);
+        verify(mockParticipantService).getActivityEvents(app, USER_ID);
         assertEquals(result.getItems().get(0).getEventId(), "event-id");
     }
 
@@ -1374,13 +1374,13 @@ public class ParticipantControllerTest extends Mockito {
 
         ForwardCursorPagedResourceList<ScheduledActivity> cursor = new ForwardCursorPagedResourceList<>(
                 ImmutableList.of(ScheduledActivity.create()), "asdf");
-        when(mockParticipantService.getActivityHistory(eq(study), eq(USER_ID), eq("activityGuid"), any(), any(), eq("asdf"),
+        when(mockParticipantService.getActivityHistory(eq(app), eq(USER_ID), eq("activityGuid"), any(), any(), eq("asdf"),
                 eq(50))).thenReturn(cursor);
 
         JsonNode result = controller.getActivityHistoryForWorkerV2(TEST_APP_ID, USER_ID,
                 "activityGuid", START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq("activityGuid"), any(), any(),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq("activityGuid"), any(), any(),
                 eq("asdf"), eq(50));
 
         ForwardCursorPagedResourceList<ScheduledActivity> retrieved = MAPPER
@@ -1395,13 +1395,13 @@ public class ParticipantControllerTest extends Mockito {
 
         ForwardCursorPagedResourceList<ScheduledActivity> cursor = new ForwardCursorPagedResourceList<>(
                 ImmutableList.of(ScheduledActivity.create()), "asdf");
-        when(mockParticipantService.getActivityHistory(eq(study), eq(USER_ID), eq(ActivityType.TASK), any(), any(),
+        when(mockParticipantService.getActivityHistory(eq(app), eq(USER_ID), eq(ActivityType.TASK), any(), any(),
                 any(), eq("asdf"), eq(50))).thenReturn(cursor);
 
         String result = controller.getActivityHistoryForWorkerV3(TEST_APP_ID, USER_ID, "tasks",
                 START_TIME.toString(), END_TIME.toString(), null, "asdf", "50");
 
-        verify(mockParticipantService).getActivityHistory(eq(study), eq(USER_ID), eq(ActivityType.TASK), any(), any(),
+        verify(mockParticipantService).getActivityHistory(eq(app), eq(USER_ID), eq(ActivityType.TASK), any(), any(),
                 any(), eq("asdf"), eq(50));
 
         ForwardCursorPagedResourceList<ScheduledActivity> retrieved = MAPPER.readValue(result,
@@ -1414,10 +1414,10 @@ public class ParticipantControllerTest extends Mockito {
         participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(ImmutableSet.of("test_user"))
                 .build();
 
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(participant);
         controller.deleteTestParticipant(USER_ID);
 
-        verify(mockUserAdminService).deleteUser(study, USER_ID);
+        verify(mockUserAdminService).deleteUser(app, USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1433,7 +1433,7 @@ public class ParticipantControllerTest extends Mockito {
     public void deleteTestUserNotATestAccount() {
         participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(EMPTY_SET).build();
 
-        when(mockParticipantService.getParticipant(study, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(participant);
         controller.deleteTestParticipant(USER_ID);
     }
 
@@ -1469,7 +1469,7 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(result.getItems().size(), 3);
 
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
 
@@ -1483,11 +1483,11 @@ public class ParticipantControllerTest extends Mockito {
 
         AccountSummarySearch payload = setAccountSummarySearch();
 
-        PagedResourceList<AccountSummary> result = controller.searchForAccountSummariesForWorker(study.getIdentifier());
+        PagedResourceList<AccountSummary> result = controller.searchForAccountSummariesForWorker(app.getIdentifier());
 
         assertEquals(result.getItems().size(), 3);
 
-        verify(mockParticipantService).getPagedAccountSummaries(eq(study), searchCaptor.capture());
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search, payload);

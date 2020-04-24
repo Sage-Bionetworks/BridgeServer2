@@ -13,10 +13,10 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,13 +28,13 @@ import com.google.common.collect.Maps;
 public class ViewCacheTest {
     
     private BridgeObjectMapper mapper;
-    private Study study;
+    private App app;
     
     @BeforeMethod
     public void before() {
         mapper = BridgeObjectMapper.get();
         
-        study = TestUtils.getValidStudy(ViewCacheTest.class);
+        app = TestUtils.getValidStudy(ViewCacheTest.class);
     }
     
     @Test
@@ -43,21 +43,21 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(App.class, app.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getObject(cacheKey, String.class)).thenReturn(null);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
-            @Override public Study get() {
-                Study study = TestUtils.getValidStudy(ViewCacheTest.class);
-                study.setName("Test Study 2");
-                return study;
+        String json = cache.getView(cacheKey, new Supplier<App>() {
+            @Override public App get() {
+                App app = TestUtils.getValidStudy(ViewCacheTest.class);
+                app.setName("Test Study 2");
+                return app;
             }
         });
         
-        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertEquals(foundStudy.getName(), "Test Study 2");
+        App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
+        assertEquals(foundApp.getName(), "Test Study 2");
     }
     
     @Test
@@ -66,7 +66,7 @@ public class ViewCacheTest {
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(App.class, app.getIdentifier());
         
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getObject(cacheKey, String.class)).thenReturn(null);
@@ -74,8 +74,8 @@ public class ViewCacheTest {
         
         // It doesn't get wrapped or transformed or anything
         try {
-            cache.getView(cacheKey, new Supplier<Study>() {
-                @Override public Study get() {
+            cache.getView(cacheKey, new Supplier<App>() {
+                @Override public App get() {
                     throw new BridgeServiceException("There has been a problem retrieving the study");
                 }
             });
@@ -87,58 +87,58 @@ public class ViewCacheTest {
     
     @Test
     public void somethingIsCached() throws Exception {
-        String originalStudyJson = mapper.writeValueAsString(study);
+        String originalStudyJson = mapper.writeValueAsString(app);
         
         ViewCache cache = new ViewCache();
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        CacheKey cacheKey = cache.getCacheKey(App.class, app.getIdentifier());
         CacheProvider provider = mock(CacheProvider.class);
         when(provider.getObject(cacheKey, String.class)).thenReturn(originalStudyJson);
         cache.setCacheProvider(provider);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
-            @Override public Study get() {
+        String json = cache.getView(cacheKey, new Supplier<App>() {
+            @Override public App get() {
                 fail("This should not be called");
                 return null;
             }
         });
         
-        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertEquals(foundStudy.getName(), "Test Study [ViewCacheTest]");
+        App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
+        assertEquals(foundApp.getName(), "Test Study [ViewCacheTest]");
     }
     
     @Test
     public void removeFromCacheWorks() throws Exception {
-        final String originalStudyJson = mapper.writeValueAsString(study);
+        final String originalStudyJson = mapper.writeValueAsString(app);
         
         ViewCache cache = new ViewCache();
         cache.setObjectMapper(BridgeObjectMapper.get());
         cache.setCachePeriod(BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
         
-        final CacheKey cacheKey = cache.getCacheKey(Study.class, study.getIdentifier());
+        final CacheKey cacheKey = cache.getCacheKey(App.class, app.getIdentifier());
         cache.setCacheProvider(getSimpleCacheProvider(cacheKey, originalStudyJson));
         
         cache.removeView(cacheKey);
         
-        String json = cache.getView(cacheKey, new Supplier<Study>() {
-            @Override public Study get() {
-                Study study = TestUtils.getValidStudy(ViewCacheTest.class);
-                study.setName("Test Study 2");
-                return study;
+        String json = cache.getView(cacheKey, new Supplier<App>() {
+            @Override public App get() {
+                App app = TestUtils.getValidStudy(ViewCacheTest.class);
+                app.setName("Test Study 2");
+                return app;
             }
         });
-        Study foundStudy = BridgeObjectMapper.get().readValue(json, DynamoStudy.class);
-        assertEquals(foundStudy.getName(), "Test Study 2");
+        App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
+        assertEquals(foundApp.getName(), "Test Study 2");
     }
     
     @Test
     public void getCacheKeyWorks() {
         ViewCache cache = new ViewCache();
         
-        CacheKey cacheKey = cache.getCacheKey(Study.class, "mostRandom", "leastRandom");
-        assertEquals(cacheKey.toString(), "mostRandom:leastRandom:Study:view");
+        CacheKey cacheKey = cache.getCacheKey(App.class, "mostRandom", "leastRandom");
+        assertEquals(cacheKey.toString(), "mostRandom:leastRandom:App:view");
     }
     
     @Test

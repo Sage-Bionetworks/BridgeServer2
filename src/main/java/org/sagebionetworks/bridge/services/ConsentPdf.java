@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -33,7 +33,7 @@ public final class ConsentPdf {
 
     public static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("MMMM d, yyyy");
     
-    private final Study study;
+    private final App app;
     private final StudyParticipant signer;
     private final ConsentSignature consentSignature;
     private final SharingScope sharingScope;
@@ -41,9 +41,9 @@ public final class ConsentPdf {
     private final String xmlTemplateWithSignatureBlock;
     private String formattedConsentDocument;
 
-    public ConsentPdf(Study study, StudyParticipant signer, ConsentSignature consentSignature,
+    public ConsentPdf(App app, StudyParticipant signer, ConsentSignature consentSignature,
             SharingScope sharingScope, String studyConsentAgreement, String xmlTemplateWithSignatureBlock) {
-        this.study = checkNotNull(study);
+        this.app = checkNotNull(app);
         this.signer = signer;
         this.consentSignature = checkNotNull(consentSignature);
         this.sharingScope = checkNotNull(sharingScope);
@@ -123,7 +123,7 @@ public final class ConsentPdf {
         }
         
         // This is now a fragment, assemble accordingly
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
         map.put("participant.name", username);
         map.put("participant.signing.date", signingDate);
         map.put("participant.contactInfo", contactInfo);

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -158,14 +158,14 @@ public class StudyConsentController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}/consents/{createdOn}/publish")
     public StatusMessage publishConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study
-        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
-        studyConsentService.publishConsent(study, subpop, timestamp);
+        studyConsentService.publishConsent(app, subpop, timestamp);
         return new StatusMessage("Consent document set as active.");
     }
 }

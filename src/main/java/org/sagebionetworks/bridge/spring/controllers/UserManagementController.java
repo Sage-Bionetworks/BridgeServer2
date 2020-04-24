@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 @CrossOrigin
@@ -49,11 +49,11 @@ public class UserManagementController extends BaseController {
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
                 .withStudy(API_APP_ID).build();        
         
-        Study study = studyService.getStudy(signIn.getStudyId());
-        CriteriaContext context = getCriteriaContext(study.getIdentifier());
+        App app = studyService.getStudy(signIn.getStudyId());
+        CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
         // We do not check consent, but do verify this is an administrator
-        UserSession session = authenticationService.signIn(study, context, signIn);
+        UserSession session = authenticationService.signIn(app, context, signIn);
 
         if (!session.isInRole(SUPERADMIN)) {
             authenticationService.signOut(session);
@@ -83,8 +83,8 @@ public class UserManagementController extends BaseController {
         String studyId = signIn.getStudyId();
 
         // Verify it's correct
-        Study study = studyService.getStudy(studyId);
-        sessionUpdateService.updateStudy(session, study.getIdentifier());
+        App app = studyService.getStudy(studyId);
+        sessionUpdateService.updateStudy(session, app.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
     }
@@ -93,14 +93,14 @@ public class UserManagementController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode createUser() {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
 
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
         
-        UserSession userSession = userAdminService.createUser(study, participant, null, false, consent);
+        UserSession userSession = userAdminService.createUser(app, participant, null, false, consent);
 
         return UserSessionInfo.toJSON(userSession);
     }
@@ -115,14 +115,14 @@ public class UserManagementController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createUserWithStudyId(@PathVariable String studyId) {
         getAuthenticatedSession(SUPERADMIN);
-        Study study = studyService.getStudy(studyId);
+        App app = studyService.getStudy(studyId);
         
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
 
         boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
 
-        userAdminService.createUser(study, participant, null, false, consent);
+        userAdminService.createUser(app, participant, null, false, consent);
 
         return CREATED_MSG;
     }
@@ -130,9 +130,9 @@ public class UserManagementController extends BaseController {
     @DeleteMapping("/v3/users/{userId}")
     public StatusMessage deleteUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
         
-        userAdminService.deleteUser(study, userId);
+        userAdminService.deleteUser(app, userId);
         
         return DELETED_MSG;
     }

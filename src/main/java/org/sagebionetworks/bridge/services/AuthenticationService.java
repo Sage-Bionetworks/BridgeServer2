@@ -37,7 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -157,41 +157,41 @@ public class AuthenticationService {
      * This method re-constructs the session based on potential changes to the user. It is called after a user 
      * account is updated, and takes the updated CriteriaContext to calculate the current state of the user. We 
      * do not rotate the reauthentication token just because the user updates their session.
-     * @param study
+     * @param app
      *      the user's study
      * @param context
      *      an updated set of criteria for calculating the user's consent status
      * @return
      *      newly created session object (not persisted)
      */
-    public UserSession getSession(Study study, CriteriaContext context) {
-        checkNotNull(study);
+    public UserSession getSession(App app, CriteriaContext context) {
+        checkNotNull(app);
         checkNotNull(context);
 
         Account account = accountService.getAccount(context.getAccountId());
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        return getSessionFromAccount(study, context, account);
+        return getSessionFromAccount(app, context, account);
     }
 
-    public UserSession signIn(Study study, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
-        checkNotNull(study);
+    public UserSession signIn(App app, CriteriaContext context, SignIn signIn) throws EntityNotFoundException {
+        checkNotNull(app);
         checkNotNull(context);
         checkNotNull(signIn);
         
         Validate.entityThrowingException(SignInValidator.PASSWORD_SIGNIN, signIn);
         
-        Account account = accountService.authenticate(study, signIn);
+        Account account = accountService.authenticate(app, signIn);
         
-        clearSession(study.getIdentifier(), account.getId());
-        UserSession session = getSessionFromAccount(study, context, account);
+        clearSession(app.getIdentifier(), account.getId());
+        UserSession session = getSessionFromAccount(app, context, account);
 
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
-        if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
-            AccountId accountId = AccountId.forId(study.getIdentifier(), account.getId());
+        if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
+            AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
             account = accountService.getAccount(accountId);
-            session = getSessionFromAccount(study, context, account);
+            session = getSessionFromAccount(app, context, account);
         }
         cacheProvider.setUserSession(session);
         
@@ -201,9 +201,9 @@ public class AuthenticationService {
         return session;
     }
     
-    public UserSession reauthenticate(Study study, CriteriaContext context, SignIn signIn)
+    public UserSession reauthenticate(App app, CriteriaContext context, SignIn signIn)
             throws EntityNotFoundException {
-        checkNotNull(study);
+        checkNotNull(app);
         checkNotNull(context);
         checkNotNull(signIn);
         
@@ -220,9 +220,9 @@ public class AuthenticationService {
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
         LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
 
-        Account account = accountService.reauthenticate(study, signIn);
+        Account account = accountService.reauthenticate(app, signIn);
         
-        UserSession session = getSessionFromAccount(study, context, account);
+        UserSession session = getSessionFromAccount(app, context, account);
         // If session exists, preserve the session token. Reauthenticating before the session times out will not
         // refresh the token or change the timeout, but it is harmless. At the time the session is set to
         // time out, it will still time out and the client will need to reauthenticate again.
@@ -250,25 +250,25 @@ public class AuthenticationService {
         } 
     }
 
-    public IdentifierHolder signUp(Study study, StudyParticipant participant) {
-        checkNotNull(study);
+    public IdentifierHolder signUp(App app, StudyParticipant participant) {
+        checkNotNull(app);
         checkNotNull(participant);
         
         try {
             // This call is exposed without authentication, so the request context has no roles, and no roles 
             // can be assigned to this user.
-            return participantService.createParticipant(study, participant, true);
+            return participantService.createParticipant(app, participant, true);
         } catch(EntityAlreadyExistsException e) {
             AccountId accountId = null;
             // Clashes in the reassignment of external identifiers will now roll back account creation and 
             // throw a different exception EAEE that we must catch and address here.
             if ("ExternalIdentifier".equals(e.getEntityClass())) {
                 String identifier = (String)e.getEntityKeys().get("identifier");
-                accountId = AccountId.forExternalId(study.getIdentifier(), identifier);
+                accountId = AccountId.forExternalId(app.getIdentifier(), identifier);
                 LOG.info("Sign up attempt using assigned external ID '"+identifier+"'");
             } else if ("Account".equals(e.getEntityClass())) {
                 String userId = (String)e.getEntityKeys().get("userId");
-                accountId = AccountId.forId(study.getIdentifier(), userId);    
+                accountId = AccountId.forId(app.getIdentifier(), userId);    
                 LOG.info("Sign up attempt using credential that exists in account '"+userId+"'");
             } else {
                 LOG.error("Sign up attempt threw unanticipated EntityAlreadyExistsException: " + e.getMessage());
@@ -277,7 +277,7 @@ public class AuthenticationService {
             // Suppress this and send an email to notify the user that the account already exists. From 
             // this call, we simply return a 200 the same as any other sign up. Otherwise the response 
             // reveals that the credential has been taken.
-            accountWorkflowService.notifyAccountExists(study, accountId);
+            accountWorkflowService.notifyAccountExists(app, accountId);
             return null;
         }
     }
@@ -303,14 +303,14 @@ public class AuthenticationService {
         }
     }
     
-    public void requestResetPassword(Study study, boolean isStudyAdmin, SignIn signIn) throws BridgeServiceException {
-        checkNotNull(study);
+    public void requestResetPassword(App app, boolean isStudyAdmin, SignIn signIn) throws BridgeServiceException {
+        checkNotNull(app);
         checkNotNull(signIn);
         
         // validate the data in signIn, then convert it to an account ID which we know will be valid.
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
         try {
-            accountWorkflowService.requestResetPassword(study, isStudyAdmin, signIn.getAccountId());    
+            accountWorkflowService.requestResetPassword(app, isStudyAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Request reset password request for unregistered email in study '"+signIn.getStudyId()+"'");
@@ -325,13 +325,13 @@ public class AuthenticationService {
         accountWorkflowService.resetPassword(passwordReset);
     }
     
-    public GeneratedPassword generatePassword(Study study, String externalId, boolean createAccount) {
-        checkNotNull(study);
+    public GeneratedPassword generatePassword(App app, String externalId, boolean createAccount) {
+        checkNotNull(app);
         
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
-        ExternalIdentifier externalIdObj = externalIdService.getExternalId(study.getIdentifier(), externalId)
+        ExternalIdentifier externalIdObj = externalIdService.getExternalId(app.getIdentifier(), externalId)
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
         // The *caller* must be associated to the external IDs substudy, if any
@@ -339,7 +339,7 @@ public class AuthenticationService {
             throw new EntityNotFoundException(Account.class);
         }
 
-        AccountId accountId = AccountId.forExternalId(study.getIdentifier(), externalId);
+        AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
         Account account = accountService.getAccount(accountId);
         
         // The *target* must be associated to the substudy, if any
@@ -352,7 +352,7 @@ public class AuthenticationService {
             throw new EntityNotFoundException(Account.class);
         }
 
-        String password = generatePassword(study.getPasswordPolicy().getMinLength());
+        String password = generatePassword(app.getPasswordPolicy().getMinLength());
         String userId;
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
@@ -361,7 +361,7 @@ public class AuthenticationService {
             // establish such a relationship.
             StudyParticipant participant = new StudyParticipant.Builder()
                     .withExternalId(externalId).withPassword(password).build();
-            userId = participantService.createParticipant(study, participant, false).getIdentifier();
+            userId = participantService.createParticipant(app, participant, false).getIdentifier();
         } else {
             // Account exists, so rotate the password
             accountService.changePassword(account, null, password);
@@ -415,13 +415,13 @@ public class AuthenticationService {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
             clearSession(context.getAppId(), account.getId());
-            Study study = studyService.getStudy(signIn.getStudyId());
-            session = getSessionFromAccount(study, context, account);
+            App app = studyService.getStudy(signIn.getStudyId());
+            session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.
-            if (!session.doesConsent() && intentService.registerIntentToParticipate(study, account)) {
+            if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
                 account = accountService.getAccount(accountId);
-                session = getSessionFromAccount(study, context, account);
+                session = getSessionFromAccount(app, context, account);
             }
             cacheProvider.setUserSession(session);
 
@@ -455,8 +455,8 @@ public class AuthenticationService {
      * Constructs a session based on the user's account, participant, and request context. This is called by sign-in
      * APIs, which creates the session. Package-scoped for unit tests.
      */
-    public UserSession getSessionFromAccount(Study study, CriteriaContext context, Account account) {
-        StudyParticipant participant = participantService.getParticipant(study, account, false);
+    public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
+        StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
         // from the context, add it to the user/session, and persist it.
@@ -465,7 +465,7 @@ public class AuthenticationService {
                     .withLanguages(context.getLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
-            accountService.editAccount(study.getIdentifier(), participant.getHealthCode(),
+            accountService.editAccount(app.getIdentifier(), participant.getHealthCode(),
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
@@ -478,13 +478,13 @@ public class AuthenticationService {
         session.setAuthenticated(true);
         session.setEnvironment(config.getEnvironment());
         session.setIpAddress(reqContext.getCallerIpAddress());
-        session.setAppId(study.getIdentifier());
+        session.setAppId(app.getIdentifier());
         session.setReauthToken(account.getReauthToken());
         
         CriteriaContext newContext = updateContextFromSession(context, session);
         session.setConsentStatuses(consentService.getConsentStatuses(newContext, account));
         
-        if (!Boolean.TRUE.equals(study.isReauthenticationEnabled())) {
+        if (!Boolean.TRUE.equals(app.isReauthenticationEnabled())) {
             account.setReauthToken(null);
         } else {
             String reauthToken = generateReauthToken();
@@ -517,8 +517,8 @@ public class AuthenticationService {
         }
         
         clearSession(authToken.getAppId(), account.getId());
-        Study study = studyService.getStudy(authToken.getAppId());
-        UserSession session = getSessionFromAccount(study, context, account);
+        App app = studyService.getStudy(authToken.getAppId());
+        UserSession session = getSessionFromAccount(app, context, account);
         cacheProvider.setUserSession(session);
         
         return session;        

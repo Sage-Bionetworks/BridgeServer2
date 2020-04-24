@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
@@ -56,12 +56,12 @@ public class ActivityEventService {
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
      * defined in the study (either in activityEventKeys or in AutomaticCustomEvents).
      */
-    public void publishCustomEvent(Study study, String healthCode, String eventKey, DateTime timestamp) {
+    public void publishCustomEvent(App app, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(eventKey);
 
-        if (!study.getActivityEventKeys().contains(eventKey)
-                && !study.getAutomaticCustomEvents().containsKey(eventKey)) {
+        if (!app.getActivityEventKeys().contains(eventKey)
+                && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
             throw new BadRequestException("Study's ActivityEventKeys does not contain eventKey: " + eventKey);
         }
 
@@ -73,7 +73,7 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the study
-            createAutomaticCustomEvents(study, healthCode, event);
+            createAutomaticCustomEvents(app, healthCode, event);
         }
     }
 
@@ -81,7 +81,7 @@ public class ActivityEventService {
      * Publishes the enrollment event for a user, as well as all of the automatic custom events that trigger on
      * enrollment time.
      */
-    public void publishEnrollmentEvent(Study study, String healthCode, ConsentSignature signature) {
+    public void publishEnrollmentEvent(App app, String healthCode, ConsentSignature signature) {
         checkNotNull(signature);
 
         // Create enrollment event. Use UTC for the timezone. DateTimes are used for period calculations, but since we
@@ -94,11 +94,11 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the study
-            createAutomaticCustomEvents(study, healthCode, event);
+            createAutomaticCustomEvents(app, healthCode, event);
         }
     }
     
-    public void publishActivitiesRetrieved(Study study, String healthCode, DateTime timestamp) {
+    public void publishActivitiesRetrieved(App app, String healthCode, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(timestamp);
         
@@ -109,7 +109,7 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the study
-            createAutomaticCustomEvents(study, healthCode, event);
+            createAutomaticCustomEvents(app, healthCode, event);
         }
     }
     
@@ -180,8 +180,8 @@ public class ActivityEventService {
         DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
         DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
         if (createdOn == null) {
-            Study study = studyService.getStudy(studyId);
-            StudyParticipant studyParticipant = participantService.getParticipant(study, "healthcode:"+healthCode, false);
+            App app = studyService.getStudy(studyId);
+            StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
             publishCreatedOnEvent(healthCode, createdOn);
             builder.put(ActivityEventObjectType.CREATED_ON.name().toLowerCase(), createdOn);
@@ -220,8 +220,8 @@ public class ActivityEventService {
         activityEventDao.deleteActivityEvents(healthCode);
     }
 
-    private void createAutomaticCustomEvents(Study study, String healthCode, ActivityEvent event) {
-        for (Map.Entry<String, String> oneAutomaticEvent : study.getAutomaticCustomEvents().entrySet()) {
+    private void createAutomaticCustomEvents(App app, String healthCode, ActivityEvent event) {
+        for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
             Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
             

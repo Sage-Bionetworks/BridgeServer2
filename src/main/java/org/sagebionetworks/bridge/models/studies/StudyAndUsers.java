@@ -8,13 +8,13 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
 public final class StudyAndUsers implements BridgeEntity {
     private final List<String> adminIds;
-    private final Study study;
+    private final App app;
     private final List<StudyParticipant> users;
 
-    public StudyAndUsers(@JsonProperty("adminIds") List<String> adminIds, @JsonProperty("study") Study study,
+    public StudyAndUsers(@JsonProperty("adminIds") List<String> adminIds, @JsonProperty("study") App app,
             @JsonProperty("users") List<StudyParticipant> users) {
         this.adminIds = adminIds;
-        this.study = study;
+        this.app = app;
         this.users = users;
     }
 
@@ -26,7 +26,7 @@ public final class StudyAndUsers implements BridgeEntity {
         return users;
     }
 
-    public Study getStudy() {
-        return study;
+    public App getStudy() {
+        return app;
     }
 }

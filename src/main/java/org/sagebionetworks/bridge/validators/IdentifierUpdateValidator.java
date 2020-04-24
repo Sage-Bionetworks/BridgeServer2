@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -18,11 +18,11 @@ import org.springframework.validation.Validator;
 public class IdentifierUpdateValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
-    private Study study;
+    private App app;
     private ExternalIdService externalIdService;
     
-    public IdentifierUpdateValidator(Study study, ExternalIdService externalIdService) {
-        this.study = study;
+    public IdentifierUpdateValidator(App app, ExternalIdService externalIdService) {
+        this.app = app;
         this.externalIdService = externalIdService;
     }
     
@@ -67,7 +67,7 @@ public class IdentifierUpdateValidator implements Validator {
                 errors.rejectValue("externalIdUpdate", "cannot be blank");
             } else {
                 // the same validation we perform when adding a participant where external ID is required on sign up.
-                Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getIdentifier(),
+                Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(app.getIdentifier(),
                         update.getExternalIdUpdate());
                 if (!optionalId.isPresent()) {
                     errors.rejectValue("externalIdUpdate", "is not a valid external ID");

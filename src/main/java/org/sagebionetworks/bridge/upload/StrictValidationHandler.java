@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -146,16 +146,16 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * unit tests.
      */
     UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {
-        Study study = studyService.getStudy(studyId);
+        App app = studyService.getStudy(studyId);
 
         // First check UploadValidationStrictness.
-        UploadValidationStrictness uploadValidationStrictness = study.getUploadValidationStrictness();
+        UploadValidationStrictness uploadValidationStrictness = app.getUploadValidationStrictness();
         if (uploadValidationStrictness != null) {
             return uploadValidationStrictness;
         }
 
         // Next, try isStrictValidationEnabled. True means Strict. False means Warning.
-        boolean strictValidationEnabled = study.isStrictUploadValidationEnabled();
+        boolean strictValidationEnabled = app.isStrictUploadValidationEnabled();
         return strictValidationEnabled ? UploadValidationStrictness.STRICT : UploadValidationStrictness.WARNING;
     }
 

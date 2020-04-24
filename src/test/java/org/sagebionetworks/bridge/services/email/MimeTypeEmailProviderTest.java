@@ -6,12 +6,12 @@ import javax.mail.MessagingException;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 public class MimeTypeEmailProviderTest {
     static class MimeTypeEmailProviderImpl extends MimeTypeEmailProvider {
-        public MimeTypeEmailProviderImpl(Study study) {
-            super(study);
+        public MimeTypeEmailProviderImpl(App app) {
+            super(app);
         }
         public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
             return null;
@@ -20,11 +20,11 @@ public class MimeTypeEmailProviderTest {
     
     @Test
     public void works() {
-        Study study = Study.create();
-        study.setName("Very Useful Study 🐶");
-        study.setSupportEmail("support@support.com");
+        App app = App.create();
+        app.setName("Very Useful Study 🐶");
+        app.setSupportEmail("support@support.com");
         
-        MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(study);
+        MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(app);
         
         assertEquals(provider.getPlainSenderEmail(), "support@support.com");
         assertEquals(provider.getFormattedSenderEmail(), "Very Useful Study 🐶 <support@support.com>");
@@ -32,11 +32,11 @@ public class MimeTypeEmailProviderTest {
     
     @Test
     public void worksWithMultipleAddresses() {
-        Study study = Study.create();
-        study.setName("Very Useful Study 🐶");
-        study.setSupportEmail("support@support.com,email@email.com");
+        App app = App.create();
+        app.setName("Very Useful Study 🐶");
+        app.setSupportEmail("support@support.com,email@email.com");
         
-        MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(study);
+        MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(app);
         
         assertEquals(provider.getPlainSenderEmail(), "support@support.com");
         assertEquals(provider.getFormattedSenderEmail(), "Very Useful Study 🐶 <support@support.com>");

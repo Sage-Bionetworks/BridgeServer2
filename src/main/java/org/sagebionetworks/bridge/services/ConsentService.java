@@ -37,7 +37,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -135,15 +135,15 @@ public class ConsentService {
      * Get the user's active consent signature (a signature that has not been withdrawn).
      * @throws EntityNotFoundException if no consent exists
      */
-    public ConsentSignature getConsentSignature(Study study, SubpopulationGuid subpopGuid, String userId) {
-        checkNotNull(study);
+    public ConsentSignature getConsentSignature(App app, SubpopulationGuid subpopGuid, String userId) {
+        checkNotNull(app);
         checkNotNull(subpopGuid);
         checkNotNull(userId);
         
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
-        subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+        subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -166,23 +166,23 @@ public class ConsentService {
      * @throws EntityAlreadyExistsException
      *      if the user has already signed the consent for this subpopulation
      */
-    public void consentToResearch(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant,
+    public void consentToResearch(App app, SubpopulationGuid subpopGuid, StudyParticipant participant,
             ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsent) {
-        checkNotNull(study, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
         checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
         checkNotNull(participant, Validate.CANNOT_BE_NULL, "participant");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
         checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
 
-        ConsentSignatureValidator validator = new ConsentSignatureValidator(study.getMinAgeOfConsent());
+        ConsentSignatureValidator validator = new ConsentSignatureValidator(app.getMinAgeOfConsent());
         Validate.entityThrowingException(validator, consentSignature);
 
-        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         StudyConsentView studyConsent = studyConsentService.getActiveConsent(subpop);
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), participant.getId()));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), participant.getId()));
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new EntityAlreadyExistsException(ConsentSignature.class, null);
@@ -203,18 +203,18 @@ public class ConsentService {
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
         for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
             AccountSubstudy acctSubstudy = AccountSubstudy.create(
-                    study.getIdentifier(), substudyId, account.getId());
+                    app.getIdentifier(), substudyId, account.getId());
             account.getAccountSubstudies().add(acctSubstudy);
         }
         
         accountService.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
-        activityEventService.publishEnrollmentEvent(study, participant.getHealthCode(), withConsentCreatedOnSignature);
+        activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), withConsentCreatedOnSignature);
 
         // Administrative actions, almost exclusively for testing, will send no consent documents
         if (sendSignedConsent) {
-            ConsentPdf consentPdf = new ConsentPdf(study, participant, withConsentCreatedOnSignature, sharingScope,
+            ConsentPdf consentPdf = new ConsentPdf(app, participant, withConsentCreatedOnSignature, sharingScope,
                     studyConsent.getDocumentContent(), xmlTemplateWithSignatureBlock);
             
             boolean verifiedEmail = (participant.getEmail() != null
@@ -228,12 +228,12 @@ public class ConsentService {
             if (verifiedEmail && !subpop.isAutoSendConsentSuppressed()) {
                 recipientEmails.add(participant.getEmail());    
             }
-            addStudyConsentRecipients(study, recipientEmails);
+            addStudyConsentRecipients(app, recipientEmails);
             if (!recipientEmails.isEmpty()) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
+                TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
-                        .withStudy(study)
+                        .withStudy(app)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -244,7 +244,7 @@ public class ConsentService {
             }
             // Otherwise if there's no verified email but there is a phone and we're not suppressing, send it there
             if (!subpop.isAutoSendConsentSuppressed() && !verifiedEmail && verifiedPhone) {
-                sendConsentViaSMS(study, subpop, participant, consentPdf);    
+                sendConsentViaSMS(app, subpop, participant, consentPdf);    
             }
         }
     }
@@ -292,16 +292,16 @@ public class ConsentService {
      * access any APIs that require consent, although the user's account (along with the history of 
      * the user's participation) will not be deleted.
      */
-    public Map<SubpopulationGuid, ConsentStatus> withdrawConsent(Study study, SubpopulationGuid subpopGuid,
+    public Map<SubpopulationGuid, ConsentStatus> withdrawConsent(App app, SubpopulationGuid subpopGuid,
             StudyParticipant participant, CriteriaContext context, Withdrawal withdrawal, long withdrewOn) {
-        checkNotNull(study);
+        checkNotNull(app);
         checkNotNull(context);
         checkNotNull(subpopGuid);
         checkNotNull(participant);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
         
-        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         Account account = accountService.getAccount(context.getAccountId());
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
@@ -309,14 +309,14 @@ public class ConsentService {
         }
         Map<SubpopulationGuid,ConsentStatus> statuses = getConsentStatuses(context, account);
         if (!ConsentStatus.isUserConsented(statuses)) {
-            notificationsService.deleteAllRegistrations(study.getIdentifier(), participant.getHealthCode());
+            notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());
             account.setSharingScope(SharingScope.NO_SHARING);
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
         accountService.updateAccount(account, null);
         
-        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
+        sendWithdrawEmail(app, account, withdrawal, withdrewOn);
 
         return statuses;
     }
@@ -328,21 +328,21 @@ public class ConsentService {
      * there are studies with distinct and separate consents, you can also selectively withdraw from the consent for 
      * a specific subpopulation without dropping out of the study.
      */
-    public void withdrawFromStudy(Study study, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
-        checkNotNull(study);
+    public void withdrawFromStudy(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
+        checkNotNull(app);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        AccountId accountId = AccountId.forId(study.getIdentifier(), participant.getId());
+        AccountId accountId = AccountId.forId(app.getIdentifier(), participant.getId());
         Account account = accountService.getAccount(accountId);
         
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             if (withdrawSignatures(account, subpopGuid, withdrewOn)) {
-                Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+                Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
                 account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
             }
         }
-        sendWithdrawEmail(study, account, withdrawal, withdrewOn);
+        sendWithdrawEmail(app, account, withdrawal, withdrewOn);
         
         // Forget this person. If the user registers again at a later date, it is as if they have 
         // created a new account. But we hold on to this record so we can still retrieve the consent 
@@ -358,21 +358,21 @@ public class ConsentService {
         account.setPhoneVerified(false);
         accountService.updateAccount(account, null);
 
-        notificationsService.deleteAllRegistrations(study.getIdentifier(), participant.getHealthCode());
+        notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());
     }
 
     // Helper method, which abstracts away logic for sending withdraw notification email.
-    private void sendWithdrawEmail(Study study, Account account, Withdrawal withdrawal,
+    private void sendWithdrawEmail(App app, Account account, Withdrawal withdrawal,
             long withdrewOn) {
         if (account.getEmail() == null) {
             // Withdraw email provider currently doesn't support non-email accounts. Skip.
             return;
         }
-        if (FALSE.equals(study.isConsentNotificationEmailVerified())) {
+        if (FALSE.equals(app.isConsentNotificationEmailVerified())) {
             // For backwards-compatibility, a null value means the email is verified.
             return;
         }
-        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(study, account,
+        WithdrawConsentEmailProvider consentEmail = new WithdrawConsentEmailProvider(app, account,
                 withdrawal, withdrewOn);
         if (!consentEmail.getRecipients().isEmpty()) {
             sendMailService.sendEmail(consentEmail);    
@@ -383,14 +383,14 @@ public class ConsentService {
      * Resend the participant's signed consent agreement via the user's email address or their phone number. 
      * It is an error to call this method if no channel exists to send the consent to the user.
      */
-    public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, StudyParticipant participant) {
-        checkNotNull(study);
+    public void resendConsentAgreement(App app, SubpopulationGuid subpopGuid, StudyParticipant participant) {
+        checkNotNull(app);
         checkNotNull(subpopGuid);
         checkNotNull(participant);
 
-        ConsentSignature consentSignature = getConsentSignature(study, subpopGuid, participant.getId());
+        ConsentSignature consentSignature = getConsentSignature(app, subpopGuid, participant.getId());
         SharingScope sharingScope = participant.getSharingScope();
-        Subpopulation subpop = subpopService.getSubpopulation(study.getIdentifier(), subpopGuid);
+        Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         String studyConsentDocument = studyConsentService.getActiveConsent(subpop).getDocumentContent();
 
         boolean verifiedEmail = (participant.getEmail() != null
@@ -398,27 +398,27 @@ public class ConsentService {
         boolean verifiedPhone = (participant.getPhone() != null
                 && Boolean.TRUE.equals(participant.getPhoneVerified()));
         
-        ConsentPdf consentPdf = new ConsentPdf(study, participant, consentSignature, sharingScope, studyConsentDocument,
+        ConsentPdf consentPdf = new ConsentPdf(app, participant, consentSignature, sharingScope, studyConsentDocument,
                 xmlTemplateWithSignatureBlock);
         
         if (verifiedEmail) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT);
+            TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                    .withStudy(study)
+                    .withStudy(app)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
                     .withType(EmailType.RESEND_CONSENT).build();
             sendMailService.sendEmail(provider);
         } else if (verifiedPhone) {
-            sendConsentViaSMS(study, subpop, participant, consentPdf);
+            sendConsentViaSMS(app, subpop, participant, consentPdf);
         } else {
             throw new BadRequestException("Participant does not have a valid email address or phone number");
         }
     }
     
-    private void sendConsentViaSMS(Study study, Subpopulation subpop, StudyParticipant participant,
+    private void sendConsentViaSMS(App app, Subpopulation subpop, StudyParticipant participant,
             ConsentPdf consentPdf) {
         String shortUrl;
         try {
@@ -433,10 +433,10 @@ public class ConsentService {
         } catch(IOException e) {
             throw new BridgeServiceException(e);
         }
-        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_SIGNED_CONSENT);
+        TemplateRevision revision = templateService.getRevisionForUser(app, SMS_SIGNED_CONSENT);
 
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withTransactionType()
@@ -454,10 +454,10 @@ public class ConsentService {
         return DateUtils.getCurrentDateTime().plusSeconds(SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS);
     }
     
-    private void addStudyConsentRecipients(Study study, Set<String> recipientEmails) {
-        Boolean consentNotificationEmailVerified = study.isConsentNotificationEmailVerified();
+    private void addStudyConsentRecipients(App app, Set<String> recipientEmails) {
+        Boolean consentNotificationEmailVerified = app.isConsentNotificationEmailVerified();
         if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
-            Set<String> studyRecipients = commaListToOrderedSet(study.getConsentNotificationEmail());
+            Set<String> studyRecipients = commaListToOrderedSet(app.getConsentNotificationEmail());
             recipientEmails.addAll(studyRecipients);
         }
     }

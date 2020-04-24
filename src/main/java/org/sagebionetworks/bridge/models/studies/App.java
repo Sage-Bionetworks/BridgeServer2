@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -19,17 +19,15 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
  * A Bridge study.
  *
  */
-// This is required or Jackson searches for, and eventually, finds the same annotation for StudyIdentifer, 
-// and attempts to use that to deserialize study (not what you want).
-@JsonDeserialize(as=DynamoStudy.class)
-public interface Study extends BridgeEntity {
+@JsonDeserialize(as=DynamoApp.class)
+public interface App extends BridgeEntity {
     ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
     /** Convenience method for creating a Study using a concrete implementation. */
-    static Study create() {
-        return new DynamoStudy();
+    static App create() {
+        return new DynamoApp();
     }
 
     /**

@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -78,59 +78,59 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
         try {
             studyService.getStudy(API_APP_ID);
         } catch (EntityNotFoundException e) {
-            Study study = Study.create();
-            study.setName("Test Study");
-            study.setShortName("TestStudy");
-            study.setIdentifier(API_APP_ID);
-            study.setReauthenticationEnabled(false);
-            study.setSponsorName("Sage Bionetworks");
-            study.setMinAgeOfConsent(18);
-            study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
-            study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
-            study.setSupportEmail("support@sagebridge.org");
-            study.setDataGroups(Sets.newHashSet(TEST_DATA_GROUPS));
-            study.setTaskIdentifiers(Sets.newHashSet(TEST_TASK_IDENTIFIERS));
-            study.setUserProfileAttributes(Sets.newHashSet("can_be_recontacted"));
-            study.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
-            study.setEmailVerificationEnabled(true);
-            study.setVerifyChannelOnSignInEnabled(true);
-            study = studyService.createStudy(study);
+            App app = App.create();
+            app.setName("Test Study");
+            app.setShortName("TestStudy");
+            app.setIdentifier(API_APP_ID);
+            app.setReauthenticationEnabled(false);
+            app.setSponsorName("Sage Bionetworks");
+            app.setMinAgeOfConsent(18);
+            app.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+            app.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+            app.setSupportEmail("support@sagebridge.org");
+            app.setDataGroups(Sets.newHashSet(TEST_DATA_GROUPS));
+            app.setTaskIdentifiers(Sets.newHashSet(TEST_TASK_IDENTIFIERS));
+            app.setUserProfileAttributes(Sets.newHashSet("can_be_recontacted"));
+            app.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
+            app.setEmailVerificationEnabled(true);
+            app.setVerifyChannelOnSignInEnabled(true);
+            app = studyService.createStudy(app);
             
             StudyParticipant admin = new StudyParticipant.Builder()
                     .withEmail(config.get("admin.email"))
                     .withPassword(config.get("admin.password"))
                     .withRoles(ImmutableSet.of(ADMIN, RESEARCHER)).build();
-            userAdminService.createUser(study, admin, API_SUBPOP, false, false);
+            userAdminService.createUser(app, admin, API_SUBPOP, false, false);
 
             StudyParticipant dev = new StudyParticipant.Builder()
                     .withEmail(config.get("api.developer.email"))
                     .withPassword(config.get("api.developer.password"))
                     .withRoles(ImmutableSet.of(DEVELOPER)).build();
-            userAdminService.createUser(study, dev, API_SUBPOP, false, false);
+            userAdminService.createUser(app, dev, API_SUBPOP, false, false);
         }
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
         try {
             studyService.getStudy(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {
-            Study study = Study.create();
-            study.setName("Shared Module Library");
-            study.setReauthenticationEnabled(false);
-            study.setShortName("SharedLib");
-            study.setSponsorName("Sage Bionetworks");
-            study.setIdentifier(SHARED_APP_ID);
-            study.setSupportEmail(config.get("admin.email"));
-            study.setTechnicalEmail(config.get("admin.email"));
-            study.setConsentNotificationEmail(config.get("admin.email"));
-            study.setEmailVerificationEnabled(true);
-            study.setVerifyChannelOnSignInEnabled(true);
-            study = studyService.createStudy(study);
+            App app = App.create();
+            app.setName("Shared Module Library");
+            app.setReauthenticationEnabled(false);
+            app.setShortName("SharedLib");
+            app.setSponsorName("Sage Bionetworks");
+            app.setIdentifier(SHARED_APP_ID);
+            app.setSupportEmail(config.get("admin.email"));
+            app.setTechnicalEmail(config.get("admin.email"));
+            app.setConsentNotificationEmail(config.get("admin.email"));
+            app.setEmailVerificationEnabled(true);
+            app.setVerifyChannelOnSignInEnabled(true);
+            app = studyService.createStudy(app);
             
             StudyParticipant dev = new StudyParticipant.Builder()
                     .withEmail(config.get("shared.developer.email"))
                     .withPassword(config.get("shared.developer.password"))
                     .withRoles(ImmutableSet.of(DEVELOPER)).build();
-            userAdminService.createUser(study, dev, SHARED_SUBPOP, false, false);
+            userAdminService.createUser(app, dev, SHARED_SUBPOP, false, false);
         }
     }
 }

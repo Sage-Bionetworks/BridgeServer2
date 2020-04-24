@@ -43,7 +43,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -120,7 +120,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        DynamoStudy study = new DynamoStudy();
+        DynamoApp study = new DynamoApp();
         study.setIdentifier(TEST_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)

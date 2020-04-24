@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -32,7 +32,7 @@ public interface AccountDao {
      * exception, the account will not be persisted (the consumer is executed after the persist 
      * is executed in a transaction, however).
      */
-    void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer);
+    void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer);
     
     /**
      * Save account changes. If the optional consumer is passed to this method and 
@@ -54,11 +54,11 @@ public interface AccountDao {
     
     /**
      * Get a page of lightweight account summaries. 
-     * @param study
-     *      retrieve participants in this study
+     * @param app
+     *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
      */
-    PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search);
+    PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search);
 }    

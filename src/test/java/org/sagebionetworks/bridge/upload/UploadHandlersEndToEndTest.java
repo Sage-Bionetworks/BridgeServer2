@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
@@ -80,7 +80,7 @@ public class UploadHandlersEndToEndTest {
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
     private static final LocalDate MOCK_TODAY = MOCK_NOW.toLocalDate();
 
-    private static final DynamoStudy STUDY = new DynamoStudy();
+    private static final DynamoApp STUDY = new DynamoApp();
     static {
         STUDY.setStrictUploadValidationEnabled(true);
     }

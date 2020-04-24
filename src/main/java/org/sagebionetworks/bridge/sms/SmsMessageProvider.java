@@ -10,7 +10,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
@@ -19,23 +19,23 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 public class SmsMessageProvider {
-    private final Study study;
+    private final App app;
     private final Map<String,String> tokenMap;
     private final Phone phone;
     private final SmsType smsType;
     private final TemplateRevision revision;
 
-    private SmsMessageProvider(Study study, TemplateRevision revision, SmsType smsType, Phone phone,
+    private SmsMessageProvider(App app, TemplateRevision revision, SmsType smsType, Phone phone,
             Map<String, String> tokenMap) {
-        this.study = study;
+        this.app = app;
         this.smsType = smsType;
         this.revision = revision;
         this.phone = phone;
         this.tokenMap = tokenMap;
     }
 
-    public Study getStudy() {
-        return study;
+    public App getStudy() {
+        return app;
     }
     public TemplateRevision getTemplateRevision() {
         return revision;
@@ -84,14 +84,14 @@ public class SmsMessageProvider {
     }
     
     public static class Builder {
-        private Study study;
+        private App app;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Phone phone;
         private SmsType smsType;
         private TemplateRevision revision;
 
-        public Builder withStudy(Study study) {
-            this.study = study;
+        public Builder withStudy(App app) {
+            this.app = app;
             return this;
         }
         public Builder withTemplateRevision(TemplateRevision revision) {
@@ -119,19 +119,19 @@ public class SmsMessageProvider {
             return this;
         }
         public SmsMessageProvider build() {
-            checkNotNull(study);
+            checkNotNull(app);
             checkNotNull(revision);
             checkNotNull(phone);
             checkNotNull(smsType);
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(study));
+            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
             
             // overwriting the study's short name field with a default value, if needed
-            String studyShortName = StringUtils.isBlank(study.getShortName()) ? "Bridge" : study.getShortName();
+            String studyShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();
             tokenMap.put("studyShortName", studyShortName);
             // remove nulls, these will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
 
-            return new SmsMessageProvider(study, revision, smsType, phone, ImmutableMap.copyOf(tokenMap));
+            return new SmsMessageProvider(app, revision, smsType, phone, ImmutableMap.copyOf(tokenMap));
         }
     }
 }

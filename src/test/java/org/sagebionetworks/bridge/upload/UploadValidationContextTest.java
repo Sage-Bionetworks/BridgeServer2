@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 public class UploadValidationContextTest {
@@ -41,7 +41,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        Study study = TestUtils.getValidStudy(UploadValidationContextTest.class);
+        App app = TestUtils.getValidStudy(UploadValidationContextTest.class);
         Upload upload = new DynamoUpload2();
         File tempDir = mock(File.class);
         File dataFile = mock(File.class);
@@ -54,7 +54,7 @@ public class UploadValidationContextTest {
         // create original
         UploadValidationContext original = new UploadValidationContext();
         original.setHealthCode(HEALTH_CODE);
-        original.setStudy(study.getIdentifier());
+        original.setStudy(app.getIdentifier());
         original.setUpload(upload);
         original.setSuccess(false);
         original.addMessage("common message");
@@ -69,7 +69,7 @@ public class UploadValidationContextTest {
         // copy and validate
         UploadValidationContext copy = original.shallowCopy();
         assertEquals(copy.getHealthCode(), HEALTH_CODE);
-        assertSame(copy.getStudy(), study.getIdentifier());
+        assertSame(copy.getStudy(), app.getIdentifier());
         assertSame(copy.getUpload(), upload);
         assertFalse(copy.getSuccess());
         assertSame(copy.getTempDir(), tempDir);

@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.SchedulePlanValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -55,12 +55,12 @@ public class SchedulePlanService {
         return schedulePlanDao.getSchedulePlan(studyIdentifier, guid);
     }
 
-    public SchedulePlan createSchedulePlan(Study study, SchedulePlan plan) {
-        checkNotNull(study);
+    public SchedulePlan createSchedulePlan(App app, SchedulePlan plan) {
+        checkNotNull(app);
         checkNotNull(plan);
 
         // Plan must always be in user's study, remove version and recreate guid for copies
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(app.getIdentifier());
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         
@@ -77,27 +77,27 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validate.entityThrowingException(
-                new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
+                new SchedulePlanValidator(app.getDataGroups(), substudyIds, app.getTaskIdentifiers()), plan);
 
-        lookupSurveyReferenceIdentifiers(study.getIdentifier(), plan);
-        return schedulePlanDao.createSchedulePlan(study.getIdentifier(), plan);
+        lookupSurveyReferenceIdentifiers(app.getIdentifier(), plan);
+        return schedulePlanDao.createSchedulePlan(app.getIdentifier(), plan);
     }
     
-    public SchedulePlan updateSchedulePlan(Study study, SchedulePlan plan) {
-        checkNotNull(study);
+    public SchedulePlan updateSchedulePlan(App app, SchedulePlan plan) {
+        checkNotNull(app);
         checkNotNull(plan);
         
         // Plan must always be in user's study
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(app.getIdentifier());
         
         // This can happen if the submission is invalid, we want to proceed to validation
         if (plan.getStrategy() != null) {
             // Verify that all GUIDs that are supplied already exist in the plan. If they don't (or GUID is null),
             // then add a new GUID.
-            SchedulePlan existing = schedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid());
+            SchedulePlan existing = schedulePlanDao.getSchedulePlan(app.getIdentifier(), plan.getGuid());
             Set<String> existingGuids = getAllActivityGuids(existing);
             List<Schedule> schedules = plan.getStrategy().getAllPossibleSchedules();
             for (Schedule schedule : schedules) {
@@ -111,10 +111,10 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validate.entityThrowingException(
-                new SchedulePlanValidator(study.getDataGroups(), substudyIds, study.getTaskIdentifiers()), plan);
+                new SchedulePlanValidator(app.getDataGroups(), substudyIds, app.getTaskIdentifiers()), plan);
         
         lookupSurveyReferenceIdentifiers(plan.getStudyKey(), plan);
         return schedulePlanDao.updateSchedulePlan(plan.getStudyKey(), plan);

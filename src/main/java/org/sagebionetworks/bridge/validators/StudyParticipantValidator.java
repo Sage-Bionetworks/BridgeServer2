@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.SubstudyService;
@@ -25,14 +25,14 @@ public class StudyParticipantValidator implements Validator {
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
     private final SubstudyService substudyService;
-    private final Study study;
+    private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, Study study,
+    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, App app,
             boolean isNew) {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;
-        this.study = study;
+        this.app = app;
         this.isNew = isNew;
     }
     
@@ -64,14 +64,14 @@ public class StudyParticipantValidator implements Validator {
             // External ID is required for non-administrative accounts when it is required on sign-up. Whether you're 
             // a researcher or not, however, if you add an external ID and we're managing them, we're going to validate
             // that yours is correct.
-            if (participant.getRoles().isEmpty() && study.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
+            if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
             // supplied (such as in the password reset workflow).
             String password = participant.getPassword();
             if (password != null) {
-                PasswordPolicy passwordPolicy = study.getPasswordPolicy();
+                PasswordPolicy passwordPolicy = app.getPasswordPolicy();
                 ValidatorUtils.validatePassword(errors, passwordPolicy, password);
             }
         } else {
@@ -81,7 +81,7 @@ public class StudyParticipantValidator implements Validator {
         }
 
         for (String substudyId : participant.getSubstudyIds()) {
-            Substudy substudy = substudyService.getSubstudy(study.getIdentifier(), substudyId, false);
+            Substudy substudy = substudyService.getSubstudy(app.getIdentifier(), substudyId, false);
             if (substudy == null) {
                 errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy");
             }
@@ -90,7 +90,7 @@ public class StudyParticipantValidator implements Validator {
         // External ID can be updated during creation or on update. If it's already assigned to another user, 
         // the database constraints will prevent this record's persistence.
         if (isNotBlank(participant.getExternalId())) {
-            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(study.getIdentifier(),
+            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(app.getIdentifier(),
                     participant.getExternalId());
             if (!optionalId.isPresent()) {
                 errors.rejectValue("externalId", "is not a valid external ID");
@@ -106,13 +106,13 @@ public class StudyParticipantValidator implements Validator {
         }
                 
         for (String dataGroup : participant.getDataGroups()) {
-            if (!study.getDataGroups().contains(dataGroup)) {
-                errors.rejectValue("dataGroups", messageForSet(study.getDataGroups(), dataGroup));
+            if (!app.getDataGroups().contains(dataGroup)) {
+                errors.rejectValue("dataGroups", messageForSet(app.getDataGroups(), dataGroup));
             }
         }
         for (String attributeName : participant.getAttributes().keySet()) {
-            if (!study.getUserProfileAttributes().contains(attributeName)) {
-                errors.rejectValue("attributes", messageForSet(study.getUserProfileAttributes(), attributeName));
+            if (!app.getUserProfileAttributes().contains(attributeName)) {
+                errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
             }
         }
     }

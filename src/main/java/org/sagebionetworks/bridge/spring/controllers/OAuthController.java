@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.OAuthService;
 
 @CrossOrigin
@@ -41,9 +41,9 @@ public class OAuthController extends BaseController {
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, vendorId, token, null);
         
-        Study study = studyService.getStudy(session.getAppId());
+        App app = studyService.getStudy(session.getAppId());
         
-        return service.requestAccessToken(study, session.getHealthCode(), authToken);
+        return service.requestAccessToken(app, session.getHealthCode(), authToken);
     }
     
     @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}", 
@@ -53,10 +53,10 @@ public class OAuthController extends BaseController {
             @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(appId);
+        App app = studyService.getStudy(appId);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return service.getHealthCodesGrantingAccess(study, vendorId, pageSizeInt, offsetKey);
+        return service.getHealthCodesGrantingAccess(app, vendorId, pageSizeInt, offsetKey);
     }
     
     @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}/{healthCode}", 
@@ -65,7 +65,7 @@ public class OAuthController extends BaseController {
             @PathVariable String healthCode) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(appId);
-        return service.getAccessToken(study, vendorId, healthCode);
+        App app = studyService.getStudy(appId);
+        return service.getAccessToken(app, vendorId, healthCode);
     }
 }

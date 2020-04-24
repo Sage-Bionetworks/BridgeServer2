@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -33,11 +33,11 @@ import nl.jqno.equalsverifier.Warning;
 public class SimpleScheduleStrategyTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    private Study study;
+    private App app;
 
     @BeforeMethod
     public void before() {
-        study = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
     }
 
     @Test
@@ -54,7 +54,7 @@ public class SimpleScheduleStrategyTest {
 
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(study.getIdentifier());
+        plan.setStudyKey(app.getIdentifier());
         plan.setStrategy(strategy);
 
         String output = MAPPER.writeValueAsString(plan);

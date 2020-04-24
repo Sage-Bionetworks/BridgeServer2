@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 
 @CrossOrigin
@@ -40,8 +40,8 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
-        Study study = studyService.getStudy(session.getAppId());
-        activityEventService.publishCustomEvent(study, session.getHealthCode(),
+        App app = studyService.getStudy(session.getAppId());
+        activityEventService.publishCustomEvent(app, session.getHealthCode(),
                 activityEvent.getEventKey(), activityEvent.getTimestamp());
         
         return new StatusMessage("Event recorded");

@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -101,11 +101,11 @@ public class ExternalIdService {
         externalIdDao.createExternalId(externalId);
     }
     
-    public void deleteExternalIdPermanently(Study study, ExternalIdentifier externalId) {
-        checkNotNull(study);
+    public void deleteExternalIdPermanently(App app, ExternalIdentifier externalId) {
+        checkNotNull(app);
         checkNotNull(externalId);
         
-        ExternalIdentifier existing = externalIdDao.getExternalId(study.getIdentifier(), externalId.getIdentifier())
+        ExternalIdentifier existing = externalIdDao.getExternalId(app.getIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         if (BridgeUtils.filterForSubstudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);

@@ -60,7 +60,7 @@ import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigVali
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
@@ -484,15 +484,15 @@ public class BridgeUtilsTest {
         String host = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
         assertTrue(StringUtils.isNotBlank(host));
         
-        Study study = Study.create();
-        study.setName("name1");
-        study.setShortName("shortName");
-        study.setIdentifier(TEST_APP_ID);
-        study.setSponsorName("sponsorName1");
-        study.setSupportEmail("supportEmail1");
-        study.setTechnicalEmail("technicalEmail1");
-        study.setConsentNotificationEmail("consentNotificationEmail1");
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> {
+        App app = App.create();
+        app.setName("name1");
+        app.setShortName("shortName");
+        app.setIdentifier(TEST_APP_ID);
+        app.setSponsorName("sponsorName1");
+        app.setSupportEmail("supportEmail1");
+        app.setTechnicalEmail("technicalEmail1");
+        app.setConsentNotificationEmail("consentNotificationEmail1");
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> {
             return value.replaceAll("1", "2");
         });
         map.put("thisMap", "isMutable");
@@ -510,10 +510,10 @@ public class BridgeUtilsTest {
     
     @Test
     public void templateResolverHandlesNullConsentEmail() {
-        Study study = TestUtils.getValidStudy(BridgeUtilsTest.class);
-        study.setConsentNotificationEmail(null);
+        App app = TestUtils.getValidStudy(BridgeUtilsTest.class);
+        app.setConsentNotificationEmail(null);
         
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(study);
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
         assertNull(map.get("consentEmail"));
     }
     

@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +43,8 @@ public class PasswordResetValidator implements Validator {
             return;
         }
         // This logic is now duplicated with StudyParticipant validation.
-        Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        PasswordPolicy passwordPolicy = study.getPasswordPolicy();
+        App app = studyService.getStudy(passwordReset.getStudyIdentifier());
+        PasswordPolicy passwordPolicy = app.getPasswordPolicy();
         String password = passwordReset.getPassword();
         ValidatorUtils.validatePassword(errors, passwordPolicy, password);
     }

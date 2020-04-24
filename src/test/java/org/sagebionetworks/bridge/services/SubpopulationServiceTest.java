@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.dao.SubpopulationDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoStudyConsent1;
 import org.sagebionetworks.bridge.dynamodb.DynamoSubpopulation;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -74,7 +74,7 @@ public class SubpopulationServiceTest {
     SubstudyService substudyService;
     
     @Mock
-    Study study;
+    App app;
     
     @Mock
     StudyConsentDao studyConsentDao;
@@ -112,8 +112,8 @@ public class SubpopulationServiceTest {
         subpop.setGuidString(BridgeUtils.generateGuid());
         
         Set<String> dataGroups = ImmutableSet.of("group1","group2");
-        when(study.getDataGroups()).thenReturn(dataGroups);
-        when(study.getIdentifier()).thenReturn(TEST_APP_ID);
+        when(app.getDataGroups()).thenReturn(dataGroups);
+        when(app.getIdentifier()).thenReturn(TEST_APP_ID);
         
         when(subpopDao.createSubpopulation(any())).thenAnswer(returnsFirstArg());
         when(subpopDao.updateSubpopulation(any())).thenAnswer(returnsFirstArg());
@@ -128,14 +128,14 @@ public class SubpopulationServiceTest {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void creationIsValidated() {
         Subpopulation subpop = Subpopulation.create();
-        service.createSubpopulation(study, subpop);
+        service.createSubpopulation(app, subpop);
     }
     
     // The contents of this exception are tested in the validator tests.
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateIsValidated() {
         Subpopulation subpop = Subpopulation.create();
-        service.createSubpopulation(study, subpop);
+        service.createSubpopulation(app, subpop);
     }
     
     @Test
@@ -149,7 +149,7 @@ public class SubpopulationServiceTest {
         
         when(subpopDao.createSubpopulation(any())).thenReturn(subpop);
         
-        Subpopulation result = service.createSubpopulation(study, subpop);
+        Subpopulation result = service.createSubpopulation(app, subpop);
         assertEquals(result.getName(), "Name");
         assertNotNull(result.getGuidString());
         assertNotEquals(result.getGuidString(), "cannot-set-guid");
@@ -158,14 +158,14 @@ public class SubpopulationServiceTest {
         
         verify(subpopDao).createSubpopulation(subpop);
         verify(studyConsentService).addConsent(eq(result.getGuid()), any());
-        verify(studyConsentService).publishConsent(study, result, CONSENT_CREATED_ON);
+        verify(studyConsentService).publishConsent(app, result, CONSENT_CREATED_ON);
         verify(substudyService).getSubstudyIds(TEST_APP_ID);
     }
     
     @Test
     public void createDefaultSubpopulationWhereNoConsents() {
-        Study study = new DynamoStudy();
-        study.setIdentifier(TEST_APP_ID);
+        App app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(new DynamoStudyConsent1(), "");
         Subpopulation subpop = Subpopulation.create();
@@ -176,12 +176,12 @@ public class SubpopulationServiceTest {
         
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of());
         when(studyConsentService.addConsent(eq(defaultGuid), any())).thenReturn(view);
-        when(subpopDao.createDefaultSubpopulation(study.getIdentifier())).thenReturn(subpop);
+        when(subpopDao.createDefaultSubpopulation(app.getIdentifier())).thenReturn(subpop);
         
         // No consents, so we add and publish one.
-        Subpopulation returnValue = service.createDefaultSubpopulation(study);
+        Subpopulation returnValue = service.createDefaultSubpopulation(app);
         verify(studyConsentService).addConsent(any(), captor.capture());
-        verify(studyConsentService).publishConsent(eq(study), eq(subpop), any(Long.class));
+        verify(studyConsentService).publishConsent(eq(app), eq(subpop), any(Long.class));
         assertEquals(returnValue, subpop);
         
         // This used the default document.
@@ -190,15 +190,15 @@ public class SubpopulationServiceTest {
     
     @Test
     public void createDefaultSubpopulationWhereConsentsExist() {
-        Study study = new DynamoStudy();
-        study.setIdentifier(TEST_APP_ID);
+        App app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
         
         SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
         Subpopulation subpop = Subpopulation.create();
         when(studyConsentService.getAllConsents(defaultGuid)).thenReturn(ImmutableList.of(new DynamoStudyConsent1()));
-        when(subpopDao.createDefaultSubpopulation(study.getIdentifier())).thenReturn(subpop);
+        when(subpopDao.createDefaultSubpopulation(app.getIdentifier())).thenReturn(subpop);
         
-        Subpopulation returnValue = service.createDefaultSubpopulation(study);
+        Subpopulation returnValue = service.createDefaultSubpopulation(app);
         assertEquals(returnValue, subpop);
         
         // Consents exist... don't add any
@@ -218,7 +218,7 @@ public class SubpopulationServiceTest {
         doReturn(consent).when(studyConsentDao).getConsent(any(), anyLong());
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(subpop);
         
-        Subpopulation result = service.updateSubpopulation(study, subpop);
+        Subpopulation result = service.updateSubpopulation(app, subpop);
         assertEquals(result.getName(), "Name");
         assertEquals(result.getGuidString(), "guid");
         assertEquals(result.getAppId(), TEST_APP_ID);
@@ -237,7 +237,7 @@ public class SubpopulationServiceTest {
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(subpop);
         
         try {
-            service.updateSubpopulation(study, subpop);
+            service.updateSubpopulation(app, subpop);
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
             assertEquals(e.getMessage(), "StudyConsent not found.");
@@ -257,7 +257,7 @@ public class SubpopulationServiceTest {
         existing.setGuidString("guidString");
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(existing);
         
-        Subpopulation updated = service.updateSubpopulation(study, subpop);
+        Subpopulation updated = service.updateSubpopulation(app, subpop);
         assertEquals(updated.getPublishedConsentCreatedOn(), 1000L);
     }
     
