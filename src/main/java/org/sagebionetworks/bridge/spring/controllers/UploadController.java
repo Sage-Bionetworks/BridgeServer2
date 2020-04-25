@@ -184,6 +184,12 @@ public class UploadController extends BaseController {
             }
             uploadId = record.getUploadId();
         }
-        return uploadService.getUploadView(uploadId);
+
+        UploadView uploadView = uploadService.getUploadView(uploadId);
+        if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
+                !session.getAppId().equals(uploadView.getUpload().getStudyId())) {
+            throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
+        }
+        return uploadView;
     }
 }

@@ -308,14 +308,15 @@ public class UploadControllerTest extends Mockito {
     }
     
     @Test
-    public void getUploadById() throws Exception {
+    public void getUploadById() {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
-        
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+
         HealthDataRecord record = HealthDataRecord.create();
         record.setHealthCode(HEALTH_CODE);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("researcher-study-id");
+        upload.setStudyId(TEST_APP_ID);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -327,6 +328,45 @@ public class UploadControllerTest extends Mockito {
         assertEquals(node.get("completedBy").textValue(), "s3_worker");
         assertEquals(node.get("type").textValue(), "Upload");
         assertEquals(node.get("healthData").get("healthCode").textValue(), HEALTH_CODE);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp=".*Study admin cannot retrieve upload in another study.*")
+    public void getUploadByIdRejectsStudyAdmin() {
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setHealthCode(HEALTH_CODE);
+
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("some-other-study");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
+
+        when(mockUploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        controller.getUpload(UPLOAD_ID);
+    }
+
+    @Test
+    public void getUploadByIdWorksForFullAdmin() {
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockResearcherSession.isInRole(EnumSet.of(Roles.SUPERADMIN, Roles.WORKER))).thenReturn(true);
+
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setHealthCode(HEALTH_CODE);
+
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setStudyId("some-other-study");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
+
+        when(mockUploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        UploadView view = controller.getUpload(UPLOAD_ID);
+        assertNotNull(view);
     }
 
     @Test
