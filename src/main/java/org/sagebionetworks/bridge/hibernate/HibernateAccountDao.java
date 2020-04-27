@@ -60,7 +60,7 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     @Override
-    public List<String> getStudyIdsForUser(String synapseUserId) {
+    public List<String> getAppIdForUser(String synapseUserId) {
         if (isBlank(synapseUserId)) {
             return ImmutableList.of();
         }
@@ -93,7 +93,7 @@ public class HibernateAccountDao implements AccountDao {
         if (unguarded.getId() != null) {
             account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
             // Enforce the app membership of the accountId
-            if (account == null || !account.getStudyId().equals(accountId.getAppId())) {
+            if (account == null || !account.getAppId().equals(accountId.getAppId())) {
                 return Optional.empty();
             }
         } else {
@@ -225,7 +225,7 @@ public class HibernateAccountDao implements AccountDao {
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        String studyId = hibernateAccount.getStudyId();
+        String studyId = hibernateAccount.getAppId();
         
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 

@@ -152,8 +152,8 @@ public interface Account extends BridgeEntity {
     AccountStatus getStatus();
     void setStatus(AccountStatus status);
 
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();

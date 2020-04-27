@@ -377,7 +377,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
         
@@ -398,7 +398,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -419,7 +419,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -440,7 +440,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -461,7 +461,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -485,7 +485,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(mockExceptionConverter.convert(ex, null)).thenReturn(TEST_EXCEPTION);
         
@@ -510,7 +510,7 @@ public class HibernateHelperTest {
         doThrow(ex).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
 
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
 
@@ -532,7 +532,7 @@ public class HibernateHelperTest {
         doThrow(pe).when(mockSessionFactory).openSession();
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         // This does not convert the exception, it hands it back.
         when(mockExceptionConverter.convert(pe, account)).thenReturn(pe);

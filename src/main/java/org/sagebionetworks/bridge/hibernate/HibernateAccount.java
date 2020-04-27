@@ -49,7 +49,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Table(name = "Accounts")
 public class HibernateAccount implements Account {
     private String id;
-    private String studyId;
+    private String appId;
     private String email;
     private String synapseUserId;
     private Phone phone;
@@ -91,7 +91,7 @@ public class HibernateAccount implements Account {
     public HibernateAccount(DateTime createdOn, String studyId, String firstName, String lastName,
             String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
-        this.studyId = studyId;
+        this.appId = studyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -116,13 +116,14 @@ public class HibernateAccount implements Account {
     }
 
     /** App ID the account lives in. */
-    public String getStudyId() {
-        return studyId;
+    @Column(name = "studyId")
+    public String getAppId() {
+        return appId;
     }
 
-    /** @see #getStudyId */
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    /** @see #getAppId */
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
     /** Account email address. */

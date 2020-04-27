@@ -70,20 +70,20 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                     // so the external ID must be exposed to the caller to troubleshoot.
                     for (String externalId : BridgeUtils.collectExternalIds(account)) {
                         eae = createEntityAlreadyExistsException("External ID",
-                                AccountId.forExternalId(account.getStudyId(), externalId));
+                                AccountId.forExternalId(account.getAppId(), externalId));
                         if (eae != null) {
                             break;
                         }
                     }
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Email-Index'")) {
                     eae = createEntityAlreadyExistsException("Email address",
-                            AccountId.forEmail(account.getStudyId(), account.getEmail()));
+                            AccountId.forEmail(account.getAppId(), account.getEmail()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-Phone-Index'")) {
                     eae = createEntityAlreadyExistsException("Phone number",
-                            AccountId.forPhone(account.getStudyId(), account.getPhone()));
+                            AccountId.forPhone(account.getAppId(), account.getPhone()));
                 } else if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-SynapseUserId-Index'")) {
                     eae = createEntityAlreadyExistsException("Synapse User ID",
-                            AccountId.forSynapseUserId(account.getStudyId(), account.getSynapseUserId()));
+                            AccountId.forSynapseUserId(account.getAppId(), account.getSynapseUserId()));
                 }
                 if (eae != null) {
                     return eae;

@@ -169,7 +169,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void updateAccountAllowsIdentifierUpdate() {
         // This call will allow identifiers/verification status to be updated.
         HibernateAccount persistedAccount = new HibernateAccount();
-        persistedAccount.setStudyId("persisted-study");
+        persistedAccount.setAppId("persisted-study");
         persistedAccount.setEmail("persisted@example.com");
         persistedAccount.setCreatedOn(new DateTime(1234L));
         persistedAccount.setPasswordModifiedOn(new DateTime(5678L));
@@ -216,7 +216,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
         assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), "original-" + HEALTH_CODE);
         verify(mockHibernateHelper, never()).update(any(), eq(null));
@@ -235,7 +235,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate - just validate ID, study, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
         assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), HEALTH_CODE);
 
@@ -257,7 +257,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void getByIdWrongStudy() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         hibernateAccount.setHealthCode(null);
-        hibernateAccount.setStudyId(TEST_APP_ID);
+        hibernateAccount.setAppId(TEST_APP_ID);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate
@@ -283,7 +283,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate - just validate ID, study, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
         assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), "original-" + HEALTH_CODE);
 
@@ -312,7 +312,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate - just validate ID, study, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
         assertEquals(account.getId(), ACCOUNT_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), HEALTH_CODE);
 
@@ -721,7 +721,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setStudyId(TEST_APP_ID);
+        hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setEmail(EMAIL);
         hibernateAccount.setPhone(PHONE);
         hibernateAccount.setFirstName(FIRST_NAME);
@@ -770,7 +770,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setStudyId(TEST_APP_ID);
+        hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setStatus(ENABLED);
 
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
@@ -798,7 +798,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
-        hibernateAccount.setStudyId(TEST_APP_ID);
+        hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setStatus(ENABLED);
 
         // Unmarshall
@@ -929,7 +929,7 @@ public class HibernateAccountDaoTest extends Mockito {
         List<String> queryResult = ImmutableList.of("studyA", "studyB");
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(String.class))).thenReturn(queryResult);
         
-        List<String> results = dao.getStudyIdsForUser(SYNAPSE_USER_ID);
+        List<String> results = dao.getAppIdForUser(SYNAPSE_USER_ID);
         assertEquals(results, queryResult);
         
         verify(mockHibernateHelper).queryGet(eq("SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE "+
@@ -940,7 +940,7 @@ public class HibernateAccountDaoTest extends Mockito {
     
     @Test
     public void getStudyIdsForUserNoSynapseUserId() throws Exception {
-        List<String> results = dao.getStudyIdsForUser(null);
+        List<String> results = dao.getAppIdForUser(null);
         assertTrue(results.isEmpty());
     }
 
@@ -958,7 +958,7 @@ public class HibernateAccountDaoTest extends Mockito {
     private static Account makeValidGenericAccount() {
         Account genericAccount = Account.create();
         genericAccount.setId(ACCOUNT_ID);
-        genericAccount.setStudyId(TEST_APP_ID);
+        genericAccount.setAppId(TEST_APP_ID);
         genericAccount.setEmail(EMAIL);
         genericAccount.setStatus(UNVERIFIED);
         return genericAccount;
@@ -969,7 +969,7 @@ public class HibernateAccountDaoTest extends Mockito {
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setHealthCode(HEALTH_CODE);
-        hibernateAccount.setStudyId(TEST_APP_ID);
+        hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setPhone(PHONE);
         hibernateAccount.setPhoneVerified(true);
         hibernateAccount.setEmail(EMAIL);
