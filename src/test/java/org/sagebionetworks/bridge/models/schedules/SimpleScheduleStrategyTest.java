@@ -37,7 +37,7 @@ public class SimpleScheduleStrategyTest {
 
     @BeforeMethod
     public void before() {
-        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidApp(ScheduleStrategyTest.class);
     }
 
     @Test

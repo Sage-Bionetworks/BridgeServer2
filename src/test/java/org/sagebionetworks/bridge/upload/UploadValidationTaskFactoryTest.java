@@ -35,7 +35,7 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setHealthDataService(healthDataService);
 
         // inputs
-        App app = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
+        App app = TestUtils.getValidApp(UploadValidationTaskFactoryTest.class);
         Upload upload = Upload.create();
         upload.setHealthCode(HEALTH_CODE);
 

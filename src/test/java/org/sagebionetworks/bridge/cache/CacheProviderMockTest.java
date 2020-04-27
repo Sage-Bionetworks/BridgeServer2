@@ -84,7 +84,7 @@ public class CacheProviderMockTest {
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
 
-        final App app = TestUtils.getValidStudy(CacheProviderMockTest.class);
+        final App app = TestUtils.getValidApp(CacheProviderMockTest.class);
         app.setIdentifier("test");
         app.setName("This is a test study");
         String json = BridgeObjectMapper.get().writeValueAsString(app);

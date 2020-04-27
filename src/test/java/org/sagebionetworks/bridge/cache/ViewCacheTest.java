@@ -34,7 +34,7 @@ public class ViewCacheTest {
     public void before() {
         mapper = BridgeObjectMapper.get();
         
-        app = TestUtils.getValidStudy(ViewCacheTest.class);
+        app = TestUtils.getValidApp(ViewCacheTest.class);
     }
     
     @Test
@@ -50,7 +50,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<App>() {
             @Override public App get() {
-                App app = TestUtils.getValidStudy(ViewCacheTest.class);
+                App app = TestUtils.getValidApp(ViewCacheTest.class);
                 app.setName("Test Study 2");
                 return app;
             }
@@ -124,7 +124,7 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<App>() {
             @Override public App get() {
-                App app = TestUtils.getValidStudy(ViewCacheTest.class);
+                App app = TestUtils.getValidApp(ViewCacheTest.class);
                 app.setName("Test Study 2");
                 return app;
             }

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
  */
 @JsonDeserialize(as=DynamoApp.class)
 public interface App extends BridgeEntity {
-    ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
+    ObjectWriter APP_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 

@@ -146,7 +146,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -179,7 +179,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPhone(TestConstants.PHONE)
                 .withPassword("password").build();
 
@@ -200,7 +200,7 @@ public class UserAdminServiceMockTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void creatingUserWithoutEmailOrPhoneProhibited() {
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withPassword("password").build();
 
         service.createUser(app, participant, null, true, true);
@@ -211,7 +211,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
         
@@ -234,7 +234,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         SubpopulationGuid consentedGuid = statuses.keySet().iterator().next();
 
@@ -248,7 +248,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(consentService.getConsentStatuses(any())).thenReturn(ImmutableMap.of());
@@ -271,7 +271,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         when(authenticationService.signIn(eq(app), any(), any()))
@@ -288,7 +288,7 @@ public class UserAdminServiceMockTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com").withPassword("password").build();
         
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -312,7 +312,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void deleteUser() {
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
@@ -346,7 +346,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void deleteUserNotFound() {
-        App app = TestUtils.getValidStudy(UserAdminServiceMockTest.class);
+        App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
         
         service.deleteUser(app, "userId");
         

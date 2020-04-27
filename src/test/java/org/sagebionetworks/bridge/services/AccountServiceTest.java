@@ -131,11 +131,11 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void getStudyIdsForUser() {
-        List<String> studies = ImmutableList.of("study1", "study2");
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(studies);
+        List<String> apps = ImmutableList.of("study1", "study2");
+        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(apps);
 
         List<String> returnVal = service.getAppIdsForUser(SYNAPSE_USER_ID);
-        assertEquals(returnVal, studies);
+        assertEquals(returnVal, apps);
         verify(mockAccountDao).getStudyIdsForUser(SYNAPSE_USER_ID);
     }
 

@@ -59,7 +59,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dao.AppDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -116,7 +116,7 @@ public class AppService {
     private CompoundActivityDefinitionService compoundActivityDefinitionService;
     private SendMailService sendMailService;
     private UploadCertificateService uploadCertService;
-    private StudyDao studyDao;
+    private AppDao appDao;
     private StudyValidator validator;
     private StudyAndUsersValidator studyAndUsersValidator;
     private CacheProvider cacheProvider;
@@ -184,8 +184,8 @@ public class AppService {
         this.studyAndUsersValidator = studyAndUsersValidator;
     }
     @Autowired
-    final void setStudyDao(StudyDao studyDao) {
-        this.studyDao = studyDao;
+    final void setAppDao(AppDao appDao) {
+        this.appDao = appDao;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
@@ -234,7 +234,7 @@ public class AppService {
 
         App app = cacheProvider.getStudy(identifier);
         if (app == null) {
-            app = studyDao.getStudy(identifier);
+            app = appDao.getApp(identifier);
             cacheProvider.setStudy(app);
         }
         if (app != null) {
@@ -260,7 +260,7 @@ public class AppService {
     }
 
     public List<App> getApps() {
-        return studyDao.getStudies();
+        return appDao.getApps();
     }
 
     public App createAppAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
@@ -332,7 +332,7 @@ public class AppService {
 
         Validate.entityThrowingException(validator, app);
 
-        if (studyDao.doesIdentifierExist(app.getIdentifier())) {
+        if (appDao.doesIdentifierExist(app.getIdentifier())) {
             throw new EntityAlreadyExistsException(App.class, IDENTIFIER_PROPERTY, app.getIdentifier());
         }
         
@@ -354,7 +354,7 @@ public class AppService {
             uploadCertService.createCmsKeyPair(app.getIdentifier());
         }
 
-        app = studyDao.createStudy(app);
+        app = appDao.createApp(app);
         cacheProvider.setStudy(app);
         
         emailVerificationService.verifyEmailAddress(app.getSupportEmail());
@@ -495,7 +495,7 @@ public class AppService {
         checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
 
         // These cannot be set through the API and will be null here, so they are set on update
-        App originalApp = studyDao.getStudy(app.getIdentifier());
+        App originalApp = appDao.getApp(app.getIdentifier());
         
         checkViolationConstraints(originalApp, app);
         
@@ -570,7 +570,7 @@ public class AppService {
         // is not updated in the cache. At least we can delete the app before this, so the next
         // time it should succeed. Have not figured out why they get out of sync.
         cacheProvider.removeStudy(app.getIdentifier());
-        App updatedApp = studyDao.updateStudy(app);
+        App updatedApp = appDao.updateApp(app);
         cacheProvider.setStudy(updatedApp);
         return updatedApp;
     }
@@ -627,10 +627,10 @@ public class AppService {
             if (!existing.isActive()) {
                 throw new BadRequestException("App '"+identifier+"' already deactivated.");
             }
-            studyDao.deactivateStudy(existing.getIdentifier());
+            appDao.deactivateApp(existing.getIdentifier());
         } else {
             // actual delete
-            studyDao.deleteStudy(existing);
+            appDao.deleteApp(existing);
 
             // delete app data
             templateService.deleteTemplatesForStudy(existing.getIdentifier());

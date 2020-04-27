@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.dynamodb.DynamoStudyDao.STUDY_WHITELIST_PROPERTY;
+import static org.sagebionetworks.bridge.dynamodb.DynamoAppDao.APP_WHITELIST_PROPERTY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.studies.App;
 
-public class DynamoStudyDaoTest extends Mockito {
+public class DynamoAppDaoTest extends Mockito {
 
     @Mock
     DynamoDBMapper mockMapper;
@@ -43,14 +43,14 @@ public class DynamoStudyDaoTest extends Mockito {
     ArgumentCaptor<App> studyCaptor;
     
     @InjectMocks
-    DynamoStudyDao dao;
+    DynamoAppDao dao;
     
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
         
         BridgeConfig config = mock(BridgeConfig.class);
-        when(config.getPropertyAsList(STUDY_WHITELIST_PROPERTY)).thenReturn(ImmutableList.of("whitelisted-study"));
+        when(config.getPropertyAsList(APP_WHITELIST_PROPERTY)).thenReturn(ImmutableList.of("whitelisted-study"));
         dao.setBridgeConfig(config);
     }
     
@@ -79,7 +79,7 @@ public class DynamoStudyDaoTest extends Mockito {
         DynamoApp saved = new DynamoApp();
         doReturn(saved).when(mockMapper).load(any());
         
-        App result = dao.getStudy(TEST_APP_ID);
+        App result = dao.getApp(TEST_APP_ID);
         assertSame(result, saved);
         
         verify(mockMapper).load(studyCaptor.capture());
@@ -89,7 +89,7 @@ public class DynamoStudyDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getStudyNotFound() {
-        dao.getStudy(TEST_APP_ID);   
+        dao.getApp(TEST_APP_ID);   
     }
     
     @Test
@@ -98,7 +98,7 @@ public class DynamoStudyDaoTest extends Mockito {
         when(mockScanList.toArray()).thenReturn(saved.toArray());
         when(mockMapper.scan(eq(DynamoApp.class), any(DynamoDBScanExpression.class))).thenReturn(mockScanList);
         
-        List<App> result = dao.getStudies();
+        List<App> result = dao.getApps();
         assertEquals(result.size(), 2);
         assertEquals(result, saved);
 
@@ -109,7 +109,7 @@ public class DynamoStudyDaoTest extends Mockito {
     public void createStudy() {
         App app = App.create();
         
-        dao.createStudy(app);
+        dao.createApp(app);
         
         verify(mockMapper).save(app);
     }
@@ -119,7 +119,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setVersion(2L);
         
-        dao.createStudy(app);
+        dao.createApp(app);
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
@@ -128,7 +128,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         
-        dao.createStudy(app);
+        dao.createApp(app);
     }
     
     @Test
@@ -136,7 +136,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setVersion(2L);
         
-        dao.updateStudy(app);
+        dao.updateApp(app);
         
         verify(mockMapper).save(app);
     }
@@ -145,7 +145,7 @@ public class DynamoStudyDaoTest extends Mockito {
     public void updateStudyWithoutVersionFails() {
         App app = App.create();
         
-        dao.updateStudy(app);
+        dao.updateApp(app);
     }
     
     @Test(expectedExceptions = ConcurrentModificationException.class)
@@ -155,7 +155,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setVersion(2L);
 
-        dao.updateStudy(app);
+        dao.updateApp(app);
     }
     
     @Test
@@ -163,7 +163,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         
-        dao.deleteStudy(app);
+        dao.deleteApp(app);
         
         verify(mockMapper).delete(app);
     }
@@ -173,7 +173,7 @@ public class DynamoStudyDaoTest extends Mockito {
         App app = App.create();
         app.setIdentifier("whitelisted-study");
         
-        dao.deleteStudy(app);
+        dao.deleteApp(app);
     }
     
     @Test
@@ -183,7 +183,7 @@ public class DynamoStudyDaoTest extends Mockito {
         app.setVersion(2L);
         when(mockMapper.load(any())).thenReturn(app);
         
-        dao.deactivateStudy(TEST_APP_ID);
+        dao.deactivateApp(TEST_APP_ID);
         
         verify(mockMapper).save(studyCaptor.capture());
         assertFalse(studyCaptor.getValue().isActive());
@@ -196,6 +196,6 @@ public class DynamoStudyDaoTest extends Mockito {
         app.setVersion(2L);
         when(mockMapper.load(any())).thenReturn(app);
         
-        dao.deactivateStudy("whitelisted-study");
+        dao.deactivateApp("whitelisted-study");
     }    
 }

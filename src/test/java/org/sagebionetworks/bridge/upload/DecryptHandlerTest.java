@@ -39,7 +39,7 @@ public class DecryptHandlerTest {
         fileHelper.writeBytes(dataFile, dataFileContent);
 
         // inputs
-        DynamoApp study = TestUtils.getValidStudy(DecryptHandlerTest.class);
+        DynamoApp study = TestUtils.getValidApp(DecryptHandlerTest.class);
 
         UploadValidationContext ctx = new UploadValidationContext();
         ctx.setAppId(study.getIdentifier());

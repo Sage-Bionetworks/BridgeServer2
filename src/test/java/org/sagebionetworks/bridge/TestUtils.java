@@ -492,7 +492,7 @@ public class TestUtils {
         return strategy;
     }
 
-    public static DynamoApp getValidStudy(Class<?> clazz) {
+    public static DynamoApp getValidApp(Class<?> clazz) {
         String id = TestUtils.randomName(clazz);
 
         Map<String,String> pushNotificationARNs = Maps.newHashMap();

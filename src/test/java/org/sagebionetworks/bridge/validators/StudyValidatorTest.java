@@ -43,7 +43,7 @@ public class StudyValidatorTest {
     
     @BeforeMethod
     public void createValidStudy() {
-        study = TestUtils.getValidStudy(StudyValidatorTest.class);
+        study = TestUtils.getValidApp(StudyValidatorTest.class);
     }
     
     @Test
