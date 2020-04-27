@@ -65,7 +65,7 @@ public class ActivityValidator implements Validator {
     private void validate(Errors errors, CompoundActivity compoundActivity) {
         errors.pushNestedPath("compoundActivity");
 
-        // taskIdentifier must be specified and must be in the Study's list
+        // taskIdentifier must be specified and must be in the App's list
         String taskIdentifier = compoundActivity.getTaskIdentifier();
         if (isBlank(taskIdentifier)) {
             errors.rejectValue("taskIdentifier", CANNOT_BE_BLANK);
@@ -77,7 +77,7 @@ public class ActivityValidator implements Validator {
     private void validate(Errors errors, TaskReference ref) {
         errors.pushNestedPath("task");
 
-        // taskIdentifier must be specified and must be in the Study's list
+        // taskIdentifier must be specified and must be in the App's list
         String taskIdentifier = ref.getIdentifier();
         if (isBlank(taskIdentifier)) {
             errors.rejectValue("identifier", CANNOT_BE_BLANK);

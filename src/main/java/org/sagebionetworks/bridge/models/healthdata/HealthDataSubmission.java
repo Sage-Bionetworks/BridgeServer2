@@ -56,7 +56,7 @@ public class HealthDataSubmission implements BridgeEntity {
 
     /**
      * Metadata fields for this record, as submitted by the app. This corresponds with the
-     * uploadMetadataFieldDefinitions configured in the study.
+     * uploadMetadataFieldDefinitions configured in the app.
      */
     public JsonNode getMetadata() {
         return metadata;

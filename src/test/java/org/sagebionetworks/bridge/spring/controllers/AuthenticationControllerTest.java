@@ -506,7 +506,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void signUpNoStudy() throws Exception {
-        // Participant - don't add study
+        // Participant - don't add app
         StudyParticipant originalParticipant = getStudyParticipant(AuthenticationControllerTest.class);
         ObjectNode node = BridgeObjectMapper.get().valueToTree(originalParticipant);
 
@@ -1250,7 +1250,7 @@ public class AuthenticationControllerTest extends Mockito {
     @Test
     public void changeAppSupportsCrossStudyAdmin() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
-        // Note that the cross-study administrator does not have a synapse user ID
+        // Note that the cross-app administrator does not have a synapse user ID
         userSession.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(SUPERADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
@@ -1263,7 +1263,7 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
 
         JsonNode node = controller.changeApp();
-        // Note that we reuse the session here, as we did in an initial implementation for cross-study
+        // Note that we reuse the session here, as we did in an initial implementation for cross-app
         // administrators.
         assertEquals(node.get("sessionToken").textValue(), "session-token");
         

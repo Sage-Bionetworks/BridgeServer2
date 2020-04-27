@@ -621,7 +621,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         String bodyString = (String)body.getContent();
         assertTrue(bodyString.contains("/mobile/resetPassword.html?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
-        // This was recently added and is only used in one study where we've hard-coded it. Remove it
+        // This was recently added and is only used in one app where we've hard-coded it. Remove it
         // so that ${url} continues to work for the reset password link. We're moving all links 
         // towad the short form, in stepped releases.
         assertTrue(bodyString.contains("/s/"+TEST_APP_ID+"?email=email%40email.com&token="+TOKEN));
@@ -852,7 +852,7 @@ public class AccountWorkflowServiceTest extends Mockito {
 
     @Test
     public void notifyAccountExistsUnverifiedEmailUnverifiedPhone() {
-        // Set study flags so that it would send emails/SMS if they were verified.
+        // Set app flags so that it would send emails/SMS if they were verified.
         app.setEmailVerificationEnabled(true);
         app.setAutoVerificationEmailSuppressed(false);
         app.setAutoVerificationPhoneSuppressed(false);
@@ -875,7 +875,7 @@ public class AccountWorkflowServiceTest extends Mockito {
 
     @Test
     public void notifyAccountExistsEmailVerifiedNullPhoneVerifiedNull() {
-        // Set study flags so that it would send emails/SMS if they were verified.
+        // Set app flags so that it would send emails/SMS if they were verified.
         app.setEmailVerificationEnabled(true);
         app.setAutoVerificationEmailSuppressed(false);
         app.setAutoVerificationPhoneSuppressed(false);

@@ -142,7 +142,7 @@ public class UserManagementControllerTest extends Mockito {
 
     @Test
     public void signInForSuperadmin() throws Exception {
-        // We look specifically for an account in the API study
+        // We look specifically for an account in the API app
         doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
         
         // Set environment to local in order to test that cookies are set
@@ -177,7 +177,7 @@ public class UserManagementControllerTest extends Mockito {
 
     @Test
     public void signInForAdminNotASuperAdmin() throws Exception {
-        // We look specifically for an account in the API study
+        // We look specifically for an account in the API app
         doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
         
         SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
@@ -245,7 +245,7 @@ public class UserManagementControllerTest extends Mockito {
 
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
-        // same study id as above test
+        // same app id as above test
         StatusMessage result = controller.createUserWithStudyId(TEST_APP_ID);
         assertEquals(result, UserManagementController.CREATED_MSG);
     }

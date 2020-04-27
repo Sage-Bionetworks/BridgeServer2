@@ -165,7 +165,7 @@ public class UploadSchemaController extends BaseController {
      * Cross-app worker API to get the upload schema for the specified app, schema ID, and revision.
      *
      * @param appId
-     *         app/study the schema lives in
+     *         app the schema lives in
      * @param schemaId
      *         schema to fetch
      * @param revision

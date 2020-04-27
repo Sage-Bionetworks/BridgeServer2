@@ -70,7 +70,7 @@ public class ReportDataKeyTest {
         assertEquals(node.get("identifier").asText(), "report");
         assertEquals(node.get("reportType").asText(), "participant");
         assertEquals(node.get("type").asText(), "ReportDataKey");
-        assertEquals(node.size(), 3); // no healthCode, no studyId.
+        assertEquals(node.size(), 3); // no healthCode, no appId.
     }
     
     // Validator test verify the key cannot be constructed in an invalid state.

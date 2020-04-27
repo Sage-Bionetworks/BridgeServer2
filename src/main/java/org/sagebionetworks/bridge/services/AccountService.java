@@ -70,7 +70,7 @@ public class AccountService {
     }
     
     /**
-     * Search for all accounts across studies that have the same Synapse user ID in common, 
+     * Search for all accounts across apps that have the same Synapse user ID in common, 
      * and return a list of the app IDs where these accounts are found.
      */
     public List<String> getAppIdsForUser(String synapseUserId) {
@@ -223,7 +223,7 @@ public class AccountService {
         
         AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
 
-        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
+        // Can't change app, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         // None of these values should be changeable by the user.
@@ -255,7 +255,7 @@ public class AccountService {
     }
     
     /**
-     * Get an account in the context of a study by the user's ID, email address, health code,
+     * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
      * the correct substudy associations to access the account. (Other methods in this service 
      * also make a check for substudy associations by relying on this method internally).
@@ -287,7 +287,7 @@ public class AccountService {
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
      * participants which are required for the rest of the participant APIs). 
      * @param app
-     *      retrieve participants in this study
+     *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
@@ -316,7 +316,7 @@ public class AccountService {
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
-        // email verification for older studies that didn't have full external ID support).
+        // email verification for older apps that didn't have full external ID support).
         if (account.getStatus() == UNVERIFIED) {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (account.getStatus() == DISABLED) {

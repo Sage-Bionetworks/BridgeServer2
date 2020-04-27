@@ -4,7 +4,7 @@ import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 
 /**
  * A model of the JSON we produce to associate app links on Android with our server. The JSON 
- * that is returned is an array of these objects, one for every study that has defined app 
+ * that is returned is an array of these objects, one for every app that has defined app 
  * links.
  * 
  * @see https://developer.android.com/training/app-links/verify-site-associations.html

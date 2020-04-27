@@ -100,7 +100,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         
         // Get all the records because we only create a default if there are no physical records, 
         // regardless of the deletion status. This was a bootstrapping step and at this point, 
-        // no new studies will be created without a default subpopulation.
+        // no new apps will be created without a default subpopulation.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
         if (createDefault && subpops.isEmpty()) {
             Subpopulation subpop = createDefaultSubpopulation(studyId);

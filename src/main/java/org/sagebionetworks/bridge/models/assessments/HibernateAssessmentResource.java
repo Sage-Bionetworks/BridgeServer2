@@ -19,7 +19,7 @@ import org.sagebionetworks.bridge.hibernate.StringListConverter;
 /**
  * The table name here is generic because we can add an additional FK column and use it for another 
  * model that has documentation links. Eventually, that might include protocols, for example, 
- * if they are commonly shared in an app with multiple studies.
+ * if they are commonly shared in an app with multiple apps.
  */
 @Entity
 @Table(name = "ExternalResources")

@@ -322,7 +322,7 @@ public class AccountWorkflowService {
     /**
      * Request that a token be sent to the user's email address or phone number that can be 
      * used to submit a password change to the server. Users who administer participants in 
-     * the study can trigger this request whether the channel used is verified or not, 
+     * the app can trigger this request whether the channel used is verified or not, 
      * but normal users must have already verified the channel to prevent abuse. In addition, 
      * this method fails silently if the email or phone number cannot be found in the system, 
      * to prevent account enumeration attacks. 
@@ -497,7 +497,7 @@ public class AccountWorkflowService {
             
             // Email is URL encoded, which is probably a mistake. We're now providing an URL that's will be 
             // opaque to the user, like the other APIs (where the templates just have a ${url} variable), but we 
-            // need to provide host/email/studyId/token variables for earlier versions of the email sign in template 
+            // need to provide host/email/appId/token variables for earlier versions of the email sign in template 
             // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
             // into that template.
             TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGN_IN);
@@ -525,7 +525,7 @@ public class AccountWorkflowService {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
 
-        // We use the study so it's existence is verified. We retrieve the account so we verify it
+        // We use the app so it's existence is verified. We retrieve the account so we verify it
         // exists as well. If the token is returned to the server, we can safely use the credentials 
         // in the persisted SignIn object.
         App app = appService.getApp(signIn.getAppId());

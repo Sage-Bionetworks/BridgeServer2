@@ -59,7 +59,7 @@ public class SchedulePlanService {
         checkNotNull(app);
         checkNotNull(plan);
 
-        // Plan must always be in user's study, remove version and recreate guid for copies
+        // Plan must always be in user's app, remove version and recreate guid for copies
         plan.setStudyKey(app.getIdentifier());
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
@@ -90,7 +90,7 @@ public class SchedulePlanService {
         checkNotNull(app);
         checkNotNull(plan);
         
-        // Plan must always be in user's study
+        // Plan must always be in user's app
         plan.setStudyKey(app.getIdentifier());
         
         // This can happen if the submission is invalid, we want to proceed to validation

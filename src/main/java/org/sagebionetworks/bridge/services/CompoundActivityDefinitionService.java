@@ -39,7 +39,7 @@ public class CompoundActivityDefinitionService {
     /** Creates a compound activity definition. */
     public CompoundActivityDefinition createCompoundActivityDefinition(String appId,
             CompoundActivityDefinition compoundActivityDefinition) {
-        // Set app to prevent people from creating defs in other studies.
+        // Set app to prevent people from creating defs in other apps.
         compoundActivityDefinition.setAppId(appId);
 
         // validate def

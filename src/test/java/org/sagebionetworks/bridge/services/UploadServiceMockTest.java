@@ -316,7 +316,7 @@ public class UploadServiceMockTest {
     public void canGetStudyUploads() throws Exception {
         setupUploadMocks();
         
-        // Now verify the study uploads works
+        // Now verify the app uploads works
         ForwardCursorPagedResourceList<UploadView> returned = svc.getAppUploads(TEST_APP_ID,
                 START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         

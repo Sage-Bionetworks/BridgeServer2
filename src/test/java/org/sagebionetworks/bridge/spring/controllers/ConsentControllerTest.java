@@ -216,7 +216,7 @@ public class ConsentControllerTest extends Mockito {
         
         String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
-        // Need to adjust the study session to match the subpopulation in the unconsented status map
+        // Need to adjust the app session to match the subpopulation in the unconsented status map
         session.setAppId(studyId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
@@ -243,7 +243,7 @@ public class ConsentControllerTest extends Mockito {
         
         String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
-        // Need to adjust the study session to match the subpopulation in the unconsented status map
+        // Need to adjust the app session to match the subpopulation in the unconsented status map
         session.setAppId(studyId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();

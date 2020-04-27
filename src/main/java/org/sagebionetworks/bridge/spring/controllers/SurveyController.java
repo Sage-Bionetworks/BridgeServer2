@@ -79,10 +79,10 @@ public class SurveyController extends BaseController {
     }
 
     /**
-     * API for worker accounts that need access to a list of published studies. This is generally used by the Bridge
+     * API for worker accounts that need access to a list of published apps. This is generally used by the Bridge
      * Exporter. We don't want to configure worker accounts for each app and add an ever-growing list of worker
      * accounts to back-end scripts, so we'll have one master worker account in the API app that can access all
-     * studies.
+     * apps.
      *
      * @param appId
      *            app to get surveys for
@@ -109,7 +109,7 @@ public class SurveyController extends BaseController {
     public String getSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) throws Exception {
         UserSession session = getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         if (session.isInRole(WORKER)) {
-            // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
+            // Worker accounts can access surveys across apps. We branch off and call getSurveyForWorker().
             return MAPPER.writeValueAsString(getSurveyForWorker(surveyGuid, createdOn));
         } else {
             return getCachedSurveyInternal(surveyGuid, createdOn, session);

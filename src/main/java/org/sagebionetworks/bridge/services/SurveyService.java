@@ -326,8 +326,8 @@ public class SurveyService {
 
     /**
      * Callers must operate on a survey in their own app. However our code has allowed administrators to delete 
-     * shared studies (which are not in the admin's app). For backwards compatibility, do not enforce the same 
-     * app rule for shared app surveys. Eventually we want admins to be able to switch into the shared study in 
+     * shared apps (which are not in the admin's app). For backwards compatibility, do not enforce the same 
+     * app rule for shared app surveys. Eventually we want admins to be able to switch into the shared app in 
      * order to delete items there, then this exception to the check can be removed.
      */
     private boolean isInApp(String appId, Survey survey) {

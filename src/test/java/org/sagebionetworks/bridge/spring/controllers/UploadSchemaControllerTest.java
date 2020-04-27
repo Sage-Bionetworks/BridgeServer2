@@ -207,7 +207,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaController controller = setupControllerWithService(mockSvc, WORKER);
         UploadSchema result = controller.getUploadSchemaByAppAndSchemaAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1);
 
-        // Unlike the other methods, this also returns study ID
+        // Unlike the other methods, this also returns appId
         assertEquals(result.getSchemaId(), TEST_SCHEMA_ID);
         assertEquals(result.getAppId(), TEST_APP_ID);
     }
@@ -387,7 +387,7 @@ public class UploadSchemaControllerTest extends Mockito {
         ObjectNode node = (ObjectNode)BridgeObjectMapper.get().readTree(TEST_SCHEMA_JSON);
         node.put("revision", revision);
 
-        // Server returns schemas with study IDs (which are filtered out selectively in some methods).
+        // Server returns schemas with app IDs (which are filtered out selectively in some methods).
         node.put("studyId", TEST_APP_ID);
 
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);
@@ -395,7 +395,7 @@ public class UploadSchemaControllerTest extends Mockito {
 
     private static void assertSchemaInResult(String result) throws Exception {
         // JSON validation is already tested, so just check obvious things like schema ID
-        // Also, (most) method results don't include study ID
+        // Also, (most) method results don't include appId
         UploadSchema schema = BridgeObjectMapper.get().readValue(result, UploadSchema.class);
         assertEquals(schema.getSchemaId(), TEST_SCHEMA_ID);
         assertNull(schema.getAppId());

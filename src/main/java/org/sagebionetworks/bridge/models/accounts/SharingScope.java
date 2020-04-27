@@ -6,7 +6,7 @@ public enum SharingScope {
      */
     NO_SHARING("Not Sharing"),
     /**
-     * Only export participant's data to a data set for the original study researchers and their affiliated research
+     * Only export participant's data to a data set for the original app researchers and their affiliated research
      * partners.
      */
     SPONSORS_AND_PARTNERS("Sponsors and Partners Only"),

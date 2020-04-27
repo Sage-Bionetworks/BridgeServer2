@@ -116,7 +116,7 @@ public class IntentService {
             return;
         }
         
-        // validate study exists
+        // validate app exists
         App app = appService.getApp(intent.getAppId());
 
         // validate subpopulation exists

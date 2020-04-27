@@ -81,14 +81,14 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /**
      * This is the DynamoDB key. It is used by the DynamoDB mapper. This should not be used directly. The key format is
-     * "[studyID]:[schemaID]". The schema ID may contain colons. The study ID may not. Since the key is created
-     * from the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
+     * "[appID]:[schemaID]". The schema ID may contain colons. The app ID may not. Since the key is created
+     * from the app ID and schema ID, this will throw an InvalidEntityException if either one is blank.
      */
     @DynamoDBHashKey
     @JsonIgnore
     public String getKey() {
         if (StringUtils.isBlank(appId)) {
-            // No study ID means we can't generate a key. However, we should still return null, because this case might
+            // No appId means we can't generate a key. However, we should still return null, because this case might
             // still come up (such as querying by secondary index), and we don't want to crash.
             return null;
         }
@@ -297,11 +297,11 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /**
      * <p>
-     * The ID of the study that this schema lives in. This is not exposed to the callers of the upload schema API, but
-     * is needed internally to create a secondary index on the study. This index is needed by:
+     * The ID of the app that this schema lives in. This is not exposed to the callers of the upload schema API, but
+     * is needed internally to create a secondary index on the app. This index is needed by:
      *   <ul>
-     *     <li>the exporter will want all schemas for a particular study to match a particular upload</li>
-     *     <li>researchers may want to list all schemas in their study for schema management</li>
+     *     <li>the exporter will want all schemas for a particular app to match a particular upload</li>
+     *     <li>researchers may want to list all schemas in their app for schema management</li>
      *   </ul>
      * </p>
      */

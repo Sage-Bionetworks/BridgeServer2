@@ -58,7 +58,7 @@ public class ConsentSignatureValidator implements Validator {
         if (sig.getSignedOn() <= 0L) {
             errors.rejectValue("signedOn", "must be a valid signature timestamp");
         }
-        // Signature image is currently optional. Some studies may collect a signature, but some may not. It's okay
+        // Signature image is currently optional. Some apps may collect a signature, but some may not. It's okay
         // to let the client validate this until we're sure this 100% required for all consents.
         String imageData = sig.getImageData();
         String imageMimeType = sig.getImageMimeType();

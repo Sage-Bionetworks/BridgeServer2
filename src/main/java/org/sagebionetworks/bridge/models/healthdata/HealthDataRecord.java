@@ -67,7 +67,7 @@ public interface HealthDataRecord extends BridgeEntity {
     void setData(JsonNode data);
 
     /**
-     * How many calendar days the participant has been in the study. For example, if the participant started on
+     * How many calendar days the participant has been in the app. For example, if the participant started on
      * 2019-07-24, then 2019-07-24 is day 1, 2019-07-25 is day 2, etc. Calendar days are calculated using the same
      * timezone as the Bridge Exporter (ie, America/Los_Angeles).
      */
@@ -149,14 +149,14 @@ public interface HealthDataRecord extends BridgeEntity {
 
     /**
      * Metadata fields for this record, as submitted by the app. This corresponds with the
-     * uploadMetadataFieldDefinitions configured in the study.
+     * uploadMetadataFieldDefinitions configured in the app.
      */
     JsonNode getUserMetadata();
 
     /** @see #getUserMetadata */
     void setUserMetadata(JsonNode userMetadata);
 
-    /** Whether this record should be shared with all researchers, only study researchers, or not at all. */
+    /** Whether this record should be shared with all researchers, only app researchers, or not at all. */
     SharingScope getUserSharingScope();
 
     /** @see #getUserSharingScope */

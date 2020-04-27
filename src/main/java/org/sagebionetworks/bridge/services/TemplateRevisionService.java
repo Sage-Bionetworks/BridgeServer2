@@ -90,7 +90,7 @@ public class TemplateRevisionService {
         checkNotNull(appId);
         checkNotNull(templateGuid);
         
-        // verify the template GUID is in the user's study.
+        // verify the template GUID is in the user's app.
         templateDao.getTemplate(appId, templateGuid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         

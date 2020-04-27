@@ -337,7 +337,7 @@ public class HealthDataService {
     }
 
     /**
-     * Deletes all records for the given health code (which corresponds to a user in a particular study). This method
+     * Deletes all records for the given health code (which corresponds to a user in a particular app). This method
      * is used by admin accounts to delete user health data, or by the user admin service to delete health data when a
      * deleting a user account
      *

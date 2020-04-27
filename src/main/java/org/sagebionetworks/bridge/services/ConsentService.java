@@ -63,7 +63,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Methods to consent a user to one of the subpopulations of a study. After calling most of these methods, the user's
+ * Methods to consent a user to one of the subpopulations of an app. After calling most of these methods, the user's
  * session should be updated.
  */
 @Component
@@ -140,7 +140,7 @@ public class ConsentService {
         checkNotNull(subpopGuid);
         checkNotNull(userId);
         
-        // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
+        // This will throw an EntityNotFoundException if the subpopulation is not in the user's app
         subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
@@ -160,9 +160,9 @@ public class ConsentService {
      * @param sendSignedConsent
      *      if true, send the consent document to the user's email address
      * @throws EntityNotFoundException
-     *      if the subpopulation is not part of the study
+     *      if the subpopulation is not part of the app
      * @throws InvalidEntityException
-     *      if the user is not old enough to participate in the study (based on birthdate declared in signature)
+     *      if the user is not old enough to participate in the app (based on birthdate declared in signature)
      * @throws EntityAlreadyExistsException
      *      if the user has already signed the consent for this subpopulation
      */
@@ -223,7 +223,7 @@ public class ConsentService {
                     && Boolean.TRUE.equals(participant.getPhoneVerified()));
             
             // Send an email to the user if they have an email address and we're not suppressing the send, 
-            // and/or to any study consent administrators.
+            // and/or to any app consent administrators.
             Set<String> recipientEmails = Sets.newHashSet();
             if (verifiedEmail && !subpop.isAutoSendConsentSuppressed()) {
                 recipientEmails.add(participant.getEmail());    
@@ -251,7 +251,7 @@ public class ConsentService {
 
     /**
      * Get all the consent status objects for this user. From these, we determine if the user 
-     * has consented to the right consents to have access to the study, and whether or not those 
+     * has consented to the right consents to have access to the app, and whether or not those 
      * consents are up-to-date.
      */
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
@@ -263,7 +263,7 @@ public class ConsentService {
     
     /**
      * Get all the consent status objects for this user. From these, we determine if the user 
-     * has consented to the right consents to have access to the study, and whether or not those 
+     * has consented to the right consents to have access to the app, and whether or not those 
      * consents are up-to-date. 
      */
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context, Account account) {
@@ -288,7 +288,7 @@ public class ConsentService {
     }
     
     /**
-     * Withdraw consent in this study. The withdrawal date is recorded and the user can no longer 
+     * Withdraw consent in this app. The withdrawal date is recorded and the user can no longer 
      * access any APIs that require consent, although the user's account (along with the history of 
      * the user's participation) will not be deleted.
      */
@@ -325,8 +325,8 @@ public class ConsentService {
      * Withdraw user from any and all consents, turn off sharing, unregister the device from any notifications, and 
      * delete the identifiers of the account. Because a user's criteria for being included in a consent can change 
      * over time, this is really the best method for ensuring a user is withdrawn from everything. But in cases where 
-     * there are studies with distinct and separate consents, you can also selectively withdraw from the consent for 
-     * a specific subpopulation without dropping out of the study.
+     * there are apps with distinct and separate consents, you can also selectively withdraw from the consent for 
+     * a specific subpopulation without dropping out of the app.
      */
     public void withdrawFromStudy(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);

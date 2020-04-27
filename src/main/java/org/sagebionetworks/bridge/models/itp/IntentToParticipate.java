@@ -74,7 +74,7 @@ public class IntentToParticipate implements BridgeEntity {
             this.appId = appId;
             return this;
         }
-        // To support existing submissions with studyId through the API, we 
+        // To support existing submissions with appId through the API, we 
         // deserialize this to appId.
         public Builder withStudyId(String appId) {
             this.appId = appId;

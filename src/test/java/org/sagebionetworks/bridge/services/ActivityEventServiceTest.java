@@ -284,7 +284,7 @@ public class ActivityEventServiceTest {
 
     @Test
     public void canPublishEnrollmentEventWithAutomaticCustomEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         // Note that these events include events that are implicitly and explicitly related to 
         // enrollment, and some that are not applicable that should be ignored.
@@ -336,7 +336,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void whenNoEnrollmentEventPublishNoCustomEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         // Note that these events include events that are implicitly and explicitly related to 
         // enrollment, and some that are not applicable that should be ignored.
@@ -357,7 +357,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void whenActivitiesRetrievedEventFailsPublishNoAutomaticEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         // Note that these automatic events include events that are triggered by enrollment, 
         // and some that are not, that should be ignored
@@ -378,7 +378,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void whenEnrollmentEventFailsPublishNoAutomaticEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         // Note that these automatic events include events that are triggered by enrollment, 
         // and some that are not, that should be ignored
@@ -399,7 +399,7 @@ public class ActivityEventServiceTest {
 
     @Test
     public void whenCustomEventFailsPublishNoAutomaticEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         app.setActivityEventKeys(ImmutableSet.of("myEvent"));
         // Note that these automatic events include events that are triggered by enrollment, 
@@ -418,7 +418,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void canPublishActivitiesRetrievedEventWithAutomaticCustomEvents() {
-        // Configure study with automatic custom events
+        // Configure app with automatic custom events
         App app = App.create();
         // Note that these events include events that should be triggered for enrollment, 
         // not activities retrieved. These are ignore.

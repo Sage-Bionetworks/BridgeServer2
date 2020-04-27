@@ -53,7 +53,7 @@ public class UploadCertificateService {
     }
 
     /**
-     * Creates a CMS key pair for a particular study and save it in permanent storage.
+     * Creates a CMS key pair for a particular app and save it in permanent storage.
      */
     public void createCmsKeyPair(final String studyIdentifier) {
         checkNotNull(studyIdentifier);
@@ -84,7 +84,7 @@ public class UploadCertificateService {
     }
 
     /**
-     * Get the PEM file for the public key of the CMS key pair. Study developers need 
+     * Get the PEM file for the public key of the CMS key pair. App developers need 
      * access to this certificate to encrypt data they send to us.
      */
     public String getPublicKeyAsPem(String studyIdentifier) {

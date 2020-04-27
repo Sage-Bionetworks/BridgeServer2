@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.exceptions;
 import org.apache.http.HttpStatus;
 
 /**
- * This endpoint has not been implemented for this study. It has been disabled, or 
+ * This endpoint has not been implemented for this app. It has been disabled, or 
  * not completely configured. The caller cannot fix the call to succeed, but it is 
  * not an unexpected server error, it is intentional.
  */

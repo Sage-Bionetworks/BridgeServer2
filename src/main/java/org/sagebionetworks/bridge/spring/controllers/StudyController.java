@@ -133,11 +133,11 @@ public class StudyController extends BaseController {
     public App getStudy(@PathVariable String identifier) {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
-        // since only admin and worker can call this method, we need to return all studies including deactivated ones
+        // since only admin and worker can call this method, we need to return all apps including deactivated ones
         return appService.getApp(identifier, true);
     }
 
-    // You can get a truncated view of studies with either format=summary or summary=true;
+    // You can get a truncated view of apps with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     
     @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
@@ -146,7 +146,7 @@ public class StudyController extends BaseController {
         
         List<App> studies = appService.getApps();
         if ("summary".equals(format) || "true".equals(summary)) {
-            // then only return active study as summary
+            // then only return active app as summary
             List<App> activeStudiesSummary = studies.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
             Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
@@ -156,7 +156,7 @@ public class StudyController extends BaseController {
         }
         getAuthenticatedSession(SUPERADMIN);
 
-        // otherwise, return all studies including deactivated ones
+        // otherwise, return all apps including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
                 new ResourceList<>(studies).withRequestParam("summary", false));
     }
@@ -171,8 +171,8 @@ public class StudyController extends BaseController {
         List<String> studyIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
         
         Stream<App> stream = null;
-        // In our current study permissions model, an admin in the API study is a 
-        // "cross-study admin" and can see all studies and can switch between all studies, 
+        // In our current app permissions model, an admin in the API app is a 
+        // "cross-study admin" and can see all apps and can switch between all apps, 
         // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
             stream = appService.getApps().stream()
@@ -210,7 +210,7 @@ public class StudyController extends BaseController {
     @PostMapping("/v3/studies/self/synapseProject")
     @ResponseStatus(HttpStatus.CREATED)
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
-        // first get current study
+        // first get current app
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
 
@@ -221,15 +221,15 @@ public class StudyController extends BaseController {
         return new SynapseProjectIdTeamIdHolder(app.getSynapseProjectId(), app.getSynapseDataAccessTeamId());
     }
 
-    // since only admin can delete study, no need to check if return results should contain deactivated ones
+    // since only admin can delete app, no need to check if return results should contain deactivated ones
     @DeleteMapping("/v3/studies/{identifier}")
     public StatusMessage deleteStudy(@PathVariable String identifier,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
-        // Finally, you cannot delete your own study because it locks this user out of their session.
-        // This is true of *all* users in the study, btw. There is an action in the BSM that iterates 
-        // through all the participants in a study and signs them out one-by-one.
+        // Finally, you cannot delete your own app because it locks this user out of their session.
+        // This is true of *all* users in the app, btw. There is an action in the BSM that iterates 
+        // through all the participants in a app and signs them out one-by-one.
         if (session.getAppId().equals(identifier)) {
             throw new UnauthorizedException("Admin cannot delete the study they are associated with.");
         }
@@ -260,7 +260,7 @@ public class StudyController extends BaseController {
         return new EmailVerificationStatusHolder(status);
     }
 
-    /** Resends the verification email for the current study's email. */
+    /** Resends the verification email for the current app's email. */
     @PostMapping("/v3/studies/self/emails/resendVerify")
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -270,8 +270,8 @@ public class StudyController extends BaseController {
     }
 
     /**
-     * Verifies the emails for the study. Since this comes in from an email with a token, you don't need to be
-     * authenticated. The token itself knows what study this is for.
+     * Verifies the emails for the app. Since this comes in from an email with a token, you don't need to be
+     * authenticated. The token itself knows what app this is for.
      */
     @PostMapping("/v3/studies/{identifier}/emails/verify")
     public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
@@ -281,7 +281,7 @@ public class StudyController extends BaseController {
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
-    // Helper method to parse and validate the email type for study email verification workflow. We do verification
+    // Helper method to parse and validate the email type for app email verification workflow. We do verification
     // here so that the service can just deal with a clean enum.
     private static StudyEmailType parseEmailType(String typeStr) {
         if (StringUtils.isBlank(typeStr)) {
@@ -318,7 +318,7 @@ public class StudyController extends BaseController {
     }
 
     /**
-     * Another version of getUploads for workers to specify any study ID to get uploads
+     * Another version of getUploads for workers to specify any app ID to get uploads
      */
     @GetMapping("/v3/studies/{identifier}/uploads")
     public ForwardCursorPagedResourceList<UploadView> getUploadsForStudy(@PathVariable String identifier,

@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 /**
  * <p>An index entry of an identifier used for a report in a study. It's possible to have the same identifier 
  * used for a study and a participant report, so the ReportIndex tables support this by including the type 
- * as well as the study in the record's hash key. When an index is created, the substudies it is associated 
+ * as well as the app in the record's hash key. When an index is created, the substudies it is associated 
  * to must be a subset of the caller's substudies (if the caller has substudies... otherwise setting substudies 
  * is optional and any substudies can be set). This information is used to filter the reports that other 
  * callers can see. </p>

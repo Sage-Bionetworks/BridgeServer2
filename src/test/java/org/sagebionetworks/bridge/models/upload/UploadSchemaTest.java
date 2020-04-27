@@ -279,7 +279,7 @@ public class UploadSchemaTest {
         assertFalse(barFieldDef.isRequired());
         assertEquals(barFieldDef.getType(), UploadFieldType.STRING);
 
-        // Add study ID and verify that it doesn't get leaked into the JSON
+        // Add appId and verify that it doesn't get leaked into the JSON
         uploadSchema.setAppId(TEST_APP_ID);
 
         // convert back to JSON - Note that we do this weird thing converting it to a string then reading it into a
@@ -330,11 +330,11 @@ public class UploadSchemaTest {
         assertFalse(barJsonMap.get("required").booleanValue());
         assertEquals(barJsonMap.get("type").textValue(), "string");
 
-        // Serialize it again using the public writer, which includes all fields except studyId.
+        // Serialize it again using the public writer, which includes all fields except appId.
         String publicJson = UploadSchema.PUBLIC_SCHEMA_WRITER.writeValueAsString(uploadSchema);
         JsonNode publicJsonNode = BridgeObjectMapper.get().readTree(publicJson);
 
-        // Public JSON is missing studyId, but is otherwise identical to the non-public (internal worker) JSON.
+        // Public JSON is missing appId, but is otherwise identical to the non-public (internal worker) JSON.
         assertFalse(publicJsonNode.has("studyId"));
         assertFalse(publicJsonNode.has("appId"));
         ((ObjectNode) publicJsonNode).put("studyId", TEST_APP_ID);

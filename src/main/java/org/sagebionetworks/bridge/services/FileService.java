@@ -162,7 +162,7 @@ public class FileService {
     }
     
     public PagedResourceList<FileRevision> getFileRevisions(String appId, String guid, int offset, int pageSize) {
-        // Will throw if the file doesn't exist in the caller's study
+        // Will throw if the file doesn't exist in the caller's app
         getFile(appId, guid);
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -178,7 +178,7 @@ public class FileService {
     public FileRevision createFileRevision(String appId, FileRevision revision) {
         Validate.entityThrowingException(INSTANCE, revision);
         
-        // Will throw if the file doesn't exist in the caller's study
+        // Will throw if the file doesn't exist in the caller's app
         getFile(appId, revision.getFileGuid());
         
         // Set system properties.

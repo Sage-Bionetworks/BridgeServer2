@@ -17,7 +17,7 @@ public interface OAuthAccessGrant extends BridgeEntity {
     
     /**
      * The vendor ID for the OAuth provider issuing the grant. This value is defined by Bridge and is scoped 
-     * to a study.
+     * to an app.
      */
     public String getVendorId();
     public void setVendorId(String vendorId);

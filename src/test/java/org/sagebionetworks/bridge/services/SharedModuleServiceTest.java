@@ -133,7 +133,7 @@ public class SharedModuleServiceTest {
         assertEquals(status.getSurveyCreatedOn().longValue(), LOCAL_SURVEY_CREATED_ON);
         assertEquals(status.getSurveyGuid(), LOCAL_SURVEY_GUID);
 
-        // Verify calls to create survey. Verify that we set the study ID.
+        // Verify calls to create survey. Verify that we set the appId.
         ArgumentCaptor<Survey> surveyToCreateCaptor = ArgumentCaptor.forClass(Survey.class);
         verify(mockSurveyService).createSurvey(surveyToCreateCaptor.capture());
         Survey surveyToCreate = surveyToCreateCaptor.getValue();

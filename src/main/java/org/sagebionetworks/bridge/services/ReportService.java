@@ -189,7 +189,7 @@ public class ReportService {
     /**
      * Save a study report record. If this is the first record for this report, the data can contain one or more
      * substudies defining who can see this report. The user can submit any substudies regardless of membership (if 
-     * the user locks themselves out of the study we do not prevent it). On subsequent saves, the substudy 
+     * the user locks themselves out of the app we do not prevent it). On subsequent saves, the substudy 
      * memberships will be enforced based on the existing report index.
      */
     public void saveStudyReport(String studyId, String identifier, ReportData reportData) {
@@ -284,7 +284,7 @@ public class ReportService {
         }        
         reportDataDao.deleteReportDataRecord(key, date);
         
-        // If this is the last key visible in the window, you can delete the index because this is a study record
+        // If this is the last key visible in the window, you can delete the index because this is an app record
         LocalDate startDate = LocalDate.now().minusDays(MAX_RANGE_DAYS);
         LocalDate endDate = LocalDate.now();
         DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);

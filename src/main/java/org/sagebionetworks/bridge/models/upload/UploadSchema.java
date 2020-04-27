@@ -92,7 +92,7 @@ public interface UploadSchema extends BridgeEntity {
     void setRevision(int revision);
 
     /**
-     * Unique identifier for the schema. This need only be unique to a given study. This should included in the upload
+     * Unique identifier for the schema. This need only be unique to a given app. This should included in the upload
      * data. This can be human readable, such as "tapping-task". This cannot be changed across different schema
      * revisions.
      */
@@ -135,8 +135,8 @@ public interface UploadSchema extends BridgeEntity {
     void setAppId(String appId);
     
     /**
-     * Workers receive back the studyId property and so this must be maintained 
-     * through migration to the user of appId.
+     * Workers receive back the appId property and so this must be maintained 
+     * through migration as studyId.
      */
     String getStudyId();
     

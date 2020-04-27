@@ -41,7 +41,7 @@ public class SmsControllerTest extends Mockito {
 
     @BeforeMethod
     public void before() {
-        // Mock study service.
+        // Mock app service.
         AppService mockAppService = mock(AppService.class);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(DUMMY_APP);
 

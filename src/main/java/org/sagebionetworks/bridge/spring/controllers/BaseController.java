@@ -186,7 +186,7 @@ public abstract class BaseController {
         RequestContext reqContext = builder.build();
         BridgeUtils.setRequestContext(reqContext);
         
-        // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
+        // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.
         App app = appService.getApp(session.getAppId());
         Set<Roles> userRoles = session.getParticipant().getRoles();
@@ -260,7 +260,7 @@ public abstract class BaseController {
      * Once we acquire a language for a user, we save it and use that language going forward. Changing their 
      * language in the host operating system will not change the language they are using (since changing the 
      * language might change their consent state). If they change their language by updating their UserProfile, 
-     * then they may have to reconsent in the new language they are using for the study. Any warnings to 
+     * then they may have to reconsent in the new language they are using for the app. Any warnings to 
      * that effect will need to be included in the application.
      */
     List<String> getLanguages(UserSession session) {
@@ -340,7 +340,7 @@ public abstract class BaseController {
         return BridgeUtils.getRequestContext().getMetrics();
     }
 
-    /** Writes the user's account ID, internal session ID, and study ID to the metrics. */
+    /** Writes the user's account ID, internal session ID, and app ID to the metrics. */
     protected void writeSessionInfoToMetrics(UserSession session) {
         Metrics metrics = getMetrics();
         if (metrics != null && session != null) {
