@@ -130,13 +130,13 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void getStudyIdsForUser() {
-        List<String> apps = ImmutableList.of("study1", "study2");
-        when(mockAccountDao.getStudyIdsForUser(SYNAPSE_USER_ID)).thenReturn(apps);
+    public void getAppIdsForUser() {
+        List<String> apps = ImmutableList.of("app1", "app2");
+        when(mockAccountDao.getAppIdForUser(SYNAPSE_USER_ID)).thenReturn(apps);
 
         List<String> returnVal = service.getAppIdsForUser(SYNAPSE_USER_ID);
         assertEquals(returnVal, apps);
-        verify(mockAccountDao).getStudyIdsForUser(SYNAPSE_USER_ID);
+        verify(mockAccountDao).getAppIdForUser(SYNAPSE_USER_ID);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
@@ -218,7 +218,7 @@ public class AccountServiceTest extends Mockito {
         account.setEmail(EMAIL);
         account.setStatus(UNVERIFIED);
         account.setStatus(ENABLED);
-        account.setStudyId("wrong-study");
+        account.setAppId("wrong-app");
         Consumer<Account> consumer = (oneAccount) -> {};
 
         service.createAccount(app, account, consumer);
@@ -226,7 +226,7 @@ public class AccountServiceTest extends Mockito {
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
-        assertEquals(createdAccount.getStudyId(), TEST_APP_ID);
+        assertEquals(createdAccount.getAppId(), TEST_APP_ID);
         assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
@@ -248,7 +248,7 @@ public class AccountServiceTest extends Mockito {
     public void updateAccountNotFound() {
         // mock hibernate
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.empty());
         
@@ -336,7 +336,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void verifyEmailUsingToken() {
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setEmailVerified(FALSE);
@@ -378,7 +378,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void verifyPhoneUsingToken() {
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
         account.setPhoneVerified(FALSE);
@@ -420,7 +420,7 @@ public class AccountServiceTest extends Mockito {
     public void changePasswordSuccess() throws Exception {
         // Set up test account
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
 
@@ -445,7 +445,7 @@ public class AccountServiceTest extends Mockito {
     public void changePasswordForPhone() throws Exception {
         // Set up test account
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
 
@@ -464,7 +464,7 @@ public class AccountServiceTest extends Mockito {
     public void changePasswordForExternalId() {
         // Set up test account
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
 
@@ -487,7 +487,7 @@ public class AccountServiceTest extends Mockito {
 
         Account account = service.authenticate(app, PASSWORD_SIGNIN);
         assertEquals(account.getId(), USER_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), HEALTH_CODE);
         assertEquals(account.getVersion(), 1); // version not incremented by update
@@ -585,7 +585,7 @@ public class AccountServiceTest extends Mockito {
 
         Account account = service.reauthenticate(app, REAUTH_SIGNIN);
         assertEquals(account.getId(), USER_ID);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         // Version has not been incremented by an update
         assertEquals(account.getVersion(), 1);
@@ -752,7 +752,7 @@ public class AccountServiceTest extends Mockito {
         // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
         // the account have a different study.
         Account account = mockGetAccountById(ACCOUNT_ID, true);
-        account.setStudyId("wrong-study");
+        account.setAppId("wrong-study");
 
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -763,7 +763,7 @@ public class AccountServiceTest extends Mockito {
 
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
-        assertEquals(createdAccount.getStudyId(), TEST_APP_ID);
+        assertEquals(createdAccount.getAppId(), TEST_APP_ID);
         assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
@@ -776,7 +776,7 @@ public class AccountServiceTest extends Mockito {
         // weren't modified.
         Account persistedAccount = Account.create();
         persistedAccount.setId(USER_ID);
-        persistedAccount.setStudyId(TEST_APP_ID);
+        persistedAccount.setAppId(TEST_APP_ID);
         persistedAccount.setCreatedOn(MOCK_DATETIME);
         persistedAccount.setEmailVerified(TRUE);
         persistedAccount.setPhoneVerified(TRUE);
@@ -796,7 +796,7 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
 
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setCreatedOn(MOCK_DATETIME.plusDays(4));
         account.setEmail(OTHER_EMAIL);
@@ -813,7 +813,7 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
         Account updatedAccount = accountCaptor.getValue();
-        assertEquals(updatedAccount.getStudyId(), TEST_APP_ID);
+        assertEquals(updatedAccount.getAppId(), TEST_APP_ID);
         assertEquals(updatedAccount.getId(), USER_ID);
         assertEquals(updatedAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getEmail(), OTHER_EMAIL);
@@ -831,7 +831,7 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setPasswordAlgorithm(STORMPATH_HMAC_SHA_256);
         account.setPasswordHash("bad password hash");
@@ -959,7 +959,7 @@ public class AccountServiceTest extends Mockito {
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setEmail(EMAIL);
         account.setHealthCode(HEALTH_CODE);

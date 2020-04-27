@@ -10,7 +10,7 @@ public class AccountSubstudyTest {
     @Test
     public void create() {
         AccountSubstudy substudy = AccountSubstudy.create(TEST_APP_ID, "substudyId", "accountId");
-        assertEquals(substudy.getStudyId(), TEST_APP_ID);
+        assertEquals(substudy.getAppId(), TEST_APP_ID);
         assertEquals(substudy.getSubstudyId(), "substudyId");
         assertEquals(substudy.getAccountId(), "accountId");
     }

@@ -64,12 +64,12 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForEmail() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setEmail(EMAIL);
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setEmail(EMAIL);
         
         when(accountDao.getAccount(AccountId.forEmail(TEST_APP_ID, EMAIL)))
@@ -88,12 +88,12 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForPhone() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setPhone(PHONE);
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setPhone(PHONE);
         
         when(accountDao.getAccount(AccountId.forPhone(TEST_APP_ID, PHONE)))
@@ -115,12 +115,12 @@ public class AccountPersistenceExceptionConverterTest {
         acctSubstudy.setExternalId("ext");
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         existing.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "ext"))).thenReturn(Optional.of(existing));
@@ -138,7 +138,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForExternalIdWhenThereAreMultiple() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
                 .create(TEST_APP_ID, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
@@ -149,7 +149,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "externalIdB")))
                 .thenReturn(Optional.of(existing));
@@ -170,7 +170,7 @@ public class AccountPersistenceExceptionConverterTest {
                 .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
                 .create(TEST_APP_ID, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
@@ -181,7 +181,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         
         // Accept anything here, but verify that it is externalIdB still (the first that would match
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "externalIdB")))
@@ -205,7 +205,7 @@ public class AccountPersistenceExceptionConverterTest {
                 .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
                 .create(TEST_APP_ID, "substudyA", USER_ID);
         as1.setExternalId("externalIdA");
@@ -213,7 +213,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         Account existing = Account.create();
         existing.setId(USER_ID);
-        existing.setStudyId(TEST_APP_ID);
+        existing.setAppId(TEST_APP_ID);
         
         // Accept anything here, but verify that it is externalIdA (which won't match user calling method)
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "externalIdA")))
@@ -233,7 +233,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsIfAccountCannotBeFound() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setAccountSubstudies(ImmutableSet.of());
 
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
@@ -262,7 +262,7 @@ public class AccountPersistenceExceptionConverterTest {
         Account account = Account.create();
         account.setSynapseUserId(SYNAPSE_USER_ID);
         account.setId(USER_ID);
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         when(accountDao.getAccount(AccountId.forSynapseUserId(TEST_APP_ID, SYNAPSE_USER_ID)))
                 .thenReturn(Optional.of(account));
@@ -279,7 +279,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void constraintViolationExceptionMessageIsHidden() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "This is a generic constraint violation.", null, null);
@@ -293,7 +293,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         OptimisticLockException ole = new OptimisticLockException();
         
@@ -305,7 +305,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void nonUniqueObjectException() {
         HibernateAccount account = new HibernateAccount();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         
         NonUniqueObjectException nuoe = new NonUniqueObjectException("message", null, null);
         

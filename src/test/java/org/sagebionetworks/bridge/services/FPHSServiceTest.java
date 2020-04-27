@@ -94,7 +94,7 @@ public class FPHSServiceTest {
         assertEquals(accountSubstudies.size(), 1);
         
         AccountSubstudy acctSubstudy = Iterables.getFirst(accountSubstudies, null);
-        assertEquals(acctSubstudy.getStudyId(), TEST_APP_ID);
+        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
         assertEquals(acctSubstudy.getSubstudyId(), "harvard");
         assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
     }

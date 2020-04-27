@@ -200,7 +200,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         checkNotNull(account);
         checkArgument(isNotBlank(externalId));
         
-        Optional<ExternalIdentifier> optionalId = getExternalId(account.getStudyId(), externalId);
+        Optional<ExternalIdentifier> optionalId = getExternalId(account.getAppId(), externalId);
         
         if (!optionalId.isPresent()) {
             return;
@@ -211,7 +211,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             mapper.save(identifier);
         }
         if (identifier.getSubstudyId() != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
                     identifier.getSubstudyId(), account.getId());
             acctSubstudy.setExternalId(identifier.getIdentifier());
             account.getAccountSubstudies().remove(acctSubstudy);

@@ -6,14 +6,14 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
 
 public interface AccountSubstudy {
     
-    static AccountSubstudy create(String studyId, String substudyId, String accountId) {
-        checkNotNull(studyId);
+    static AccountSubstudy create(String appId, String substudyId, String accountId) {
+        checkNotNull(appId);
         checkNotNull(substudyId);
         checkNotNull(accountId);
-        return new HibernateAccountSubstudy(studyId, substudyId, accountId);
+        return new HibernateAccountSubstudy(appId, substudyId, accountId);
     }
     
-    String getStudyId();
+    String getAppId();
     String getSubstudyId();
     String getAccountId();
     String getExternalId();

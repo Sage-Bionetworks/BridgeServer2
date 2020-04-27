@@ -77,7 +77,7 @@ public class AccountService {
         if (StringUtils.isBlank(synapseUserId)) {
             throw new BadRequestException("Account does not have a Synapse user");
         }
-        return accountDao.getStudyIdsForUser(synapseUserId);
+        return accountDao.getAppIdForUser(synapseUserId);
     }
     
     /**
@@ -171,7 +171,7 @@ public class AccountService {
         checkNotNull(signIn);
         
         if (!TRUE.equals(app.isReauthenticationEnabled())) {
-            throw new UnauthorizedException("Reauthentication is not enabled for study: " + app.getName());    
+            throw new UnauthorizedException("Reauthentication is not enabled for app: " + app.getName());    
         }
         Account account = accountDao.getAccount(signIn.getAccountId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -201,7 +201,7 @@ public class AccountService {
         checkNotNull(app);
         checkNotNull(account);
         
-        account.setStudyId(app.getIdentifier());
+        account.setAppId(app.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
         account.setModifiedOn(timestamp);
@@ -221,13 +221,13 @@ public class AccountService {
     public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
         checkNotNull(account);
         
-        AccountId accountId = AccountId.forId(account.getStudyId(),  account.getId());
+        AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
 
         // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         // None of these values should be changeable by the user.
-        account.setStudyId(persistedAccount.getStudyId());
+        account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
@@ -242,11 +242,11 @@ public class AccountService {
     /**
      * Load, and if it exists, edit and save an account. 
      */
-    public void editAccount(String studyId, String healthCode, Consumer<Account> accountEdits) {
-        checkNotNull(studyId);
+    public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
         
-        AccountId accountId = AccountId.forHealthCode(studyId, healthCode);
+        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
         Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);

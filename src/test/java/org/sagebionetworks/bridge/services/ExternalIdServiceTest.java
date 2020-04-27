@@ -232,7 +232,7 @@ public class ExternalIdServiceTest {
     @Test
     public void unassignExternalId() {
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         
         externalIdService.unassignExternalId(account, ID);
@@ -243,7 +243,7 @@ public class ExternalIdServiceTest {
     @Test
     public void unassignExternalIdNullDoesNothing() {
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         
         externalIdService.unassignExternalId(account, null);

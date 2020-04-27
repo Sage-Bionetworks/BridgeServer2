@@ -139,7 +139,7 @@ public class HibernateAccountTest {
                 "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID);
 
         assertEquals(account.getCreatedOn().getMillis(), 123L);
-        assertEquals(account.getStudyId(), TEST_APP_ID);
+        assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getFirstName(), "firstName");
         assertEquals(account.getLastName(), "lastName");
         assertEquals(account.getEmail(), "email");

@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.models.substudies.AccountSubstudyId;
 public final class HibernateAccountSubstudy implements AccountSubstudy {
 
     @Id
-    private String studyId;
+    private String appId;
     @Id
     private String substudyId;
     @Id
@@ -29,14 +29,14 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
     public HibernateAccountSubstudy() {
     }
     
-    public HibernateAccountSubstudy(String studyId, String substudyId, String accountId) {
-        this.studyId = studyId;
+    public HibernateAccountSubstudy(String appId, String substudyId, String accountId) {
+        this.appId = appId;
         this.substudyId = substudyId;
         this.accountId = accountId;
     }
     
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     public String getSubstudyId() {
         return substudyId;
@@ -56,7 +56,7 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
 
     @Override
     public int hashCode() {
-        return Objects.hash(accountId, externalId, studyId, substudyId);
+        return Objects.hash(accountId, externalId, appId, substudyId);
     }
 
     @Override
@@ -68,13 +68,13 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
         HibernateAccountSubstudy other = (HibernateAccountSubstudy) obj;
         return Objects.equals(accountId, other.accountId) && 
                Objects.equals(externalId, other.externalId) && 
-               Objects.equals(studyId, other.studyId) && 
+               Objects.equals(appId, other.appId) && 
                Objects.equals(substudyId, other.substudyId);
     }
 
     @Override
     public String toString() {
-        return "HibernateAccountSubstudy [studyId=" + studyId + ", substudyId=" + substudyId + ", accountId="
+        return "HibernateAccountSubstudy [appId=" + appId + ", substudyId=" + substudyId + ", accountId="
                 + accountId + ", externalId=" + externalId + "]";
     }
 }
