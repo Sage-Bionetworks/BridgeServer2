@@ -28,6 +28,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
     static final String REQUEST_KEY_START_DATE = "startDate";
     static final String REQUEST_KEY_SERVICE = "service";
     static final String REQUEST_KEY_STUDY_ID = "studyId";
+    static final String REQUEST_KEY_APP_ID = "appId";
     static final String REQUEST_KEY_USER_ID = "userId";
     static final String UDD_SERVICE_TITLE = "UDD";
 
@@ -48,14 +49,15 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
 
     /** {@inheritDoc} */
     @Override
-    public void requestUserData(String studyId, String userId, DateRange dateRange)
+    public void requestUserData(String appId, String userId, DateRange dateRange)
             throws JsonProcessingException {
         String startDateStr = dateRange.getStartDate().toString();
         String endDateStr = dateRange.getEndDate().toString();
 
         // wrap msg as nested json node
         ObjectNode requestNode = JSON_OBJECT_MAPPER.createObjectNode();
-        requestNode.put(REQUEST_KEY_STUDY_ID, studyId);
+        requestNode.put(REQUEST_KEY_STUDY_ID, appId);
+        requestNode.put(REQUEST_KEY_APP_ID, appId);
         requestNode.put(REQUEST_KEY_USER_ID, userId);
         requestNode.put(REQUEST_KEY_START_DATE, startDateStr);
         requestNode.put(REQUEST_KEY_END_DATE, endDateStr);
@@ -69,7 +71,7 @@ public class UserDataDownloadViaSqsService implements UserDataDownloadService {
         // send to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_UDD_SQS_QUEUE_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
-        logger.info("Sent request to SQS for userId=" + userId + ", study=" + studyId +
+        logger.info("Sent request to SQS for userId=" + userId + ", app=" + appId +
                 ", startDate=" + startDateStr + ", endDate=" + endDateStr + "; received message ID=" +
                 sqsResult.getMessageId());
     }

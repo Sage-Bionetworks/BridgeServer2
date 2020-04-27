@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class UserProfileControllerTest extends Mockito {
     
@@ -82,7 +82,7 @@ public class UserProfileControllerTest extends Mockito {
     CacheProvider mockCacheProvider;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     ParticipantService mockParticipantService;
@@ -136,7 +136,7 @@ public class UserProfileControllerTest extends Mockito {
 
         when(mockConsentService.getConsentStatuses(any())).thenReturn(CONSENT_STATUSES_MAP);
         
-        when(mockStudyService.getStudy((String)any())).thenReturn(app);
+        when(mockAppService.getApp((String)any())).thenReturn(app);
         
         ViewCache viewCache = new ViewCache();
         viewCache.setCachePeriod(BRIDGE_VIEW_EXPIRE_IN_SECONDS);

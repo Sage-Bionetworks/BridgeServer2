@@ -34,7 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class DefaultStudyBootstrapperTest extends Mockito {
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     UserAdminService mockUserAdminService;
@@ -68,15 +68,15 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        when(mockStudyService.getStudy(any(String.class))).thenThrow(EntityNotFoundException.class);
-        when(mockStudyService.createStudy(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mockAppService.getApp(any(String.class))).thenThrow(EntityNotFoundException.class);
+        when(mockAppService.createApp(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
     public void createsDefaultStudyWhenMissing() {
         defaultStudyBootstrapper.onApplicationEvent(null);
 
-        verify(mockStudyService, times(2)).createStudy(studyCaptor.capture());
+        verify(mockAppService, times(2)).createApp(studyCaptor.capture());
 
         List<App> createdStudyList = studyCaptor.getAllValues();
 

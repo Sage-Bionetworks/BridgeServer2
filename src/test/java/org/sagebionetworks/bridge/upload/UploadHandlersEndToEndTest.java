@@ -57,7 +57,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -271,9 +271,9 @@ public class UploadHandlersEndToEndTest {
         StrictValidationHandler strictValidationHandler = new StrictValidationHandler();
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
-        StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
-        strictValidationHandler.setStudyService(mockStudyService);
+        AppService mockAppService = mock(AppService.class);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(STUDY);
+        strictValidationHandler.setAppService(mockAppService);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "test-substudy", "userId");
         acctSubstudy.setExternalId(EXTERNAL_ID);
@@ -329,7 +329,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(record.getCreatedOnTimeZone(), CREATED_ON_TIME_ZONE);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TEST_APP_ID);
+        assertEquals(record.getAppId(), TEST_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_TODAY);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);

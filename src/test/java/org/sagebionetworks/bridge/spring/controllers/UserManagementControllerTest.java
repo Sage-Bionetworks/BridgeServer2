@@ -55,7 +55,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 public class UserManagementControllerTest extends Mockito {
@@ -64,7 +64,7 @@ public class UserManagementControllerTest extends Mockito {
     AuthenticationService mockAuthService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
     UserAdminService mockUserAdminService;
@@ -121,7 +121,7 @@ public class UserManagementControllerTest extends Mockito {
 
         doReturn(session).when(mockUserAdminService).createUser(any(), any(), any(), anyBoolean(), anyBoolean());
         doReturn(session).when(mockAuthService).getSession(any(String.class));
-        doReturn(mockApp).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(mockApp).when(mockAppService).getApp(TEST_APP_ID);
 
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(null).when(controller).getMetrics();
@@ -143,13 +143,13 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void signInForSuperadmin() throws Exception {
         // We look specifically for an account in the API study
-        doReturn(mockApp).when(mockStudyService).getStudy(API_APP_ID);
+        doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
         
         // Set environment to local in order to test that cookies are set
         when(mockBridgeConfig.getEnvironment()).thenReturn(LOCAL);
         when(mockBridgeConfig.get("domain")).thenReturn("localhost");
 
-        SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
+        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
                 .withPassword(PASSWORD).build();
         mockRequestBody(mockRequest, signIn);
 
@@ -161,7 +161,7 @@ public class UserManagementControllerTest extends Mockito {
 
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals(session.getAppId(), "originalStudy");
-        assertEquals(signInCaptor.getValue().getStudyId(), API_APP_ID);
+        assertEquals(signInCaptor.getValue().getAppId(), API_APP_ID);
 
         verify(mockResponse).addCookie(cookieCaptor.capture());
         
@@ -178,9 +178,9 @@ public class UserManagementControllerTest extends Mockito {
     @Test
     public void signInForAdminNotASuperAdmin() throws Exception {
         // We look specifically for an account in the API study
-        doReturn(mockApp).when(mockStudyService).getStudy(API_APP_ID);
+        doReturn(mockApp).when(mockAppService).getApp(API_APP_ID);
         
-        SignIn signIn = new SignIn.Builder().withStudy("originalStudy").withEmail(EMAIL)
+        SignIn signIn = new SignIn.Builder().withAppId("originalStudy").withEmail(EMAIL)
                 .withPassword("password").build();
         mockRequestBody(mockRequest, signIn);
 
@@ -204,12 +204,12 @@ public class UserManagementControllerTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
-        SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
+        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
 
         App nextApp = App.create();
         nextApp.setIdentifier("nextStudy");
-        when(mockStudyService.getStudy("nextStudy")).thenReturn(nextApp);
+        when(mockAppService.getApp("nextStudy")).thenReturn(nextApp);
 
         controller.changeStudyForAdmin();
         assertEquals(session.getAppId(), "nextStudy");
@@ -222,7 +222,7 @@ public class UserManagementControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        SignIn signIn = new SignIn.Builder().withStudy("nextStudy").build();
+        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
         
         controller.changeStudyForAdmin();

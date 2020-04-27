@@ -353,9 +353,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test Study [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User   &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
     }
@@ -405,9 +405,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test Study [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User Allen Wrench &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
 
@@ -789,7 +789,7 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(email.getSubject(), "signedConsent subject");
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(Sets.newHashSet(email.getRecipientAddresses()),
                 Sets.newHashSet("email@email.com", "bridge-testing+consent@sagebase.org"));
     }

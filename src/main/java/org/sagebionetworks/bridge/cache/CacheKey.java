@@ -56,7 +56,7 @@ public final class CacheKey {
         return new CacheKey(userId, throttleType.name().toLowerCase(), "channel-throttling");
     }
     public static final CacheKey emailSignInRequest(SignIn signIn) {
-        return new CacheKey(signIn.getEmail(), signIn.getStudyId(), "signInRequest");
+        return new CacheKey(signIn.getEmail(), signIn.getAppId(), "signInRequest");
     }
     /** The email verification status from Amazon SES, which we cache for a short time. Not involved with 
      * verification of an individual's email address. So we do return it through the cache API.
@@ -80,7 +80,7 @@ public final class CacheKey {
         return new CacheKey(sptoken, "phone", appId); // no type, not great
     }
     public static final CacheKey phoneSignInRequest(SignIn signIn) {
-        return new CacheKey(signIn.getPhone().getNumber(), signIn.getStudyId(),"phoneSignInRequest");
+        return new CacheKey(signIn.getPhone().getNumber(), signIn.getAppId(),"phoneSignInRequest");
     }
     public static final CacheKey requestInfo(String userId) {
         return new CacheKey(userId, "request-info");

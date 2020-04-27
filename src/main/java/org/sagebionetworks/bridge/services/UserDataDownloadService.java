@@ -13,6 +13,6 @@ public interface UserDataDownloadService {
      * Kicks off an asynchronous request to gather user data for the logged in user, with data from the specified date
      * range (inclusive).
      */
-    void requestUserData(String studyId, String userId, DateRange dateRange)
+    void requestUserData(String appId, String userId, DateRange dateRange)
             throws JsonProcessingException;
 }

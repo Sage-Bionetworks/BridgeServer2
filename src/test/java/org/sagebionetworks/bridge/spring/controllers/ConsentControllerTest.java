@@ -60,7 +60,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ConsentControllerTest extends Mockito {
 
@@ -71,7 +71,7 @@ public class ConsentControllerTest extends Mockito {
     ConsentController controller;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     ConsentService mockConsentService;
@@ -113,7 +113,7 @@ public class ConsentControllerTest extends Mockito {
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
@@ -221,7 +221,7 @@ public class ConsentControllerTest extends Mockito {
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockStudyService.getStudy(studyId)).thenReturn(app);
+        when(mockAppService.getApp(studyId)).thenReturn(app);
         
         JsonNode result = controller.giveV1();
         
@@ -248,7 +248,7 @@ public class ConsentControllerTest extends Mockito {
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockStudyService.getStudy(studyId)).thenReturn(app);
+        when(mockAppService.getApp(studyId)).thenReturn(app);
         
         JsonNode result = controller.giveV2();
         

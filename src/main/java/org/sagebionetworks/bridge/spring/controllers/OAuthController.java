@@ -41,7 +41,7 @@ public class OAuthController extends BaseController {
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, vendorId, token, null);
         
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         return service.requestAccessToken(app, session.getHealthCode(), authToken);
     }
@@ -53,7 +53,7 @@ public class OAuthController extends BaseController {
             @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
         return service.getHealthCodesGrantingAccess(app, vendorId, pageSizeInt, offsetKey);
@@ -65,7 +65,7 @@ public class OAuthController extends BaseController {
             @PathVariable String healthCode) {
         getAuthenticatedSession(WORKER);
         
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         return service.getAccessToken(app, vendorId, healthCode);
     }
 }

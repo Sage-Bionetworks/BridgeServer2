@@ -57,7 +57,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getHealthCode(), "dummy healthcode");
         assertNull(record.getId());
         assertSame(record.getMetadata(), DUMMY_METADATA);
-        assertEquals(record.getStudyId(), "dummy study");
+        assertEquals(record.getAppId(), "dummy study");
         assertEquals(record.getUploadDate(), UPLOAD_DATE);
         assertEquals(record.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(record.getUserSharingScope(), SharingScope.NO_SHARING);
@@ -282,7 +282,7 @@ public class HealthDataRecordTest {
         record.setData(DUMMY_DATA);
         record.setHealthCode("dummy healthcode");
         record.setMetadata(DUMMY_METADATA);
-        record.setStudyId("dummy study");
+        record.setAppId("dummy study");
         record.setUploadDate(UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setUserSharingScope(SharingScope.NO_SHARING);
@@ -308,7 +308,7 @@ public class HealthDataRecordTest {
                 "   \"rawDataAttachmentId\":\"raw.zip\",\n" +
                 "   \"schemaId\":\"json schema\",\n" +
                 "   \"schemaRevision\":3,\n" +
-                "   \"studyId\":\""+TEST_APP_ID+"\",\n" +
+                "   \"appId\":\""+TEST_APP_ID+"\",\n" +
                 "   \"synapseExporterStatus\":\"not_exported\",\n" +
                 "   \"uploadDate\":\"2014-02-12\",\n" +
                 "   \"uploadId\":\"json upload\",\n" +
@@ -333,7 +333,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getRawDataAttachmentId(), "raw.zip");
         assertEquals(record.getSchemaId(), "json schema");
         assertEquals(record.getSchemaRevision().intValue(), 3);
-        assertEquals(record.getStudyId(), TEST_APP_ID);
+        assertEquals(record.getAppId(), TEST_APP_ID);
         assertEquals(record.getSynapseExporterStatus(), HealthDataRecord.ExporterStatus.NOT_EXPORTED);
         assertEquals(record.getUploadDate().toString(ISODateTimeFormat.date()), "2014-02-12");
         assertEquals(record.getUploadId(), "json upload");
@@ -357,7 +357,7 @@ public class HealthDataRecordTest {
 
         // then convert to a map so we can validate the raw JSON
         Map<String, Object> jsonMap = BridgeObjectMapper.get().readValue(convertedJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(jsonMap.size(), 23);
+        assertEquals(jsonMap.size(), 24);
         assertEquals(jsonMap.get("appVersion"), APP_VERSION);
         assertEquals(jsonMap.get("createdOnTimeZone"), "-0800");
         assertEquals(jsonMap.get("dayInStudy"), 42);
@@ -368,6 +368,7 @@ public class HealthDataRecordTest {
         assertEquals(jsonMap.get("schemaId"), "json schema");
         assertEquals(jsonMap.get("schemaRevision"), 3);
         assertEquals(jsonMap.get("studyId"), TEST_APP_ID);
+        assertEquals(jsonMap.get("appId"), TEST_APP_ID);
         assertEquals(jsonMap.get("synapseExporterStatus"), "not_exported");
         assertEquals(jsonMap.get("uploadDate"), "2014-02-12");
         assertEquals(jsonMap.get("uploadId"), "json upload");
@@ -398,7 +399,7 @@ public class HealthDataRecordTest {
 
         // Convert back to map again. Only validate a few key fields are present and the filtered fields are absent.
         Map<String, Object> publicJsonMap = BridgeObjectMapper.get().readValue(publicJson, JsonUtils.TYPE_REF_RAW_MAP);
-        assertEquals(publicJsonMap.size(), 22);
+        assertEquals(publicJsonMap.size(), 23);
         assertFalse(publicJsonMap.containsKey("healthCode"));
         assertEquals(publicJsonMap.get("id"), "json record ID");
     }

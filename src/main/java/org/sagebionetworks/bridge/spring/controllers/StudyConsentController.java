@@ -158,7 +158,7 @@ public class StudyConsentController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}/consents/{createdOn}/publish")
     public StatusMessage publishConsentV2(@PathVariable String guid, @PathVariable String createdOn) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
         // Throws 404 exception if this subpopulation is not part of the caller's study

@@ -21,7 +21,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 /**
@@ -53,13 +53,13 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
     private static final Joiner ERROR_MESSAGE_JOINER = Joiner.on("; ");
 
-    private StudyService studyService;
+    private AppService appService;
     private UploadSchemaService uploadSchemaService;
 
     /** Study service, used to fetch configuration for if strict validation is enabled for the given study. */
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
 
     /** Upload Schema Service, used to get the schema to validate against the upload. */
@@ -83,7 +83,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
         int schemaRev = record.getSchemaRevision();
 
         // get schema
-        UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(context.getStudy(), schemaId, schemaRev);
+        UploadSchema schema = uploadSchemaService.getUploadSchemaByIdAndRev(context.getAppId(), schemaId, schemaRev);
         List<UploadFieldDefinition> fieldDefList = schema.getFieldDefinitions();
 
         List<String> errorList = validateAllFields(fieldDefList, recordDataNode);
@@ -119,14 +119,14 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         // log warning
         String combinedErrorMessage = ERROR_MESSAGE_JOINER.join(errorList);
-        String loggedErrorMessage = "Strict upload validation error in study " + context.getStudy()
+        String loggedErrorMessage = "Strict upload validation error in study " + context.getAppId()
                 + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUploadId() + ": " +
                 combinedErrorMessage;
         logger.warn(loggedErrorMessage);
 
         // Further action depends on validation strictness.
         UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForStudy(context
-                .getStudy());
+                .getAppId());
         switch (uploadValidationStrictness) {
             case WARNING:
                 // We already warned. Do nothing.
@@ -146,7 +146,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * unit tests.
      */
     UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {
-        App app = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
 
         // First check UploadValidationStrictness.
         UploadValidationStrictness uploadValidationStrictness = app.getUploadValidationStrictness();

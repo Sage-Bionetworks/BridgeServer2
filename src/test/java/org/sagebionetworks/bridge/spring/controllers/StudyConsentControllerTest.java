@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.StudyConsentService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 public class StudyConsentControllerTest extends Mockito {
@@ -50,7 +50,7 @@ public class StudyConsentControllerTest extends Mockito {
     }
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     @Mock
     StudyConsentService mockStudyConsentService;
     @Mock
@@ -165,7 +165,7 @@ public class StudyConsentControllerTest extends Mockito {
     public void publishConsentV2() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(APP);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         
         StatusMessage result = controller.publishConsentV2(GUID, DATETIME_STRING);
         assertEquals(result.getMessage(), "Consent document set as active.");

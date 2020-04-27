@@ -54,7 +54,7 @@ public class SubpopulationController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public GuidVersionHolder createSubpopulation() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
         subpop = subpopService.createSubpopulation(app, subpop);
@@ -65,7 +65,7 @@ public class SubpopulationController extends BaseController {
     @PostMapping("/v3/subpopulations/{guid}")
     public GuidVersionHolder updateSubpopulation(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         Subpopulation subpop = parseJson(Subpopulation.class);
         subpop.setGuidString(guid);

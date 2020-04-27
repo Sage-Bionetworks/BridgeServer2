@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class HealthDataControllerTest extends Mockito {
     private static final String APP_VERSION = "version 1.0.0, build 2";
@@ -93,7 +93,7 @@ public class HealthDataControllerTest extends Mockito {
     ParticipantService mockParticipantService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     RequestInfoService requestInfoService;
@@ -129,7 +129,7 @@ public class HealthDataControllerTest extends Mockito {
 
         // Mock services.
         when(mockParticipantService.getParticipant(same(APP), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(APP);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
 
         // mock session
         UserSession mockSession = new UserSession();

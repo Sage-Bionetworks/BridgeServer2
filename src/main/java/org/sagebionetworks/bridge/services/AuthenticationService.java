@@ -66,7 +66,7 @@ public class AuthenticationService {
     private ConsentService consentService;
     private AccountService accountService;
     private ParticipantService participantService;
-    private StudyService studyService;
+    private AppService appService;
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
     private IntentService intentService;
@@ -100,8 +100,8 @@ public class AuthenticationService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     @Autowired
     final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -313,7 +313,7 @@ public class AuthenticationService {
             accountWorkflowService.requestResetPassword(app, isStudyAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Request reset password request for unregistered email in study '"+signIn.getStudyId()+"'");
+            LOG.info("Request reset password request for unregistered email in study '"+signIn.getAppId()+"'");
         }
     }
 
@@ -415,7 +415,7 @@ public class AuthenticationService {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
             clearSession(context.getAppId(), account.getId());
-            App app = studyService.getStudy(signIn.getStudyId());
+            App app = appService.getApp(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.
@@ -517,7 +517,7 @@ public class AuthenticationService {
         }
         
         clearSession(authToken.getAppId(), account.getId());
-        App app = studyService.getStudy(authToken.getAppId());
+        App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);
         cacheProvider.setUserSession(session);
         

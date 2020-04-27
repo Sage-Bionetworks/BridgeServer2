@@ -14,6 +14,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
@@ -40,7 +41,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String rawDataAttachmentId;
     private String schemaId;
     private Integer schemaRevision;
-    private String studyId;
+    private String appId;
     private LocalDate uploadDate;
     private String uploadId;
     private Long uploadedOn;
@@ -207,14 +208,20 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-uploadedOn-index")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
-    /** @see #getStudyId */
+    /** @see #getAppId */
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+    
+    // This value is exposed in the API and needs to be maintained through migration
+    @DynamoDBIgnore
+    public String getStudyId() {
+        return appId;
     }
 
     /** {@inheritDoc} */

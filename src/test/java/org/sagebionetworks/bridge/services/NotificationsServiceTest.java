@@ -60,7 +60,7 @@ public class NotificationsServiceTest {
     private ParticipantService mockParticipantService;
 
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private AmazonSNSClient mockSnsClient;
@@ -86,7 +86,7 @@ public class NotificationsServiceTest {
         service = new NotificationsService();
         service.setNotificationTopicService(mockNotificationTopicService);
         service.setParticipantService(mockParticipantService);
-        service.setStudyService(mockStudyService);
+        service.setAppService(mockAppService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
 
@@ -94,7 +94,7 @@ public class NotificationsServiceTest {
         map.put(OS_NAME, PLATFORM_ARN);
         doReturn(map).when(mockApp).getPushNotificationARNs();
      
-        doReturn(mockApp).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(mockApp).when(mockAppService).getApp(TEST_APP_ID);
     }
 
     @Test

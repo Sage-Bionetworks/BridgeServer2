@@ -62,7 +62,7 @@ public class CacheKeyTest {
     
     @Test
     public void emailSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID)
                 .withEmail("email@email.com").build();
         assertEquals(CacheKey.emailSignInRequest(signIn).toString(),
                 "email@email.com:" + TEST_APP_ID + ":signInRequest");
@@ -103,7 +103,7 @@ public class CacheKeyTest {
     
     @Test
     public void phoneSignInRequest() {
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID)
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID)
                 .withPhone(TestConstants.PHONE).build();
         
         assertEquals(CacheKey.phoneSignInRequest(signIn).toString(),

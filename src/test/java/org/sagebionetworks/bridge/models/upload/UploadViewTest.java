@@ -41,7 +41,7 @@ public class UploadViewTest {
         record.setPhoneInfo("phoneInfo");
         record.setSchemaId("schema-id");
         record.setSchemaRevision(5);
-        record.setStudyId(TEST_APP_ID);
+        record.setAppId(TEST_APP_ID);
         record.setUploadDate(LocalDate.parse("2016-10-10"));
         record.setUploadId("upload-id");
         record.setUploadedOn(REQUESTED_ON.getMillis());

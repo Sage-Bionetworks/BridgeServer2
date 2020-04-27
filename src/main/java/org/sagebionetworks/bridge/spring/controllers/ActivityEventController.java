@@ -40,7 +40,7 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         activityEventService.publishCustomEvent(app, session.getHealthCode(),
                 activityEvent.getEventKey(), activityEvent.getTimestamp());
         

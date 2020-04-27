@@ -67,9 +67,10 @@ public class JsonUtilsTest {
     public void asText() throws Exception {
         JsonNode node = mapper.readTree(esc("{'key':'value'}"));
         
-        assertNull(JsonUtils.asText(node, null));
+        assertNull(JsonUtils.asText(node, (String)null));
         assertNull(JsonUtils.asText(node, "badProp"));
         assertEquals(JsonUtils.asText(node, "key"), "value");
+        assertEquals(JsonUtils.asText(node, "wrongKey", "key"), "value");
     }
 
     @Test

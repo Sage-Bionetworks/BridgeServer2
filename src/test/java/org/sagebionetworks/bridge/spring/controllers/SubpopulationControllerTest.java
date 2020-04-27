@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 public class SubpopulationControllerTest extends Mockito {
@@ -59,7 +59,7 @@ public class SubpopulationControllerTest extends Mockito {
     SubpopulationService mockSubpopService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
     App mockApp;
@@ -92,7 +92,7 @@ public class SubpopulationControllerTest extends Mockito {
 
         when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockApp);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(mockApp);
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

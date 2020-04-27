@@ -133,7 +133,7 @@ public class ScheduledActivityController extends BaseController {
     public String getScheduledActivitiesByDateRange(@RequestParam String startTime, @RequestParam String endTime)
             throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         DateTime startsOnObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endsOnObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
@@ -198,7 +198,7 @@ public class ScheduledActivityController extends BaseController {
     private List<ScheduledActivity> getScheduledActivitiesInternalV3(String untilString, String offset,
             String daysAhead, String minimumPerScheduleString) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         DateTime endsOn = null;
         DateTimeZone requestTimeZone = null;

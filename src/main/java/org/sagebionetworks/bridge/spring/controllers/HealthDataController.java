@@ -110,7 +110,7 @@ public class HealthDataController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public String submitHealthDataForParticipant(@PathVariable String userId) throws IOException, UploadValidationException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // Get participant.
         StudyParticipant participant = participantService.getParticipant(app, userId, false);

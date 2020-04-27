@@ -57,7 +57,7 @@ public class ActivityEventServiceTest {
     private ActivityEventDao activityEventDao;
     
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private ParticipantService mockParticipantService;
@@ -68,7 +68,7 @@ public class ActivityEventServiceTest {
         activityEventService = new ActivityEventService();
         
         activityEventService.setActivityEventDao(activityEventDao);
-        activityEventService.setStudyService(mockStudyService);
+        activityEventService.setAppService(mockAppService);
         activityEventService.setParticipantService(mockParticipantService);
     }
 
@@ -163,7 +163,7 @@ public class ActivityEventServiceTest {
         assertEquals(results.size(), 4);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
-        verify(mockStudyService, never()).getStudy(anyString());
+        verify(mockAppService, never()).getApp(anyString());
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), anyBoolean());
     }
     
@@ -181,7 +181,7 @@ public class ActivityEventServiceTest {
         assertEquals(results.size(), 3);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
-        verify(mockStudyService, never()).getStudy(anyString());
+        verify(mockAppService, never()).getApp(anyString());
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), eq(false));
     }
     
@@ -201,7 +201,7 @@ public class ActivityEventServiceTest {
         assertEquals(results.size(), 4);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
-        verify(mockStudyService, never()).getStudy(anyString());
+        verify(mockAppService, never()).getApp(anyString());
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), eq(false));
     }
     
@@ -212,7 +212,7 @@ public class ActivityEventServiceTest {
         
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(CREATED_ON).build();
         when(mockParticipantService.getParticipant(app, "healthcode:" + HEALTH_CODE, false)).thenReturn(studyParticipant);
@@ -223,7 +223,7 @@ public class ActivityEventServiceTest {
         assertEquals(results.size(), 2);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
-        verify(mockStudyService).getStudy(TEST_APP_ID);
+        verify(mockAppService).getApp(TEST_APP_ID);
         verify(mockParticipantService).getParticipant(app, "healthcode:"+HEALTH_CODE, false);
     }
     

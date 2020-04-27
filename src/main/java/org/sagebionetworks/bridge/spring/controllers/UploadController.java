@@ -128,29 +128,29 @@ public class UploadController extends BaseController {
             metrics.setUploadId(uploadId);
         }
 
-        // User can be a worker account (get study and health code from the upload itself)...
+        // User can be a worker account (get app and health code from the upload itself)...
         UserSession session = getAuthenticatedSession();
         Upload upload = uploadService.getUpload(uploadId);
-        String studyId;
+        String appId;
         UploadCompletionClient uploadCompletionClient;
         if (session.isInRole(Roles.WORKER)) {
-            studyId = upload.getStudyId();
-            if (studyId == null) {
-                studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+            appId = upload.getAppId();
+            if (appId == null) {
+                appId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
             }
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
-            // Do not need to look up the study.
+            // Do not need to look up the app.
             session = getAuthenticatedAndConsentedSession();
             if (!session.getHealthCode().equals(upload.getHealthCode())) {
                 throw new UnauthorizedException();
             }
 
-            studyId = session.getAppId();
+            appId = session.getAppId();
             uploadCompletionClient = UploadCompletionClient.APP;
         }
-        uploadService.uploadComplete(studyId, uploadCompletionClient, upload, redrive);
+        uploadService.uploadComplete(appId, uploadCompletionClient, upload, redrive);
 
         // In async mode, we get the validation status (probably in validation_in_progress) and return immediately.
         // In sync mode, we poll until the validation status is complete (or failed or another non-transient status).
@@ -179,16 +179,16 @@ public class UploadController extends BaseController {
             }
             
             if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getAppId().equals(record.getStudyId())) {
-                throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
+                !session.getAppId().equals(record.getAppId())) {
+                throw new UnauthorizedException("App admin cannot retrieve upload in another app.");
             }
             uploadId = record.getUploadId();
         }
 
         UploadView uploadView = uploadService.getUploadView(uploadId);
         if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getAppId().equals(uploadView.getUpload().getStudyId())) {
-            throw new UnauthorizedException("Study admin cannot retrieve upload in another study.");
+                !session.getAppId().equals(uploadView.getUpload().getAppId())) {
+            throw new UnauthorizedException("App admin cannot retrieve upload in another app.");
         }
         return uploadView;
     }

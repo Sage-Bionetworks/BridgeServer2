@@ -65,7 +65,7 @@ public class TemplateController extends BaseController {
     @ResponseStatus(CREATED)
     public GuidVersionHolder createTemplate() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Template template = parseJson(Template.class);
         

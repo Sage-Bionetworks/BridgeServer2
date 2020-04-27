@@ -40,8 +40,18 @@ public class OAuthAuthorizationTokenTest {
     }
     
     @Test
-    public void canDeserializeStudy() throws Exception {
-        String json = TestUtils.createJson("{'study':'test-study',"+
+    public void canDeserializeWithStudy() throws Exception {
+        String json = TestUtils.createJson("{'study':'" + TEST_APP_ID + "',"+
+                "'vendorId':'vendorId','authToken':'authToken',"+
+                "'callbackUrl':'callbackUrl'}");
+        
+        OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(json, OAuthAuthorizationToken.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void canDeserializeWithAppId() throws Exception {
+        String json = TestUtils.createJson("{'appId':'" + TEST_APP_ID + "',"+
                 "'vendorId':'vendorId','authToken':'authToken',"+
                 "'callbackUrl':'callbackUrl'}");
         

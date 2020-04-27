@@ -103,16 +103,16 @@ public class UploadValidationTask implements Runnable {
 
                 if (ex instanceof Error) {
                     // Something really bad happened, like an OutOfMemoryError. Log this at the error level.
-                    logger.error(String.format("Critical error in upload validation handler %s for study %s, " +
-                            "upload %s, filename %s: %s: %s", handlerName, context.getStudy(),
+                    logger.error(String.format("Critical error in upload validation handler %s for app %s, " +
+                            "upload %s, filename %s: %s: %s", handlerName, context.getAppId(),
                             context.getUpload().getUploadId(), context.getUpload().getFilename(),
                             ex.getClass().getName(), ex.getMessage()), ex);
                 } else {
                     // Upload validation failed. Since there are a lot of garbage uploads, log this at the info level
                     // so it doesn't set off our alarms. Once the garbage uploads are cleaned up, we can bump this back
                     // up to warning.
-                    logger.info(String.format("Exception thrown from upload validation handler %s for study %s, " +
-                            "upload %s, filename %s: %s: %s", handlerName, context.getStudy(),
+                    logger.info(String.format("Exception thrown from upload validation handler %s for app %s, " +
+                            "upload %s, filename %s: %s: %s", handlerName, context.getAppId(),
                             context.getUpload().getUploadId(), context.getUpload().getFilename(),
                             ex.getClass().getName(), ex.getMessage()), ex);
                 }
@@ -130,8 +130,8 @@ public class UploadValidationTask implements Runnable {
         try {
             uploadDao.writeValidationStatus(context.getUpload(), status, context.getMessageList(),
                     context.getRecordId());
-            logger.info(String.format("Upload validation for study %s, upload %s, record %s, with status %s",
-                    context.getStudy(), context.getUpload().getUploadId(), context.getRecordId(),
+            logger.info(String.format("Upload validation for app %s, upload %s, record %s, with status %s",
+                    context.getAppId(), context.getUpload().getUploadId(), context.getRecordId(),
                     status));
         } catch (RuntimeException ex) {
             // ExceptionInterceptor doesn't handle asynchronous tasks, so we'll need to catch exceptions and log them
@@ -152,7 +152,7 @@ public class UploadValidationTask implements Runnable {
     // Log helper. Unit tests will mock (spy) this, so we verify that we're catching and logging the exception.
     // Package-scoped so unit tests have access to this.
     void logWriteValidationStatusException(UploadStatus status, Exception ex) {
-        logger.error("Exception writing validation status for study " + context.getStudy() +
+        logger.error("Exception writing validation status for app " + context.getAppId() +
                 ", upload " + context.getUpload().getUploadId() + ", record " + context.getRecordId() + ", status " +
                 status + ": " + ex.getMessage(), ex);
     }

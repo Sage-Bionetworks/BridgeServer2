@@ -42,7 +42,7 @@ public class UploadValidationTaskFactoryTest {
         // execute and validate
         UploadValidationTask task = taskFactory.newTask(app.getIdentifier(), upload);
         assertEquals(task.getContext().getHealthCode(), HEALTH_CODE);
-        assertSame(task.getContext().getStudy(), app.getIdentifier());
+        assertSame(task.getContext().getAppId(), app.getIdentifier());
         assertSame(task.getContext().getUpload(), upload);
 
         assertSame(task.getFileHelper(), fileHelper);
