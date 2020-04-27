@@ -12,7 +12,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SmsService;
 
@@ -38,10 +38,10 @@ public class SmsController extends BaseController {
     @GetMapping("/v3/participants/{userId}/sms/recent")
     public SmsMessage getMostRecentMessage(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // Get phone number for participant.
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        StudyParticipant participant = participantService.getParticipant(app, userId, false);
         if (participant.getPhone() == null) {
             throw new BadRequestException("participant has no phone number");
         }

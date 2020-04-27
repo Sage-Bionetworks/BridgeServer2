@@ -43,7 +43,7 @@ public class AppConfigElementService {
         // Validate that ID exists before you try and use it to set the key
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        element.setStudyId(studyId);
+        element.setAppId(studyId);
         element.setId(element.getId());
         element.setVersion(null);
         element.setDeleted(false);
@@ -98,7 +98,7 @@ public class AppConfigElementService {
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        element.setStudyId(studyId);
+        element.setAppId(studyId);
         element.setId(element.getId());
         element.setModifiedOn(DateTime.now().getMillis());
         // cannot change the creation timestamp

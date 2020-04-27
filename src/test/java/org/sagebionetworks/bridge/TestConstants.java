@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class TestConstants {
-    public static final String TEST_APP_ID = "test-study";
+    public static final String TEST_APP_ID = "test-app";
 
     public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
             .withSubject("a subject").withMessage("a message").build();

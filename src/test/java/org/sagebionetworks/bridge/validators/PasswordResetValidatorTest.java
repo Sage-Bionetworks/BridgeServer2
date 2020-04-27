@@ -15,28 +15,28 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class PasswordResetValidatorTest {
     
     PasswordResetValidator validator;
     
     @Mock
-    StudyService studyService;
+    AppService appService;
     
     @Mock
-    Study study;
+    App app;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        doReturn(PasswordPolicy.DEFAULT_PASSWORD_POLICY).when(study).getPasswordPolicy();
-        doReturn(study).when(studyService).getStudy(TEST_APP_ID);
+        doReturn(PasswordPolicy.DEFAULT_PASSWORD_POLICY).when(app).getPasswordPolicy();
+        doReturn(app).when(appService).getApp(TEST_APP_ID);
         
         validator = new PasswordResetValidator();
-        validator.setStudyService(studyService);
+        validator.setAppService(appService);
     }
     
     @Test

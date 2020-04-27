@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
@@ -55,11 +55,11 @@ public class StudyAndUsersTest {
                 "\t]\n" +
                 "}";
 
-        Study study = new DynamoStudy();
-        study.setActive(true);
-        study.setIdentifier(TEST_APP_ID);
-        study.setName(TEST_STUDY_NAME);
-        study.setSupportEmail(TEST_USER_EMAIL);
+        App app = new DynamoApp();
+        app.setActive(true);
+        app.setIdentifier(TEST_APP_ID);
+        app.setName(TEST_STUDY_NAME);
+        app.setSupportEmail(TEST_USER_EMAIL);
 
         // make it ordered
         LinkedHashSet<Roles> user1Roles = new LinkedHashSet<>();
@@ -87,12 +87,12 @@ public class StudyAndUsersTest {
 
         StudyAndUsers retStudyAndUsers = BridgeObjectMapper.get().readValue(json, StudyAndUsers.class);
         List<String> retAdminIds = retStudyAndUsers.getAdminIds();
-        Study retStudy = retStudyAndUsers.getStudy();
+        App retApp = retStudyAndUsers.getStudy();
         List<StudyParticipant> userList = retStudyAndUsers.getUsers();
 
         // verify
         assertEquals(retAdminIds, adminIds);
-        assertEquals(retStudy, study);
+        assertEquals(retApp, app);
         assertEquals(userList, mockUsers);
     }
 }

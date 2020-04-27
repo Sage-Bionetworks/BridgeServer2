@@ -45,9 +45,9 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SubpopulationService;
 
 public class SubpopulationControllerTest extends Mockito {
@@ -59,10 +59,10 @@ public class SubpopulationControllerTest extends Mockito {
     SubpopulationService mockSubpopService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
-    Study mockStudy;
+    App mockApp;
 
     @Mock
     HttpServletRequest mockRequest;
@@ -90,9 +90,9 @@ public class SubpopulationControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setAuthenticated(true);
 
-        when(mockStudy.getIdentifier()).thenReturn(TEST_APP_ID);
+        when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockStudy);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(mockApp);
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -148,7 +148,7 @@ public class SubpopulationControllerTest extends Mockito {
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
-        doReturn(createdSubpop).when(mockSubpopService).createSubpopulation(eq(mockStudy), captor.capture());
+        doReturn(createdSubpop).when(mockSubpopService).createSubpopulation(eq(mockApp), captor.capture());
 
         GuidVersionHolder result = controller.createSubpopulation();
         assertEquals(result.getGuid(), "AAA");
@@ -174,7 +174,7 @@ public class SubpopulationControllerTest extends Mockito {
         Subpopulation createdSubpop = Subpopulation.create();
         createdSubpop.setGuidString("AAA");
         createdSubpop.setVersion(1L);
-        doReturn(createdSubpop).when(mockSubpopService).updateSubpopulation(eq(mockStudy), captor.capture());
+        doReturn(createdSubpop).when(mockSubpopService).updateSubpopulation(eq(mockApp), captor.capture());
 
         GuidVersionHolder result = controller.updateSubpopulation("AAA");
         assertEquals(result.getGuid(), "AAA");

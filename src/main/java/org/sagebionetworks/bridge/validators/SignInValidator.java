@@ -67,7 +67,7 @@ public class SignInValidator implements Validator {
     public void validate(Object object, Errors errors) {
         SignIn signIn = (SignIn)object;
         
-        if (requiredFields.contains(STUDY) && isBlank(signIn.getStudyId())) {
+        if (requiredFields.contains(STUDY) && isBlank(signIn.getAppId())) {
             errors.rejectValue("study", "is required");
         }
         if (requiredFields.contains(EMAIL) && isBlank(signIn.getEmail())) {

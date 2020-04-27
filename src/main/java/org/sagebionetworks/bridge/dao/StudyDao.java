@@ -2,21 +2,21 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 public interface StudyDao {
 
     boolean doesIdentifierExist(String identifier);
     
-    Study getStudy(String identifier);
+    App getStudy(String identifier);
     
-    List<Study> getStudies();
+    List<App> getStudies();
     
-    Study createStudy(Study study);
+    App createStudy(App app);
     
-    Study updateStudy(Study study);
+    App updateStudy(App app);
     
-    void deleteStudy(Study study);
+    void deleteStudy(App app);
 
     void deactivateStudy(String studyId);
 }

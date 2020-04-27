@@ -29,14 +29,14 @@ public class DynamoAppConfigElementTest {
     public void keyParsing() {
         // set through setters, get key
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setStudyId(TEST_APP_ID);
+        element.setAppId(TEST_APP_ID);
         element.setId(ID);
         assertEquals(element.getKey(), KEY);
         
         // set key, get through getters
         element = new DynamoAppConfigElement();
         element.setKey(KEY);
-        assertEquals(element.getStudyId(), TEST_APP_ID);
+        assertEquals(element.getAppId(), TEST_APP_ID);
         assertEquals(element.getId(), ID);
         
         // set key, get through getters
@@ -47,7 +47,7 @@ public class DynamoAppConfigElementTest {
         // setters nullify key
         element = new DynamoAppConfigElement();
         element.setKey(KEY);
-        element.setStudyId(null);
+        element.setAppId(null);
         assertNull(element.getKey());
         
         element = new DynamoAppConfigElement();
@@ -56,10 +56,10 @@ public class DynamoAppConfigElementTest {
         assertNull(element.getId());
         
         element = new DynamoAppConfigElement();
-        element.setStudyId(TEST_APP_ID);
+        element.setAppId(TEST_APP_ID);
         element.setId(ID);
         element.setKey(null);
-        assertNull(element.getStudyId());
+        assertNull(element.getAppId());
         assertNull(element.getId());
     }
     
@@ -73,7 +73,7 @@ public class DynamoAppConfigElementTest {
     @Test
     public void canSerialize() throws Exception {
         DynamoAppConfigElement element = new DynamoAppConfigElement();
-        element.setStudyId(TEST_APP_ID);
+        element.setAppId(TEST_APP_ID);
         element.setId(ID);
         element.setRevision(1L);
         element.setDeleted(true);
@@ -95,7 +95,7 @@ public class DynamoAppConfigElementTest {
         assertEquals(node.get("type").textValue(), "AppConfigElement");
         
         AppConfigElement deser = BridgeObjectMapper.get().readValue(node.toString(), AppConfigElement.class);
-        deser.setStudyId(TEST_APP_ID);
+        deser.setAppId(TEST_APP_ID);
         assertEquals(deser, element);
     }
     

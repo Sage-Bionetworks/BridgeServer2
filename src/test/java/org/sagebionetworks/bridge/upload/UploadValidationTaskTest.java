@@ -32,7 +32,7 @@ import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -68,13 +68,13 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
 
         // Set up context
-        Study study = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+        App app = TestUtils.getValidStudy(UploadValidationTaskTest.class);
 
         upload = Upload.create();
         upload.setUploadId("test-upload");
 
         ctx = new UploadValidationContext();
-        ctx.setAppId(study.getIdentifier());
+        ctx.setAppId(app.getIdentifier());
         ctx.setUpload(upload);
 
         // Set up other pre-reqs

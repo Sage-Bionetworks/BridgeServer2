@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -100,9 +100,9 @@ public class ConsentController extends BaseController {
     @PostMapping("/v3/consents/signature/withdraw")
     public JsonNode withdrawConsent() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        return withdrawConsentV2(study.getIdentifier());
+        return withdrawConsentV2(app.getIdentifier());
     }
 
     // V2: consent to a specific subpopulation
@@ -110,9 +110,9 @@ public class ConsentController extends BaseController {
     @GetMapping(path="/v3/subpopulations/{guid}/consents/signature", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getConsentSignatureV2(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        ConsentSignature sig = consentService.getConsentSignature(study, SubpopulationGuid.create(guid), session.getId());
+        ConsentSignature sig = consentService.getConsentSignature(app, SubpopulationGuid.create(guid), session.getId());
         return ConsentSignature.SIGNATURE_WRITER.writeValueAsString(sig);
     }
     
@@ -126,15 +126,15 @@ public class ConsentController extends BaseController {
     public JsonNode withdrawConsentV2(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
 
         CriteriaContext context = getCriteriaContext(session);
-        consentService.withdrawConsent(study, subpopGuid, session.getParticipant(), context, withdrawal, withdrewOn);
+        consentService.withdrawConsent(app, subpopGuid, session.getParticipant(), context, withdrawal, withdrewOn);
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
-        UserSession updatedSession = authenticationService.getSession(study, context);
+        UserSession updatedSession = authenticationService.getSession(app, context);
         sessionUpdateService.updateSession(session, updatedSession);
 
         return UserSessionInfo.toJSON(updatedSession);
@@ -144,10 +144,10 @@ public class ConsentController extends BaseController {
     public StatusMessage withdrawFromStudy() {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawFromStudy(study, session.getParticipant(), withdrawal, withdrewOn);
+        consentService.withdrawFromStudy(app, session.getParticipant(), withdrawal, withdrewOn);
         
         authenticationService.signOut(session);
         
@@ -161,9 +161,9 @@ public class ConsentController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendConsentAgreement(@PathVariable String guid) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        consentService.resendConsentAgreement(study, SubpopulationGuid.create(guid), session.getParticipant());
+        consentService.resendConsentAgreement(app, SubpopulationGuid.create(guid), session.getParticipant());
         return new StatusMessage("Signed consent agreement resent.");
     }
     
@@ -180,7 +180,7 @@ public class ConsentController extends BaseController {
     
     private JsonNode giveConsentForVersion(int version, SubpopulationGuid subpopGuid) {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         JsonNode node = parseJson(JsonNode.class);
         ConsentSignature consentSignature = ConsentSignature.fromJSON(node);
@@ -199,12 +199,12 @@ public class ConsentController extends BaseController {
             throw new EntityNotFoundException(Subpopulation.class);
         }
         
-        consentService.consentToResearch(study, subpopGuid, session.getParticipant(), consentSignature,
+        consentService.consentToResearch(app, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
         // We must do a full refresh of the session because consents can set data groups and substudies.
         CriteriaContext updatedContext = getCriteriaContext(session);
-        UserSession updatedSession = authenticationService.getSession(study, updatedContext);
+        UserSession updatedSession = authenticationService.getSession(app, updatedContext);
         sessionUpdateService.updateSession(session, updatedSession);
         
         return UserSessionInfo.toJSON(updatedSession);

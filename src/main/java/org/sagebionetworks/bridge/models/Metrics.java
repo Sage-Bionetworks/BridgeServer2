@@ -100,8 +100,8 @@ public class Metrics {
         json.put("status", status);
     }
 
-    public void setStudy(String study) {
-        put("study", study);
+    public void setAppId(String appId) {
+        put("appId", appId);
     }
 
     public void setUserId(String userId) {

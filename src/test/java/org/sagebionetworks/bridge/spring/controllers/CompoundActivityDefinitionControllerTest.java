@@ -30,14 +30,14 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.services.CompoundActivityDefinitionService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class CompoundActivityDefinitionControllerTest extends Mockito {
     private static final String TASK_ID = "test-task";
 
     private CompoundActivityDefinitionController controller;
     private CompoundActivityDefinitionService defService;
-    private StudyService studyService;
+    private AppService appService;
     private HttpServletRequest mockRequest;
     private HttpServletResponse mockResponse;
 
@@ -48,7 +48,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         mockSession.setAppId(TEST_APP_ID);
 
         // mock study service
-        studyService = mock(StudyService.class);
+        appService = mock(AppService.class);
 
         // mock def service
         defService = mock(CompoundActivityDefinitionService.class);
@@ -57,7 +57,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         controller = spy(new CompoundActivityDefinitionController());
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
         controller.setCompoundActivityDefService(defService);
-        controller.setStudyService(studyService);
+        controller.setAppService(appService);
         
         mockRequest = mock(HttpServletRequest.class);
         mockResponse = mock(HttpServletResponse.class);
@@ -70,7 +70,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertCrossOrigin(CompoundActivityDefinitionController.class);
         assertCreate(CompoundActivityDefinitionController.class, "createCompoundActivityDefinition");
         assertDelete(CompoundActivityDefinitionController.class, "deleteCompoundActivityDefinition");
-        assertGet(CompoundActivityDefinitionController.class, "getAllCompoundActivityDefinitionsInStudy");
+        assertGet(CompoundActivityDefinitionController.class, "getAllCompoundActivityDefinitionsInApp");
         assertGet(CompoundActivityDefinitionController.class, "getCompoundActivityDefinition");
         assertPost(CompoundActivityDefinitionController.class, "updateCompoundActivityDefinition");
     }
@@ -84,10 +84,10 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // Set it as the mock JSON input.
         mockRequestBody(mockRequest, controllerInput);
 
-        // mock service - Service output should have both task ID and study ID so we can test that study ID is filtered
+        // mock service - Service output should have both task ID and app ID so we can test that app ID is filtered
         // out
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_APP_ID);
+        serviceOutput.setAppId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
@@ -99,14 +99,14 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         String result = controller.createCompoundActivityDefinition();
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
-        assertNull(controllerOutput.getStudyId());
+        assertNull(controllerOutput.getAppId());
 
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(TASK_ID, serviceInput.getTaskId());
         
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -118,21 +118,21 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // verify call through to the service
         verify(defService).deleteCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
     public void list() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_APP_ID);
+        serviceOutput.setAppId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
-        when(defService.getAllCompoundActivityDefinitionsInStudy(TEST_APP_ID)).thenReturn(
+        when(defService.getAllCompoundActivityDefinitionsInApp(TEST_APP_ID)).thenReturn(
                 ImmutableList.of(serviceOutput));
 
         // execute and validate
-        String result = controller.getAllCompoundActivityDefinitionsInStudy();
+        String result = controller.getAllCompoundActivityDefinitionsInApp();
 
         ResourceList<CompoundActivityDefinition> controllerOutputResourceList = BridgeObjectMapper.get().readValue(
                 result, new TypeReference<ResourceList<CompoundActivityDefinition>>() {});
@@ -141,16 +141,16 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         CompoundActivityDefinition controllerOutput = controllerOutputList.get(0);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
-        assertNull(controllerOutput.getStudyId());
+        assertNull(controllerOutput.getAppId());
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
     public void get() throws Exception {
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_APP_ID);
+        serviceOutput.setAppId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         when(defService.getCompoundActivityDefinition(TEST_APP_ID, TASK_ID)).thenReturn(serviceOutput);
@@ -159,9 +159,9 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         String result = controller.getCompoundActivityDefinition(TASK_ID);
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
-        assertNull(controllerOutput.getStudyId());
+        assertNull(controllerOutput.getAppId());
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -175,7 +175,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
 
         // mock service
         CompoundActivityDefinition serviceOutput = CompoundActivityDefinition.create();
-        serviceOutput.setStudyId(TEST_APP_ID);
+        serviceOutput.setAppId(TEST_APP_ID);
         serviceOutput.setTaskId(TASK_ID);
 
         ArgumentCaptor<CompoundActivityDefinition> serviceInputCaptor = ArgumentCaptor.forClass(
@@ -187,13 +187,13 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         String result = controller.updateCompoundActivityDefinition(TASK_ID);
         CompoundActivityDefinition controllerOutput = getDefFromResult(result);
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
-        assertNull(controllerOutput.getStudyId());
+        assertNull(controllerOutput.getAppId());
 
         // validate service input
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(serviceInput.getTaskId(), TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     private static CompoundActivityDefinition getDefFromResult(String jsonText) throws Exception {

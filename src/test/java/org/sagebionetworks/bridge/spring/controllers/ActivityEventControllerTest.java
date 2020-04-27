@@ -34,14 +34,14 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ActivityEventControllerTest extends Mockito {
 
     @Mock
-    private StudyService studyService;
+    private AppService appService;
     
     @Mock
     private ActivityEventService mockActivityEventService;
@@ -56,7 +56,7 @@ public class ActivityEventControllerTest extends Mockito {
     @Spy
     private ActivityEventController controller = new ActivityEventController();
 
-    private Study study;
+    private App app;
     
     @BeforeMethod
     private void before() {
@@ -70,8 +70,8 @@ public class ActivityEventControllerTest extends Mockito {
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         
-        study = Study.create();
-        when(studyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = App.create();
+        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
     }
     
     @Test
@@ -90,7 +90,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals("Event recorded", message.getMessage());
         
-        verify(mockActivityEventService).publishCustomEvent(study, HEALTH_CODE, "foo", TestConstants.TIMESTAMP);
+        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TestConstants.TIMESTAMP);
     }
     
     @Test

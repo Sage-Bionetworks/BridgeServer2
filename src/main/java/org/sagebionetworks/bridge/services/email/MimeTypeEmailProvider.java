@@ -5,16 +5,16 @@ import java.util.Set;
 import javax.mail.MessagingException;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 import com.google.common.collect.Iterables;
 
 public abstract class MimeTypeEmailProvider {
 
-    private Study study;
+    private App app;
     
-    protected MimeTypeEmailProvider(Study study) {
-        this.study = study;
+    protected MimeTypeEmailProvider(App app) {
+        this.app = app;
     }
     
     /**
@@ -35,8 +35,8 @@ public abstract class MimeTypeEmailProvider {
         String senderEmail = getPlainSenderEmail();
         return String.format("%s <%s>", getStudy().getName(), senderEmail);
     }
-    public Study getStudy() {
-        return study;
+    public App getStudy() {
+        return app;
     }
     
     public abstract MimeTypeEmail getMimeTypeEmail() throws MessagingException;

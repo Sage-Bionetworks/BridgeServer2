@@ -42,12 +42,12 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
@@ -65,7 +65,7 @@ public abstract class BaseController {
 
     AccountService accountService;
 
-    StudyService studyService;
+    AppService appService;
 
     AuthenticationService authenticationService;
     
@@ -84,8 +84,8 @@ public abstract class BaseController {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -188,10 +188,10 @@ public abstract class BaseController {
         
         // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
         // or (b) always for privileged accounts.
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         Set<Roles> userRoles = session.getParticipant().getRoles();
         boolean userHasRoles = !userRoles.isEmpty();
-        if (study.isParticipantIpLockingEnabled() || userHasRoles) {
+        if (app.isParticipantIpLockingEnabled() || userHasRoles) {
             String sessionIpAddress = session.getIpAddress();
             String requestIpAddress = reqContext.getCallerIpAddress();
             if (!Objects.equals(sessionIpAddress, requestIpAddress)) {
@@ -201,7 +201,7 @@ public abstract class BaseController {
 
         // Any method that can throw a 412 can also throw a 410 (min app version not met).
         if (consentRequired) {
-            verifySupportedVersionOrThrowException(study);
+            verifySupportedVersionOrThrowException(app);
         }
 
         // if there are roles, they are required
@@ -246,10 +246,10 @@ public abstract class BaseController {
         return null;
     }
     
-    void verifySupportedVersionOrThrowException(Study study) throws UnsupportedVersionException {
+    void verifySupportedVersionOrThrowException(App app) throws UnsupportedVersionException {
         ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
         String osName = clientInfo.getOsName();
-        Integer minVersionForOs = study.getMinSupportedAppVersions().get(osName);
+        Integer minVersionForOs = app.getMinSupportedAppVersions().get(osName);
         
         if (!clientInfo.isSupportedAppVersion(minVersionForOs)) {
             throw new UnsupportedVersionException(clientInfo);
@@ -346,7 +346,7 @@ public abstract class BaseController {
         if (metrics != null && session != null) {
             metrics.setSessionId(session.getInternalSessionToken());
             metrics.setUserId(session.getId());
-            metrics.setStudy(session.getAppId());
+            metrics.setAppId(session.getAppId());
         }
     }
     

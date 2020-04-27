@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
@@ -48,7 +48,7 @@ public class SurveyService {
     private SurveyDao surveyDao;
     private SchedulePlanService schedulePlanService;
     private SharedModuleMetadataService sharedModuleMetadataService;
-    private StudyService studyService;
+    private AppService appService;
 
     @Autowired
     final void setSurveyDao(SurveyDao surveyDao) {
@@ -71,13 +71,13 @@ public class SurveyService {
     }
 
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
-    public Survey getSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
-        Survey survey = surveyDao.getSurvey(studyIdentifier, keys, includeElements);
-        if (!isInStudy(studyIdentifier, survey)) {
+    public Survey getSurvey(String appId, GuidCreatedOnVersionHolder keys, boolean includeElements, boolean throwException) {
+        Survey survey = surveyDao.getSurvey(appId, keys, includeElements);
+        if (!isInApp(appId, survey)) {
             if (throwException) {
                 throw new EntityNotFoundException(Survey.class);    
             }
@@ -93,9 +93,9 @@ public class SurveyService {
         checkNotNull(survey, "Survey cannot be null");
 
         // Check survey ID uniqueness.
-        if (isNotBlank(survey.getStudyIdentifier()) && isNotBlank(survey.getIdentifier())) {
-            String studyId = survey.getStudyIdentifier();
-            String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(studyId, survey.getIdentifier());
+        if (isNotBlank(survey.getAppId()) && isNotBlank(survey.getIdentifier())) {
+            String appId = survey.getAppId();
+            String existingSurveyGuid = surveyDao.getSurveyGuidForIdentifier(appId, survey.getIdentifier());
             if (existingSurveyGuid != null) {
                 String errMsg = "Survey identifier " + survey.getIdentifier() + " is already used by survey " +
                         existingSurveyGuid;
@@ -110,9 +110,9 @@ public class SurveyService {
             element.setGuid(BridgeUtils.generateGuid());
         }
         Set<String> dataGroups = Collections.emptySet();
-        if (survey.getStudyIdentifier() != null) {
-            Study study = studyService.getStudy(survey.getStudyIdentifier());
-            dataGroups = study.getDataGroups();
+        if (survey.getAppId() != null) {
+            App app = appService.getApp(survey.getAppId());
+            dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
 
@@ -122,35 +122,35 @@ public class SurveyService {
     /**
      * Update an existing survey.
      */
-    public Survey updateSurvey(String studyIdentifier, Survey survey) {
+    public Survey updateSurvey(String appId, Survey survey) {
         checkNotNull(survey, "Survey cannot be null");
         checkNotNull(survey.getGuid(), "Guid cannot be null");
         checkNotNull(survey.getCreatedOn(), "createdOn cannot be null");
         
-        Survey existing = surveyDao.getSurvey(studyIdentifier, survey, false);
-        if (existing == null || (existing.isDeleted() && survey.isDeleted()) || !isInStudy(studyIdentifier, survey)) {
+        Survey existing = surveyDao.getSurvey(appId, survey, false);
+        if (existing == null || (existing.isDeleted() && survey.isDeleted()) || !isInApp(appId, survey)) {
             throw new EntityNotFoundException(Survey.class);
         }
 
         if (existing.isPublished()) {
             // If the existing survey is published, the only thing you can do is undelete it.
             if (existing.isDeleted() && !survey.isDeleted()) {
-                existing = surveyDao.getSurvey(studyIdentifier, survey, true); // get all the children for the update
+                existing = surveyDao.getSurvey(appId, survey, true); // get all the children for the update
                 existing.setDeleted(false);
-                return surveyDao.updateSurvey(studyIdentifier, existing);
+                return surveyDao.updateSurvey(appId, existing);
             } else {
                 throw new PublishedSurveyException(survey);
             }
         }
         
         Set<String> dataGroups = Collections.emptySet();
-        if (survey.getStudyIdentifier() != null) {
-            Study study = studyService.getStudy(survey.getStudyIdentifier());
-            dataGroups = study.getDataGroups();
+        if (survey.getAppId() != null) {
+            App app = appService.getApp(survey.getAppId());
+            dataGroups = app.getDataGroups();
         }
         Validate.entityThrowingException(new SurveySaveValidator(dataGroups), survey);
         
-        return surveyDao.updateSurvey(studyIdentifier, survey);
+        return surveyDao.updateSurvey(appId, survey);
     }
 
     /**
@@ -158,31 +158,31 @@ public class SurveyService {
      * longer be changed (it can still be the source of a new version). There can be more than one published version of
      * a survey.
      */
-    public Survey publishSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
+    public Survey publishSurvey(String appId, GuidCreatedOnVersionHolder keys, boolean newSchemaRev) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
-        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, true);
-        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
+        Survey existing = surveyDao.getSurvey(appId, keys, true);
+        if (existing == null || existing.isDeleted() || !isInApp(appId, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
         Validate.entityThrowingException(publishValidator, existing);
 
-        return surveyDao.publishSurvey(studyIdentifier, existing, newSchemaRev);
+        return surveyDao.publishSurvey(appId, existing, newSchemaRev);
     }
 
     /**
      * Copy the survey and return a new version of it.
      */
-    public Survey versionSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public Survey versionSurvey(String appId, GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
-        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, false);
-        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
+        Survey existing = surveyDao.getSurvey(appId, keys, false);
+        if (existing == null || existing.isDeleted() || !isInApp(appId, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
-        return surveyDao.versionSurvey(studyIdentifier, keys);
+        return surveyDao.versionSurvey(appId, keys);
     }
 
     /**
@@ -190,14 +190,14 @@ public class SurveyService {
      * to provide it when the version is specifically referenced). Once a survey is published, you cannot 
      * delete it, because we do not know if it has already been dereferenced in scheduled activities. Any 
      * survey version that could have been sent to users will remain in the API so you can look at its 
-     * schema, etc. This is how study developers should delete surveys. 
+     * schema, etc. This is how app developers should delete surveys. 
      */
-    public void deleteSurvey(String studyIdentifier, GuidCreatedOnVersionHolder keys) {
+    public void deleteSurvey(String appId, GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid(), "Guid cannot be null");
         checkNotNull(keys.getCreatedOn(), "createdOn cannot be null");
         
-        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, true);
-        if (existing == null || existing.isDeleted() || !isInStudy(studyIdentifier, existing)) {
+        Survey existing = surveyDao.getSurvey(appId, keys, true);
+        if (existing == null || existing.isDeleted() || !isInApp(appId, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
         // verify if a shared module refers to it
@@ -218,17 +218,16 @@ public class SurveyService {
      *      right now.</li>
      * </ol>
      */
-    public void deleteSurveyPermanently(String studyIdentifier,
-            GuidCreatedOnVersionHolder keys) {
+    public void deleteSurveyPermanently(String appId, GuidCreatedOnVersionHolder keys) {
         checkNotNull(keys.getGuid());
         checkNotNull(keys.getCreatedOn());
         
-        Survey existing = surveyDao.getSurvey(studyIdentifier, keys, false);
-        if (existing == null || !isInStudy(studyIdentifier, existing)) {
+        Survey existing = surveyDao.getSurvey(appId, keys, false);
+        if (existing == null || !isInApp(appId, existing)) {
             throw new EntityNotFoundException(Survey.class);
         }
-        checkConstraintsBeforePhysicalDelete(studyIdentifier, keys);
-        surveyDao.deleteSurveyPermanently(studyIdentifier, keys);
+        checkConstraintsBeforePhysicalDelete(appId, keys);
+        surveyDao.deleteSurveyPermanently(appId, keys);
     }
 
     // Helper method to verify if there is any shared module related to specified survey
@@ -249,15 +248,15 @@ public class SurveyService {
     /**
      * Get all versions of a specific survey, ordered by most recent version first in the list.
      * 
-     * @param studyIdentifier
+     * @param appId
      * @param guid
      * @return
      */
-    public List<Survey> getSurveyAllVersions(String studyIdentifier, String guid, boolean includeDeleted) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+    public List<Survey> getSurveyAllVersions(String appId, String guid, boolean includeDeleted) {
+        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        List<Survey> allVersions = surveyDao.getSurveyAllVersions(studyIdentifier, guid, includeDeleted);
+        List<Survey> allVersions = surveyDao.getSurveyAllVersions(appId, guid, includeDeleted);
         if (allVersions.isEmpty()) {
             throw new EntityNotFoundException(Survey.class);
         }
@@ -267,16 +266,16 @@ public class SurveyService {
     /**
      * Get the most recent version of a survey, regardless of whether it is published or not.
      * 
-     * @param studyIdentifier
+     * @param appId
      * @param guid
      * @return
      */
-    public Survey getSurveyMostRecentVersion(String studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+    public Survey getSurveyMostRecentVersion(String appId, String guid) {
+        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        Survey survey = surveyDao.getSurveyMostRecentVersion(studyIdentifier, guid);
-        if (survey == null || !isInStudy(studyIdentifier, survey)) {
+        Survey survey = surveyDao.getSurveyMostRecentVersion(appId, guid);
+        if (survey == null || !isInApp(appId, survey)) {
             throw new EntityNotFoundException(Survey.class);
         }
         return survey;
@@ -286,65 +285,65 @@ public class SurveyService {
      * Get the most recent version of a survey that is published. More recent, unpublished versions of the survey will
      * be ignored.
      * 
-     * @param studyIdentifier
+     * @param appId
      * @param guid
      * @param includeElements
      *      if true, include the child elements, otherwise the collection is empty
      * @return
      */
-    public Survey getSurveyMostRecentlyPublishedVersion(String studyIdentifier, String guid, boolean includeElements) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+    public Survey getSurveyMostRecentlyPublishedVersion(String appId, String guid, boolean includeElements) {
+        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
         checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
 
-        Survey survey = surveyDao.getSurveyMostRecentlyPublishedVersion(studyIdentifier, guid, includeElements);
-        if (survey == null || !isInStudy(studyIdentifier, survey)) {
+        Survey survey = surveyDao.getSurveyMostRecentlyPublishedVersion(appId, guid, includeElements);
+        if (survey == null || !isInApp(appId, survey)) {
             throw new EntityNotFoundException(Survey.class);
         }
         return survey;
     }
 
     /**
-     * Get the most recent version of each survey in the study that has been published. If a survey has not been
+     * Get the most recent version of each survey in the app that has been published. If a survey has not been
      * published, nothing is returned.
      */
-    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String studyIdentifier, boolean includeDeleted) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+    public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String appId, boolean includeDeleted) {
+        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
 
-        return surveyDao.getAllSurveysMostRecentlyPublishedVersion(studyIdentifier, includeDeleted);
+        return surveyDao.getAllSurveysMostRecentlyPublishedVersion(appId, includeDeleted);
     }
 
     /**
-     * Get the most recent version of each survey in the study, whether published or not.
+     * Get the most recent version of each survey in the app, whether published or not.
      * 
-     * @param studyIdentifier
+     * @param appId
      * @return
      */
-    public List<Survey> getAllSurveysMostRecentVersion(String studyIdentifier, boolean includeDeleted) {
-        checkNotNull(studyIdentifier, Validate.CANNOT_BE_NULL, "study");
+    public List<Survey> getAllSurveysMostRecentVersion(String appId, boolean includeDeleted) {
+        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
 
-        return surveyDao.getAllSurveysMostRecentVersion(studyIdentifier, includeDeleted);
+        return surveyDao.getAllSurveysMostRecentVersion(appId, includeDeleted);
     }
 
     /**
-     * Callers must operate on a survey in their own study. However our code has allowed administrators to delete 
-     * shared studies (which are not in the admin's study). For backwards compatibility, do not enforce the same 
-     * study rule for shared study surveys. Eventually we want admins to be able to switch into the shared study in 
+     * Callers must operate on a survey in their own app. However our code has allowed administrators to delete 
+     * shared studies (which are not in the admin's app). For backwards compatibility, do not enforce the same 
+     * app rule for shared app surveys. Eventually we want admins to be able to switch into the shared study in 
      * order to delete items there, then this exception to the check can be removed.
      */
-    private boolean isInStudy(String studyId, Survey survey) {
-        if (studyId == null) {
+    private boolean isInApp(String appId, Survey survey) {
+        if (appId == null) {
             return true;
         }
-        if (survey == null || survey.getStudyIdentifier() == null) {
+        if (survey == null || survey.getAppId() == null) {
             return false;
         }
-        return survey.getStudyIdentifier().equals(studyId);
+        return survey.getAppId().equals(appId);
     }
     
-    private void checkConstraintsBeforePhysicalDelete(final String studyId, final GuidCreatedOnVersionHolder keys) {
+    private void checkConstraintsBeforePhysicalDelete(final String appId, final GuidCreatedOnVersionHolder keys) {
         // You cannot physically delete a survey if it is referenced by a logically deleted schedule plan. It's possible
         // the schedule plan could be restored. All you can do is logically delete the survey.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, appId, true);
 
         // If a schedule points to this specific survey, don't allow the physical delete.
         SchedulePlan match = findFirstMatchingPlan(plans, keys, (surveyReference, theseKeys) -> {
@@ -361,7 +360,7 @@ public class SurveyService {
         if (match != null) {
             // A plan points to this survey's published version, so there must be at least one published version
             // that's not logically deleted
-            long publishedSurveys = getSurveyAllVersions(studyId, keys.getGuid(), false).stream()
+            long publishedSurveys = getSurveyAllVersions(appId, keys.getGuid(), false).stream()
                     .filter(Survey::isPublished).collect(Collectors.counting());
 
             if (publishedSurveys == 1L) {

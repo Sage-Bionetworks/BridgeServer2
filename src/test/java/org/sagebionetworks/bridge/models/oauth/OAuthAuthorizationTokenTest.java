@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.oauth;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -22,7 +23,7 @@ public class OAuthAuthorizationTokenTest {
         OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "vendorId", "authToken", "callbackUrl");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(token);
-        assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("vendorId").textValue(), "vendorId");
         assertEquals(node.get("authToken").textValue(), "authToken");
         assertEquals(node.get("callbackUrl").textValue(), "callbackUrl");
@@ -30,11 +31,31 @@ public class OAuthAuthorizationTokenTest {
         assertEquals(node.size(), 5);
         
         OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(node.toString(), OAuthAuthorizationToken.class);
-        assertEquals(deser.getStudyId(), TEST_APP_ID);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
         assertEquals(deser.getVendorId(), "vendorId");
         assertEquals(deser.getAuthToken(), "authToken");
         assertEquals(deser.getCallbackUrl(), "callbackUrl");
         
         assertEquals(deser, token);
+    }
+    
+    @Test
+    public void canDeserializeWithStudy() throws Exception {
+        String json = TestUtils.createJson("{'study':'" + TEST_APP_ID + "',"+
+                "'vendorId':'vendorId','authToken':'authToken',"+
+                "'callbackUrl':'callbackUrl'}");
+        
+        OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(json, OAuthAuthorizationToken.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void canDeserializeWithAppId() throws Exception {
+        String json = TestUtils.createJson("{'appId':'" + TEST_APP_ID + "',"+
+                "'vendorId':'vendorId','authToken':'authToken',"+
+                "'callbackUrl':'callbackUrl'}");
+        
+        OAuthAuthorizationToken deser = BridgeObjectMapper.get().readValue(json, OAuthAuthorizationToken.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
     }
 }

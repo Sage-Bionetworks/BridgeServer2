@@ -56,9 +56,9 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SurveyService;
 
 public class SurveyControllerTest extends Mockito {
@@ -82,7 +82,7 @@ public class SurveyControllerTest extends Mockito {
     CacheProvider mockCacheProvider;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     BridgeConfig mockConfig;
@@ -136,15 +136,15 @@ public class SurveyControllerTest extends Mockito {
         }).when(mockCacheProvider).removeObject(any());
         viewCache.setCacheProvider(mockCacheProvider);
         
-        Study study = Study.create();
-        doReturn(study).when(mockStudyService).getStudy(any(String.class));
+        App app = App.create();
+        doReturn(app).when(mockAppService).getApp(any(String.class));
         controller.setViewCache(viewCache);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
     
-    private void setupContext(String studyId, boolean hasConsented, Roles role) throws Exception {
+    private void setupContext(String appId, boolean hasConsented, Roles role) throws Exception {
         // Create a participant (with a role, if given)
         StudyParticipant.Builder builder = new StudyParticipant.Builder().withHealthCode("BBB");
         if (role != null) {
@@ -154,7 +154,7 @@ public class SurveyControllerTest extends Mockito {
 
         // Set up a session that is returned as if the user is already signed in.
         session = new UserSession(participant);
-        session.setAppId(studyId);
+        session.setAppId(appId);
         session.setAuthenticated(true);
         
         // ... and setup session to report user consented, if needed.
@@ -168,7 +168,7 @@ public class SurveyControllerTest extends Mockito {
         assertCrossOrigin(SurveyController.class);
         assertGet(SurveyController.class, "getAllSurveysMostRecentVersion");
         assertGet(SurveyController.class, "getAllSurveysMostRecentlyPublishedVersion");
-        assertGet(SurveyController.class, "getAllSurveysMostRecentlyPublishedVersionForStudy");
+        assertGet(SurveyController.class, "getAllSurveysMostRecentlyPublishedVersionForApp");
         assertGet(SurveyController.class, "getSurveyMostRecentlyPublishedVersionForUser");
         assertGet(SurveyController.class, "getSurvey");
         assertGet(SurveyController.class, "getSurveyForUser");
@@ -256,7 +256,7 @@ public class SurveyControllerTest extends Mockito {
         when(mockSurveyService.getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, false)).thenReturn(surveyList);
 
         // execute and validate
-        ResourceList<Survey> result = controller.getAllSurveysMostRecentlyPublishedVersionForStudy(TEST_APP_ID, false);
+        ResourceList<Survey> result = controller.getAllSurveysMostRecentlyPublishedVersionForApp(TEST_APP_ID, false);
         
         List<Survey> resultSurveyList = result.getItems();
         assertEquals(resultSurveyList.size(), 2);
@@ -589,7 +589,7 @@ public class SurveyControllerTest extends Mockito {
     private void assertCacheIsCleared(ExecuteSurvey executeSurvey, int getCount) throws Exception {
         // Setup the cache to return content and verify the cache returns content
         Survey survey = new DynamoSurvey();
-        survey.setStudyIdentifier(TEST_APP_ID);
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid(SURVEY_GUID);
         survey.setCreatedOn(CREATED_ON.getMillis());
         

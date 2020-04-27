@@ -25,7 +25,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.SchedulePlanDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
@@ -46,7 +46,7 @@ import com.google.common.collect.Sets;
 
 public class SchedulePlanServiceMockTest {
 
-    private Study study;
+    private App app;
     private String surveyGuid1;
     private String surveyGuid2;
     private SchedulePlanService service;
@@ -57,10 +57,10 @@ public class SchedulePlanServiceMockTest {
     
     @BeforeMethod
     public void before() {
-        study = new DynamoStudy();
-        study.setIdentifier(TEST_APP_ID);
-        study.setTaskIdentifiers(ImmutableSet.of("tapTest", "taskGuid", "CCC"));
-        study.setDataGroups(ImmutableSet.of("AAA"));
+        app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
+        app.setTaskIdentifiers(ImmutableSet.of("tapTest", "taskGuid", "CCC"));
+        app.setDataGroups(ImmutableSet.of("AAA"));
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
@@ -88,7 +88,7 @@ public class SchedulePlanServiceMockTest {
         schedulePlan.setStrategy(null);
 
         // The key thing here is that we make it to validation.
-        service.createSchedulePlan(study, schedulePlan);
+        service.createSchedulePlan(app, schedulePlan);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -99,7 +99,7 @@ public class SchedulePlanServiceMockTest {
         when(mockSchedulePlanDao.getSchedulePlan(eq(TEST_APP_ID), any())).thenReturn(schedulePlan);
         
         // The key thing here is that we make it to validation.
-        service.updateSchedulePlan(study, schedulePlan);
+        service.updateSchedulePlan(app, schedulePlan);
     }
     
     @Test
@@ -119,7 +119,7 @@ public class SchedulePlanServiceMockTest {
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
         
-        service.createSchedulePlan(study, plan);
+        service.createSchedulePlan(app, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
         verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
@@ -135,13 +135,13 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = constructSchedulePlan();
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
-        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(app.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
-        service.updateSchedulePlan(study, plan);
+        service.updateSchedulePlan(app, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
         verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
-        verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
+        verify(mockSchedulePlanDao).getSchedulePlan(app.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         List<Activity> activities = spCaptor.getValue().getStrategy().getAllPossibleSchedules().get(0).getActivities();
@@ -159,7 +159,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = constructSchedulePlan();
         plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().set(0, activity);
         
-        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(app.getIdentifier(), plan.getGuid())).thenReturn(plan);
         
         // Verify that this was set.
         String identifier = plan.getStrategy().getAllPossibleSchedules().get(0).getActivities().get(0)
@@ -169,10 +169,10 @@ public class SchedulePlanServiceMockTest {
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
-        service.updateSchedulePlan(study, plan);
+        service.updateSchedulePlan(app, plan);
         verify(mockSurveyService).getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean());
         verify(mockSurveyService).getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true));
-        verify(mockSchedulePlanDao).getSchedulePlan(study.getIdentifier(), plan.getGuid());
+        verify(mockSchedulePlanDao).getSchedulePlan(app.getIdentifier(), plan.getGuid());
         verify(mockSchedulePlanDao).updateSchedulePlan(any(), spCaptor.capture());
         
         // It was not used.
@@ -195,7 +195,7 @@ public class SchedulePlanServiceMockTest {
         }
         
         ArgumentCaptor<SchedulePlan> spCaptor = ArgumentCaptor.forClass(SchedulePlan.class);
-        service.createSchedulePlan(study, plan);
+        service.createSchedulePlan(app, plan);
         
         verify(mockSchedulePlanDao).createSchedulePlan(any(), spCaptor.capture());
         
@@ -211,7 +211,7 @@ public class SchedulePlanServiceMockTest {
     }
     @Test
     public void schedulePlanSetsStudyIdentifierOnCreate() {
-        DynamoStudy anotherStudy = getAnotherStudy();
+        DynamoApp anotherStudy = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the studyKey
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
@@ -222,7 +222,7 @@ public class SchedulePlanServiceMockTest {
     
     @Test
     public void schedulePlanSetsStudyIdentifierOnUpdate() {
-        DynamoStudy anotherStudy = getAnotherStudy();
+        DynamoApp anotherStudy = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the studyKey
         when(mockSchedulePlanDao.getSchedulePlan(anotherStudy.getIdentifier(), plan.getGuid())).thenReturn(plan);
@@ -237,7 +237,7 @@ public class SchedulePlanServiceMockTest {
         // Check that 1) validation is called and 2) the study's enumerations are used in the validation
         SchedulePlan plan = constructorInvalidSchedulePlan();
         try {
-            service.createSchedulePlan(study, plan);
+            service.createSchedulePlan(app, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(
@@ -254,9 +254,9 @@ public class SchedulePlanServiceMockTest {
     public void validatesOnUpdate() {
         // Check that 1) validation is called and 2) the study's enumerations are used in the validation
         SchedulePlan plan = constructorInvalidSchedulePlan();
-        when(mockSchedulePlanDao.getSchedulePlan(study.getIdentifier(), plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(app.getIdentifier(), plan.getGuid())).thenReturn(plan);
         try {
-            service.updateSchedulePlan(study, plan);
+            service.updateSchedulePlan(app, plan);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(
@@ -321,8 +321,8 @@ public class SchedulePlanServiceMockTest {
         return plan;
     }
     
-    private DynamoStudy getAnotherStudy() {
-        DynamoStudy anotherStudy = new DynamoStudy();
+    private DynamoApp getAnotherStudy() {
+        DynamoApp anotherStudy = new DynamoApp();
         anotherStudy.setIdentifier("another-study");
         anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
         return anotherStudy;

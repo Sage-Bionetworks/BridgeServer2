@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
 @CrossOrigin
@@ -65,13 +65,13 @@ public class UserProfileController extends BaseController {
     @GetMapping(path={"/v3/users/self", "/api/v1/profile"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUserProfile() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         String userId = session.getId();
         
-        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, app.getIdentifier());
         String json = viewCache.getView(cacheKey, new Supplier<ObjectNode>() {
             @Override public ObjectNode get() {
-                StudyParticipant participant = participantService.getParticipant(study, userId, false);
+                StudyParticipant participant = participantService.getParticipant(app, userId, false);
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
                 if (participant.getFirstName() != null) {
                     node.put(FIRST_NAME_FIELD, participant.getFirstName());    
@@ -95,32 +95,32 @@ public class UserProfileController extends BaseController {
     @PostMapping({"/v3/users/self", "/api/v1/profile"})
     public JsonNode updateUserProfile() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         String userId = session.getId();
         
         JsonNode node = parseJson(JsonNode.class);
         Map<String,String> attributes = Maps.newHashMap();
-        for (String attrKey : study.getUserProfileAttributes()) {
+        for (String attrKey : app.getUserProfileAttributes()) {
             if (node.has(attrKey)) {
                 attributes.put(attrKey, node.get(attrKey).asText());
             }
         }
         
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        StudyParticipant participant = participantService.getParticipant(app, userId, false);
         
         StudyParticipant updated = new StudyParticipant.Builder().copyOf(participant)
                 .withFirstName(JsonUtils.asText(node, "firstName"))
                 .withLastName(JsonUtils.asText(node, "lastName"))
                 .withAttributes(attributes)
                 .withId(userId).build();
-        participantService.updateParticipant(study, updated);
+        participantService.updateParticipant(app, updated);
         
-        StudyParticipant updatedParticipant = participantService.getParticipant(study, userId, true);
+        StudyParticipant updatedParticipant = participantService.getParticipant(app, userId, true);
         CriteriaContext context = getCriteriaContext(session);
         
         sessionUpdateService.updateParticipant(session, context, updatedParticipant);
         
-        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, study.getIdentifier());
+        CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, app.getIdentifier());
         viewCache.removeView(cacheKey);
         
         return UserSessionInfo.toJSON(session);
@@ -152,9 +152,9 @@ public class UserProfileController extends BaseController {
     @PostMapping("/v3/users/self/dataGroups")
     public JsonNode updateDataGroups() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        StudyParticipant participant = participantService.getParticipant(study, session.getId(), false);
+        StudyParticipant participant = participantService.getParticipant(app, session.getId(), false);
         
         StudyParticipant dataGroups = parseJson(StudyParticipant.class);
         
@@ -162,7 +162,7 @@ public class UserProfileController extends BaseController {
                 .copyFieldsOf(dataGroups, DATA_GROUPS_SET)
                 .withId(session.getId()).build();
         
-        participantService.updateParticipant(study, updated);
+        participantService.updateParticipant(app, updated);
         
         RequestContext reqContext = BridgeUtils.getRequestContext();
         

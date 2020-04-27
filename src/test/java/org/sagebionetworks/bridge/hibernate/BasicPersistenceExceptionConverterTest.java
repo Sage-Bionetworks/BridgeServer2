@@ -37,7 +37,7 @@ public class BasicPersistenceExceptionConverterTest {
     @Test
     public void optimisticLockException() { 
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(TEST_APP_ID);
+        template.setAppId(TEST_APP_ID);
         
         OptimisticLockException ole = new OptimisticLockException();
         

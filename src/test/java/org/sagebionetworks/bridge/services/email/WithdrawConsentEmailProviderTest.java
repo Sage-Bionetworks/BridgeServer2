@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 public class WithdrawConsentEmailProviderTest {
 
@@ -22,27 +22,27 @@ public class WithdrawConsentEmailProviderTest {
     private static final Withdrawal WITHDRAWAL = new Withdrawal("<p>Because, reasons.</p>");
     
     private WithdrawConsentEmailProvider provider;
-    private Study study;
+    private App app;
     private Account account;
     
     @BeforeMethod
     public void before() {
-        study = mock(Study.class);
+        app = mock(App.class);
         
         account = Account.create();
         account.setEmail("d@d.com");
         
-        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(app, account, WITHDRAWAL, UNIX_TIMESTAMP);
     }
     
     @Test
     public void canGenerateMinimalEmail() throws Exception {
-        when(study.getConsentNotificationEmail()).thenReturn("a@a.com");
-        when(study.isConsentNotificationEmailVerified()).thenReturn(true);
-        when(study.getName()).thenReturn("Study Name");
-        when(study.getSupportEmail()).thenReturn("c@c.com");
+        when(app.getConsentNotificationEmail()).thenReturn("a@a.com");
+        when(app.isConsentNotificationEmailVerified()).thenReturn(true);
+        when(app.getName()).thenReturn("Study Name");
+        when(app.getSupportEmail()).thenReturn("c@c.com");
 
-        provider = new WithdrawConsentEmailProvider(study, account, new Withdrawal(null), UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(app, account, new Withdrawal(null), UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(email.getType(), EmailType.WITHDRAW_CONSENT);
         
@@ -62,14 +62,14 @@ public class WithdrawConsentEmailProviderTest {
 
     @Test
     public void canGenerateMaximalEmail() throws Exception {
-        when(study.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
-        when(study.isConsentNotificationEmailVerified()).thenReturn(true);
-        when(study.getName()).thenReturn("Study Name");
-        when(study.getSupportEmail()).thenReturn("c@c.com");
+        when(app.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
+        when(app.isConsentNotificationEmailVerified()).thenReturn(true);
+        when(app.getName()).thenReturn("Study Name");
+        when(app.getSupportEmail()).thenReturn("c@c.com");
         account.setFirstName("<b>Jack</b>");
         account.setLastName("<i>Aubrey</i>");
 
-        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        provider = new WithdrawConsentEmailProvider(app, account, WITHDRAWAL, UNIX_TIMESTAMP);
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(email.getType(), EmailType.WITHDRAW_CONSENT);
 
@@ -90,8 +90,8 @@ public class WithdrawConsentEmailProviderTest {
     
     @Test
     public void unverifiedStudyConsentEmailGeneratesNoRecipients() {
-        study.setConsentNotificationEmailVerified(false);
-        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        app.setConsentNotificationEmailVerified(false);
+        provider = new WithdrawConsentEmailProvider(app, account, WITHDRAWAL, UNIX_TIMESTAMP);
         
         assertTrue(provider.getRecipients().isEmpty());
     }
@@ -99,9 +99,9 @@ public class WithdrawConsentEmailProviderTest {
     @Test
     public void nullStudyConsentEmailGeneratesNoRecipients() {
         // email shouldn't be verified if it is null, but regardless, there should still be no recipients
-        study.setConsentNotificationEmailVerified(true); 
-        study.setConsentNotificationEmail(null);
-        provider = new WithdrawConsentEmailProvider(study, account, WITHDRAWAL, UNIX_TIMESTAMP);
+        app.setConsentNotificationEmailVerified(true); 
+        app.setConsentNotificationEmail(null);
+        provider = new WithdrawConsentEmailProvider(app, account, WITHDRAWAL, UNIX_TIMESTAMP);
         
         assertTrue(provider.getRecipients().isEmpty());
     }

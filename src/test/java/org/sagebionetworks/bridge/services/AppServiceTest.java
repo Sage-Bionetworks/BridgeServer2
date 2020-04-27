@@ -12,7 +12,7 @@ import static org.sagebionetworks.bridge.models.studies.PasswordPolicy.DEFAULT_P
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.WARNING;
-import static org.sagebionetworks.bridge.services.StudyService.EXPORTER_SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.services.AppService.EXPORTER_SYNAPSE_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -67,7 +67,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -80,7 +80,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.studies.StudyAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -93,13 +93,13 @@ import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 
-public class StudyServiceMockTest extends Mockito {
+public class AppServiceTest extends Mockito {
     private static final long BRIDGE_ADMIN_TEAM_ID = 1357L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2468L;
     private static final Long TEST_USER_ID = Long.parseLong("3348228"); // test user exists in synapse
     private static final String TEST_NAME_SCOPING_TOKEN = "qwerty";
-    private static final String TEST_PROJECT_NAME = "Test Study StudyServiceMockTest Project " + TEST_NAME_SCOPING_TOKEN;
-    private static final String TEST_TEAM_NAME = "Test Study StudyServiceMockTest Access Team " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_PROJECT_NAME = "Test App AppServiceTest Project " + TEST_NAME_SCOPING_TOKEN;
+    private static final String TEST_TEAM_NAME = "Test App AppServiceTest Access Team " + TEST_NAME_SCOPING_TOKEN;
     private static final String TEST_TEAM_ID = "1234";
     private static final String TEST_PROJECT_ID = "synapseProjectId";
 
@@ -155,15 +155,15 @@ public class StudyServiceMockTest extends Mockito {
     @Captor
     ArgumentCaptor<Team> teamCaptor;
     @Captor
-    ArgumentCaptor<Study> studyCaptor;
+    ArgumentCaptor<App> studyCaptor;
     @Captor
     ArgumentCaptor<Template> templateCaptor;
 
     @Spy
     @InjectMocks
-    StudyService service;
+    AppService service;
     
-    Study study;
+    App app;
     Team team;
     Project project;
     MembershipInvitation teamMemberInvitation;
@@ -172,19 +172,19 @@ public class StudyServiceMockTest extends Mockito {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         // Mock config.
-        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SUPPORT_EMAIL_PLAIN)).thenReturn(SUPPORT_EMAIL);
-        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_TEAM_BRIDGE_ADMIN))
+        when(mockBridgeConfig.get(AppService.CONFIG_KEY_SUPPORT_EMAIL_PLAIN)).thenReturn(SUPPORT_EMAIL);
+        when(mockBridgeConfig.get(AppService.CONFIG_KEY_TEAM_BRIDGE_ADMIN))
                 .thenReturn(String.valueOf(BRIDGE_ADMIN_TEAM_ID));
-        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_TEAM_BRIDGE_STAFF))
+        when(mockBridgeConfig.get(AppService.CONFIG_KEY_TEAM_BRIDGE_STAFF))
                 .thenReturn(String.valueOf(BRIDGE_STAFF_TEAM_ID));
-        when(mockBridgeConfig.getPropertyAsList(StudyService.CONFIG_STUDY_WHITELIST)).thenReturn(ImmutableList.of(API_APP_ID));
-        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(SYNAPSE_TRACKING_VIEW_ID);
+        when(mockBridgeConfig.getPropertyAsList(AppService.CONFIG_APP_WHITELIST)).thenReturn(ImmutableList.of(API_APP_ID));
+        when(mockBridgeConfig.get(AppService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(SYNAPSE_TRACKING_VIEW_ID);
         service.setBridgeConfig(mockBridgeConfig); // this has to be set again after being mocked
 
         // Mock templates
-        service.setStudyEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
+        service.setAppEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
                 "Verify your study email"));
-        service.setStudyEmailVerificationTemplate(mockTemplateAsSpringResource(
+        service.setAppEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new StudyValidator());
         
@@ -194,29 +194,29 @@ public class StudyServiceMockTest extends Mockito {
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
-        study = getTestStudy();
-        study.setIdentifier(TEST_APP_ID);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = getTestStudy();
+        app.setIdentifier(TEST_APP_ID);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
         GuidVersionHolder keys = new GuidVersionHolder("guid", 1L);
         when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
         
         when(mockStudyDao.createStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except set version to 1.
-            Study study = invocation.getArgument(0);
-            study.setVersion(1L);
-            return study;
+            App app = invocation.getArgument(0);
+            app.setVersion(1L);
+            return app;
         });
 
         when(mockStudyDao.updateStudy(any())).thenAnswer(invocation -> {
             // Return the same study, except we increment the version.
-            Study study = invocation.getArgument(0);
-            Long oldVersion = study.getVersion();
-            study.setVersion(oldVersion != null ? oldVersion + 1 : 1);
-            return study;
+            App app = invocation.getArgument(0);
+            Long oldVersion = app.getVersion();
+            app.setVersion(oldVersion != null ? oldVersion + 1 : 1);
+            return app;
         });
         
-        // Spy StudyService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
+        // Spy AppService.createTimeLimitedToken() to create a known token instead of a random one. This makes our
         // tests easier.
         doReturn(VERIFICATION_TOKEN).when(service).createTimeLimitedToken();
 
@@ -231,24 +231,24 @@ public class StudyServiceMockTest extends Mockito {
         teamMemberInvitation.setTeamId(TEST_TEAM_ID);
     }
 
-    private Study getTestStudy() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        return study;
+    private App getTestStudy() {
+        App app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        return app;
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getStudyExcludeDeleted() {
-        study.setActive(false);
-        service.getStudy(TEST_APP_ID, false);
+        app.setActive(false);
+        service.getApp(TEST_APP_ID, false);
     }
     
     @Test
     public void getStudies() {
-        when(mockStudyDao.getStudies()).thenReturn(ImmutableList.of(study));
+        when(mockStudyDao.getStudies()).thenReturn(ImmutableList.of(app));
         
-        List<Study> results = service.getStudies();
-        assertSame(results.get(0), study);
+        List<App> results = service.getApps();
+        assertSame(results.get(0), app);
         
         verify(mockStudyDao).getStudies();
     }
@@ -256,17 +256,17 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void createStudySendsVerificationEmail() throws Exception {
         // Create study.
-        Study study = getTestStudy();
-        String consentNotificationEmail = study.getConsentNotificationEmail();
+        App app = getTestStudy();
+        String consentNotificationEmail = app.getConsentNotificationEmail();
 
         // Execute. Verify study is created with ConsentNotificationEmailVerified=false.
-        service.createStudy(study);
+        service.createApp(app);
 
-        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockStudyDao).createStudy(savedStudyCaptor.capture());
 
-        Study savedStudy = savedStudyCaptor.getValue();
-        assertFalse(savedStudy.isConsentNotificationEmailVerified());
+        App savedApp = savedStudyCaptor.getValue();
+        assertFalse(savedApp.isConsentNotificationEmailVerified());
 
         // Verify email verification email.
         verifyEmailVerificationEmail(consentNotificationEmail);
@@ -275,25 +275,25 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void updateStudyConsentNotificationEmailSendsVerificationEmail() throws Exception {
         // Original study. ConsentNotificationEmailVerified is true.
-        Study originalStudy = getTestStudy();
-        originalStudy.setConsentNotificationEmailVerified(true);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(originalStudy);
+        App originalApp = getTestStudy();
+        originalApp.setConsentNotificationEmailVerified(true);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(originalApp);
 
         // New study is the same as original study. Change consent notification email and study name.
-        Study newStudy = getTestStudy();
-        newStudy.setConsentNotificationEmail("different-email@example.com");
-        newStudy.setName("different-name");
+        App newApp = getTestStudy();
+        newApp.setConsentNotificationEmail("different-email@example.com");
+        newApp.setName("different-name");
 
         // Execute. Verify the consent email change and study name change. The verified flag should now be false.
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
 
-        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
 
-        Study savedStudy = savedStudyCaptor.getValue();
-        assertEquals(savedStudy.getConsentNotificationEmail(), "different-email@example.com");
-        assertFalse(savedStudy.isConsentNotificationEmailVerified());
-        assertEquals(savedStudy.getName(), "different-name");
+        App savedApp = savedStudyCaptor.getValue();
+        assertEquals(savedApp.getConsentNotificationEmail(), "different-email@example.com");
+        assertFalse(savedApp.isConsentNotificationEmailVerified());
+        assertEquals(savedApp.getName(), "different-name");
 
         // Verify email verification email.
         verifyEmailVerificationEmail("different-email@example.com");
@@ -303,9 +303,9 @@ public class StudyServiceMockTest extends Mockito {
         // Verify token in CacheProvider.
         ArgumentCaptor<String> verificationDataCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCacheProvider).setObject(eq(VER_CACHE_KEY), verificationDataCaptor.capture(),
-                eq(StudyService.VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS));
+                eq(AppService.VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS));
         JsonNode verificationData = BridgeObjectMapper.get().readTree(verificationDataCaptor.getValue());
-        assertEquals(verificationData.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(verificationData.get("appId").textValue(), TEST_APP_ID);
         assertEquals(verificationData.get("email").textValue(), consentNotificationEmail);
 
         // Verify sent email.
@@ -330,24 +330,24 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void updateStudyWithSameConsentNotificationEmailDoesntSendVerification() {
         // Original study. ConsentNotificationEmailVerified is true.
-        Study originalStudy = getTestStudy();
-        originalStudy.setConsentNotificationEmailVerified(true);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(originalStudy);
+        App originalApp = getTestStudy();
+        originalApp.setConsentNotificationEmailVerified(true);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(originalApp);
 
         // New study is the same as original study. Make some inconsequential change to the study name.
-        Study newStudy = getTestStudy();
-        newStudy.setName("different-name");
-        newStudy.setConsentNotificationEmailVerified(true);
+        App newApp = getTestStudy();
+        newApp.setName("different-name");
+        newApp.setConsentNotificationEmailVerified(true);
 
         // Execute. Verify the study name change. Verified is still true.
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
 
-        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
 
-        Study savedStudy = savedStudyCaptor.getValue();
-        assertTrue(savedStudy.isConsentNotificationEmailVerified());
-        assertEquals(savedStudy.getName(), "different-name");
+        App savedApp = savedStudyCaptor.getValue();
+        assertTrue(savedApp.isConsentNotificationEmailVerified());
+        assertEquals(savedApp.getName(), "different-name");
 
         // Verify we don't send email.
         verify(mockSendMailService, never()).sendEmail(any());
@@ -373,23 +373,23 @@ public class StudyServiceMockTest extends Mockito {
     private void updateStudyConsentNotificationEmailVerified(Boolean oldValue, Boolean newValue,
             Boolean expectedValue) {
         // Original study
-        Study oldStudy = getTestStudy();
-        oldStudy.setConsentNotificationEmailVerified(oldValue);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        App oldApp = getTestStudy();
+        oldApp.setConsentNotificationEmailVerified(oldValue);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // New study
-        Study newStudy = getTestStudy();
-        newStudy.setConsentNotificationEmailVerified(newValue);
+        App newApp = getTestStudy();
+        newApp.setConsentNotificationEmailVerified(newValue);
 
         // Update
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
 
         // Verify result
-        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
 
-        Study savedStudy = savedStudyCaptor.getValue();
-        assertEquals(savedStudy.isConsentNotificationEmailVerified(), expectedValue);
+        App savedApp = savedStudyCaptor.getValue();
+        assertEquals(savedApp.isConsentNotificationEmailVerified(), expectedValue);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -401,9 +401,9 @@ public class StudyServiceMockTest extends Mockito {
     // email to confirm... so return a 400 in this case.
     @Test(expectedExceptions = BadRequestException.class)
     public void sendVerifyEmailNoConsentEmail() throws Exception {
-        Study study = getTestStudy();
-        study.setConsentNotificationEmail(null);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        app.setConsentNotificationEmail(null);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
         service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
     }
@@ -411,14 +411,14 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void sendVerifyEmailSuccess() throws Exception {
         // Mock getStudy().
-        Study study = getTestStudy();
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
 
         // Execute.
         service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
-        verifyEmailVerificationEmail(study.getConsentNotificationEmail());
+        verifyEmailVerificationEmail(app.getConsentNotificationEmail());
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -457,9 +457,9 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
-        Study study = getTestStudy();
-        study.setConsentNotificationEmail("correct-email@example.com");
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        app.setConsentNotificationEmail("correct-email@example.com");
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
         service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
@@ -475,9 +475,9 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
-        Study study = getTestStudy();
-        study.setConsentNotificationEmail(null);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        app.setConsentNotificationEmail(null);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
         service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
@@ -493,9 +493,9 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getStudy().
-        Study study = getTestStudy();
-        study.setConsentNotificationEmail("wrong-email@example.com");
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        app.setConsentNotificationEmail("wrong-email@example.com");
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
         service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
@@ -511,21 +511,21 @@ public class StudyServiceMockTest extends Mockito {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
         // Mock getting the study from the cache.
-        Study study = getTestStudy();
-        study.setConsentNotificationEmail("correct-email@example.com");
-        when(mockCacheProvider.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = getTestStudy();
+        app.setConsentNotificationEmail("correct-email@example.com");
+        when(mockCacheProvider.getStudy(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
         service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
 
-        ArgumentCaptor<Study> savedStudyCaptor = ArgumentCaptor.forClass(Study.class);
+        ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockStudyDao).updateStudy(savedStudyCaptor.capture());
 
-        Study savedStudy = savedStudyCaptor.getValue();
-        assertTrue(savedStudy.isConsentNotificationEmailVerified());
+        App savedApp = savedStudyCaptor.getValue();
+        assertTrue(savedApp.isConsentNotificationEmailVerified());
 
         // Verify that we cached the study.
-        verify(mockCacheProvider).setStudy(savedStudy);
+        verify(mockCacheProvider).setStudy(savedApp);
 
         // Verify that we removed the used token.
         verify(mockCacheProvider).removeObject(VER_CACHE_KEY);
@@ -533,120 +533,120 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test
     public void cannotRemoveTaskIdentifiers() {
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(TEST_APP_ID);
-        updatedStudy.setTaskIdentifiers(Sets.newHashSet("task2", "different-tag"));
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(TEST_APP_ID);
+        updatedApp.setTaskIdentifiers(Sets.newHashSet("task2", "different-tag"));
         
         try {
-            service.updateStudy(updatedStudy, true);
+            service.updateApp(updatedApp, true);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
             assertEquals(e.getMessage(), "Task identifiers cannot be deleted.");
             assertEquals(e.getEntityKeys().get("identifier"), TEST_APP_ID);
-            assertEquals(e.getEntityKeys().get("type"), "Study");
+            assertEquals(e.getEntityKeys().get("type"), "App");
         }
     }
     
     @Test
     public void cannotRemoveDataGroups() {
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
 
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(TEST_APP_ID);
-        updatedStudy.setDataGroups(Sets.newHashSet("beta_users", "different-tag"));
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(TEST_APP_ID);
+        updatedApp.setDataGroups(Sets.newHashSet("beta_users", "different-tag"));
         
         try {
-            service.updateStudy(updatedStudy, true);
+            service.updateApp(updatedApp, true);
             fail("Should have thrown exception");
         } catch(ConstraintViolationException e) {
             assertEquals(e.getMessage(), "Data groups cannot be deleted.");
             assertEquals(e.getEntityKeys().get("identifier"), TEST_APP_ID);
-            assertEquals(e.getEntityKeys().get("type"), "Study");
+            assertEquals(e.getEntityKeys().get("type"), "App");
         }
     }
     
     @Test
     public void cannotRemoveTaskIdentifiersEmptyLists() {
-        study.setTaskIdentifiers(EMPTY_SET);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app.setTaskIdentifiers(EMPTY_SET);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(TEST_APP_ID);
-        updatedStudy.setTaskIdentifiers(EMPTY_SET);
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(TEST_APP_ID);
+        updatedApp.setTaskIdentifiers(EMPTY_SET);
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test
     public void cannotRemoveDataGroupsEmptyLists() {
-        study.setDataGroups(EMPTY_SET);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app.setDataGroups(EMPTY_SET);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(TEST_APP_ID);
-        updatedStudy.setDataGroups(EMPTY_SET);
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(TEST_APP_ID);
+        updatedApp.setDataGroups(EMPTY_SET);
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Activity event keys cannot be deleted.")
     public void cannotRemoveActivityEventKeys() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        study.setActivityEventKeys(ImmutableSet.of("test"));
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        app.setActivityEventKeys(ImmutableSet.of("test"));
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(study.getIdentifier());
-        updatedStudy.setActivityEventKeys(EMPTY_SET);
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(app.getIdentifier());
+        updatedApp.setActivityEventKeys(EMPTY_SET);
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
     public void cannotRemoveDefaultStudyTemplates() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(study.getIdentifier());
-        updatedStudy.getDefaultTemplates().remove(EMAIL_ACCOUNT_EXISTS.name().toLowerCase());
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(app.getIdentifier());
+        updatedApp.getDefaultTemplates().remove(EMAIL_ACCOUNT_EXISTS.name().toLowerCase());
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
     public void cannotNullDefaultStudyTemplates() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(study.getIdentifier());
-        updatedStudy.setDefaultTemplates(null);
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(app.getIdentifier());
+        updatedApp.setDefaultTemplates(null);
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyWithNullArgumentThrows() {
-        service.getStudy((String)null);
+        service.getApp((String)null);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyWithEmptyStringArgumentThrows() {
-        service.getStudy("");
+        service.getApp("");
     }
     
     @Test
     public void createStudyWithoutConsentNotificationEmailDoesNotSendNotification() {
-        Study study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setConsentNotificationEmail(null);
+        App app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setConsentNotificationEmail(null);
         
-        service.createStudy(study);
+        service.createApp(app);
         
         verify(mockSendMailService, never()).sendEmail(any());
     }
@@ -657,17 +657,17 @@ public class StudyServiceMockTest extends Mockito {
         GuidVersionHolder keys = new GuidVersionHolder("oneGuid", 1L);
         when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
         
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        study.setDefaultTemplates(ImmutableMap.of());
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        app.setDefaultTemplates(ImmutableMap.of());
         
-        service.createStudy(study);
+        service.createApp(app);
         
         int templateTypeNum = TemplateType.values().length;
         
-        assertEquals(study.getDefaultTemplates().size(), templateTypeNum);
+        assertEquals(app.getDefaultTemplates().size(), templateTypeNum);
         
-        verify(mockTemplateService, times(templateTypeNum)).createTemplate(eq(study), templateCaptor.capture());
+        verify(mockTemplateService, times(templateTypeNum)).createTemplate(eq(app), templateCaptor.capture());
         for (int i=0; i < templateTypeNum; i++) {
             TemplateType type = TemplateType.values()[i];
             Template template = templateCaptor.getAllValues().get(i);
@@ -675,20 +675,20 @@ public class StudyServiceMockTest extends Mockito {
             assertEquals(template.getTemplateType(), type);
             assertEquals(template.getName(), BridgeUtils.templateTypeToLabel(type));
             
-            assertEquals(study.getDefaultTemplates().get(type.name().toLowerCase()), "oneGuid");
+            assertEquals(app.getDefaultTemplates().get(type.name().toLowerCase()), "oneGuid");
         }
     }
     
     @Test
     public void updateStudyCallsTemplateMigrationService() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setIdentifier(TEST_APP_ID);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setIdentifier(TEST_APP_ID);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(app);
         
-        Study updatedStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        updatedStudy.setIdentifier(TEST_APP_ID);
+        App updatedApp = TestUtils.getValidStudy(AppServiceTest.class);
+        updatedApp.setIdentifier(TEST_APP_ID);
         
-        service.updateStudy(updatedStudy, true);
+        service.updateApp(updatedApp, true);
     }
     
     @Test
@@ -703,14 +703,14 @@ public class StudyServiceMockTest extends Mockito {
                 not(eq(EMAIL_ACCOUNT_EXISTS)), eq(0), eq(50), eq(true));
         
         // execute
-        service.deleteStudy(TEST_APP_ID, true);
+        service.deleteApp(TEST_APP_ID, true);
 
         // verify we called the correct dependent services
-        verify(mockStudyDao).deleteStudy(study);
-        verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInStudy(
-                study.getIdentifier());
-        verify(mockSubpopService).deleteAllSubpopulations(study.getIdentifier());
-        verify(mockTopicService).deleteAllTopics(study.getIdentifier());
+        verify(mockStudyDao).deleteStudy(app);
+        verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
+                app.getIdentifier());
+        verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());
+        verify(mockTopicService).deleteAllTopics(app.getIdentifier());
         verify(mockCacheProvider).removeStudy(TEST_APP_ID);
         verify(mockTemplateService).deleteTemplatesForStudy(TEST_APP_ID);
         verify(mockFileService).deleteAllStudyFiles(TEST_APP_ID);
@@ -724,27 +724,27 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void deactivateStudyAlreadyDeactivatedBefore() {
-        Study study = getTestStudy();
-        study.setActive(false);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        App app = getTestStudy();
+        app.setActive(false);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(app);
 
-        service.deleteStudy(study.getIdentifier(), false);
+        service.deleteApp(app.getIdentifier(), false);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deactivateStudyNotFound() {
         // Basically, this test doesn't do much because getStudy() will throw ENFE, not return null
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenThrow(new EntityNotFoundException(Study.class));
-        service.deleteStudy(study.getIdentifier(), false);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenThrow(new EntityNotFoundException(App.class));
+        service.deleteApp(app.getIdentifier(), false);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void nonAdminsCannotUpdateDeactivatedStudy() {
-        Study study = getTestStudy();
-        study.setActive(false);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        App app = getTestStudy();
+        app.setActive(false);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(app);
 
-        service.updateStudy(study, false);
+        service.updateApp(app, false);
 
         verify(mockStudyDao, never()).updateStudy(any());
     }
@@ -752,34 +752,34 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void updateUploadMetadataOldStudyHasNoFields() {
         // old study
-        Study oldStudy = getTestStudy();
-        oldStudy.setUploadMetadataFieldDefinitions(null);
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        App oldApp = getTestStudy();
+        oldApp.setUploadMetadataFieldDefinitions(null);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // new study
-        Study newStudy = getTestStudy();
-        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+        App newApp = getTestStudy();
+        newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-field").withType(UploadFieldType.INT).build()));
 
         // execute - no exception
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
     }
 
     @Test
     public void updateUploadMetadataNewStudyHasNoFields() {
         // old study
-        Study oldStudy = getTestStudy();
-        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+        App oldApp = getTestStudy();
+        oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-field").withType(UploadFieldType.INT).build()));
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // new study
-        Study newStudy = getTestStudy();
-        newStudy.setUploadMetadataFieldDefinitions(null);
+        App newApp = getTestStudy();
+        newApp.setUploadMetadataFieldDefinitions(null);
 
         // execute - expect exception
         try {
-            service.updateStudy(newStudy, false);
+            service.updateApp(newApp, false);
             fail("expected exception");
         } catch (UnauthorizedException ex) {
             assertEquals(ex.getMessage(),
@@ -798,16 +798,16 @@ public class StudyServiceMockTest extends Mockito {
                 .withType(UploadFieldType.TIMESTAMP).build();
 
         // old study
-        Study oldStudy = getTestStudy();
-        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField1, reorderedField2));
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        App oldApp = getTestStudy();
+        oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField1, reorderedField2));
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // new study
-        Study newStudy = getTestStudy();
-        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField2, reorderedField1, addedField));
+        App newApp = getTestStudy();
+        newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField2, reorderedField1, addedField));
 
         // execute - no exception
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
     }
 
     @Test
@@ -823,17 +823,17 @@ public class StudyServiceMockTest extends Mockito {
                 .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
-        Study oldStudy = getTestStudy();
-        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        App oldApp = getTestStudy();
+        oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // new study
-        Study newStudy = getTestStudy();
-        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
+        App newApp = getTestStudy();
+        newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
 
         // execute - expect exception
         try {
-            service.updateStudy(newStudy, false);
+            service.updateApp(newApp, false);
             fail("expected exception");
         } catch (UnauthorizedException ex) {
             assertEquals(ex.getMessage(), "Non-admins cannot delete or modify upload metadata fields; " +
@@ -854,44 +854,44 @@ public class StudyServiceMockTest extends Mockito {
                 .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
         // old study
-        Study oldStudy = getTestStudy();
-        oldStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
-        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldStudy);
+        App oldApp = getTestStudy();
+        oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
+        when(mockStudyDao.getStudy(TEST_APP_ID)).thenReturn(oldApp);
 
         // new study
-        Study newStudy = getTestStudy();
-        newStudy.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
+        App newApp = getTestStudy();
+        newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
 
         // execute - no exception
-        service.updateStudy(newStudy, true);
+        service.updateApp(newApp, true);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void nonAdminsCannotSetActiveToFalse() {
-        Study originalStudy = getTestStudy();
-        originalStudy.setActive(true);
-        when(mockStudyDao.getStudy(originalStudy.getIdentifier())).thenReturn(originalStudy);
+        App originalApp = getTestStudy();
+        originalApp.setActive(true);
+        when(mockStudyDao.getStudy(originalApp.getIdentifier())).thenReturn(originalApp);
 
-        Study study = getTestStudy();
-        study.setIdentifier(originalStudy.getIdentifier());
-        study.setActive(false);
+        App app = getTestStudy();
+        app.setIdentifier(originalApp.getIdentifier());
+        app.setActive(false);
 
-        service.updateStudy(study, false);
+        service.updateApp(app, false);
 
         verify(mockStudyDao, never()).updateStudy(any());
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void adminCannotSetActiveToFalse() {
-        Study originalStudy = getTestStudy();
-        originalStudy.setActive(true);
-        when(mockStudyDao.getStudy(originalStudy.getIdentifier())).thenReturn(originalStudy);
+        App originalApp = getTestStudy();
+        originalApp.setActive(true);
+        when(mockStudyDao.getStudy(originalApp.getIdentifier())).thenReturn(originalApp);
 
-        Study study = getTestStudy();
-        study.setIdentifier(originalStudy.getIdentifier());
-        study.setActive(false);
+        App app = getTestStudy();
+        app.setIdentifier(originalApp.getIdentifier());
+        app.setActive(false);
 
-        service.updateStudy(study, true);
+        service.updateApp(app, true);
 
         verify(mockStudyDao, never()).updateStudy(any());
     }
@@ -899,11 +899,11 @@ public class StudyServiceMockTest extends Mockito {
     @Test
     public void createStudyAndUsers() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -924,11 +924,11 @@ public class StudyServiceMockTest extends Mockito {
                 .build();
         
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
 
         // spy
-        doReturn(study).when(service).createStudy(any());
+        doReturn(app).when(service).createApp(any());
         
         // stub out use of synapse client so we can validate it, not just ignore it.
         when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<>());
@@ -944,15 +944,15 @@ public class StudyServiceMockTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
 
         // verify
-        verify(mockParticipantService).createParticipant(study, mockUser1, false);
-        verify(mockParticipantService).createParticipant(study, mockUser2, false);
-        verify(mockParticipantService, times(2)).requestResetPassword(study, mockIdentifierHolder.getIdentifier());
-        verify(service).createStudy(study);
+        verify(mockParticipantService).createParticipant(app, mockUser1, false);
+        verify(mockParticipantService).createParticipant(app, mockUser2, false);
+        verify(mockParticipantService, times(2)).requestResetPassword(app, mockIdentifierHolder.getIdentifier());
+        verify(service).createApp(app);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS,
-                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), study);
+                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), app);
         
         assertEquals(projectCaptor.getValue().getName(), TEST_PROJECT_NAME);
         assertEquals(teamCaptor.getValue().getName(), TEST_TEAM_NAME);
@@ -962,17 +962,17 @@ public class StudyServiceMockTest extends Mockito {
     public void createStudyAndUsersSynapseUserNotFound() throws SynapseException {
         when(mockSynapseClient.getUserProfile(any())).thenThrow(new SynapseNotFoundException());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("bad-admin-id"), study, null);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("bad-admin-id"), app, null);
 
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
     
     @Test
     public void createStudyAndUsersDefaultsPasswordPolicy() throws SynapseException {
-        study.setPasswordPolicy(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseDataAccessTeamId(null);
-        study.setSynapseProjectId(null);
+        app.setPasswordPolicy(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setSynapseDataAccessTeamId(null);
+        app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID).withRoles(ImmutableSet.of(DEVELOPER)).build());
 
@@ -990,9 +990,9 @@ public class StudyServiceMockTest extends Mockito {
         view.setScopeIds(new ArrayList<>());
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
 
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
         
         verify(mockStudyDao).createStudy(studyCaptor.capture());
         assertNotNull(studyCaptor.getValue().getPasswordPolicy());
@@ -1017,37 +1017,37 @@ public class StudyServiceMockTest extends Mockito {
     }
     
     private void createStudyAndUserInWrongRole(Set<Roles> roles) throws SynapseException {
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseDataAccessTeamId(null);
-        study.setSynapseProjectId(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setSynapseDataAccessTeamId(null);
+        app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID).withEmail(TEST_USER_EMAIL).withRoles(roles).build());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
 
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*users\\[0\\].roles should have at least one role.*")
     public void createStudyAndUsersUserHasNoRole() throws SynapseException {
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseDataAccessTeamId(null);
-        study.setSynapseProjectId(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setSynapseDataAccessTeamId(null);
+        app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID).build());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), study, participants);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
 
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
     public void createStudyAndUsersWithNullAdmins() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -1068,18 +1068,18 @@ public class StudyServiceMockTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, app, mockUsers);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
     public void createStudyAndUsersWithEmptyRoles() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -1091,18 +1091,18 @@ public class StudyServiceMockTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, app, mockUsers);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*adminIds are required.*")
     public void createStudyAndUsersWithEmptyAdmins() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -1123,45 +1123,45 @@ public class StudyServiceMockTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of(), study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of(), app, mockUsers);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*users are required.*")
     public void createStudyAndUsersWithEmptyUser() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         List<StudyParticipant> mockUsers = new ArrayList<>();
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, mockUsers);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, mockUsers);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*users are required.*")
     public void createStudyAndUsersWithNullUser() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, null);
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, null);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
     @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*study cannot be null.*")
     public void createStudyAndUsersWithNullStudy() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withEmail(TEST_USER_EMAIL)
@@ -1185,16 +1185,16 @@ public class StudyServiceMockTest extends Mockito {
         StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, null, mockUsers);
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
 
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a project ID.")
+    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "App already has a project ID.")
     public void createStudyAndUsersProjectIdExists() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseDataAccessTeamId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        App app = getTestStudy();
+        app.setSynapseDataAccessTeamId(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID)
@@ -1205,17 +1205,17 @@ public class StudyServiceMockTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
                 .thenReturn(new IdentifierHolder("userId"));
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, ImmutableList.of(mockUser1));
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }    
     
     @Test
     public void createSynapseProjectTeam() throws SynapseException {
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         AccessControlList mockAcl = new AccessControlList();
         AccessControlList mockTeamAcl = new AccessControlList();
@@ -1232,8 +1232,8 @@ public class StudyServiceMockTest extends Mockito {
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
         // execute
-        Study retStudy = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), 
-                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), study);
+        App retApp = service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), 
+                ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), app);
         
         // verify
         // create project and team
@@ -1266,11 +1266,11 @@ public class StudyServiceMockTest extends Mockito {
 
         // 4. Bridge Staff
         ResourceAccess bridgeStaffAcl = principalIdToAcl.get(BRIDGE_STAFF_TEAM_ID);
-        assertEquals(bridgeStaffAcl.getAccessType(), StudyService.READ_DOWNLOAD_ACCESS);
+        assertEquals(bridgeStaffAcl.getAccessType(), AppService.READ_DOWNLOAD_ACCESS);
 
         // 5. Created data access team.
         ResourceAccess capturedTeamRa = principalIdToAcl.get(Long.valueOf(TEST_TEAM_ID));
-        assertEquals(capturedTeamRa.getAccessType(), StudyService.READ_DOWNLOAD_ACCESS);
+        assertEquals(capturedTeamRa.getAccessType(), AppService.READ_DOWNLOAD_ACCESS);
 
         // Add project to tracking view. We truncate the "syn" from the project ID.
         verify(mockSynapseClient).putEntity(view);
@@ -1284,20 +1284,20 @@ public class StudyServiceMockTest extends Mockito {
         verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, TEST_USER_SYNAPSE_ID_2, false);
         
         // update study
-        assertNotNull(retStudy);
-        assertEquals(retStudy.getIdentifier(), study.getIdentifier());
-        assertEquals(retStudy.getName(), study.getName());
-        assertEquals(retStudy.getSynapseProjectId(), TEST_PROJECT_ID);
-        assertEquals(retStudy.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
+        assertNotNull(retApp);
+        assertEquals(retApp.getIdentifier(), app.getIdentifier());
+        assertEquals(retApp.getName(), app.getName());
+        assertEquals(retApp.getSynapseProjectId(), TEST_PROJECT_ID);
+        assertEquals(retApp.getSynapseDataAccessTeamId().toString(), TEST_TEAM_ID);
     }
 
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "Study already has a team ID.")
+    @Test(expectedExceptions = EntityAlreadyExistsException.class, expectedExceptionsMessageRegExp = "App already has a team ID.")
     public void createSynapseProjectTeamAccessTeamIdExists() throws SynapseException {
         // mock
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID)
@@ -1308,74 +1308,74 @@ public class StudyServiceMockTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
                 .thenReturn(new IdentifierHolder("userId"));
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, study, ImmutableList.of(mockUser1));
+        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
         // execute
-        service.createStudyAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockStudyAndUsers);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamNullStudyName() throws Exception {
         // mock
-        Study study = getTestStudy();
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setName(null); // This is not a good name...
+        App app = getTestStudy();
+        app.setExternalIdRequiredOnSignup(false);
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
+        app.setName(null); // This is not a good name...
 
-        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), app);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamBadStudyName() throws Exception {
         // mock
-        Study study = getTestStudy();
-        study.setExternalIdRequiredOnSignup(false);
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
-        study.setName("# # "); // This is not a good name...
+        App app = getTestStudy();
+        app.setExternalIdRequiredOnSignup(false);
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
+        app.setName("# # "); // This is not a good name...
 
-        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), study);
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_IDENTIFIER), app);
     }
 
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamNonExistUserID() throws SynapseException {
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         // pre-setup
         when(mockSynapseClient.getUserProfile(any())).thenThrow(SynapseNotFoundException.class);
 
         // execute
-        service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), study);
+        service.createSynapseProjectTeam(ImmutableList.of(TEST_USER_ID.toString()), app);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamNullUserID() throws SynapseException {
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         // execute
-        service.createSynapseProjectTeam(null, study);
+        service.createSynapseProjectTeam(null, app);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void createSynapseProjectTeamEmptyUserID() throws SynapseException {
-        Study study = getTestStudy();
-        study.setSynapseProjectId(null);
-        study.setSynapseDataAccessTeamId(null);
+        App app = getTestStudy();
+        app.setSynapseProjectId(null);
+        app.setSynapseDataAccessTeamId(null);
 
         // execute
-        service.createSynapseProjectTeam(ImmutableList.of(), study);
+        service.createSynapseProjectTeam(ImmutableList.of(), app);
     }
 
     @Test
     public void addProjectToTrackingView_ViewIdNotSpecified() throws Exception {
         // Set up.
-        when(mockBridgeConfig.get(StudyService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(null);
+        when(mockBridgeConfig.get(AppService.CONFIG_KEY_SYNAPSE_TRACKING_VIEW)).thenReturn(null);
         service.setBridgeConfig(mockBridgeConfig);
 
         // Execute and verify.
@@ -1413,65 +1413,65 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test
     public void newStudyVerifiesSupportEmail() {
-        Study study = getTestStudy();
-        when(mockEmailVerificationService.verifyEmailAddress(study.getSupportEmail()))
+        App app = getTestStudy();
+        when(mockEmailVerificationService.verifyEmailAddress(app.getSupportEmail()))
                 .thenReturn(EmailVerificationStatus.PENDING);
 
-        service.createStudy(study);
+        service.createApp(app);
 
-        verify(mockEmailVerificationService).verifyEmailAddress(study.getSupportEmail());
-        assertTrue(study.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP));
+        verify(mockEmailVerificationService).verifyEmailAddress(app.getSupportEmail());
+        assertTrue(app.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP));
     }
 
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createStudyChecksForExistingIdentifier() {
-        Study study = getTestStudy();
+        App app = getTestStudy();
         
         // already exists under the same ID.
-        when(mockStudyDao.doesIdentifierExist(study.getIdentifier())).thenReturn(true);
+        when(mockStudyDao.doesIdentifierExist(app.getIdentifier())).thenReturn(true);
         
-        service.createStudy(study);
+        service.createApp(app);
     }
     
     // This would be destructive
     @Test
     public void createStudyDoesNotCreateCertsForWhitelistedStudies() {
-        Study study = getTestStudy();
-        study.setIdentifier(API_APP_ID); // the only Id in the mock whitelist
+        App app = getTestStudy();
+        app.setIdentifier(API_APP_ID); // the only Id in the mock whitelist
         
-        service.createStudy(study);
+        service.createApp(app);
         
         verify(mockUploadCertService, never()).createCmsKeyPair(any());
     }
     
     @Test
     public void updatingStudyVerifiesSupportEmail() throws Exception {
-        Study study = getTestStudy();
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        App app = getTestStudy();
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(app);
 
         // We need to copy study in order to set support email and have it be different than
         // the mock version returned from the database
-        Study newStudy = BridgeObjectMapper.get().readValue(
-                BridgeObjectMapper.get().writeValueAsString(study), Study.class);
-        newStudy.setSupportEmail("foo@foo.com"); // it's new and must be verified.
+        App newApp = BridgeObjectMapper.get().readValue(
+                BridgeObjectMapper.get().writeValueAsString(app), App.class);
+        newApp.setSupportEmail("foo@foo.com"); // it's new and must be verified.
         
-        service.updateStudy(newStudy, false);
+        service.updateApp(newApp, false);
         verify(mockEmailVerificationService).verifyEmailAddress("foo@foo.com");
     }
 
     @Test
     public void updatingStudyNoChangeInSupportEmailDoesNotVerifyEmail() {
-        Study study = getTestStudy();
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(study);
+        App app = getTestStudy();
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(app);
         
-        service.updateStudy(study, false);
+        service.updateApp(app, false);
         verify(mockEmailVerificationService, never()).verifyEmailAddress(any());
     }
     
     @Test
     public void updateStudyCorrectlyDetectsEmailChangesInvolvingNulls() {
         // consent email still correctly detected
-        String originalEmail = TestUtils.getValidStudy(StudyServiceMockTest.class).getConsentNotificationEmail();
+        String originalEmail = TestUtils.getValidStudy(AppServiceTest.class).getConsentNotificationEmail();
         String newEmail = "changed@changed.com";
         
         setupConsentEmailChangeTest(null, null, false, false);
@@ -1484,16 +1484,16 @@ public class StudyServiceMockTest extends Mockito {
     private void setupConsentEmailChangeTest(String originalEmail, String newEmail, boolean shouldBeChanged,
             boolean expectedSendEmail) {
         reset(mockSendMailService);
-        Study original = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        App original = TestUtils.getValidStudy(AppServiceTest.class);
         original.setConsentNotificationEmail(originalEmail);
         when(mockStudyDao.getStudy(any())).thenReturn(original);
         
-        Study update = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        App update = TestUtils.getValidStudy(AppServiceTest.class);
         update.setConsentNotificationEmail(newEmail);
         // just assume this is true for the test so defaults aren't set
         update.setConsentNotificationEmailVerified(true);
         
-        service.updateStudy(update, true);
+        service.updateApp(update, true);
         
         if (expectedSendEmail) {
             verify(mockSendMailService).sendEmail(any());
@@ -1518,17 +1518,17 @@ public class StudyServiceMockTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void studyIsValidated() {
-        Study testStudy = new DynamoStudy();
-        testStudy.setName("Belgian Waffles [Test]");
-        service.createStudy(testStudy);
+        App testApp = new DynamoApp();
+        testApp.setName("Belgian Waffles [Test]");
+        service.createApp(testApp);
     }
 
     @Test
     public void cannotCreateAnExistingStudyWithAVersion() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study = service.createStudy(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app = service.createApp(app);
         try {
-            study = service.createStudy(study);
+            app = service.createApp(app);
             fail("Should have thrown an exception");
         } catch(EntityAlreadyExistsException e) {
             // expected exception
@@ -1537,9 +1537,9 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void cannotCreateAStudyWithAVersion() {
-        Study testStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        testStudy.setVersion(1L);
-        service.createStudy(testStudy);
+        App testApp = TestUtils.getValidStudy(AppServiceTest.class);
+        testApp.setVersion(1L);
+        service.createApp(testApp);
     }
 
     /**
@@ -1553,94 +1553,94 @@ public class StudyServiceMockTest extends Mockito {
         // developer
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
-        study.setConsentNotificationEmailVerified(true);
-        study.setReauthenticationEnabled(null);
-        study.setStudyIdExcludedInExport(false);
-        study.setTaskIdentifiers(null);
-        study.setUploadValidationStrictness(null);
-        study.setActivityEventKeys(null);
-        study.setHealthCodeExportEnabled(true);
-        study.setActive(false);
-        study.setStrictUploadValidationEnabled(false);
-        study.setEmailVerificationEnabled(false);
-        study.setEmailSignInEnabled(true);
-        study.setPhoneSignInEnabled(true);
+        app.setConsentNotificationEmailVerified(true);
+        app.setReauthenticationEnabled(null);
+        app.setAppIdExcludedInExport(false);
+        app.setTaskIdentifiers(null);
+        app.setUploadValidationStrictness(null);
+        app.setActivityEventKeys(null);
+        app.setHealthCodeExportEnabled(true);
+        app.setActive(false);
+        app.setStrictUploadValidationEnabled(false);
+        app.setEmailVerificationEnabled(false);
+        app.setEmailSignInEnabled(true);
+        app.setPhoneSignInEnabled(true);
         
-        study = service.createStudy(study);
+        app = service.createApp(app);
 
         // Verify that the flags are set correctly on create.
-        assertFalse(study.isConsentNotificationEmailVerified());
-        assertNotNull(study.getVersion(), "Version has been set");
-        assertTrue(study.isActive());
-        assertTrue(study.isReauthenticationEnabled());
-        assertFalse(study.isStrictUploadValidationEnabled());
-        assertTrue(study.isStudyIdExcludedInExport());
-        assertEquals(study.getUploadValidationStrictness(), REPORT);
+        assertFalse(app.isConsentNotificationEmailVerified());
+        assertNotNull(app.getVersion(), "Version has been set");
+        assertTrue(app.isActive());
+        assertTrue(app.isReauthenticationEnabled());
+        assertFalse(app.isStrictUploadValidationEnabled());
+        assertTrue(app.isAppIdExcludedInExport());
+        assertEquals(app.getUploadValidationStrictness(), REPORT);
 
-        verify(mockCacheProvider).setStudy(study);
+        verify(mockCacheProvider).setStudy(app);
         
         // A default, active consent should be created for the study.
-        verify(mockSubpopService).createDefaultSubpopulation(study);
+        verify(mockSubpopService).createDefaultSubpopulation(app);
 
         verify(mockStudyDao).createStudy(studyCaptor.capture());
 
-        Study newStudy = studyCaptor.getValue();
-        assertTrue(newStudy.isActive());
-        assertFalse(newStudy.isStrictUploadValidationEnabled());
-        assertTrue(newStudy.isStudyIdExcludedInExport());
-        assertEquals(UploadValidationStrictness.REPORT, newStudy.getUploadValidationStrictness());
+        App newApp = studyCaptor.getValue();
+        assertTrue(newApp.isActive());
+        assertFalse(newApp.isStrictUploadValidationEnabled());
+        assertTrue(newApp.isAppIdExcludedInExport());
+        assertEquals(UploadValidationStrictness.REPORT, newApp.getUploadValidationStrictness());
 
-        assertEquals(newStudy.getIdentifier(), study.getIdentifier());
-        assertEquals(newStudy.getName(), "Test Study [StudyServiceMockTest]");
-        assertEquals(newStudy.getMinAgeOfConsent(), 18);
-        assertEquals(newStudy.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
-        assertTrue(newStudy.getTaskIdentifiers().isEmpty());
-        assertTrue(newStudy.getActivityEventKeys().isEmpty());
+        assertEquals(newApp.getIdentifier(), app.getIdentifier());
+        assertEquals(newApp.getName(), "Test App [AppServiceTest]");
+        assertEquals(newApp.getMinAgeOfConsent(), 18);
+        assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
+        assertTrue(newApp.getTaskIdentifiers().isEmpty());
+        assertTrue(newApp.getActivityEventKeys().isEmpty());
 
-        verify(mockCacheProvider).setStudy(newStudy);
+        verify(mockCacheProvider).setStudy(newApp);
 
         // make some (non-admin) updates, these should change
-        newStudy.setConsentNotificationEmailVerified(true);
-        newStudy.setStrictUploadValidationEnabled(true);
-        newStudy.setUploadValidationStrictness(WARNING);
+        newApp.setConsentNotificationEmailVerified(true);
+        newApp.setStrictUploadValidationEnabled(true);
+        newApp.setUploadValidationStrictness(WARNING);
         
-        when(mockStudyDao.getStudy(newStudy.getIdentifier())).thenReturn(newStudy);
-        Study updatedStudy = service.updateStudy(newStudy, false);
+        when(mockStudyDao.getStudy(newApp.getIdentifier())).thenReturn(newApp);
+        App updatedApp = service.updateApp(newApp, false);
         
-        assertTrue(updatedStudy.isConsentNotificationEmailVerified());
-        assertTrue(updatedStudy.isStrictUploadValidationEnabled());
-        assertEquals(updatedStudy.getUploadValidationStrictness(), WARNING);
+        assertTrue(updatedApp.isConsentNotificationEmailVerified());
+        assertTrue(updatedApp.isStrictUploadValidationEnabled());
+        assertEquals(updatedApp.getUploadValidationStrictness(), WARNING);
 
-        verify(mockCacheProvider).removeStudy(updatedStudy.getIdentifier());
-        verify(mockCacheProvider, times(2)).setStudy(updatedStudy);
+        verify(mockCacheProvider).removeStudy(updatedApp.getIdentifier());
+        verify(mockCacheProvider, times(2)).setStudy(updatedApp);
 
         // delete study
         reset(mockCacheProvider);
-        service.deleteStudy(study.getIdentifier(), true);
+        service.deleteApp(app.getIdentifier(), true);
         
-        verify(mockCacheProvider).getStudy(study.getIdentifier());
-        verify(mockCacheProvider).setStudy(updatedStudy);
-        verify(mockCacheProvider).removeStudy(study.getIdentifier());
+        verify(mockCacheProvider).getStudy(app.getIdentifier());
+        verify(mockCacheProvider).setStudy(updatedApp);
+        verify(mockCacheProvider).removeStudy(app.getIdentifier());
 
-        verify(mockStudyDao).deleteStudy(updatedStudy);
+        verify(mockStudyDao).deleteStudy(updatedApp);
         verify(mockCompoundActivityDefinitionService)
-                .deleteAllCompoundActivityDefinitionsInStudy(updatedStudy.getIdentifier());
-        verify(mockSubpopService).deleteAllSubpopulations(updatedStudy.getIdentifier());
-        verify(mockTopicService).deleteAllTopics(updatedStudy.getIdentifier());
+                .deleteAllCompoundActivityDefinitionsInApp(updatedApp.getIdentifier());
+        verify(mockSubpopService).deleteAllSubpopulations(updatedApp.getIdentifier());
+        verify(mockTopicService).deleteAllTopics(updatedApp.getIdentifier());
     }
 
     @Test
     public void canUpdatePasswordPolicyAndTemplates() throws Exception {
         // service need the defaults injected for this test...
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setPasswordPolicy(null);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setPasswordPolicy(null);
 
-        study = service.createStudy(study);
+        app = service.createApp(app);
 
         // First, verify that defaults are set...
-        PasswordPolicy policy = study.getPasswordPolicy();
+        PasswordPolicy policy = app.getPasswordPolicy();
         assertNotNull(policy);
         assertEquals(policy.getMinLength(), 8);
         assertTrue(policy.isNumericRequired());
@@ -1648,15 +1648,15 @@ public class StudyServiceMockTest extends Mockito {
         assertTrue(policy.isUpperCaseRequired());
 
         // You have to mock this for the update
-        Study existingStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(existingStudy);
-        study.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
+        App existingApp = TestUtils.getValidStudy(AppServiceTest.class);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(existingApp);
+        app.setPasswordPolicy(new PasswordPolicy(6, true, false, false, true));
         
-        study = service.updateStudy(study, true);
+        app = service.updateApp(app, true);
         
-        policy = study.getPasswordPolicy();
-        assertTrue(study.isEmailVerificationEnabled());
-        assertTrue(study.isAutoVerificationPhoneSuppressed());
+        policy = app.getPasswordPolicy();
+        assertTrue(app.isEmailVerificationEnabled());
+        assertTrue(app.isAutoVerificationPhoneSuppressed());
 
         assertEquals(policy.getMinLength(), 6);
         assertTrue(policy.isNumericRequired());
@@ -1667,96 +1667,96 @@ public class StudyServiceMockTest extends Mockito {
 
     @Test
     public void defaultsAreUsedWhenNotProvided() throws Exception {
-        service.setStudyEmailVerificationTemplate(TEMPLATE_RESOURCE);
-        service.setStudyEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
+        service.setAppEmailVerificationTemplate(TEMPLATE_RESOURCE);
+        service.setAppEmailVerificationTemplateSubject(TEMPLATE_RESOURCE);
         
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setPasswordPolicy(null);
-        study = service.createStudy(study);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setPasswordPolicy(null);
+        app = service.createApp(app);
         
-        assertEquals(DEFAULT_PASSWORD_POLICY, study.getPasswordPolicy());
-        assertNotNull(study.getPasswordPolicy());
+        assertEquals(DEFAULT_PASSWORD_POLICY, app.getPasswordPolicy());
+        assertNotNull(app.getPasswordPolicy());
         
         // Remove them and update... we are set back to defaults
-        study.setPasswordPolicy(null);
+        app.setPasswordPolicy(null);
         
         // You have to mock this for the update
-        Study existingStudy = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(existingStudy);
+        App existingApp = TestUtils.getValidStudy(AppServiceTest.class);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(existingApp);
         
-        study = service.updateStudy(study, false);
-        assertNotNull(study.getPasswordPolicy());
+        app = service.updateApp(app, false);
+        assertNotNull(app.getPasswordPolicy());
     }
 
     @Test
     public void adminsCanChangeSomeValuesResearchersCannot() {
-        study = TestUtils.getValidStudy(StudyServiceMockTest.class);
-        study.setStudyIdExcludedInExport(true);
-        study.setEmailVerificationEnabled(true);
-        study.setExternalIdRequiredOnSignup(false);
-        study.setEmailSignInEnabled(false);
-        study.setPhoneSignInEnabled(false);
-        study.setReauthenticationEnabled(false);
-        study.setAccountLimit(0);
-        study.setVerifyChannelOnSignInEnabled(false);
+        app = TestUtils.getValidStudy(AppServiceTest.class);
+        app.setAppIdExcludedInExport(true);
+        app.setEmailVerificationEnabled(true);
+        app.setExternalIdRequiredOnSignup(false);
+        app.setEmailSignInEnabled(false);
+        app.setPhoneSignInEnabled(false);
+        app.setReauthenticationEnabled(false);
+        app.setAccountLimit(0);
+        app.setVerifyChannelOnSignInEnabled(false);
 
-        Study existing = TestUtils.getValidStudy(StudyServiceMockTest.class);
+        App existing = TestUtils.getValidStudy(AppServiceTest.class);
         existing.setExternalIdRequiredOnSignup(false);
         existing.setEmailSignInEnabled(false);
         existing.setPhoneSignInEnabled(false);
         existing.setReauthenticationEnabled(false);
         assertStudyDefaults(existing);
-        when(mockStudyDao.getStudy(study.getIdentifier())).thenReturn(existing);
+        when(mockStudyDao.getStudy(app.getIdentifier())).thenReturn(existing);
         
         // Cannot be changed on create
-        study = service.createStudy(study);
-        assertStudyDefaults(study); // still set to defaults
+        app = service.createApp(app);
+        assertStudyDefaults(app); // still set to defaults
         
         // Researchers cannot change these through update
-        changeStudyDefaults(study);
-        study = service.updateStudy(study, false);
-        assertStudyDefaults(study); // nope
+        changeStudyDefaults(app);
+        app = service.updateApp(app, false);
+        assertStudyDefaults(app); // nope
         
         // But administrators can change these
-        changeStudyDefaults(study);
-        study = service.updateStudy(study, true);
+        changeStudyDefaults(app);
+        app = service.updateApp(app, true);
         // These values have all successfully been changed from the defaults
-        assertFalse(study.isStudyIdExcludedInExport());
-        assertFalse(study.isEmailVerificationEnabled());
-        assertFalse(study.isVerifyChannelOnSignInEnabled());
-        assertTrue(study.isAutoVerificationPhoneSuppressed());
-        assertTrue(study.isExternalIdRequiredOnSignup());
-        assertTrue(study.isEmailSignInEnabled());
-        assertTrue(study.isPhoneSignInEnabled());
-        assertTrue(study.isReauthenticationEnabled());
-        assertEquals(study.getAccountLimit(), 10);
+        assertFalse(app.isAppIdExcludedInExport());
+        assertFalse(app.isEmailVerificationEnabled());
+        assertFalse(app.isVerifyChannelOnSignInEnabled());
+        assertTrue(app.isAutoVerificationPhoneSuppressed());
+        assertTrue(app.isExternalIdRequiredOnSignup());
+        assertTrue(app.isEmailSignInEnabled());
+        assertTrue(app.isPhoneSignInEnabled());
+        assertTrue(app.isReauthenticationEnabled());
+        assertEquals(app.getAccountLimit(), 10);
     }
 
-    private void assertStudyDefaults(Study study) {
-        assertTrue(study.isStudyIdExcludedInExport());
-        assertTrue(study.isEmailVerificationEnabled());
-        assertTrue(study.isVerifyChannelOnSignInEnabled());
-        assertFalse(study.isExternalIdRequiredOnSignup());
-        assertFalse(study.isEmailSignInEnabled());
-        assertFalse(study.isPhoneSignInEnabled());
-        assertFalse(study.isReauthenticationEnabled());
-        assertEquals(study.getAccountLimit(), 0);
+    private void assertStudyDefaults(App app) {
+        assertTrue(app.isAppIdExcludedInExport());
+        assertTrue(app.isEmailVerificationEnabled());
+        assertTrue(app.isVerifyChannelOnSignInEnabled());
+        assertFalse(app.isExternalIdRequiredOnSignup());
+        assertFalse(app.isEmailSignInEnabled());
+        assertFalse(app.isPhoneSignInEnabled());
+        assertFalse(app.isReauthenticationEnabled());
+        assertEquals(app.getAccountLimit(), 0);
     }
     
-    private void changeStudyDefaults(Study study) {
-        study.setStudyIdExcludedInExport(false);
-        study.setEmailVerificationEnabled(false);
-        study.setVerifyChannelOnSignInEnabled(false);
-        study.setExternalIdRequiredOnSignup(true);
-        study.setEmailSignInEnabled(true);
-        study.setPhoneSignInEnabled(true);
-        study.setReauthenticationEnabled(true);
-        study.setAccountLimit(10);
+    private void changeStudyDefaults(App app) {
+        app.setAppIdExcludedInExport(false);
+        app.setEmailVerificationEnabled(false);
+        app.setVerifyChannelOnSignInEnabled(false);
+        app.setExternalIdRequiredOnSignup(true);
+        app.setEmailSignInEnabled(true);
+        app.setPhoneSignInEnabled(true);
+        app.setReauthenticationEnabled(true);
+        app.setAccountLimit(10);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cantDeleteApiStudy() {
-        service.deleteStudy(API_APP_ID, true);
+        service.deleteApp(API_APP_ID, true);
     }
 
 }

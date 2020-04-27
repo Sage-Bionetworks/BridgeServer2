@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -110,14 +110,14 @@ public class HealthDataController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public String submitHealthDataForParticipant(@PathVariable String userId) throws IOException, UploadValidationException {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // Get participant.
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        StudyParticipant participant = participantService.getParticipant(app, userId, false);
 
         // Submit health data.
         HealthDataSubmission healthDataSubmission = parseJson(HealthDataSubmission.class);
-        HealthDataRecord savedRecord = healthDataService.submitHealthData(study.getIdentifier(), participant,
+        HealthDataRecord savedRecord = healthDataService.submitHealthData(app.getIdentifier(), participant,
                 healthDataSubmission);
 
         // Write record ID into the metrics, for logging and diagnostics.

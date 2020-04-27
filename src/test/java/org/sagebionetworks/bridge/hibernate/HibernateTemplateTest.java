@@ -29,7 +29,7 @@ public class HibernateTemplateTest extends Mockito {
         Criteria criteria = TestUtils.createCriteria(1, 5, ImmutableSet.of(), ImmutableSet.of());
         
         HibernateTemplate template = new HibernateTemplate();
-        template.setStudyId(TEST_APP_ID);
+        template.setAppId(TEST_APP_ID);
         template.setGuid("oneGuid");
         template.setTemplateType(EMAIL_APP_INSTALL_LINK);
         template.setName("oneName");
@@ -42,7 +42,7 @@ public class HibernateTemplateTest extends Mockito {
         template.setVersion(3);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(template);
-        assertNull(node.get("studyId"));
+        assertNull(node.get("appId"));
         assertEquals(node.get("guid").textValue(), "oneGuid");
         assertEquals(node.get("templateType").textValue(), EMAIL_APP_INSTALL_LINK.name().toLowerCase());
         assertEquals(node.get("name").textValue(), "oneName");

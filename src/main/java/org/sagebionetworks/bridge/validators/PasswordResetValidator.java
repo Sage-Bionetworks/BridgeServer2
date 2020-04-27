@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.services.AppService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,11 +14,11 @@ import org.springframework.validation.Validator;
 @Component
 public class PasswordResetValidator implements Validator {
 
-    private StudyService studyService;
+    private AppService appService;
     
     @Autowired
-    public final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Override
@@ -36,15 +36,15 @@ public class PasswordResetValidator implements Validator {
         if (StringUtils.isBlank(passwordReset.getPassword())) {
             errors.rejectValue("password", "is required");
         }
-        if (StringUtils.isBlank(passwordReset.getStudyIdentifier())) {
+        if (StringUtils.isBlank(passwordReset.getAppId())) {
             errors.rejectValue("study", "is required");
         }
         if (errors.hasErrors()) {
             return;
         }
         // This logic is now duplicated with StudyParticipant validation.
-        Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
-        PasswordPolicy passwordPolicy = study.getPasswordPolicy();
+        App app = appService.getApp(passwordReset.getAppId());
+        PasswordPolicy passwordPolicy = app.getPasswordPolicy();
         String password = passwordReset.getPassword();
         ValidatorUtils.validatePassword(errors, passwordPolicy, password);
     }

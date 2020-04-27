@@ -37,7 +37,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ReportService;
 
 /**
@@ -199,9 +199,9 @@ public class ParticipantReportController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -247,9 +247,9 @@ public class ParticipantReportController extends BaseController {
             "/v3/participants/{userId}/reports/{identifier}" })
     public StatusMessage deleteParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);    
         }
@@ -265,9 +265,9 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportRecord(@PathVariable String userId, @PathVariable String identifier,
             @PathVariable String date) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }

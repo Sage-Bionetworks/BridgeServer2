@@ -200,7 +200,7 @@ public class UploadSchemaTest {
         schema.setAppId(TEST_APP_ID);
         schema.setSchemaId("test-schema");
         schema.setRevision(7);
-        assertEquals(schema.getSchemaKey().toString(), "test-study-test-schema-v7");
+        assertEquals(schema.getSchemaKey().toString(), TEST_APP_ID + "-test-schema-v7");
     }
 
     @Test
@@ -229,7 +229,7 @@ public class UploadSchemaTest {
                 "   \"revision\":3,\n" +
                 "   \"schemaId\":\"test-schema\",\n" +
                 "   \"schemaType\":\"ios_survey\",\n" +
-                "   \""+appIdField+"\":\"test-study\",\n" +
+                "   \""+appIdField+"\":\""+ TEST_APP_ID + "\",\n" +
                 "   \"deleted\":true,\n"+
                 "   \"surveyGuid\":\"survey-guid\",\n" +
                 "   \"surveyCreatedOn\":\"" + surveyCreatedOnStr + "\",\n" +

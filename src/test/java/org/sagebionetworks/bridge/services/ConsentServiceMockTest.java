@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -106,7 +106,7 @@ public class ConsentServiceMockTest {
     @Spy
     private ConsentService consentService;
 
-    private Study study;
+    private App app;
 
     @Mock
     private AccountService accountService;
@@ -146,7 +146,7 @@ public class ConsentServiceMockTest {
         MockitoAnnotations.initMocks(this);
 
         String documentString = IOUtils.toString(
-                new FileInputStream(new ClassPathResource("conf/study-defaults/consent-page.xhtml").getFile()));
+                new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()));
 
         consentService.setAccountService(accountService);
         consentService.setSendMailService(sendMailService);
@@ -160,13 +160,13 @@ public class ConsentServiceMockTest {
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         consentService.setTemplateService(templateService);
 
-        study = TestUtils.getValidStudy(ConsentServiceMockTest.class);
+        app = TestUtils.getValidStudy(ConsentServiceMockTest.class);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("signedConsent subject");
         revision.setDocumentContent("signedConsent body");
         revision.setMimeType(MimeType.HTML);
-        when(templateService.getRevisionForUser(study, EMAIL_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT)).thenReturn(revision);
 
         account = Account.create();
         account.setId(ID);
@@ -182,15 +182,15 @@ public class ConsentServiceMockTest {
         when(studyConsentView.getDocumentContent())
                 .thenReturn("<p>This is content of the final HTML document we assemble.</p>");
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(studyConsentView);
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID))
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID))
                 .thenThrow(new EntityNotFoundException(Subpopulation.class));
 
-        consentService.getConsentSignature(study, SUBPOP_GUID, PARTICIPANT.getId());
+        consentService.getConsentSignature(app, SUBPOP_GUID, PARTICIPANT.getId());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -199,15 +199,15 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SubpopulationGuid.create("second-subpop"),
                 ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.getConsentSignature(study, SUBPOP_GUID, PARTICIPANT.getId());
+        consentService.getConsentSignature(app, SUBPOP_GUID, PARTICIPANT.getId());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotConsentToSubpopulationToWhichTheyAreNotMapped() {
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID))
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID))
                 .thenThrow(new EntityNotFoundException(Subpopulation.class));
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 false);
     }
 
@@ -221,7 +221,7 @@ public class ConsentServiceMockTest {
         ConsentSignature sig = new ConsentSignature.Builder().withConsentSignature(CONSENT_SIGNATURE)
                 .withConsentCreatedOn(CONSENT_CREATED_ON + 20000).withWithdrewOn(12345L).build();
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         // verify consents were set on account properly
@@ -242,7 +242,7 @@ public class ConsentServiceMockTest {
         assertNull(updatedConsentList.get(1).getWithdrewOn());
 
         // Consent we send to activityEventService is same as the second consent.
-        verify(activityEventService).publishEnrollmentEvent(study, PARTICIPANT.getHealthCode(),
+        verify(activityEventService).publishEnrollmentEvent(app, PARTICIPANT.getHealthCode(),
                 updatedConsentList.get(1));
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -253,7 +253,7 @@ public class ConsentServiceMockTest {
 
         Set<String> recipients = email.getRecipientEmails();
         assertEquals(recipients.size(), 2);
-        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
+        assertTrue(recipients.contains(app.getConsentNotificationEmail()));
         assertTrue(recipients.contains(PARTICIPANT.getEmail()));
     }
 
@@ -261,7 +261,7 @@ public class ConsentServiceMockTest {
     public void emailConsentAgreementSuccess() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
         BasicEmailProvider email = emailCaptor.getValue();
@@ -276,7 +276,7 @@ public class ConsentServiceMockTest {
                 .withBirthdate("2018-05-12").build();
 
         try {
-            consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, consentSignature, SharingScope.NO_SHARING,
+            consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, consentSignature, SharingScope.NO_SHARING,
                     false);
             fail("Exception expected.");
         } catch (InvalidEntityException e) {
@@ -292,7 +292,7 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(sig));
 
         try {
-            consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE,
+            consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE,
                     SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch (EntityAlreadyExistsException e) {
@@ -305,7 +305,7 @@ public class ConsentServiceMockTest {
     @Test
     public void noConsentIfDaoFails() {
         try {
-            consentService.consentToResearch(study, SubpopulationGuid.create("badGuid"), PARTICIPANT, CONSENT_SIGNATURE,
+            consentService.consentToResearch(app, SubpopulationGuid.create("badGuid"), PARTICIPANT, CONSENT_SIGNATURE,
                     SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch (Throwable e) {
@@ -326,7 +326,7 @@ public class ConsentServiceMockTest {
                 ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE, CONSENT_SIGNATURE));
 
         // Execute and validate.
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
         verify(accountService).getAccount(CONTEXT.getAccountId());
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
@@ -353,9 +353,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test Study [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User   &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
     }
@@ -368,10 +368,10 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         account.setDataGroups(dataGroups);
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
@@ -381,7 +381,7 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawConsentWithAccount() throws Exception {
         setupWithdrawTest();
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountService).updateAccount(account, null);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -393,7 +393,7 @@ public class ConsentServiceMockTest {
     public void withdrawFromStudyWithEmail() throws Exception {
         setupWithdrawTest();
 
-        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
@@ -405,9 +405,9 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test Study [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User Allen Wrench &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
 
@@ -438,7 +438,7 @@ public class ConsentServiceMockTest {
         account.setHealthCode(PARTICIPANT.getHealthCode());
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.withdrawFromStudy(study, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromStudy(app, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
@@ -451,7 +451,7 @@ public class ConsentServiceMockTest {
             }
         }
 
-        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
@@ -464,10 +464,10 @@ public class ConsentServiceMockTest {
         account.setDataGroups(dataGroups);
 
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
-        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
@@ -478,7 +478,7 @@ public class ConsentServiceMockTest {
     public void accountFailureConsistent() {
         when(accountService.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
         try {
-            consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+            consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
             fail("Should have thrown an exception");
         } catch (BridgeServiceException e) {
             // expected exception
@@ -489,8 +489,8 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawWithNotificationEmailVerifiedNull() throws Exception {
         setupWithdrawTest();
-        study.setConsentNotificationEmailVerified(null);
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        app.setConsentNotificationEmailVerified(null);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -499,8 +499,8 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawWithNotificationEmailVerifiedFalse() throws Exception {
         setupWithdrawTest();
-        study.setConsentNotificationEmailVerified(false);
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
+        app.setConsentNotificationEmailVerified(false);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
@@ -509,8 +509,8 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawFromStudyNotificationEmailVerifiedNull() throws Exception {
         setupWithdrawTest();
-        study.setConsentNotificationEmailVerified(null);
-        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        app.setConsentNotificationEmailVerified(null);
+        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
@@ -519,8 +519,8 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawAllWithNotificationEmailVerifiedFalse() throws Exception {
         setupWithdrawTest();
-        study.setConsentNotificationEmailVerified(false);
-        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        app.setConsentNotificationEmailVerified(false);
+        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
@@ -530,34 +530,34 @@ public class ConsentServiceMockTest {
     public void withdrawFromOneRequiredConsentSetsAccountToNoSharing() throws Exception {
         setupWithdrawTest(true, false);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
         assertEquals(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn(), new Long(WITHDREW_ON));
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
 
-        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
     public void withdrawFromOneOfTwoRequiredConsentsSetsAcountToNoSharing() throws Exception {
         setupWithdrawTest(true, true);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         // You must sign all required consents to sign.
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
         assertEquals(account.getConsentSignatureHistory(SUBPOP_GUID).get(0).getWithdrewOn(), new Long(WITHDREW_ON));
         assertNull(account.getConsentSignatureHistory(SECOND_SUBPOP).get(0).getWithdrewOn());
 
-        verify(notificationsService).deleteAllRegistrations(study.getIdentifier(), HEALTH_CODE);
+        verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), HEALTH_CODE);
     }
 
     @Test
     public void withdrawFromOneOptionalConsentDoesNotChangeSharing() throws Exception {
         setupWithdrawTest(false, true);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         // Not changed because all the required consents are still signed.
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
@@ -572,7 +572,7 @@ public class ConsentServiceMockTest {
     public void withdrawFromOneOfTwoOptionalConsentsDoesNotChangeSharing() throws Exception {
         setupWithdrawTest(false, false);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         // Not changed because all the required consents are still signed.
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
@@ -600,14 +600,14 @@ public class ConsentServiceMockTest {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE, withdrawnSignature));
         account.setConsentSignatureHistory(SECOND_SUBPOP, ImmutableList.of(withdrawnSignature));
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
     }
 
     @Test
     public void consentToResearchNoConsentAdministratorEmail() {
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -620,36 +620,36 @@ public class ConsentServiceMockTest {
     public void consentToResearchSuppressEmailNotification() {
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
         Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
         assertEquals(recipients.size(), 1);
-        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
+        assertTrue(recipients.contains(app.getConsentNotificationEmail()));
     }
 
     @Test
     public void consentToResearchNoParticipantEmail() {
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
 
-        consentService.consentToResearch(study, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
+        consentService.consentToResearch(app, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
         Set<String> recipients = emailCaptor.getValue().getRecipientEmails();
         assertEquals(recipients.size(), 1);
-        assertTrue(recipients.contains(study.getConsentNotificationEmail()));
+        assertTrue(recipients.contains(app.getConsentNotificationEmail()));
     }
 
     @Test
     public void consentToResearchNoRecipients() {
         // easiest to test this if we null out the study consent email.
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
 
         // sendEmail = true because the system would otherwise send it based on the call, but hasn't looked to suppress
         // yet.
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.ALL_QUALIFIED_RESEARCHERS, true);
 
         verify(sendMailService, never()).sendEmail(any());
@@ -658,7 +658,7 @@ public class ConsentServiceMockTest {
     @Test
     public void consentToResearchSucceedsWithoutNotification() {
         // In this call, we explicitly override any other settings to suppress notifications
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 false);
 
         verify(sendMailService, never()).sendEmail(any());
@@ -667,9 +667,9 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawConsentNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
-        consentService.withdrawConsent(study, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
         verify(sendMailService, never()).sendEmail(any());
     }
@@ -677,21 +677,21 @@ public class ConsentServiceMockTest {
     @Test
     public void withdrawAllConsentsNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
-        when(subpopService.getSubpopulation(study.getIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
 
-        consentService.withdrawFromStudy(study, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
         verify(sendMailService, never()).sendEmail(any());
     }
 
     @Test
     public void emailConsentAgreementNoConsentAdministratorEmail() {
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
         assertEquals(emailCaptor.getValue().getRecipientEmails().size(), 1);
@@ -702,7 +702,7 @@ public class ConsentServiceMockTest {
     public void emailConsentAgreementDoesNotSuppressEmailNotification() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(subpopulation, never()).isAutoSendConsentSuppressed();
 
@@ -719,18 +719,18 @@ public class ConsentServiceMockTest {
 
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, noEmail);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, noEmail);
     }
 
     @Test
     public void emailConsentAgreementNoRecipients() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
         // easiest to test this if we null out the study consent email.
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
         try {
-            consentService.resendConsentAgreement(study, SUBPOP_GUID, noEmail);
+            consentService.resendConsentAgreement(app, SUBPOP_GUID, noEmail);
             fail("Should have thrown an exception");
         } catch (BadRequestException e) {
         }
@@ -742,9 +742,9 @@ public class ConsentServiceMockTest {
     @Test
     public void emailConsentAgreementNotificationEmailVerifiedFalse() throws Exception {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        study.setConsentNotificationEmailVerified(false);
+        app.setConsentNotificationEmailVerified(false);
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
@@ -760,9 +760,9 @@ public class ConsentServiceMockTest {
     @Test
     public void emailConsentAgreementWithoutStudyRecipientsDoesSend() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
@@ -776,9 +776,9 @@ public class ConsentServiceMockTest {
 
         // For backwards-compatibility, consentNotificationEmailVerified=null means we still send it to the consent
         // notification email.
-        study.setConsentNotificationEmailVerified(null);
+        app.setConsentNotificationEmailVerified(null);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -789,7 +789,7 @@ public class ConsentServiceMockTest {
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(email.getSubject(), "signedConsent subject");
         assertEquals(email.getSenderAddress(),
-                "\"Test Study [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(Sets.newHashSet(email.getRecipientAddresses()),
                 Sets.newHashSet("email@email.com", "bridge-testing+consent@sagebase.org"));
     }
@@ -798,9 +798,9 @@ public class ConsentServiceMockTest {
     public void consentToResearchNoNotificationEmailVerifiedSends() throws Exception {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        study.setConsentNotificationEmailVerified(false);
+        app.setConsentNotificationEmailVerified(false);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -818,11 +818,11 @@ public class ConsentServiceMockTest {
     public void consentToResearchWithNoRecipientsDoesNotSend() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
         // The provider reports that there are no addresses to send to, which is correct
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
-        consentService.consentToResearch(study, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
+        consentService.consentToResearch(app, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
 
         verify(sendMailService, never()).sendEmail(emailCaptor.capture());
     }
@@ -830,9 +830,9 @@ public class ConsentServiceMockTest {
     @Test
     public void consentToResearchWithoutStudyRecipientsDoesSend() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        study.setConsentNotificationEmail(null);
+        app.setConsentNotificationEmail(null);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, PARTICIPANT, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
@@ -847,13 +847,13 @@ public class ConsentServiceMockTest {
 
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();
 
-        consentService.consentToResearch(study, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
+        consentService.consentToResearch(app, SUBPOP_GUID, noEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING, true);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         assertFalse(emailCaptor.getValue().getRecipientEmails().isEmpty());
         assertEquals(emailCaptor.getValue().getRecipientEmails().iterator().next(),
-                study.getConsentNotificationEmail());
+                app.getConsentNotificationEmail());
     }
 
     @Test
@@ -862,9 +862,9 @@ public class ConsentServiceMockTest {
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("some test content");
-        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForUser(app, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, true);
 
         verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
@@ -876,7 +876,7 @@ public class ConsentServiceMockTest {
 
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), PHONE_PARTICIPANT.getPhone());
-        assertEquals(provider.getStudy(), study);
+        assertEquals(provider.getStudy(), app);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
         assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());
@@ -886,7 +886,7 @@ public class ConsentServiceMockTest {
     public void consentToResearchWithPhoneAutoSuppressed() {
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, true);
 
         verify(smsService, never()).sendSmsMessage(any(), any());
@@ -897,7 +897,7 @@ public class ConsentServiceMockTest {
         StudyParticipant phoneAndEmail = new StudyParticipant.Builder().copyOf(PHONE_PARTICIPANT).withEmail(EMAIL)
                 .withEmailVerified(Boolean.TRUE).build();
 
-        consentService.consentToResearch(study, SUBPOP_GUID, phoneAndEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
+        consentService.consentToResearch(app, SUBPOP_GUID, phoneAndEmail, CONSENT_SIGNATURE, SharingScope.NO_SHARING,
                 true);
 
         verify(sendMailService).sendEmail(any());
@@ -906,7 +906,7 @@ public class ConsentServiceMockTest {
 
     @Test
     public void consentToResearchWithPhoneSuppressedByCallFlag() {
-        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);
 
         verify(smsService, never()).sendSmsMessage(any(), any());
@@ -917,10 +917,10 @@ public class ConsentServiceMockTest {
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
 
-        when(subpopService.getSubpopulation(study.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
-        consentService.consentToResearch(study, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
@@ -936,9 +936,9 @@ public class ConsentServiceMockTest {
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent("some test content");
-        when(templateService.getRevisionForUser(study, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
+        when(templateService.getRevisionForUser(app, TemplateType.SMS_SIGNED_CONSENT)).thenReturn(revision);
         
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, PHONE_PARTICIPANT);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, PHONE_PARTICIPANT);
 
         verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
 
@@ -949,7 +949,7 @@ public class ConsentServiceMockTest {
 
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), PHONE_PARTICIPANT.getPhone());
-        assertEquals(provider.getStudy(), study);
+        assertEquals(provider.getStudy(), app);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
         assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());
@@ -962,7 +962,7 @@ public class ConsentServiceMockTest {
         StudyParticipant phoneAndEmail = new StudyParticipant.Builder().copyOf(PHONE_PARTICIPANT).withEmail(EMAIL)
                 .withEmailVerified(Boolean.TRUE).build();
 
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, phoneAndEmail);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, phoneAndEmail);
 
         verify(sendMailService).sendEmail(any());
         verify(smsService, never()).sendSmsMessage(any(), any());
@@ -974,7 +974,7 @@ public class ConsentServiceMockTest {
 
         StudyParticipant noPhoneOrEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withPhone(TestConstants.PHONE).withEmailVerified(null).withPhoneVerified(null).build();
-        consentService.resendConsentAgreement(study, SUBPOP_GUID, noPhoneOrEmail);
+        consentService.resendConsentAgreement(app, SUBPOP_GUID, noPhoneOrEmail);
     }
 
     @Test

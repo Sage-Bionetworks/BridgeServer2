@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import org.sagebionetworks.bridge.models.studies.Study;
-
 /** Enumeration of different email types associated with the study. Currently used to verify recipient emails. */
 public enum StudyEmailType {
     /**

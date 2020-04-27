@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.VerificationData;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -112,7 +112,7 @@ public class AccountWorkflowService {
 
     // Dependent services
     private SmsService smsService;
-    private StudyService studyService;
+    private AppService appService;
     private SendMailService sendMailService;
     private AccountService accountService;
     private CacheProvider cacheProvider;
@@ -132,8 +132,8 @@ public class AccountWorkflowService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
 
     @Autowired
@@ -169,8 +169,8 @@ public class AccountWorkflowService {
      * verified. We assume that an account has been created and that email verification should be sent
      * (neither is verified in this method).
      */
-    public void sendEmailVerificationToken(Study study, String userId, String recipientEmail) {
-        checkNotNull(study);
+    public void sendEmailVerificationToken(App app, String userId, String recipientEmail) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
         
         if (recipientEmail == null) {
@@ -187,17 +187,17 @@ public class AccountWorkflowService {
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
         
         saveVerification(sptoken, new VerificationData.Builder()
-                .withAppId(study.getIdentifier())
+                .withAppId(app.getIdentifier())
                 .withType(EMAIL)
                 .withUserId(userId)
                 .withExpiresOn(expiresOn).build());
 
-        String oldUrl = getVerifyEmailURL(study, sptoken);
-        String newUrl = getShortVerifyEmailURL(study, sptoken);
+        String oldUrl = getVerifyEmailURL(app, sptoken);
+        String newUrl = getShortVerifyEmailURL(app, sptoken);
 
-        TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_VERIFY_EMAIL);
+        TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_VERIFY_EMAIL);
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
@@ -210,8 +210,8 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(provider);
     }
     
-    public void sendPhoneVerificationToken(Study study, String userId, Phone phone) {
-        checkNotNull(study);
+    public void sendPhoneVerificationToken(App app, String userId, Phone phone) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
         
         if (phone == null) {
@@ -225,16 +225,16 @@ public class AccountWorkflowService {
         long expiresOn = getDateTimeInMillis() + (VERIFY_OR_RESET_EXPIRE_IN_SECONDS*1000);
 
         saveVerification(sptoken, new VerificationData.Builder()
-                .withAppId(study.getIdentifier())
+                .withAppId(app.getIdentifier())
                 .withType(PHONE)
                 .withUserId(userId)
                 .withExpiresOn(expiresOn).build());
         
         String formattedSpToken = sptoken.substring(0,3) + "-" + sptoken.substring(3,6);
         
-        TemplateRevision revision = templateService.getRevisionForUser(study, SMS_VERIFY_PHONE);
+        TemplateRevision revision = templateService.getRevisionForUser(app, SMS_VERIFY_PHONE);
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withToken("token", formattedSpToken)
                 .withTemplateRevision(revision)
                 .withTransactionType()
@@ -250,13 +250,13 @@ public class AccountWorkflowService {
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
         checkNotNull(accountId);
         
-        Study study = studyService.getStudy(accountId.getAppId());
+        App app = appService.getApp(accountId.getAppId());
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             if (type == ChannelType.EMAIL) {
-                sendEmailVerificationToken(study, account.getId(), account.getEmail());
+                sendEmailVerificationToken(app, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
-                sendPhoneVerificationToken(study, account.getId(), account.getPhone());
+                sendPhoneVerificationToken(app, account.getId(), account.getPhone());
             } else {
                 throw new UnsupportedOperationException("Channel type not implemented");
             }
@@ -275,8 +275,8 @@ public class AccountWorkflowService {
         if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
-        Study study = studyService.getStudy(data.getAppId());
-        Account account = accountService.getAccount(AccountId.forId(study.getIdentifier(), data.getUserId()));
+        App app = appService.getApp(data.getAppId());
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -297,8 +297,8 @@ public class AccountWorkflowService {
      * won't be sent out if auto-verification is disabled (or if the user doesn't have a verified communication channel). 
      * This is because account exist notifications are only sent out when users are trying to sign up.
      */
-    public void notifyAccountExists(Study study, AccountId accountId) {
-        checkNotNull(study);
+    public void notifyAccountExists(App app, AccountId accountId) {
+        checkNotNull(app);
         checkNotNull(accountId);
 
         Account account = accountService.getAccount(accountId);
@@ -307,15 +307,15 @@ public class AccountWorkflowService {
         }
         boolean verifiedEmail = account.getEmail() != null && Boolean.TRUE.equals(account.getEmailVerified());
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
-        boolean sendEmail = study.isEmailVerificationEnabled() && !study.isAutoVerificationEmailSuppressed();
-        boolean sendPhone = !study.isAutoVerificationPhoneSuppressed();
+        boolean sendEmail = app.isEmailVerificationEnabled() && !app.isAutoVerificationEmailSuppressed();
+        boolean sendPhone = !app.isAutoVerificationPhoneSuppressed();
         
         if (verifiedEmail && sendEmail) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_ACCOUNT_EXISTS);
-            sendPasswordResetRelatedEmail(study, account.getEmail(), true, revision);
+            TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_ACCOUNT_EXISTS);
+            sendPasswordResetRelatedEmail(app, account.getEmail(), true, revision);
         } else if (verifiedPhone && sendPhone) {
-            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_ACCOUNT_EXISTS);
-            sendPasswordResetRelatedSMS(study, account, true, revision);
+            TemplateRevision revision = templateService.getRevisionForUser(app, SMS_ACCOUNT_EXISTS);
+            sendPasswordResetRelatedSMS(app, account, true, revision);
         }
     }
     
@@ -327,9 +327,9 @@ public class AccountWorkflowService {
      * this method fails silently if the email or phone number cannot be found in the system, 
      * to prevent account enumeration attacks. 
      */
-    public void requestResetPassword(Study study, boolean isStudyAdmin, AccountId accountId) {
+    public void requestResetPassword(App app, boolean isStudyAdmin, AccountId accountId) {
         checkNotNull(accountId);
-        checkArgument(study.getIdentifier().equals(accountId.getAppId()));
+        checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
         Account account = accountService.getAccount(accountId);
         // We are going to change the status of the account if this succeeds, so we must also
@@ -338,27 +338,27 @@ public class AccountWorkflowService {
             boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
             boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
             if (account.getEmail() != null && emailVerified) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_RESET_PASSWORD);
-                sendPasswordResetRelatedEmail(study, account.getEmail(), false, revision);
+                TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_RESET_PASSWORD);
+                sendPasswordResetRelatedEmail(app, account.getEmail(), false, revision);
             } else if (account.getPhone() != null && phoneVerified) {
-                TemplateRevision revision = templateService.getRevisionForUser(study, SMS_RESET_PASSWORD);
-                sendPasswordResetRelatedSMS(study, account, false, revision);
+                TemplateRevision revision = templateService.getRevisionForUser(app, SMS_RESET_PASSWORD);
+                sendPasswordResetRelatedSMS(app, account, false, revision);
             }
         }
     }
     
-    private void sendPasswordResetRelatedEmail(Study study, String email, boolean includeEmailSignIn,
+    private void sendPasswordResetRelatedEmail(App app, String email, boolean includeEmailSignIn,
             TemplateRevision revision) {
         String sptoken = getNextToken();
         
-        CacheKey cacheKey = CacheKey.passwordResetForEmail(sptoken, study.getIdentifier());
+        CacheKey cacheKey = CacheKey.passwordResetForEmail(sptoken, app.getIdentifier());
         cacheProvider.setObject(cacheKey, email, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
-        String url = getResetPasswordURL(study, sptoken);
-        String shortUrl = getShortResetPasswordURL(study, sptoken);
+        String url = getResetPasswordURL(app, sptoken);
+        String shortUrl = getShortResetPasswordURL(app, sptoken);
         
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
-            .withStudy(study)
+            .withStudy(app)
             .withTemplateRevision(revision)
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
@@ -370,8 +370,8 @@ public class AccountWorkflowService {
             .withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
             .withType(EmailType.RESET_PASSWORD);
             
-        if (includeEmailSignIn && study.isEmailSignInEnabled()) {
-            SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(study.getIdentifier()).build();
+        if (includeEmailSignIn && app.isEmailSignInEnabled()) {
+            SignIn signIn = new SignIn.Builder().withEmail(email).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, account, token) -> {
                     // get and add the sign in URLs.
@@ -388,27 +388,27 @@ public class AccountWorkflowService {
         sendMailService.sendEmail(builder.build());
     }
     
-    private void sendPasswordResetRelatedSMS(Study study, Account account, boolean includePhoneSignIn,
+    private void sendPasswordResetRelatedSMS(App app, Account account, boolean includePhoneSignIn,
             TemplateRevision revision) {
         Phone phone = account.getPhone();
         String sptoken = getNextToken();
         
-        CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, study.getIdentifier());
+        CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, app.getIdentifier());
         cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
-        String url = getShortResetPasswordURL(study, sptoken);
+        String url = getShortResetPasswordURL(app, sptoken);
         
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
         builder.withTemplateRevision(revision);
         builder.withTransactionType();
-        builder.withStudy(study);
+        builder.withStudy(app);
         builder.withPhone(phone);
         builder.withToken(SPTOKEN_KEY, sptoken);
         builder.withToken(RESET_PASSWORD_URL_KEY, url);
         builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
-        if (includePhoneSignIn && study.isPhoneSignInEnabled()) {
-            SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(study.getIdentifier()).build();
+        if (includePhoneSignIn && app.isPhoneSignInEnabled()) {
+            SignIn signIn = new SignIn.Builder().withPhone(phone).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
                 signIn, false, this::getNextPhoneToken, (theStudy, account2, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
@@ -428,8 +428,8 @@ public class AccountWorkflowService {
         checkNotNull(passwordReset);
         
         // This pathway is unusual as the token may have been sent via email or phone, so test for both.
-        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
-        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
+        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getAppId());
+        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getAppId());
         
         String email = cacheProvider.getObject(emailCacheKey, String.class);
         Phone phone = cacheProvider.getObject(phoneCacheKey, Phone.class);
@@ -439,14 +439,14 @@ public class AccountWorkflowService {
         cacheProvider.removeObject(emailCacheKey);
         cacheProvider.removeObject(phoneCacheKey);
         
-        Study study = studyService.getStudy(passwordReset.getStudyIdentifier());
+        App app = appService.getApp(passwordReset.getAppId());
         ChannelType channelType = null;
         AccountId accountId = null;
         if (email != null) {
-            accountId = AccountId.forEmail(study.getIdentifier(), email);
+            accountId = AccountId.forEmail(app.getIdentifier(), email);
             channelType = ChannelType.EMAIL;
         } else if (phone != null) {
-            accountId = AccountId.forPhone(study.getIdentifier(), phone);
+            accountId = AccountId.forPhone(app.getIdentifier(), phone);
             channelType = ChannelType.PHONE;
         } else {
             throw new BridgeServiceException("Could not reset password");
@@ -521,20 +521,20 @@ public class AccountWorkflowService {
     /** Requests channel sign-in. Returns the userId, or null if the user does not exist. */
     private String requestChannelSignIn(ChannelType channelType, Validator validator, AtomicLong atomicLong,
             SignIn signIn, boolean shouldThrottle, Supplier<String> tokenSupplier,
-            TriConsumer<Study, Account, String> messageSender) {
+            TriConsumer<App, Account, String> messageSender) {
         long startTime = System.currentTimeMillis();
         Validate.entityThrowingException(validator, signIn);
 
         // We use the study so it's existence is verified. We retrieve the account so we verify it
         // exists as well. If the token is returned to the server, we can safely use the credentials 
         // in the persisted SignIn object.
-        Study study = studyService.getStudy(signIn.getStudyId());
+        App app = appService.getApp(signIn.getAppId());
 
         // Do we want the same flag for phone? Do we want to eliminate this flag?
-        if (channelType == EMAIL && !study.isEmailSignInEnabled()) {
-            throw new UnauthorizedException("Email-based sign in not enabled for study: " + study.getName());
-        } else if (channelType == PHONE && !study.isPhoneSignInEnabled()) {
-            throw new UnauthorizedException("Phone-based sign in not enabled for study: " + study.getName());
+        if (channelType == EMAIL && !app.isEmailSignInEnabled()) {
+            throw new UnauthorizedException("Email-based sign in not enabled for study: " + app.getName());
+        } else if (channelType == PHONE && !app.isPhoneSignInEnabled()) {
+            throw new UnauthorizedException("Phone-based sign in not enabled for study: " + app.getName());
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
@@ -572,7 +572,7 @@ public class AccountWorkflowService {
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
 
-        messageSender.accept(study, account, token);
+        messageSender.accept(app, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
 
         return account.getId();
@@ -629,24 +629,24 @@ public class AccountWorkflowService {
         return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
     }
     
-    private String getVerifyEmailURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(OLD_VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
+    private String getVerifyEmailURL(App app, String sptoken) {
+        return formatWithEncodedArgs(OLD_VERIFY_EMAIL_URL, app.getIdentifier(), sptoken);
     }
     
-    private String getResetPasswordURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(OLD_RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+    private String getResetPasswordURL(App app, String sptoken) {
+        return formatWithEncodedArgs(OLD_RESET_PASSWORD_URL, app.getIdentifier(), sptoken);
     }
     
     private String getShortEmailSignInURL(String email, String studyId, String token) {
         return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, token);
     }
     
-    private String getShortVerifyEmailURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(VERIFY_EMAIL_URL, study.getIdentifier(), sptoken);
+    private String getShortVerifyEmailURL(App app, String sptoken) {
+        return formatWithEncodedArgs(VERIFY_EMAIL_URL, app.getIdentifier(), sptoken);
     }
     
-    private String getShortResetPasswordURL(Study study, String sptoken) {
-        return formatWithEncodedArgs(RESET_PASSWORD_URL, study.getIdentifier(), sptoken);
+    private String getShortResetPasswordURL(App app, String sptoken) {
+        return formatWithEncodedArgs(RESET_PASSWORD_URL, app.getIdentifier(), sptoken);
     }
     
     private String formatWithEncodedArgs(String formatString, String... strings) {

@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivityStatus;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.validators.ScheduleContextValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -180,14 +180,14 @@ public class ScheduledActivityService {
         return DateTime.now();
     }
 
-    public List<ScheduledActivity> getScheduledActivities(Study study, ScheduleContext context) {
-        checkNotNull(study);
+    public List<ScheduledActivity> getScheduledActivities(App app, ScheduleContext context) {
+        checkNotNull(app);
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
 
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
@@ -208,14 +208,14 @@ public class ScheduledActivityService {
         return orderActivities(scheduledActivities, V3_FILTER);
     }
     
-    public List<ScheduledActivity> getScheduledActivitiesV4(Study study, ScheduleContext context) {
-        checkNotNull(study);
+    public List<ScheduledActivity> getScheduledActivitiesV4(App app, ScheduleContext context) {
+        checkNotNull(app);
         checkNotNull(context);
         
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(study, healthCode, DateUtils.getCurrentDateTime());
+        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);

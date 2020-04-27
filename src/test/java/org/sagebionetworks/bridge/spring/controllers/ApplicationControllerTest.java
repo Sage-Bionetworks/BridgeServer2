@@ -30,22 +30,22 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
 import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AuthenticationService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UrlShortenerService;
 
 public class ApplicationControllerTest extends Mockito {
 
     @Mock
-    StudyService studyService;
+    AppService appService;
     
     @Mock
     AuthenticationService authenticationService;
@@ -63,7 +63,7 @@ public class ApplicationControllerTest extends Mockito {
     @Spy
     ApplicationController controller;
     
-    Study study;
+    App app;
     
     @BeforeMethod
     public void before() {
@@ -75,13 +75,13 @@ public class ApplicationControllerTest extends Mockito {
         viewCache.setCacheProvider(cacheProvider);
         controller.setViewCache(viewCache);
         
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        study.setName("<Test Study>");
-        study.setSupportEmail("support@email.com");
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        app.setName("<Test Study>");
+        app.setSupportEmail("support@email.com");
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
-        doReturn(study).when(studyService).getStudy(TEST_APP_ID);
+        doReturn(app).when(appService).getApp(TEST_APP_ID);
     }
     
     @Test
@@ -112,10 +112,10 @@ public class ApplicationControllerTest extends Mockito {
         String templateName = controller.verifyEmail(model, TEST_APP_ID);
         
         assertEquals(templateName, "verifyEmail");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(model).addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
-        verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -123,8 +123,8 @@ public class ApplicationControllerTest extends Mockito {
         String templateName = controller.verifyStudyEmail(model, TEST_APP_ID);
 
         assertEquals(templateName, "verifyStudyEmail");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -132,12 +132,12 @@ public class ApplicationControllerTest extends Mockito {
         String templateName = controller.resetPassword(model, TEST_APP_ID);
         
         assertEquals(templateName, "resetPassword");
-        String passwordDescription = BridgeUtils.passwordPolicyDescription(study.getPasswordPolicy());
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(model).addAttribute(SUPPORT_EMAIL, study.getSupportEmail());
-        verify(model).addAttribute(STUDY_ID, study.getIdentifier());
+        String passwordDescription = BridgeUtils.passwordPolicyDescription(app.getPasswordPolicy());
+        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
         verify(model).addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -147,9 +147,9 @@ public class ApplicationControllerTest extends Mockito {
         
         String templateName = controller.startSessionWithQueryParam(model, TEST_APP_ID);
         assertEquals(templateName, "startSession");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -159,21 +159,21 @@ public class ApplicationControllerTest extends Mockito {
         
         String templateName = controller.startSessionWithPath(model, TEST_APP_ID);
         assertEquals(templateName, "startSession");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(study.getName(), "UTF-8"));
-        verify(model).addAttribute(STUDY_ID, study.getIdentifier());
-        verify(studyService).getStudy(TEST_APP_ID);
+        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(appService).getApp(TEST_APP_ID);
     }
     
     @Test
     public void androidAppLinks() throws Exception {
-        DynamoStudy study2 = new DynamoStudy();
+        DynamoApp study2 = new DynamoApp();
         study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();
+        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
         
-        study.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK);
-        study.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_2);
+        app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK);
+        app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_2);
         study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_3);
         study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_4);
         
@@ -192,14 +192,14 @@ public class ApplicationControllerTest extends Mockito {
 
     @Test
     public void appleAppLinks() throws Exception {
-        DynamoStudy study2 = new DynamoStudy();
+        DynamoApp study2 = new DynamoApp();
         study2.setIdentifier(TEST_APP_ID);
         study2.setSupportEmail("support@email.com");
         study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(study, study2)).when(studyService).getStudies();
+        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
         
-        study.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK);
-        study.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_2);
+        app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK);
+        app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_2);
         study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_3);
         study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_4);
 

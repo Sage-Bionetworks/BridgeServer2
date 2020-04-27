@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
@@ -57,7 +57,7 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.HealthDataService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -80,7 +80,7 @@ public class UploadHandlersEndToEndTest {
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
     private static final LocalDate MOCK_TODAY = MOCK_NOW.toLocalDate();
 
-    private static final DynamoStudy STUDY = new DynamoStudy();
+    private static final DynamoApp STUDY = new DynamoApp();
     static {
         STUDY.setStrictUploadValidationEnabled(true);
     }
@@ -271,9 +271,9 @@ public class UploadHandlersEndToEndTest {
         StrictValidationHandler strictValidationHandler = new StrictValidationHandler();
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
-        StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
-        strictValidationHandler.setStudyService(mockStudyService);
+        AppService mockAppService = mock(AppService.class);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(STUDY);
+        strictValidationHandler.setAppService(mockAppService);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "test-substudy", "userId");
         acctSubstudy.setExternalId(EXTERNAL_ID);

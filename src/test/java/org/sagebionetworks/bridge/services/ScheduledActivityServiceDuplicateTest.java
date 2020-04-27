@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
@@ -153,7 +153,7 @@ public class ScheduledActivityServiceDuplicateTest {
     AppConfigService appConfigService;
     
     @Mock
-    Study study;
+    App app;
     
     ScheduledActivityService service;
     
@@ -271,7 +271,7 @@ public class ScheduledActivityServiceDuplicateTest {
         // Correctly scheduled one-time tasks coming from scheduler
         doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
         
-        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
         verify(activityDao).getActivities(any(), any());
         verify(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
@@ -299,7 +299,7 @@ public class ScheduledActivityServiceDuplicateTest {
         // Correctly scheduled one-time tasks coming from scheduler
         doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
         
-        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
@@ -323,7 +323,7 @@ public class ScheduledActivityServiceDuplicateTest {
         // Correctly scheduled one-time tasks coming from scheduler
         doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
         
-        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());
@@ -347,7 +347,7 @@ public class ScheduledActivityServiceDuplicateTest {
         // Correctly scheduled one-time tasks coming from scheduler
         doReturn(makeSchedulePlans()).when(schedulePlanService).getSchedulePlans(any(), any(), eq(false));
         
-        List<ScheduledActivity> activities = service.getScheduledActivities(study, context);
+        List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
         // There's only one of these and they are set to midnight UTC.
         verify(activityDao).getActivities(any(), any());

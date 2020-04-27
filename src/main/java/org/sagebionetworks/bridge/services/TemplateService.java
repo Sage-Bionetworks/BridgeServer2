@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -70,7 +70,7 @@ public class TemplateService {
     private TemplateDao templateDao;
     private TemplateRevisionDao templateRevisionDao;
     private CriteriaDao criteriaDao;
-    private StudyService studyService;
+    private AppService appService;
     private SubstudyService substudyService;
     
     private String defaultEmailVerificationTemplate;
@@ -105,59 +105,59 @@ public class TemplateService {
         this.criteriaDao = criteriaDao;
     }
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     @Autowired
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
 
-    @Value("classpath:conf/study-defaults/email-verification.txt")
+    @Value("classpath:conf/app-defaults/email-verification.txt")
     final void setDefaultEmailVerificationTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/email-verification-subject.txt")
+    @Value("classpath:conf/app-defaults/email-verification-subject.txt")
     final void setDefaultEmailVerificationTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailVerificationTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/reset-password.txt")
+    @Value("classpath:conf/app-defaults/reset-password.txt")
     final void setDefaultPasswordTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/reset-password-subject.txt")
+    @Value("classpath:conf/app-defaults/reset-password-subject.txt")
     final void setDefaultPasswordTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultResetPasswordTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/email-sign-in.txt")
+    @Value("classpath:conf/app-defaults/email-sign-in.txt")
     final void setDefaultEmailSignInTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailSignInTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/email-sign-in-subject.txt")
+    @Value("classpath:conf/app-defaults/email-sign-in-subject.txt")
     final void setDefaultEmailSignInTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultEmailSignInTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/account-exists.txt")
+    @Value("classpath:conf/app-defaults/account-exists.txt")
     final void setDefaultAccountExistsTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/account-exists-subject.txt")
+    @Value("classpath:conf/app-defaults/account-exists-subject.txt")
     final void setDefaultAccountExistsTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAccountExistsTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/signed-consent.txt")
+    @Value("classpath:conf/app-defaults/signed-consent.txt")
     final void setSignedConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultSignedConsentTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/signed-consent-subject.txt")
+    @Value("classpath:conf/app-defaults/signed-consent-subject.txt")
     final void setSignedConsentTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultSignedConsentTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/app-install-link.txt")
+    @Value("classpath:conf/app-defaults/app-install-link.txt")
     final void setAppInstallLinkTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAppInstallLinkTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
-    @Value("classpath:conf/study-defaults/app-install-link-subject.txt")
+    @Value("classpath:conf/app-defaults/app-install-link-subject.txt")
     final void setAppInstallLinkTemplateSubject(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultAppInstallLinkTemplateSubject = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
@@ -208,22 +208,22 @@ public class TemplateService {
         defaultTemplatesMap.put(SMS_VERIFY_PHONE, Triple.of(null, defaultVerifyPhoneSmsTemplate, TEXT));
     }
     
-    public TemplateRevision getRevisionForUser(Study study, TemplateType type) {
+    public TemplateRevision getRevisionForUser(App app, TemplateType type) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
-            .withAppId(study.getIdentifier())
+            .withAppId(app.getIdentifier())
             .build();
 
-        Template template = getTemplateForUser(study, context, type)
+        Template template = getTemplateForUser(app, context, type)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         return templateRevisionDao.getTemplateRevision(template.getGuid(), template.getPublishedCreatedOn())
                 .orElseThrow(() -> new EntityNotFoundException(TemplateRevision.class));
     }
     
     @SuppressWarnings("unchecked")
-    Optional<Template> getTemplateForUser(Study study, CriteriaContext context, TemplateType type) {
+    Optional<Template> getTemplateForUser(App app, CriteriaContext context, TemplateType type) {
         checkNotNull(context);
         checkNotNull(type);
 
@@ -239,8 +239,8 @@ public class TemplateService {
         if (templateMatches.size() == 1) {
             return Optional.of(templateMatches.get(0));
         }
-        // If not, fall back to the default specified for this study, if it exists. 
-        String defaultGuid = study.getDefaultTemplates().get(type.name().toLowerCase());
+        // If not, fall back to the default specified for this app, if it exists. 
+        String defaultGuid = app.getDefaultTemplates().get(type.name().toLowerCase());
         if (defaultGuid != null) {
             // Specified default may not exist, log as integrity violation, but continue
             Optional<Template> optional = templateDao.getTemplate(context.getAppId(), defaultGuid);
@@ -263,9 +263,9 @@ public class TemplateService {
         return Optional.empty();
     }
     
-    public PagedResourceList<? extends Template> getTemplatesForType(String studyId, TemplateType type,
+    public PagedResourceList<? extends Template> getTemplatesForType(String appId, TemplateType type,
             Integer offset, Integer pageSize, boolean includeDeleted) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
         checkNotNull(type);
 
         if (offset == null) {
@@ -280,28 +280,28 @@ public class TemplateService {
             throw new BadRequestException("pageSize must be in range 1-" + API_MAXIMUM_PAGE_SIZE);
         }
         
-        PagedResourceList<? extends Template> templates = templateDao.getTemplates(studyId, type, offset, pageSize, includeDeleted);
+        PagedResourceList<? extends Template> templates = templateDao.getTemplates(appId, type, offset, pageSize, includeDeleted);
         for (Template template : templates.getItems()) {
             loadCriteria(template);
         }
         return templates;
     }
     
-    public Template getTemplate(String studyId, String guid) {
-        checkNotNull(studyId);
+    public Template getTemplate(String appId, String guid) {
+        checkNotNull(appId);
         
         if (StringUtils.isBlank(guid)) {
             throw new BadRequestException("Invalid template guid: " + guid);
         }
         
-        Template template = templateDao.getTemplate(studyId, guid)
+        Template template = templateDao.getTemplate(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Template.class));
         
         loadCriteria(template);
         return template;
     }
 
-    public GuidVersionHolder createTemplate(Study study, Template template) {
+    public GuidVersionHolder createTemplate(App app, Template template) {
         TemplateRevision revision = TemplateRevision.create();
         if (template.getTemplateType() != null) {
             Triple<String,String,MimeType> triple = defaultTemplatesMap.get(template.getTemplateType());
@@ -310,16 +310,16 @@ public class TemplateService {
             revision.setMimeType(triple.getRight());
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
 
         String templateGuid = generateGuid();
         DateTime timestamp = getTimestamp();
         String storagePath = templateGuid + "." + timestamp.getMillis();
 
-        template.setStudyId(study.getIdentifier());
+        template.setAppId(app.getIdentifier());
         template.setDeleted(false);
         template.setVersion(0);
         template.setGuid(templateGuid);
@@ -340,28 +340,28 @@ public class TemplateService {
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
-    public GuidVersionHolder updateTemplate(String studyId, Template template) {
-        checkNotNull(studyId);
+    public GuidVersionHolder updateTemplate(String appId, Template template) {
+        checkNotNull(appId);
         checkNotNull(template);
         
         // If the entity is deleted and staying deleted, don't allow this operation.
-        Template existing = getTemplate(studyId, template.getGuid());
+        Template existing = getTemplate(appId, template.getGuid());
         if (existing.isDeleted() && template.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
-        template.setStudyId(studyId);
+        template.setAppId(appId);
         template.setModifiedOn(getTimestamp());
         // no reason for these to be updated after creation
         template.setTemplateType(existing.getTemplateType());
         template.setCreatedOn(existing.getCreatedOn());
         
-        Study study = studyService.getStudy(studyId);
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        App app = appService.getApp(appId);
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(study.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, template);
 
-        if (template.isDeleted() && isDefaultTemplate(template, studyId)) {
+        if (template.isDeleted() && isDefaultTemplate(template, appId)) {
             throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
                 .withEntityKey("guid", template.getGuid()).build();
         }
@@ -372,14 +372,15 @@ public class TemplateService {
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
     
-    public void deleteTemplate(String studyId, String guid) {
+    public void deleteTemplate(String appId, String guid) {
         // This not only verifies the template exists, it verifies it is in the caller's study
-        Template existing = getTemplate(studyId, guid);
+        Template existing = getTemplate(appId, guid);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Template.class);
         }
-        if (isDefaultTemplate(existing, studyId)) {
-            throw new ConstraintViolationException.Builder().withMessage("The default template for a type cannot be deleted.")
+        if (isDefaultTemplate(existing, appId)) {
+            throw new ConstraintViolationException.Builder()
+                .withMessage("The default template for a type cannot be deleted.")
                 .withEntityKey("guid", guid).build();
         }
         
@@ -389,21 +390,21 @@ public class TemplateService {
         templateDao.updateTemplate(existing);
     }
     
-    public void deleteTemplatePermanently(String studyId, String guid) {
+    public void deleteTemplatePermanently(String appId, String guid) {
         // Throws exception if template doesn't exist
-        Template template = getTemplate(studyId, guid);
+        Template template = getTemplate(appId, guid);
 
-        templateDao.deleteTemplatePermanently(studyId, guid);
+        templateDao.deleteTemplatePermanently(appId, guid);
         criteriaDao.deleteCriteria(getKey(template));
     }
     
-    public void deleteTemplatesForStudy(String studyId) {
-        templateDao.deleteTemplatesForStudy(studyId);
+    public void deleteTemplatesForStudy(String appId) {
+        templateDao.deleteTemplatesForApp(appId);
     }
 
-    private boolean isDefaultTemplate(Template template, String studyId) {
-        Study study = studyService.getStudy(studyId);
-        String defaultGuid = study.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
+    private boolean isDefaultTemplate(Template template, String appId) {
+        App app = appService.getApp(appId);
+        String defaultGuid = app.getDefaultTemplates().get(template.getTemplateType().name().toLowerCase());
         
         return (template.getGuid().equals(defaultGuid));
     }

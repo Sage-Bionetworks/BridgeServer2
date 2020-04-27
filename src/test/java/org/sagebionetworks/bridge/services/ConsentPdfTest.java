@@ -17,9 +17,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 public class ConsentPdfTest {
@@ -32,20 +32,20 @@ public class ConsentPdfTest {
             .withEmail(EMAIL).withEmailVerified(true).build();;
     
     private String consentBodyTemplate;
-    private Study study;
+    private App app;
     
     @BeforeMethod
     public void before() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP);
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
-                "conf/study-defaults/consent-page.xhtml").getFile()));
+                "conf/app-defaults/consent-page.xhtml").getFile()));
         
-        study = new DynamoStudy();
-        study.setName("Study Name");
-        study.setSponsorName("Sponsor Name");
-        study.setSupportEmail("sender@default.com");
-        study.setConsentNotificationEmail("consent@consent.com");
-        study.setConsentNotificationEmailVerified(true);
+        app = new DynamoApp();
+        app.setName("Study Name");
+        app.setSponsorName("Sponsor Name");
+        app.setSupportEmail("sender@default.com");
+        app.setConsentNotificationEmail("consent@consent.com");
+        app.setConsentNotificationEmailVerified(true);
     }
     
     @AfterMethod
@@ -57,7 +57,7 @@ public class ConsentPdfTest {
     public void createsBytes() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING, DOCUMENT_FRAGMENT,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING, DOCUMENT_FRAGMENT,
                 consentBodyTemplate);
         
         assertTrue(consentPdf.getBytes().length > 0);
@@ -67,7 +67,7 @@ public class ConsentPdfTest {
     public void docWithNullUserTimeZone() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING, DOCUMENT_FRAGMENT,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING, DOCUMENT_FRAGMENT,
                 consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
@@ -79,7 +79,7 @@ public class ConsentPdfTest {
     public void docWithoutSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
 
         String output = consentPdf.getFormattedConsentDocument(); 
@@ -90,7 +90,7 @@ public class ConsentPdfTest {
     public void docWithSigImage() throws Exception {
         ConsentSignature sig = makeSignatureWithImage();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
@@ -100,7 +100,7 @@ public class ConsentPdfTest {
     public void legacyDocWithInvalidSig() throws Exception {
         ConsentSignature sig = makeInvalidSignature();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
@@ -114,7 +114,7 @@ public class ConsentPdfTest {
         StudyParticipant noEmailParticipant = new StudyParticipant.Builder().copyOf(EMAIL_PARTICIPANT)
                 .withEmail(null).build();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, noEmailParticipant, sig, NO_SHARING, DOCUMENT_FRAGMENT,
+        ConsentPdf consentPdf = new ConsentPdf(app, noEmailParticipant, sig, NO_SHARING, DOCUMENT_FRAGMENT,
                 consentBodyTemplate);
 
         String output = consentPdf.getFormattedConsentDocument();
@@ -125,7 +125,7 @@ public class ConsentPdfTest {
     public void docWithInvalidSig() throws Exception {
         ConsentSignature sig = makeInvalidSignature();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         
         String output = consentPdf.getFormattedConsentDocument();
@@ -138,7 +138,7 @@ public class ConsentPdfTest {
         
         StudyParticipant phoneParticipant = new StudyParticipant.Builder().withPhone(PHONE).withPhoneVerified(true).build();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, phoneParticipant, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, phoneParticipant, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         String output = consentPdf.getFormattedConsentDocument();
         assertTrue(output.contains(">(971) 248-6796<"));
@@ -151,7 +151,7 @@ public class ConsentPdfTest {
         
         StudyParticipant extIdParticipant = new StudyParticipant.Builder().withExternalId("anId").build();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, extIdParticipant, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, extIdParticipant, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         String output = consentPdf.getFormattedConsentDocument();
         assertTrue(output.contains(">anId<"));
@@ -162,7 +162,7 @@ public class ConsentPdfTest {
     public void dateFormattedCorrectly() throws Exception {
         ConsentSignature sig = makeSignatureWithoutImage();
         
-        ConsentPdf consentPdf = new ConsentPdf(study, EMAIL_PARTICIPANT, sig, NO_SHARING,
+        ConsentPdf consentPdf = new ConsentPdf(app, EMAIL_PARTICIPANT, sig, NO_SHARING,
                 DOCUMENT_FRAGMENT, consentBodyTemplate);
         String output = consentPdf.getFormattedConsentDocument();
 

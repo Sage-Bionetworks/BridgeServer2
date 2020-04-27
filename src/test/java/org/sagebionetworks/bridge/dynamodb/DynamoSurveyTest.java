@@ -68,7 +68,7 @@ public class DynamoSurveyTest {
         // Convert to JSON.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(survey, JsonNode.class);
 
-        // Convert JSON to map to validate JSON. Note that study ID is intentionally omitted, but type is added.
+        // Convert JSON to map to validate JSON. Note that app ID is intentionally omitted, but type is added.
         assertEquals(jsonNode.size(), 14);
         assertEquals(jsonNode.get("guid").textValue(), "test-survey-guid");
         assertEquals(jsonNode.get("version").intValue(), 2);
@@ -94,7 +94,7 @@ public class DynamoSurveyTest {
 
         // Convert back to POJO and validate. Note that study ID is still missing, since it was removed from the JSON.
         Survey convertedSurvey = BridgeObjectMapper.get().convertValue(jsonNode, Survey.class);
-        assertNull(convertedSurvey.getStudyIdentifier());
+        assertNull(convertedSurvey.getAppId());
         assertEquals(convertedSurvey.getGuid(), "test-survey-guid");
         assertEquals(convertedSurvey.getCreatedOn(), TEST_CREATED_ON_MILLIS);
         assertEquals(convertedSurvey.getModifiedOn(), TEST_MODIFIED_ON_MILLIS);
@@ -153,7 +153,7 @@ public class DynamoSurveyTest {
         Survey copy = new DynamoSurvey(survey);
 
         // validate
-        assertEquals(copy.getStudyIdentifier(), TEST_APP_ID);
+        assertEquals(copy.getAppId(), TEST_APP_ID);
         assertEquals(copy.getGuid(), "test-survey-guid");
         assertEquals(copy.getCreatedOn(), TEST_CREATED_ON_MILLIS);
         assertEquals(copy.getModifiedOn(), TEST_MODIFIED_ON_MILLIS);

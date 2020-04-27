@@ -43,7 +43,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -65,7 +65,7 @@ import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ReportService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ParticipantReportControllerTest extends Mockito {
     
@@ -87,7 +87,7 @@ public class ParticipantReportControllerTest extends Mockito {
     ReportService mockReportService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     AccountService mockAccountService;
@@ -120,7 +120,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        DynamoStudy study = new DynamoStudy();
+        DynamoApp study = new DynamoApp();
         study.setIdentifier(TEST_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
@@ -138,7 +138,7 @@ public class ParticipantReportControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setConsentStatuses(statuses);
         
-        doReturn(study).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(study).when(mockAppService).getApp(TEST_APP_ID);
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();

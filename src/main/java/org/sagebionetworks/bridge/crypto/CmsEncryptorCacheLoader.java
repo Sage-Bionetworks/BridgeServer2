@@ -38,8 +38,8 @@ public class CmsEncryptorCacheLoader extends CacheLoader<String, CmsEncryptor> {
 
     /** {@inheritDoc} */
     @Override
-    public CmsEncryptor load(@Nonnull String studyId) throws CertificateEncodingException, IOException {
-        String pemFileName = String.format(PEM_FILENAME_FORMAT, studyId);
+    public CmsEncryptor load(@Nonnull String appId) throws CertificateEncodingException, IOException {
+        String pemFileName = String.format(PEM_FILENAME_FORMAT, appId);
 
         // download certificate
         String certPem = s3CmsHelper.readS3FileAsString(CERT_BUCKET, pemFileName);

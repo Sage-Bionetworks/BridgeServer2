@@ -15,7 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 
 public class TestingHandlerTest {
@@ -163,7 +163,7 @@ public class TestingHandlerTest {
         // Testing handler may call context.getAppId().getIdentifier(), context.getUpload().getUploadId(), and
         // context.getUpload().getFilename(), so get those ready
 
-        DynamoStudy study = TestUtils.getValidStudy(TestingHandlerTest.class);
+        DynamoApp study = TestUtils.getValidStudy(TestingHandlerTest.class);
         study.setIdentifier(TEST_APP_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();

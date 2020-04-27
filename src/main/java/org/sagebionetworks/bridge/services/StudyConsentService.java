@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -101,7 +101,7 @@ public class StudyConsentService {
     private String publicationsBucket = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
     private String fullPageTemplate;
     
-    @Value("classpath:conf/study-defaults/consent-page.xhtml")
+    @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
         this.fullPageTemplate = IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8);
     }
@@ -258,7 +258,7 @@ public class StudyConsentService {
      * Set the specified consent document as active, setting all other consent documents 
      * as inactive.
      *
-     * @param study
+     * @param app
      *            study for this consent
      * @param subpop
      *            the subpopulation associated with this consent
@@ -266,8 +266,8 @@ public class StudyConsentService {
      *            time the consent document was added to the database.
      * @return the activated consent document along with its document content
      */
-    public StudyConsentView publishConsent(Study study, Subpopulation subpop, long timestamp) {
-        checkNotNull(study);
+    public StudyConsentView publishConsent(App app, Subpopulation subpop, long timestamp) {
+        checkNotNull(app);
         checkNotNull(subpop);
         checkArgument(timestamp > 0, "Timestamp is 0");
         
@@ -278,10 +278,10 @@ public class StudyConsentService {
         // Only if we can publish the document, do we mark it as published in the database.
         String documentContent = loadDocumentContent(consent);
         try {
-            publishFormatsToS3(study, subpop.getGuid(), documentContent);
+            publishFormatsToS3(app, subpop.getGuid(), documentContent);
             
             subpop.setPublishedConsentCreatedOn(timestamp);
-            subpopService.updateSubpopulation(study, subpop);
+            subpopService.updateSubpopulation(app, subpop);
 
         } catch(IOException | DocumentException | XRRuntimeException e) {
             throw new BridgeServiceException(e.getMessage());
@@ -314,8 +314,8 @@ public class StudyConsentService {
         return content;
     }
     
-    private void publishFormatsToS3(Study study, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(study, (value) -> XML_ESCAPER.translate(value));
+    private void publishFormatsToS3(App app, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
+        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> XML_ESCAPER.translate(value));
         map.putAll(SIGNATURE_BLOCK_VARS);
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 

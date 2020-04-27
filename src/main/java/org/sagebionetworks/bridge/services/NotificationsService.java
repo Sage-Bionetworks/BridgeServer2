@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -44,7 +44,7 @@ public class NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsService.class);
 
     private ParticipantService participantService;
-    private StudyService studyService;
+    private AppService appService;
     private NotificationRegistrationDao notificationRegistrationDao;
     private NotificationTopicService notificationTopicService;
     private AmazonSNSClient snsClient;
@@ -56,8 +56,8 @@ public class NotificationsService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -127,19 +127,19 @@ public class NotificationsService {
         checkNotNull(registration);
 
         adjustToCanonicalOsNameIfNeeded(registration);
-        Study study = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         Validate.entityThrowingException(NotificationRegistrationValidator.INSTANCE, registration);
 
         NotificationRegistration createdRegistration;
         if (registration.getProtocol() == NotificationProtocol.APPLICATION) {
             // This is a push notification registration. We'll need to generate an endpoint ARN.
-            String platformARN = getPlatformARN(study, registration);
+            String platformARN = getPlatformARN(app, registration);
             createdRegistration = notificationRegistrationDao.createPushNotificationRegistration(platformARN,
                     registration);
         } else {
             if (registration.getProtocol() == NotificationProtocol.SMS) {
                 // Can only create SMS registration for the user's own phone number, and only if it's verified.
-                StudyParticipant participant = participantService.getParticipant(study, context.getUserId(),
+                StudyParticipant participant = participantService.getParticipant(app, context.getUserId(),
                         false);
                 if (!TRUE.equals(participant.getPhoneVerified()) ||
                     !participant.getPhone().getNumber().equals(registration.getEndpoint())) {
@@ -242,8 +242,8 @@ public class NotificationsService {
         return erroredRegistrations;
     }
 
-    private String getPlatformARN(Study study, NotificationRegistration registration) {
-        String platformARN = study.getPushNotificationARNs().get(registration.getOsName());
+    private String getPlatformARN(App app, NotificationRegistration registration) {
+        String platformARN = app.getPushNotificationARNs().get(registration.getOsName());
         if (StringUtils.isBlank(platformARN)) {
             throw new NotImplementedException("Notifications not enabled for '"+registration.getOsName()+"' platform.");
         }

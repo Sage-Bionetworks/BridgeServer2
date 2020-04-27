@@ -48,9 +48,9 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AppConfigService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class AppConfigControllerTest extends Mockito {
     
@@ -71,7 +71,7 @@ public class AppConfigControllerTest extends Mockito {
     private AppConfigService mockService;
     
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private CacheProvider mockCacheProvider;
@@ -82,7 +82,7 @@ public class AppConfigControllerTest extends Mockito {
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
     
-    private Study study;
+    private App app;
     
     private AppConfig appConfig;
     
@@ -107,8 +107,8 @@ public class AppConfigControllerTest extends Mockito {
         appConfig.setGuid(GUID);
         appConfig.setVersion(1L);
         
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
@@ -142,7 +142,7 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
         
         String string = controller.getStudyAppConfig(TEST_APP_ID);
@@ -259,7 +259,7 @@ public class AppConfigControllerTest extends Mockito {
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
         
         controller.getStudyAppConfig(TEST_APP_ID);

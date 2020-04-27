@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AppConfigService;
 
 @CrossOrigin
@@ -52,23 +52,24 @@ public class AppConfigController extends BaseController {
         this.viewCache = viewCache;
     }
 
-    @GetMapping(path="/v3/studies/{studyId}/appconfig", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getStudyAppConfig(@PathVariable String studyId) {
-        Study study = studyService.getStudy(studyId);
+    @GetMapping(path = { "/v1/apps/{appId}/appconfig", "/v3/studies/{appId}/appconfig" }, 
+            produces = { APPLICATION_JSON_UTF8_VALUE })
+    public String getStudyAppConfig(@PathVariable String appId) {
+        App app = appService.getApp(appId);
         
         RequestContext reqContext = BridgeUtils.getRequestContext();
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(reqContext.getCallerLanguages())
                 .withClientInfo(reqContext.getCallerClientInfo())
-                .withAppId(study.getIdentifier())
+                .withAppId(app.getIdentifier())
                 .build();
         
         CacheKey cacheKey = getCriteriaContextCacheKey(context);
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
             // So we can delete all the relevant cached versions, keep track of them under the study
-            cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(study.getIdentifier()), cacheKey.toString());
+            cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(app.getIdentifier()), cacheKey.toString());
             return appConfig;
         });
         return json;

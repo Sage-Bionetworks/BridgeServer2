@@ -67,12 +67,12 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class ScheduledActivityControllerTest extends Mockito {
@@ -100,7 +100,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(USER_AGENT);
     
-    private static final Study STUDY = Study.create();  
+    private static final App APP = App.create();  
     
     private static final TypeReference<ForwardCursorPagedResourceList<ScheduledActivity>> FORWARD_CURSOR_PAGED_ACTIVITIES_REF =
             ACTIVITY_TYPE_REF;
@@ -113,7 +113,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     ScheduledActivityService mockScheduledActivityService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -125,7 +125,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     RequestInfoService mockRequestInfoService;
     
     @Mock
-    Study mockStudy;
+    App mockApp;
     
     @Mock
     Account mockAccount;
@@ -187,10 +187,10 @@ public class ScheduledActivityControllerTest extends Mockito {
         session = new UserSession(participant);
         session.setAppId(TEST_APP_ID);
         
-        when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
+        when(mockScheduledActivityService.getScheduledActivities(eq(APP), any(ScheduleContext.class))).thenReturn(list);
 
-        STUDY.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
+        APP.setIdentifier(TEST_APP_ID);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         when(mockBridgeConfig.getEnvironment()).thenReturn(UAT);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
@@ -227,7 +227,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         verify(mockAccount).setTimeZone(MSK);
         verify(sessionUpdateService).updateTimeZone(session, MSK);
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         assertEquals(contextCaptor.getValue().getInitialTimeZone(), MSK);
         assertEquals(contextCaptor.getValue().getStartsOn().getZone(), MSK);
         assertEquals(contextCaptor.getValue().getEndsOn().getZone(), MSK);
@@ -244,7 +244,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         controller.getScheduledActivities(null, "-07:00", "3", "5");
         
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), UNK);
     }
@@ -254,7 +254,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     public void utcTimeZoneParsedCorrectly() throws Exception {
         controller.getScheduledActivities(null, "+0:00", "3", "5");
         
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(DateUtils.timeZoneToOffsetString(context.getInitialTimeZone()), "+00:00");
     }
@@ -265,11 +265,11 @@ public class ScheduledActivityControllerTest extends Mockito {
         mockEditAccount(mockAccountService, mockAccount);
         DateTimeZone MSK = DateTimeZone.forOffsetHours(3);
         List<ScheduledActivity> list = ImmutableList.of();
-        when(mockScheduledActivityService.getScheduledActivities(eq(STUDY), any(ScheduleContext.class))).thenReturn(list);
+        when(mockScheduledActivityService.getScheduledActivities(eq(APP), any(ScheduleContext.class))).thenReturn(list);
         
         controller.getScheduledActivities(null, "+03:00", "3", "5");
         
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getInitialTimeZone(), MSK);
@@ -343,7 +343,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         controller.getScheduledActivities(now.toString(), null, null, null);
 
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         verifyNoMoreInteractions(mockScheduledActivityService);
         assertEquals(contextCaptor.getValue().getEndsOn(), now);
         assertEquals(contextCaptor.getValue().getInitialTimeZone(), now.getZone());
@@ -359,7 +359,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         controller.getScheduledActivities(null, "+03:00", "3", null);
         
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         verifyNoMoreInteractions(mockScheduledActivityService);
         assertEquals(contextCaptor.getValue().getEndsOn().withMillisOfSecond(0), expectedEndsOn);
         assertEquals(contextCaptor.getValue().getInitialTimeZone(), expectedEndsOn.getZone());
@@ -398,7 +398,7 @@ public class ScheduledActivityControllerTest extends Mockito {
     public void fullyInitializedSessionProvidesAccountCreatedOnInScheduleContext() throws Exception {
         controller.getScheduledActivities(null, "-07:00", "3", null);
         
-        verify(mockScheduledActivityService).getScheduledActivities(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivities(eq(APP), contextCaptor.capture());
         ScheduleContext context = contextCaptor.getValue();
         assertEquals(context.getAccountCreatedOn(), ACCOUNT_CREATED_ON.withZone(DateTimeZone.UTC));
     }
@@ -530,7 +530,7 @@ public class ScheduledActivityControllerTest extends Mockito {
         
         verify(sessionUpdateService).updateTimeZone(any(UserSession.class), timeZoneCaptor.capture());
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        verify(mockScheduledActivityService).getScheduledActivitiesV4(eq(STUDY), contextCaptor.capture());
+        verify(mockScheduledActivityService).getScheduledActivitiesV4(eq(APP), contextCaptor.capture());
         verify(controller).persistTimeZone(session, zone);
         verify(mockAccount).setTimeZone(zone);
         

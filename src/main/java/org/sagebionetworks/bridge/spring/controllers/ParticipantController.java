@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -96,19 +96,19 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createSmsRegistration(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.createSmsRegistration(study, userId);
+        participantService.createSmsRegistration(app, userId);
         return new StatusMessage("SMS notification registration created");
     }
 
     @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         CriteriaContext context = getCriteriaContext(session);
-        StudyParticipant participant = participantService.getSelfParticipant(study, context, consents);
+        StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
         
         return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
     }
@@ -116,7 +116,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/self")
     public JsonNode updateSelfParticipant() {
         UserSession session = getAuthenticatedSession();
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         // By copying only values that were included in the JSON onto the existing StudyParticipant,
         // we allow clients to only send back partial JSON to update the user. This has been the 
@@ -125,7 +125,7 @@ public class ParticipantController extends BaseController {
         Set<String> fieldNames = Sets.newHashSet(node.fieldNames());
 
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
-        StudyParticipant existing = participantService.getParticipant(study, session.getId(), false);
+        StudyParticipant existing = participantService.getParticipant(app, session.getId(), false);
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .copyOf(existing)
                 .copyFieldsOf(participant, fieldNames)
@@ -139,12 +139,12 @@ public class ParticipantController extends BaseController {
         }
         StudyParticipant updated = builder.build();
         
-        participantService.updateParticipant(study, updated);
+        participantService.updateParticipant(app, updated);
         
         // Construction of the participant record now includes some fields that aren't set directly by the update,
         // such as substudy associations. Load a completely updated participant record. Do get history 
         // for consent and session.
-        StudyParticipant updatedParticipant = participantService.getParticipant(study, session.getId(), true);
+        StudyParticipant updatedParticipant = participantService.getParticipant(app, session.getId(), true);
         RequestContext reqContext = BridgeUtils.getRequestContext();
         
         CriteriaContext context = new CriteriaContext.Builder()
@@ -165,13 +165,13 @@ public class ParticipantController extends BaseController {
     @DeleteMapping("/v3/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        StudyParticipant participant = participantService.getParticipant(study, userId, false);
+        StudyParticipant participant = participantService.getParticipant(app, userId, false);
         if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
         }
-        userAdminService.deleteUser(study, userId);
+        userAdminService.deleteUser(app, userId);
         
         return new StatusMessage("User deleted.");
     }
@@ -180,9 +180,9 @@ public class ParticipantController extends BaseController {
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String studyId,
             @PathVariable String userId) {
         getAuthenticatedSession(Roles.WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
 
-        return new ResourceList<>(participantService.getActivityEvents(study, userId));
+        return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
     
     @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/activities/{activityType}/{referentGuid}", produces = {
@@ -193,9 +193,9 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
         getAuthenticatedSession(Roles.WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         
-        return getActivityHistoryV3Internal(study, userId, activityType, referentGuid, scheduledOnStart, scheduledOnEnd,
+        return getActivityHistoryV3Internal(app, userId, activityType, referentGuid, scheduledOnStart, scheduledOnEnd,
                 offsetKey, pageSize);
     }
 
@@ -206,9 +206,9 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
         getAuthenticatedSession(Roles.WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         
-        return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
+        return getActivityHistoryInternalV2(app, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
                 offsetKey, pageSize);
     }
 
@@ -217,11 +217,11 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         IdentifierUpdate update = parseJson(IdentifierUpdate.class);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         CriteriaContext context = getCriteriaContext(session);
         
-        StudyParticipant participant = participantService.updateIdentifiers(study, context, update);
+        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
         sessionUpdateService.updateParticipant(session, context, participant);
         
         return UserSessionInfo.toJSON(session);
@@ -235,19 +235,19 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String endDate, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        return getParticipantsInternal(study, offsetBy, pageSize, emailFilter, phoneFilter, startDate,
+        return getParticipantsInternal(app, offsetBy, pageSize, emailFilter, phoneFilter, startDate,
                 endDate, startTime, endTime);
     }
 
     @PostMapping("/v3/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummaries() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
-        return participantService.getPagedAccountSummaries(study, search);
+        return participantService.getPagedAccountSummaries(app, search);
     }
     
     @Deprecated
@@ -259,46 +259,46 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(studyId);
-        return getParticipantsInternal(study, offsetBy, pageSize, emailFilter, phoneFilter, startDate, endDate,
+        App app = appService.getApp(studyId);
+        return getParticipantsInternal(app, offsetBy, pageSize, emailFilter, phoneFilter, startDate, endDate,
                 startTime, endTime);
     }
 
     @PostMapping("/v3/studies/{studyId}/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummariesForWorker(@PathVariable String studyId) {
         getAuthenticatedSession(WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
-        return participantService.getPagedAccountSummaries(study, search);
+        return participantService.getPagedAccountSummaries(app, search);
     }
 
     @PostMapping("/v3/participants")
     @ResponseStatus(HttpStatus.CREATED)
     public IdentifierHolder createParticipant() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
-        return participantService.createParticipant(study, participant, true);
+        return participantService.createParticipant(app, participant, true);
     }
 
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !study.isHealthCodeExportEnabled()
+        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
-        StudyParticipant participant = participantService.getParticipant(study, userId, consents);
+        StudyParticipant participant = participantService.getParticipant(app, userId, consents);
 
-        ObjectWriter writer = (study.isHealthCodeExportEnabled()) ?
+        ObjectWriter writer = (app.isHealthCodeExportEnabled()) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -308,9 +308,9 @@ public class ParticipantController extends BaseController {
     public String getParticipantForWorker(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
 
-        StudyParticipant participant = participantService.getParticipant(study, userId, consents);
+        StudyParticipant participant = participantService.getParticipant(app, userId, consents);
         
         ObjectWriter writer = StudyParticipant.API_WITH_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -336,13 +336,13 @@ public class ParticipantController extends BaseController {
             APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         // Verify it's in the same study as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!study.getIdentifier().equals(requestInfo.getAppId())) {
+        } else if (!app.getIdentifier().equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
         return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
@@ -351,14 +351,14 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         StudyParticipant participant = parseJson(StudyParticipant.class);
  
         // Force userId of the URL
         participant = new StudyParticipant.Builder().copyOf(participant).withId(userId).build();
         
-        participantService.updateParticipant(study, participant);
+        participantService.updateParticipant(app, participant);
 
         return new StatusMessage("Participant updated.");
     }
@@ -366,9 +366,9 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.signUserOut(study, userId, deleteReauthToken);
+        participantService.signUserOut(app, userId, deleteReauthToken);
 
         return new StatusMessage("User signed out.");
     }
@@ -376,9 +376,9 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.requestResetPassword(study, userId);
+        participantService.requestResetPassword(app, userId);
         
         return new StatusMessage("Request to reset password sent to user.");
     }
@@ -390,9 +390,9 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        return getActivityHistoryInternalV2(study, userId, activityGuid, scheduledOnStart,
+        return getActivityHistoryInternalV2(app, userId, activityGuid, scheduledOnStart,
             scheduledOnEnd, offsetBy, offsetKey, pageSize);
     }
 
@@ -402,18 +402,18 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        return getActivityHistoryV3Internal(study, userId, activityType, referentGuid, scheduledOnStart,
+        return getActivityHistoryV3Internal(app, userId, activityType, referentGuid, scheduledOnStart,
                 scheduledOnEnd, offsetKey, pageSize);
     }
 
     @DeleteMapping("/v3/participants/{userId}/activities")
     public StatusMessage deleteActivities(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.deleteActivities(study, userId);
+        participantService.deleteActivities(app, userId);
         
         return new StatusMessage("Scheduled activities deleted.");
     }
@@ -421,9 +421,9 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/resendEmailVerification")
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.resendVerification(study, ChannelType.EMAIL, userId);
+        participantService.resendVerification(app, ChannelType.EMAIL, userId);
         
         return new StatusMessage("Email verification request has been resent to user.");
     }
@@ -431,9 +431,9 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/resendPhoneVerification")
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
-        participantService.resendVerification(study, ChannelType.PHONE, userId);
+        participantService.resendVerification(app, ChannelType.PHONE, userId);
         
         return new StatusMessage("Phone verification request has been resent to user.");
     }
@@ -441,10 +441,10 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/{guid}/resendConsent")
     public StatusMessage resendConsentAgreement(@PathVariable String userId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        participantService.resendConsentAgreement(study, subpopGuid, userId);
+        participantService.resendConsentAgreement(app, subpopGuid, userId);
         
         return new StatusMessage("Consent agreement resent to user.");
     }
@@ -452,12 +452,12 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
     public StatusMessage withdrawFromStudy(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(study, userId, withdrawal, withdrewOn);
+        participantService.withdrawFromStudy(app, userId, withdrawal, withdrewOn);
         
         return new StatusMessage("User has been withdrawn from the study.");
     }
@@ -465,13 +465,13 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/consents/{guid}/withdraw")
     public StatusMessage withdrawConsent(@PathVariable String userId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        participantService.withdrawConsent(study, userId, subpopGuid, withdrawal, withdrewOn);
+        participantService.withdrawConsent(app, userId, subpopGuid, withdrawal, withdrewOn);
         
         return new StatusMessage("User has been withdrawn from subpopulation '"+guid+"'.");
     }
@@ -481,20 +481,20 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
         DateTime endTimeDate = getDateTimeOrDefault(endTime, null);
 
-        return participantService.getUploads(study, userId, startTimeDate, endTimeDate, pageSize, offsetKey);
+        return participantService.getUploads(app, userId, startTimeDate, endTimeDate, pageSize, offsetKey);
     }
 
     @GetMapping("/v3/participants/{userId}/notifications")
     public ResourceList<NotificationRegistration> getNotificationRegistrations(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        List<NotificationRegistration> registrations = participantService.listRegistrations(study, userId);
+        List<NotificationRegistration> registrations = participantService.listRegistrations(app, userId);
         
         return new ResourceList<>(registrations);
     }
@@ -503,11 +503,11 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendNotification(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         NotificationMessage message = parseJson(NotificationMessage.class);
         
-        Set<String> erroredNotifications = participantService.sendNotification(study, userId, message);
+        Set<String> erroredNotifications = participantService.sendNotification(app, userId, message);
         
         if (erroredNotifications.isEmpty()) {
             return new StatusMessage(NOTIFY_SUCCESS_MESSAGE);                    
@@ -519,23 +519,23 @@ public class ParticipantController extends BaseController {
     @GetMapping("/v3/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) {
         UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
-        Study study = studyService.getStudy(researcherSession.getAppId());
+        App app = appService.getApp(researcherSession.getAppId());
 
-        return new ResourceList<>(participantService.getActivityEvents(study, userId));
+        return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
 
     @PostMapping("/v3/studies/{studyId}/participants/{userId}/sendSmsMessage")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendSmsMessageForWorker(@PathVariable String studyId, @PathVariable String userId) {
         getAuthenticatedSession(WORKER);
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         SmsTemplate template = parseJson(SmsTemplate.class);
         
-        participantService.sendSmsMessage(study, userId, template);
+        participantService.sendSmsMessage(app, userId, template);
         return new StatusMessage("Message sent.");
     }
     
-    private JsonNode getParticipantsInternal(Study study, String offsetByString, String pageSizeString,
+    private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,
             String emailFilter, String phoneFilter, String startDateString, String endDateString,
             String startTimeString, String endTimeString) {
         
@@ -561,7 +561,7 @@ public class ParticipantController extends BaseController {
                 .withPhoneFilter(phoneFilter)
                 .withStartTime(startTime)
                 .withEndTime(endTime).build();
-        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(study, search);
+        PagedResourceList<AccountSummary> page = participantService.getPagedAccountSummaries(app, search);
         
         // Similarly, we will return startTime/endTime in the top-level request parameter properties as 
         // startDate/endDate while transitioning, to maintain backwards compatibility.
@@ -576,7 +576,7 @@ public class ParticipantController extends BaseController {
         return node;
     }
     
-    private JsonNode getActivityHistoryInternalV2(Study study, String userId, String activityGuid,
+    private JsonNode getActivityHistoryInternalV2(App app, String userId, String activityGuid,
             String scheduledOnStartString, String scheduledOnEndString, String offsetBy, String offsetKey,
             String pageSizeString) throws Exception {
         if (offsetKey == null) {
@@ -588,7 +588,7 @@ public class ParticipantController extends BaseController {
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
         ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(
-                study, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
+                app, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
 
         // If offsetBy was supplied, we return it as a top-level property of the list for backwards compatibility.
         String json = ScheduledActivity.RESEARCHER_SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);
@@ -599,7 +599,7 @@ public class ParticipantController extends BaseController {
         return node;
     }
     
-    private String getActivityHistoryV3Internal(Study study, String userId, String activityTypeString,
+    private String getActivityHistoryV3Internal(App app, String userId, String activityTypeString,
             String referentGuid, String scheduledOnStartString, String scheduledOnEndString, String offsetKey,
             String pageSizeString) throws Exception {
         
@@ -608,7 +608,7 @@ public class ParticipantController extends BaseController {
         DateTime scheduledOnEnd = getDateTimeOrDefault(scheduledOnEndString, null);
         int pageSize = getIntOrDefault(pageSizeString, BridgeConstants.API_DEFAULT_PAGE_SIZE);
         
-        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(study, userId,
+        ForwardCursorPagedResourceList<ScheduledActivity> page = participantService.getActivityHistory(app, userId,
                 activityType, referentGuid, scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
         
         return ScheduledActivity.SCHEDULED_ACTIVITY_WRITER.writeValueAsString(page);

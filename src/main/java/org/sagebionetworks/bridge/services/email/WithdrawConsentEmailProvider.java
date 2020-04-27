@@ -17,7 +17,7 @@ import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 import com.google.common.collect.Lists;
 
@@ -33,8 +33,8 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     private final long withdrewOn;
     private final List<String> recipients;
     
-    public WithdrawConsentEmailProvider(Study study, Account account, Withdrawal withdrawal, long withdrewOn) {
-        super(study);
+    public WithdrawConsentEmailProvider(App app, Account account, Withdrawal withdrawal, long withdrewOn) {
+        super(app);
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();
         this.email = account.getEmail();

@@ -23,7 +23,7 @@ public class StudyConsentValidatorTest {
         resource = new AbstractResource() {
             @Override
             public InputStream getInputStream() throws IOException {
-                return new FileInputStream(new ClassPathResource("conf/study-defaults/consent-page.xhtml").getFile());
+                return new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile());
             }
             @Override
             public String getDescription() {

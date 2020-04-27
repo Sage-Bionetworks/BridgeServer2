@@ -8,9 +8,9 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class EmailSignInEmailProviderTest {
@@ -23,10 +23,10 @@ public class EmailSignInEmailProviderTest {
 
     @Test
     public void testProvider() throws Exception {
-        Study study = new DynamoStudy();
-        study.setName("Study name");
-        study.setIdentifier("foo");
-        study.setSupportEmail("support@email.com");
+        App app = new DynamoApp();
+        app.setName("Study name");
+        app.setIdentifier("foo");
+        app.setSupportEmail("support@email.com");
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject(SUBJECT_TEMPLATE);
@@ -36,7 +36,7 @@ public class EmailSignInEmailProviderTest {
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(study)
+                .withStudy(app)
                 .withTemplateRevision(revision)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withToken("email", BridgeUtils.encodeURIComponent(RECIPIENT_EMAIL))

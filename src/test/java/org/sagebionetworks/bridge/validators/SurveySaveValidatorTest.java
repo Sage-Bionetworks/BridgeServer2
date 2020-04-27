@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
@@ -47,7 +48,7 @@ import com.google.common.collect.Sets;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class SurveySaveValidatorTest {
     
-    private static final Set<String> STUDY_DATA_GROUPS = Sets.newHashSet("foo", "baz");
+    private static final Set<String> APP_DATA_GROUPS = Sets.newHashSet("foo", "baz");
 
     private Survey survey;
 
@@ -59,7 +60,7 @@ public class SurveySaveValidatorTest {
         survey = new TestSurvey(SurveySaveValidatorTest.class, true);
         // because this is set by the service before validation
         survey.setGuid("AAA");
-        validator = new SurveySaveValidator(STUDY_DATA_GROUPS);
+        validator = new SurveySaveValidator(APP_DATA_GROUPS);
     }
 
     private SurveyInfoScreen createSurveyInfoScreen() {
@@ -93,9 +94,9 @@ public class SurveySaveValidatorTest {
     }
 
     @Test
-    public void studyIdentifierRequired() {
-        survey.setStudyIdentifier("");
-        assertValidatorMessage(validator, survey, "studyIdentifier", "is required");
+    public void appIdRequired() {
+        survey.setAppId("");
+        assertValidatorMessage(validator, survey, "appId", "is required");
     }
 
     @Test
@@ -364,7 +365,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -396,7 +397,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -428,7 +429,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -466,7 +467,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -497,7 +498,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -530,7 +531,7 @@ public class SurveySaveValidatorTest {
         Survey survey = new DynamoSurvey();
         survey.setName("Name");
         survey.setIdentifier("Identifier");
-        survey.setStudyIdentifier("study-key");
+        survey.setAppId(TEST_APP_ID);
         survey.setGuid("guid");
 
         StringConstraints constraints = new StringConstraints();
@@ -975,18 +976,18 @@ public class SurveySaveValidatorTest {
     @Test
     public void validatesInvalidDataGroupsForAnyOperator() {
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.ANY)
-                .withDataGroups(Sets.newHashSet("notInStudy")).withEndSurvey(true).build();
+                .withDataGroups(Sets.newHashSet("notInApp")).withEndSurvey(true).build();
         updateSurveyWithAfterRulesInOneQuestion(rule);
 
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0].dataGroups",
-                "contains data groups 'notInStudy' that are not valid data groups: baz, foo");
+                "contains data groups 'notInApp' that are not valid data groups: baz, foo");
     }
     
     @Test
     public void validatesMixedValidityDataGroupsForAllOperator() {
         TreeSet<String> dataGroups = new TreeSet();
         dataGroups.add("foo");
-        dataGroups.add("notInStudy");
+        dataGroups.add("notInApp");
         
         SurveyRule rule = new SurveyRule.Builder().withOperator(SurveyRule.Operator.ALL)
                 .withDataGroups(dataGroups).withEndSurvey(true).build();
@@ -994,7 +995,7 @@ public class SurveySaveValidatorTest {
         updateSurveyWithAfterRulesInOneQuestion(rule);
 
         assertValidatorMessage(validator, survey, "elements[0].afterRules[0].dataGroups",
-                "contains data groups 'foo, notInStudy' that are not valid data groups: baz, foo");
+                "contains data groups 'foo, notInApp' that are not valid data groups: baz, foo");
     }
     
     @Test

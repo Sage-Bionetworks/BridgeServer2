@@ -60,7 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
@@ -281,19 +281,19 @@ public class BridgeUtils {
      *  <li>consentEmail = study.getConsentNotificationEmail()</li>
      * </ul>
      */
-    public static Map<String,String> studyTemplateVariables(Study study, Function<String,String> escaper) {
+    public static Map<String,String> studyTemplateVariables(App app, Function<String,String> escaper) {
         Map<String,String> map = Maps.newHashMap();
-        map.put("studyName", study.getName());
-        map.put("studyShortName", study.getShortName());
-        map.put("studyId", study.getIdentifier());
-        map.put("sponsorName", study.getSponsorName());
+        map.put("studyName", app.getName());
+        map.put("studyShortName", app.getShortName());
+        map.put("studyId", app.getIdentifier());
+        map.put("sponsorName", app.getSponsorName());
         map.put("supportEmail", 
-                Iterables.getFirst(commaListToOrderedSet(study.getSupportEmail()), ""));
+                Iterables.getFirst(commaListToOrderedSet(app.getSupportEmail()), ""));
         map.put("technicalEmail", 
-                Iterables.getFirst(commaListToOrderedSet(study.getTechnicalEmail()), ""));
-        if (study.getConsentNotificationEmail() != null) {
+                Iterables.getFirst(commaListToOrderedSet(app.getTechnicalEmail()), ""));
+        if (app.getConsentNotificationEmail() != null) {
             map.put("consentEmail", 
-                    Iterables.getFirst(commaListToOrderedSet(study.getConsentNotificationEmail()), ""));
+                    Iterables.getFirst(commaListToOrderedSet(app.getConsentNotificationEmail()), ""));
         }
         map.put("host", BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"));
         if (escaper != null) {
@@ -304,8 +304,8 @@ public class BridgeUtils {
         return map;
     }
     
-    public static Map<String,String> studyTemplateVariables(Study study) {
-        return studyTemplateVariables(study, null);
+    public static Map<String,String> studyTemplateVariables(App app) {
+        return studyTemplateVariables(app, null);
     }
     
     /**

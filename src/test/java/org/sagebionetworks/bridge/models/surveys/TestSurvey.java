@@ -214,7 +214,7 @@ public class TestSurvey extends DynamoSurvey {
         setVersion(2L);
         setPublished(true);
         setSchemaRevision(42);
-        setStudyIdentifier(TEST_APP_ID);
+        setAppId(TEST_APP_ID);
         List<SurveyElement> elements = getElements();
         elements.add(booleanQuestion);
         elements.add(dateQuestion);

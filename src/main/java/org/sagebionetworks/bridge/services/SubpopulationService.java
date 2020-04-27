@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -64,7 +64,7 @@ public class SubpopulationService {
     final void setSubstudyService(SubstudyService substudyService) {
         this.substudyService = substudyService;
     }
-    @Value("classpath:conf/study-defaults/consent-body.xhtml")
+    @Value("classpath:conf/app-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
         this.defaultConsentDocument = new StudyConsentForm(IOUtils.toString(resource.getInputStream(), StandardCharsets.UTF_8));
     }
@@ -75,66 +75,66 @@ public class SubpopulationService {
     
     /**
      * Create subpopulation.
-     * @param study 
+     * @param app 
      * @param subpop
      * @return
      */
-    public Subpopulation createSubpopulation(Study study, Subpopulation subpop) {
-        checkNotNull(study);
+    public Subpopulation createSubpopulation(App app, Subpopulation subpop) {
+        checkNotNull(app);
         checkNotNull(subpop);
 
         subpop.setGuidString(BridgeUtils.generateGuid());
-        subpop.setAppId(study.getIdentifier());
+        subpop.setAppId(app.getIdentifier());
 
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation created = subpopDao.createSubpopulation(subpop);
         
         // Create a default consent for this subpopulation.
         StudyConsentView view = studyConsentService.addConsent(subpop.getGuid(), defaultConsentDocument);
-        studyConsentService.publishConsent(study, subpop, view.getCreatedOn());
+        studyConsentService.publishConsent(app, subpop, view.getCreatedOn());
         
-        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(app.getIdentifier()));
         return created;
     }
     
     /**
      * Create a default subpopulation for a new study
-     * @param study
+     * @param app
      * @return
      */
-    public Subpopulation createDefaultSubpopulation(Study study) {
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create(study.getIdentifier());
-        Subpopulation created = subpopDao.createDefaultSubpopulation(study.getIdentifier());
+    public Subpopulation createDefaultSubpopulation(App app) {
+        SubpopulationGuid subpopGuid = SubpopulationGuid.create(app.getIdentifier());
+        Subpopulation created = subpopDao.createDefaultSubpopulation(app.getIdentifier());
         
         // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
             StudyConsentView view = studyConsentService.addConsent(subpopGuid, defaultConsentDocument);
-            studyConsentService.publishConsent(study, created, view.getCreatedOn());
+            studyConsentService.publishConsent(app, created, view.getCreatedOn());
         }
         
-        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(app.getIdentifier()));
         return created;
     }
     
     /**
      * Update a subpopulation.
-     * @param study
+     * @param app
      * @param subpop
      * @return
      */
-    public Subpopulation updateSubpopulation(Study study, Subpopulation subpop) {
-        checkNotNull(study);
+    public Subpopulation updateSubpopulation(App app, Subpopulation subpop) {
+        checkNotNull(app);
         checkNotNull(subpop);
         
-        subpop.setAppId(study.getIdentifier());
+        subpop.setAppId(app.getIdentifier());
 
         // Verify this subpopulation is part of the study. Existing code also doesn't submit
         // this publication timestamp back to the server, so set if it doesn't exist.
-        Subpopulation existingSubpop = getSubpopulation(study.getIdentifier(), subpop.getGuid());
+        Subpopulation existingSubpop = getSubpopulation(app.getIdentifier(), subpop.getGuid());
         if (subpop.getPublishedConsentCreatedOn() == 0L) {
             subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
         }
@@ -145,14 +145,14 @@ public class SubpopulationService {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(study.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);
-        cacheProvider.removeObject(CacheKey.subpop(updated.getGuid(), study.getIdentifier()));
-        cacheProvider.removeObject(CacheKey.subpopList(study.getIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpop(updated.getGuid(), app.getIdentifier()));
+        cacheProvider.removeObject(CacheKey.subpopList(app.getIdentifier()));
         return updated;
     }
     

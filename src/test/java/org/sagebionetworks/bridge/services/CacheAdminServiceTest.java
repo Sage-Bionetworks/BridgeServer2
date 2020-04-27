@@ -40,14 +40,14 @@ public class CacheAdminServiceTest {
     public void listsItemsWithoutSessions() {
         Set<String> set = adminService.listItems();
         assertEquals(set.size(), 2);
-        assertTrue(set.contains("foo:study"));
+        assertTrue(set.contains("foo:App"));
         assertTrue(set.contains("baz:Survey:view"));
     }
     
     
     @Test
     public void canRemoveItem() {
-        adminService.removeItem("foo:study");
+        adminService.removeItem("foo:App");
         Set<String> set = adminService.listItems();
         assertEquals(set.size(), 1);
     }
@@ -83,7 +83,7 @@ public class CacheAdminServiceTest {
     }
     
     private Jedis createStubJedis() {
-        Set<String> KEYS = Sets.newHashSet(CacheKey.study("foo").toString(),
+        Set<String> KEYS = Sets.newHashSet(CacheKey.app("foo").toString(),
                 CacheKey.viewKey(Survey.class, "baz").toString());
         return new Jedis("") {
             @Override

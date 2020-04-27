@@ -37,10 +37,10 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Creates a compound activity definition. */
-    public CompoundActivityDefinition createCompoundActivityDefinition(String studyId,
+    public CompoundActivityDefinition createCompoundActivityDefinition(String appId,
             CompoundActivityDefinition compoundActivityDefinition) {
-        // Set study to prevent people from creating defs in other studies.
-        compoundActivityDefinition.setStudyId(studyId);
+        // Set app to prevent people from creating defs in other studies.
+        compoundActivityDefinition.setAppId(appId);
 
         // validate def
         Validate.entityThrowingException(CompoundActivityDefinitionValidator.INSTANCE, compoundActivityDefinition);
@@ -50,55 +50,55 @@ public class CompoundActivityDefinitionService {
     }
 
     /** Deletes a compound activity definition. */
-    public void deleteCompoundActivityDefinition(String studyId, String taskId) {
+    public void deleteCompoundActivityDefinition(String appId, String taskId) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
         }
-        checkConstraintViolations(studyId, taskId);
+        checkConstraintViolations(appId, taskId);
         
         // call through to dao
-        compoundActivityDefDao.deleteCompoundActivityDefinition(studyId, taskId);
+        compoundActivityDefDao.deleteCompoundActivityDefinition(appId, taskId);
     }
 
-    /** Deletes all compound activity definitions in the specified study. Used when we physically delete a study. */
-    public void deleteAllCompoundActivityDefinitionsInStudy(String studyId) {
-        // no user input - study comes from controller
+    /** Deletes all compound activity definitions in the specified app. Used when we physically delete an app. */
+    public void deleteAllCompoundActivityDefinitionsInApp(String appId) {
+        // no user input - app comes from controller
 
         // call through to dao
-        compoundActivityDefDao.deleteAllCompoundActivityDefinitionsInStudy(studyId);
+        compoundActivityDefDao.deleteAllCompoundActivityDefinitionsInApp(appId);
     }
 
-    /** List all compound activity definitions in a study. */
-    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInStudy(String studyId) {
-        // no user input - study comes from controller
+    /** List all compound activity definitions in an app. */
+    public List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInApp(String appId) {
+        // no user input - app comes from controller
 
         // call through to dao
-        return compoundActivityDefDao.getAllCompoundActivityDefinitionsInStudy(studyId);
+        return compoundActivityDefDao.getAllCompoundActivityDefinitionsInApp(appId);
     }
 
     /** Get a compound activity definition by ID. */
-    public CompoundActivityDefinition getCompoundActivityDefinition(String studyId, String taskId) {
+    public CompoundActivityDefinition getCompoundActivityDefinition(String appId, String taskId) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
         }
 
         // call through to dao
-        return compoundActivityDefDao.getCompoundActivityDefinition(studyId, taskId);
+        return compoundActivityDefDao.getCompoundActivityDefinition(appId, taskId);
     }
 
     /** Update a compound activity definition. */
-    public CompoundActivityDefinition updateCompoundActivityDefinition(String studyId, String taskId,
+    public CompoundActivityDefinition updateCompoundActivityDefinition(String appId, String taskId,
             CompoundActivityDefinition compoundActivityDefinition) {
         // validate user input (taskId)
         if (StringUtils.isBlank(taskId)) {
             throw new BadRequestException("taskId must be specified");
         }
 
-        // Set the studyId and taskId. This prevents people from updating the wrong def or updating a def in another
-        // study.
-        compoundActivityDefinition.setStudyId(studyId);
+        // Set the appId and taskId. This prevents people from updating the wrong def or updating a def in another
+        // app.
+        compoundActivityDefinition.setAppId(appId);
         compoundActivityDefinition.setTaskId(taskId);
 
         // validate def
@@ -108,10 +108,10 @@ public class CompoundActivityDefinitionService {
         return compoundActivityDefDao.updateCompoundActivityDefinition(compoundActivityDefinition);
     }
     
-    private void checkConstraintViolations(String studyId, String taskId) {
+    private void checkConstraintViolations(String appId, String taskId) {
         // You cannot physically delete a compound activity if it is referenced by a logically deleted schedule plan. 
         // It's possible the schedule plan could be restored. All you can do is logically delete the compound activity.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId, true);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, appId, true);
         SchedulePlan match = findFirstMatchingPlan(plans, taskId);
         if (match != null) {
             throw new ConstraintViolationException.Builder().withMessage(

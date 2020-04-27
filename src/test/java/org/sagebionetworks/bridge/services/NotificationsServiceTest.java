@@ -34,7 +34,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -60,7 +60,7 @@ public class NotificationsServiceTest {
     private ParticipantService mockParticipantService;
 
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private AmazonSNSClient mockSnsClient;
@@ -72,7 +72,7 @@ public class NotificationsServiceTest {
     private NotificationRegistrationDao mockRegistrationDao;
     
     @Mock
-    private Study mockStudy;
+    private App mockApp;
 
     @Captor
     private ArgumentCaptor<PublishRequest> requestCaptor;
@@ -86,15 +86,15 @@ public class NotificationsServiceTest {
         service = new NotificationsService();
         service.setNotificationTopicService(mockNotificationTopicService);
         service.setParticipantService(mockParticipantService);
-        service.setStudyService(mockStudyService);
+        service.setAppService(mockAppService);
         service.setNotificationRegistrationDao(mockRegistrationDao);
         service.setSnsClient(mockSnsClient);
 
         Map<String,String> map = Maps.newHashMap();
         map.put(OS_NAME, PLATFORM_ARN);
-        doReturn(map).when(mockStudy).getPushNotificationARNs();
+        doReturn(map).when(mockApp).getPushNotificationARNs();
      
-        doReturn(mockStudy).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(mockApp).when(mockAppService).getApp(TEST_APP_ID);
     }
 
     @Test
@@ -144,7 +144,7 @@ public class NotificationsServiceTest {
         // Mock participant DAO w/ phone number.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(true).build();
-        when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         NotificationRegistration result = service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
@@ -160,7 +160,7 @@ public class NotificationsServiceTest {
         // Mock participant DAO w/ unverified phone number.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(null).build();
-        when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, getSmsNotificationRegistration());
@@ -171,7 +171,7 @@ public class NotificationsServiceTest {
         // Mock participant DAO w/ wrong phone number.
         StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(true).build();
-        when(mockParticipantService.getParticipant(mockStudy, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         NotificationRegistration registration = getSmsNotificationRegistration();

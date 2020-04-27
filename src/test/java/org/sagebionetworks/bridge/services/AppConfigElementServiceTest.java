@@ -101,7 +101,7 @@ public class AppConfigElementServiceTest {
         AppConfigElement captured = elementCaptor.getValue();
         assertNull(captured.getVersion());
         assertFalse(captured.isDeleted());
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getKey(), TEST_APP_ID + ":id");
         assertEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());
@@ -204,7 +204,7 @@ public class AppConfigElementServiceTest {
         
         verify(dao).saveElementRevision(elementCaptor.capture());
         AppConfigElement captured = elementCaptor.getValue(); 
-        assertEquals(captured.getStudyId(), TEST_APP_ID);
+        assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getKey(), TEST_APP_ID + ":id");
         assertNotEquals(captured.getCreatedOn(), TIMESTAMP.getMillis());
         assertEquals(captured.getModifiedOn(), TIMESTAMP.getMillis());

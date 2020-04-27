@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 
 import com.google.common.collect.ImmutableSet;
@@ -39,7 +39,7 @@ public class ExternalIdServiceTest {
     private static final Set<String> SUBSTUDIES = ImmutableSet.of(SUBSTUDY_ID);
     private static final String HEALTH_CODE = "healthCode";
     
-    private Study study;
+    private App app;
     private ExternalIdentifier extId;
     
     @Mock
@@ -56,8 +56,8 @@ public class ExternalIdServiceTest {
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID).build());
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         extId = ExternalIdentifier.create(TEST_APP_ID, ID);
         extId.setSubstudyId(SUBSTUDY_ID);
         externalIdService = new ExternalIdService();
@@ -190,7 +190,7 @@ public class ExternalIdServiceTest {
     public void deleteExternalIdPermanently() {
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
         
-        externalIdService.deleteExternalIdPermanently(study, extId);
+        externalIdService.deleteExternalIdPermanently(app, extId);
         
         verify(externalIdDao).deleteExternalId(extId);
     }
@@ -199,7 +199,7 @@ public class ExternalIdServiceTest {
     public void deleteExternalIdPermanentlyMissingThrows() {
         when(externalIdDao.getExternalId(TEST_APP_ID, extId.getIdentifier())).thenReturn(Optional.empty());
         
-        externalIdService.deleteExternalIdPermanently(study, extId);
+        externalIdService.deleteExternalIdPermanently(app, extId);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -210,7 +210,7 @@ public class ExternalIdServiceTest {
         extId.setSubstudyId("someOtherId");
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
         
-        externalIdService.deleteExternalIdPermanently(study, extId);
+        externalIdService.deleteExternalIdPermanently(app, extId);
     }
     
     @Test

@@ -53,14 +53,14 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ConsentControllerTest extends Mockito {
 
@@ -71,7 +71,7 @@ public class ConsentControllerTest extends Mockito {
     ConsentController controller;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     ConsentService mockConsentService;
@@ -102,7 +102,7 @@ public class ConsentControllerTest extends Mockito {
     
     UserSession session;
     
-    Study study;
+    App app;
     
     UserSession updatedSession;
     
@@ -111,9 +111,9 @@ public class ConsentControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         
-        study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
@@ -183,7 +183,7 @@ public class ConsentControllerTest extends Mockito {
     @Test
     public void getConsentSignatureV1() throws Exception {
         SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
-        when(mockConsentService.getConsentSignature(study, defaultGuid, USER_ID)).thenReturn(SIGNATURE);
+        when(mockConsentService.getConsentSignature(app, defaultGuid, USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignature();
         
@@ -191,12 +191,12 @@ public class ConsentControllerTest extends Mockito {
         assertEquals(SIGNATURE.getName(), retrieved.getName());
         assertEquals(SIGNATURE.getBirthdate(), retrieved.getBirthdate());
         
-        verify(mockConsentService).getConsentSignature(study, defaultGuid, USER_ID);
+        verify(mockConsentService).getConsentSignature(app, defaultGuid, USER_ID);
     }
     
     @Test
     public void getConsentSignatureV2() throws Exception {
-        when(mockConsentService.getConsentSignature(study, SUBPOP_GUID, USER_ID)).thenReturn(SIGNATURE);
+        when(mockConsentService.getConsentSignature(app, SUBPOP_GUID, USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
         
@@ -204,7 +204,7 @@ public class ConsentControllerTest extends Mockito {
         assertEquals(SIGNATURE.getName(), retrieved.getName());
         assertEquals(SIGNATURE.getBirthdate(), retrieved.getBirthdate());
         
-        verify(mockConsentService).getConsentSignature(study, SUBPOP_GUID, USER_ID);
+        verify(mockConsentService).getConsentSignature(app, SUBPOP_GUID, USER_ID);
     }
     
     @SuppressWarnings("deprecation")
@@ -221,7 +221,7 @@ public class ConsentControllerTest extends Mockito {
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockStudyService.getStudy(studyId)).thenReturn(study);
+        when(mockAppService.getApp(studyId)).thenReturn(app);
         
         JsonNode result = controller.giveV1();
         
@@ -229,7 +229,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(SESSION_TOKEN, retrievedSession.getSessionToken());
         
-        verify(mockConsentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
+        verify(mockConsentService).consentToResearch(app, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
         verify(mockSessionUpdateService).updateSession(session, updatedSession);
     }
@@ -248,7 +248,7 @@ public class ConsentControllerTest extends Mockito {
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockStudyService.getStudy(studyId)).thenReturn(study);
+        when(mockAppService.getApp(studyId)).thenReturn(app);
         
         JsonNode result = controller.giveV2();
         
@@ -256,7 +256,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(SESSION_TOKEN, retrievedSession.getSessionToken());
         
-        verify(mockConsentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
+        verify(mockConsentService).consentToResearch(app, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
         verify(mockSessionUpdateService).updateSession(session, updatedSession);
     }
@@ -281,7 +281,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(SESSION_TOKEN, retrievedSession.getSessionToken());
         
-        verify(mockConsentService).consentToResearch(study, SUBPOP_GUID, session.getParticipant(), 
+        verify(mockConsentService).consentToResearch(app, SUBPOP_GUID, session.getParticipant(), 
                 SIGNATURE, SharingScope.NO_SHARING, true);
         verify(mockSessionUpdateService).updateSession(session, updatedSession);
     }
@@ -319,7 +319,7 @@ public class ConsentControllerTest extends Mockito {
         // This call recreates the session from scratch
         assertEquals(SESSION_TOKEN, retrievedSession.getSessionToken());
         
-        verify(mockConsentService).withdrawConsent(eq(study), eq(defaultGuid), eq(session.getParticipant()), any(),
+        verify(mockConsentService).withdrawConsent(eq(app), eq(defaultGuid), eq(session.getParticipant()), any(),
                 eq(WITHDRAWAL), eq(TIMESTAMP.getMillis()));
         verify(mockSessionUpdateService).updateSession(session, updatedSession);
     }
@@ -341,7 +341,7 @@ public class ConsentControllerTest extends Mockito {
         // This call recreates the session from scratch
         assertEquals(SESSION_TOKEN, retrievedSession.getSessionToken());
         
-        verify(mockConsentService).withdrawConsent(eq(study), eq(SUBPOP_GUID), eq(session.getParticipant()), any(),
+        verify(mockConsentService).withdrawConsent(eq(app), eq(SUBPOP_GUID), eq(session.getParticipant()), any(),
                 eq(WITHDRAWAL), eq(TIMESTAMP.getMillis()));
         verify(mockSessionUpdateService).updateSession(session, updatedSession);
     }
@@ -359,7 +359,7 @@ public class ConsentControllerTest extends Mockito {
         
         assertEquals(result.getMessage(), "Signed out.");
         
-        verify(mockConsentService).withdrawFromStudy(study, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
+        verify(mockConsentService).withdrawFromStudy(app, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
         verify(mockAuthService).signOut(session);
 
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
@@ -376,7 +376,7 @@ public class ConsentControllerTest extends Mockito {
         
         assertEquals(result.getMessage(), "Signed consent agreement resent.");
         
-        verify(mockConsentService).resendConsentAgreement(study, SUBPOP_GUID, session.getParticipant());        
+        verify(mockConsentService).resendConsentAgreement(app, SUBPOP_GUID, session.getParticipant());        
     }
     
     @Test

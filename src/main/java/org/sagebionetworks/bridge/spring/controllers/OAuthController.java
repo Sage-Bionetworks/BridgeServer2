@@ -18,7 +18,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.OAuthService;
 
 @CrossOrigin
@@ -41,29 +41,31 @@ public class OAuthController extends BaseController {
         String token = node.has(AUTH_TOKEN) ? node.get(AUTH_TOKEN).textValue() : null;
         OAuthAuthorizationToken authToken = new OAuthAuthorizationToken(null, vendorId, token, null);
         
-        Study study = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
-        return service.requestAccessToken(study, session.getHealthCode(), authToken);
+        return service.requestAccessToken(app, session.getHealthCode(), authToken);
     }
     
-    @GetMapping("/v3/studies/{studyId}/oauth/{vendorId}")
-    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(@PathVariable String studyId,
+    @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}", 
+            "/v3/studies/{appId}/oauth/{vendorId}"})
+    public ForwardCursorPagedResourceList<String> getHealthCodesGrantingAccess(@PathVariable String appId,
             @PathVariable String vendorId, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(appId);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return service.getHealthCodesGrantingAccess(study, vendorId, pageSizeInt, offsetKey);
+        return service.getHealthCodesGrantingAccess(app, vendorId, pageSizeInt, offsetKey);
     }
     
-    @GetMapping("/v3/studies/{studyId}/oauth/{vendorId}/{healthCode}")
-    public OAuthAccessToken getAccessToken(@PathVariable String studyId, @PathVariable String vendorId,
+    @GetMapping(path = {"/v1/apps/{appId}/oauth/{vendorId}/{healthCode}", 
+            "/v3/studies/{appId}/oauth/{vendorId}/{healthCode}"})
+    public OAuthAccessToken getAccessToken(@PathVariable String appId, @PathVariable String vendorId,
             @PathVariable String healthCode) {
         getAuthenticatedSession(WORKER);
         
-        Study study = studyService.getStudy(studyId);
-        return service.getAccessToken(study, vendorId, healthCode);
+        App app = appService.getApp(appId);
+        return service.getAccessToken(app, vendorId, healthCode);
     }
 }

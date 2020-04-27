@@ -41,7 +41,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -151,14 +151,14 @@ public class AccountService {
      * Authenticate a user with the supplied credentials, returning that user's account record
      * if successful. 
      */
-    public Account authenticate(Study study, SignIn signIn) {
-        checkNotNull(study);
+    public Account authenticate(App app, SignIn signIn) {
+        checkNotNull(app);
         checkNotNull(signIn);
         
         Account account = accountDao.getAccount(signIn.getAccountId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         verifyPassword(account, signIn.getPassword());
-        return authenticateInternal(study, account, signIn);        
+        return authenticateInternal(app, account, signIn);        
     }
 
     /**
@@ -166,18 +166,18 @@ public class AccountService {
      * authenticate request. Allows the client to re-authenticate without prompting
      * for a password.
      */
-    public Account reauthenticate(Study study, SignIn signIn) {
-        checkNotNull(study);
+    public Account reauthenticate(App app, SignIn signIn) {
+        checkNotNull(app);
         checkNotNull(signIn);
         
-        if (!TRUE.equals(study.isReauthenticationEnabled())) {
-            throw new UnauthorizedException("Reauthentication is not enabled for study: " + study.getName());    
+        if (!TRUE.equals(app.isReauthenticationEnabled())) {
+            throw new UnauthorizedException("Reauthentication is not enabled for study: " + app.getName());    
         }
         Account account = accountDao.getAccount(signIn.getAccountId())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         accountSecretDao.verifySecret(REAUTH, account.getId(), signIn.getReauthToken(), ROTATIONS)
             .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        return authenticateInternal(study, account, signIn);        
+        return authenticateInternal(app, account, signIn);        
     }
     
     /**
@@ -197,11 +197,11 @@ public class AccountService {
      * exception, the account will not be persisted (the consumer is executed after the persist 
      * is executed in a transaction, however).
      */
-    public void createAccount(Study study, Account account, Consumer<Account> afterPersistConsumer) {
-        checkNotNull(study);
+    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
+        checkNotNull(app);
         checkNotNull(account);
         
-        account.setStudyId(study.getIdentifier());
+        account.setStudyId(app.getIdentifier());
         DateTime timestamp = DateUtils.getCurrentDateTime();
         account.setCreatedOn(timestamp);
         account.setModifiedOn(timestamp);
@@ -209,7 +209,7 @@ public class AccountService {
         account.setMigrationVersion(MIGRATION_VERSION);
 
         // Create account. We don't verify substudies because this is handled by validation
-        accountDao.createAccount(study, account, afterPersistConsumer);
+        accountDao.createAccount(app, account, afterPersistConsumer);
     }
     
     /**
@@ -286,17 +286,17 @@ public class AccountService {
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
      * participants which are required for the rest of the participant APIs). 
-     * @param study
+     * @param app
      *      retrieve participants in this study
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
      */
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
-        checkNotNull(study);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
+        checkNotNull(app);
         checkNotNull(search);
         
-        return accountDao.getPagedAccountSummaries(study, search);
+        return accountDao.getPagedAccountSummaries(app, search);
     }
     
     /**
@@ -313,7 +313,7 @@ public class AccountService {
         }
     }
     
-    protected Account authenticateInternal(Study study, Account account, SignIn signIn) {
+    protected Account authenticateInternal(App app, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older studies that didn't have full external ID support).
@@ -321,10 +321,10 @@ public class AccountService {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (account.getStatus() == DISABLED) {
             throw new AccountDisabledException();
-        } else if (study.isVerifyChannelOnSignInEnabled()) {
+        } else if (app.isVerifyChannelOnSignInEnabled()) {
             if (signIn.getPhone() != null && !TRUE.equals(account.getPhoneVerified())) {
                 throw new UnauthorizedException("Phone number has not been verified");
-            } else if (study.isEmailVerificationEnabled() && 
+            } else if (app.isEmailVerificationEnabled() && 
                     signIn.getEmail() != null && !TRUE.equals(account.getEmailVerified())) {
                 throw new UnauthorizedException("Email has not been verified");
             }

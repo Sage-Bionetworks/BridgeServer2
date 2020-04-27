@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.OAuthProvider;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.redis.JedisTransaction;
@@ -58,10 +58,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class CacheProviderMockTest {
-    private static final CacheKey CACHE_KEY = CacheKey.study("key");
+    private static final CacheKey CACHE_KEY = CacheKey.app("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String REQUEST_INFO_KEY = "userId:request-info";
-    private static final String STUDY_ID_KEY = TEST_APP_ID + ":study";
+    private static final String STUDY_ID_KEY = TEST_APP_ID + ":App";
     private static final String USER_ID = "userId";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
@@ -84,20 +84,20 @@ public class CacheProviderMockTest {
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
 
-        final Study study = TestUtils.getValidStudy(CacheProviderMockTest.class);
-        study.setIdentifier("test");
-        study.setName("This is a test study");
-        String json = BridgeObjectMapper.get().writeValueAsString(study);
+        final App app = TestUtils.getValidStudy(CacheProviderMockTest.class);
+        app.setIdentifier("test");
+        app.setName("This is a test study");
+        String json = BridgeObjectMapper.get().writeValueAsString(app);
         assertTrue(json != null && json.length() > 0);
 
-        final CacheKey cacheKey = CacheKey.study(study.getIdentifier());
+        final CacheKey cacheKey = CacheKey.app(app.getIdentifier());
         simpleCacheProvider.setObject(cacheKey, json, BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS);
 
         String cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(cachedString, json);
 
         // Remove something that's not the key
-        final CacheKey brokenCacheKey = CacheKey.study(study.getIdentifier()+"2");
+        final CacheKey brokenCacheKey = CacheKey.app(app.getIdentifier()+"2");
         simpleCacheProvider.removeObject(brokenCacheKey);
         cachedString = simpleCacheProvider.getObject(cacheKey, String.class);
         assertEquals(cachedString, json);
@@ -586,27 +586,27 @@ public class CacheProviderMockTest {
 
     @Test
     public void setStudy() throws Exception {
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        String ser = BridgeObjectMapper.get().writeValueAsString(study);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        String ser = BridgeObjectMapper.get().writeValueAsString(app);
 
         when(jedisOps.setex(any(), anyInt(), any())).thenReturn("OK");
 
-        cacheProvider.setStudy(study);
+        cacheProvider.setStudy(app);
 
         verify(jedisOps).setex(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
     }
 
     @Test
     public void getStudy() throws Exception {
-        Study study = Study.create();
-        study.setIdentifier(TEST_APP_ID);
-        String ser = BridgeObjectMapper.get().writeValueAsString(study);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        String ser = BridgeObjectMapper.get().writeValueAsString(app);
 
         when(jedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
 
-        Study returned = cacheProvider.getStudy(TEST_APP_ID);
-        assertEquals(study, returned);
+        App returned = cacheProvider.getStudy(TEST_APP_ID);
+        assertEquals(app, returned);
 
         verify(jedisOps).get(STUDY_ID_KEY);
         verify(jedisOps).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);

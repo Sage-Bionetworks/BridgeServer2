@@ -43,11 +43,11 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.healthdata.RecordExportStatusRequest;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class HealthDataControllerTest extends Mockito {
     private static final String APP_VERSION = "version 1.0.0, build 2";
@@ -67,10 +67,10 @@ public class HealthDataControllerTest extends Mockito {
     private static final String TEST_RECORD_ID = "record-to-update";
     private static final String USER_ID = "test-user";
 
-    private static final Study STUDY;
+    private static final App APP;
     static {
-        STUDY = Study.create();
-        STUDY.setIdentifier(TEST_APP_ID);
+        APP = App.create();
+        APP.setIdentifier(TEST_APP_ID);
     }
     
     private static final HealthDataRecord.ExporterStatus TEST_STATUS = HealthDataRecord.ExporterStatus.SUCCEEDED;
@@ -93,7 +93,7 @@ public class HealthDataControllerTest extends Mockito {
     ParticipantService mockParticipantService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     RequestInfoService requestInfoService;
@@ -128,8 +128,8 @@ public class HealthDataControllerTest extends Mockito {
         doReturn(mockMetrics).when(controller).getMetrics();
 
         // Mock services.
-        when(mockParticipantService.getParticipant(same(STUDY), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(STUDY);
+        when(mockParticipantService.getParticipant(same(APP), eq(USER_ID), anyBoolean())).thenReturn(OTHER_PARTICIPANT);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
 
         // mock session
         UserSession mockSession = new UserSession();

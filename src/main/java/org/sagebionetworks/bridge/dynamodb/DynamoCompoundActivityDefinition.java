@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 @JsonFilter("filter")
 public class DynamoCompoundActivityDefinition implements CompoundActivityDefinition {
     private List<SchemaReference> schemaList = ImmutableList.of();
-    private String studyId;
+    private String appId;
     private List<SurveyReference> surveyList = ImmutableList.of();
     private String taskId;
     private Long version;
@@ -42,18 +42,18 @@ public class DynamoCompoundActivityDefinition implements CompoundActivityDefinit
     }
 
     /** {@inheritDoc} */
-    @DynamoDBHashKey
+    @DynamoDBHashKey(attributeName = "studyId")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
-    /** @see #getStudyId */
+    /** @see #getAppId */
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
-
+    
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter = SurveyReferenceListMarshaller.class)
     @Override

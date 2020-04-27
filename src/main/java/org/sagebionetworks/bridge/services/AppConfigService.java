@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.validators.AppConfigValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -44,7 +44,7 @@ public class AppConfigService {
     
     private AppConfigElementService appConfigElementService;
     
-    private StudyService studyService;
+    private AppService appService;
     
     private SubstudyService substudyService;
     
@@ -60,8 +60,8 @@ public class AppConfigService {
     }
     
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -99,17 +99,17 @@ public class AppConfigService {
         return BridgeUtils.generateGuid();
     }
     
-    public List<AppConfig> getAppConfigs(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<AppConfig> getAppConfigs(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
-        return appConfigDao.getAppConfigs(studyId, includeDeleted);
+        return appConfigDao.getAppConfigs(appId, includeDeleted);
     }
     
-    public AppConfig getAppConfig(String studyId, String guid) {
-        checkNotNull(studyId);
+    public AppConfig getAppConfig(String appId, String guid) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
-        return appConfigDao.getAppConfig(studyId, guid);
+        return appConfigDao.getAppConfig(appId, guid);
     }
     
     public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
@@ -149,9 +149,9 @@ public class AppConfigService {
         return matched;
     }
 
-    protected AppConfigElement retrieveConfigElement(String studyId, ConfigReference configRef, String appConfigGuid) {
+    protected AppConfigElement retrieveConfigElement(String appId, ConfigReference configRef, String appConfigGuid) {
         try {
-            return appConfigElementService.getElementRevision(studyId, configRef.getId(), configRef.getRevision());
+            return appConfigElementService.getElementRevision(appId, configRef.getId(), configRef.getRevision());
         } catch(EntityNotFoundException e) {
             String message = String.format("AppConfig[guid=%s] references missing AppConfigElement[id=%s, revision=%d]",
                     appConfigGuid, configRef.getId(), configRef.getRevision());
@@ -169,37 +169,37 @@ public class AppConfigService {
      * specific version or createdOn timestamp of a version, and we validate this when creating/
      * updating the app config. We're only concerned with adding the survey identifier here.
      */
-    SurveyReference resolveSurvey(String studyId, SurveyReference surveyRef) {
+    SurveyReference resolveSurvey(String appId, SurveyReference surveyRef) {
         if (surveyRef.getIdentifier() != null) {
             return surveyRef;
         }
         GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyRef);
-        Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, false);
+        Survey survey = surveyService.getSurvey(appId, surveyKeys, false, false);
         if (survey != null) {
             return new SurveyReference(survey.getIdentifier(), survey.getGuid(), new DateTime(survey.getCreatedOn()));    
         }
         return surveyRef;
     }
     
-    public AppConfig createAppConfig(String studyId, AppConfig appConfig) {
-        checkNotNull(studyId);
+    public AppConfig createAppConfig(String appId, AppConfig appConfig) {
+        checkNotNull(appId);
         checkNotNull(appConfig);
         
-        appConfig.setStudyId(studyId);
+        appConfig.setAppId(appId);
         
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, study.getDataGroups(), substudyIds, true);
+                fileService, app.getDataGroups(), substudyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
 
         DynamoAppConfig newAppConfig = new DynamoAppConfig();
         newAppConfig.setLabel(appConfig.getLabel());
-        newAppConfig.setStudyId(appConfig.getStudyId());
+        newAppConfig.setAppId(appConfig.getAppId());
         newAppConfig.setCriteria(appConfig.getCriteria());
         newAppConfig.setClientData(appConfig.getClientData());
         newAppConfig.setSurveyReferences(appConfig.getSurveyReferences());
@@ -215,39 +215,39 @@ public class AppConfigService {
         return newAppConfig;
     }
     
-    public AppConfig updateAppConfig(String studyId, AppConfig appConfig) {
-        checkNotNull(studyId);
+    public AppConfig updateAppConfig(String appId, AppConfig appConfig) {
+        checkNotNull(appId);
         checkNotNull(appConfig);
         
-        appConfig.setStudyId(studyId);
+        appConfig.setAppId(appId);
         
-        Study study = studyService.getStudy(studyId);
+        App app = appService.getApp(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(study.getIdentifier());
+        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, study.getDataGroups(), substudyIds, false);
+                fileService, app.getDataGroups(), substudyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.
-        AppConfig persistedConfig = appConfigDao.getAppConfig(studyId, appConfig.getGuid());
+        AppConfig persistedConfig = appConfigDao.getAppConfig(appId, appConfig.getGuid());
         appConfig.setCreatedOn(persistedConfig.getCreatedOn());
         appConfig.setModifiedOn(getCurrentTimestamp());
         
         return appConfigDao.updateAppConfig(appConfig);
     }
     
-    public void deleteAppConfig(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteAppConfig(String appId, String guid) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
-        appConfigDao.deleteAppConfig(studyId, guid);
+        appConfigDao.deleteAppConfig(appId, guid);
     }
     
-    public void deleteAppConfigPermanently(String studyId, String guid) {
-        checkNotNull(studyId);
+    public void deleteAppConfigPermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
-        appConfigDao.deleteAppConfigPermanently(studyId, guid);
+        appConfigDao.deleteAppConfigPermanently(appId, guid);
     }
 }

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoStudy;
+import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -19,17 +19,15 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
  * A Bridge study.
  *
  */
-// This is required or Jackson searches for, and eventually, finds the same annotation for StudyIdentifer, 
-// and attempts to use that to deserialize study (not what you want).
-@JsonDeserialize(as=DynamoStudy.class)
-public interface Study extends BridgeEntity {
+@JsonDeserialize(as=DynamoApp.class)
+public interface App extends BridgeEntity {
     ObjectWriter STUDY_LIST_WRITER = new BridgeObjectMapper().writer(
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
     /** Convenience method for creating a Study using a concrete implementation. */
-    static Study create() {
-        return new DynamoStudy();
+    static App create() {
+        return new DynamoApp();
     }
 
     /**
@@ -122,23 +120,23 @@ public interface Study extends BridgeEntity {
 
     /**
      * <p>
-     * True if the Bridge Exporter should include the studyId prefix in the "originalTable" field in the appVersion
+     * True if the Bridge Exporter should include the appId prefix in the "originalTable" field in the appVersion
      * (now "Health Data Summary") table in Synapse. This exists primarily because we want to remove redundant prefixes
-     * from the Synapse tables (to improve reporting), but we don't want to break existing studies or partition
+     * from the Synapse tables (to improve reporting), but we don't want to break existing apps or partition
      * existing data.
      * </p>
      * <p>
-     * The setting is "reversed" so we don't have to backfill a bunch of old studies.
+     * The setting is "reversed" so we don't have to backfill a bunch of old apps.
      * </p>
      * <p>
-     * This is a "hidden" setting, primarily to support back-compat for old studies. New studies should be created with
+     * This is a "hidden" setting, primarily to support back-compat for old apps. New apps should be created with
      * this flag set to true, and only admins can change the flag.
      * </p>
      */
-    boolean isStudyIdExcludedInExport();
+    boolean isAppIdExcludedInExport();
 
-    /** @see #isStudyIdExcludedInExport */
-    void setStudyIdExcludedInExport(boolean studyIdExcludedInExport);
+    /** @see #isAppIdExcludedInExport */
+    void setAppIdExcludedInExport(boolean studyIdExcludedInExport);
 
     /**
      * The email address that will be given to study participants and other end user for all support 

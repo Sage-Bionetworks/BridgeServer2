@@ -73,7 +73,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.MimeType;
 import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
@@ -195,12 +195,12 @@ public class ParticipantService {
      * register notifications, but sometimes the work can't be done on time, so we want study developers to have the
      * option of backfilling these.
      */
-    public void createSmsRegistration(Study study, String userId) {
-        checkNotNull(study);
+    public void createSmsRegistration(App app, String userId) {
+        checkNotNull(app);
         checkNotNull(userId);
 
         // Account must have a verified phone number.
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
         if (!TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user has no verified phone number");
@@ -214,7 +214,7 @@ public class ParticipantService {
         }
         Set<String> substudyIds = BridgeUtils.collectSubstudyIds(account);
         CriteriaContext criteriaContext = new CriteriaContext.Builder()
-                .withAppId(study.getIdentifier())
+                .withAppId(app.getIdentifier())
                 .withUserId(userId)
                 .withHealthCode(account.getHealthCode())
                 .withClientInfo(requestInfo.getClientInfo())
@@ -224,7 +224,7 @@ public class ParticipantService {
                 .build();
 
         // Participant must be consented.
-        StudyParticipant participant = getParticipant(study, account, true);
+        StudyParticipant participant = getParticipant(app, account, true);
         if (!TRUE.equals(participant.isConsented())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user is not consented");
@@ -237,18 +237,18 @@ public class ParticipantService {
         registration.setEndpoint(account.getPhone().getNumber());
 
         // Create registration.
-        notificationsService.createRegistration(study.getIdentifier(), criteriaContext, registration);
+        notificationsService.createRegistration(app.getIdentifier(), criteriaContext, registration);
     }
 
-    public StudyParticipant getParticipant(Study study, String userId, boolean includeHistory) {
+    public StudyParticipant getParticipant(App app, String userId, boolean includeHistory) {
         // This parse method correctly deserializes formats such as externalId:XXXXXXXX.
-        AccountId accountId = BridgeUtils.parseAccountId(study.getIdentifier(), userId);
+        AccountId accountId = BridgeUtils.parseAccountId(app.getIdentifier(), userId);
         Account account = getAccountThrowingException(accountId);
-        return getParticipant(study, account, includeHistory);
+        return getParticipant(app, account, includeHistory);
     }
     
-    public StudyParticipant getSelfParticipant(Study study, CriteriaContext context, boolean includeHistory) {
-        AccountId accountId = AccountId.forId(study.getIdentifier(),  context.getUserId());
+    public StudyParticipant getSelfParticipant(App app, CriteriaContext context, boolean includeHistory) {
+        AccountId accountId = AccountId.forId(app.getIdentifier(),  context.getUserId());
         Account account = getAccountThrowingException(accountId); // already filters for substudy
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
@@ -261,7 +261,7 @@ public class ParticipantService {
         return builder.build();
     }
     
-    public StudyParticipant getParticipant(Study study, Account account, boolean includeHistory) {
+    public StudyParticipant getParticipant(App app, Account account, boolean includeHistory) {
         if (account == null) {
             // This should never happen. However, it occasionally does happen, generally only during integration tests.
             // If a call is taking a long time for whatever reason, the call will timeout and the tests will delete the
@@ -284,13 +284,13 @@ public class ParticipantService {
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
-            copyHistoryToParticipant(builder, account, study.getIdentifier());
+            copyHistoryToParticipant(builder, account, app.getIdentifier());
         }
         // Without requestInfo, we cannot reliably determine if the user is consented
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
             CriteriaContext context = new CriteriaContext.Builder()
-                .withAppId(study.getIdentifier())
+                .withAppId(app.getIdentifier())
                 .withUserId(account.getId())
                 .withHealthCode(account.getHealthCode())
                 .withUserDataGroups(account.getDataGroups())
@@ -348,12 +348,12 @@ public class ParticipantService {
         return builder;
     }
 
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(Study study, AccountSummarySearch search) {
-        checkNotNull(study);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
+        checkNotNull(app);
         
-        Validate.entityThrowingException(new AccountSummarySearchValidator(study.getDataGroups()), search);
+        Validate.entityThrowingException(new AccountSummarySearchValidator(app.getDataGroups()), search);
         
-        return accountService.getPagedAccountSummaries(study, search);
+        return accountService.getPagedAccountSummaries(app, search);
     }
 
     /**
@@ -378,11 +378,11 @@ public class ParticipantService {
         return account.getCreatedOn();
     }
 
-    public void signUserOut(Study study, String userId, boolean deleteReauthToken) {
-        checkNotNull(study);
+    public void signUserOut(App app, String userId, boolean deleteReauthToken) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
 
-        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
+        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
@@ -396,22 +396,22 @@ public class ParticipantService {
      * Create a study participant. A password must be provided, even if it is added on behalf of a user before
      * triggering a reset password request.
      */
-    public IdentifierHolder createParticipant(Study study, StudyParticipant participant, boolean shouldSendVerification) {
-        checkNotNull(study);
+    public IdentifierHolder createParticipant(App app, StudyParticipant participant, boolean shouldSendVerification) {
+        checkNotNull(app);
         checkNotNull(participant);
         
-        if (study.getAccountLimit() > 0) {
-            throwExceptionIfLimitMetOrExceeded(study);
+        if (app.getAccountLimit() > 0) {
+            throwExceptionIfLimitMetOrExceeded(app);
         }
         
-        StudyParticipantValidator validator = new StudyParticipantValidator(externalIdService, substudyService, study,
+        StudyParticipantValidator validator = new StudyParticipantValidator(externalIdService, substudyService, app,
                 true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
         Account account = getAccount();
         account.setId(generateGUID());
-        account.setStudyId(study.getIdentifier());
+        account.setStudyId(app.getIdentifier());
         account.setEmail(participant.getEmail());
         account.setPhone(participant.getPhone());
         account.setEmailVerified(FALSE);
@@ -432,10 +432,10 @@ public class ParticipantService {
         }
         
         final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
-        updateAccountAndRoles(study, account, participant, externalId, true);
+        updateAccountAndRoles(app, account, participant, externalId, true);
 
         // enabled unless we need any kind of verification
-        boolean sendEmailVerification = shouldSendVerification && study.isEmailVerificationEnabled();
+        boolean sendEmailVerification = shouldSendVerification && app.isEmailVerificationEnabled();
         if (participant.getEmail() != null && !sendEmailVerification) {
             // not verifying, so consider it verified
             account.setEmailVerified(true); 
@@ -461,7 +461,7 @@ public class ParticipantService {
         // within an account transaction, and roll back the account if the external ID save fails. If the 
         // account save fails, catch the exception and rollback the external ID save. 
         try {
-            accountService.createAccount(study, account,
+            accountService.createAccount(app, account,
                     (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
         } catch(Exception e) {
             if (externalId != null) {
@@ -471,8 +471,8 @@ public class ParticipantService {
         }
         
         // send verify email
-        if (sendEmailVerification && !study.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+        if (sendEmailVerification && !app.isAutoVerificationEmailSuppressed()) {
+            accountWorkflowService.sendEmailVerificationToken(app, account.getId(), account.getEmail());
         }
 
         // If you create an account with a phone number, this opts the phone number in to receiving SMS. We do this
@@ -485,8 +485,8 @@ public class ParticipantService {
         }
 
         // send verify phone number
-        if (shouldSendVerification && !study.isAutoVerificationPhoneSuppressed()) {
-            accountWorkflowService.sendPhoneVerificationToken(study, account.getId(), phone);
+        if (shouldSendVerification && !app.isAutoVerificationPhoneSuppressed()) {
+            accountWorkflowService.sendPhoneVerificationToken(app, account.getId(), phone);
         }
         return new IdentifierHolder(account.getId());
     }
@@ -511,18 +511,18 @@ public class ParticipantService {
             participant.getSynapseUserId() != null && participant.getPassword() == null;
     }
 
-    public void updateParticipant(Study study, StudyParticipant participant) {
-        checkNotNull(study);
+    public void updateParticipant(App app, StudyParticipant participant) {
+        checkNotNull(app);
         checkNotNull(participant);
 
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, substudyService, study, false);
+                externalIdService, substudyService, app, false);
         Validate.entityThrowingException(validator, participant);
         
-        Account account = getAccountThrowingException(study.getIdentifier(), participant.getId());
+        Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());
         
         final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
-        updateAccountAndRoles(study, account, participant, externalId, false);
+        updateAccountAndRoles(app, account, participant, externalId, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
@@ -550,15 +550,15 @@ public class ParticipantService {
         }
     }
 
-    private void throwExceptionIfLimitMetOrExceeded(Study study) {
+    private void throwExceptionIfLimitMetOrExceeded(App app) {
         // It's sufficient to get minimum number of records, we're looking only at the total of all accounts
-        PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(study, AccountSummarySearch.EMPTY_SEARCH);
-        if (summaries.getTotal() >= study.getAccountLimit()) {
-            throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, study.getAccountLimit()));
+        PagedResourceList<AccountSummary> summaries = getPagedAccountSummaries(app, AccountSummarySearch.EMPTY_SEARCH);
+        if (summaries.getTotal() >= app.getAccountLimit()) {
+            throw new LimitExceededException(String.format(BridgeConstants.MAX_USERS_ERROR, app.getAccountLimit()));
         }
     }
     
-    private void updateAccountAndRoles(Study study, Account account, StudyParticipant participant,
+    private void updateAccountAndRoles(App app, Account account, StudyParticipant participant,
             ExternalIdentifier externalId, boolean isNew) {
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
@@ -621,7 +621,7 @@ public class ParticipantService {
         
         // Do not copy timezone (external ID field exists only to submit the value on create).
         
-        for (String attribute : study.getUserProfileAttributes()) {
+        for (String attribute : app.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
@@ -649,60 +649,60 @@ public class ParticipantService {
         }
     }
     
-    public void requestResetPassword(Study study, String userId) {
-        checkNotNull(study);
+    public void requestResetPassword(App app, String userId) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
 
         // Don't throw an exception here, you'd be exposing that an email/phone number is in the system.
-        AccountId accountId = AccountId.forId(study.getIdentifier(), userId);
+        AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
 
-        accountWorkflowService.requestResetPassword(study, true, accountId);
+        accountWorkflowService.requestResetPassword(app, true, accountId);
     }
 
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(App app, String userId,
             String activityGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd, String offsetKey, int pageSize) {
-        checkNotNull(study);
+        checkNotNull(app);
         checkArgument(isNotBlank(activityGuid));
         checkArgument(isNotBlank(userId));
 
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityGuid, scheduledOnStart,
                 scheduledOnEnd, offsetKey, pageSize);
     }
     
-    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(Study study, String userId,
+    public ForwardCursorPagedResourceList<ScheduledActivity> getActivityHistory(App app, String userId,
             ActivityType activityType, String referentGuid, DateTime scheduledOnStart, DateTime scheduledOnEnd,
             String offsetKey, int pageSize) {
 
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         return scheduledActivityService.getActivityHistory(account.getHealthCode(), activityType, referentGuid,
                 scheduledOnStart, scheduledOnEnd, offsetKey, pageSize);
     }
 
-    public void deleteActivities(Study study, String userId) {
-        checkNotNull(study);
+    public void deleteActivities(App app, String userId) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
 
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         activityDao.deleteActivitiesForUser(account.getHealthCode());
     }
 
-    public void resendVerification(Study study, ChannelType type, String userId) {
-        checkNotNull(study);
+    public void resendVerification(App app, ChannelType type, String userId) {
+        checkNotNull(app);
         checkArgument(isNotBlank(userId));
 
-        StudyParticipant participant = getParticipant(study, userId, false);
+        StudyParticipant participant = getParticipant(app, userId, false);
         if (type == ChannelType.EMAIL) { 
             if (participant.getEmail() != null) {
-                AccountId accountId = AccountId.forEmail(study.getIdentifier(), participant.getEmail());
+                AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
                 accountWorkflowService.resendVerificationToken(type, accountId);
             }
         } else if (type == ChannelType.PHONE) {
             if (participant.getPhone() != null) {
-                AccountId accountId = AccountId.forPhone(study.getIdentifier(), participant.getPhone());
+                AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
                 accountWorkflowService.resendVerificationToken(type, accountId);
             }
         } else {
@@ -710,38 +710,38 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawFromStudy(Study study, String userId, Withdrawal withdrawal, long withdrewOn) {
-        checkNotNull(study);
+    public void withdrawFromStudy(App app, String userId, Withdrawal withdrawal, long withdrewOn) {
+        checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        StudyParticipant participant = getParticipant(study, userId, false);
+        StudyParticipant participant = getParticipant(app, userId, false);
 
-        consentService.withdrawFromStudy(study, participant, withdrawal, withdrewOn);
+        consentService.withdrawFromStudy(app, participant, withdrawal, withdrewOn);
     }
 
-    public void withdrawConsent(Study study, String userId,
+    public void withdrawConsent(App app, String userId,
             SubpopulationGuid subpopGuid, Withdrawal withdrawal, long withdrewOn) {
-        checkNotNull(study);
+        checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(subpopGuid);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
 
-        StudyParticipant participant = getParticipant(study, userId, false);
-        CriteriaContext context = getCriteriaContextForParticipant(study, participant);
+        StudyParticipant participant = getParticipant(app, userId, false);
+        CriteriaContext context = getCriteriaContextForParticipant(app, participant);
 
-        consentService.withdrawConsent(study, subpopGuid, participant, context, withdrawal, withdrewOn);
+        consentService.withdrawConsent(app, subpopGuid, participant, context, withdrawal, withdrewOn);
     }
     
-    public void resendConsentAgreement(Study study, SubpopulationGuid subpopGuid, String userId) {
-        checkNotNull(study);
+    public void resendConsentAgreement(App app, SubpopulationGuid subpopGuid, String userId) {
+        checkNotNull(app);
         checkNotNull(subpopGuid);
         checkArgument(isNotBlank(userId));
 
-        StudyParticipant participant = getParticipant(study, userId, false);
-        consentService.resendConsentAgreement(study, subpopGuid, participant);
+        StudyParticipant participant = getParticipant(app, userId, false);
+        consentService.resendConsentAgreement(app, subpopGuid, participant);
     }
 
     /**
@@ -766,52 +766,52 @@ public class ParticipantService {
         }).collect(BridgeCollectors.toImmutableList());
     }
 
-    public ForwardCursorPagedResourceList<UploadView> getUploads(Study study, String userId, DateTime startTime,
+    public ForwardCursorPagedResourceList<UploadView> getUploads(App app, String userId, DateTime startTime,
             DateTime endTime, Integer pageSize, String offsetKey) {
-        checkNotNull(study);
+        checkNotNull(app);
         checkNotNull(userId);
         
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         return uploadService.getUploads(account.getHealthCode(), startTime, endTime, pageSize, offsetKey);
     }
 
-    public List<NotificationRegistration> listRegistrations(Study study, String userId) {
-        checkNotNull(study);
+    public List<NotificationRegistration> listRegistrations(App app, String userId) {
+        checkNotNull(app);
         checkNotNull(userId);
 
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         return notificationsService.listRegistrations(account.getHealthCode());
     }
 
-    public Set<String> sendNotification(Study study, String userId, NotificationMessage message) {
-        checkNotNull(study);
+    public Set<String> sendNotification(App app, String userId, NotificationMessage message) {
+        checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(message);
 
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
-        return notificationsService.sendNotificationToUser(study.getIdentifier(), account.getHealthCode(), message);
+        return notificationsService.sendNotificationToUser(app.getIdentifier(), account.getHealthCode(), message);
     }
 
     /**
      * Send an SMS message to this user if they have a verified phone number. This message will be 
      * sent with AWS' non-critical, "Promotional" level of delivery that optimizes for cost.
      */
-    public void sendSmsMessage(Study study, String userId, SmsTemplate template) {
-        checkNotNull(study);
+    public void sendSmsMessage(App app, String userId, SmsTemplate template) {
+        checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(template);
         
         if (StringUtils.isBlank(template.getMessage())) {
             throw new BadRequestException("Message is required");
         }
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
         if (account.getPhone() == null || !TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Account does not have a verified phone number");
         }
-        Map<String,String> variables = BridgeUtils.studyTemplateVariables(study);
+        Map<String,String> variables = BridgeUtils.studyTemplateVariables(app);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent(template.getMessage());
@@ -821,37 +821,37 @@ public class ParticipantService {
                 .withPhone(account.getPhone())
                 .withTemplateRevision(revision)
                 .withPromotionType()
-                .withStudy(study);
+                .withStudy(app);
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
         }
         smsService.sendSmsMessage(userId, builder.build());
     }
     
-    public List<ActivityEvent> getActivityEvents(Study study, String userId) {
-        Account account = getAccountThrowingException(study.getIdentifier(), userId);
+    public List<ActivityEvent> getActivityEvents(App app, String userId) {
+        Account account = getAccountThrowingException(app.getIdentifier(), userId);
         
-        return activityEventService.getActivityEventList(study.getIdentifier(), account.getHealthCode());
+        return activityEventService.getActivityEventList(app.getIdentifier(), account.getHealthCode());
     }
     
     /**
      * This method is only executed on the authenticated caller, not on behalf of any other person.
      */
-    public StudyParticipant updateIdentifiers(Study study, CriteriaContext context, IdentifierUpdate update) {
-        checkNotNull(study);
+    public StudyParticipant updateIdentifiers(App app, CriteriaContext context, IdentifierUpdate update) {
+        checkNotNull(app);
         checkNotNull(context);
         checkNotNull(update);
         
         // Validate
-        Validate.entityThrowingException(new IdentifierUpdateValidator(study, externalIdService), update);
+        Validate.entityThrowingException(new IdentifierUpdateValidator(app, externalIdService), update);
         
         // Sign in
         Account account;
         // These throw exceptions for not found, disabled, and not yet verified.
         if (update.getSignIn().getReauthToken() != null) {
-            account = accountService.reauthenticate(study, update.getSignIn());
+            account = accountService.reauthenticate(app, update.getSignIn());
         } else {
-            account = accountService.authenticate(study, update.getSignIn());
+            account = accountService.authenticate(app, update.getSignIn());
         }
         // Verify the account matches the current caller
         if (!account.getId().equals(context.getUserId())) {
@@ -868,7 +868,7 @@ public class ParticipantService {
         }
         if (update.getEmailUpdate() != null && account.getEmail() == null) {
             account.setEmail(update.getEmailUpdate());
-            account.setEmailVerified( !study.isEmailVerificationEnabled() );
+            account.setEmailVerified( !app.isEmailVerificationEnabled() );
             sendEmailVerification = true;
             accountUpdated = true;
         }
@@ -898,12 +898,12 @@ public class ParticipantService {
             accountService.updateAccount(account, null);
         }
         if (sendEmailVerification && 
-            study.isEmailVerificationEnabled() && 
-            !study.isAutoVerificationEmailSuppressed()) {
-            accountWorkflowService.sendEmailVerificationToken(study, account.getId(), account.getEmail());
+            app.isEmailVerificationEnabled() && 
+            !app.isAutoVerificationEmailSuppressed()) {
+            accountWorkflowService.sendEmailVerificationToken(app, account.getId(), account.getEmail());
         }
         // return updated StudyParticipant to update and return session
-        return getParticipant(study, account.getId(), false);
+        return getParticipant(app, account.getId(), false);
     }
     
     protected ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
@@ -954,12 +954,12 @@ public class ParticipantService {
     }
      
     
-    private CriteriaContext getCriteriaContextForParticipant(Study study, StudyParticipant participant) {
+    private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {
         RequestInfo info = requestInfoService.getRequestInfo(participant.getId());
         ClientInfo clientInfo = (info == null) ? null : info.getClientInfo();
         
         return new CriteriaContext.Builder()
-            .withAppId(study.getIdentifier())
+            .withAppId(app.getIdentifier())
             .withHealthCode(participant.getHealthCode())
             .withUserId(participant.getId())
             .withClientInfo(clientInfo)

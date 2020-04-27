@@ -90,18 +90,18 @@ public class MetricsTest {
     }
 
     @Test
-    public void testSetStudy() {
+    public void testSetAppId() {
         String requestId = "12345";
         Metrics metrics = new Metrics(requestId);
-        metrics.setStudy(null);
+        metrics.setAppId(null);
         String json = metrics.toJsonString();
-        assertFalse(json.contains("\"study\":"));
-        metrics.setStudy(" ");
+        assertFalse(json.contains("\"appId\":"));
+        metrics.setAppId(" ");
         json = metrics.toJsonString();
-        assertFalse(json.contains("\"study\":"));
-        metrics.setStudy(TEST_APP_ID);
+        assertFalse(json.contains("\"appId\":"));
+        metrics.setAppId(TEST_APP_ID);
         json = metrics.toJsonString();
-        assertTrue(json.contains("\"study\":\""+TEST_APP_ID+"\""));
+        assertTrue(json.contains("\"appId\":\""+TEST_APP_ID+"\""));
     }
 
     @Test

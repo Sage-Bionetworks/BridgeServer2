@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @BridgeTypeName("AppConfigElement")
 public final class DynamoAppConfigElement implements AppConfigElement {
     private String id;
-    private String studyId;
+    private String appId;
     private Long revision;
     private boolean deleted;
     private JsonNode data;
@@ -36,18 +36,18 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     @DynamoDBHashKey
     @JsonIgnore
     public String getKey() {
-        if (StringUtils.isBlank(studyId) || StringUtils.isBlank(id)) {
+        if (StringUtils.isBlank(appId) || StringUtils.isBlank(id)) {
             return null;
         }
-        return String.format("%s:%s", studyId, id);
+        return String.format("%s:%s", appId, id);
     }
     public void setKey(String key) {
-        this.studyId = null;
+        this.appId = null;
         this.id = null;
         if (key != null) {
             String[] components = key.split(":", 2);
             if (components.length == 2) {
-                this.studyId = components[0];
+                this.appId = components[0];
                 this.id = components[1];
             }
         }
@@ -61,11 +61,11 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     }
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-index")
     @JsonIgnore
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     public String getId() {
         return id;
@@ -114,7 +114,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
     
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, id, revision, deleted, data, createdOn, modifiedOn, version);
+        return Objects.hash(appId, id, revision, deleted, data, createdOn, modifiedOn, version);
     }
     @Override
     public boolean equals(Object obj) {
@@ -123,7 +123,7 @@ public final class DynamoAppConfigElement implements AppConfigElement {
         if (obj == null || getClass() != obj.getClass())
             return false;
         DynamoAppConfigElement other = (DynamoAppConfigElement) obj;
-        return Objects.equals(studyId, other.studyId) &&
+        return Objects.equals(appId, other.appId) &&
                 Objects.equals(id, other.id) &&
                 Objects.equals(revision, other.revision) &&
                 Objects.equals(deleted, other.deleted) &&

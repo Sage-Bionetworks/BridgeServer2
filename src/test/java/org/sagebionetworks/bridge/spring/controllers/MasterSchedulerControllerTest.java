@@ -41,10 +41,10 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.MasterSchedulerConfig;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.MasterSchedulerService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class MasterSchedulerControllerTest extends Mockito {
     private static final DateTime LAST_PROCESSED_TIME = DateTime.parse("2017-06-03T20:50:21.650-08:00");
@@ -59,7 +59,7 @@ public class MasterSchedulerControllerTest extends Mockito {
     private MasterSchedulerService mockSchedulerService;
     
     @Mock
-    private StudyService mockStudyService;
+    private AppService mockAppService;
     
     @Mock
     private AccountService mockAccountService;
@@ -79,7 +79,7 @@ public class MasterSchedulerControllerTest extends Mockito {
     
     MasterSchedulerConfig mockConfig;
     
-    Study study;
+    App app;
     
     UserSession mockSession; 
     

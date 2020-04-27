@@ -8,28 +8,28 @@ import static org.testng.Assert.assertEquals;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class StrictValidationHandlerGetValidationStrictnessTest {
     private StrictValidationHandler handler;
-    private StudyService mockStudyService;
+    private AppService mockAppService;
 
     @BeforeMethod
     public void setup() {
-        mockStudyService = mock(StudyService.class);
+        mockAppService = mock(AppService.class);
         handler = new StrictValidationHandler();
-        handler.setStudyService(mockStudyService);
+        handler.setAppService(mockAppService);
     }
 
     @Test
     public void enumStrict() {
         // mock study
-        Study study = Study.create();
-        study.setUploadValidationStrictness(UploadValidationStrictness.STRICT);
-        study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = App.create();
+        app.setUploadValidationStrictness(UploadValidationStrictness.STRICT);
+        app.setStrictUploadValidationEnabled(false);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
         UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
@@ -39,10 +39,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
     @Test
     public void enumReport() {
         // mock study
-        Study study = Study.create();
-        study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
-        study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = App.create();
+        app.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
+        app.setStrictUploadValidationEnabled(false);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
         UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
@@ -52,10 +52,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
     @Test
     public void enumWarn() {
         // mock study
-        Study study = Study.create();
-        study.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
-        study.setStrictUploadValidationEnabled(true);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = App.create();
+        app.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
+        app.setStrictUploadValidationEnabled(true);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
         UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
@@ -65,10 +65,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
     @Test
     public void booleanTrue() {
         // mock study
-        Study study = Study.create();
-        study.setUploadValidationStrictness(null);
-        study.setStrictUploadValidationEnabled(true);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = App.create();
+        app.setUploadValidationStrictness(null);
+        app.setStrictUploadValidationEnabled(true);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
         UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
@@ -78,10 +78,10 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
     @Test
     public void booleanFalse() {
         // mock study
-        Study study = Study.create();
-        study.setUploadValidationStrictness(null);
-        study.setStrictUploadValidationEnabled(false);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(study);
+        App app = App.create();
+        app.setUploadValidationStrictness(null);
+        app.setStrictUploadValidationEnabled(false);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
         UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);

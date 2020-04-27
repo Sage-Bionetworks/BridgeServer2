@@ -19,7 +19,7 @@ import com.google.common.collect.Lists;
 public final class CacheKey {
     
     private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
-            "channel-throttling", "lock", "study", "Subpopulation", "SubpopulationList", "view" };
+            "channel-throttling", "lock", "App", "Subpopulation", "SubpopulationList", "view" };
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
@@ -34,14 +34,14 @@ public final class CacheKey {
         return new CacheKey("TagList");
     }
 
-    public static final CacheKey reauthTokenLookupKey(String userId, String studyId) {
-        return new CacheKey(userId, studyId, "ReauthToken");
+    public static final CacheKey reauthTokenLookupKey(String userId, String appId) {
+        return new CacheKey(userId, appId, "ReauthToken");
     }
     public static final CacheKey shortenUrl(String token) {
         return new CacheKey(token, "ShortenedUrl");
     }
-    public static final CacheKey appConfigList(String studyId) {
-        return new CacheKey(studyId, "AppConfigList");
+    public static final CacheKey appConfigList(String appId) {
+        return new CacheKey(appId, "AppConfigList");
     }
 
     /**
@@ -56,7 +56,7 @@ public final class CacheKey {
         return new CacheKey(userId, throttleType.name().toLowerCase(), "channel-throttling");
     }
     public static final CacheKey emailSignInRequest(SignIn signIn) {
-        return new CacheKey(signIn.getEmail(), signIn.getStudyId(), "signInRequest");
+        return new CacheKey(signIn.getEmail(), signIn.getAppId(), "signInRequest");
     }
     /** The email verification status from Amazon SES, which we cache for a short time. Not involved with 
      * verification of an individual's email address. So we do return it through the cache API.
@@ -64,35 +64,35 @@ public final class CacheKey {
     public static final CacheKey emailVerification(String email) {
         return new CacheKey(email, "emailVerificationStatus");
     }
-    public static final CacheKey itp(SubpopulationGuid subpopGuid, String studyId, Phone phone) {
-        return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), studyId, "itp");
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, String appId, Phone phone) {
+        return new CacheKey(subpopGuid.getGuid(), phone.getNumber(), appId, "itp");
     }
-    public static final CacheKey itp(SubpopulationGuid subpopGuid, String studyId, String email) {
-        return new CacheKey(subpopGuid.getGuid(), email, studyId, "itp");
+    public static final CacheKey itp(SubpopulationGuid subpopGuid, String appId, String email) {
+        return new CacheKey(subpopGuid.getGuid(), email, appId, "itp");
     }
     public static final CacheKey lock(String value, Class<?> clazz) {
         return new CacheKey(value, clazz.getCanonicalName(), "lock");
     }
-    public static final CacheKey passwordResetForEmail(String sptoken, String studyId) {
-        return new CacheKey(sptoken, studyId); // no type, not great
+    public static final CacheKey passwordResetForEmail(String sptoken, String appId) {
+        return new CacheKey(sptoken, appId); // no type, not great
     }
-    public static final CacheKey passwordResetForPhone(String sptoken, String studyId) { 
-        return new CacheKey(sptoken, "phone", studyId); // no type, not great
+    public static final CacheKey passwordResetForPhone(String sptoken, String appId) { 
+        return new CacheKey(sptoken, "phone", appId); // no type, not great
     }
     public static final CacheKey phoneSignInRequest(SignIn signIn) {
-        return new CacheKey(signIn.getPhone().getNumber(), signIn.getStudyId(),"phoneSignInRequest");
+        return new CacheKey(signIn.getPhone().getNumber(), signIn.getAppId(),"phoneSignInRequest");
     }
     public static final CacheKey requestInfo(String userId) {
         return new CacheKey(userId, "request-info");
     }
-    public static final CacheKey study(String studyId) {
-        return new CacheKey(studyId, "study");
+    public static final CacheKey app(String appId) {
+        return new CacheKey(appId, "App");
     }    
-    public static final CacheKey subpop(SubpopulationGuid subpopGuid, String studyId) {
-        return new CacheKey(subpopGuid.getGuid(), studyId, "Subpopulation");
+    public static final CacheKey subpop(SubpopulationGuid subpopGuid, String appId) {
+        return new CacheKey(subpopGuid.getGuid(), appId, "Subpopulation");
     }
-    public static final CacheKey subpopList(String studyId) {
-        return new CacheKey(studyId, "SubpopulationList");
+    public static final CacheKey subpopList(String appId) {
+        return new CacheKey(appId, "SubpopulationList");
     }
     public static final CacheKey userIdToSession(String userId) {
         return new CacheKey(userId, "session2", "user");
