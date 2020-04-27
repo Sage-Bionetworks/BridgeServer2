@@ -88,7 +88,7 @@ public class SurveyServiceMockTest {
     SharedModuleMetadataService mockSharedModuleMetadataService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Captor
     ArgumentCaptor<GuidCreatedOnVersionHolder> keysCaptor;
@@ -111,13 +111,13 @@ public class SurveyServiceMockTest {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
         app = TestUtils.getValidStudy(SurveyServiceMockTest.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Create service.
         service = new SurveyService();
-        service.setStudyService(mockStudyService);
+        service.setAppService(mockAppService);
         service.setSurveyDao(mockSurveyDao);
         service.setSchedulePlanService(mockSchedulePlanService);
         service.setSharedModuleMetadataService(mockSharedModuleMetadataService);

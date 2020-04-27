@@ -106,7 +106,7 @@ public class ViewCacheTest {
         });
         
         App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
-        assertEquals(foundApp.getName(), "Test Study [ViewCacheTest]");
+        assertEquals(foundApp.getName(), "Test App [ViewCacheTest]");
     }
     
     @Test

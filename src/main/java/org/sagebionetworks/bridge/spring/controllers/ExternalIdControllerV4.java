@@ -71,7 +71,7 @@ public class ExternalIdControllerV4 extends BaseController {
     @DeleteMapping("/v4/externalids/{externalId}")
     public StatusMessage deleteExternalIdentifier(@PathVariable String externalId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), externalId);
         externalIdService.deleteExternalIdPermanently(app, externalIdentifier);
@@ -86,7 +86,7 @@ public class ExternalIdControllerV4 extends BaseController {
         
         Boolean createAccountBool = Boolean.valueOf(createAccount);
         
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         return authenticationService.generatePassword(app, externalId, createAccountBool);
     }
 }

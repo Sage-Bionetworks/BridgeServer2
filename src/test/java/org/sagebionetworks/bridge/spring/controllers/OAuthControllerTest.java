@@ -45,7 +45,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.OAuthService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class OAuthControllerTest extends Mockito {
     
@@ -66,7 +66,7 @@ public class OAuthControllerTest extends Mockito {
     App mockApp;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -91,8 +91,8 @@ public class OAuthControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
         
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockApp);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(mockApp);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(mockApp);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(mockApp);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

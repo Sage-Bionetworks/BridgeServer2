@@ -84,7 +84,7 @@ public class TemplateServiceTest extends Mockito {
     CriteriaDao mockCriteriaDao;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     SubstudyService mockSubstudyService;
@@ -137,7 +137,7 @@ public class TemplateServiceTest extends Mockito {
         app.setIdentifier(TEST_APP_ID);
         app.setDataGroups(USER_DATA_GROUPS);
         app.setDefaultTemplates(new HashMap<>());
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(USER_SUBSTUDY_IDS);
     }
     
@@ -186,7 +186,7 @@ public class TemplateServiceTest extends Mockito {
         } else {
             app.setDefaultTemplates(ImmutableMap.of(EMAIL_RESET_PASSWORD.name().toLowerCase(), guid));    
         }
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
     }
     
     // This is the happy case... one template matches the provided criteria and is returned

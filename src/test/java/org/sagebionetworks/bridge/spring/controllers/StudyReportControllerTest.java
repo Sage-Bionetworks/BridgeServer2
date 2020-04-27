@@ -60,7 +60,7 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ReportService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class StudyReportControllerTest extends Mockito {
     
@@ -84,7 +84,7 @@ public class StudyReportControllerTest extends Mockito {
     ReportService mockReportService;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     AccountService mockAccountService;
@@ -130,7 +130,7 @@ public class StudyReportControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         
-        doReturn(study).when(mockStudyService).getStudy(TEST_APP_ID);
+        doReturn(study).when(mockAppService).getApp(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
         
         ReportIndex index = ReportIndex.create();

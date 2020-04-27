@@ -500,47 +500,47 @@ public class TestUtils {
         pushNotificationARNs.put(OperatingSystem.ANDROID, "arn:android:"+id);
 
         // This study will save without further modification.
-        DynamoApp study = new DynamoApp();
-        study.setName("Test Study ["+clazz.getSimpleName()+"]");
-        study.setShortName("ShortName");
-        study.setAutoVerificationEmailSuppressed(true);
-        study.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        study.setStudyIdExcludedInExport(true);
-        study.setIdentifier(id);
-        study.setMinAgeOfConsent(18);
-        study.setSponsorName("The Council on Test Studies");
-        study.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
-        study.setConsentNotificationEmailVerified(true);
-        study.setSynapseDataAccessTeamId(1234L);
-        study.setSynapseProjectId("test-synapse-project-id");
-        study.setTechnicalEmail("bridge-testing+technical@sagebase.org");
-        study.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
-        study.setUsesCustomExportSchedule(true);
-        study.setSupportEmail("bridge-testing+support@sagebase.org");
-        study.setUserProfileAttributes(Sets.newHashSet("a", "b"));
-        study.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
-        study.setActivityEventKeys(Sets.newHashSet("event1", "event2"));
-        study.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
-        study.setStrictUploadValidationEnabled(true);
-        study.setHealthCodeExportEnabled(true);
-        study.setEmailVerificationEnabled(true);
-        study.setReauthenticationEnabled(true);
-        study.setEmailSignInEnabled(true);
-        study.setPhoneSignInEnabled(true);
-        study.setVerifyChannelOnSignInEnabled(true);
-        study.setExternalIdRequiredOnSignup(true);
-        study.setActive(true);
-        study.setDisableExport(false);
-        study.setAccountLimit(0);
-        study.setPushNotificationARNs(pushNotificationARNs);
-        study.setAutoVerificationPhoneSuppressed(true);
+        DynamoApp app = new DynamoApp();
+        app.setName("Test App ["+clazz.getSimpleName()+"]");
+        app.setShortName("ShortName");
+        app.setAutoVerificationEmailSuppressed(true);
+        app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        app.setAppIdExcludedInExport(true);
+        app.setIdentifier(id);
+        app.setMinAgeOfConsent(18);
+        app.setSponsorName("The Council on Test Studies");
+        app.setConsentNotificationEmail("bridge-testing+consent@sagebase.org");
+        app.setConsentNotificationEmailVerified(true);
+        app.setSynapseDataAccessTeamId(1234L);
+        app.setSynapseProjectId("test-synapse-project-id");
+        app.setTechnicalEmail("bridge-testing+technical@sagebase.org");
+        app.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
+        app.setUsesCustomExportSchedule(true);
+        app.setSupportEmail("bridge-testing+support@sagebase.org");
+        app.setUserProfileAttributes(Sets.newHashSet("a", "b"));
+        app.setTaskIdentifiers(Sets.newHashSet("task1", "task2"));
+        app.setActivityEventKeys(Sets.newHashSet("event1", "event2"));
+        app.setDataGroups(Sets.newHashSet("beta_users", "production_users"));
+        app.setStrictUploadValidationEnabled(true);
+        app.setHealthCodeExportEnabled(true);
+        app.setEmailVerificationEnabled(true);
+        app.setReauthenticationEnabled(true);
+        app.setEmailSignInEnabled(true);
+        app.setPhoneSignInEnabled(true);
+        app.setVerifyChannelOnSignInEnabled(true);
+        app.setExternalIdRequiredOnSignup(true);
+        app.setActive(true);
+        app.setDisableExport(false);
+        app.setAccountLimit(0);
+        app.setPushNotificationARNs(pushNotificationARNs);
+        app.setAutoVerificationPhoneSuppressed(true);
         Map<String,String> defaultTemplates = new HashMap<>();
         for (TemplateType type : TemplateType.values()) {
             String typeName = type.name().toLowerCase();
             defaultTemplates.put(typeName, "ABC-DEF");
         }
-        study.setDefaultTemplates(defaultTemplates);
-        return study;
+        app.setDefaultTemplates(defaultTemplates);
+        return app;
     }
 
     public static SchedulePlan getABTestSchedulePlan(String appId) {

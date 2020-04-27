@@ -36,12 +36,12 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class ActivityEventControllerTest extends Mockito {
 
     @Mock
-    private StudyService studyService;
+    private AppService appService;
     
     @Mock
     private ActivityEventService mockActivityEventService;
@@ -71,7 +71,7 @@ public class ActivityEventControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         app = App.create();
-        when(studyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
     }
     
     @Test

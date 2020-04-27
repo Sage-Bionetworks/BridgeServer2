@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -84,29 +85,31 @@ import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
-@Component("studyService")
+@Component
 @PropertySource("classpath:conf/app-defaults/sms-messages.properties")
-public class StudyService {
-    private static final Logger LOG = LoggerFactory.getLogger(StudyService.class);
+public class AppService {
+    private static final Logger LOG = LoggerFactory.getLogger(AppService.class);
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
-    static final String CONFIG_STUDY_WHITELIST = "study.whitelist";
+    static final String CONFIG_APP_WHITELIST = "study.whitelist";
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
     static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
-    private static final String VERIFY_STUDY_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
-    static final int VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
+    private static final String VERIFY_APP_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
+    static final int VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
-    private static final String STUDY_PROPERTY = "Study";
+    private static final String APP_PROPERTY = "App";
     private static final String TYPE_PROPERTY = "type";
     private static final String STUDY_EMAIL_VERIFICATION_URL = "studyEmailVerificationUrl";
     private static final String STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "studyEmailVerificationExpirationPeriod";
+    private static final String APP_EMAIL_VERIFICATION_URL = "appEmailVerificationUrl";
+    private static final String APP_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "apEmailVerificationExpirationPeriod";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     public static final Set<ACCESS_TYPE> READ_DOWNLOAD_ACCESS = ImmutableSet.of(ACCESS_TYPE.READ, ACCESS_TYPE.DOWNLOAD);
 
-    private Set<String> studyWhitelist;
+    private Set<String> appWhitelist;
     private String bridgeSupportEmailPlain;
     private String bridgeAdminTeamId;
     private String bridgeStaffTeamId;
@@ -128,7 +131,7 @@ public class StudyService {
     private TemplateService templateService;
     private FileService fileService;
 
-    // Not defaults, if you wish to change these, change in source. Not configurable per study
+    // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
     private String appEmailVerificationTemplateSubject;
     
@@ -150,8 +153,8 @@ public class StudyService {
         this.bridgeSupportEmailPlain = bridgeConfig.get(CONFIG_KEY_SUPPORT_EMAIL_PLAIN);
         this.bridgeAdminTeamId = bridgeConfig.get(CONFIG_KEY_TEAM_BRIDGE_ADMIN);
         this.bridgeStaffTeamId = bridgeConfig.get(CONFIG_KEY_TEAM_BRIDGE_STAFF);
-        this.studyWhitelist = Collections.unmodifiableSet(new HashSet<>(
-                bridgeConfig.getPropertyAsList(CONFIG_STUDY_WHITELIST)));
+        this.appWhitelist = Collections.unmodifiableSet(new HashSet<>(
+                bridgeConfig.getPropertyAsList(CONFIG_APP_WHITELIST)));
         this.synapseTrackingViewId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
     }
 
@@ -226,7 +229,7 @@ public class StudyService {
         this.fileService = fileService;
     }
     
-    public App getStudy(String identifier, boolean includeDeleted) {
+    public App getApp(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
         App app = cacheProvider.getStudy(identifier);
@@ -238,7 +241,7 @@ public class StudyService {
             // If it it exists and has been deactivated, and this call is not supposed to retrieve deactivated
             // studies, treat it as if it doesn't exist.
             if (!app.isActive() && !includeDeleted) {
-                throw new EntityNotFoundException(App.class, "Study not found.");
+                throw new EntityNotFoundException(App.class);
             }
             // Because these templates do not exist in all studies, add the defaults where they are null
             if (app.getPasswordPolicy() == null) {
@@ -248,20 +251,20 @@ public class StudyService {
         return app;
     }
 
-    // only return active study
-    public App getStudy(String identifier) {
+    // only return active app
+    public App getApp(String identifier) {
         if (isBlank(identifier)) {
-            throw new BadRequestException("study parameter is required");
+            throw new BadRequestException("identifier is required");
         }
-        return getStudy(identifier, false);
+        return getApp(identifier, false);
     }
 
-    public List<App> getStudies() {
+    public List<App> getApps() {
         return studyDao.getStudies();
     }
 
-    public App createStudyAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
-        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "study and users");
+    public App createAppAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
+        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
         App app = studyAndUsers.getStudy();
         StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService, app, true);
@@ -281,8 +284,8 @@ public class StudyService {
         }
         Validate.throwException(errors, studyAndUsers);
 
-        // Create study
-        app = createStudy(studyAndUsers.getStudy());
+        // Create app
+        app = createApp(studyAndUsers.getStudy());
 
         // Create users and send password reset email
         for (StudyParticipant user: studyAndUsers.getUsers()) {
@@ -299,16 +302,16 @@ public class StudyService {
         return app;
     }
 
-    public App createStudy(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
+    public App createApp(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
         if (app.getVersion() != null){
-            throw new EntityAlreadyExistsException(App.class, "Study has a version value; it may already exist",
+            throw new EntityAlreadyExistsException(App.class, "App has a version value; it may already exist",
                 new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, app.getIdentifier()).build()); 
         }
 
         app.setActive(true);
         app.setConsentNotificationEmailVerified(false);
-        app.setStudyIdExcludedInExport(true);
+        app.setAppIdExcludedInExport(true);
         app.setVerifyChannelOnSignInEnabled(true);
         app.setEmailVerificationEnabled(true);
         app.getDataGroups().add(BridgeConstants.TEST_USER_GROUP);
@@ -316,13 +319,13 @@ public class StudyService {
             app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
 
-        // If reauth isn't set on study creation, set it to true. We only do this at study creation and not on update,
+        // If reauth isn't set on app creation, set it to true. We only do this at app creation and not on update,
         // because we don't want to suddenly be creating reauth tokens for old studies that don't use reauth.
         if (app.isReauthenticationEnabled() == null) {
             app.setReauthenticationEnabled(true);
         }
 
-        // If validation strictness isn't set on study creation, set it to a reasonable default.
+        // If validation strictness isn't set on app creation, set it to a reasonable default.
         if (app.getUploadValidationStrictness() == null) {
             app.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
         }
@@ -347,7 +350,7 @@ public class StudyService {
         app.setDefaultTemplates(map);
 
         // do not create certs for whitelisted studies (legacy studies)
-        if (!studyWhitelist.contains(app.getIdentifier())) {
+        if (!appWhitelist.contains(app.getIdentifier())) {
             uploadCertService.createCmsKeyPair(app.getIdentifier());
         }
 
@@ -363,7 +366,7 @@ public class StudyService {
     }
     
     /**
-     * Create a synapse project after creating a study. Administrator Synapse user IDs need to be verified, and 
+     * Create a synapse project after creating a app. Administrator Synapse user IDs need to be verified, and 
      * no users are added to the data access team that will be created.
      */
     public App createSynapseProjectTeam(List<String> adminIds, App app) throws SynapseException {
@@ -381,20 +384,20 @@ public class StudyService {
         try {
             BridgeUtils.toSynapseFriendlyName(app.getName());    
         } catch(NullPointerException | IllegalArgumentException e) {
-            throw new BadRequestException("Study name is invalid Synapse name: " + app.getName());
+            throw new BadRequestException("App name is invalid Synapse name: " + app.getName());
         }
         return createSynapseProjectTeam(adminIds, ImmutableList.of(), app);
     }
 
     protected App createSynapseProjectTeam(List<String> synapseUserIds, List<String> userIds, App app) throws SynapseException {
-        // first check if study already has project and team ids
+        // first check if app already has project and team ids
         if (app.getSynapseDataAccessTeamId() != null){
-            throw new EntityAlreadyExistsException(App.class, "Study already has a team ID.",
+            throw new EntityAlreadyExistsException(App.class, "App already has a team ID.",
                 new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, app.getIdentifier())
                     .put("synapseDataAccessTeamId", app.getSynapseDataAccessTeamId()).build());
         }
         if (app.getSynapseProjectId() != null){
-            throw new EntityAlreadyExistsException(App.class, "Study already has a project ID.",
+            throw new EntityAlreadyExistsException(App.class, "App already has a project ID.",
                 new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, app.getIdentifier())
                 .put("synapseProjectId", app.getSynapseProjectId()).build());
         }
@@ -448,10 +451,10 @@ public class StudyService {
             synapseClient.setTeamMemberPermissions(newTeamId, userId, false);
         }
 
-        // finally, update study
+        // finally, update app
         app.setSynapseProjectId(newProjectId);
         app.setSynapseDataAccessTeamId(Long.parseLong(newTeamId));
-        updateStudy(app, false);
+        updateApp(app, false);
 
         return app;
     }
@@ -488,8 +491,8 @@ public class StudyService {
         acl.getResourceAccess().add(resource);
     }
     
-    public App updateStudy(App app, boolean isAdminUpdate) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
+    public App updateApp(App app, boolean isAdminUpdate) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
 
         // These cannot be set through the API and will be null here, so they are set on update
         App originalApp = studyDao.getStudy(app.getIdentifier());
@@ -499,9 +502,9 @@ public class StudyService {
         // A number of fields can only be set by an administrator. We set these to their existing values if the 
         // caller is not an admin.
         if (!isAdminUpdate) {
-            // prevent non-admins update a deactivated study
+            // prevent non-admins update a deactivated app
             if (!originalApp.isActive()) {
-                throw new EntityNotFoundException(App.class, "Study '"+ app.getIdentifier() +"' not found.");
+                throw new EntityNotFoundException(App.class, "App '"+ app.getIdentifier() +"' not found.");
             }
             app.setHealthCodeExportEnabled(originalApp.isHealthCodeExportEnabled());
             app.setEmailVerificationEnabled(originalApp.isEmailVerificationEnabled());
@@ -510,17 +513,17 @@ public class StudyService {
             app.setPhoneSignInEnabled(originalApp.isPhoneSignInEnabled());
             app.setReauthenticationEnabled(originalApp.isReauthenticationEnabled());
             app.setAccountLimit(originalApp.getAccountLimit());
-            app.setStudyIdExcludedInExport(originalApp.isStudyIdExcludedInExport());
+            app.setAppIdExcludedInExport(originalApp.isAppIdExcludedInExport());
             app.setVerifyChannelOnSignInEnabled(originalApp.isVerifyChannelOnSignInEnabled());
         }
 
-        // prevent anyone changing active to false -- it should be done by deactivateStudy() method
+        // prevent anyone changing active to false -- it should be done by deactivateApp() method
         if (originalApp.isActive() && !app.isActive()) {
-            throw new BadRequestException("Study cannot be deleted through an update.");
+            throw new BadRequestException("App cannot be deleted through an update.");
         }
 
         // With the introduction of the session verification email, studies won't have all the templates
-        // that are normally required. So set it if someone tries to update a study, to a default value.
+        // that are normally required. So set it if someone tries to update a app, to a default value.
         if (app.getPasswordPolicy() == null) {
             app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         }
@@ -533,10 +536,10 @@ public class StudyService {
             // case-by-case basis.
             app.setConsentNotificationEmailVerified(true);
         } else if (!originalApp.isConsentNotificationEmailVerified()) {
-            // You can't use the updateStudy() API to set consentNotificationEmailVerified from false to true.
+            // You can't use the updateApp() API to set consentNotificationEmailVerified from false to true.
             app.setConsentNotificationEmailVerified(false);
         }
-        // This needs to happen before the study is updated.
+        // This needs to happen before the app is updated.
         boolean consentHasChanged = !Objects.equals(originalApp.getConsentNotificationEmail(),
                 app.getConsentNotificationEmail());
         if (consentHasChanged) {
@@ -550,7 +553,7 @@ public class StudyService {
             checkUploadMetadataConstraints(originalApp, app);
         }
 
-        App updatedApp = updateAndCacheStudy(app);
+        App updatedApp = updateAndCacheApp(app);
         
         if (!originalApp.getSupportEmail().equals(app.getSupportEmail())) {
             emailVerificationService.verifyEmailAddress(app.getSupportEmail());
@@ -561,10 +564,10 @@ public class StudyService {
         return updatedApp;
     }
 
-    // Helper method to save the study to the DAO and also update the cache.
-    private App updateAndCacheStudy(App app) {
-        // When the version is out of sync in the cache, then an exception is thrown and the study
-        // is not updated in the cache. At least we can delete the study before this, so the next
+    // Helper method to save the app to the DAO and also update the cache.
+    private App updateAndCacheApp(App app) {
+        // When the version is out of sync in the cache, then an exception is thrown and the app
+        // is not updated in the cache. At least we can delete the app before this, so the next
         // time it should succeed. Have not figured out why they get out of sync.
         cacheProvider.removeStudy(app.getIdentifier());
         App updatedApp = studyDao.updateStudy(app);
@@ -575,7 +578,7 @@ public class StudyService {
     // Helper method to check if we deleted or modified an upload metadata fields. Only admins can delete or modify
     // upload metadata fields.
     private static void checkUploadMetadataConstraints(App oldApp, App newApp) {
-        // Shortcut: if oldStudy.uploadMetadataFieldDefinitions is empty, we can skip. Adding fields is always okay.
+        // Shortcut: if oldApp.uploadMetadataFieldDefinitions is empty, we can skip. Adding fields is always okay.
         if (oldApp.getUploadMetadataFieldDefinitions().isEmpty()) {
             return;
         }
@@ -609,27 +612,27 @@ public class StudyService {
         }
     }
 
-    public void deleteStudy(String identifier, boolean physical) {
+    public void deleteApp(String identifier, boolean physical) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
-        if (studyWhitelist.contains(identifier)) {
+        if (appWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");
         }
 
         // only admin can call this method, should contain deactivated ones.
-        App existing = getStudy(identifier, true);
+        App existing = getApp(identifier, true);
         
         if (!physical) {
             // deactivate
             if (!existing.isActive()) {
-                throw new BadRequestException("Study '"+identifier+"' already deactivated.");
+                throw new BadRequestException("App '"+identifier+"' already deactivated.");
             }
             studyDao.deactivateStudy(existing.getIdentifier());
         } else {
             // actual delete
             studyDao.deleteStudy(existing);
 
-            // delete study data
+            // delete app data
             templateService.deleteTemplatesForStudy(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());
@@ -649,30 +652,30 @@ public class StudyService {
     private void checkViolationConstraints(App originalApp, App app) {
         if (!app.getDataGroups().containsAll(originalApp.getDataGroups())) {
             throw new ConstraintViolationException.Builder()
-                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
                     .withMessage("Data groups cannot be deleted.").build();
         }
         if (!app.getTaskIdentifiers().containsAll(originalApp.getTaskIdentifiers())) {
             throw new ConstraintViolationException.Builder()
-                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
                     .withMessage("Task identifiers cannot be deleted.").build();
         }
         if (!app.getActivityEventKeys().containsAll(originalApp.getActivityEventKeys())) {
             throw new ConstraintViolationException.Builder()
-                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                    .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
                     .withMessage("Activity event keys cannot be deleted.").build();
 
         }
         if (app.getDefaultTemplates().keySet().size() != TemplateType.values().length) {
             throw new ConstraintViolationException.Builder()
-                .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, STUDY_PROPERTY)
+                .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
                 .withMessage("Default templates cannot be deleted.").build();
         }
     }
     
-    /** Sends the email verification email for the given study's email. */
-    public void sendVerifyEmail(String studyId, StudyEmailType type) {
-        App app = getStudy(studyId);
+    /** Sends the email verification email for the given app's email. */
+    public void sendVerifyEmail(String appId, StudyEmailType type) {
+        App app = getApp(appId);
         sendVerifyEmail(app, type);
     }
 
@@ -694,7 +697,7 @@ public class StudyService {
                 throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
         }
         if (email == null) {
-            throw new BadRequestException("Email not set for study");
+            throw new BadRequestException("Email not set for app");
         }
 
         // Generate and save token.
@@ -703,8 +706,8 @@ public class StudyService {
 
         // Create and send verification email. Users cannot edit this template so there's no backwards
         // compatibility issues
-        String studyId = BridgeUtils.encodeURIComponent(app.getIdentifier());
-        String shortUrl = String.format(VERIFY_STUDY_EMAIL_URL, BASE_URL, studyId, token, type.toString().toLowerCase());
+        String appId = BridgeUtils.encodeURIComponent(app.getIdentifier());
+        String shortUrl = String.format(VERIFY_APP_EMAIL_URL, BASE_URL, appId, token, type.toString().toLowerCase());
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject(appEmailVerificationTemplateSubject);
@@ -714,16 +717,18 @@ public class StudyService {
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(app).withTemplateRevision(revision)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email)
                 .withToken(STUDY_EMAIL_VERIFICATION_URL, shortUrl)
-                .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS)
+                .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS)
+                .withToken(APP_EMAIL_VERIFICATION_URL, shortUrl)
+                .withExpirationPeriod(APP_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS)
                 .withType(EmailType.VERIFY_CONSENT_EMAIL)
                 .build();
         sendMailService.sendEmail(provider);
     }
 
     /** Verifies the email with the given verification token. */
-    public void verifyEmail(String studyId, String token, StudyEmailType type) {
+    public void verifyEmail(String appId, String token, StudyEmailType type) {
         // Verify input.
-        checkNotNull(studyId);
+        checkNotNull(appId);
         if (StringUtils.isBlank(token)) {
             throw new BadRequestException("Verification token must be specified");
         }
@@ -738,7 +743,7 @@ public class StudyService {
         }
 
         // Figure out which email we need to verify from type.
-        App app = getStudy(studyId);
+        App app = getApp(appId);
         String email;
         switch (type) {
             case CONSENT_NOTIFICATION:
@@ -749,11 +754,11 @@ public class StudyService {
                 throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
         }
 
-        // Make sure the study's current consent notification email matches the email saved in the verification data.
-        // If the study's consent notification email is updated, the caller might still be using an older verification
+        // Make sure the app's current consent notification email matches the email saved in the verification data.
+        // If the app's consent notification email is updated, the caller might still be using an older verification
         // email.
-        if (!studyId.equals(data.getStudyId())) {
-            throw new BadRequestException("Email verification token is for a different study.");
+        if (!appId.equals(data.getAppId())) {
+            throw new BadRequestException("Email verification token is for a different app.");
         }
         if (email == null || !email.equals(data.getEmail())) {
             throw new BadRequestException("Email verification token does not match consent notification email.");
@@ -769,8 +774,8 @@ public class StudyService {
                 throw new BadRequestException("Unrecognized email type \"" + type.toString() + "\"");
         }
 
-        // Update study.
-        updateAndCacheStudy(app);
+        // Update app.
+        updateAndCacheApp(app);
     }
 
     // Creates a random token for consent notification email verification. Package-scoped so it can be mocked by unit
@@ -787,7 +792,7 @@ public class StudyService {
         try {
             CacheKey cacheKey = CacheKey.verificationToken(sptoken);
             cacheProvider.setObject(cacheKey, BridgeObjectMapper.get().writeValueAsString(data),
-                    VERIFY_STUDY_EMAIL_EXPIRE_IN_SECONDS);
+                    VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS);
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }
@@ -812,20 +817,21 @@ public class StudyService {
 
     // Verification data for consent notification email.
     private static class VerificationData {
-        private final String studyId;
+        private final String appId;
         private final String email;
 
         @JsonCreator
-        VerificationData(@JsonProperty("studyId") String studyId, @JsonProperty("email") String email) {
-            checkArgument(isNotBlank(studyId));
+        VerificationData(@JsonAlias("studyId") @JsonProperty("appId") String appId,
+                @JsonProperty("email") String email) {
+            checkArgument(isNotBlank(appId));
             checkArgument(isNotBlank(email));
-            this.studyId = studyId;
+            this.appId = appId;
             this.email = email;
         }
 
-        // Study ID that we want to verify email for.
-        public String getStudyId() {
-            return studyId;
+        // App ID that we want to verify email for.
+        public String getAppId() {
+            return appId;
         }
 
         // Email address that we want to verify.

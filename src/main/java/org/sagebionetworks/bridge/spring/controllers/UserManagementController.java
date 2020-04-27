@@ -47,9 +47,9 @@ public class UserManagementController extends BaseController {
         
         // Adjust the sign in so it is always done against the API study.
         SignIn signIn = new SignIn.Builder().withSignIn(originSignIn)
-                .withStudy(API_APP_ID).build();        
+                .withAppId(API_APP_ID).build();        
         
-        App app = studyService.getStudy(signIn.getStudyId());
+        App app = appService.getApp(signIn.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
         // We do not check consent, but do verify this is an administrator
@@ -61,7 +61,7 @@ public class UserManagementController extends BaseController {
         }
         
         // Now act as if the user is in the study that was requested
-        sessionUpdateService.updateStudy(session, originSignIn.getStudyId());
+        sessionUpdateService.updateStudy(session, originSignIn.getAppId());
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
@@ -80,10 +80,10 @@ public class UserManagementController extends BaseController {
 
         // The only part of this payload we care about is the study property
         SignIn signIn = parseJson(SignIn.class);
-        String studyId = signIn.getStudyId();
+        String studyId = signIn.getAppId();
 
         // Verify it's correct
-        App app = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         sessionUpdateService.updateStudy(session, app.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
@@ -93,7 +93,7 @@ public class UserManagementController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode createUser() {
         UserSession session = getAuthenticatedSession(ADMIN);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
 
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
@@ -115,7 +115,7 @@ public class UserManagementController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createUserWithStudyId(@PathVariable String studyId) {
         getAuthenticatedSession(SUPERADMIN);
-        App app = studyService.getStudy(studyId);
+        App app = appService.getApp(studyId);
         
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);
@@ -130,7 +130,7 @@ public class UserManagementController extends BaseController {
     @DeleteMapping("/v3/users/{userId}")
     public StatusMessage deleteUser(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         userAdminService.deleteUser(app, userId);
         

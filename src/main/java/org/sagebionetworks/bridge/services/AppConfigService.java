@@ -44,7 +44,7 @@ public class AppConfigService {
     
     private AppConfigElementService appConfigElementService;
     
-    private StudyService studyService;
+    private AppService appService;
     
     private SubstudyService substudyService;
     
@@ -60,8 +60,8 @@ public class AppConfigService {
     }
     
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -187,7 +187,7 @@ public class AppConfigService {
         
         appConfig.setAppId(appId);
         
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         
         Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
@@ -221,7 +221,7 @@ public class AppConfigService {
         
         appConfig.setAppId(appId);
         
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         
         Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         

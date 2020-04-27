@@ -52,9 +52,14 @@ public class JsonUtils {
         }
     }
 
-    public static String asText(JsonNode parent, String property) {
-        if (parent != null && parent.hasNonNull(property)) {
-            return parent.get(property).asText();
+    public static String asText(JsonNode parent, String... properties) {
+        if (parent != null && properties != null) {
+            for (int i=0; i < properties.length; i++) {
+                String property = properties[i];
+                if (parent.hasNonNull(property)) {
+                    return parent.get(property).asText();
+                }
+            }
         }
         return null;
     }

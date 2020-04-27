@@ -199,7 +199,7 @@ public class ParticipantReportController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
@@ -247,7 +247,7 @@ public class ParticipantReportController extends BaseController {
             "/v3/participants/{userId}/reports/{identifier}" })
     public StatusMessage deleteParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
@@ -265,7 +265,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportRecord(@PathVariable String userId, @PathVariable String identifier,
             @PathVariable String date) {
         UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {

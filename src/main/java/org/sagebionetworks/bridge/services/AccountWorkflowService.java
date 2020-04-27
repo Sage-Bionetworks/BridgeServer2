@@ -112,7 +112,7 @@ public class AccountWorkflowService {
 
     // Dependent services
     private SmsService smsService;
-    private StudyService studyService;
+    private AppService appService;
     private SendMailService sendMailService;
     private AccountService accountService;
     private CacheProvider cacheProvider;
@@ -132,8 +132,8 @@ public class AccountWorkflowService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
 
     @Autowired
@@ -250,7 +250,7 @@ public class AccountWorkflowService {
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
         checkNotNull(accountId);
         
-        App app = studyService.getStudy(accountId.getAppId());
+        App app = appService.getApp(accountId.getAppId());
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             if (type == ChannelType.EMAIL) {
@@ -275,7 +275,7 @@ public class AccountWorkflowService {
         if (data == null || data.getType() != type) {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
-        App app = studyService.getStudy(data.getAppId());
+        App app = appService.getApp(data.getAppId());
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
@@ -371,7 +371,7 @@ public class AccountWorkflowService {
             .withType(EmailType.RESET_PASSWORD);
             
         if (includeEmailSignIn && app.isEmailSignInEnabled()) {
-            SignIn signIn = new SignIn.Builder().withEmail(email).withStudy(app.getIdentifier()).build();
+            SignIn signIn = new SignIn.Builder().withEmail(email).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
                 signIn, false, this::getNextToken, (theStudy, account, token) -> {
                     // get and add the sign in URLs.
@@ -408,7 +408,7 @@ public class AccountWorkflowService {
         builder.withExpirationPeriod(RESET_PASSWORD_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         if (includePhoneSignIn && app.isPhoneSignInEnabled()) {
-            SignIn signIn = new SignIn.Builder().withPhone(phone).withStudy(app.getIdentifier()).build();
+            SignIn signIn = new SignIn.Builder().withPhone(phone).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
                 signIn, false, this::getNextPhoneToken, (theStudy, account2, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
@@ -428,8 +428,8 @@ public class AccountWorkflowService {
         checkNotNull(passwordReset);
         
         // This pathway is unusual as the token may have been sent via email or phone, so test for both.
-        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
-        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getStudyIdentifier());
+        CacheKey emailCacheKey = CacheKey.passwordResetForEmail(passwordReset.getSptoken(), passwordReset.getAppId());
+        CacheKey phoneCacheKey = CacheKey.passwordResetForPhone(passwordReset.getSptoken(), passwordReset.getAppId());
         
         String email = cacheProvider.getObject(emailCacheKey, String.class);
         Phone phone = cacheProvider.getObject(phoneCacheKey, Phone.class);
@@ -439,7 +439,7 @@ public class AccountWorkflowService {
         cacheProvider.removeObject(emailCacheKey);
         cacheProvider.removeObject(phoneCacheKey);
         
-        App app = studyService.getStudy(passwordReset.getStudyIdentifier());
+        App app = appService.getApp(passwordReset.getAppId());
         ChannelType channelType = null;
         AccountId accountId = null;
         if (email != null) {
@@ -528,7 +528,7 @@ public class AccountWorkflowService {
         // We use the study so it's existence is verified. We retrieve the account so we verify it
         // exists as well. If the token is returned to the server, we can safely use the credentials 
         // in the persisted SignIn object.
-        App app = studyService.getStudy(signIn.getStudyId());
+        App app = appService.getApp(signIn.getAppId());
 
         // Do we want the same flag for phone? Do we want to eliminate this flag?
         if (channelType == EMAIL && !app.isEmailSignInEnabled()) {

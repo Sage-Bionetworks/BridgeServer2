@@ -41,7 +41,7 @@ public class IntentService {
     
     private SendMailService sendMailService;
 
-    private StudyService studyService;
+    private AppService appService;
     
     private SubpopulationService subpopService;
     
@@ -67,8 +67,8 @@ public class IntentService {
     }
 
     @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     @Autowired
@@ -117,7 +117,7 @@ public class IntentService {
         }
         
         // validate study exists
-        App app = studyService.getStudy(intent.getAppId());
+        App app = appService.getApp(intent.getAppId());
 
         // validate subpopulation exists
         SubpopulationGuid guid = SubpopulationGuid.create(intent.getSubpopGuid());

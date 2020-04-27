@@ -55,7 +55,7 @@ public class AppConfigController extends BaseController {
     @GetMapping(path = { "/v1/apps/{appId}/appconfig", "/v3/studies/{appId}/appconfig" }, 
             produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getStudyAppConfig(@PathVariable String appId) {
-        App app = studyService.getStudy(appId);
+        App app = appService.getApp(appId);
         
         RequestContext reqContext = BridgeUtils.getRequestContext();
         

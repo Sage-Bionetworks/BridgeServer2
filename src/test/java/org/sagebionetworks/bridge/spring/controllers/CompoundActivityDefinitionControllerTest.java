@@ -30,14 +30,14 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivityDefinition;
 import org.sagebionetworks.bridge.services.CompoundActivityDefinitionService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class CompoundActivityDefinitionControllerTest extends Mockito {
     private static final String TASK_ID = "test-task";
 
     private CompoundActivityDefinitionController controller;
     private CompoundActivityDefinitionService defService;
-    private StudyService studyService;
+    private AppService appService;
     private HttpServletRequest mockRequest;
     private HttpServletResponse mockResponse;
 
@@ -48,7 +48,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         mockSession.setAppId(TEST_APP_ID);
 
         // mock study service
-        studyService = mock(StudyService.class);
+        appService = mock(AppService.class);
 
         // mock def service
         defService = mock(CompoundActivityDefinitionService.class);
@@ -57,7 +57,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         controller = spy(new CompoundActivityDefinitionController());
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
         controller.setCompoundActivityDefService(defService);
-        controller.setStudyService(studyService);
+        controller.setAppService(appService);
         
         mockRequest = mock(HttpServletRequest.class);
         mockResponse = mock(HttpServletResponse.class);
@@ -106,7 +106,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertEquals(TASK_ID, serviceInput.getTaskId());
         
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -118,7 +118,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         // verify call through to the service
         verify(defService).deleteCompoundActivityDefinition(TEST_APP_ID, TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -143,7 +143,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
         assertNull(controllerOutput.getAppId());
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -161,7 +161,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         assertEquals(controllerOutput.getTaskId(), TASK_ID);
         assertNull(controllerOutput.getAppId());
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     @Test
@@ -193,7 +193,7 @@ public class CompoundActivityDefinitionControllerTest extends Mockito {
         CompoundActivityDefinition serviceInput = serviceInputCaptor.getValue();
         assertEquals(serviceInput.getTaskId(), TASK_ID);
         verify(controller).getAuthenticatedSession(Roles.DEVELOPER);
-        verifyZeroInteractions(studyService);
+        verifyZeroInteractions(appService);
     }
 
     private static CompoundActivityDefinition getDefFromResult(String jsonText) throws Exception {

@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class StrictValidationHandlerTest {
@@ -78,9 +78,9 @@ public class StrictValidationHandlerTest {
         DynamoApp testStudy = new DynamoApp();
         testStudy.setUploadValidationStrictness(uploadValidationStrictness);
 
-        StudyService mockStudyService = mock(StudyService.class);
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(testStudy);
-        handler.setStudyService(mockStudyService);
+        AppService mockAppService = mock(AppService.class);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(testStudy);
+        handler.setAppService(mockAppService);
 
         // set up JSON data
         String jsonDataString = "{\n" +
@@ -420,9 +420,9 @@ public class StrictValidationHandlerTest {
     @Test
     public void schemaless() throws Exception {
         // Set up mocks.
-        StudyService mockStudyService = mock(StudyService.class);
+        AppService mockAppService = mock(AppService.class);
         UploadSchemaService mockUploadSchemaService = mock(UploadSchemaService.class);
-        handler.setStudyService(mockStudyService);
+        handler.setAppService(mockAppService);
         handler.setUploadSchemaService(mockUploadSchemaService);
 
         // Create record with no schema.
@@ -437,6 +437,6 @@ public class StrictValidationHandlerTest {
         assertTrue(context.getMessageList().isEmpty());
 
         // We don't ever use the dependent services.
-        verifyZeroInteractions(mockStudyService, mockUploadSchemaService);
+        verifyZeroInteractions(mockAppService, mockUploadSchemaService);
     }
 }

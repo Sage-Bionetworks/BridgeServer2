@@ -65,7 +65,7 @@ public class UserProfileController extends BaseController {
     @GetMapping(path={"/v3/users/self", "/api/v1/profile"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getUserProfile() {
         UserSession session = getAuthenticatedSession();
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         String userId = session.getId();
         
         CacheKey cacheKey = viewCache.getCacheKey(ObjectNode.class, userId, app.getIdentifier());
@@ -95,7 +95,7 @@ public class UserProfileController extends BaseController {
     @PostMapping({"/v3/users/self", "/api/v1/profile"})
     public JsonNode updateUserProfile() {
         UserSession session = getAuthenticatedSession();
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         String userId = session.getId();
         
         JsonNode node = parseJson(JsonNode.class);
@@ -152,7 +152,7 @@ public class UserProfileController extends BaseController {
     @PostMapping("/v3/users/self/dataGroups")
     public JsonNode updateDataGroups() {
         UserSession session = getAuthenticatedSession();
-        App app = studyService.getStudy(session.getAppId());
+        App app = appService.getApp(session.getAppId());
         
         StudyParticipant participant = participantService.getParticipant(app, session.getId(), false);
         

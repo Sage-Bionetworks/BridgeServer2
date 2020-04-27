@@ -45,7 +45,7 @@ import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.SchedulePlanService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 
 public class SchedulePlanControllerTest extends Mockito {
     
@@ -57,7 +57,7 @@ public class SchedulePlanControllerTest extends Mockito {
     SchedulePlanController controller;
     
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
     
     @Mock
     SchedulePlanService mockSchedulePlanService;
@@ -83,8 +83,8 @@ public class SchedulePlanControllerTest extends Mockito {
         app = new DynamoApp();
         app.setIdentifier(TEST_APP_ID);
         
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
         
         when(mockUserSession.getAppId()).thenReturn(TEST_APP_ID);
         doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);

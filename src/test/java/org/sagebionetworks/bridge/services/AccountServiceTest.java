@@ -72,7 +72,7 @@ public class AccountServiceTest extends Mockito {
 
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
-    private static final SignIn SIGN_IN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+    private static final SignIn SIGN_IN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withReauthToken("reauthToken").build();
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, PHONE);
     private static final DateTime MOCK_DATETIME = DateTime.parse("2017-05-19T14:45:27.593-0700");
@@ -87,9 +87,9 @@ public class AccountServiceTest extends Mockito {
             .of(AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A, USER_ID));
     private static final ImmutableSet<String> CALLER_SUBSTUDIES = ImmutableSet.of(SUBSTUDY_B);
     
-    private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+    private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
-    private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+    private static final SignIn REAUTH_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withReauthToken(REAUTH_TOKEN).build();
 
     @Mock
@@ -568,7 +568,7 @@ public class AccountServiceTest extends Mockito {
 
         App app = App.create();
 
-        service.authenticate(app, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+        service.authenticate(app, new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
                 .withPassword("wrong password").build());
     }
 
@@ -691,7 +691,7 @@ public class AccountServiceTest extends Mockito {
 
         App app = App.create();
 
-        SignIn signIn = new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+        SignIn signIn = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
                 .withPassword("bad password").build();
         service.authenticate(app, signIn);
     }
@@ -703,7 +703,7 @@ public class AccountServiceTest extends Mockito {
         App app = App.create();
         app.setReauthenticationEnabled(true);
 
-        service.reauthenticate(app, new SignIn.Builder().withStudy(TEST_APP_ID).withEmail(EMAIL)
+        service.reauthenticate(app, new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
                 .withReauthToken("wrong reauth token").build());
     }
 
@@ -870,7 +870,7 @@ public class AccountServiceTest extends Mockito {
         app.setVerifyChannelOnSignInEnabled(true);
 
         // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
-        SignIn phoneSignIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(PHONE)
+        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withPassword(DUMMY_PASSWORD).build();
         service.authenticate(app, phoneSignIn);
     }
@@ -901,7 +901,7 @@ public class AccountServiceTest extends Mockito {
     
     @Test
     public void authenticateAccountUnverifiedPhoneSucceedsForLegacy() throws Exception {
-        SignIn phoneSignIn = new SignIn.Builder().withStudy(TEST_APP_ID).withPhone(PHONE)
+        SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withPassword(DUMMY_PASSWORD).build();
 
         // mock hibernate

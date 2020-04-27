@@ -24,7 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,15 +50,15 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
     public static final Set<String> TEST_TASK_IDENTIFIERS = ImmutableSet.of("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
 
     private final UserAdminService userAdminService;
-    private final StudyService studyService;
+    private final AppService appService;
     private final DynamoInitializer dynamoInitializer;
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
 
     @Autowired
-    public DefaultStudyBootstrapper(UserAdminService userAdminService, StudyService studyService,
+    public DefaultStudyBootstrapper(UserAdminService userAdminService, AppService appService,
             AnnotationBasedTableCreator annotationBasedTableCreator, DynamoInitializer dynamoInitializer) {
         this.userAdminService = userAdminService;
-        this.studyService = studyService;
+        this.appService = appService;
         this.dynamoInitializer = dynamoInitializer;
         this.annotationBasedTableCreator = annotationBasedTableCreator;
     }
@@ -76,7 +76,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
         try {
-            studyService.getStudy(API_APP_ID);
+            appService.getApp(API_APP_ID);
         } catch (EntityNotFoundException e) {
             App app = App.create();
             app.setName("Test Study");
@@ -94,7 +94,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             app.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             app.setEmailVerificationEnabled(true);
             app.setVerifyChannelOnSignInEnabled(true);
-            app = studyService.createStudy(app);
+            app = appService.createApp(app);
             
             StudyParticipant admin = new StudyParticipant.Builder()
                     .withEmail(config.get("admin.email"))
@@ -111,7 +111,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
 
         // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
         try {
-            studyService.getStudy(SHARED_APP_ID);
+            appService.getApp(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {
             App app = App.create();
             app.setName("Shared Module Library");
@@ -124,7 +124,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             app.setConsentNotificationEmail(config.get("admin.email"));
             app.setEmailVerificationEnabled(true);
             app.setVerifyChannelOnSignInEnabled(true);
-            app = studyService.createStudy(app);
+            app = appService.createApp(app);
             
             StudyParticipant dev = new StudyParticipant.Builder()
                     .withEmail(config.get("shared.developer.email"))

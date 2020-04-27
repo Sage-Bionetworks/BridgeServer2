@@ -121,7 +121,7 @@ import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
-import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -152,10 +152,10 @@ public class ParticipantControllerTest extends Mockito {
             ENABLED, TEST_APP_ID, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_APP_ID).withEmail(EMAIL)
+            .withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(PASSWORD).build();
     private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withStudy(TEST_APP_ID).withPhone(PHONE)
+            .withAppId(TEST_APP_ID).withPhone(PHONE)
             .withPassword(PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             PHONE, null, null);
@@ -177,7 +177,7 @@ public class ParticipantControllerTest extends Mockito {
     ParticipantService mockParticipantService;
 
     @Mock
-    StudyService mockStudyService;
+    AppService mockAppService;
 
     @Mock
     AuthenticationService mockAuthService;
@@ -253,7 +253,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
-        when(mockStudyService.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         List<AccountSummary> summaries = ImmutableList.of(SUMMARY, SUMMARY, SUMMARY);
         PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 30).withRequestParam("offsetBy", 10)
@@ -1114,7 +1114,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(Roles.WORKER)).build());
 
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
 
         JsonNode result = controller.getParticipantsForWorker(app.getIdentifier(), "10", "20", "emailSubstring",
                 "phoneSubstring", START_TIME.toString(), END_TIME.toString(), null, null);
@@ -1142,7 +1142,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(Roles.WORKER)).build());
 
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
 
         JsonNode result = controller.getParticipantsForWorker(app.getIdentifier(), "10", "20", "emailSubstring",
                 "phoneSubstring", null, null, START_TIME.toString(), END_TIME.toString());
@@ -1172,7 +1172,7 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode(HEALTH_CODE)
                 .build();
 
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
         when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(foundParticipant);
 
         String result = controller.getParticipantForWorker(app.getIdentifier(), USER_ID, true);
@@ -1328,7 +1328,7 @@ public class ParticipantControllerTest extends Mockito {
 
         StudyParticipant foundParticipant = new StudyParticipant.Builder().withId(USER_ID).build();
 
-        when(mockStudyService.getStudy(app.getIdentifier())).thenReturn(app);
+        when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
         when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(foundParticipant);
 
         controller.getParticipantForWorker(app.getIdentifier(), USER_ID, false);
