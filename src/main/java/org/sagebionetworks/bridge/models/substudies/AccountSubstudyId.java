@@ -11,7 +11,7 @@ import javax.persistence.Embeddable;
 public final class AccountSubstudyId implements Serializable {
 
     @Column(name = "studyId")
-    private String studyId;
+    private String appId;
 
     @Column(name = "substudyId")
     private String substudyId;
@@ -21,14 +21,14 @@ public final class AccountSubstudyId implements Serializable {
 
     public AccountSubstudyId() {
     }
-    public AccountSubstudyId(String studyId, String substudyId, String accountId) {
-        this.studyId = studyId;
+    public AccountSubstudyId(String appId, String substudyId, String accountId) {
+        this.appId = appId;
         this.substudyId = substudyId;
         this.accountId = accountId;
     }
     
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     public String getSubstudyId() {
         return substudyId;
@@ -39,7 +39,7 @@ public final class AccountSubstudyId implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, substudyId, accountId);
+        return Objects.hash(appId, substudyId, accountId);
     }
 
     @Override
@@ -49,7 +49,7 @@ public final class AccountSubstudyId implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
         AccountSubstudyId other = (AccountSubstudyId) obj;
-        return Objects.equals(studyId, other.studyId) &&
+        return Objects.equals(appId, other.appId) &&
                 Objects.equals(substudyId, other.substudyId) &&
                 Objects.equals(accountId, other.accountId);
     }    

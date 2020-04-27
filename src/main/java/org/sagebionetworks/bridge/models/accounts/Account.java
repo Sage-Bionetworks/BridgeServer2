@@ -152,8 +152,8 @@ public interface Account extends BridgeEntity {
     AccountStatus getStatus();
     void setStatus(AccountStatus status);
 
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
@@ -192,7 +192,7 @@ public interface Account extends BridgeEntity {
     SharingScope getSharingScope();
     void setSharingScope(SharingScope sharingScope);
     
-    /** Has the user consented to receive email about the study from the study administrators? */
+    /** Has the user consented to receive email about the app from the app administrators? */
     Boolean getNotifyByEmail();
     void setNotifyByEmail(Boolean notifyByEmail);
     
