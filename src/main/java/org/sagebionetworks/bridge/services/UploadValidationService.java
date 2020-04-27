@@ -35,12 +35,12 @@ public class UploadValidationService {
      * method returns immediately. Call UploadService.getUpload() to check for validation status and messages.
      * </p>
      * <p>
-     * Study and user comes from the controller and upload comes from UploadService.getUpload(), so none of the fields
+     * App and user comes from the controller and upload comes from UploadService.getUpload(), so none of the fields
      * are user input, so validation is not needed.
      * </p>
      *
-     * @param study
-     *         study this upload lives in
+     * @param appId
+     *         app this upload lives in
      * @param upload
      *         upload metadata object for the upload
      */

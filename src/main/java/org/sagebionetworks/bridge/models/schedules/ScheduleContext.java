@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableMap;
 /**
  * All the information necessary to convert a schedule into a set of activities, on a given request. 
  * Because some of these values derive from the user, there is a validator that is run on this object 
- * that verifies the four required values (studyId, initialTimeZone, endsOn and healthCode) are present.
+ * that verifies the four required values (appId, initialTimeZone, endsOn and healthCode) are present.
  * 
  * @see org.sagebionetworks.bridge.validators.ScheduleContextValidator
  */

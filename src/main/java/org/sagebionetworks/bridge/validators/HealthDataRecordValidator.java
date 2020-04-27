@@ -31,7 +31,7 @@ public class HealthDataRecordValidator implements Validator {
      * <li>metadata is not a map (but empty maps are okay)</li>
      * <li>schemaId is null or empty</li>
      * <li>schemaRevision is zero or negative</li>
-     * <li>studyId is null or empty</li>
+     * <li>appId is null or empty</li>
      * <li>uploadDate is null</li>
      * <li>userSharingScope is null</li>
      * </ul>

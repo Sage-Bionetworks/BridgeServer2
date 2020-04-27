@@ -167,7 +167,7 @@ public class CacheProvider {
     }
 
     /**
-     * During a transition period away from StudyIdentifier, we will need special handling to
+     * During a transition period away from appId, we will need special handling to
      * ensure persisted sessions, subpopulations, and subpopulation lists are deserialized 
      * correctly. 
      */

@@ -102,7 +102,7 @@ public class SubpopulationService {
     }
     
     /**
-     * Create a default subpopulation for a new study
+     * Create a default subpopulation for a new app
      * @param app
      * @return
      */
@@ -157,7 +157,7 @@ public class SubpopulationService {
     }
     
     /**
-     * Get all subpopulations defined for this study that have not been deleted. If 
+     * Get all subpopulations defined for this app that have not been deleted. If 
      * there are no subpopulations, a default subpopulation will be created with a 
      * default consent.
      */
@@ -237,7 +237,7 @@ public class SubpopulationService {
     /**
      * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
      * in the API. This deletes everything, including the default subpopulation. This is used when 
-     * deleting a study, as part of a test, for example.
+     * deleting an app, as part of a test, for example.
      */
     public void deleteAllSubpopulations(String studyId) {
         checkNotNull(studyId);

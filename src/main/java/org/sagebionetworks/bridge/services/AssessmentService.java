@@ -320,7 +320,7 @@ public class AssessmentService {
     /**
      * Takes an assessment in the shared context and clones it into the caller's local context, using the 
      * specified organization as the new owner of the local assessment (must be an organization the caller
-     * is associated to). If the identifier already exists in this study, the revision number is adjusted
+     * is associated to). If the identifier already exists in this app, the revision number is adjusted
      * appropriately. The origin GUID is set to the GUID of the shared assessment.
      */
     public Assessment importAssessment(String appId, String ownerId, String newIdentifier, String guid) {

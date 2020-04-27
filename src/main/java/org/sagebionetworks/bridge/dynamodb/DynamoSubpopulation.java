@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * A sub-population of the study participants who will receive a unique consent based on selection by a data group, 
+ * A sub-population of the app participants who will receive a unique consent based on selection by a data group, 
  * an application version, or both. 
  */
 @DynamoDBTable(tableName = "Subpopulation")

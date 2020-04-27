@@ -45,7 +45,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
     }
 
     /**
-     * If overrideSenderEmail is specified, returns that. Otherwise, returns the plain sender email from the study,
+     * If overrideSenderEmail is specified, returns that. Otherwise, returns the plain sender email from the app,
      * as specified in {@link MimeTypeEmailProvider#getPlainSenderEmail}.
      */
     @Override
@@ -132,8 +132,8 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         }
         
         /**
-         * Specify the sender email, instead of getting it from the study. This is the plain, unformmated email, for
-         * example "example@example.com".
+         * Specify the sender email, instead of getting it from the app. This is the plain, 
+         * unformmated email, for example "example@example.com".
          */
         public Builder withOverrideSenderEmail(String overrideSenderEmail) {
             this.overrideSenderEmail = overrideSenderEmail;

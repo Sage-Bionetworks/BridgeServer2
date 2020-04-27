@@ -39,7 +39,7 @@ public enum ActivityEventObjectType {
      */
     ACTIVITY,
     /**
-     * A custom event defined at the study level.
+     * A custom event defined at the app level.
      */
     CUSTOM,
     /**

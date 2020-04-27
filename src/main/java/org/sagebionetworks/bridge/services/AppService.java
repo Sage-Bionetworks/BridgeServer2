@@ -158,7 +158,7 @@ public class AppService {
         this.synapseTrackingViewId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
     }
 
-    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    /** Compound activity definition service, used to clean up deleted apps. This is set by Spring. */
     @Autowired
     final void setCompoundActivityDefinitionService(
             CompoundActivityDefinitionService compoundActivityDefinitionService) {

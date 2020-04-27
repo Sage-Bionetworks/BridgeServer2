@@ -106,7 +106,7 @@ public class UserManagementController extends BaseController {
     }
 
     /**
-     * admin api used to create consent/not-consent user for given study
+     * admin api used to create consent/not-consent user for given app
      * nearly identical to createUser() one
      * @param studyId
      * @return

@@ -297,11 +297,11 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /**
      * <p>
-     * The ID of the study that this schema lives in. This is not exposed to the callers of the upload schema API, but
-     * is needed internally to create a secondary index on the study. This index is needed by:
+     * The ID of the app that this schema lives in. This is not exposed to the callers of the upload schema API, but
+     * is needed internally to create a secondary index on the app. This index is needed by:
      *   <ul>
-     *     <li>the exporter will want all schemas for a particular study to match a particular upload</li>
-     *     <li>researchers may want to list all schemas in their study for schema management</li>
+     *     <li>the exporter will want all schemas for a particular app to match a particular upload</li>
+     *     <li>researchers may want to list all schemas in their app for schema management</li>
      *   </ul>
      * </p>
      */

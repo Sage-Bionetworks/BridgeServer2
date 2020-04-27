@@ -11,8 +11,8 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * This struct contains the results of importing a shared module into the local study, including what type of module it
- * is, and its key params (schema ID/revision or survey GUID/createdOn) in the local study.
+ * This struct contains the results of importing a shared module into the local app, including what type of module it
+ * is, and its key params (schema ID/revision or survey GUID/createdOn) in the local app.
  */
 @BridgeTypeName("SharedModuleImportStatus")
 public class SharedModuleImportStatus implements BridgeEntity {

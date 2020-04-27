@@ -39,12 +39,12 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
     static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_APP_ID);
     
     /**
-     * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
+     * The data group set in the test (api) app. This includes groups that are required for the SDK integration tests.
      */
     public static final Set<String> TEST_DATA_GROUPS = ImmutableSet.of("sdk-int-1", "sdk-int-2", "group1", TEST_USER_GROUP);
 
     /**
-     * The task identifiers set in the test (api) study. This includes task identifiers that are required for the SDK
+     * The task identifiers set in the test (api) app. This includes task identifiers that are required for the SDK
      * integration tests.
      */
     public static final Set<String> TEST_TASK_IDENTIFIERS = ImmutableSet.of("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");

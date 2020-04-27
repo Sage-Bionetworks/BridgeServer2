@@ -37,8 +37,8 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
 /**
- * Main functionality we want to verify in this test is that study can be serialized with all values, 
- * but filtered in the API to exclude read-only studies when exposed to researchers.
+ * Main functionality we want to verify in this test is that app can be serialized with all values, 
+ * but filtered in the API to exclude read-only apps when exposed to researchers.
  */
 public class DynamoAppTest {
     private static final List<AppleAppLink> APPLE_APP_LINKS = Lists.newArrayList(TestConstants.APPLE_APP_LINK);

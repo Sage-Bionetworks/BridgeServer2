@@ -99,15 +99,15 @@ public class UserAdminService {
     /**
      * Create a user and optionally consent the user and/or sign the user in. If a specific subpopulation 
      * is not specified (and currently the API for this method does not allow it), than the method iterates 
-     * through all subpopulations in the study and consents the user to all required consents. This should 
+     * through all subpopulations in the app and consents the user to all required consents. This should 
      * allow the user to make calls without receiving a 412 response. 
      * 
-     * @param app
-     *            the study of the target user
+     * @param appId
+     *            the app of the target user
      * @param participant
      *            sign up information for the target user
      * @param subpopGuid
-     *            the subpopulation to consent to (if null, it will use the default/study subpopulation).
+     *            the subpopulation to consent to (if null, it will use the default/app subpopulation).
      * @param signUserIn
      *            should the user be signed into Bridge after creation?
      * @param consentUser
@@ -183,7 +183,7 @@ public class UserAdminService {
      * Delete the target user.
      *
      * @param app
-     *      target user's study
+     *      target user's app
      * @param id
      *      target user's ID
      */

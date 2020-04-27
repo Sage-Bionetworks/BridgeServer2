@@ -275,7 +275,7 @@ public class UploadService {
     }
     
     /**
-     * <p>Get uploads for an entire study in a time window. Start and end time are optional. If neither are provided, they 
+     * <p>Get uploads for an entire app in a time window. Start and end time are optional. If neither are provided, they 
      * default to the last day of uploads. If end time is not provided, the query ends at the time of the request. If the 
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>

@@ -192,7 +192,7 @@ public interface Account extends BridgeEntity {
     SharingScope getSharingScope();
     void setSharingScope(SharingScope sharingScope);
     
-    /** Has the user consented to receive email about the study from the study administrators? */
+    /** Has the user consented to receive email about the app from the app administrators? */
     Boolean getNotifyByEmail();
     void setNotifyByEmail(Boolean notifyByEmail);
     

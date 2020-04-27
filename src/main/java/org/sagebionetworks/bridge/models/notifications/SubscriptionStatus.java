@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Simple value object for communicating the status of a subscription back to the client. The 
- * client will get back one record for every topic in the study.
+ * client will get back one record for every topic in the app.
  */
 public class SubscriptionStatus {
 

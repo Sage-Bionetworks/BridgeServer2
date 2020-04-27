@@ -20,10 +20,10 @@ public interface AccountDao {
     int MIGRATION_VERSION = 1;
     
     /**
-     * Search for all accounts across studies that have the same Synapse user ID in common, 
-     * and return a list of the study IDs where these accounts are found.
+     * Search for all accounts across apps that have the same Synapse user ID in common, 
+     * and return a list of the appIds where these accounts are found.
      * @param synapseUserId
-     * @return list of study identifiers
+     * @return list of app identifiers
      */
     List<String> getStudyIdsForUser(String synapseUserId);
     

@@ -322,7 +322,7 @@ public class AccountWorkflowService {
     /**
      * Request that a token be sent to the user's email address or phone number that can be 
      * used to submit a password change to the server. Users who administer participants in 
-     * the study can trigger this request whether the channel used is verified or not, 
+     * the app can trigger this request whether the channel used is verified or not, 
      * but normal users must have already verified the channel to prevent abuse. In addition, 
      * this method fails silently if the email or phone number cannot be found in the system, 
      * to prevent account enumeration attacks. 

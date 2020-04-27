@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 
 /**
  * A model of the JSON we return to iOS clients. For iOS clients, one object encompasses all the 
- * links for all the studies.
+ * links for all the apps.
  * 
  * @see https://developer.apple.com/library/content/documentation/General/Conceptual/AppSearch/UniversalLinks.html
  */

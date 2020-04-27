@@ -40,7 +40,7 @@ public interface Subpopulation extends BridgeEntity, HasCriteria {
     
     /**
      * Is it required that the user sign the consent for this subpopulation in order
-     * to access the Bridge server and participate in the study?
+     * to access the Bridge server and participate in the app?
      */
     void setRequired(boolean required);
     boolean isRequired();
@@ -62,8 +62,8 @@ public interface Subpopulation extends BridgeEntity, HasCriteria {
     
     /**
      * Is this subpopulation a default group? The first default subpopulation can be 
-     * edited, but it cannot be deleted. Created for new studies or transitional 
-     * studies.
+     * edited, but it cannot be deleted. Created for new apps or transitional 
+     * apps.
      */
     void setDefaultGroup(boolean defaultGroup);
     boolean isDefaultGroup();
@@ -96,12 +96,12 @@ public interface Subpopulation extends BridgeEntity, HasCriteria {
     Set<String> getSubstudyIdsAssignedOnConsent();
     
     /**
-     * URL for retrieving the HTML version of the published consent for this study.
+     * URL for retrieving the HTML version of the published consent for this app.
      */
     String getConsentHTML();
     
     /**
-     * URL for retrieving the PDF version of the published consent for this study.
+     * URL for retrieving the PDF version of the published consent for this app.
      */
     String getConsentPDF();
 

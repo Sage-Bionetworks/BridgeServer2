@@ -14,8 +14,8 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.s3.S3Helper;
 
 /**
- * This is the cache loader that supports loading CMS encryptors on demand, keyed by the study ID. If the study's
- * encryptor is already in the cache, this returns that encryptor. If it isn't, this study will pull the PEM fils for
+ * This is the cache loader that supports loading CMS encryptors on demand, keyed by the appId. If the app's
+ * encryptor is already in the cache, this returns that encryptor. If it isn't, this app will pull the PEM fils for
  * the cert and private key from the configured S3 bucket and construct an encryptor using those encryption materials.
  */
 @Component

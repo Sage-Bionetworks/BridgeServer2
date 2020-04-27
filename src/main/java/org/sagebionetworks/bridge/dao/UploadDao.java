@@ -45,7 +45,7 @@ public interface UploadDao {
             @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);
 
     /**
-     * Get the uploads for an entire study in the indicated time range.
+     * Get the uploads for an entire app in the indicated time range.
      */
     ForwardCursorPagedResourceList<Upload> getStudyUploads(@Nonnull String appId,
             @Nonnull DateTime startTime, @Nonnull DateTime endTime, int pageSize, @Nullable String offsetKey);

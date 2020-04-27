@@ -260,7 +260,7 @@ public class StudyController extends BaseController {
         return new EmailVerificationStatusHolder(status);
     }
 
-    /** Resends the verification email for the current study's email. */
+    /** Resends the verification email for the current app's email. */
     @PostMapping("/v3/studies/self/emails/resendVerify")
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -270,8 +270,8 @@ public class StudyController extends BaseController {
     }
 
     /**
-     * Verifies the emails for the study. Since this comes in from an email with a token, you don't need to be
-     * authenticated. The token itself knows what study this is for.
+     * Verifies the emails for the app. Since this comes in from an email with a token, you don't need to be
+     * authenticated. The token itself knows what app this is for.
      */
     @PostMapping("/v3/studies/{identifier}/emails/verify")
     public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
@@ -318,7 +318,7 @@ public class StudyController extends BaseController {
     }
 
     /**
-     * Another version of getUploads for workers to specify any study ID to get uploads
+     * Another version of getUploads for workers to specify any app ID to get uploads
      */
     @GetMapping("/v3/studies/{identifier}/uploads")
     public ForwardCursorPagedResourceList<UploadView> getUploadsForStudy(@PathVariable String identifier,

@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /**
  * Participant-facing schema reference, to be used in scheduled activities. This contains the schema ID and optionally
- * the revision. It does not contain study ID as that's not exposed to participants.
+ * the revision. It does not contain appId as that's not exposed to participants.
  */
 public final class SchemaReference {
     private final String id;

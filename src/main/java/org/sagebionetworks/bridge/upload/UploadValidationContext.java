@@ -37,7 +37,7 @@ public class UploadValidationContext {
     }
 
     /**
-     * This is the study that the upload lives in and is validated against. This is made available by the upload
+     * This is the app that the upload lives in and is validated against. This is made available by the upload
      * validation service and is initially set by the upload validation task factory.
      */
     public String getStudy() {

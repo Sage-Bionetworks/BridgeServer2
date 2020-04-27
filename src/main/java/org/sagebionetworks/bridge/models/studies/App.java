@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 /**
- * A Bridge study.
+ * A Bridge app.
  *
  */
 @JsonDeserialize(as=DynamoApp.class)
@@ -25,13 +25,13 @@ public interface App extends BridgeEntity {
         new SimpleFilterProvider().addFilter("filter",
         SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier")));
 
-    /** Convenience method for creating a Study using a concrete implementation. */
+    /** Convenience method for creating an App using a concrete implementation. */
     static App create() {
         return new DynamoApp();
     }
 
     /**
-     * The display name of the study (will be seen by participants in email). This name makes the 
+     * The display name of the app (will be seen by participants in email). This name makes the 
      * most sense when it starts with "The".
      */
     String getName();
@@ -44,15 +44,15 @@ public interface App extends BridgeEntity {
     void setShortName(String shortName);
     
     /**
-     * The name of the institution or research group conducting the study. 
+     * The name of the institution or research group that owns the app. 
      */
     String getSponsorName();
     void setSponsorName(String sponsorName);
     
     /**
-     * A string that uniquely identifies the study, and serves as a domain within which accounts are 
-     * scoped for that study. By convention, should be an institution acronym or tag, a dash, and then 
-     * an acronym or short phrase for the study. For example "uw-asthma" or "ohsu-molemapper". Cannot
+     * A string that uniquely identifies the app, and serves as a domain within which accounts are 
+     * scoped for that app. By convention, should be an institution acronym or tag, a dash, and then 
+     * an acronym or short phrase for the app. For example "uw-asthma" or "ohsu-molemapper". Cannot
      * be changed once created.
      */
     String getIdentifier();
@@ -96,7 +96,7 @@ public interface App extends BridgeEntity {
 
     /**
      * If true, the channel (email or phone number) used to sign in will be checked and must be verified
-     * for sign in to succeed. This is false for legacy studies but set to true for newer studies. 
+     * for sign in to succeed. This is false for legacy apps but set to true for newer apps. 
      */
     boolean isVerifyChannelOnSignInEnabled();
     
@@ -113,7 +113,7 @@ public interface App extends BridgeEntity {
     
     /**
      * User must confirm that they are at least this many years old in order to
-     * participate in the study. 
+     * participate in the app. 
      */
     int getMinAgeOfConsent();
     void setMinAgeOfConsent(int minAge);
@@ -140,7 +140,7 @@ public interface App extends BridgeEntity {
 
     /**
      * The email address that will be given to study participants and other end user for all support 
-     * requests and queries (technical, study-related, etc.). This can be a comma-separated list of 
+     * requests and queries (technical, app-related, etc.). This can be a comma-separated list of 
      * email addresses.
      */
     String getSupportEmail();
@@ -159,9 +159,9 @@ public interface App extends BridgeEntity {
     void setSynapseProjectId(String projectId);
 
     /**
-     * Set a limit on the number of accounts that can be created for this study. This is intended 
-     * to establish evaluation studies with limited accounts or enrollment. The value should be 
-     * set to 0 for production studies (there is a runtime cost to enforcing this limit). If 
+     * Set a limit on the number of accounts that can be created for this app. This is intended 
+     * to establish evaluation apps with limited accounts or enrollment. The value should be 
+     * set to 0 for production apps (there is a runtime cost to enforcing this limit). If 
      * value is zero, no limit is enforced.
      */
     int getAccountLimit();
@@ -169,15 +169,15 @@ public interface App extends BridgeEntity {
     
     /**
      * The email address for a technical contact who can coordinate with the Bridge Server team on 
-     * issues related either to client development or hand-offs of the study data through the 
+     * issues related either to client development or hand-offs of the app data through the 
      * Bridge server. This can be a comma-separated list of email addresses.
      */
     String getTechnicalEmail();
     void setTechnicalEmail(String email);
 
     /**
-     * By default, all studies are exported using the default nightly schedule. Some studies may need custom schedules
-     * for hourly or on-demand exports. To prevent this study from being exported twice (once by the custom schedule,
+     * By default, all apps are exported using the default nightly schedule. Some apps may need custom schedules
+     * for hourly or on-demand exports. To prevent this app from being exported twice (once by the custom schedule,
      * once by the default schedule), you should set this attribute to true.
      */
     boolean getUsesCustomExportSchedule();
@@ -187,7 +187,7 @@ public interface App extends BridgeEntity {
 
     /**
      * <p>
-     * Metadata fields can be configured for any study. This metadata will be implicitly added to every schema and
+     * Metadata fields can be configured for any app. This metadata will be implicitly added to every schema and
      * automatically added to every Synapse table.
      * </p>
      * <p>
@@ -210,8 +210,8 @@ public interface App extends BridgeEntity {
     void setUploadValidationStrictness(UploadValidationStrictness uploadValidationStrictness);
 
     /**
-     * Copies of all consent agreements, as well as rosters of all participants in a study, or any 
-     * other study governance issues, will be emailed to this address. This can be a comma-separated 
+     * Copies of all consent agreements, as well as rosters of all participants in a app, or any 
+     * other app governance issues, will be emailed to this address. This can be a comma-separated 
      * list of email addresses. 
      */
     String getConsentNotificationEmail();
@@ -224,14 +224,14 @@ public interface App extends BridgeEntity {
     void setConsentNotificationEmailVerified(Boolean verified);
 
     /**
-     * Extension attributes that can be accepted on the UserProfile object for this study. These 
+     * Extension attributes that can be accepted on the UserProfile object for this app. These 
      * attributes will be exported with the participant roster. 
      */
     Set<String> getUserProfileAttributes();
     void setUserProfileAttributes(Set<String> attributes);
 
     /**
-     * The enumerated task identifiers that can be used when scheduling tasks for this study. These are provided 
+     * The enumerated task identifiers that can be used when scheduling tasks for this app. These are provided 
      * through the UI to prevent errors when creating schedules. 
      */
     Set<String> getTaskIdentifiers();
@@ -245,50 +245,50 @@ public interface App extends BridgeEntity {
     void setActivityEventKeys(Set<String> activityEventKeys);
 
     /**
-     * The enumerated set of data group strings that can be assigned to users in this study. This enumeration ensures 
-     * the values are meaningful to the study and the data groups cannot be filled maliciously with junk tags. 
+     * The enumerated set of data group strings that can be assigned to users in this app. This enumeration ensures 
+     * the values are meaningful to the app and the data groups cannot be filled maliciously with junk tags. 
      */
     Set<String> getDataGroups();
     void setDataGroups(Set<String> dataGroups);
     
     /**
-     * The password policy for users signing up for this study. 
+     * The password policy for users signing up for this app. 
      */
     PasswordPolicy getPasswordPolicy();
     void setPasswordPolicy(PasswordPolicy passwordPolicy);
 
     /**
-     * Is this study active? Currently not in use, a de-activated study will be hidden from the 
-     * study APIs and will no longer be available for use (a logical delete).
+     * Is this app active? Currently not in use, a de-activated app will be hidden from the 
+     * app APIs and will no longer be available for use (a logical delete).
      */
     boolean isActive();
     void setActive(boolean active);
 
-    /** True if uploads in this study should fail on strict validation errors. */
+    /** True if uploads in this app should fail on strict validation errors. */
     boolean isStrictUploadValidationEnabled();
 
     /** @see #isStrictUploadValidationEnabled */
     void setStrictUploadValidationEnabled(boolean enabled);
     
-    /** True if we allow users in this study to send an email with a link to sign into the app. */ 
+    /** True if we allow users in this app to send an email with a link to sign into the app. */ 
     boolean isEmailSignInEnabled();
     
     /** @see #isEmailSignInEnabled */
     void setEmailSignInEnabled(boolean emailSignInEnabled);
     
-    /** True if we allow users in this study to send an SMS message with a token that can be used to sign into the app. */ 
+    /** True if we allow users in this app to send an SMS message with a token that can be used to sign into the app. */ 
     boolean isPhoneSignInEnabled();
     
     /** @see #isPhoneSignInEnabled */
     void setPhoneSignInEnabled(boolean phoneSignInEnabled);
     
-    /** True if this study will export the healthCode when generating a participant roster. */
+    /** True if this app will export the healthCode when generating a participant roster. */
     boolean isHealthCodeExportEnabled();
     
     /** @see #isHealthCodeExportEnabled(); */
     void setHealthCodeExportEnabled(boolean enabled);
     
-    /** True if this study requires users to verify their email addresses in order to sign up. 
+    /** True if this app requires users to verify their email addresses in order to sign up. 
      * True by default.
      */
     boolean isEmailVerificationEnabled();
@@ -298,7 +298,7 @@ public interface App extends BridgeEntity {
     
     /** 
      * True if the external ID must be provided when the user signs up. If validation is also 
-     * enabled, this study is configured to use lab codes if desired (username and password auto-
+     * enabled, this app is configured to use lab codes if desired (username and password auto-
      * generated from the external ID). If this is false, the external ID is not required when 
      * submitting a sign up. 
      */
@@ -318,7 +318,7 @@ public interface App extends BridgeEntity {
     
     /**
      * A map between operating system names, and the platform ARN necessary to register a device to 
-     * receive mobile push notifications for this study, on that platform.
+     * receive mobile push notifications for this app, on that platform.
      */
     Map<String, String> getPushNotificationARNs();
 
@@ -326,7 +326,7 @@ public interface App extends BridgeEntity {
     void setPushNotificationARNs(Map<String, String> pushNotificationARNs);
     
     /**
-     * A map between operating system names, and a link to send via SMS to acquire the study's app. 
+     * A map between operating system names, and a link to send via SMS to acquire the app. 
      * This can be either to an app store, or an intermediate web page that will route to a final 
      * app or appstore.
      */

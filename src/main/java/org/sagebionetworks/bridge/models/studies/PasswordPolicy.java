@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * The policies that govern password creation. New studies will be created with the default password 
+ * The policies that govern password creation. New apps will be created with the default password 
  * policy, which requires 8 characters, one numeric, one symbol and one upper- and lower-case 
- * character. However, this policy can be adjusted for legacy studies which were created with much 
+ * character. However, this policy can be adjusted for legacy apps which were created with much 
  * more lax constraints.
  */
 public final class PasswordPolicy {
@@ -18,7 +18,7 @@ public final class PasswordPolicy {
     public static final int VALUE_ON = 1;
     
     /**
-     * The password policy that is initially created for a study.
+     * The password policy that is initially created for an app.
      */
     public static final PasswordPolicy DEFAULT_PASSWORD_POLICY = new PasswordPolicy(8, true, true, true, true);
     

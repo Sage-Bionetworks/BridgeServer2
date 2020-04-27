@@ -221,7 +221,7 @@ public class SmsService {
 
     /**
      * Opt a phone number back in if it is opted out. This is only used when a new account is created, generally in
-     * a new study. User ID is used for logging.
+     * a new app. User ID is used for logging.
      */
     public void optInPhoneNumber(String userId, Phone phone) {
         if (StringUtils.isBlank(userId)) {

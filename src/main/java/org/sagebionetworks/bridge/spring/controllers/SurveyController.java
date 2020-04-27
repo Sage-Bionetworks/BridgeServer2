@@ -79,10 +79,10 @@ public class SurveyController extends BaseController {
     }
 
     /**
-     * API for worker accounts that need access to a list of published studies. This is generally used by the Bridge
+     * API for worker accounts that need access to a list of published apps. This is generally used by the Bridge
      * Exporter. We don't want to configure worker accounts for each app and add an ever-growing list of worker
      * accounts to back-end scripts, so we'll have one master worker account in the API app that can access all
-     * studies.
+     * apps.
      *
      * @param appId
      *            app to get surveys for

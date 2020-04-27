@@ -54,7 +54,7 @@ public class ActivityEventService {
     /**
      * Publishes a custom event. Note that this automatically prepends "custom:" to the event key to form the event ID
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
-     * defined in the study (either in activityEventKeys or in AutomaticCustomEvents).
+     * defined in the app (either in activityEventKeys or in AutomaticCustomEvents).
      */
     public void publishCustomEvent(App app, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);

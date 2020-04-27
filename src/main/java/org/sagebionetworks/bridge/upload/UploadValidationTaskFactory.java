@@ -50,8 +50,8 @@ public class UploadValidationTaskFactory {
     /**
      * Factory method for creating a validation task instance, for validating a single upload.
      *
-     * @param study
-     *         study this upload lives in
+     * @param appId
+     *         app this upload lives in
      * @param upload
      *         upload metadata object for the upload
      * @return upload validation task, which will validate the upload

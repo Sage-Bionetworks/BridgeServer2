@@ -57,7 +57,7 @@ public interface SmsMessage extends BridgeEntity {
     /** @see #getSmsType */
     void setSmsType(SmsType smsType);
 
-    /** The study whose behalf we sent the message. */
+    /** The app on whose behalf we sent the message. */
     String getStudyId();
 
     /** @see #getStudyId */

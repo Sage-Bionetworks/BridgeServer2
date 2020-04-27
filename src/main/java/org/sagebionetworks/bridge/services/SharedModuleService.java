@@ -22,7 +22,7 @@ import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 /**
- * Service for importing shared modules into the local study, and recursively importing schemas and surveys as well.
+ * Service for importing shared modules into the local app, and recursively importing schemas and surveys as well.
  */
 @Component
 public class SharedModuleService {
@@ -39,7 +39,7 @@ public class SharedModuleService {
     }
 
     /**
-     * Schema service, used to get the schema from shared and write the schema to the local study, where applicable.
+     * Schema service, used to get the schema from shared and write the schema to the local app, where applicable.
      * Configured by Spring.
      */
     @Autowired
@@ -53,7 +53,7 @@ public class SharedModuleService {
         this.surveyService = surveyService;
     }
 
-    /** Imports a specific module version into the specified study. */
+    /** Imports a specific module version into the specified app. */
     public SharedModuleImportStatus importModuleByIdAndVersion(String studyId, String moduleId,
             int moduleVersion) {
         // appId is provided by the controller. Validate the rest of the args.
@@ -69,7 +69,7 @@ public class SharedModuleService {
         return importModule(studyId, metadata);
     }
 
-    /** Imports the latest published version of a module into the specified study. */
+    /** Imports the latest published version of a module into the specified app. */
     public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String studyId, String moduleId) {
         // appId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {

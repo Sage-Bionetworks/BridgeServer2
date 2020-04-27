@@ -40,7 +40,7 @@ import org.sagebionetworks.bridge.services.ReportService;
  * <p>Permissions for study reports are more complicated than other controllers:</p>
  * <p><b>Study Reports</b></p>
  * <ul>
- *   <li>any authenticated user can get the study identifiers (indices)</li>
+ *   <li>any authenticated user can get the study report indices</li>
  *   <li>any authenticated user can see a study report</li>  
  *   <li>developers/workers can add/delete</li>
  * </ul>
@@ -62,7 +62,7 @@ public class StudyReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for reports in this study. For backwards compatibility this method 
+     * Get a list of the identifiers used for reports in this app. For backwards compatibility this method 
      * takes an argument and can return participants, but there is now a separate endpoint for that.
      */
     @GetMapping("/v3/reports")

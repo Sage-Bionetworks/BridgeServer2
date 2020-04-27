@@ -115,7 +115,7 @@ public class HibernateAccount implements Account {
         this.id = id;
     }
 
-    /** Study ID the account lives in. */
+    /** App ID the account lives in. */
     public String getStudyId() {
         return studyId;
     }
@@ -385,7 +385,7 @@ public class HibernateAccount implements Account {
         this.sharingScope = sharingScope;
     }
 
-    /** Has this user consented to receive email from the study administrators? */
+    /** Has this user consented to receive email from the app administrators? */
     public Boolean getNotifyByEmail() {
         return (notifyByEmail == null) ? TRUE : notifyByEmail;
     }

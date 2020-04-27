@@ -41,9 +41,9 @@ import org.sagebionetworks.bridge.services.UploadSchemaService;
  * {@link org.sagebionetworks.bridge.upload.UploadValidationContext#getHealthDataRecord}.
  * </p>
  * <p>
- * Because legacy studies don't have the concept of "required fields", Upload Validation was made lenient, to be able
+ * Because legacy apps don't have the concept of "required fields", Upload Validation was made lenient, to be able
  * to still gather partial data. With strict validation, Bridge will still log warnings for all apps for reporting
- * purposes, and failing strict validation can be configured on a per-study basis. Note that all new studies should be
+ * purposes, and failing strict validation can be configured on a per-app basis. Note that all new apps should be
  * created with strict validation turned on.
  * </p>
  */
@@ -56,7 +56,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
     private AppService appService;
     private UploadSchemaService uploadSchemaService;
 
-    /** Study service, used to fetch configuration for if strict validation is enabled for the given study. */
+    /** App service, used to fetch configuration for if strict validation is enabled for the given app. */
     @Autowired
     public final void setAppService(AppService appService) {
         this.appService = appService;
@@ -142,7 +142,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
     }
 
     /**
-     * Returns what level of validation strictness we should use, based on study configs. Package-scoped to facilitate
+     * Returns what level of validation strictness we should use, based on app configs. Package-scoped to facilitate
      * unit tests.
      */
     UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {

@@ -70,7 +70,7 @@ public class AccountService {
     }
     
     /**
-     * Search for all accounts across studies that have the same Synapse user ID in common, 
+     * Search for all accounts across apps that have the same Synapse user ID in common, 
      * and return a list of the app IDs where these accounts are found.
      */
     public List<String> getAppIdsForUser(String synapseUserId) {
@@ -255,7 +255,7 @@ public class AccountService {
     }
     
     /**
-     * Get an account in the context of a study by the user's ID, email address, health code,
+     * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
      * the correct substudy associations to access the account. (Other methods in this service 
      * also make a check for substudy associations by relying on this method internally).
@@ -287,7 +287,7 @@ public class AccountService {
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
      * participants which are required for the rest of the participant APIs). 
      * @param app
-     *      retrieve participants in this study
+     *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.

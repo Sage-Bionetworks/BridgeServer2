@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * A record of a subscription of a user's device, registered to receive notifications, with one 
- * of the topics in the study. This registration has also been made in SNS so that this user will 
+ * of the topics in the app. This registration has also been made in SNS so that this user will 
  * receive messages sent to the Bridge topic's peer SNS topic.
  * 
  * Subscriptions currently match 1:1 with SNS topic subscriptions. Once we introduce the 
