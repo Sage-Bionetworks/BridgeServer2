@@ -5,13 +5,13 @@ import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -26,7 +26,6 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -65,9 +64,7 @@ public class UploadService {
     
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
-    static final String CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST = "upload.dupe.study.whitelist";
 
-    private Set<String> dupeStudyWhitelist;
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
@@ -88,11 +85,6 @@ public class UploadService {
     @Autowired
     final void setConfig(BridgeConfig config) {
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
-
-        // This is the set of study IDs where we ignore dedupe logic. This configuration exists (1) for integration
-        // tests, where we always upload the same files over and over and (2) for studies where it's valid and expected
-        // for apps to always submit the same files over and over again.
-        dupeStudyWhitelist = ImmutableSet.copyOf(config.getList(CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST));
     }
 
     /**
@@ -155,7 +147,7 @@ public class UploadService {
         this.pollValidationStatusSleepMillis = pollValidationStatusSleepMillis;
     }
 
-    public UploadSession createUpload(String studyId, StudyParticipant participant, UploadRequest uploadRequest) {
+    public UploadSession createUpload(String appId, StudyParticipant participant, UploadRequest uploadRequest) {
         Validate.entityThrowingException(validator, uploadRequest);
 
         // Check to see if upload is a dupe, and if it is, get the upload status.
@@ -164,8 +156,9 @@ public class UploadService {
         String originalUploadId = null;
         UploadStatus originalUploadStatus = null;
 
-        // Dedupe logic gated on whitelist.
-        if (!dupeStudyWhitelist.contains(studyId)) {
+        // Do not execute dedupe logic on test/API app, because integration tests submit the 
+        // same uploads over and over again with each test run.
+        if (!API_APP_ID.equals(appId)) {
             try {
                 originalUploadId = uploadDedupeDao.getDuplicate(participant.getHealthCode(), uploadMd5,
                         uploadRequestedOn);
@@ -186,13 +179,13 @@ public class UploadService {
             uploadId = originalUploadId;
         } else {
             // This is a new upload.
-            Upload upload = uploadDao.createUpload(uploadRequest, studyId, participant.getHealthCode(),
+            Upload upload = uploadDao.createUpload(uploadRequest, appId, participant.getHealthCode(),
                     originalUploadId);
             uploadId = upload.getUploadId();
 
             if (originalUploadId != null) {
                 // We had a dupe of a previous completed upload. Log this for future analysis.
-                logger.info("Detected dupe: Study " + studyId + ", upload " + uploadId +
+                logger.info("Detected dupe: App " + appId + ", upload " + uploadId +
                         " is a dupe of " + originalUploadId);
             } else {
                 try {
@@ -275,18 +268,18 @@ public class UploadService {
     }
     
     /**
-     * <p>Get uploads for an entire study in a time window. Start and end time are optional. If neither are provided, they 
+     * <p>Get uploads for an entire app in a time window. Start and end time are optional. If neither are provided, they 
      * default to the last day of uploads. If end time is not provided, the query ends at the time of the request. If the 
      * start time is not provided, it defaults to a day before the end time. The time window is constrained to two days 
      * of uploads (though those days can be any period in time). </p>
      */
-    public ForwardCursorPagedResourceList<UploadView> getStudyUploads(@Nonnull String studyId,
+    public ForwardCursorPagedResourceList<UploadView> getAppUploads(@Nonnull String appId,
             @Nullable DateTime startTime, @Nullable DateTime endTime, @Nullable Integer pageSize, @Nullable String offsetKey) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
 
         // in case clients didn't set page size up
         return getUploads(startTime, endTime, (start, end)-> 
-            uploadDao.getStudyUploads(studyId, start, end,
+            uploadDao.getAppUploads(appId, start, end,
                     (pageSize == null ? API_DEFAULT_PAGE_SIZE : pageSize.intValue()), offsetKey)
         );
     }
@@ -404,7 +397,7 @@ public class UploadService {
         }
     }
 
-    public void uploadComplete(String studyId, UploadCompletionClient completedBy, Upload upload,
+    public void uploadComplete(String appId, UploadCompletionClient completedBy, Upload upload,
             boolean redrive) {
         String uploadId = upload.getUploadId();
 
@@ -448,7 +441,7 @@ public class UploadService {
         }
 
         // kick off upload validation
-        uploadValidationService.validateUpload(studyId, upload);
+        uploadValidationService.validateUpload(appId, upload);
     }
     
     public void deleteUploadsForHealthCode(String healthCode) {

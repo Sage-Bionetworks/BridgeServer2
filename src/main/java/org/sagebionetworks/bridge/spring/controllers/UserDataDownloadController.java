@@ -36,7 +36,7 @@ public class UserDataDownloadController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestUserData() throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
-        String studyIdentifier = session.getAppId();
+        String appId = session.getAppId();
         
         // At least for now, if the user does not have a verified email address, do not allow this service.
         StudyParticipant participant = session.getParticipant();
@@ -47,7 +47,7 @@ public class UserDataDownloadController extends BaseController {
         }
 
         DateRange dateRange = parseJson(DateRange.class);
-        userDataDownloadService.requestUserData(studyIdentifier, session.getParticipant().getId(), dateRange);
+        userDataDownloadService.requestUserData(appId, session.getParticipant().getId(), dateRange);
         return ACCEPTED_MSG;
     }
 }

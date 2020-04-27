@@ -456,11 +456,11 @@ public class StudyControllerTest extends Mockito {
                 .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
                 .withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
+        doReturn(uploads).when(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         
         ForwardCursorPagedResourceList<UploadView> result = controller.getUploads(startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
         
-        verify(mockUploadService).getStudyUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
+        verify(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
         verify(mockAppService, never()).getApp(TEST_APP_ID);
         // in other words, it's the object we mocked out from the service, we were returned the value.
         assertNull(result.getRequestParams().get("offsetBy"));
@@ -514,13 +514,13 @@ public class StudyControllerTest extends Mockito {
                 .withRequestParam("pageSize", API_MAXIMUM_PAGE_SIZE)
                 .withRequestParam("startTime", startTime)
                 .withRequestParam("endTime", endTime);
-        doReturn(uploads).when(mockUploadService).getStudyUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
+        doReturn(uploads).when(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
                 null);
 
         ForwardCursorPagedResourceList<UploadView> result = controller.getUploadsForStudy(TEST_APP_ID, startTime.toString(), endTime.toString(),
                 API_MAXIMUM_PAGE_SIZE, null);
 
-        verify(mockUploadService).getStudyUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
+        verify(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
 
         // in other words, it's the object we mocked out from the service, we were returned the value.
         assertNull(result.getRequestParams().get("offsetBy"));

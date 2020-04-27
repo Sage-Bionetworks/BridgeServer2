@@ -46,7 +46,7 @@ public class StrictValidationHandlerTest {
 
         // Set up common context attributes.
         context = new UploadValidationContext();
-        context.setStudy(TEST_APP_ID);
+        context.setAppId(TEST_APP_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId("test-upload");

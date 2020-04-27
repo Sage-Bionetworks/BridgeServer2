@@ -121,7 +121,7 @@ public class HealthDataService {
      * Synchronous health data API. Used to submit small health data payloads (such as survey responses) without
      * incurring the overhead of creating a bunch of small files to upload to S3.
      */
-    public HealthDataRecord submitHealthData(String studyId, StudyParticipant participant,
+    public HealthDataRecord submitHealthData(String appId, StudyParticipant participant,
             HealthDataSubmission healthDataSubmission) throws IOException, UploadValidationException {
         // validate health data submission
         if (healthDataSubmission == null) {
@@ -133,10 +133,10 @@ public class HealthDataService {
         String uploadId = BridgeUtils.generateGuid();
 
         // construct health data record
-        HealthDataRecord record = makeRecordFromSubmission(studyId, participant, healthDataSubmission);
+        HealthDataRecord record = makeRecordFromSubmission(appId, participant, healthDataSubmission);
 
         // get schema
-        UploadSchema schema = getSchemaForSubmission(studyId, healthDataSubmission);
+        UploadSchema schema = getSchemaForSubmission(appId, healthDataSubmission);
         if (schema != null) {
             // sanitize field names in the data node
             JsonNode sanitizedData = sanitizeFieldNames(healthDataSubmission.getData());
@@ -150,7 +150,7 @@ public class HealthDataService {
         UploadValidationContext uploadValidationContext = new UploadValidationContext();
         uploadValidationContext.setHealthCode(participant.getHealthCode());
         uploadValidationContext.setHealthDataRecord(record);
-        uploadValidationContext.setStudy(studyId);
+        uploadValidationContext.setAppId(appId);
 
         // For back-compat reasons, we need to make a dummy upload to store the uploadId. This will never be persisted.
         // We just need a way to signal the Upload Validation pipeline to use this uploadId.
@@ -203,10 +203,10 @@ public class HealthDataService {
     }
 
     // Helper method which encapsulates getting the schema, either by schemaId/Revision or by surveyGuid/CreatedOn.
-    private UploadSchema getSchemaForSubmission(String studyId, HealthDataSubmission healthDataSubmission) {
+    private UploadSchema getSchemaForSubmission(String appId, HealthDataSubmission healthDataSubmission) {
         if (healthDataSubmission.getSchemaId() != null) {
             // Note that if there's no schema, we treat this like schemaless.
-            return schemaService.getUploadSchemaByIdAndRevNoThrow(studyId, healthDataSubmission.getSchemaId(),
+            return schemaService.getUploadSchemaByIdAndRevNoThrow(appId, healthDataSubmission.getSchemaId(),
                     healthDataSubmission.getSchemaRevision());
         } else if (healthDataSubmission.getSurveyGuid() != null) {
             // surveyCreatedOn is a timestamp. SurveyService takes long epoch millis. Convert.
@@ -216,7 +216,7 @@ public class HealthDataService {
             // specified.
             String surveyGuid = healthDataSubmission.getSurveyGuid();
             GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-            Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
+            Survey survey = surveyService.getSurvey(appId, surveyKeys, false, true);
             String schemaId = survey.getIdentifier();
             Integer schemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(schemaId) || schemaRev == null) {
@@ -226,7 +226,7 @@ public class HealthDataService {
 
             // Get the schema with the schema ID and rev.
             // Note that if there's no schema, we treat this like schemaless.
-            return schemaService.getUploadSchemaByIdAndRevNoThrow(studyId, schemaId, schemaRev);
+            return schemaService.getUploadSchemaByIdAndRevNoThrow(appId, schemaId, schemaRev);
         } else {
             // Schemaless.
             return null;
@@ -272,15 +272,15 @@ public class HealthDataService {
     /**
      * Helper method, which creates a health data record from the given health data submission.
      *
-     * @param studyId
-     *         study this health data was submitted to
+     * @param appId
+     *         app this health data was submitted to
      * @param participant
      *         participant who submitted the data
      * @param healthDataSubmission
      *         the data submission
      * @return created health data record
      */
-    private static HealthDataRecord makeRecordFromSubmission(String studyId, StudyParticipant participant,
+    private static HealthDataRecord makeRecordFromSubmission(String appId, StudyParticipant participant,
             HealthDataSubmission healthDataSubmission) {
         // from submission
         HealthDataRecord record = HealthDataRecord.create();
@@ -294,7 +294,7 @@ public class HealthDataService {
 
         // from elsewhere
         record.setHealthCode(participant.getHealthCode());
-        record.setStudyId(studyId);
+        record.setAppId(appId);
         record.setUploadDate(DateUtils.getCurrentCalendarDateInLocalTime());
         record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
 

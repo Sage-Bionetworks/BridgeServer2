@@ -67,8 +67,8 @@ public class InitRecordHandlerTest {
         context.setUnzippedDataFileMap(Maps.transformEntries(jsonDataMap,
                 (name, node) -> makeFileWithContent(name, node.toString())));
 
-        // Contexts always include studyId.
-        context.setStudy(TEST_APP_ID);
+        // Contexts always include appId.
+        context.setAppId(TEST_APP_ID);
 
         // And upload (with upload ID and health code).
         DynamoUpload2 upload = new DynamoUpload2();
@@ -140,7 +140,7 @@ public class InitRecordHandlerTest {
         assertEquals(record.getAppVersion(), APP_VERSION);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TEST_APP_ID);
+        assertEquals(record.getAppId(), TEST_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);

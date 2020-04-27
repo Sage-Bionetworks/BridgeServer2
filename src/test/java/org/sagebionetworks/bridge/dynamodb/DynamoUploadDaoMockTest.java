@@ -143,7 +143,7 @@ public class DynamoUploadDaoMockTest {
         // Validate that our DDB upload object matches our upload request, and that the upload ID matches.
         assertEquals(capturedUpload.getUploadId(), upload.getUploadId());
         assertNull(capturedUpload.getDuplicateUploadId());
-        assertEquals(capturedUpload.getStudyId(), TEST_APP_ID);
+        assertEquals(capturedUpload.getAppId(), TEST_APP_ID);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.REQUESTED);
         assertEquals(capturedUpload.getContentLength(), req.getContentLength());
@@ -166,7 +166,7 @@ public class DynamoUploadDaoMockTest {
         // Validate key values (study ID, requestedOn) and values from the dupe code path.
         // Everything else is tested in the previous test
         assertEquals(capturedUpload.getDuplicateUploadId(), "original-upload-id");
-        assertEquals(capturedUpload.getStudyId(), TEST_APP_ID);
+        assertEquals(capturedUpload.getAppId(), TEST_APP_ID);
         assertTrue(capturedUpload.getRequestedOn() > 0);
         assertEquals(capturedUpload.getStatus(), UploadStatus.DUPLICATE);
     }
@@ -175,7 +175,7 @@ public class DynamoUploadDaoMockTest {
     public void getUpload() {
         // mock DDB mapper
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId(TEST_APP_ID);
+        upload.setAppId(TEST_APP_ID);
         when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
 
         // execute
@@ -195,7 +195,7 @@ public class DynamoUploadDaoMockTest {
         when(healthCodeDao.getStudyIdentifier(upload.getHealthCode())).thenReturn(TEST_APP_ID);
 
         Upload retVal = dao.getUpload("test-get-upload");
-        assertEquals(retVal.getStudyId(), TEST_APP_ID);
+        assertEquals(retVal.getAppId(), TEST_APP_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -433,14 +433,14 @@ public class DynamoUploadDaoMockTest {
 
         when(mockMapper.batchLoad(any(List.class))).thenReturn(batchLoadMap1, batchLoadMap2);
 
-        ForwardCursorPagedResourceList<Upload> page1 = dao.getStudyUploads(TEST_APP_ID, startTime, endTime, pageSize, null);
+        ForwardCursorPagedResourceList<Upload> page1 = dao.getAppUploads(TEST_APP_ID, startTime, endTime, pageSize, null);
         assertEquals(page1.getNextPageOffsetKey(), "uploadId3");
         assertNull(page1.getRequestParams().get("offsetKey"));
         assertEquals(page1.getRequestParams().get("pageSize"), pageSize);
         assertEquals(page1.getRequestParams().get("startTime"), startTime.toString());
         assertEquals(page1.getRequestParams().get("endTime"), endTime.toString());
 
-        ForwardCursorPagedResourceList<Upload> page2 = dao.getStudyUploads(TEST_APP_ID, startTime, endTime, pageSize,
+        ForwardCursorPagedResourceList<Upload> page2 = dao.getAppUploads(TEST_APP_ID, startTime, endTime, pageSize,
                 page1.getNextPageOffsetKey());
         assertNull(page2.getNextPageOffsetKey());
         assertEquals(page2.getRequestParams().get("offsetKey"), "uploadId3");
@@ -456,7 +456,7 @@ public class DynamoUploadDaoMockTest {
         int pageSize = 2;
 
         try {
-            dao.getStudyUploads(TEST_APP_ID, startTime, endTime, pageSize, "bad-key");
+            dao.getAppUploads(TEST_APP_ID, startTime, endTime, pageSize, "bad-key");
             fail("Should have thrown an exception");
         } catch (BadRequestException e) {
             assertEquals(e.getMessage(), "Invalid offsetKey: bad-key");
@@ -468,7 +468,7 @@ public class DynamoUploadDaoMockTest {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 
-        dao.getStudyUploads(TEST_APP_ID, startTime, endTime, -1, null);
+        dao.getAppUploads(TEST_APP_ID, startTime, endTime, -1, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -476,7 +476,7 @@ public class DynamoUploadDaoMockTest {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 
-        dao.getStudyUploads(TEST_APP_ID, startTime, endTime, 101, null);
+        dao.getAppUploads(TEST_APP_ID, startTime, endTime, 101, null);
     }
 
     @Test

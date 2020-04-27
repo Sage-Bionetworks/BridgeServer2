@@ -329,7 +329,7 @@ public class UploadHandlersEndToEndTest {
         assertEquals(record.getCreatedOnTimeZone(), CREATED_ON_TIME_ZONE);
         assertEquals(record.getHealthCode(), HEALTH_CODE);
         assertEquals(record.getPhoneInfo(), PHONE_INFO);
-        assertEquals(record.getStudyId(), TEST_APP_ID);
+        assertEquals(record.getAppId(), TEST_APP_ID);
         assertEquals(record.getUploadDate(), MOCK_TODAY);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);

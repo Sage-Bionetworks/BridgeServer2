@@ -73,7 +73,7 @@ public class IosSchemaValidationHandler2Test {
         record.setData(BridgeObjectMapper.get().createObjectNode());
 
         context = new UploadValidationContext();
-        context.setStudy(TEST_APP_ID);
+        context.setAppId(TEST_APP_ID);
         context.setUpload(upload);
         context.setHealthDataRecord(record);
 

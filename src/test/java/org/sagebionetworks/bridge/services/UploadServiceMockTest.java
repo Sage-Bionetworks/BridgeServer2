@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
@@ -132,8 +133,6 @@ public class UploadServiceMockTest {
         svc.setS3UploadClient(mockS3UploadClient);
         
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(UPLOAD_BUCKET_NAME);
-        when(mockConfig.getList(UploadService.CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST))
-                .thenReturn(ImmutableList.of("whitelisted-study"));
         svc.setConfig(mockConfig);
     }
     
@@ -290,8 +289,8 @@ public class UploadServiceMockTest {
         
         ForwardCursorPagedResourceList<Upload> pagedList = new ForwardCursorPagedResourceList<>(results, MOCK_OFFSET_KEY)
             .withRequestParam(ResourceList.PAGE_SIZE, API_MAXIMUM_PAGE_SIZE);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
-        doReturn(pagedList).when(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        doReturn(pagedList).when(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        doReturn(pagedList).when(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
         
         // Mock the record returned from the validation status record
         doReturn("schema-id").when(mockRecord).getSchemaId();
@@ -318,10 +317,10 @@ public class UploadServiceMockTest {
         setupUploadMocks();
         
         // Now verify the study uploads works
-        ForwardCursorPagedResourceList<UploadView> returned = svc.getStudyUploads(TEST_APP_ID,
+        ForwardCursorPagedResourceList<UploadView> returned = svc.getAppUploads(TEST_APP_ID,
                 START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         
-        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
+        verify(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_MAXIMUM_PAGE_SIZE, MOCK_OFFSET_KEY);
         validateUploadMocks(returned, MOCK_OFFSET_KEY);
     }
 
@@ -329,9 +328,9 @@ public class UploadServiceMockTest {
     public void canGetStudyUploadsWithoutPageSize() throws Exception {
         setupUploadMocks();
 
-        svc.getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, null, null);
+        svc.getAppUploads(TEST_APP_ID, START_TIME, END_TIME, null, null);
 
-        verify(mockUploadDao).getStudyUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
+        verify(mockUploadDao).getAppUploads(TEST_APP_ID, START_TIME, END_TIME, API_DEFAULT_PAGE_SIZE, null);
     }
 
     private void validateUploadMocks(ForwardCursorPagedResourceList<UploadView> returned, String expectedOffsetKey) {
@@ -451,19 +450,17 @@ public class UploadServiceMockTest {
     }
     
     @Test
-    public void createUploadNoDedupingWhitelistedStudies() throws Exception {
-        String studyId = "whitelisted-study";
-        
+    public void createUploadNoDedupingAPIApp() throws Exception {
         UploadRequest uploadRequest = constructUploadRequest();
         Upload upload = new DynamoUpload2(uploadRequest, HEALTH_CODE);
         upload.setUploadId(NEW_UPLOAD_ID);
         
-        when(mockUploadDao.createUpload(uploadRequest, studyId, HEALTH_CODE, null)).thenReturn(upload);
+        when(mockUploadDao.createUpload(uploadRequest, API_APP_ID, HEALTH_CODE, null)).thenReturn(upload);
         when(mockUploadCredentailsService.getSessionCredentials())
             .thenReturn(new BasicSessionCredentials(null, null, null));
         when(mockS3UploadClient.generatePresignedUrl(any())).thenReturn(new URL("https://ws.com/some-link"));
         
-        UploadSession session = svc.createUpload(studyId, PARTICIPANT, uploadRequest);
+        UploadSession session = svc.createUpload(API_APP_ID, PARTICIPANT, uploadRequest);
         assertEquals(session.getId(), NEW_UPLOAD_ID);
         assertEquals(session.getUrl(), "https://ws.com/some-link");
         assertEquals(session.getExpires(), TIMESTAMP.getMillis() + UploadService.EXPIRATION);

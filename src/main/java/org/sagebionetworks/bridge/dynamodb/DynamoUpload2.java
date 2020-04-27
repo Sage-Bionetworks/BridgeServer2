@@ -41,7 +41,7 @@ public class DynamoUpload2 implements Upload {
     private String healthCode;
     private String recordId;
     private UploadStatus status;
-    private String studyId;
+    private String appId;
     private long requestedOn;
     private long completedOn;
     private UploadCompletionClient completedBy;
@@ -171,13 +171,20 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     
-    /** @see #getStudyId */
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    /** @see #getAppId */
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+    
+    // This is currently returned from the API and needs to be maintained until 
+    // downstream users are updated.
+    @DynamoDBIgnore
+    public String getStudyId() {
+        return appId;
     }
     
     /** {@inheritDoc} */
