@@ -201,7 +201,7 @@ public class HealthDataServiceSubmitHealthDataTest {
 
         UploadValidationContext context = contextCaptor.getValue();
         assertEquals(context.getHealthCode(), HEALTH_CODE);
-        assertEquals(context.getStudy(), TEST_APP_ID);
+        assertEquals(context.getAppId(), TEST_APP_ID);
 
         // We generate an upload ID and use it for the record ID.
         String uploadId = context.getUploadId();
@@ -222,7 +222,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         assertEquals(contextRecord.getSchemaId(), SCHEMA_ID);
         assertEquals(contextRecord.getSchemaRevision().intValue(), SCHEMA_REV);
         assertEquals(contextRecord.getHealthCode(), HEALTH_CODE);
-        assertEquals(contextRecord.getStudyId(), TEST_APP_ID);
+        assertEquals(contextRecord.getAppId(), TEST_APP_ID);
         assertEquals(contextRecord.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(contextRecord.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
         assertEquals(contextRecord.getCreatedOn().longValue(), CREATED_ON_MILLIS);

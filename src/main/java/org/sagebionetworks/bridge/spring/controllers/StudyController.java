@@ -313,7 +313,7 @@ public class StudyController extends BaseController {
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
 
-        return uploadService.getStudyUploads(session.getAppId(), startTimeObj, endTimeObj, pageSize,
+        return uploadService.getAppUploads(session.getAppId(), startTimeObj, endTimeObj, pageSize,
                 offsetKey);
     }
 
@@ -333,6 +333,6 @@ public class StudyController extends BaseController {
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
 
-        return uploadService.getStudyUploads(identifier, startTimeObj, endTimeObj, pageSize, offsetKey);
+        return uploadService.getAppUploads(identifier, startTimeObj, endTimeObj, pageSize, offsetKey);
     }
 }

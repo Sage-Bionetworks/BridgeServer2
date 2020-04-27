@@ -80,10 +80,10 @@ public class UserManagementController extends BaseController {
 
         // The only part of this payload we care about is the app property
         SignIn signIn = parseJson(SignIn.class);
-        String studyId = signIn.getAppId();
+        String appId = signIn.getAppId();
 
         // Verify it's correct
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         sessionUpdateService.updateStudy(session, app.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
@@ -106,16 +106,16 @@ public class UserManagementController extends BaseController {
     }
 
     /**
-     * admin api used to create consent/not-consent user for given app
+     * Admin api used to create consent/not-consent user for given app
      * nearly identical to createUser() one
-     * @param studyId
+     * @param appId
      * @return
      */
-    @PostMapping("/v3/studies/{studyId}/users")
+    @PostMapping(path = {"/v1/apps/{appId}/users", "/v3/studies/{appId}/users"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithStudyId(@PathVariable String studyId) {
+    public StatusMessage createUserWithStudyId(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         
         JsonNode node = parseJson(JsonNode.class);
         StudyParticipant participant = parseJson(node, StudyParticipant.class);

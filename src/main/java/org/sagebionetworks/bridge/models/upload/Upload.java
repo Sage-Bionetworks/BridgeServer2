@@ -76,9 +76,9 @@ public interface Upload {
     UploadCompletionClient getCompletedBy();
     
     /**
-     * <p>The appId for this upload.</p>
+     * <p>The app ID for this upload.</p>
      */
-    String getStudyId();
+    String getAppId();
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();

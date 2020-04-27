@@ -48,4 +48,16 @@ public class VerificationDataTest {
         assertEquals(deser.getUserId(), USER_ID);
         assertEquals(deser.getExpiresOn(), TIMESTAMP.getMillis());
     }
+    
+    @Test
+    public void restoreVerificationDataWithAppId() throws Exception {
+        String json = TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'"+
+                USER_ID+"',"+"'expiresOn':1422319112486}");
+        VerificationData deser = BridgeObjectMapper.get().readValue(json,
+                VerificationData.class);
+        assertEquals(deser.getAppId(), TEST_APP_ID);
+        assertEquals(deser.getType(), ChannelType.EMAIL);
+        assertEquals(deser.getUserId(), USER_ID);
+        assertEquals(deser.getExpiresOn(), TIMESTAMP.getMillis());
+    }
 }

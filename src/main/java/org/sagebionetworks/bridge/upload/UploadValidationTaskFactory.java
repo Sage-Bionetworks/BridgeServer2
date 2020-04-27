@@ -56,11 +56,11 @@ public class UploadValidationTaskFactory {
      *         upload metadata object for the upload
      * @return upload validation task, which will validate the upload
      */
-    public UploadValidationTask newTask(@Nonnull String studyId, @Nonnull Upload upload) {
+    public UploadValidationTask newTask(@Nonnull String appId, @Nonnull Upload upload) {
         // context
         UploadValidationContext context = new UploadValidationContext();
         context.setHealthCode(upload.getHealthCode());
-        context.setStudy(studyId);
+        context.setAppId(appId);
         context.setUpload(upload);
 
         // task

@@ -43,7 +43,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
     public void handle(@Nonnull UploadValidationContext context) {
         HealthDataRecord record = context.getHealthDataRecord();
 
-        AccountId accountId = AccountId.forHealthCode(context.getStudy(), context.getHealthCode());
+        AccountId accountId = AccountId.forHealthCode(context.getAppId(), context.getHealthCode());
         Account account = accountService.getAccount(accountId);
         if (account != null) {
             

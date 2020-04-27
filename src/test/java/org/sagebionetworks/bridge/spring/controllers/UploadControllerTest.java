@@ -122,7 +122,7 @@ public class UploadControllerTest extends Mockito {
         upload.setUploadId("upload-id");
         doReturn(upload).when(mockUploadService).getUpload("upload-id");
         
-        upload.setStudyId("worker-health-code");
+        upload.setAppId("worker-health-code");
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setId(RECORD_ID);
@@ -175,7 +175,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void uploadCompleteAcceptsWorker() throws Exception {
-        upload.setStudyId("consented-user-study-id");
+        upload.setAppId("consented-user-study-id");
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();
 
@@ -195,7 +195,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void uploadCompleteWithMissingStudyId() throws Exception {
-        upload.setStudyId(null); // no appId, must look up by healthCode
+        upload.setAppId(null); // no appId, must look up by healthCode
         upload.setHealthCode(HEALTH_CODE);
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();
@@ -315,7 +315,7 @@ public class UploadControllerTest extends Mockito {
         record.setHealthCode(HEALTH_CODE);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("researcher-study-id");
+        upload.setAppId("researcher-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -336,13 +336,13 @@ public class UploadControllerTest extends Mockito {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
-        record.setStudyId(TEST_APP_ID);
+        record.setAppId(TEST_APP_ID);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId(TEST_APP_ID);
+        upload.setAppId(TEST_APP_ID);
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
         
@@ -357,20 +357,20 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp=".*Study admin cannot retrieve upload in another study.*")
+            expectedExceptionsMessageRegExp=".*App admin cannot retrieve upload in another app.*")
     public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(USER_ID).when(mockResearcherSession).getId();
         when(mockResearcherSession.getAppId()).thenReturn("researcher-study-id");
 
         HealthDataRecord record = HealthDataRecord.create();
-        record.setStudyId(TEST_APP_ID);
+        record.setAppId(TEST_APP_ID);
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("researcher-study-id");
+        upload.setAppId("researcher-study-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 
@@ -387,13 +387,13 @@ public class UploadControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
 
         HealthDataRecord record = HealthDataRecord.create();
-        record.setStudyId("some-other-study");
+        record.setAppId("some-other-study");
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setStudyId("some-other-study");
+        upload.setAppId("some-other-study");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 

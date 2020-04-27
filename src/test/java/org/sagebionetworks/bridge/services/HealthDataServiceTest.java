@@ -305,7 +305,7 @@ public class HealthDataServiceTest {
         record.setMetadata(TEST_METADATA);
         record.setSchemaId(TEST_SCHEMA_ID);
         record.setSchemaRevision(TEST_SCHEMA_REV);
-        record.setStudyId(TEST_APP_ID);
+        record.setAppId(TEST_APP_ID);
         record.setUploadDate(TEST_UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setUserSharingScope(SharingScope.NO_SHARING);

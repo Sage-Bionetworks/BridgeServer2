@@ -95,7 +95,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
         ObjectNode dataMap = (ObjectNode) record.getData();
         JsonNode infoJson = context.getInfoJsonNode();
-        String studyId = context.getStudy();
+        String studyId = context.getAppId();
         Map<String, File> unzippedDataFileMap = context.getUnzippedDataFileMap();
 
         // Parse createdOn.

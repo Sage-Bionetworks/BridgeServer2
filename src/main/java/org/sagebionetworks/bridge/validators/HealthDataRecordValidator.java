@@ -97,8 +97,8 @@ public class HealthDataRecordValidator implements Validator {
             }
 
             // app ID is non-null and non-empty
-            if (StringUtils.isBlank(record.getStudyId())) {
-                errors.rejectValue("studyId", Validate.CANNOT_BE_BLANK);
+            if (StringUtils.isBlank(record.getAppId())) {
+                errors.rejectValue("appId", Validate.CANNOT_BE_BLANK);
             }
 
             // upload date is non-null
