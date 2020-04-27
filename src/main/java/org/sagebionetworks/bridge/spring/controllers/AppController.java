@@ -102,14 +102,14 @@ public class AppController extends BaseController {
         return appWhitelist;
     }
 
-    @GetMapping("/v3/studies/self")
+    @GetMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public App getCurrentApp() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
         return appService.getApp(session.getAppId());
     }
     
-    @PostMapping("/v3/studies/self")
+    @PostMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public VersionHolder updateAppForDeveloperOrAdmin() {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
@@ -119,7 +119,7 @@ public class AppController extends BaseController {
         return new VersionHolder(appUpdate.getVersion());
     }
 
-    @PostMapping("/v3/studies/{appId}")
+    @PostMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
     public VersionHolder updateApp(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
         
@@ -129,7 +129,7 @@ public class AppController extends BaseController {
         return new VersionHolder(appUpdate.getVersion());
     }
 
-    @GetMapping("/v3/studies/{appId}")
+    @GetMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
     public App getApp(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
@@ -140,7 +140,7 @@ public class AppController extends BaseController {
     // You can get a truncated view of studies with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     
-    @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllApps(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary) throws Exception {        
         
@@ -161,7 +161,8 @@ public class AppController extends BaseController {
                 new ResourceList<>(apps).withRequestParam("summary", false));
     }
     
-    @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path = { "/v1/apps/memberships", "/v3/studies/memberships" }, produces = {
+            APPLICATION_JSON_UTF8_VALUE })
     public String getAppMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
         
@@ -186,7 +187,7 @@ public class AppController extends BaseController {
         return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps));
     }
 
-    @PostMapping("/v3/studies")
+    @PostMapping(path = {"/v1/apps", "/v3/studies"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createApp() {
         getAuthenticatedSession(SUPERADMIN);
@@ -196,7 +197,7 @@ public class AppController extends BaseController {
         return new VersionHolder(app.getVersion());
     }
 
-    @PostMapping("/v3/studies/init")
+    @PostMapping(path = {"/v1/apps/init", "/v3/studies/init"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createAppAndUsers() throws SynapseException {
         getAuthenticatedSession(SUPERADMIN);
@@ -207,7 +208,7 @@ public class AppController extends BaseController {
         return new VersionHolder(app.getVersion());
     }
 
-    @PostMapping("/v3/studies/self/synapseProject")
+    @PostMapping(path = {"/v1/apps/self/synapseProject", "/v3/studies/self/synapseProject"})
     @ResponseStatus(HttpStatus.CREATED)
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current study
@@ -222,7 +223,7 @@ public class AppController extends BaseController {
     }
 
     // since only admin can delete study, no need to check if return results should contain deactivated ones
-    @DeleteMapping("/v3/studies/{appId}")
+    @DeleteMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
     public StatusMessage deleteApp(@PathVariable String appId,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
@@ -242,7 +243,7 @@ public class AppController extends BaseController {
         return DELETED_MSG;
     }
 
-    @GetMapping("/v3/studies/self/publicKey")
+    @GetMapping(path = {"/v1/apps/self/publicKey", "/v3/studies/self/publicKey"})
     public CmsPublicKey getAppPublicKeyAsPem() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
@@ -251,7 +252,7 @@ public class AppController extends BaseController {
         return new CmsPublicKey(pem);
     }
 
-    @GetMapping("/v3/studies/self/emailStatus")
+    @GetMapping(path = {"/v1/apps/self/emailStatus", "/v3/studies/self/emailStatus"})
     public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
@@ -261,7 +262,7 @@ public class AppController extends BaseController {
     }
 
     /** Resends the verification email for the current study's email. */
-    @PostMapping("/v3/studies/self/emails/resendVerify")
+    @PostMapping(path = {"/v1/apps/self/emails/resendVerify", "/v3/studies/self/emails/resendVerify"})
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyEmailType parsedType = parseEmailType(type);
@@ -273,7 +274,7 @@ public class AppController extends BaseController {
      * Verifies the emails for the app. Since this comes in from an email with a token, you don't need to be
      * authenticated. The token itself knows what study this is for.
      */
-    @PostMapping("/v3/studies/{appId}/emails/verify")
+    @PostMapping(path = {"/v1/apps/{appId}/emails/verify", "/v3/studies/{appId}/emails/verify"})
     public StatusMessage verifyEmail(@PathVariable String appId, @RequestParam(required = false) String token,
             @RequestParam(required = false) String type) {
         StudyEmailType parsedType = parseEmailType(type);
@@ -295,7 +296,7 @@ public class AppController extends BaseController {
         }
     }
 
-    @PostMapping("/v3/studies/self/verifyEmail")
+    @PostMapping(path = {"/v1/apps/self/verifyEmail", "/v3/studies/self/verifyEmail"})
     public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
@@ -304,7 +305,7 @@ public class AppController extends BaseController {
         return new EmailVerificationStatusHolder(status);
     }
 
-    @GetMapping("/v3/studies/self/uploads")
+    @GetMapping(path = {"/v1/apps/self/uploads", "/v3/studies/self/uploads"})
     public ForwardCursorPagedResourceList<UploadView> getUploads(@RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String offsetKey) {
@@ -320,7 +321,7 @@ public class AppController extends BaseController {
     /**
      * Another version of getUploads for workers to specify any study ID to get uploads
      */
-    @GetMapping("/v3/studies/{appId}/uploads")
+    @GetMapping(path = {"/v1/apps/{appId}/uploads", "/v3/studies/{appId}/uploads"})
     public ForwardCursorPagedResourceList<UploadView> getUploadsForApp(@PathVariable String appId,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
