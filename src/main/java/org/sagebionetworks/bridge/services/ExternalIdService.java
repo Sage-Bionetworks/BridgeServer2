@@ -128,7 +128,7 @@ public class ExternalIdService {
     
     public void unassignExternalId(Account account, String externalId) {
         checkNotNull(account);
-        checkNotNull(account.getStudyId());
+        checkNotNull(account.getAppId());
         checkNotNull(account.getHealthCode());
         
         if (externalId != null) {

@@ -391,7 +391,7 @@ public class DynamoExternalIdDaoMockTest {
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(acctSubstudy);
@@ -410,7 +410,7 @@ public class DynamoExternalIdDaoMockTest {
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.getAccountSubstudies().add(as);
 
         dao.unassignExternalId(account, ID);
@@ -429,7 +429,7 @@ public class DynamoExternalIdDaoMockTest {
         as.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getAccountSubstudies().add(as);
@@ -449,7 +449,7 @@ public class DynamoExternalIdDaoMockTest {
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
-        account.setStudyId(TEST_APP_ID);
+        account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.setAccountSubstudies(null); // this would throw an error if executed

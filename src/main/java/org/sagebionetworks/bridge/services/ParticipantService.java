@@ -364,7 +364,7 @@ public class ParticipantService {
     public DateTime getStudyStartTime(AccountId accountId) {
         Account account = getAccountThrowingException(accountId);
 
-        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getStudyId(), account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
             return activitiesRetrievedDateTime;
@@ -411,7 +411,7 @@ public class ParticipantService {
         // Set basic params from inputs.
         Account account = getAccount();
         account.setId(generateGUID());
-        account.setStudyId(app.getIdentifier());
+        account.setAppId(app.getIdentifier());
         account.setEmail(participant.getEmail());
         account.setPhone(participant.getPhone());
         account.setEmailVerified(FALSE);
@@ -593,14 +593,14 @@ public class ParticipantService {
             for (String substudyId : participant.getSubstudyIds()) {
                 if (!existingSubstudyIds.contains(substudyId)) {
                     AccountSubstudy newSubstudy = AccountSubstudy.create(
-                            account.getStudyId(), substudyId, account.getId());
+                            account.getAppId(), substudyId, account.getId());
                     account.getAccountSubstudies().add(newSubstudy);
                     clearCache = true;
                 }
             }
         }
         if (externalId != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
                     externalId.getSubstudyId(), account.getId());
             
             // If a substudy relationship exists without the external ID, remove it because
@@ -749,7 +749,7 @@ public class ParticipantService {
      */
     public List<UserConsentHistory> getUserConsentHistory(Account account, SubpopulationGuid subpopGuid) {
         return account.getConsentSignatureHistory(subpopGuid).stream().map(signature -> {
-            Subpopulation subpop = subpopService.getSubpopulation(account.getStudyId(), subpopGuid);
+            Subpopulation subpop = subpopService.getSubpopulation(account.getAppId(), subpopGuid);
             boolean hasSignedActiveConsent = (signature.getConsentCreatedOn() == subpop.getPublishedConsentCreatedOn());
 
             return new UserConsentHistory.Builder()
@@ -878,7 +878,7 @@ public class ParticipantService {
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
         if (externalId != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getStudyId(),
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
                     externalId.getSubstudyId(), account.getId());
             // Highly unlikely this was an admin account, but just in case
             if (account.getAccountSubstudies().contains(acctSubstudy)) {
@@ -908,7 +908,7 @@ public class ParticipantService {
     
     protected ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
         checkNotNull(account);
-        checkNotNull(account.getStudyId());
+        checkNotNull(account.getAppId());
         checkNotNull(account.getHealthCode());
         
         Set<String> allExternalIds = BridgeUtils.collectExternalIds(account);
@@ -916,7 +916,7 @@ public class ParticipantService {
             return null;
         }
         
-        ExternalIdentifier identifier = externalIdService.getExternalId(account.getStudyId(), externalId).orElse(null);
+        ExternalIdentifier identifier = externalIdService.getExternalId(account.getAppId(), externalId).orElse(null);
         if (identifier == null) {
             return null;
         }

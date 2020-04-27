@@ -21,11 +21,11 @@ public interface AccountDao {
     
     /**
      * Search for all accounts across studies that have the same Synapse user ID in common, 
-     * and return a list of the study IDs where these accounts are found.
+     * and return a list of the app IDs where these accounts are found.
      * @param synapseUserId
-     * @return list of study identifiers
+     * @return list of appIds
      */
-    List<String> getStudyIdsForUser(String synapseUserId);
+    List<String> getAppIdForUser(String synapseUserId);
     
     /**
      * Create an account. If the optional consumer is passed to this method and it throws an 
