@@ -120,7 +120,7 @@ public class UserAdminService {
         checkNotNull(app, "Study cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
-        // Validate study + email or phone. This is the minimum we need to create a functional account.
+        // Validate app + email or phone. This is the minimum we need to create a functional account.
         SignIn signIn = new SignIn.Builder().withAppId(app.getIdentifier()).withEmail(participant.getEmail())
                 .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
         Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);

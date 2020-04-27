@@ -186,7 +186,7 @@ public abstract class BaseController {
         RequestContext reqContext = builder.build();
         BridgeUtils.setRequestContext(reqContext);
         
-        // Sessions are locked to an IP address if (a) it is enabled in the study for unprivileged participant accounts
+        // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.
         App app = appService.getApp(session.getAppId());
         Set<Roles> userRoles = session.getParticipant().getRoles();

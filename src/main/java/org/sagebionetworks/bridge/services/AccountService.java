@@ -223,7 +223,7 @@ public class AccountService {
         
         AccountId accountId = AccountId.forId(account.getStudyId(),  account.getId());
 
-        // Can't change study, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
+        // Can't change app, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         // None of these values should be changeable by the user.
@@ -316,7 +316,7 @@ public class AccountService {
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
-        // email verification for older studies that didn't have full external ID support).
+        // email verification for older apps that didn't have full external ID support).
         if (account.getStatus() == UNVERIFIED) {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (account.getStatus() == DISABLED) {

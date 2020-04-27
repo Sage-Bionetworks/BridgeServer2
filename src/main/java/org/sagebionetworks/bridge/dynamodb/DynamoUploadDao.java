@@ -121,7 +121,7 @@ public class DynamoUploadDao implements UploadDao {
         key.setUploadId(uploadId);
         DynamoUpload2 upload = mapper.load(key);
         if (upload != null) {
-            // Very old uploads (2+ years ago) did not have studyId set; for these we must do 
+            // Very old uploads (2+ years ago) did not have appId set; for these we must do 
             // a lookup in the legacy DynamoHealthCode table.
             if (upload.getStudyId() == null) { 
                 String studyId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());

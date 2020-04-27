@@ -284,7 +284,7 @@ public class ReportService {
         }        
         reportDataDao.deleteReportDataRecord(key, date);
         
-        // If this is the last key visible in the window, you can delete the index because this is a study record
+        // If this is the last key visible in the window, you can delete the index because this is an app record
         LocalDate startDate = LocalDate.now().minusDays(MAX_RANGE_DAYS);
         LocalDate endDate = LocalDate.now();
         DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);

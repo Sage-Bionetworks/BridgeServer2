@@ -98,7 +98,7 @@ public class SharedModuleMetadataService {
             String surveyGuid = metadata.getSurveyGuid();
             long createdOn = metadata.getSurveyCreatedOn();
 
-            // Metadata does not have study information
+            // Metadata does not have app information
             Survey survey = surveyService.getSurvey(SHARED_APP_ID,
                     new GuidCreatedOnVersionHolderImpl(surveyGuid, createdOn), false, false);
             if (survey == null) {
@@ -256,7 +256,7 @@ public class SharedModuleMetadataService {
         boolean hasWhere = StringUtils.isNotBlank(where);
         
         if (mostRecent && hasWhere) {
-            // This is disallowed because of the confusion (both from Bridge developers and from Study managers) on
+            // This is disallowed because of the confusion (both from Bridge developers and from study managers) on
             // how this would actually work.
             throw new BadRequestException("mostrecent=true cannot be specified with where clause");
         }

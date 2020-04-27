@@ -72,7 +72,7 @@ public class ActivityEventService {
                 .withTimestamp(timestamp).build();
         
         if (activityEventDao.publishEvent(event)) {
-            // Create automatic events, as defined in the study
+            // Create automatic events, as defined in the app
             createAutomaticCustomEvents(app, healthCode, event);
         }
     }
@@ -93,7 +93,7 @@ public class ActivityEventService {
             .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
         
         if (activityEventDao.publishEvent(event)) {
-            // Create automatic events, as defined in the study
+            // Create automatic events, as defined in the app
             createAutomaticCustomEvents(app, healthCode, event);
         }
     }
@@ -108,7 +108,7 @@ public class ActivityEventService {
             .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).build();
         
         if (activityEventDao.publishEvent(event)) {
-            // Create automatic events, as defined in the study
+            // Create automatic events, as defined in the app
             createAutomaticCustomEvents(app, healthCode, event);
         }
     }

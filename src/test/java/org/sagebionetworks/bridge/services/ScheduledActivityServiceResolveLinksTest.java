@@ -54,7 +54,7 @@ public class ScheduledActivityServiceResolveLinksTest {
     private static final long SURVEY_CREATED_ON_MILLIS = 1234;
     private static final DateTime SURVEY_CREATED_ON_DATE_TIME = new DateTime(SURVEY_CREATED_ON_MILLIS);
 
-    // We only care about ClientInfo (which is automatically populated to ClientInfo.UNKNOWN_CLIENT) and study ID.
+    // We only care about ClientInfo (which is automatically populated to ClientInfo.UNKNOWN_CLIENT) and appId.
     private static final ScheduleContext SCHEDULE_CONTEXT = new ScheduleContext.Builder()
             .withAppId(TEST_APP_ID).build();
 

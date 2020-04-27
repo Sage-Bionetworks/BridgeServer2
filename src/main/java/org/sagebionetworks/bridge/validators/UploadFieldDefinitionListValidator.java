@@ -39,7 +39,7 @@ public class UploadFieldDefinitionListValidator {
     public void validate(List<UploadFieldDefinition> fieldDefList, Errors errors, String attributeName) {
         if (fieldDefList == null || fieldDefList.isEmpty()) {
             // Skip. Sometimes, the fieldDefList doesn't need to be present, like in
-            // Study.uploadMetadataFieldDefinitions.
+            // App.uploadMetadataFieldDefinitions.
             return;
         }
 

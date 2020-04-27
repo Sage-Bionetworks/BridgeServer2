@@ -50,7 +50,7 @@ public class ExportViaSqsService implements ExportService {
         // endDateTime is set to 5 seconds ago, to account for clock skew.
         String endDateTimeStr = DateTime.now(BridgeConstants.LOCAL_TIME_ZONE).minusSeconds(5).toString();
 
-        // Study whitelist is needed because we only export the given study.
+        // Study whitelist is needed because we only export the given app.
         ArrayNode studyWhitelistNode = JSON_OBJECT_MAPPER.createArrayNode();
         studyWhitelistNode.add(studyId);
 

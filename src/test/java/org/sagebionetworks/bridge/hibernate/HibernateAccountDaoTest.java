@@ -213,7 +213,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
-        // execute and validate - just validate ID, study, and email, and health code mapping
+        // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
         assertEquals(account.getId(), ACCOUNT_ID);
         assertEquals(account.getStudyId(), TEST_APP_ID);

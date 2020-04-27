@@ -92,7 +92,7 @@ public class ExternalIdService {
         ExternalIdValidator validator = new ExternalIdValidator(substudyService, isV3);
         Validate.entityThrowingException(validator, externalId);
         
-        // Note that this external ID must be unique across the whole study, not just a substudy, or else
+        // Note that this external ID must be unique across the whole app, not just a substudy, or else
         // it cannot be used to identify the substudy, and that's a significant purpose behind the 
         // association of the two
         if (externalIdDao.getExternalId(appId, externalId.getIdentifier()).isPresent()) {

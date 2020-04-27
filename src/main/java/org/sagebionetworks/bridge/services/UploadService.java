@@ -89,8 +89,8 @@ public class UploadService {
     final void setConfig(BridgeConfig config) {
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
 
-        // This is the set of study IDs where we ignore dedupe logic. This configuration exists (1) for integration
-        // tests, where we always upload the same files over and over and (2) for studies where it's valid and expected
+        // This is the set of app IDs where we ignore dedupe logic. This configuration exists (1) for integration
+        // tests, where we always upload the same files over and over and (2) for apps where it's valid and expected
         // for apps to always submit the same files over and over again.
         dupeStudyWhitelist = ImmutableSet.copyOf(config.getList(CONFIG_KEY_UPLOAD_DUPE_STUDY_WHITELIST));
     }

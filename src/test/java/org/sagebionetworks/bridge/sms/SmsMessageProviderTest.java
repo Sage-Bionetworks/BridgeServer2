@@ -56,7 +56,7 @@ public class SmsMessageProviderTest {
         
         assertEquals(provider.getTokenMap().get("url"), "some-url");
         assertEquals(provider.getTokenMap().get("expirationPeriod"), "4 hours");
-        // BridgeUtils.studyTemplateVariables() has been called
+        // BridgeUtils.appTemplateVariables() has been called
         assertEquals(provider.getTokenMap().get("studyName"), "Name");
         assertEquals(provider.getTokenMap().get("studyShortName"), "ShortName");
         assertEquals(provider.getTokenMap().get("studyId"), TEST_APP_ID);

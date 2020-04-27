@@ -101,7 +101,7 @@ public class DynamoAppTest {
 
     @Test
     public void equalsHashCode() {
-        // studyIdentifier is derived from the identifier
+        // appId is derived from the identifier
         EqualsVerifier.forClass(DynamoApp.class).allFieldsShouldBeUsed()
             .suppress(Warning.NONFINAL_FIELDS)
             .withPrefabValues(ObjectMapper.class, new ObjectMapper(), new ObjectMapper())

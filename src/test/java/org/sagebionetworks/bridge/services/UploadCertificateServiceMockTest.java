@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.s3.S3Helper;
 
 public class UploadCertificateServiceMockTest {
-    // For safety, don't use api study. Otherwise, if we botch the test, we risk stomping over the api PEM keys again.
+    // For safety, don't use api app. Otherwise, if we botch the test, we risk stomping over the api PEM keys again.
     private static final String PEM_FILENAME = UploadCertificateService.getPemFilename(TEST_APP_ID);
 
     private AmazonS3 mockS3client;

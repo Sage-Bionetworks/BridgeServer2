@@ -67,7 +67,7 @@ public class InitRecordHandlerTest {
         context.setUnzippedDataFileMap(Maps.transformEntries(jsonDataMap,
                 (name, node) -> makeFileWithContent(name, node.toString())));
 
-        // Contexts always include studyId.
+        // Contexts always include appId.
         context.setStudy(TEST_APP_ID);
 
         // And upload (with upload ID and health code).

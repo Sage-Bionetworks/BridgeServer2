@@ -163,7 +163,7 @@ public class UploadFileHelper {
                     sanitizedParsedJsonNodeMap = parsedSanitizedJsonFileCache.get(parsedFilename);
                 } else {
                     // We don't want to load large files into memory, for obvious reasons. Because of the way old
-                    // studies are set up, we sometimes end up parsing very large files into Bridge anyway. For now,
+                    // apps are set up, we sometimes end up parsing very large files into Bridge anyway. For now,
                     // warn if the size is >5mb, and skip if the size >20mb.
                     File parsedFile = oneFileEntry.getValue();
                     long parsedFileSize = fileHelper.fileSize(parsedFile);

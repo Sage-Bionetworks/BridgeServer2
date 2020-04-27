@@ -109,7 +109,7 @@ public class SurveyController extends BaseController {
     public String getSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn) throws Exception {
         UserSession session = getSessionEitherConsentedOrInRole(WORKER, DEVELOPER);
         if (session.isInRole(WORKER)) {
-            // Worker accounts can access surveys across studies. We branch off and call getSurveyForWorker().
+            // Worker accounts can access surveys across apps. We branch off and call getSurveyForWorker().
             return MAPPER.writeValueAsString(getSurveyForWorker(surveyGuid, createdOn));
         } else {
             return getCachedSurveyInternal(surveyGuid, createdOn, session);

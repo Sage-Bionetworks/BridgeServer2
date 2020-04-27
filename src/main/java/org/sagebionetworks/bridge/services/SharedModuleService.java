@@ -56,7 +56,7 @@ public class SharedModuleService {
     /** Imports a specific module version into the specified study. */
     public SharedModuleImportStatus importModuleByIdAndVersion(String studyId, String moduleId,
             int moduleVersion) {
-        // studyId is provided by the controller. Validate the rest of the args.
+        // appId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
             throw new BadRequestException("module ID must be specified");
         }
@@ -71,7 +71,7 @@ public class SharedModuleService {
 
     /** Imports the latest published version of a module into the specified study. */
     public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String studyId, String moduleId) {
-        // studyId is provided by the controller. Validate the rest of the args.
+        // appId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
             throw new BadRequestException("module ID must be specified");
         }
@@ -110,7 +110,7 @@ public class SharedModuleService {
 
             schemaService.createSchemaRevisionV4(studyId, schema);
 
-            // Schema ID and rev are the same in the shared study and in the local study.
+            // Schema ID and rev are the same in the shared app and in the local app.
             return new SharedModuleImportStatus(schemaId, schemaRev);
         } else if (moduleType == SharedModuleType.SURVEY) {
             // Copy survey from shared to local.
@@ -124,7 +124,7 @@ public class SharedModuleService {
             sharedSurvey.setModuleId(moduleId);
             sharedSurvey.setModuleVersion(moduleVersion);
 
-            // Survey keys don't include study ID. Instead, we need to set the study ID directly in the survey object.
+            // Survey keys don't include appId. Instead, we need to set the appId directly in the survey object.
             sharedSurvey.setAppId(studyId);
             Survey localSurvey = surveyService.createSurvey(sharedSurvey);
             GuidCreatedOnVersionHolder localSurveyKey = new GuidCreatedOnVersionHolderImpl(localSurvey.getGuid(),
@@ -137,7 +137,7 @@ public class SharedModuleService {
             // version so it doesn't get munged with an "unofficial" version.
             surveyService.publishSurvey(studyId, localSurveyKey, true);
 
-            // Survey GUID and createdOn are changed when we create the survey in a new study. Return the new ones.
+            // Survey GUID and createdOn are changed when we create the survey in a new app. Return the new ones.
             return new SharedModuleImportStatus(localSurveyKey.getGuid(), localSurveyKey.getCreatedOn());
         } else {
             // If we ever hit this code block, something has gone terribly terribly wrong.

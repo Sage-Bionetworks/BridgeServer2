@@ -96,7 +96,7 @@ public class HealthDataRecordValidator implements Validator {
                 errors.rejectValue("schemaRevision", "can't be zero or negative");
             }
 
-            // study ID is non-null and non-empty
+            // app ID is non-null and non-empty
             if (StringUtils.isBlank(record.getStudyId())) {
                 errors.rejectValue("studyId", Validate.CANNOT_BE_BLANK);
             }

@@ -3377,7 +3377,7 @@ public class ParticipantServiceTest extends Mockito {
         verifyRoleUpdate(callerRoles, ImmutableSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, WORKER), expected);
     }
 
-    // Makes a study instance, so tests can modify it without affecting other tests.
+    // Makes an app instance, so tests can modify it without affecting other tests.
     private static App makeStudy() {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);

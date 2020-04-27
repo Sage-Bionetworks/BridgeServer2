@@ -499,7 +499,7 @@ public class TestUtils {
         pushNotificationARNs.put(OperatingSystem.IOS, "arn:ios:"+id);
         pushNotificationARNs.put(OperatingSystem.ANDROID, "arn:android:"+id);
 
-        // This study will save without further modification.
+        // This app will save without further modification.
         DynamoApp app = new DynamoApp();
         app.setName("Test App ["+clazz.getSimpleName()+"]");
         app.setShortName("ShortName");

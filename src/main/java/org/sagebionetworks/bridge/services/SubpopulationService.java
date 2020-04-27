@@ -132,13 +132,13 @@ public class SubpopulationService {
         
         subpop.setAppId(app.getIdentifier());
 
-        // Verify this subpopulation is part of the study. Existing code also doesn't submit
+        // Verify this subpopulation is part of the app. Existing code also doesn't submit
         // this publication timestamp back to the server, so set if it doesn't exist.
         Subpopulation existingSubpop = getSubpopulation(app.getIdentifier(), subpop.getGuid());
         if (subpop.getPublishedConsentCreatedOn() == 0L) {
             subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
         }
-        // Verify that the publishedConsentCreatedOn field points to a real study consent. Don't use the service
+        // Verify that the publishedConsentCreatedOn field points to a real app consent. Don't use the service
         // because it loads the document from S3.
         StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         if (consent == null) {

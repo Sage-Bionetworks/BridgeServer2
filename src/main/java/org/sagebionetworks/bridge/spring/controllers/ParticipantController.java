@@ -322,7 +322,7 @@ public class ParticipantController extends BaseController {
             throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
 
-        // Verify it's in the same study as the researcher.
+        // Verify it's in the same app as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
@@ -338,7 +338,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         App app = appService.getApp(session.getAppId());
 
-        // Verify it's in the same study as the researcher.
+        // Verify it's in the same app as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();

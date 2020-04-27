@@ -163,7 +163,7 @@ public class DynamoUploadDaoMockTest {
 
         DynamoUpload2 capturedUpload = uploadCaptor.getValue();
 
-        // Validate key values (study ID, requestedOn) and values from the dupe code path.
+        // Validate key values (appId, requestedOn) and values from the dupe code path.
         // Everything else is tested in the previous test
         assertEquals(capturedUpload.getDuplicateUploadId(), "original-upload-id");
         assertEquals(capturedUpload.getStudyId(), TEST_APP_ID);

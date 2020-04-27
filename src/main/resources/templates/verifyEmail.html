@@ -47,7 +47,7 @@ try {
         contentType: "application/json; charset=utf-8",
         dataType: "json"
     });
-    // The response in the success case is 412, accept terms of study
+    // The response in the success case is 412, accept terms of app
     p.done(success).fail(function(response) {
         if (response.status === 412) {
             success();

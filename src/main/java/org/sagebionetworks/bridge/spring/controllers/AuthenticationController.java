@@ -300,7 +300,7 @@ public class AuthenticationController extends BaseController {
     public JsonNode changeApp() {
         UserSession session = getAuthenticatedSession();
         
-        // To switch studies, the account must be an administrative account with a Synapse User ID
+        // To switch apps, the account must be an administrative account with a Synapse User ID
         StudyParticipant participant = session.getParticipant(); 
         if (participant.getRoles().isEmpty()) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
@@ -312,7 +312,7 @@ public class AuthenticationController extends BaseController {
         App targetApp = appService.getApp(targetAppId);
 
         // Cross app administrator can switch to any app. Implement this here because clients 
-        // cannot tell who is a cross-app administrator once they've switched studies.
+        // cannot tell who is a cross-app administrator once they've switched apps.
         if (session.isInRole(SUPERADMIN)) {
             sessionUpdateService.updateStudy(session, targetApp.getIdentifier());
             return UserSessionInfo.toJSON(session);

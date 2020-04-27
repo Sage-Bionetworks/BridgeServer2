@@ -80,7 +80,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
 
         List<App> createdStudyList = studyCaptor.getAllValues();
 
-        // Validate api study.
+        // Validate api app.
         App app = createdStudyList.get(0);
         assertEquals(app.getName(), "Test Study");
         assertEquals(app.getIdentifier(), API_APP_ID);
@@ -94,12 +94,12 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         assertEquals(app.getPasswordPolicy(), new PasswordPolicy(2, false, false, false, false));
         assertTrue(app.isEmailVerificationEnabled());
 
-        // Validate shared study. No need to test every attribute. Just validate the important attributes.
+        // Validate shared app. No need to test every attribute. Just validate the important attributes.
         App sharedApp = createdStudyList.get(1);
         assertEquals(sharedApp.getName(), "Shared Module Library");
         assertEquals(sharedApp.getIdentifier(), SHARED_APP_ID);
 
-        // So it doesn't get out of sync, validate the study. However, default templates are set 
+        // So it doesn't get out of sync, validate the app. However, default templates are set 
         // by the service. so those two errors are expected.
         try {
             Validate.entityThrowingException(new StudyValidator(), app);    

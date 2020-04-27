@@ -81,14 +81,14 @@ public class DynamoUploadSchema implements UploadSchema {
 
     /**
      * This is the DynamoDB key. It is used by the DynamoDB mapper. This should not be used directly. The key format is
-     * "[studyID]:[schemaID]". The schema ID may contain colons. The study ID may not. Since the key is created
-     * from the study ID and schema ID, this will throw an InvalidEntityException if either one is blank.
+     * "[appID]:[schemaID]". The schema ID may contain colons. The app ID may not. Since the key is created
+     * from the app ID and schema ID, this will throw an InvalidEntityException if either one is blank.
      */
     @DynamoDBHashKey
     @JsonIgnore
     public String getKey() {
         if (StringUtils.isBlank(appId)) {
-            // No study ID means we can't generate a key. However, we should still return null, because this case might
+            // No appId means we can't generate a key. However, we should still return null, because this case might
             // still come up (such as querying by secondary index), and we don't want to crash.
             return null;
         }

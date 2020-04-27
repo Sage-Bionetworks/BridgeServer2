@@ -247,7 +247,7 @@ public class ConsentServiceMockTest {
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
-        // We notify the study administrator and send a copy to the user.
+        // We notify the app administrator and send a copy to the user.
         BasicEmailProvider email = emailCaptor.getValue();
         assertEquals(email.getType(), EmailType.SIGN_CONSENT);
 
@@ -643,7 +643,7 @@ public class ConsentServiceMockTest {
 
     @Test
     public void consentToResearchNoRecipients() {
-        // easiest to test this if we null out the study consent email.
+        // easiest to test this if we null out the app consent email.
         app.setConsentNotificationEmail(null);
         when(subpopulation.isAutoSendConsentSuppressed()).thenReturn(true);
 
@@ -725,7 +725,7 @@ public class ConsentServiceMockTest {
     @Test
     public void emailConsentAgreementNoRecipients() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        // easiest to test this if we null out the study consent email.
+        // easiest to test this if we null out the app consent email.
         app.setConsentNotificationEmail(null);
 
         StudyParticipant noEmail = new StudyParticipant.Builder().copyOf(PARTICIPANT).withEmail(null).build();

@@ -55,7 +55,7 @@ public class DynamoUploadSchemaDao implements UploadSchemaDao {
         // Currently, all UploadSchemas are DynamoUploadSchemas, so we don't need to validate this class cast.
         DynamoUploadSchema ddbSchema = (DynamoUploadSchema) schema;
 
-        // Blank of version. This allows people to copy-paste schema revs from other studies, or easily create a new
+        // Blank of version. This allows people to copy-paste schema revs from other apps, or easily create a new
         // schema rev from a previously existing one. It also means if they get a schema rev and then try to create
         // that schema rev again, we'll correctly throw a ConcurrentModificationException.
         ddbSchema.setVersion(null);

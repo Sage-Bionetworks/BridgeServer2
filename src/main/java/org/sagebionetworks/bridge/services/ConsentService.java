@@ -140,7 +140,7 @@ public class ConsentService {
         checkNotNull(subpopGuid);
         checkNotNull(userId);
         
-        // This will throw an EntityNotFoundException if the subpopulation is not in the user's study
+        // This will throw an EntityNotFoundException if the subpopulation is not in the user's app
         subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
@@ -223,7 +223,7 @@ public class ConsentService {
                     && Boolean.TRUE.equals(participant.getPhoneVerified()));
             
             // Send an email to the user if they have an email address and we're not suppressing the send, 
-            // and/or to any study consent administrators.
+            // and/or to any app consent administrators.
             Set<String> recipientEmails = Sets.newHashSet();
             if (verifiedEmail && !subpop.isAutoSendConsentSuppressed()) {
                 recipientEmails.add(participant.getEmail());    

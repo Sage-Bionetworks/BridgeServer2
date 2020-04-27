@@ -644,7 +644,7 @@ public class IntervalActivitySchedulerTest {
                 "2015-03-23 06:00", "2015-03-24 06:00", "2015-03-25 06:00");
     }
 
-    // This is a specific scenario in one of our studies and I wanted to have a test specifically to verify this works.
+    // This is a specific scenario in one of our apps and I wanted to have a test specifically to verify this works.
     @Test
     public void oneDayDelayWithTimesSchedulesTheNextDayAfterAnEvent() {
         Schedule schedule = new Schedule();

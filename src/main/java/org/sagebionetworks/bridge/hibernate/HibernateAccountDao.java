@@ -92,7 +92,7 @@ public class HibernateAccountDao implements AccountDao {
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
             account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
-            // Enforce the study membership of the accountId
+            // Enforce the app membership of the accountId
             if (account == null || !account.getStudyId().equals(accountId.getAppId())) {
                 return Optional.empty();
             }

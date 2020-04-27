@@ -74,7 +74,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
                 .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
                 .withCallerUserId("DefaultStudyBootstrapper").build());
 
-        // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
+        // Create the "api" app if it doesn't exist. This is used for local testing and integ tests.
         try {
             appService.getApp(API_APP_ID);
         } catch (EntityNotFoundException e) {
@@ -109,7 +109,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             userAdminService.createUser(app, dev, API_SUBPOP, false, false);
         }
 
-        // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
+        // Create the "shared" app if it doesn't exist. This is used for the Shared Module Library.
         try {
             appService.getApp(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {

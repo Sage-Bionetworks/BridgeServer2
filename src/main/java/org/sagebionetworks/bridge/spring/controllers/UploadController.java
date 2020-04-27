@@ -128,7 +128,7 @@ public class UploadController extends BaseController {
             metrics.setUploadId(uploadId);
         }
 
-        // User can be a worker account (get study and health code from the upload itself)...
+        // User can be a worker account (get app and health code from the upload itself)...
         UserSession session = getAuthenticatedSession();
         Upload upload = uploadService.getUpload(uploadId);
         String studyId;
@@ -141,7 +141,7 @@ public class UploadController extends BaseController {
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {
             // Or, the consented user that originally made the upload request. Check that health codes match.
-            // Do not need to look up the study.
+            // Do not need to look up the app.
             session = getAuthenticatedAndConsentedSession();
             if (!session.getHealthCode().equals(upload.getHealthCode())) {
                 throw new UnauthorizedException();

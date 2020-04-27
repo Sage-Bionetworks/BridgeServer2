@@ -178,7 +178,7 @@ public class SmsService {
         }
     }
 
-    // Helper method to init the SMS log schema for the study.
+    // Helper method to init the SMS log schema for the app.
     private void initMessageLogSchema(String studyId) {
         // See if schema already exists.
         UploadSchema existingSchema = null;
@@ -242,7 +242,7 @@ public class SmsService {
         if (Boolean.TRUE.equals(checkResult.isOptedOut())) {
             LOG.info("Opting in user " + userId + " for SMS messages");
 
-            // User was previously opted out. They created a new account (almost certainly in a new study). We need
+            // User was previously opted out. They created a new account (almost certainly in a new app). We need
             // to opt them back in. Note that according to AWS, this can only be done once every 30 days to prevent
             // abuse.
             OptInPhoneNumberRequest optInRequest = new OptInPhoneNumberRequest().withPhoneNumber(

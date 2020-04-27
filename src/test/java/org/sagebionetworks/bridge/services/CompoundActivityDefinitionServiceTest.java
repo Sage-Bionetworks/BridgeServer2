@@ -66,7 +66,7 @@ public class CompoundActivityDefinitionServiceTest {
         CompoundActivityDefinition serviceResult = service.createCompoundActivityDefinition(TEST_APP_ID,
                 serviceInput);
 
-        // validate dao input - It's the same as the service input, but we also set the study ID.
+        // validate dao input - It's the same as the service input, but we also set the app ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(serviceInput, daoInput);
         assertEquals(daoInput.getAppId(), TEST_APP_ID);
@@ -243,7 +243,7 @@ public class CompoundActivityDefinitionServiceTest {
         CompoundActivityDefinition serviceResult = service.updateCompoundActivityDefinition(TEST_APP_ID,
                 TASK_ID, serviceInput);
 
-        // validate dao input - It's the same as the service input, but we also set the study ID.
+        // validate dao input - It's the same as the service input, but we also set the app ID.
         CompoundActivityDefinition daoInput = daoInputCaptor.getValue();
         assertSame(daoInput, serviceInput);
         assertEquals(daoInput.getAppId(), TEST_APP_ID);

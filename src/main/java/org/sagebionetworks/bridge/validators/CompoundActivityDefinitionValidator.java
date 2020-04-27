@@ -42,7 +42,7 @@ public class CompoundActivityDefinitionValidator implements Validator {
                 errors.rejectValue("appId", "must be specified");
             }
 
-            // taskIdentifier must be specified and must be in the Study's list
+            // taskIdentifier must be specified and must be in the App's list
             String taskId = compoundActivityDef.getTaskId();
             if (isBlank(taskId)) {
                 errors.rejectValue("taskId", "must be specified");

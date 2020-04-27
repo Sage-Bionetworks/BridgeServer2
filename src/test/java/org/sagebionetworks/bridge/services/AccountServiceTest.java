@@ -494,7 +494,7 @@ public class AccountServiceTest extends Mockito {
     }
 
     // This test is just a negative test to verify that the reauth token is not being rotated...
-    // regardless of how study.reauthenticationEnabled is set, it will succeed because we don't
+    // regardless of how app.reauthenticationEnabled is set, it will succeed because we don't
     // touch the reauth token
     @Test
     public void authenticateSuccessNoReauthentication() throws Exception {
@@ -749,8 +749,8 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void createAccountSuccess() throws Exception {
-        // Study passed into createAccount() takes precedence over StudyId in the Account object. To test this, make
-        // the account have a different study.
+        // App passed into createAccount() takes precedence over appId in the Account object. To test this, make
+        // the account have a different app.
         Account account = mockGetAccountById(ACCOUNT_ID, true);
         account.setStudyId("wrong-study");
 
@@ -869,7 +869,7 @@ public class AccountServiceTest extends Mockito {
         App app = App.create();
         app.setVerifyChannelOnSignInEnabled(true);
 
-        // execute and verify - Verify just ID, study, and email, and health code mapping is enough.
+        // execute and verify - Verify just ID, app, and email, and health code mapping is enough.
         SignIn phoneSignIn = new SignIn.Builder().withAppId(TEST_APP_ID).withPhone(PHONE)
                 .withPassword(DUMMY_PASSWORD).build();
         service.authenticate(app, phoneSignIn);
@@ -911,7 +911,7 @@ public class AccountServiceTest extends Mockito {
         App app = App.create();
         app.setVerifyChannelOnSignInEnabled(false);
 
-        // execute and verify - Verify just ID, study, and email, and health code mapping is enough. 
+        // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
         service.authenticate(app, phoneSignIn);
     }
     

@@ -73,7 +73,7 @@ public class HibernateAssessment {
     private String originGuid;
     
     // Substudy will be refactored into organization with a system-wide, unique
-    // identifier of "appId:substudyId". In local studies it remains identical 
+    // identifier of "appId:substudyId". In local apps it remains identical 
     // to the substudy ID, but in the shared context, the compound key must be 
     // used.
     private String ownerId;
