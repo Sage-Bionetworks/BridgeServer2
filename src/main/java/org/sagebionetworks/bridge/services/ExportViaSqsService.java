@@ -25,7 +25,7 @@ public class ExportViaSqsService implements ExportService {
     // constants - these are package scoped so unit tests can access them
     static final String CONFIG_KEY_EXPORTER_SQS_QUEUE_URL = "exporter.request.sqs.queue.url";
     static final String REQUEST_KEY_END_DATE_TIME = "endDateTime";
-    static final String REQUEST_KEY_STUDY_WHITELIST = "studyWhitelist";
+    static final String REQUEST_KEY_APP_WHITELIST = "studyWhitelist";
     static final String REQUEST_KEY_TAG = "tag";
     static final String REQUEST_KEY_USE_LAST_EXPORT_TIME = "useLastExportTime";
 
@@ -46,21 +46,21 @@ public class ExportViaSqsService implements ExportService {
 
     /** {@inheritDoc} */
     @Override
-    public void startOnDemandExport(String studyId) throws JsonProcessingException {
+    public void startOnDemandExport(String appId) throws JsonProcessingException {
         // endDateTime is set to 5 seconds ago, to account for clock skew.
         String endDateTimeStr = DateTime.now(BridgeConstants.LOCAL_TIME_ZONE).minusSeconds(5).toString();
 
-        // Study whitelist is needed because we only export the given app.
-        ArrayNode studyWhitelistNode = JSON_OBJECT_MAPPER.createArrayNode();
-        studyWhitelistNode.add(studyId);
+        // App whitelist is needed because we only export the given app.
+        ArrayNode appWhitelistNode = JSON_OBJECT_MAPPER.createArrayNode();
+        appWhitelistNode.add(appId);
 
         // Generate tag, for both logging here and for the BridgeEX request
-        String tag = "On-Demand Export studyId=" + studyId + " endDateTime=" + endDateTimeStr;
+        String tag = "On-Demand Export appId=" + appId + " endDateTime=" + endDateTimeStr;
 
         // Create exporter request as a JSON node.
         ObjectNode requestNode = JSON_OBJECT_MAPPER.createObjectNode();
         requestNode.put(REQUEST_KEY_END_DATE_TIME, endDateTimeStr);
-        requestNode.set(REQUEST_KEY_STUDY_WHITELIST, studyWhitelistNode);
+        requestNode.set(REQUEST_KEY_APP_WHITELIST, appWhitelistNode);
         requestNode.put(REQUEST_KEY_TAG, tag);
         requestNode.put(REQUEST_KEY_USE_LAST_EXPORT_TIME, true);
 

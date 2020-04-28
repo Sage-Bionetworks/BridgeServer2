@@ -73,7 +73,7 @@ public class BasicEmailProviderTest {
     public void withOverrideSenderEmail() {
         // Set up dependencies
         App app = App.create();
-        app.setName("Study Name");
+        app.setName("App Name");
         app.setSupportEmail("email@email.com");
 
         TemplateRevision revision = TemplateRevision.create();

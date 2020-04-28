@@ -42,7 +42,7 @@ public interface AccountDao {
     void updateAccount(Account account, Consumer<Account> afterPersistConsumer);
     
     /**
-     * Get an account in the context of a study by the user's ID, email address, health code,
+     * Get an account in the context of an app by the user's ID, email address, health code,
      * phone number, or Synapse user ID. 
      */
     Optional<Account> getAccount(AccountId accountId);

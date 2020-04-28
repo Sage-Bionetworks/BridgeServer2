@@ -51,13 +51,13 @@ public class ExternalIdService {
         this.substudyService = substudyService;
     }
     
-    public Optional<ExternalIdentifier> getExternalId(String studyId, String externalId) {
-        checkNotNull(studyId);
+    public Optional<ExternalIdentifier> getExternalId(String appId, String externalId) {
+        checkNotNull(appId);
         
         if (StringUtils.isBlank(externalId)) {
             return Optional.empty();
         }
-        return externalIdDao.getExternalId(studyId, externalId);
+        return externalIdDao.getExternalId(appId, externalId);
     }
     
     public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(
@@ -80,7 +80,7 @@ public class ExternalIdService {
         checkNotNull(externalId);
         
         String appId = BridgeUtils.getRequestContext().getCallerAppId();
-        externalId.setStudyId(appId);
+        externalId.setAppId(appId);
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error

@@ -62,7 +62,7 @@ public class ActivityEventService {
 
         if (!app.getActivityEventKeys().contains(eventKey)
                 && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
-            throw new BadRequestException("Study's ActivityEventKeys does not contain eventKey: " + eventKey);
+            throw new BadRequestException("App's ActivityEventKeys does not contain eventKey: " + eventKey);
         }
 
         ActivityEvent event = new DynamoActivityEvent.Builder()
@@ -171,7 +171,7 @@ public class ActivityEventService {
     /**
     * Gets the activity events times for a specific user in order to schedule against them.
     */
-    public Map<String, DateTime> getActivityEventMap(String studyId, String healthCode) {
+    public Map<String, DateTime> getActivityEventMap(String appId, String healthCode) {
         checkNotNull(healthCode);
         Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode);
         Builder<String, DateTime> builder = ImmutableMap.<String, DateTime>builder();
@@ -180,7 +180,7 @@ public class ActivityEventService {
         DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
         DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
         if (createdOn == null) {
-            App app = appService.getApp(studyId);
+            App app = appService.getApp(appId);
             StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
             publishCreatedOnEvent(healthCode, createdOn);
@@ -198,8 +198,8 @@ public class ActivityEventService {
         return builder.build();
     }
     
-    public List<ActivityEvent> getActivityEventList(String studyId, String healthCode) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(studyId, healthCode);
+    public List<ActivityEvent> getActivityEventList(String appId, String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(appId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {

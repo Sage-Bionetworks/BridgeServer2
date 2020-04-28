@@ -60,7 +60,7 @@ public class SchedulePlanService {
         checkNotNull(plan);
 
         // Plan must always be in user's app, remove version and recreate guid for copies
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         plan.setVersion(null);
         plan.setGuid(BridgeUtils.generateGuid());
         
@@ -91,7 +91,7 @@ public class SchedulePlanService {
         checkNotNull(plan);
         
         // Plan must always be in user's app
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         
         // This can happen if the submission is invalid, we want to proceed to validation
         if (plan.getStrategy() != null) {
@@ -116,8 +116,8 @@ public class SchedulePlanService {
         Validate.entityThrowingException(
                 new SchedulePlanValidator(app.getDataGroups(), substudyIds, app.getTaskIdentifiers()), plan);
         
-        lookupSurveyReferenceIdentifiers(plan.getStudyKey(), plan);
-        return schedulePlanDao.updateSchedulePlan(plan.getStudyKey(), plan);
+        lookupSurveyReferenceIdentifiers(plan.getAppId(), plan);
+        return schedulePlanDao.updateSchedulePlan(plan.getAppId(), plan);
     }
 
     public void deleteSchedulePlan(String studyIdentifier, String guid) {

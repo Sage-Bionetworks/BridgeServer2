@@ -62,7 +62,7 @@ public class SchedulePlanValidatorTest {
     @Test
     public void studyKeyRequired() {
         SchedulePlan plan = getValidSimpleStrategy();
-        plan.setStudyKey(null);
+        plan.setAppId(null);
         assertMessage(plan, "studyKey cannot be missing, null, or blank", "studyKey");
     }
 
@@ -127,7 +127,7 @@ public class SchedulePlanValidatorTest {
         // This is valid, then you can manipulate it to invalidate it.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("a label");
-        plan.setStudyKey("study-key");
+        plan.setAppId("study-key");
         plan.setStrategy(strategy);
         return plan;
     }
@@ -140,7 +140,7 @@ public class SchedulePlanValidatorTest {
         // This is valid, then you can manipulate it to invalidate it.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("a label");
-        plan.setStudyKey("study-key");
+        plan.setAppId("study-key");
         plan.setStrategy(strategy);
         return plan;
     }

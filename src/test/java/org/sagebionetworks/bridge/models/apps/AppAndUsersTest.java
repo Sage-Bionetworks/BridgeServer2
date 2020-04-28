@@ -15,11 +15,9 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
 
-public class StudyAndUsersTest {
-    private static final String TEST_STUDY_NAME = "test=study-name";
+public class AppAndUsersTest {
+    private static final String TEST_APP_NAME = "test=app-name";
     private static final String TEST_USER_EMAIL = "test+user@email.com";
     private static final String TEST_USER_EMAIL_2 = "test+user+2@email.com";
     private static final String TEST_USER_FIRST_NAME = "test_user_first_name";
@@ -29,38 +27,47 @@ public class StudyAndUsersTest {
     private static final String TEST_ADMIN_ID_2 = "3348228";
 
     @Test
-    public void deserializeCorrectly() throws Exception {
+    public void deserializeWithStudyProperty() throws Exception {
+        deserializeCorrectly("study");
+    }
+    
+    @Test
+    public void deserializeWithAppProperty() throws Exception {
+        deserializeCorrectly("app");
+    }
+    
+    private void deserializeCorrectly(String appFieldName) throws Exception {
         // mock
-        String json = "{\n" +
-                "\t\"adminIds\": [\"3346407\", \"3348228\"],\n" +
-                "\t\"study\": {\n" +
-                "\t  \"identifier\": \""+TEST_APP_ID+"\",\n" +
-                "\t  \"supportEmail\": \"test+user@email.com\",\n" +
-                "\t  \"name\": \"test=study-name\",\n" +
-                "\t  \"active\": \"true\"\n" +
-                "\t},\n" +
-                "\t\"users\": [\n" +
-                "\t\t{\n" +
-                "\t\t\t\"firstName\": \"test_user_first_name\",\n" +
-                "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
-                "\t\t\t\"email\": \"test+user@email.com\",\n" +
-                "\t\t\t\"password\": \"test_user_password\",\n" +
-                "\t\t\t\"roles\": [\"developer\",\"researcher\"]\n" +
-                "\t\t},\n" +
-                "\t\t{\n" +
-                "\t\t\t\"firstName\": \"test_user_first_name\",\n" +
-                "\t\t\t\"lastName\": \"test_user_last_name\",\n" +
-                "\t\t\t\"email\": \"test+user+2@email.com\",\n" +
-                "\t\t\t\"password\": \"test_user_password\",\n" +
-                "\t\t\t\"roles\": [\"researcher\"]\n" +
-                "\t\t}\n" +
-                "\t]\n" +
+        String json = "{" +
+                "  \"adminIds\": [\"3346407\", \"3348228\"]," +
+                "  \"" + appFieldName + "\": {" +
+                "    \"identifier\": \""+TEST_APP_ID+"\"," +
+                "    \"supportEmail\": \"test+user@email.com\"," +
+                "    \"name\": \"test=app-name\"," +
+                "    \"active\": \"true\"" +
+                "  }," +
+                "  \"users\": [" +
+                "    {" +
+                "      \"firstName\": \"test_user_first_name\"," +
+                "      \"lastName\": \"test_user_last_name\"," +
+                "      \"email\": \"test+user@email.com\"," +
+                "      \"password\": \"test_user_password\"," +
+                "      \"roles\": [\"developer\",\"researcher\"]" +
+                "    }," +
+                "    {" +
+                "      \"firstName\": \"test_user_first_name\"," +
+                "      \"lastName\": \"test_user_last_name\"," +
+                "      \"email\": \"test+user+2@email.com\"," +
+                "      \"password\": \"test_user_password\"," +
+                "      \"roles\": [\"researcher\"]" +
+                "    }" +
+                "  ]" +
                 "}";
 
         App app = new DynamoApp();
         app.setActive(true);
         app.setIdentifier(TEST_APP_ID);
-        app.setName(TEST_STUDY_NAME);
+        app.setName(TEST_APP_NAME);
         app.setSupportEmail(TEST_USER_EMAIL);
 
         // make it ordered
@@ -87,9 +94,9 @@ public class StudyAndUsersTest {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        StudyAndUsers retStudyAndUsers = BridgeObjectMapper.get().readValue(json, StudyAndUsers.class);
+        AppAndUsers retStudyAndUsers = BridgeObjectMapper.get().readValue(json, AppAndUsers.class);
         List<String> retAdminIds = retStudyAndUsers.getAdminIds();
-        App retApp = retStudyAndUsers.getStudy();
+        App retApp = retStudyAndUsers.getApp();
         List<StudyParticipant> userList = retStudyAndUsers.getUsers();
 
         // verify

@@ -19,13 +19,13 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 
 @Component
-public class StudyAndUsersValidator implements Validator {
+public class AppAndUsersValidator implements Validator {
 
     private SynapseClient synapseClient;
 
@@ -36,14 +36,14 @@ public class StudyAndUsersValidator implements Validator {
     
     @Override
     public boolean supports(Class<?> clazz) {
-        return StudyAndUsers.class.isAssignableFrom(clazz);
+        return AppAndUsers.class.isAssignableFrom(clazz);
     }
 
     @Override
     public void validate(Object object, Errors errors) {
-        StudyAndUsers studyAndUsers = (StudyAndUsers)object;
+        AppAndUsers appAndUsers = (AppAndUsers)object;
         
-        List<String> adminIds = studyAndUsers.getAdminIds();
+        List<String> adminIds = appAndUsers.getAdminIds();
         if (adminIds == null || adminIds.isEmpty()) {
             errors.rejectValue("adminIds", "are required");
         } else {
@@ -64,7 +64,7 @@ public class StudyAndUsersValidator implements Validator {
             }
         }
         
-        List<StudyParticipant> users = studyAndUsers.getUsers();
+        List<StudyParticipant> users = appAndUsers.getUsers();
         if (users == null || users.isEmpty()) {
             errors.rejectValue("users", "are required");
         } else {
@@ -94,11 +94,11 @@ public class StudyAndUsersValidator implements Validator {
             }
         }
         
-        App app = studyAndUsers.getStudy();
+        App app = appAndUsers.getApp();
         if (app == null) {
-            errors.rejectValue("study", "cannot be null");
+            errors.rejectValue("app", "cannot be null");
         } else {
-            errors.pushNestedPath("study");
+            errors.pushNestedPath("app");
             try {
                 BridgeUtils.toSynapseFriendlyName(app.getName());    
             } catch(NullPointerException | IllegalArgumentException e) {

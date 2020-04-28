@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.AppValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class DefaultStudyBootstrapperTest extends Mockito {
@@ -57,7 +57,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     DefaultStudyBootstrapper defaultStudyBootstrapper;
     
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
 
     @Captor
     ArgumentCaptor<SubpopulationGuid> subpopCaptor;
@@ -76,16 +76,16 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     public void createsDefaultStudyWhenMissing() {
         defaultStudyBootstrapper.onApplicationEvent(null);
 
-        verify(mockAppService, times(2)).createApp(studyCaptor.capture());
+        verify(mockAppService, times(2)).createApp(appCaptor.capture());
 
-        List<App> createdStudyList = studyCaptor.getAllValues();
+        List<App> createdStudyList = appCaptor.getAllValues();
 
         // Validate api app.
         App app = createdStudyList.get(0);
-        assertEquals(app.getName(), "Test Study");
+        assertEquals(app.getName(), "Test App");
         assertEquals(app.getIdentifier(), API_APP_ID);
         assertEquals(app.getSponsorName(), "Sage Bionetworks");
-        assertEquals(app.getShortName(), "TestStudy");
+        assertEquals(app.getShortName(), "TestApp");
         assertEquals(app.getMinAgeOfConsent(), 18);
         assertEquals(app.getConsentNotificationEmail(), "bridge-testing+consent@sagebase.org");
         assertEquals(app.getTechnicalEmail(), "bridge-testing+technical@sagebase.org");
@@ -102,7 +102,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         // So it doesn't get out of sync, validate the app. However, default templates are set 
         // by the service. so those two errors are expected.
         try {
-            Validate.entityThrowingException(new StudyValidator(), app);    
+            Validate.entityThrowingException(new AppValidator(), app);    
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().keySet().size(), 2);
             assertEquals(e.getErrors().get("verifyEmailTemplate").size(), 1);

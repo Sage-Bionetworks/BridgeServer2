@@ -112,12 +112,12 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
     
     @Override
-    public ReportTypeResourceList<? extends ReportIndex> getIndices(String studyId, ReportType reportType) {
-        checkNotNull(studyId);
+    public ReportTypeResourceList<? extends ReportIndex> getIndices(String appId, ReportType reportType) {
+        checkNotNull(appId);
         checkNotNull(reportType);
         
         // Don't use ReportDataKey because it enforces presence of healthCode for ReportType.PARTICIPANT.
-        String key = String.format("%s:%s", studyId, reportType.name());
+        String key = String.format("%s:%s", appId, reportType.name());
         
         DynamoReportIndex hashKey = new DynamoReportIndex();
         hashKey.setKey(key);

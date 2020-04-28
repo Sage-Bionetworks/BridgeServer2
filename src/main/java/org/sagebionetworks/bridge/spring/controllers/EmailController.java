@@ -41,11 +41,14 @@ public class EmailController extends BaseController {
                 throw new BridgeServiceException("No authentication token provided.", SC_UNAUTHORIZED);
             }
             // App has to be provided as an URL parameter
-            String studyId = request().getParameter("study");
-            if (studyId == null) {
-                throw new BadRequestException("Study not found.");
+            String appId = request().getParameter("study");
+            if (appId == null) {
+                appId = request().getParameter("appId");
+                if (appId == null) {
+                    throw new BadRequestException("App ID not found.");    
+                }
             }
-            App app = appService.getApp(studyId);
+            App app = appService.getApp(appId);
             
             // MailChimp submits email as data[email]
             String email = request().getParameter("data[email]");

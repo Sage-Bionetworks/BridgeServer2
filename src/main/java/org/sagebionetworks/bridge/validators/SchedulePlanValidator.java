@@ -28,7 +28,7 @@ public class SchedulePlanValidator implements Validator {
     @Override
     public void validate(Object obj, Errors errors) {
         SchedulePlan plan = (SchedulePlan)obj;
-        if (isBlank(plan.getStudyKey())) {
+        if (isBlank(plan.getAppId())) {
             errors.rejectValue("studyKey", "cannot be missing, null, or blank");
         }
         if (isBlank(plan.getLabel())) {

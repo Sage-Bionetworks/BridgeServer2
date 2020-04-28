@@ -123,7 +123,7 @@ public class SmsMessageProvider {
             checkNotNull(revision);
             checkNotNull(phone);
             checkNotNull(smsType);
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
+            tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
             
             // overwriting the app's short name field with a default value, if needed
             String studyShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();

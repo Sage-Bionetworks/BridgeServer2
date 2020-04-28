@@ -51,7 +51,7 @@ public class DynamoAppConfigTest {
     private static final List<FileReference> FILE_REFS = ImmutableList.of(
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
-    private static final String STUDY_ID = TestUtils.randomName(DynamoAppConfigTest.class);
+    private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
     @Test
     public void hashCodeEquals() {
@@ -92,7 +92,7 @@ public class DynamoAppConfigTest {
         JsonNode clientData = TestUtils.getClientData();
         
         AppConfig appConfig = AppConfig.create();
-        appConfig.setAppId(STUDY_ID);
+        appConfig.setAppId(APP_ID);
         appConfig.setLabel(LABEL);
         appConfig.setCriteria(criteria);
         appConfig.setCreatedOn(TIMESTAMP.getMillis());

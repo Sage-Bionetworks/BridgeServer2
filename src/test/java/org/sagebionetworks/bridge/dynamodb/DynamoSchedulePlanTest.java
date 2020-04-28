@@ -38,7 +38,7 @@ public class DynamoSchedulePlanTest {
         plan.setLabel("Label");
         plan.setGuid("guid");
         plan.setModifiedOn(datetime.getMillis());
-        plan.setStudyKey(TEST_APP_ID);
+        plan.setAppId(TEST_APP_ID);
         plan.setVersion(2L);
         plan.setDeleted(true);
         plan.setStrategy(strategy);
@@ -52,6 +52,7 @@ public class DynamoSchedulePlanTest {
         assertEquals(node.get("label").textValue(), "Label");
         assertTrue(node.get("deleted").booleanValue());
         assertNull(node.get("studyKey"));
+        assertNull(node.get("appId"));
         assertNotNull(node.get("strategy"));
         assertEquals(DateTime.parse(node.get("modifiedOn").asText()), datetime);
 
@@ -67,15 +68,15 @@ public class DynamoSchedulePlanTest {
     }
     
     @Test
-    public void jsonStudyKeyIsIgnored() throws Exception {
-        String json = TestUtils.createJson("{'studyKey':'study-key'}");
+    public void jsonAppIdIsIgnored() throws Exception {
+        String json = TestUtils.createJson("{'appId':'ignore-me'}");
         
         SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
-        assertNull(plan.getStudyKey());
+        assertNull(plan.getAppId());
         
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         plan = DynamoSchedulePlan.fromJson(node);
-        assertNull(plan.getStudyKey());
+        assertNull(plan.getAppId());
     }
 
     @Test(expectedExceptions = BadRequestException.class)

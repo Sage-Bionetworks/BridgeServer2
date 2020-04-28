@@ -85,6 +85,7 @@ public class DynamoAppConfigElementTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(element);
         assertNull(node.get("key"));
         assertNull(node.get("studyId"));
+        assertNull(node.get("appId"));
         assertEquals(node.get("revision").longValue(), 1L);
         assertEquals(node.get("id").textValue(), ID);
         assertTrue(node.get("deleted").booleanValue());

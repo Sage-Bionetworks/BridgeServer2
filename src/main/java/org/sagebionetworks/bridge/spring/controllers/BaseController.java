@@ -289,10 +289,10 @@ public abstract class BaseController {
         return languages;
     }
 
-    CriteriaContext getCriteriaContext(String studyId) {
+    CriteriaContext getCriteriaContext(String appId) {
         RequestContext reqContext = BridgeUtils.getRequestContext();
         return new CriteriaContext.Builder()
-            .withAppId(studyId)
+            .withAppId(appId)
             .withLanguages(reqContext.getCallerLanguages())
             .withClientInfo(reqContext.getCallerClientInfo())
             .build();

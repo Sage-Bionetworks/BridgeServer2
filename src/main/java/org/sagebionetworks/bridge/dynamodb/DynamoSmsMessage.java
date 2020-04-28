@@ -23,7 +23,7 @@ public class DynamoSmsMessage implements SmsMessage {
     private String messageBody;
     private String messageId;
     private SmsType smsType;
-    private String studyId;
+    private String appId;
 
     /** {@inheritDoc} */
     @DynamoDBHashKey
@@ -106,13 +106,13 @@ public class DynamoSmsMessage implements SmsMessage {
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-sentOn-index")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 }

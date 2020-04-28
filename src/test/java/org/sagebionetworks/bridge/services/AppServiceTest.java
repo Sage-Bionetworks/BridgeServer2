@@ -81,7 +81,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -90,8 +90,8 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
-import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
-import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.AppAndUsersValidator;
+import org.sagebionetworks.bridge.validators.AppValidator;
 
 public class AppServiceTest extends Mockito {
     private static final long BRIDGE_ADMIN_TEAM_ID = 1357L;
@@ -186,9 +186,9 @@ public class AppServiceTest extends Mockito {
                 "Verify your study email"));
         service.setAppEmailVerificationTemplate(mockTemplateAsSpringResource(
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
-        service.setValidator(new StudyValidator());
+        service.setValidator(new AppValidator());
         
-        StudyAndUsersValidator studyAndUsersValidator = new StudyAndUsersValidator();
+        AppAndUsersValidator studyAndUsersValidator = new AppAndUsersValidator();
         studyAndUsersValidator.setSynapseClient(mockSynapseClient);
         service.setStudyAndUsersValidator(studyAndUsersValidator);
 
@@ -405,7 +405,7 @@ public class AppServiceTest extends Mockito {
         app.setConsentNotificationEmail(null);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
         
-        service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_APP_ID, AppEmailType.CONSENT_NOTIFICATION);
     }
     
     @Test
@@ -415,7 +415,7 @@ public class AppServiceTest extends Mockito {
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute.
-        service.sendVerifyEmail(TEST_APP_ID, StudyEmailType.CONSENT_NOTIFICATION);
+        service.sendVerifyEmail(TEST_APP_ID, AppEmailType.CONSENT_NOTIFICATION);
 
         // Verify email verification email.
         verifyEmailVerificationEmail(app.getConsentNotificationEmail());
@@ -423,17 +423,17 @@ public class AppServiceTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullToken() {
-        service.verifyEmail(TEST_APP_ID, null, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, null, AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailEmptyToken() {
-        service.verifyEmail(TEST_APP_ID, "", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, "", AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailBlankToken() {
-        service.verifyEmail(TEST_APP_ID, "   ", StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, "   ", AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -444,7 +444,7 @@ public class AppServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class)
     public void verifyEmailNullVerificationData() {
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(null);
-        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -462,7 +462,7 @@ public class AppServiceTest extends Mockito {
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -480,7 +480,7 @@ public class AppServiceTest extends Mockito {
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -498,7 +498,7 @@ public class AppServiceTest extends Mockito {
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Will throw.
-        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, AppEmailType.CONSENT_NOTIFICATION);
     }
 
     @Test
@@ -513,10 +513,10 @@ public class AppServiceTest extends Mockito {
         // Mock getting the app from the cache.
         App app = getTestStudy();
         app.setConsentNotificationEmail("correct-email@example.com");
-        when(mockCacheProvider.getStudy(TEST_APP_ID)).thenReturn(app);
+        when(mockCacheProvider.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Execute. Verify consentNotificationEmailVerified is now true.
-        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, StudyEmailType.CONSENT_NOTIFICATION);
+        service.verifyEmail(TEST_APP_ID, VERIFICATION_TOKEN, AppEmailType.CONSENT_NOTIFICATION);
 
         ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
         verify(mockAppDao).updateApp(savedStudyCaptor.capture());
@@ -525,7 +525,7 @@ public class AppServiceTest extends Mockito {
         assertTrue(savedApp.isConsentNotificationEmailVerified());
 
         // Verify that we cached the app.
-        verify(mockCacheProvider).setStudy(savedApp);
+        verify(mockCacheProvider).setApp(savedApp);
 
         // Verify that we removed the used token.
         verify(mockCacheProvider).removeObject(VER_CACHE_KEY);
@@ -711,7 +711,7 @@ public class AppServiceTest extends Mockito {
                 app.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());
         verify(mockTopicService).deleteAllTopics(app.getIdentifier());
-        verify(mockCacheProvider).removeStudy(TEST_APP_ID);
+        verify(mockCacheProvider).removeApp(TEST_APP_ID);
         verify(mockTemplateService).deleteTemplatesForStudy(TEST_APP_ID);
         verify(mockFileService).deleteAllStudyFiles(TEST_APP_ID);
     }
@@ -924,7 +924,7 @@ public class AppServiceTest extends Mockito {
                 .build();
         
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
 
         // spy
@@ -962,7 +962,7 @@ public class AppServiceTest extends Mockito {
     public void createStudyAndUsersSynapseUserNotFound() throws SynapseException {
         when(mockSynapseClient.getUserProfile(any())).thenThrow(new SynapseNotFoundException());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("bad-admin-id"), app, null);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(ImmutableList.of("bad-admin-id"), app, null);
 
         service.createAppAndUsers(mockStudyAndUsers);
     }
@@ -990,7 +990,7 @@ public class AppServiceTest extends Mockito {
         view.setScopeIds(new ArrayList<>());
         when(mockSynapseClient.getEntity(SYNAPSE_TRACKING_VIEW_ID, EntityView.class)).thenReturn(view);
 
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
 
         service.createAppAndUsers(mockStudyAndUsers);
         
@@ -1023,7 +1023,7 @@ public class AppServiceTest extends Mockito {
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID).withEmail(TEST_USER_EMAIL).withRoles(roles).build());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
 
         service.createAppAndUsers(mockStudyAndUsers);
     }
@@ -1037,7 +1037,7 @@ public class AppServiceTest extends Mockito {
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
                 .withSynapseUserId(TEST_USER_SYNAPSE_ID).build());
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of("12345678"), app, participants);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(ImmutableList.of("12345678"), app, participants);
 
         service.createAppAndUsers(mockStudyAndUsers);
     }
@@ -1068,7 +1068,7 @@ public class AppServiceTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(null, app, mockUsers);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1091,7 +1091,7 @@ public class AppServiceTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(null, app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(null, app, mockUsers);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1123,7 +1123,7 @@ public class AppServiceTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(ImmutableList.of(), app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(ImmutableList.of(), app, mockUsers);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1137,7 +1137,7 @@ public class AppServiceTest extends Mockito {
         app.setSynapseDataAccessTeamId(null);
 
         List<StudyParticipant> mockUsers = new ArrayList<>();
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1150,7 +1150,7 @@ public class AppServiceTest extends Mockito {
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, null);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, null);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1182,7 +1182,7 @@ public class AppServiceTest extends Mockito {
                 .build();
 
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, null, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, null, mockUsers);
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1205,7 +1205,7 @@ public class AppServiceTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
                 .thenReturn(new IdentifierHolder("userId"));
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1308,7 +1308,7 @@ public class AppServiceTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean()))
                 .thenReturn(new IdentifierHolder("userId"));
         
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, ImmutableList.of(mockUser1));
 
         // execute
         service.createAppAndUsers(mockStudyAndUsers);
@@ -1579,7 +1579,7 @@ public class AppServiceTest extends Mockito {
         assertTrue(app.isAppIdExcludedInExport());
         assertEquals(app.getUploadValidationStrictness(), REPORT);
 
-        verify(mockCacheProvider).setStudy(app);
+        verify(mockCacheProvider).setApp(app);
         
         // A default, active consent should be created for the app.
         verify(mockSubpopService).createDefaultSubpopulation(app);
@@ -1599,7 +1599,7 @@ public class AppServiceTest extends Mockito {
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
         assertTrue(newApp.getActivityEventKeys().isEmpty());
 
-        verify(mockCacheProvider).setStudy(newApp);
+        verify(mockCacheProvider).setApp(newApp);
 
         // make some (non-admin) updates, these should change
         newApp.setConsentNotificationEmailVerified(true);
@@ -1613,16 +1613,16 @@ public class AppServiceTest extends Mockito {
         assertTrue(updatedApp.isStrictUploadValidationEnabled());
         assertEquals(updatedApp.getUploadValidationStrictness(), WARNING);
 
-        verify(mockCacheProvider).removeStudy(updatedApp.getIdentifier());
-        verify(mockCacheProvider, times(2)).setStudy(updatedApp);
+        verify(mockCacheProvider).removeApp(updatedApp.getIdentifier());
+        verify(mockCacheProvider, times(2)).setApp(updatedApp);
 
         // delete app
         reset(mockCacheProvider);
         service.deleteApp(app.getIdentifier(), true);
         
-        verify(mockCacheProvider).getStudy(app.getIdentifier());
-        verify(mockCacheProvider).setStudy(updatedApp);
-        verify(mockCacheProvider).removeStudy(app.getIdentifier());
+        verify(mockCacheProvider).getApp(app.getIdentifier());
+        verify(mockCacheProvider).setApp(updatedApp);
+        verify(mockCacheProvider).removeApp(app.getIdentifier());
 
         verify(mockAppDao).deleteApp(updatedApp);
         verify(mockCompoundActivityDefinitionService)

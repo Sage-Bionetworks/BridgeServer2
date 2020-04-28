@@ -135,7 +135,7 @@ public class ScheduleControllerTest extends Mockito {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("Label");
         plan.setGuid("BBB");
-        plan.setStudyKey("study-key");
+        plan.setAppId("study-key");
         plan.setStrategy(strategy);
         plans.add(plan);
 
@@ -149,7 +149,7 @@ public class ScheduleControllerTest extends Mockito {
         plan = new DynamoSchedulePlan();
         plan.setLabel("Label");
         plan.setGuid("BBB");
-        plan.setStudyKey("study-key");
+        plan.setAppId("study-key");
         plan.setStrategy(strategy);
         plans.add(plan);
         

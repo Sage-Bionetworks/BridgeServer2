@@ -36,8 +36,8 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 @Component
-public class StudyValidator implements Validator {
-    public static final StudyValidator INSTANCE = new StudyValidator();
+public class AppValidator implements Validator {
+    public static final AppValidator INSTANCE = new AppValidator();
     
     private static final int MAX_SYNAPSE_LENGTH = 250;
     private static final int METADATA_MAX_BYTES = 2500;
@@ -45,11 +45,6 @@ public class StudyValidator implements Validator {
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
     protected static final String EMAIL_ERROR = "is not a comma-separated list of email addresses";
     
-    /**
-     * Inspect StudyParticipant for its field names; these cannot be used as user profile attributes because UserProfile
-     * collapses these values into the top-level JSON it returns (unlike StudyParticipant where these values are a map
-     * under the attribute property).
-     */
     private static final Set<String> RESERVED_ATTR_NAMES = Sets.newHashSet();
     static {
         Field[] fields = StudyParticipant.class.getDeclaredFields();
@@ -221,7 +216,7 @@ public class StudyValidator implements Validator {
         if (app.getAppleAppLinks() != null && !app.getAppleAppLinks().isEmpty()) {
             validateAppLinks(errors, "appleAppLinks", app.getAppleAppLinks(), (AppleAppLink link) -> {
                 if (isBlank(link.getAppId())) {
-                    errors.rejectValue("appID", "cannot be blank or null");
+                    errors.rejectValue("appId", "cannot be blank or null");
                 }
                 if (link.getPaths() == null || link.getPaths().isEmpty()) {
                     errors.rejectValue("paths", "cannot be null or empty");

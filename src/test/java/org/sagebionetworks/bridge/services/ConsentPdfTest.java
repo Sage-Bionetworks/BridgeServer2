@@ -41,7 +41,7 @@ public class ConsentPdfTest {
                 "conf/app-defaults/consent-page.xhtml").getFile()));
         
         app = new DynamoApp();
-        app.setName("Study Name");
+        app.setName("App Name");
         app.setSponsorName("Sponsor Name");
         app.setSupportEmail("sender@default.com");
         app.setConsentNotificationEmail("consent@consent.com");

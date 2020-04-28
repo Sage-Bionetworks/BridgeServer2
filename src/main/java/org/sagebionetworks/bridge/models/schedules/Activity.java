@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * An activity we wish a study participant to do. The two main types of activities are 
+ * An activity we wish a participant to do. The two main types of activities are 
  * tasks in the application (such as taking a tapping test), and surveys to be filled 
  * out and returned to the sever.
  * 

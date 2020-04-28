@@ -811,7 +811,7 @@ public class ParticipantService {
         if (account.getPhone() == null || !TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Account does not have a verified phone number");
         }
-        Map<String,String> variables = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> variables = BridgeUtils.appTemplateVariables(app);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent(template.getMessage());

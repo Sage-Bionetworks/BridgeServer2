@@ -11,6 +11,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 /**
  * Implementation of external identifier.
@@ -18,27 +19,28 @@ import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 @DynamoDBTable(tableName = "ExternalIdentifier")
 public final class DynamoExternalIdentifier implements ExternalIdentifier {
 
-    private String studyId;
+    private String appId;
     private String substudyId;
     private String identifier;
     private String healthCode;
     
     public DynamoExternalIdentifier() {}
     
-    public DynamoExternalIdentifier(String studyId, String identifier) {
-        this.studyId = studyId;
+    public DynamoExternalIdentifier(String appId, String identifier) {
+        this.appId = appId;
         this.identifier = identifier;
     }
     
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-substudyId-index")
     @DynamoDBHashKey
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    @JsonAlias("studyId")
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     
     @DynamoDBIndexRangeKey(attributeName = "substudyId", globalSecondaryIndexName = "studyId-substudyId-index")
@@ -73,7 +75,7 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
 
     @Override
     public int hashCode() {
-        return Objects.hash(healthCode, identifier, studyId, substudyId);
+        return Objects.hash(healthCode, identifier, appId, substudyId);
     }
 
     @Override
@@ -85,13 +87,13 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
         DynamoExternalIdentifier other = (DynamoExternalIdentifier) obj;
         return Objects.equals(healthCode, other.healthCode) &&
                Objects.equals(identifier, other.identifier) &&
-               Objects.equals(studyId, other.studyId) &&
+               Objects.equals(appId, other.appId) &&
                Objects.equals(substudyId, other.substudyId);
     }
 
     @Override
     public String toString() {
-        return "DynamoExternalIdentifier [studyId=" + studyId + ", substudyId=" + substudyId + ", identifier="
+        return "DynamoExternalIdentifier [appId=" + appId + ", substudyId=" + substudyId + ", identifier="
                 + identifier + ", healthCode=" + healthCode + "]";
     }
 }

@@ -72,7 +72,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -80,9 +80,9 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
-import org.sagebionetworks.bridge.validators.StudyAndUsersValidator;
+import org.sagebionetworks.bridge.validators.AppAndUsersValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
-import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.AppValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -117,8 +117,8 @@ public class AppService {
     private SendMailService sendMailService;
     private UploadCertificateService uploadCertService;
     private AppDao appDao;
-    private StudyValidator validator;
-    private StudyAndUsersValidator studyAndUsersValidator;
+    private AppValidator validator;
+    private AppAndUsersValidator studyAndUsersValidator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
     private NotificationTopicService topicService;
@@ -176,11 +176,11 @@ public class AppService {
         this.uploadCertService = uploadCertService;
     }
     @Autowired
-    final void setValidator(StudyValidator validator) {
+    final void setValidator(AppValidator validator) {
         this.validator = validator;
     }
     @Autowired
-    final void setStudyAndUsersValidator(StudyAndUsersValidator studyAndUsersValidator) {
+    final void setStudyAndUsersValidator(AppAndUsersValidator studyAndUsersValidator) {
         this.studyAndUsersValidator = studyAndUsersValidator;
     }
     @Autowired
@@ -232,10 +232,10 @@ public class AppService {
     public App getApp(String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
 
-        App app = cacheProvider.getStudy(identifier);
+        App app = cacheProvider.getApp(identifier);
         if (app == null) {
             app = appDao.getApp(identifier);
-            cacheProvider.setStudy(app);
+            cacheProvider.setApp(app);
         }
         if (app != null) {
             // If it it exists and has been deactivated, and this call is not supposed to retrieve deactivated
@@ -263,10 +263,10 @@ public class AppService {
         return appDao.getApps();
     }
 
-    public App createAppAndUsers(StudyAndUsers studyAndUsers) throws SynapseException {
+    public App createAppAndUsers(AppAndUsers studyAndUsers) throws SynapseException {
         checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
-        App app = studyAndUsers.getStudy();
+        App app = studyAndUsers.getApp();
         StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService, app, true);
         
         Errors errors = Validate.getErrorsFor(studyAndUsers);
@@ -285,7 +285,7 @@ public class AppService {
         Validate.throwException(errors, studyAndUsers);
 
         // Create app
-        app = createApp(studyAndUsers.getStudy());
+        app = createApp(studyAndUsers.getApp());
 
         // Create users and send password reset email
         for (StudyParticipant user: studyAndUsers.getUsers()) {
@@ -355,12 +355,12 @@ public class AppService {
         }
 
         app = appDao.createApp(app);
-        cacheProvider.setStudy(app);
+        cacheProvider.setApp(app);
         
         emailVerificationService.verifyEmailAddress(app.getSupportEmail());
 
         if (app.getConsentNotificationEmail() != null) {
-            sendVerifyEmail(app, StudyEmailType.CONSENT_NOTIFICATION);    
+            sendVerifyEmail(app, AppEmailType.CONSENT_NOTIFICATION);    
         }
         return app;
     }
@@ -559,7 +559,7 @@ public class AppService {
             emailVerificationService.verifyEmailAddress(app.getSupportEmail());
         }
         if (consentHasChanged && app.getConsentNotificationEmail() != null) {
-            sendVerifyEmail(app, StudyEmailType.CONSENT_NOTIFICATION);    
+            sendVerifyEmail(app, AppEmailType.CONSENT_NOTIFICATION);    
         }
         return updatedApp;
     }
@@ -569,9 +569,9 @@ public class AppService {
         // When the version is out of sync in the cache, then an exception is thrown and the app
         // is not updated in the cache. At least we can delete the app before this, so the next
         // time it should succeed. Have not figured out why they get out of sync.
-        cacheProvider.removeStudy(app.getIdentifier());
+        cacheProvider.removeApp(app.getIdentifier());
         App updatedApp = appDao.updateApp(app);
-        cacheProvider.setStudy(updatedApp);
+        cacheProvider.setApp(updatedApp);
         return updatedApp;
     }
 
@@ -641,7 +641,7 @@ public class AppService {
             fileService.deleteAllStudyFiles(existing.getIdentifier());
         }
 
-        cacheProvider.removeStudy(identifier);
+        cacheProvider.removeApp(identifier);
     }
     
     /**
@@ -674,13 +674,13 @@ public class AppService {
     }
     
     /** Sends the email verification email for the given app's email. */
-    public void sendVerifyEmail(String appId, StudyEmailType type) {
+    public void sendVerifyEmail(String appId, AppEmailType type) {
         App app = getApp(appId);
         sendVerifyEmail(app, type);
     }
 
     // Helper method to send the email verification email.
-    private void sendVerifyEmail(App app, StudyEmailType type) {
+    private void sendVerifyEmail(App app, AppEmailType type) {
         checkNotNull(app);
         if (type == null) {
             throw new BadRequestException("Email type must be specified");
@@ -726,7 +726,7 @@ public class AppService {
     }
 
     /** Verifies the email with the given verification token. */
-    public void verifyEmail(String appId, String token, StudyEmailType type) {
+    public void verifyEmail(String appId, String token, AppEmailType type) {
         // Verify input.
         checkNotNull(appId);
         if (StringUtils.isBlank(token)) {

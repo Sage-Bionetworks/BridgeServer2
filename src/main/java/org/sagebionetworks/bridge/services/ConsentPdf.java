@@ -123,7 +123,7 @@ public final class ConsentPdf {
         }
         
         // This is now a fragment, assemble accordingly
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app);
         map.put("participant.name", username);
         map.put("participant.signing.date", signingDate);
         map.put("participant.contactInfo", contactInfo);

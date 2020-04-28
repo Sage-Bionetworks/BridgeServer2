@@ -2694,7 +2694,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(externalId.getIdentifier(), EXTERNAL_ID);
         assertEquals(externalId.getHealthCode(), HEALTH_CODE);
-        assertEquals(externalId.getStudyId(), TEST_APP_ID);
+        assertEquals(externalId.getAppId(), TEST_APP_ID);
         assertEquals(externalId.getSubstudyId(), SUBSTUDY_ID);
     }    
     

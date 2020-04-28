@@ -480,7 +480,7 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void studyTemplateVariblesWorks() {
+    public void appTemplateVariblesWorks() {
         String host = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
         assertTrue(StringUtils.isNotBlank(host));
         
@@ -492,7 +492,7 @@ public class BridgeUtilsTest {
         app.setSupportEmail("supportEmail1");
         app.setTechnicalEmail("technicalEmail1");
         app.setConsentNotificationEmail("consentNotificationEmail1");
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> {
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app, (value) -> {
             return value.replaceAll("1", "2");
         });
         map.put("thisMap", "isMutable");
@@ -513,7 +513,7 @@ public class BridgeUtilsTest {
         App app = TestUtils.getValidApp(BridgeUtilsTest.class);
         app.setConsentNotificationEmail(null);
         
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app);
         assertNull(map.get("consentEmail"));
     }
     

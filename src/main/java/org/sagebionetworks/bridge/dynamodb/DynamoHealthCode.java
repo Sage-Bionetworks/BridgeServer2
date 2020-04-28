@@ -20,16 +20,16 @@ public class DynamoHealthCode {
 
     private String code;
     private Long version;
-    private String studyId;
+    private String appId;
 
     public DynamoHealthCode() {
     }
 
-    public DynamoHealthCode(String code, String studyId) {
+    public DynamoHealthCode(String code, String appId) {
         checkArgument(StringUtils.isNotBlank(code), "code cannot be null or empty.");
-        checkArgument(StringUtils.isNotBlank(studyId), "study identifier cannot be null or empty.");
+        checkArgument(StringUtils.isNotBlank(appId), "appId cannot be null or empty.");
         this.code = code;
-        this.studyId = studyId;
+        this.appId = appId;
     }
 
     @DynamoDBHashKey
@@ -50,11 +50,11 @@ public class DynamoHealthCode {
         this.version = version;
     }
 
-    @DynamoDBAttribute
-    public String getStudyIdentifier() {
-        return studyId;
+    @DynamoDBAttribute(attributeName = "studyIdentifier")
+    public String getAppId() {
+        return appId;
     }
-    public void setStudyIdentifier(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 }

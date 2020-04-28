@@ -154,7 +154,7 @@ public class DynamoExternalIdDaoMockTest {
         assertTrue(query.isConsistentRead());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_APP_ID);
+        assertEquals(id.getAppId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
 
@@ -477,7 +477,7 @@ public class DynamoExternalIdDaoMockTest {
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "CCCCC");
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_APP_ID);
+        assertEquals(id.getAppId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
 
@@ -499,7 +499,7 @@ public class DynamoExternalIdDaoMockTest {
         assertNull(query.getExclusiveStartKey());
 
         DynamoExternalIdentifier id = query.getHashKeyValues();
-        assertEquals(id.getStudyId(), TEST_APP_ID);
+        assertEquals(id.getAppId(), TEST_APP_ID);
         assertNull(id.getIdentifier());
     }
     

@@ -38,7 +38,7 @@ public class DynamoHealthCodeDaoTest {
     public void successfullyRetrieveStudyId() {
         DynamoHealthCode code = new DynamoHealthCode();
         code.setCode("healthCode");
-        code.setStudyIdentifier(TEST_APP_ID);
+        code.setAppId(TEST_APP_ID);
         code.setVersion(1L);
         when(mapper.load(any())).thenReturn(code);
         

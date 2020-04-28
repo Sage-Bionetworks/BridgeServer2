@@ -47,12 +47,12 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.EmailVerificationStatusHolder;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.EmailVerificationService;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
-import org.sagebionetworks.bridge.services.StudyEmailType;
+import org.sagebionetworks.bridge.services.AppEmailType;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 import org.sagebionetworks.client.exceptions.SynapseException;
@@ -146,7 +146,7 @@ public class AppController extends BaseController {
         
         List<App> apps = appService.getApps();
         if ("summary".equals(format) || "true".equals(summary)) {
-            // then only return active study as summary
+            // then only return active app as summary
             List<App> activeAppsSummary = apps.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
             Collections.sort(activeAppsSummary, APP_COMPARATOR);
@@ -172,8 +172,8 @@ public class AppController extends BaseController {
         List<String> appIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
         
         Stream<App> stream = null;
-        // In our current study permissions model, an admin in the API study is a 
-        // "cross-study admin" and can see all apps and can switch between all apps, 
+        // In our current app permissions model, an admin in the API app is a 
+        // "cross-app admin" and can see all apps and can switch between all apps, 
         // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
             stream = appService.getApps().stream()
@@ -202,8 +202,8 @@ public class AppController extends BaseController {
     public VersionHolder createAppAndUsers() throws SynapseException {
         getAuthenticatedSession(SUPERADMIN);
 
-        StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
-        App app = appService.createAppAndUsers(studyAndUsers);
+        AppAndUsers appAndUsers = parseJson(AppAndUsers.class);
+        App app = appService.createAppAndUsers(appAndUsers);
 
         return new VersionHolder(app.getVersion());
     }
@@ -230,7 +230,7 @@ public class AppController extends BaseController {
         
         // Finally, you cannot delete your own app because it locks this user out of their session.
         // This is true of *all* users in the app, btw. There is an action in the BSM that iterates 
-        // through all the participants in a study and signs them out one-by-one.
+        // through all the participants in an app and signs them out one-by-one.
         if (session.getAppId().equals(appId)) {
             throw new UnauthorizedException("Admin cannot delete the app they are associated with.");
         }
@@ -265,7 +265,7 @@ public class AppController extends BaseController {
     @PostMapping(path = {"/v1/apps/self/emails/resendVerify", "/v3/studies/self/emails/resendVerify"})
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        StudyEmailType parsedType = parseEmailType(type);
+        AppEmailType parsedType = parseEmailType(type);
         appService.sendVerifyEmail(session.getAppId(), parsedType);
         return RESEND_EMAIL_MSG;
     }
@@ -277,20 +277,20 @@ public class AppController extends BaseController {
     @PostMapping(path = {"/v1/apps/{appId}/emails/verify", "/v3/studies/{appId}/emails/verify"})
     public StatusMessage verifyEmail(@PathVariable String appId, @RequestParam(required = false) String token,
             @RequestParam(required = false) String type) {
-        StudyEmailType parsedType = parseEmailType(type);
+        AppEmailType parsedType = parseEmailType(type);
         appService.verifyEmail(appId, token, parsedType);
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
     // Helper method to parse and validate the email type for app email verification workflow. We do verification
     // here so that the service can just deal with a clean enum.
-    private static StudyEmailType parseEmailType(String typeStr) {
+    private static AppEmailType parseEmailType(String typeStr) {
         if (StringUtils.isBlank(typeStr)) {
             throw new BadRequestException("Email type must be specified");
         }
 
         try {
-            return StudyEmailType.valueOf(typeStr.toUpperCase());
+            return AppEmailType.valueOf(typeStr.toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Unrecognized type \"" + typeStr + "\"");
         }
