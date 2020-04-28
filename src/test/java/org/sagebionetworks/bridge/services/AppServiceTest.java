@@ -1156,7 +1156,7 @@ public class AppServiceTest extends Mockito {
         service.createAppAndUsers(mockStudyAndUsers);
     }
 
-    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*study cannot be null.*")
+    @Test (expectedExceptions = InvalidEntityException.class, expectedExceptionsMessageRegExp = ".*app cannot be null.*")
     public void createStudyAndUsersWithNullStudy() throws SynapseException {
         // mock
         App app = getTestStudy();

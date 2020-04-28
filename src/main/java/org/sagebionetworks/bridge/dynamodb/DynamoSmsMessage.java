@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -114,5 +115,11 @@ public class DynamoSmsMessage implements SmsMessage {
     @Override
     public void setAppId(String appId) {
         this.appId = appId;
+    }
+    
+    // Maintain this property for backwards compatibility
+    @DynamoDBIgnore
+    public String getStudyId() {
+        return appId;
     }
 }

@@ -415,7 +415,7 @@ public class AppValidatorTest {
     @Test
     public void appleAppLinkAppIdCannotBeEmpty() {
         app.getAppleAppLinks().add(new AppleAppLink(null, Lists.newArrayList("*")));
-        assertValidatorMessage(INSTANCE, app, "appleAppLinks[0]."+APP_ID,"cannot be blank or null");
+        assertValidatorMessage(INSTANCE, app, "appleAppLinks[0]."+APP_ID, "cannot be blank or null");
     }
     
     @Test

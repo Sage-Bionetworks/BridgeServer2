@@ -216,7 +216,7 @@ public class AppValidator implements Validator {
         if (app.getAppleAppLinks() != null && !app.getAppleAppLinks().isEmpty()) {
             validateAppLinks(errors, "appleAppLinks", app.getAppleAppLinks(), (AppleAppLink link) -> {
                 if (isBlank(link.getAppId())) {
-                    errors.rejectValue("appId", "cannot be blank or null");
+                    errors.rejectValue("appID", "cannot be blank or null");
                 }
                 if (link.getPaths() == null || link.getPaths().isEmpty()) {
                     errors.rejectValue("paths", "cannot be null or empty");

@@ -32,7 +32,7 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
     }
     
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-substudyId-index")
-    @DynamoDBHashKey
+    @DynamoDBHashKey(attributeName = "studyId")
     @Override
     public String getAppId() {
         return appId;
