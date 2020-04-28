@@ -38,7 +38,7 @@ public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
     
-    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
+    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "+
             "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
             "acct.synapseUserId) FROM HibernateAccount AS acct";
             
@@ -66,7 +66,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         QueryBuilder query = new QueryBuilder();
         query.append(
-            "SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
+            "SELECT DISTINCT acct.appId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
             "synapseUserId", synapseUserId);
         return hibernateHelper.queryGet(query.getQuery(), query.getParameters(), null, null, String.class);
     }
@@ -122,7 +122,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.append(prefix);
         builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
         builder.append("WITH acct.id = acctSubstudy.accountId");
-        builder.append("WHERE acct.studyId = :studyId", "studyId", studyId);
+        builder.append("WHERE acct.appId = :appId", "appId", studyId);
 
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();

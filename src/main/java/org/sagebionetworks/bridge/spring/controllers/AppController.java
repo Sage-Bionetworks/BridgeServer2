@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.models.studies.App.STUDY_LIST_WRITER;
+import static org.sagebionetworks.bridge.models.studies.App.APP_LIST_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.Arrays;
@@ -59,21 +59,21 @@ import org.sagebionetworks.client.exceptions.SynapseException;
 
 @CrossOrigin
 @RestController
-public class StudyController extends BaseController {
+public class AppController extends BaseController {
 
     static final StatusMessage CONSENT_EMAIL_VERIFIED_MSG = new StatusMessage("Consent notification email address verified.");
 
     static final StatusMessage RESEND_EMAIL_MSG = new StatusMessage("Resending verification email for consent notification email.");
 
-    static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
+    static final StatusMessage DELETED_MSG = new StatusMessage("App deleted.");
 
-    private final Comparator<App> STUDY_COMPARATOR = new Comparator<App>() {
+    private final Comparator<App> APP_COMPARATOR = new Comparator<App>() {
         public int compare(App app1, App app2) {
             return app1.getName().compareToIgnoreCase(app2.getName());
         }
     };
 
-    private final Set<String> studyWhitelist = Collections
+    private final Set<String> appWhitelist = Collections
             .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
 
     private UploadCertificateService uploadCertificateService;
@@ -98,19 +98,19 @@ public class StudyController extends BaseController {
     }
     
     // To enable mocking of values.
-    Set<String> getStudyWhitelist() {
-        return studyWhitelist;
+    Set<String> getAppWhitelist() {
+        return appWhitelist;
     }
 
-    @GetMapping("/v3/studies/self")
-    public App getCurrentStudy() {
+    @GetMapping(path = {"/v1/apps/self", "/v3/studies/self"})
+    public App getCurrentApp() {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         
         return appService.getApp(session.getAppId());
     }
     
-    @PostMapping("/v3/studies/self")
-    public VersionHolder updateStudyForDeveloperOrAdmin() {
+    @PostMapping(path = {"/v1/apps/self", "/v3/studies/self"})
+    public VersionHolder updateAppForDeveloperOrAdmin() {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
         App appUpdate = parseJson(App.class);
@@ -119,76 +119,77 @@ public class StudyController extends BaseController {
         return new VersionHolder(appUpdate.getVersion());
     }
 
-    @PostMapping("/v3/studies/{identifier}")
-    public VersionHolder updateStudy(@PathVariable String identifier) {
+    @PostMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
+    public VersionHolder updateApp(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
         
         App appUpdate = parseJson(App.class);
-        appUpdate.setIdentifier(identifier);
+        appUpdate.setIdentifier(appId);
         appUpdate = appService.updateApp(appUpdate, true);
         return new VersionHolder(appUpdate.getVersion());
     }
 
-    @GetMapping("/v3/studies/{identifier}")
-    public App getStudy(@PathVariable String identifier) {
+    @GetMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
+    public App getApp(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN, WORKER);
         
         // since only admin and worker can call this method, we need to return all apps including deactivated ones
-        return appService.getApp(identifier, true);
+        return appService.getApp(appId, true);
     }
 
     // You can get a truncated view of apps with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     
-    @GetMapping(path="/v3/studies", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getAllStudies(@RequestParam(required = false) String format,
+    @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getAllApps(@RequestParam(required = false) String format,
             @RequestParam(required = false) String summary) throws Exception {        
         
-        List<App> studies = appService.getApps();
+        List<App> apps = appService.getApps();
         if ("summary".equals(format) || "true".equals(summary)) {
-            // then only return active app as summary
-            List<App> activeStudiesSummary = studies.stream()
+            // then only return active study as summary
+            List<App> activeAppsSummary = apps.stream()
                     .filter(s -> s.isActive()).collect(Collectors.toList());
-            Collections.sort(activeStudiesSummary, STUDY_COMPARATOR);
-            ResourceList<App> summaries = new ResourceList<App>(activeStudiesSummary)
+            Collections.sort(activeAppsSummary, APP_COMPARATOR);
+            ResourceList<App> summaries = new ResourceList<App>(activeAppsSummary)
                     .withRequestParam("summary", true);
-            return STUDY_LIST_WRITER.writeValueAsString(summaries);  
+            return APP_LIST_WRITER.writeValueAsString(summaries);  
         }
         getAuthenticatedSession(SUPERADMIN);
 
         // otherwise, return all apps including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
-                new ResourceList<>(studies).withRequestParam("summary", false));
+                new ResourceList<>(apps).withRequestParam("summary", false));
     }
     
-    @GetMapping(path="/v3/studies/memberships", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getStudyMemberships() throws Exception {   
+    @GetMapping(path = { "/v1/apps/memberships", "/v3/studies/memberships" }, produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getAppMemberships() throws Exception {   
         UserSession session = getAuthenticatedSession();
         
         if (session.getParticipant().getRoles().isEmpty()) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
-        List<String> studyIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
+        List<String> appIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
         
         Stream<App> stream = null;
-        // In our current app permissions model, an admin in the API app is a 
+        // In our current study permissions model, an admin in the API study is a 
         // "cross-study admin" and can see all apps and can switch between all apps, 
         // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
             stream = appService.getApps().stream()
                 .filter(s -> s.isActive());
         } else {
-            stream = studyIds.stream()
+            stream = appIds.stream()
                 .map(id -> appService.getApp(id))
-                .filter(s -> s.isActive() && studyIds.contains(s.getIdentifier()));
+                .filter(s -> s.isActive() && appIds.contains(s.getIdentifier()));
         }
-        List<App> studies = stream.sorted(STUDY_COMPARATOR).collect(toList());
-        return STUDY_LIST_WRITER.writeValueAsString(new ResourceList<App>(studies));
+        List<App> apps = stream.sorted(APP_COMPARATOR).collect(toList());
+        return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps));
     }
 
-    @PostMapping("/v3/studies")
+    @PostMapping(path = {"/v1/apps", "/v3/studies"})
     @ResponseStatus(HttpStatus.CREATED)
-    public VersionHolder createStudy() {
+    public VersionHolder createApp() {
         getAuthenticatedSession(SUPERADMIN);
 
         App app = parseJson(App.class);
@@ -196,9 +197,9 @@ public class StudyController extends BaseController {
         return new VersionHolder(app.getVersion());
     }
 
-    @PostMapping("/v3/studies/init")
+    @PostMapping(path = {"/v1/apps/init", "/v3/studies/init"})
     @ResponseStatus(HttpStatus.CREATED)
-    public VersionHolder createStudyAndUsers() throws SynapseException {
+    public VersionHolder createAppAndUsers() throws SynapseException {
         getAuthenticatedSession(SUPERADMIN);
 
         StudyAndUsers studyAndUsers = parseJson(StudyAndUsers.class);
@@ -207,7 +208,7 @@ public class StudyController extends BaseController {
         return new VersionHolder(app.getVersion());
     }
 
-    @PostMapping("/v3/studies/self/synapseProject")
+    @PostMapping(path = {"/v1/apps/self/synapseProject", "/v3/studies/self/synapseProject"})
     @ResponseStatus(HttpStatus.CREATED)
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
         // first get current app
@@ -222,28 +223,28 @@ public class StudyController extends BaseController {
     }
 
     // since only admin can delete app, no need to check if return results should contain deactivated ones
-    @DeleteMapping("/v3/studies/{identifier}")
-    public StatusMessage deleteStudy(@PathVariable String identifier,
+    @DeleteMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
+    public StatusMessage deleteApp(@PathVariable String appId,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
         // Finally, you cannot delete your own app because it locks this user out of their session.
         // This is true of *all* users in the app, btw. There is an action in the BSM that iterates 
-        // through all the participants in a app and signs them out one-by-one.
-        if (session.getAppId().equals(identifier)) {
-            throw new UnauthorizedException("Admin cannot delete the study they are associated with.");
+        // through all the participants in a study and signs them out one-by-one.
+        if (session.getAppId().equals(appId)) {
+            throw new UnauthorizedException("Admin cannot delete the app they are associated with.");
         }
-        if (getStudyWhitelist().contains(identifier)) {
-            throw new UnauthorizedException(identifier + " is protected by whitelist.");
+        if (getAppWhitelist().contains(appId)) {
+            throw new UnauthorizedException(appId + " is protected by whitelist.");
         }
         
-        appService.deleteApp(identifier, Boolean.valueOf(physical));
+        appService.deleteApp(appId, Boolean.valueOf(physical));
 
         return DELETED_MSG;
     }
 
-    @GetMapping("/v3/studies/self/publicKey")
-    public CmsPublicKey getStudyPublicKeyAsPem() {
+    @GetMapping(path = {"/v1/apps/self/publicKey", "/v3/studies/self/publicKey"})
+    public CmsPublicKey getAppPublicKeyAsPem() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
 
         String pem = uploadCertificateService.getPublicKeyAsPem(session.getAppId());
@@ -251,7 +252,7 @@ public class StudyController extends BaseController {
         return new CmsPublicKey(pem);
     }
 
-    @GetMapping("/v3/studies/self/emailStatus")
+    @GetMapping(path = {"/v1/apps/self/emailStatus", "/v3/studies/self/emailStatus"})
     public EmailVerificationStatusHolder getEmailStatus() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
@@ -261,7 +262,7 @@ public class StudyController extends BaseController {
     }
 
     /** Resends the verification email for the current app's email. */
-    @PostMapping("/v3/studies/self/emails/resendVerify")
+    @PostMapping(path = {"/v1/apps/self/emails/resendVerify", "/v3/studies/self/emails/resendVerify"})
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         StudyEmailType parsedType = parseEmailType(type);
@@ -273,11 +274,11 @@ public class StudyController extends BaseController {
      * Verifies the emails for the app. Since this comes in from an email with a token, you don't need to be
      * authenticated. The token itself knows what app this is for.
      */
-    @PostMapping("/v3/studies/{identifier}/emails/verify")
-    public StatusMessage verifyEmail(@PathVariable String identifier, @RequestParam(required = false) String token,
+    @PostMapping(path = {"/v1/apps/{appId}/emails/verify", "/v3/studies/{appId}/emails/verify"})
+    public StatusMessage verifyEmail(@PathVariable String appId, @RequestParam(required = false) String token,
             @RequestParam(required = false) String type) {
         StudyEmailType parsedType = parseEmailType(type);
-        appService.verifyEmail(identifier, token, parsedType);
+        appService.verifyEmail(appId, token, parsedType);
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
@@ -295,7 +296,7 @@ public class StudyController extends BaseController {
         }
     }
 
-    @PostMapping("/v3/studies/self/verifyEmail")
+    @PostMapping(path = {"/v1/apps/self/verifyEmail", "/v3/studies/self/verifyEmail"})
     public EmailVerificationStatusHolder verifySenderEmail() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
@@ -304,7 +305,7 @@ public class StudyController extends BaseController {
         return new EmailVerificationStatusHolder(status);
     }
 
-    @GetMapping("/v3/studies/self/uploads")
+    @GetMapping(path = {"/v1/apps/self/uploads", "/v3/studies/self/uploads"})
     public ForwardCursorPagedResourceList<UploadView> getUploads(@RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String offsetKey) {
@@ -320,19 +321,19 @@ public class StudyController extends BaseController {
     /**
      * Another version of getUploads for workers to specify any app ID to get uploads
      */
-    @GetMapping("/v3/studies/{identifier}/uploads")
-    public ForwardCursorPagedResourceList<UploadView> getUploadsForStudy(@PathVariable String identifier,
+    @GetMapping(path = {"/v1/apps/{appId}/uploads", "/v3/studies/{appId}/uploads"})
+    public ForwardCursorPagedResourceList<UploadView> getUploadsForApp(@PathVariable String appId,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
         getAuthenticatedSession(WORKER);
         
         // This won't happen because the route won't match, but tests look for a BadRequestException
-        if (StringUtils.isBlank(identifier)) {
-            throw new BadRequestException("studyId cannot be missing, null, or blank");
+        if (StringUtils.isBlank(appId)) {
+            throw new BadRequestException("appId cannot be missing, null, or blank");
         }
         DateTime startTimeObj = BridgeUtils.getDateTimeOrDefault(startTime, null);
         DateTime endTimeObj = BridgeUtils.getDateTimeOrDefault(endTime, null);
 
-        return uploadService.getAppUploads(identifier, startTimeObj, endTimeObj, pageSize, offsetKey);
+        return uploadService.getAppUploads(appId, startTimeObj, endTimeObj, pageSize, offsetKey);
     }
 }

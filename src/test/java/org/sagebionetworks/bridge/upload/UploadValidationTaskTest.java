@@ -68,7 +68,7 @@ public class UploadValidationTaskTest {
         when(healthDataService.getRecordById(eq(RECORD_ID))).thenReturn(testRecord);
 
         // Set up context
-        App app = TestUtils.getValidStudy(UploadValidationTaskTest.class);
+        App app = TestUtils.getValidApp(UploadValidationTaskTest.class);
 
         upload = Upload.create();
         upload.setUploadId("test-upload");

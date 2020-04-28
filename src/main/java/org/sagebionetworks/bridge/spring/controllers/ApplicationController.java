@@ -126,8 +126,8 @@ public class ApplicationController extends BaseController {
         CacheKey cacheKey = viewCache.getCacheKey(AndroidAppLinkList.class);
         String json = viewCache.getView(cacheKey, () -> {
             AndroidAppLinkList links = new AndroidAppLinkList();
-            List<App> studies = appService.getApps();
-            for(App app : studies) {
+            List<App> apps = appService.getApps();
+            for(App app : apps) {
                 for (AndroidAppLink link : app.getAndroidAppLinks()) {
                     links.add(new AndroidAppSiteAssociation(link));
                 }
@@ -145,8 +145,8 @@ public class ApplicationController extends BaseController {
         CacheKey cacheKey = viewCache.getCacheKey(AppleAppSiteAssociation.class);
         String json = viewCache.getView(cacheKey, () -> {
             List<AppleAppLink> links = Lists.newArrayList();
-            List<App> studies = appService.getApps();
-            for(App app : studies) {
+            List<App> apps = appService.getApps();
+            for(App app : apps) {
                 links.addAll(app.getAppleAppLinks());
             }
             return new AppleAppSiteAssociation(links);

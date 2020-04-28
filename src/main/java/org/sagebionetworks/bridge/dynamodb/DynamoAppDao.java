@@ -18,7 +18,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.dao.AppDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -29,10 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DynamoStudyDao implements StudyDao {
-    static final String STUDY_WHITELIST_PROPERTY = "study.whitelist";
+public class DynamoAppDao implements AppDao {
+    static final String APP_WHITELIST_PROPERTY = "study.whitelist";
     
-    private Set<String> studyWhitelist;
+    private Set<String> appWhitelist;
 
     private DynamoDBMapper mapper;
 
@@ -46,31 +46,31 @@ public class DynamoStudyDao implements StudyDao {
     
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
-        studyWhitelist = ImmutableSet.copyOf(config.getPropertyAsList(STUDY_WHITELIST_PROPERTY));
+        appWhitelist = ImmutableSet.copyOf(config.getPropertyAsList(APP_WHITELIST_PROPERTY));
     }
 
     @Override
-    public boolean doesIdentifierExist(String identifier) {
-        DynamoApp study = new DynamoApp();
-        study.setIdentifier(identifier);
-        return (mapper.load(study) != null);
+    public boolean doesIdentifierExist(String appId) {
+        DynamoApp app = new DynamoApp();
+        app.setIdentifier(appId);
+        return (mapper.load(app) != null);
     }
     
     @Override
-    public App getStudy(String identifier) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, "identifier");
+    public App getApp(String appId) {
+        checkArgument(isNotBlank(appId), Validate.CANNOT_BE_BLANK, "appId");
         
         DynamoApp app = new DynamoApp();
-        app.setIdentifier(identifier);
+        app.setIdentifier(appId);
         app = mapper.load(app);
         if (app == null) {
-            throw new EntityNotFoundException(App.class, "Study '"+identifier+"' not found.");
+            throw new EntityNotFoundException(App.class, "App '"+appId+"' not found.");
         }
         return app;
     }
     
     @Override
-    public List<App> getStudies() {
+    public List<App> getApps() {
         DynamoDBScanExpression scan = new DynamoDBScanExpression();
 
         // get all apps including deactivated ones
@@ -80,9 +80,9 @@ public class DynamoStudyDao implements StudyDao {
     }
 
     @Override
-    public App createStudy(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
-        checkArgument(app.getVersion() == null, "%s has a version; may not be new", "study");
+    public App createApp(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
+        checkArgument(app.getVersion() == null, "%s has a version; may not be new", "app");
         try {
             mapper.save(app);
         } catch(ConditionalCheckFailedException e) { // in the create scenario, this should be a hash key clash.
@@ -92,9 +92,9 @@ public class DynamoStudyDao implements StudyDao {
     }
 
     @Override
-    public App updateStudy(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
-        checkNotNull(app.getVersion(), Validate.CANNOT_BE_NULL, "study version");
+    public App updateApp(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
+        checkNotNull(app.getVersion(), Validate.CANNOT_BE_NULL, "app version");
         try {
             mapper.save(app);
         } catch(ConditionalCheckFailedException e) {
@@ -104,28 +104,28 @@ public class DynamoStudyDao implements StudyDao {
     }
 
     @Override
-    public void deleteStudy(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_BLANK, "study");
+    public void deleteApp(App app) {
+        checkNotNull(app, Validate.CANNOT_BE_BLANK, "app");
 
-        String studyId = app.getIdentifier();
-        if (studyWhitelist.contains(studyId)) {
-            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        String appId = app.getIdentifier();
+        if (appWhitelist.contains(appId)) {
+            throw new UnauthorizedException(appId + " is protected by whitelist.");
         }
 
         mapper.delete(app);
     }
 
     @Override
-    public void deactivateStudy(String studyId) {
-        checkNotNull(studyId, Validate.CANNOT_BE_BLANK, "study");
+    public void deactivateApp(String appId) {
+        checkNotNull(appId, Validate.CANNOT_BE_BLANK, "appId");
 
-        if (studyWhitelist.contains(studyId)) {
-            throw new UnauthorizedException(studyId + " is protected by whitelist.");
+        if (appWhitelist.contains(appId)) {
+            throw new UnauthorizedException(appId + " is protected by whitelist.");
         }
 
-        App app = getStudy(studyId);
+        App app = getApp(appId);
         app.setActive(false);
 
-        updateStudy(app);
+        updateApp(app);
     }
 }

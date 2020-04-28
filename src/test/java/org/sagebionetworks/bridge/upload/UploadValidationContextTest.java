@@ -41,7 +41,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        App app = TestUtils.getValidStudy(UploadValidationContextTest.class);
+        App app = TestUtils.getValidApp(UploadValidationContextTest.class);
         Upload upload = new DynamoUpload2();
         File tempDir = mock(File.class);
         File dataFile = mock(File.class);

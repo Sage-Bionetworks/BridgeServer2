@@ -116,7 +116,7 @@ public class DynamoAppTest {
 
     @Test
     public void studyFullySerializesForCaching() throws Exception {
-        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
+        final DynamoApp study = TestUtils.getValidApp(DynamoAppTest.class);
         
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
                 OAuthProviderTest.CALLBACK_URL, null);
@@ -216,7 +216,7 @@ public class DynamoAppTest {
     
     @Test
     public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
-        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
+        final DynamoApp study = TestUtils.getValidApp(DynamoAppTest.class);
         study.setVersion(2L);
 
         final String json = BridgeObjectMapper.get().writeValueAsString(study);

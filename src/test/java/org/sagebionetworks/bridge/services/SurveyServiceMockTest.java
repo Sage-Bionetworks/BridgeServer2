@@ -110,7 +110,7 @@ public class SurveyServiceMockTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
-        app = TestUtils.getValidStudy(SurveyServiceMockTest.class);
+        app = TestUtils.getValidApp(SurveyServiceMockTest.class);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));

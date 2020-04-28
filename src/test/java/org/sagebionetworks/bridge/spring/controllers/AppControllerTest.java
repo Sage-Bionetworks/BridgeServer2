@@ -18,12 +18,12 @@ import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
-import static org.sagebionetworks.bridge.TestUtils.getValidStudy;
+import static org.sagebionetworks.bridge.TestUtils.getValidApp;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.services.EmailVerificationStatus.VERIFIED;
 import static org.sagebionetworks.bridge.services.StudyEmailType.CONSENT_NOTIFICATION;
-import static org.sagebionetworks.bridge.spring.controllers.StudyController.CONSENT_EMAIL_VERIFIED_MSG;
-import static org.sagebionetworks.bridge.spring.controllers.StudyController.RESEND_EMAIL_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.AppController.CONSENT_EMAIL_VERIFIED_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.AppController.RESEND_EMAIL_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -83,7 +83,7 @@ import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
-public class StudyControllerTest extends Mockito {
+public class AppControllerTest extends Mockito {
     private static final String DUMMY_VERIFICATION_TOKEN = "dummy-token";
     private static final String EMAIL_ADDRESS = "foo@foo.com";
 
@@ -132,10 +132,10 @@ public class StudyControllerTest extends Mockito {
     
     @Spy
     @InjectMocks
-    StudyController controller;
+    AppController controller;
     
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
     
     @Captor
     ArgumentCaptor<StudyAndUsers> studyAndUsersCaptor;
@@ -169,24 +169,24 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void verifyAnnotations() throws Exception {
-        assertCrossOrigin(StudyController.class);
-        assertGet(StudyController.class, "getCurrentStudy");
-        assertPost(StudyController.class, "updateStudyForDeveloperOrAdmin");
-        assertPost(StudyController.class, "updateStudy");
-        assertGet(StudyController.class, "getStudy");
-        assertGet(StudyController.class, "getAllStudies");
-        assertCreate(StudyController.class, "createStudy");
-        assertCreate(StudyController.class, "createStudyAndUsers");
-        assertCreate(StudyController.class, "createSynapse");
-        assertDelete(StudyController.class, "deleteStudy");
-        assertGet(StudyController.class, "getStudyPublicKeyAsPem");
-        assertGet(StudyController.class, "getEmailStatus");
-        assertPost(StudyController.class, "resendVerifyEmail");
-        assertPost(StudyController.class, "verifyEmail");
-        assertPost(StudyController.class, "verifySenderEmail");
-        assertGet(StudyController.class, "getUploads");
-        assertGet(StudyController.class, "getUploadsForStudy");
-        assertGet(StudyController.class, "getStudyMemberships");
+        assertCrossOrigin(AppController.class);
+        assertGet(AppController.class, "getCurrentApp");
+        assertPost(AppController.class, "updateAppForDeveloperOrAdmin");
+        assertPost(AppController.class, "updateApp");
+        assertGet(AppController.class, "getApp");
+        assertGet(AppController.class, "getAllApps");
+        assertCreate(AppController.class, "createApp");
+        assertCreate(AppController.class, "createAppAndUsers");
+        assertCreate(AppController.class, "createSynapse");
+        assertDelete(AppController.class, "deleteApp");
+        assertGet(AppController.class, "getAppPublicKeyAsPem");
+        assertGet(AppController.class, "getEmailStatus");
+        assertPost(AppController.class, "resendVerifyEmail");
+        assertPost(AppController.class, "verifyEmail");
+        assertPost(AppController.class, "verifySenderEmail");
+        assertGet(AppController.class, "getUploads");
+        assertGet(AppController.class, "getUploadsForApp");
+        assertGet(AppController.class, "getAppMemberships");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -199,11 +199,11 @@ public class StudyControllerTest extends Mockito {
         
         doReturn(session).when(controller).getSessionIfItExists();
 
-        controller.getStudyPublicKeyAsPem();
+        controller.getAppPublicKeyAsPem();
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void cannotAccessGetUploadsForSpecifiedStudyUnlessWorker () throws Exception {
+    public void cannotAccessGetUploadsForSpecifiedAppUnlessWorker () throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE).build();
         UserSession session = new UserSession(participant);
@@ -215,14 +215,14 @@ public class StudyControllerTest extends Mockito {
 
         doReturn(session).when(controller).getSessionIfItExists();
 
-        controller.getUploadsForStudy(TEST_APP_ID, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        controller.getUploadsForApp(TEST_APP_ID, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test
     public void canDeactivateForSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
-        controller.deleteStudy("not-protected", false);
+        controller.deleteApp("not-protected", false);
 
         verify(mockAppService).deleteApp("not-protected", false);
         verifyNoMoreInteractions(mockAppService);
@@ -232,7 +232,7 @@ public class StudyControllerTest extends Mockito {
     public void canDeleteForSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
-        controller.deleteStudy("not-protected", true);
+        controller.deleteApp("not-protected", true);
 
         verify(mockAppService).deleteApp("not-protected", true);
         verifyNoMoreInteractions(mockAppService);
@@ -240,27 +240,27 @@ public class StudyControllerTest extends Mockito {
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void cannotDeactivateForDeveloper() throws Exception {
-        controller.deleteStudy(TEST_APP_ID, false);
+        controller.deleteApp(TEST_APP_ID, false);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void cannotDeleteForDeveloper() throws Exception {
-        controller.deleteStudy(TEST_APP_ID, true);
+        controller.deleteApp(TEST_APP_ID, true);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void deactivateStudyThrowsGoodException() throws Exception {
+    public void deactivateAppThrowsGoodException() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         doThrow(new EntityNotFoundException(App.class)).when(mockAppService).deleteApp("not-protected",
                 false);
 
-        controller.deleteStudy("not-protected", false);
+        controller.deleteApp("not-protected", false);
     }
 
     @Test
-    public void canCreateStudyAndUser() throws Exception {
+    public void canCreateAppAndUser() throws Exception {
         // mock
-        App app = getValidStudy(StudyControllerTest.class);
+        App app = getValidApp(AppControllerTest.class);
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
         app.setVersion(1L);
@@ -293,7 +293,7 @@ public class StudyControllerTest extends Mockito {
         when(mockAppService.createAppAndUsers(argumentCaptor.capture())).thenReturn(app);
 
         // execute
-        VersionHolder result = controller.createStudyAndUsers();
+        VersionHolder result = controller.createAppAndUsers();
         
         // verify
         verify(mockAppService, times(1)).createAppAndUsers(any());
@@ -328,7 +328,7 @@ public class StudyControllerTest extends Mockito {
     public void canGetCmsPublicKeyPemFile() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
-        CmsPublicKey result = controller.getStudyPublicKeyAsPem();
+        CmsPublicKey result = controller.getAppPublicKeyAsPem();
 
         assertTrue(result.getPublicKey().contains("-----BEGIN CERTIFICATE-----"));
     }
@@ -424,28 +424,28 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void developerCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(DEVELOPER);
+    public void developerCanAccessCurrentApp() throws Exception {
+        testRoleAccessToCurrentApp(DEVELOPER);
     }
     
     @Test
-    public void researcherCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(RESEARCHER);
+    public void researcherCanAccessCurrentApp() throws Exception {
+        testRoleAccessToCurrentApp(RESEARCHER);
     }
     
     @Test
-    public void adminCanAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(ADMIN);
+    public void adminCanAccessCurrentApp() throws Exception {
+        testRoleAccessToCurrentApp(ADMIN);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void userCannotAccessCurrentStudy() throws Exception {
-        testRoleAccessToCurrentStudy(null);
+    public void userCannotAccessCurrentApp() throws Exception {
+        testRoleAccessToCurrentApp(null);
     }
     
     @SuppressWarnings("deprecation")
     @Test
-    public void canGetUploadsForStudy() throws Exception {
+    public void canGetUploadsForApp() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
         
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
@@ -471,38 +471,38 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void getUploadsForStudyWithNullStudyId() {
+    public void getUploadsForAppWithNullAppId() {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(null, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        controller.getUploadsForApp(null, startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void getUploadsForStudyWitEmptyStudyId() {
+    public void getUploadsForAppWithEmptyAppId() {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy("", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        controller.getUploadsForApp("", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void getUploadsForStudyWithBlankStudyId() {
+    public void getUploadsForAppWithBlankAppId() {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
         DateTime endTime = DateTime.parse("2010-01-02T00:00:00.000Z");
 
-        controller.getUploadsForStudy(" ", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
+        controller.getUploadsForApp(" ", startTime.toString(), endTime.toString(), API_MAXIMUM_PAGE_SIZE, null);
     }
 
     @SuppressWarnings("deprecation")
     @Test
-    public void canGetUploadsForSpecifiedStudy() throws Exception {
+    public void canGetUploadsForSpecifiedApp() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
 
         DateTime startTime = DateTime.parse("2010-01-01T00:00:00.000Z");
@@ -517,7 +517,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(uploads).when(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE,
                 null);
 
-        ForwardCursorPagedResourceList<UploadView> result = controller.getUploadsForStudy(TEST_APP_ID, startTime.toString(), endTime.toString(),
+        ForwardCursorPagedResourceList<UploadView> result = controller.getUploadsForApp(TEST_APP_ID, startTime.toString(), endTime.toString(),
                 API_MAXIMUM_PAGE_SIZE, null);
 
         verify(mockUploadService).getAppUploads(TEST_APP_ID, startTime, endTime, API_MAXIMUM_PAGE_SIZE, null);
@@ -531,11 +531,11 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test
-    public void getSummaryStudiesWithFormatWorks() throws Exception {
-        List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockAppService).getApps();
+    public void getSummaryAppsWithFormatWorks() throws Exception {
+        List<App> apps = ImmutableList.of(new DynamoApp());
+        doReturn(apps).when(mockAppService).getApps();
         
-        String result = controller.getAllStudies("summary", null);
+        String result = controller.getAllApps("summary", null);
         ResourceList<App> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<App>>() {});
         assertTrue((Boolean)list.getRequestParams().get("summary"));
 
@@ -543,48 +543,48 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void getSummaryStudiesWithSummaryWorks() throws Exception {
-        List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockAppService).getApps();
+    public void getSummaryAppsWithSummaryWorks() throws Exception {
+        List<App> apps = ImmutableList.of(new DynamoApp());
+        doReturn(apps).when(mockAppService).getApps();
         
-        String result = controller.getAllStudies(null, "true");
+        String result = controller.getAllApps(null, "true");
 
         assertFalse(result.contains("healthCodeExportEnabled"));
     }
 
     @Test
-    public void getSummaryStudiesWithInactiveOnes() throws Exception {
-        DynamoApp testStudy1 = new DynamoApp();
-        testStudy1.setName("test_study_1");
-        testStudy1.setActive(true);
+    public void getSummaryAppsWithInactiveOnes() throws Exception {
+        DynamoApp testApp1 = new DynamoApp();
+        testApp1.setName("test_app_1");
+        testApp1.setActive(true);
 
         DynamoApp testStudy2 = new DynamoApp();
-        testStudy2.setName("test_study_2");
+        testStudy2.setName("test_app_2");
 
-        List<App> studies = ImmutableList.of(testStudy1, testStudy2);
-        doReturn(studies).when(mockAppService).getApps();
+        List<App> apps = ImmutableList.of(testApp1, testStudy2);
+        doReturn(apps).when(mockAppService).getApps();
 
-        String result = controller.getAllStudies("summary", null);
+        String result = controller.getAllApps("summary", null);
 
         // only active apps will be returned
         JsonNode recordJsonNode = DefaultObjectMapper.INSTANCE.readTree(result);
         JsonNode items = recordJsonNode.get("items");
         assertTrue(items.size() == 1);
-        JsonNode study = items.get(0);
-        assertEquals("test_study_1", study.get("name").asText());
+        JsonNode app = items.get(0);
+        assertEquals("test_app_1", app.get("name").asText());
         assertFalse(result.contains("healthCodeExportEnabled"));
 
         verify(controller, never()).getAuthenticatedSession(ADMIN);
     }
     
     @Test
-    public void getFullStudiesWorks() throws Exception {
-        List<App> studies = ImmutableList.of(new DynamoApp());
-        doReturn(studies).when(mockAppService).getApps();
+    public void getFullAppsWorks() throws Exception {
+        List<App> apps = ImmutableList.of(new DynamoApp());
+        doReturn(apps).when(mockAppService).getApps();
         
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        String result = controller.getAllStudies(null, "false");
+        String result = controller.getAllApps(null, "false");
         ResourceList<App> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<App>>() {});
         assertFalse((Boolean)list.getRequestParams().get("summary"));
 
@@ -592,7 +592,7 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void updateStudy() throws Exception {
+    public void updateApp() throws Exception {
         when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
@@ -604,118 +604,118 @@ public class StudyControllerTest extends Mockito {
         app.setName("value to seek");
         mockRequestBody(mockRequest, app);
         
-        VersionHolder holder = controller.updateStudy(TEST_APP_ID);
+        VersionHolder holder = controller.updateApp(TEST_APP_ID);
         assertEquals(holder.getVersion(), Long.valueOf(3L));
         
-        verify(mockAppService).updateApp(studyCaptor.capture(), eq(true));
-        assertEquals(studyCaptor.getValue().getName(), "value to seek");
+        verify(mockAppService).updateApp(appCaptor.capture(), eq(true));
+        assertEquals(appCaptor.getValue().getName(), "value to seek");
     }
-    
+
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateStudyRejectsStudyAdmin() throws Exception {
+    public void updateAppRejectsStudyAdmin() throws Exception {
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().
                 withRoles(ImmutableSet.of(ADMIN)).build());
         doReturn(mockSession).when(controller).getSessionIfItExists();
         
-        controller.updateStudy("some-study");
+        controller.updateApp("some-app");
     }
     
     @Test
-    public void getStudy() throws Exception {
+    public void getApp() throws Exception {
         App retrieved = App.create();
-        when(mockAppService.getApp("some-study", true)).thenReturn(retrieved);
+        when(mockAppService.getApp("some-app", true)).thenReturn(retrieved);
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN, WORKER);
         
-        App result = controller.getStudy("some-study");
+        App result = controller.getApp("some-app");
         assertSame(result, retrieved);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getStudyRejectsNonSuperAdmin() throws Exception { 
+    public void getAppRejectsNonSuperAdmin() throws Exception { 
         when(mockSession.isInRole(DEVELOPER)).thenReturn(false);
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         doReturn(mockSession).when(controller).getSessionIfItExists();
         
-        controller.getStudy("some-study");
+        controller.getApp("some-app");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getAllStudiesFullStudyRejectsStudyAdmin() throws Exception {
+    public void getAllAppsFullStudyRejectsStudyAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
-        controller.getAllStudies(null, null);
+        controller.getAllApps(null, null);
     }
     
     @Test
     public void getAllStudiesSummary() throws Exception {
         // Two active and one deleted app
         App app1 = App.create();
-        app1.setName("study1");
+        app1.setName("app1");
         app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
         app1.setActive(true);
         App app2 = App.create();
-        app2.setName("study2");
+        app2.setName("app2");
         app2.setActive(true);
         App app3 = App.create();
-        app3.setName("study3");
+        app3.setName("app3");
         app3.setActive(false);
-        List<App> studies = ImmutableList.of(app1, app2, app3);
-        when(mockAppService.getApps()).thenReturn(studies);
+        List<App> apps = ImmutableList.of(app1, app2, app3);
+        when(mockAppService.getApps()).thenReturn(apps);
         
-        String json = controller.getAllStudies("summary", null);
+        String json = controller.getAllApps("summary", null);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         assertEquals(node.get("items").size(), 2);
-        assertEquals(node.get("items").get(0).get("name").textValue(), "study1");
-        assertEquals(node.get("items").get(1).get("name").textValue(), "study2");
+        assertEquals(node.get("items").get(0).get("name").textValue(), "app1");
+        assertEquals(node.get("items").get(1).get("name").textValue(), "app2");
         assertNull(node.get("items").get(0).get("sponsorName"));
         assertTrue(node.get("requestParams").get("summary").booleanValue());
     }
     
     @Test
-    public void getAllStudies() throws Exception {
+    public void getAllApps() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         // Two active and one deleted app
         App app1 = App.create();
-        app1.setName("study1");
+        app1.setName("app1");
         app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
         app1.setActive(true);
         App app2 = App.create();
-        app2.setName("study2");
+        app2.setName("app2");
         app2.setActive(true);
         App app3 = App.create();
-        app3.setName("study3");
+        app3.setName("app3");
         app3.setActive(false);
-        List<App> studies = ImmutableList.of(app1, app2, app3);
-        when(mockAppService.getApps()).thenReturn(studies);
+        List<App> apps = ImmutableList.of(app1, app2, app3);
+        when(mockAppService.getApps()).thenReturn(apps);
         
-        String json = controller.getAllStudies(null, null);
+        String json = controller.getAllApps(null, null);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
         assertEquals(node.get("items").size(), 3);
-        assertEquals(node.get("items").get(0).get("name").textValue(), "study1");
+        assertEquals(node.get("items").get(0).get("name").textValue(), "app1");
         assertEquals(node.get("items").get(0).get("sponsorName").textValue(), "sponsor name");
-        assertEquals(node.get("items").get(1).get("name").textValue(), "study2");
-        assertEquals(node.get("items").get(2).get("name").textValue(), "study3");
+        assertEquals(node.get("items").get(1).get("name").textValue(), "app2");
+        assertEquals(node.get("items").get(2).get("name").textValue(), "app3");
         assertFalse(node.get("requestParams").get("summary").booleanValue());
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createStudyRejectsNonSuperAdmin() throws Exception {
+    public void createAppRejectsNonSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
-        controller.createStudy();
+        controller.createApp();
     }
     
     @Test
-    public void createStudy() throws Exception {
+    public void createApp() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         App created = App.create();
@@ -726,24 +726,24 @@ public class StudyControllerTest extends Mockito {
         newApp.setName("some study");
         mockRequestBody(mockRequest, newApp);
         
-        VersionHolder keys = controller.createStudy();
+        VersionHolder keys = controller.createApp();
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
         verify(mockAppService).createApp(newApp);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createStudyAndUsersRejectsNoneSuperAdmin() throws Exception {
+    public void createAppAndUsersRejectsNoneSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
-        controller.createStudyAndUsers();
+        controller.createAppAndUsers();
     }
     
     @Test
-    public void createStudyAndUsers() throws Exception {
+    public void createAppAndUsers() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         App created = App.create();
@@ -751,14 +751,14 @@ public class StudyControllerTest extends Mockito {
         when(mockAppService.createAppAndUsers(any())).thenReturn(created);
         
         App newApp = App.create();
-        newApp.setName("some study");
+        newApp.setName("some app");
         
         StudyAndUsers studyAndUsers = new StudyAndUsers(
                 ImmutableList.of("admin1", "admin2"), newApp,
                 ImmutableList.of(new StudyParticipant.Builder().build()));
         mockRequestBody(mockRequest, studyAndUsers);
         
-        VersionHolder keys = controller.createStudyAndUsers();
+        VersionHolder keys = controller.createAppAndUsers();
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
         verify(mockAppService).createAppAndUsers(studyAndUsersCaptor.capture());
@@ -770,45 +770,45 @@ public class StudyControllerTest extends Mockito {
     }
         
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void deleteStudyRejectsNonSuperAdmin() throws Exception {
+    public void deleteAppRejectsNonSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
         
-        controller.deleteStudy("other-study", true);
+        controller.deleteApp("other-app", true);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Admin cannot delete the study they are associated with.*")
-    public void deleteStudyRejectsCallerInStudy() throws Exception {
-        // API is protected by the whitelist so this test must target some other app
-        when(mockSession.getAppId()).thenReturn("other-study");
+            expectedExceptionsMessageRegExp = ".*Admin cannot delete the app they are associated with.*")
+    public void deleteAppRejectsCallerInStudy() throws Exception {
+        // API is protected by the whitelist so this test must target some other study
+        when(mockSession.getAppId()).thenReturn("other-app");
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        controller.deleteStudy("other-study", true);
+        controller.deleteApp("other-app", true);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*other-study is protected by whitelist.*")
-    public void deleteStudyRejectsWhitelistedStudy() throws Exception {
+            expectedExceptionsMessageRegExp = ".*other-app is protected by whitelist.*")
+    public void deleteAppRejectsWhitelistedApp() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        when(controller.getStudyWhitelist()).thenReturn(ImmutableSet.of("other-study"));
-        controller.deleteStudy("other-study", true);
+        when(controller.getAppWhitelist()).thenReturn(ImmutableSet.of("other-app"));
+        controller.deleteApp("other-app", true);
     }
     
     @Test
-    public void deleteStudy() throws Exception {
+    public void deleteApp() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        controller.deleteStudy("delete-study", true);
+        controller.deleteApp("delete-app", true);
         
-        verify(mockAppService).deleteApp("delete-study", Boolean.TRUE);
+        verify(mockAppService).deleteApp("delete-app", Boolean.TRUE);
     }
     
     @Test
-    public void getStudyMemberships() throws Exception {
+    public void getAppMemberships() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(EMAIL)
                 .withEmailVerified(true)
@@ -817,26 +817,26 @@ public class StudyControllerTest extends Mockito {
         when(mockSession.getParticipant()).thenReturn(participant);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
-        mockStudy("Study D", "studyD", true);
-        mockStudy("Study C", "studyC", true);
-        mockStudy("Study B", "studyB", true);
-        mockStudy("Study A", "studyA", false);
+        mockApp("App D", "appD", true);
+        mockApp("App C", "appC", true);
+        mockApp("App B", "appB", true);
+        mockApp("App A", "appA", false);
         
-        List<String> list = ImmutableList.of("studyA", "studyB", "studyC");
+        List<String> list = ImmutableList.of("appA", "appB", "appC");
         when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
-        String jsonString = controller.getStudyMemberships();
+        String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
         
         assertEquals(node.size(), 2);
-        assertEquals(node.get(0).get("name").textValue(), "Study B");
-        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
-        assertEquals(node.get(1).get("name").textValue(), "Study C");
-        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
+        assertEquals(node.get(0).get("name").textValue(), "App B");
+        assertEquals(node.get(0).get("identifier").textValue(), "appB");
+        assertEquals(node.get(1).get("name").textValue(), "App C");
+        assertEquals(node.get(1).get("identifier").textValue(), "appC");
     }
     
     @Test
-    public void getStudyMembershipsForCrossStudyAdmin() throws Exception {
+    public void getAppMembershipsForCrossStudyAdmin() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
                 .withRoles(ImmutableSet.of(ADMIN)).withEmailVerified(true)
                 .withSynapseUserId(SYNAPSE_USER_ID).build();
@@ -845,31 +845,31 @@ public class StudyControllerTest extends Mockito {
         
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
-        App appD = mockStudy("Study D", "studyD", true);
-        App appC = mockStudy("Study C", "studyC", true);
-        App appB = mockStudy("Study B", "studyB", true);
-        App appA = mockStudy("Study A", "studyA", false);
+        App appD = mockApp("App D", "appD", true);
+        App appC = mockApp("App C", "appC", true);
+        App appB = mockApp("App B", "appB", true);
+        App appA = mockApp("App A", "appA", false);
         when(mockAppService.getApps()).thenReturn(ImmutableList.of(appA, appB, appC, appD));
         
         // This user is only associated to the API app, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
         when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         
-        String jsonString = controller.getStudyMemberships();
+        String jsonString = controller.getAppMemberships();
         JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
 
         assertEquals(node.size(), 3);
-        assertEquals(node.get(0).get("name").textValue(), "Study B");
-        assertEquals(node.get(0).get("identifier").textValue(), "studyB");
-        assertEquals(node.get(1).get("name").textValue(), "Study C");
-        assertEquals(node.get(1).get("identifier").textValue(), "studyC");
-        assertEquals(node.get(2).get("name").textValue(), "Study D");
-        assertEquals(node.get(2).get("identifier").textValue(), "studyD");
+        assertEquals(node.get(0).get("name").textValue(), "App B");
+        assertEquals(node.get(0).get("identifier").textValue(), "appB");
+        assertEquals(node.get(1).get("name").textValue(), "App C");
+        assertEquals(node.get(1).get("identifier").textValue(), "appC");
+        assertEquals(node.get(2).get("name").textValue(), "App D");
+        assertEquals(node.get(2).get("identifier").textValue(), "appD");
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = ".*" + APP_ACCESS_EXCEPTION_MSG + ".*")
-    public void getStudyMembershipsForNonAdminUsers() throws Exception {
+    public void getAppMembershipsForNonAdminUsers() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(EMAIL)
                 .withEmailVerified(true)
@@ -877,19 +877,19 @@ public class StudyControllerTest extends Mockito {
         when(mockSession.getParticipant()).thenReturn(participant);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
-        controller.getStudyMemberships();
+        controller.getAppMemberships();
     }
     
-    private App mockStudy(String name, String identifier, boolean active) {
+    private App mockApp(String name, String appId, boolean active) {
         App app = App.create();
         app.setName(name);
-        app.setIdentifier(identifier);
+        app.setIdentifier(appId);
         app.setActive(active);
-        when(mockAppService.getApp(identifier)).thenReturn(app);
+        when(mockAppService.getApp(appId)).thenReturn(app);
         return app;
     }
     
-    private void testRoleAccessToCurrentStudy(Roles role) throws Exception {
+    private void testRoleAccessToCurrentApp(Roles role) throws Exception {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         if (role != null) {
             builder.withRoles(ImmutableSet.of(role));
@@ -899,7 +899,7 @@ public class StudyControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
         
-        App result = controller.getCurrentStudy();
+        App result = controller.getCurrentApp();
         assertEquals(result.getSupportEmail(), EMAIL_ADDRESS);        
     }
 }

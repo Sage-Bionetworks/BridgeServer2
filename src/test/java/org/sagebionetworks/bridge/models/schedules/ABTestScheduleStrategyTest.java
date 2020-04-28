@@ -43,7 +43,7 @@ public class ABTestScheduleStrategyTest {
 
     @BeforeMethod
     public void before() {
-        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidApp(ScheduleStrategyTest.class);
         healthCodes = Lists.newArrayList();
         for (int i = 0; i < 1000; i++) {
             healthCodes.add(BridgeUtils.generateGuid());

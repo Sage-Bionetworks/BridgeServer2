@@ -510,7 +510,7 @@ public class BridgeUtilsTest {
     
     @Test
     public void templateResolverHandlesNullConsentEmail() {
-        App app = TestUtils.getValidStudy(BridgeUtilsTest.class);
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
         app.setConsentNotificationEmail(null);
         
         Map<String,String> map = BridgeUtils.studyTemplateVariables(app);

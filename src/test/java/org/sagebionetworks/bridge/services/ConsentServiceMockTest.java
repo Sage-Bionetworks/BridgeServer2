@@ -160,7 +160,7 @@ public class ConsentServiceMockTest {
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         consentService.setTemplateService(templateService);
 
-        app = TestUtils.getValidStudy(ConsentServiceMockTest.class);
+        app = TestUtils.getValidApp(ConsentServiceMockTest.class);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("signedConsent subject");

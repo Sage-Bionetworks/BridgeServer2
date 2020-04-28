@@ -163,7 +163,7 @@ public class TestingHandlerTest {
         // Testing handler may call context.getAppId().getIdentifier(), context.getUpload().getUploadId(), and
         // context.getUpload().getFilename(), so get those ready
 
-        DynamoApp study = TestUtils.getValidStudy(TestingHandlerTest.class);
+        DynamoApp study = TestUtils.getValidApp(TestingHandlerTest.class);
         study.setIdentifier(TEST_APP_ID);
 
         DynamoUpload2 upload = new DynamoUpload2();
