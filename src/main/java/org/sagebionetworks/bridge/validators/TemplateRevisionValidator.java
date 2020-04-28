@@ -69,7 +69,7 @@ public class TemplateRevisionValidator implements Validator {
     
     private void validateSmsTemplate(Errors errors, TemplateRevision revision, Set<String> templateVariables) {
         // This is not necessarily going to prevent the message from be split because the template variables haven't
-        // been substituted. We do calculate this more accurately in the study manager right now.
+        // been substituted. We do calculate this more accurately in the app manager right now.
         if (isBlank(revision.getDocumentContent())) {
             errors.rejectValue("documentContent", "cannot be blank");
         } else if (revision.getDocumentContent().length() > SMS_CHARACTER_LIMIT) {

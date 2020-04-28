@@ -102,7 +102,7 @@ public class SubpopulationService {
     }
     
     /**
-     * Create a default subpopulation for a new study
+     * Create a default subpopulation for a new app
      * @param app
      * @return
      */
@@ -132,13 +132,13 @@ public class SubpopulationService {
         
         subpop.setAppId(app.getIdentifier());
 
-        // Verify this subpopulation is part of the study. Existing code also doesn't submit
+        // Verify this subpopulation is part of the app. Existing code also doesn't submit
         // this publication timestamp back to the server, so set if it doesn't exist.
         Subpopulation existingSubpop = getSubpopulation(app.getIdentifier(), subpop.getGuid());
         if (subpop.getPublishedConsentCreatedOn() == 0L) {
             subpop.setPublishedConsentCreatedOn(existingSubpop.getPublishedConsentCreatedOn());
         }
-        // Verify that the publishedConsentCreatedOn field points to a real study consent. Don't use the service
+        // Verify that the publishedConsentCreatedOn field points to a real app consent. Don't use the service
         // because it loads the document from S3.
         StudyConsent consent = studyConsentDao.getConsent(subpop.getGuid(), subpop.getPublishedConsentCreatedOn());
         if (consent == null) {
@@ -157,7 +157,7 @@ public class SubpopulationService {
     }
     
     /**
-     * Get all subpopulations defined for this study that have not been deleted. If 
+     * Get all subpopulations defined for this app that have not been deleted. If 
      * there are no subpopulations, a default subpopulation will be created with a 
      * default consent.
      */
@@ -237,7 +237,7 @@ public class SubpopulationService {
     /**
      * Delete all subpopulations. This is a physical delete and not a logical delete, and is not exposed 
      * in the API. This deletes everything, including the default subpopulation. This is used when 
-     * deleting a study, as part of a test, for example.
+     * deleting an app, as part of a test, for example.
      */
     public void deleteAllSubpopulations(String studyId) {
         checkNotNull(studyId);

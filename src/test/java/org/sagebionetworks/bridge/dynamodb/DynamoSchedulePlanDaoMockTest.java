@@ -414,7 +414,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         
         // This creates a criteria schedule plan which is the most complicated to persist.
         SchedulePlan plan = constructSchedulePlan();
-        plan.setStudyKey(null); // not allowed, should be set to study argument
+        plan.setStudyKey(null); // not allowed, should be set to app argument
         plan.setDeleted(true); // not allowed, should be set to false
         plan.setVersion(1L); // not allowed, should be set to null
         Criteria criteria = ((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().get(0).getCriteria();

@@ -98,7 +98,7 @@ public class SmsServiceTest {
         mockSnsClient = mock(AmazonSNSClient.class);
         when(mockSnsClient.publish(any())).thenReturn(new PublishResult().withMessageId(MESSAGE_ID));
 
-        // Mock study service. This is only used to get the study short name.
+        // Mock app service. This is only used to get the app short name.
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
         app.setShortName(STUDY_SHORT_NAME);

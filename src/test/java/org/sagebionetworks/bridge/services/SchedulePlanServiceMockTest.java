@@ -213,7 +213,7 @@ public class SchedulePlanServiceMockTest {
     public void schedulePlanSetsStudyIdentifierOnCreate() {
         DynamoApp anotherStudy = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
-        // Just pass it back, the service should set the studyKey
+        // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.createSchedulePlan(anotherStudy, plan);
@@ -224,7 +224,7 @@ public class SchedulePlanServiceMockTest {
     public void schedulePlanSetsStudyIdentifierOnUpdate() {
         DynamoApp anotherStudy = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
-        // Just pass it back, the service should set the studyKey
+        // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.getSchedulePlan(anotherStudy.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
@@ -234,7 +234,7 @@ public class SchedulePlanServiceMockTest {
     
     @Test
     public void validatesOnCreate() {
-        // Check that 1) validation is called and 2) the study's enumerations are used in the validation
+        // Check that 1) validation is called and 2) the app's enumerations are used in the validation
         SchedulePlan plan = constructorInvalidSchedulePlan();
         try {
             service.createSchedulePlan(app, plan);
@@ -252,7 +252,7 @@ public class SchedulePlanServiceMockTest {
 
     @Test
     public void validatesOnUpdate() {
-        // Check that 1) validation is called and 2) the study's enumerations are used in the validation
+        // Check that 1) validation is called and 2) the app's enumerations are used in the validation
         SchedulePlan plan = constructorInvalidSchedulePlan();
         when(mockSchedulePlanDao.getSchedulePlan(app.getIdentifier(), plan.getGuid())).thenReturn(plan);
         try {

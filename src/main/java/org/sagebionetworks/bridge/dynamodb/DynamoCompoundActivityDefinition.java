@@ -16,8 +16,8 @@ import org.sagebionetworks.bridge.models.schedules.SchemaReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 
 /**
- * DynamoDB implementation of CompoundActivityDefinition. The hash key is study ID and the range key is the task ID.
- * This allows us to namespace compound activity definitions to studies and to list all definitions in a study.
+ * DynamoDB implementation of CompoundActivityDefinition. The hash key is appId and the range key is the task ID.
+ * This allows us to namespace compound activity definitions to apps and to list all definitions in a app.
  */
 @DynamoDBTable(tableName = "CompoundActivityDefinition")
 @JsonFilter("filter")

@@ -60,7 +60,7 @@ public class UploadArchiveService {
         maxZipEntrySize = config.getPropertyAsInt(CONFIG_KEY_MAX_ZIP_ENTRY_SIZE);
     }
 
-    /** Loading cache for CMS encryptor, keyed by study ID. This is configured by Spring. */
+    /** Loading cache for CMS encryptor, keyed by appId. This is configured by Spring. */
     @Autowired
     public final void setCmsEncryptorCache(LoadingCache<String, CmsEncryptor> cmsEncryptorCache) {
         this.cmsEncryptorCache = cmsEncryptorCache;
@@ -79,10 +79,10 @@ public class UploadArchiveService {
     }
 
     /**
-     * Encrypts the specified data, using the encryption materials for the specified study.
+     * Encrypts the specified data, using the encryption materials for the specified app.
      *
-     * @param studyId
-     *         study ID, must be non-null, non-empty, and refer to a valid study
+     * @param appId
+     *         appId, must be non-null, non-empty, and refer to a valid study
      * @param bytes
      *         data to encrypt, must be non-null
      * @return encrypted data as a byte array
@@ -109,10 +109,10 @@ public class UploadArchiveService {
     }
 
     /**
-     * Decrypts the specified data, using the encryption materials for the specified study.
+     * Decrypts the specified data, using the encryption materials for the specified app.
      *
-     * @param studyId
-     *         study ID, must be non-null, non-empty, and refer to a valid study
+     * @param appId
+     *         appId, must be non-null, non-empty, and refer to a valid study
      * @param bytes
      *         data to decrypt, must be non-null
      * @return decrypted data as a byte array
@@ -135,7 +135,7 @@ public class UploadArchiveService {
     }
 
     /**
-     * Decrypts the specified data stream, using the encryption materials for the specified study, and returns the a
+     * Decrypts the specified data stream, using the encryption materials for the specified app, and returns the a
      * stream of decrypted data. The caller is responsible for closing both streams.
      */
     public InputStream decrypt(String studyId, InputStream source) {
@@ -156,11 +156,11 @@ public class UploadArchiveService {
     }
 
     /**
-     * Helper function to get the encryptor for the given study.
+     * Helper function to get the encryptor for the given app.
      *
-     * @param studyId
-     *         study ID to get the encryptor for
-     * @return the encryptor for the given study
+     * @param appId
+     *         app ID to get the encryptor for
+     * @return the encryptor for the given app
      * @throws BridgeServiceException
      *         if we fail to load the encryptor, or if the encryptor can't be found
      */

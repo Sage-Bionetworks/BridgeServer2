@@ -14,7 +14,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * Compound activity definition, which is keyed off taskID and stored in persistent storage. This allows study
+ * Compound activity definition, which is keyed off taskID and stored in persistent storage. This allows app
  * developers to define a task once and use that task in multiple schedules.
  */
 @BridgeTypeName("CompoundActivityDefinition")

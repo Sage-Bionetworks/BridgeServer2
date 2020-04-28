@@ -44,7 +44,7 @@ public class StudyConsentController extends BaseController {
         this.subpopService = subpopService;
     }
 
-    // V1 API: consents directly associated to a study
+    // V1 API: consents directly associated to an app
     @Deprecated
     @GetMapping("/v3/consents")
     public ResourceList<StudyConsent> getAllConsents() {
@@ -97,7 +97,7 @@ public class StudyConsentController extends BaseController {
         String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         subpopService.getSubpopulation(studyId, subpopGuid);
         
         List<StudyConsent> consents = studyConsentService.getAllConsents(subpopGuid);
@@ -110,7 +110,7 @@ public class StudyConsentController extends BaseController {
         String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         Subpopulation subpop = subpopService.getSubpopulation(studyId, subpopGuid);
         
         return studyConsentService.getActiveConsent(subpop);
@@ -122,7 +122,7 @@ public class StudyConsentController extends BaseController {
         String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         subpopService.getSubpopulation(studyId, subpopGuid);
         
         return studyConsentService.getMostRecentConsent(subpopGuid);
@@ -134,7 +134,7 @@ public class StudyConsentController extends BaseController {
         String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         subpopService.getSubpopulation(studyId, subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);
@@ -148,7 +148,7 @@ public class StudyConsentController extends BaseController {
         String studyId = session.getAppId();
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         subpopService.getSubpopulation(studyId, subpopGuid);
 
         StudyConsentForm form = parseJson(StudyConsentForm.class);
@@ -161,7 +161,7 @@ public class StudyConsentController extends BaseController {
         App app = appService.getApp(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         
-        // Throws 404 exception if this subpopulation is not part of the caller's study
+        // Throws 404 exception if this subpopulation is not part of the caller's app
         Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
 
         long timestamp = DateUtils.convertToMillisFromEpoch(createdOn);

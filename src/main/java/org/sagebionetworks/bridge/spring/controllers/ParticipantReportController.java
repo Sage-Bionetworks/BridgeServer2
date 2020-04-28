@@ -132,7 +132,7 @@ public class ParticipantReportController extends BaseController {
                 endDate);
     }
 
-    /** Worker API to get reports for the given user in the given study by date. */
+    /** Worker API to get reports for the given user in the given app by date. */
     @GetMapping("/v3/studies/{studyId}/participants/{userId}/reports/{reportId}")
     public DateRangeResourceList<? extends ReportData> getParticipantReportForWorker(@PathVariable String studyId,
             @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = false) String startDate,
@@ -165,7 +165,7 @@ public class ParticipantReportController extends BaseController {
                 endTime, offsetKey, pageSize);
     }
 
-    /** Worker API to get reports for the given user in the given study by date-time. */
+    /** Worker API to get reports for the given user in the given app by date-time. */
     @GetMapping("/v4/studies/{studyId}/participants/{userId}/reports/{reportId}")
     public ForwardCursorPagedResourceList<ReportData> getParticipantReportForWorkerV4(@PathVariable String studyId,
             @PathVariable String userId, @PathVariable String reportId,

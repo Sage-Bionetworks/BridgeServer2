@@ -39,12 +39,12 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
     static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_APP_ID);
     
     /**
-     * The data group set in the test (api) study. This includes groups that are required for the SDK integration tests.
+     * The data group set in the test (api) app. This includes groups that are required for the SDK integration tests.
      */
     public static final Set<String> TEST_DATA_GROUPS = ImmutableSet.of("sdk-int-1", "sdk-int-2", "group1", TEST_USER_GROUP);
 
     /**
-     * The task identifiers set in the test (api) study. This includes task identifiers that are required for the SDK
+     * The task identifiers set in the test (api) app. This includes task identifiers that are required for the SDK
      * integration tests.
      */
     public static final Set<String> TEST_TASK_IDENTIFIERS = ImmutableSet.of("task:AAA", "task:BBB", "task:CCC", "CCC", "task1");
@@ -74,7 +74,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
                 .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
                 .withCallerUserId("DefaultStudyBootstrapper").build());
 
-        // Create the "api" study if it doesn't exist. This is used for local testing and integ tests.
+        // Create the "api" app if it doesn't exist. This is used for local testing and integ tests.
         try {
             appService.getApp(API_APP_ID);
         } catch (EntityNotFoundException e) {
@@ -109,7 +109,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             userAdminService.createUser(app, dev, API_SUBPOP, false, false);
         }
 
-        // Create the "shared" study if it doesn't exist. This is used for the Shared Module Library.
+        // Create the "shared" app if it doesn't exist. This is used for the Shared Module Library.
         try {
             appService.getApp(SHARED_APP_ID);
         } catch (EntityNotFoundException e) {

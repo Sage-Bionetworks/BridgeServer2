@@ -195,7 +195,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void uploadCompleteWithMissingStudyId() throws Exception {
-        upload.setAppId(null); // no studyId, must look up by healthCode
+        upload.setAppId(null); // no appId, must look up by healthCode
         upload.setHealthCode(HEALTH_CODE);
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();

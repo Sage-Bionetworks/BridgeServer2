@@ -60,7 +60,7 @@ public class UserManagementController extends BaseController {
             throw new UnauthorizedException("Not a superadmin account");
         }
         
-        // Now act as if the user is in the study that was requested
+        // Now act as if the user is in the app that was requested
         sessionUpdateService.updateStudy(session, originSignIn.getAppId());
         setCookieAndRecordMetrics(session);
         
@@ -78,7 +78,7 @@ public class UserManagementController extends BaseController {
     public JsonNode changeStudyForAdmin() {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        // The only part of this payload we care about is the study property
+        // The only part of this payload we care about is the app property
         SignIn signIn = parseJson(SignIn.class);
         String appId = signIn.getAppId();
 

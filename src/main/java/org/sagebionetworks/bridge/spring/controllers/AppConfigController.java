@@ -68,7 +68,7 @@ public class AppConfigController extends BaseController {
         CacheKey cacheKey = getCriteriaContextCacheKey(context);
         String json = viewCache.getView(cacheKey, () -> {
             AppConfig appConfig = appConfigService.getAppConfigForUser(context, true);
-            // So we can delete all the relevant cached versions, keep track of them under the study
+            // So we can delete all the relevant cached versions, keep track of them under the app
             cacheProvider.addCacheKeyToSet(CacheKey.appConfigList(app.getIdentifier()), cacheKey.toString());
             return appConfig;
         });

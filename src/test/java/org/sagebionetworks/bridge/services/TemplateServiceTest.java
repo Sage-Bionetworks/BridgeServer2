@@ -200,7 +200,7 @@ public class TemplateServiceTest extends Mockito {
         assertEquals(template, t2);
     }
     
-    // More than one template matches, so the study default is used instead
+    // More than one template matches, so the app default is used instead
     @Test
     public void getTemplateForUserMatchesManyUsesDefault() {
         Template t1 = makeTemplate(GUID1, "fr");
@@ -233,7 +233,7 @@ public class TemplateServiceTest extends Mockito {
         Template t2 = makeTemplate(GUID2, "fr");
         mockGetTemplates(ImmutableList.of(t1, t2));
         
-        // no default in the study map at all
+        // no default in the app map at all
         mockTemplateDefault(null);
         
         Template template = service.getTemplateForUser(app, makeContext("fr"), EMAIL_RESET_PASSWORD).get();
@@ -247,7 +247,7 @@ public class TemplateServiceTest extends Mockito {
         Template t2 = makeTemplate(GUID2, "en");
         mockGetTemplates(ImmutableList.of(t1, t2));
         
-        // no default in the study map at all
+        // no default in the app map at all
         mockTemplateDefault(null);
         
         Template template = service.getTemplateForUser(app, makeContext("fr"), EMAIL_RESET_PASSWORD).get();

@@ -175,10 +175,10 @@ public class UploadServiceCreateUploadMockTest {
 
     @Test
     public void dupeWhitelisted() {
-        // If the current study is whitelisted for dupes, then all 3 cases (not dupe, incomplete dupe, complete dupe)
+        // If the current app is whitelisted for dupes, then all 3 cases (not dupe, incomplete dupe, complete dupe)
         // look exactly the same. We have no way of knowing whether something is a dupe or not, because we never look.
 
-        // mock config with dupe study whitelist
+        // mock config with dupe app whitelist
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
         svc.setConfig(mockConfig);

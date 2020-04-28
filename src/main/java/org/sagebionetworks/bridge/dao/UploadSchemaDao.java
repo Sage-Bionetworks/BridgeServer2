@@ -28,7 +28,7 @@ public interface UploadSchemaDao {
     UploadSchema getUploadSchemaByIdAndRevision(String appId, String schemaId, int revision);
 
     /**
-     * DAO method for fetching upload schemas. This method fetches an upload schema for the specified study and schema
+     * DAO method for fetching upload schemas. This method fetches an upload schema for the specified app and schema
      * ID. If there is more than one revision of the schema, this fetches the latest revision.
      */
     UploadSchema getUploadSchemaLatestRevisionById(String appId, String schemaId);

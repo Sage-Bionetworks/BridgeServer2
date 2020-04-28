@@ -65,7 +65,7 @@ public class IdentifierUpdateValidatorTest {
     
     @Test
     public void signInErrorsNestedReauthentication() {
-        // Reauthentication with no study
+        // Reauthentication with no app
         SignIn reauth = new SignIn.Builder().withEmail(EMAIL)
                 .withReauthToken("ABDC").build();
         

@@ -132,7 +132,7 @@ public class DynamoCompoundActivityDefinitionTest {
         assertEquals(jsonNode.get("surveyList").size(), 2);
 
         // convert to JSON using the PUBLIC_DEFINITION_WRITER
-        // For simplicity, just test that study ID is absent and the other major key values are present
+        // For simplicity, just test that appId is absent and the other major key values are present
         String publicJsonText = CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(def);
         JsonNode publicJsonNode = BridgeObjectMapper.get().readTree(publicJsonText);
         assertNull(publicJsonNode.get("studyId"));

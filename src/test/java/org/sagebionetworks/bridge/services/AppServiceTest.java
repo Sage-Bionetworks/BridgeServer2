@@ -209,7 +209,7 @@ public class AppServiceTest extends Mockito {
         });
 
         when(mockAppDao.updateApp(any())).thenAnswer(invocation -> {
-            // Return the same study, except we increment the version.
+            // Return the same app, except we increment the version.
             App app = invocation.getArgument(0);
             Long oldVersion = app.getVersion();
             app.setVersion(oldVersion != null ? oldVersion + 1 : 1);
@@ -255,11 +255,11 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void createStudySendsVerificationEmail() throws Exception {
-        // Create study.
+        // Create app.
         App app = getTestStudy();
         String consentNotificationEmail = app.getConsentNotificationEmail();
 
-        // Execute. Verify study is created with ConsentNotificationEmailVerified=false.
+        // Execute. Verify app is created with ConsentNotificationEmailVerified=false.
         service.createApp(app);
 
         ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
@@ -274,17 +274,17 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void updateStudyConsentNotificationEmailSendsVerificationEmail() throws Exception {
-        // Original study. ConsentNotificationEmailVerified is true.
+        // Original app. ConsentNotificationEmailVerified is true.
         App originalApp = getTestStudy();
         originalApp.setConsentNotificationEmailVerified(true);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(originalApp);
 
-        // New study is the same as original study. Change consent notification email and study name.
+        // New app is the same as original app. Change consent notification email and app name.
         App newApp = getTestStudy();
         newApp.setConsentNotificationEmail("different-email@example.com");
         newApp.setName("different-name");
 
-        // Execute. Verify the consent email change and study name change. The verified flag should now be false.
+        // Execute. Verify the consent email change and app name change. The verified flag should now be false.
         service.updateApp(newApp, false);
 
         ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
@@ -329,17 +329,17 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void updateStudyWithSameConsentNotificationEmailDoesntSendVerification() {
-        // Original study. ConsentNotificationEmailVerified is true.
+        // Original app. ConsentNotificationEmailVerified is true.
         App originalApp = getTestStudy();
         originalApp.setConsentNotificationEmailVerified(true);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(originalApp);
 
-        // New study is the same as original study. Make some inconsequential change to the study name.
+        // New app is the same as original app. Make some inconsequential change to the app name.
         App newApp = getTestStudy();
         newApp.setName("different-name");
         newApp.setConsentNotificationEmailVerified(true);
 
-        // Execute. Verify the study name change. Verified is still true.
+        // Execute. Verify the app name change. Verified is still true.
         service.updateApp(newApp, false);
 
         ArgumentCaptor<App> savedStudyCaptor = ArgumentCaptor.forClass(App.class);
@@ -355,7 +355,7 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void updateStudyChangesNullConsentNotificationEmailVerifiedToTrue() {
-        // For backwards-compatibility, we flip the verified=null flag to true. This only happens for older studies
+        // For backwards-compatibility, we flip the verified=null flag to true. This only happens for older apps
         // that predate verification, most of which are confirmed working.
         updateStudyConsentNotificationEmailVerified(null, null, true);
     }
@@ -372,12 +372,12 @@ public class AppServiceTest extends Mockito {
 
     private void updateStudyConsentNotificationEmailVerified(Boolean oldValue, Boolean newValue,
             Boolean expectedValue) {
-        // Original study
+        // Original app
         App oldApp = getTestStudy();
         oldApp.setConsentNotificationEmailVerified(oldValue);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // New study
+        // New app
         App newApp = getTestStudy();
         newApp.setConsentNotificationEmailVerified(newValue);
 
@@ -510,7 +510,7 @@ public class AppServiceTest extends Mockito {
                 "}";
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
 
-        // Mock getting the study from the cache.
+        // Mock getting the app from the cache.
         App app = getTestStudy();
         app.setConsentNotificationEmail("correct-email@example.com");
         when(mockCacheProvider.getStudy(TEST_APP_ID)).thenReturn(app);
@@ -524,7 +524,7 @@ public class AppServiceTest extends Mockito {
         App savedApp = savedStudyCaptor.getValue();
         assertTrue(savedApp.isConsentNotificationEmailVerified());
 
-        // Verify that we cached the study.
+        // Verify that we cached the app.
         verify(mockCacheProvider).setStudy(savedApp);
 
         // Verify that we removed the used token.
@@ -653,7 +653,7 @@ public class AppServiceTest extends Mockito {
     
     @Test
     public void createStudyCreatesDefaultTemplates() {
-        // Mock this to verify that defaults are set in study
+        // Mock this to verify that defaults are set in app
         GuidVersionHolder keys = new GuidVersionHolder("oneGuid", 1L);
         when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
         
@@ -751,12 +751,12 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void updateUploadMetadataOldStudyHasNoFields() {
-        // old study
+        // old app
         App oldApp = getTestStudy();
         oldApp.setUploadMetadataFieldDefinitions(null);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // new study
+        // new app
         App newApp = getTestStudy();
         newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-field").withType(UploadFieldType.INT).build()));
@@ -767,13 +767,13 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void updateUploadMetadataNewStudyHasNoFields() {
-        // old study
+        // old app
         App oldApp = getTestStudy();
         oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-field").withType(UploadFieldType.INT).build()));
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // new study
+        // new app
         App newApp = getTestStudy();
         newApp.setUploadMetadataFieldDefinitions(null);
 
@@ -797,12 +797,12 @@ public class AppServiceTest extends Mockito {
         UploadFieldDefinition addedField = new UploadFieldDefinition.Builder().withName("added-field")
                 .withType(UploadFieldType.TIMESTAMP).build();
 
-        // old study
+        // old app
         App oldApp = getTestStudy();
         oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField1, reorderedField2));
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // new study
+        // new app
         App newApp = getTestStudy();
         newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField2, reorderedField1, addedField));
 
@@ -822,12 +822,12 @@ public class AppServiceTest extends Mockito {
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
                 .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
-        // old study
+        // old app
         App oldApp = getTestStudy();
         oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // new study
+        // new app
         App newApp = getTestStudy();
         newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
 
@@ -853,12 +853,12 @@ public class AppServiceTest extends Mockito {
         UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
                 .withType(UploadFieldType.STRING).withMaxLength(20).build();
 
-        // old study
+        // old app
         App oldApp = getTestStudy();
         oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
 
-        // new study
+        // new app
         App newApp = getTestStudy();
         newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
 
@@ -1283,7 +1283,7 @@ public class AppServiceTest extends Mockito {
         verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, TEST_USER_SYNAPSE_ID, false);
         verify(mockSynapseClient).setTeamMemberPermissions(TEST_TEAM_ID, TEST_USER_SYNAPSE_ID_2, false);
         
-        // update study
+        // update app
         assertNotNull(retApp);
         assertEquals(retApp.getIdentifier(), app.getIdentifier());
         assertEquals(retApp.getName(), app.getName());
@@ -1449,7 +1449,7 @@ public class AppServiceTest extends Mockito {
         App app = getTestStudy();
         when(mockAppDao.getApp(app.getIdentifier())).thenReturn(app);
 
-        // We need to copy study in order to set support email and have it be different than
+        // We need to copy app in order to set support email and have it be different than
         // the mock version returned from the database
         App newApp = BridgeObjectMapper.get().readValue(
                 BridgeObjectMapper.get().writeValueAsString(app), App.class);
@@ -1514,7 +1514,7 @@ public class AppServiceTest extends Mockito {
         return mockResource;
     }
     
-    // Tests from the Play-based StudyServiceTest.java in BridgePF
+    // Tests from the Play-based AppServiceTest.java in BridgePF
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void studyIsValidated() {
@@ -1581,7 +1581,7 @@ public class AppServiceTest extends Mockito {
 
         verify(mockCacheProvider).setStudy(app);
         
-        // A default, active consent should be created for the study.
+        // A default, active consent should be created for the app.
         verify(mockSubpopService).createDefaultSubpopulation(app);
 
         verify(mockAppDao).createApp(studyCaptor.capture());
@@ -1616,7 +1616,7 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).removeStudy(updatedApp.getIdentifier());
         verify(mockCacheProvider, times(2)).setStudy(updatedApp);
 
-        // delete study
+        // delete app
         reset(mockCacheProvider);
         service.deleteApp(app.getIdentifier(), true);
         

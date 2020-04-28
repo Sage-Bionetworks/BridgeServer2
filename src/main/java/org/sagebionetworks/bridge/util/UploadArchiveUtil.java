@@ -8,7 +8,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
-// Usage: play "run-main org.sagebionetworks.bridge.util.UploadArchiveUtil [encrypt/decrypt] [study ID] [input file]
+// Usage: play "run-main org.sagebionetworks.bridge.util.UploadArchiveUtil [encrypt/decrypt] [appId] [input file]
 // [output file]"
 public class UploadArchiveUtil {
     @SuppressWarnings("resource")
@@ -17,7 +17,7 @@ public class UploadArchiveUtil {
         if (args.length != 4) {
             System.out.println(
                     "Usage: play \"run-main org.sagebionetworks.bridge.util.UploadArchiveUtil [encrypt/decrypt] " +
-                            "[study ID] [input filename] [output filename]\"");
+                            "[appId] [input filename] [output filename]\"");
             System.exit(1);
             return;
         }

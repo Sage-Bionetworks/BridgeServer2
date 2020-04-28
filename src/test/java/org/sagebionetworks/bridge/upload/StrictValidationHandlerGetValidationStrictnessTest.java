@@ -25,7 +25,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
 
     @Test
     public void enumStrict() {
-        // mock study
+        // mock app
         App app = App.create();
         app.setUploadValidationStrictness(UploadValidationStrictness.STRICT);
         app.setStrictUploadValidationEnabled(false);
@@ -38,7 +38,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
 
     @Test
     public void enumReport() {
-        // mock study
+        // mock app
         App app = App.create();
         app.setUploadValidationStrictness(UploadValidationStrictness.REPORT);
         app.setStrictUploadValidationEnabled(false);
@@ -51,7 +51,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
 
     @Test
     public void enumWarn() {
-        // mock study
+        // mock app
         App app = App.create();
         app.setUploadValidationStrictness(UploadValidationStrictness.WARNING);
         app.setStrictUploadValidationEnabled(true);
@@ -64,7 +64,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
 
     @Test
     public void booleanTrue() {
-        // mock study
+        // mock app
         App app = App.create();
         app.setUploadValidationStrictness(null);
         app.setStrictUploadValidationEnabled(true);
@@ -77,7 +77,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
 
     @Test
     public void booleanFalse() {
-        // mock study
+        // mock app
         App app = App.create();
         app.setUploadValidationStrictness(null);
         app.setStrictUploadValidationEnabled(false);

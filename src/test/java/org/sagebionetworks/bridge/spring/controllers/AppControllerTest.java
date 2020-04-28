@@ -566,7 +566,7 @@ public class AppControllerTest extends Mockito {
 
         String result = controller.getAllApps("summary", null);
 
-        // only active studies will be returned
+        // only active apps will be returned
         JsonNode recordJsonNode = DefaultObjectMapper.INSTANCE.readTree(result);
         JsonNode items = recordJsonNode.get("items");
         assertTrue(items.size() == 1);
@@ -652,8 +652,8 @@ public class AppControllerTest extends Mockito {
     }
     
     @Test
-    public void getAllAppsSummary() throws Exception {
-        // Two active and one deleted study
+    public void getAllStudiesSummary() throws Exception {
+        // Two active and one deleted app
         App app1 = App.create();
         app1.setName("app1");
         app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
@@ -679,7 +679,7 @@ public class AppControllerTest extends Mockito {
     @Test
     public void getAllApps() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
-        // Two active and one deleted study
+        // Two active and one deleted app
         App app1 = App.create();
         app1.setName("app1");
         app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
@@ -851,7 +851,7 @@ public class AppControllerTest extends Mockito {
         App appA = mockApp("App A", "appA", false);
         when(mockAppService.getApps()).thenReturn(ImmutableList.of(appA, appB, appC, appD));
         
-        // This user is only associated to the API study, but they are an admin
+        // This user is only associated to the API app, but they are an admin
         List<String> list = ImmutableList.of(TEST_APP_ID);
         when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID)).thenReturn(list);
         

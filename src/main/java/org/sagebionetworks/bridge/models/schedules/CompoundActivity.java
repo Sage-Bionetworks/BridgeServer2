@@ -43,7 +43,7 @@ public final class CompoundActivity {
         return surveyList;
     }
 
-    /** Task identifier associated with this activity, as defined in the study. */
+    /** Task identifier associated with this activity, as defined in the app. */
     public String getTaskIdentifier() {
         return taskIdentifier;
     }

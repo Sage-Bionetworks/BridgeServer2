@@ -107,7 +107,7 @@ public final class ConsentPdf {
         // User's name may contain HTML. Clean it up
         String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
         
-        // A prior format using '@@' as a delimiter is no longer used by any study in production.
+        // A prior format using '@@' as a delimiter is no longer used by any app in production.
         
         String contactInfo = "";
         String contactLabel = "";

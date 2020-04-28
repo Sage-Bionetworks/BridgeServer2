@@ -26,7 +26,7 @@ public class ExportController extends BaseController {
         this.exportService = exportService;
     }
 
-    /** Kicks off an on-demand export for the given study. */
+    /** Kicks off an on-demand export for the given app. */
     @PostMapping("/v3/export/start")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage startOnDemandExport() throws JsonProcessingException {

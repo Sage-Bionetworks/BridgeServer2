@@ -12,10 +12,10 @@ public interface CompoundActivityDefinitionDao {
     /** Deletes a compound activity definition. */
     void deleteCompoundActivityDefinition(String appId, String taskId);
 
-    /** Deletes all compound activity definitions in the specified study. Used when we physically delete a study. */
+    /** Deletes all compound activity definitions in the specified app. Used when we physically delete an app. */
     void deleteAllCompoundActivityDefinitionsInApp(String appId);
 
-    /** List all compound activity definitions in a study. */
+    /** List all compound activity definitions in an app. */
     List<CompoundActivityDefinition> getAllCompoundActivityDefinitionsInApp(String appId);
 
     /** Get a compound activity definition by ID. */

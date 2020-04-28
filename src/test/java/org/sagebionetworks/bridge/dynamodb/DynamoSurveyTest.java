@@ -92,7 +92,7 @@ public class DynamoSurveyTest {
         JsonNode jsonElementList = jsonNode.get("elements");
         assertEquals(jsonElementList.size(), 13);
 
-        // Convert back to POJO and validate. Note that study ID is still missing, since it was removed from the JSON.
+        // Convert back to POJO and validate. Note that appId is still missing, since it was removed from the JSON.
         Survey convertedSurvey = BridgeObjectMapper.get().convertValue(jsonNode, Survey.class);
         assertNull(convertedSurvey.getAppId());
         assertEquals(convertedSurvey.getGuid(), "test-survey-guid");

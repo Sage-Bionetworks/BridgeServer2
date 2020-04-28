@@ -174,7 +174,7 @@ public class StudyValidator implements Validator {
         }
         validateDataGroupNamesAndFitForSynapseExport(errors, app.getDataGroups());
 
-        // emailVerificationEnabled=true (public study):
+        // emailVerificationEnabled=true (public app):
         //     externalIdValidationEnabled and externalIdRequiredOnSignup can vary independently
         // emailVerificationEnabled=false:
         //     externalIdValidationEnabled and externalIdRequiredOnSignup must both be true

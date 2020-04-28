@@ -270,15 +270,15 @@ public class BridgeUtils {
     
     /**
      * Create a variable map for the <code>resolveTemplate</code> method that includes common values from 
-     * a study that used in most of our templates. The map is mutable. Variables include:
+     * a app that used in most of our templates. The map is mutable. Variables include:
      * <ul>
-     *  <li>studyName = study.getName()</li>
-     *  <li>studyShortName = study.getShortName()</li>
-     *  <li>studyId = study.getIdentifier()</li>
-     *  <li>sponsorName = study.getSponsorName()</li>
-     *  <li>supportEmail = study.getSupportEmail()</li>
-     *  <li>technicalEmail = study.getTechnicalEmail()</li>
-     *  <li>consentEmail = study.getConsentNotificationEmail()</li>
+     *  <li>studyName = app.getName()</li>
+     *  <li>studyShortName = app.getShortName()</li>
+     *  <li>studyId = app.getIdentifier()</li>
+     *  <li>sponsorName = app.getSponsorName()</li>
+     *  <li>supportEmail = app.getSupportEmail()</li>
+     *  <li>technicalEmail = app.getTechnicalEmail()</li>
+     *  <li>consentEmail = app.getConsentNotificationEmail()</li>
      * </ul>
      */
     public static Map<String,String> studyTemplateVariables(App app, Function<String,String> escaper) {

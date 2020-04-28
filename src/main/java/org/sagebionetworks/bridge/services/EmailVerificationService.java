@@ -35,8 +35,8 @@ import com.amazonaws.services.simpleemail.model.VerifyEmailIdentityRequest;
 
 /**
  * Service to verify an email address can be used to send SES emails. Will be called independently of
- * the study APIs that retrieve a cached study, because it needs to be cached on a very different time period 
- * from studies (studies can be cached forever, while this status updates outside the system and should be 
+ * the study APIs that retrieve a cached app, because it needs to be cached on a very different time period 
+ * from apps (apps can be cached forever, while this status updates outside the system and should be 
  * held for much shorter time period).
  */
 @Component
@@ -140,7 +140,7 @@ public class EmailVerificationService {
      * Get the status of this email address. If the address is unknown to SES or it in the state UNVERIFIED, then
      * we will have SES send out a request to verify the email address and return the status PENDING. Otherwise,
      * we return the status (in this case, it should be VERIFIED). This is the primary method called when getting, 
-     * saving or updating a study.
+     * saving or updating a app.
      *
      * @param emailAddress email address to verify
      * @return emailVerificationStatus

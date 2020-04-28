@@ -14,7 +14,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
 /**
- * An identifier that can be used to find an account (a study identifier with an ID, email, or phone number).
+ * An identifier that can be used to find an account (an appId, email, or phone number).
  * Note that AccountId inequality does not indicate the objects represent two different accounts! 
  */
 public final class AccountId implements BridgeEntity {

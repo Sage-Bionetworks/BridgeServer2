@@ -74,7 +74,7 @@ public class StrictValidationHandlerTest {
                 testSchema);
         handler.setUploadSchemaService(mockSchemaService);
 
-        // mock study service - this is to get the shouldThrow (strictUploadValidationEnabled) flag
+        // mock app service - this is to get the shouldThrow (strictUploadValidationEnabled) flag
         DynamoApp testStudy = new DynamoApp();
         testStudy.setUploadValidationStrictness(uploadValidationStrictness);
 

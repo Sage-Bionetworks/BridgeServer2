@@ -40,7 +40,7 @@ public class EmailController extends BaseController {
             if (token == null || !token.equals(bridgeConfig.getEmailUnsubscribeToken())) {
                 throw new BridgeServiceException("No authentication token provided.", SC_UNAUTHORIZED);
             }
-            // Study has to be provided as an URL parameter
+            // App has to be provided as an URL parameter
             String studyId = request().getParameter("study");
             if (studyId == null) {
                 throw new BadRequestException("Study not found.");

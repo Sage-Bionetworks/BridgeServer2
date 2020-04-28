@@ -628,7 +628,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getSessionIfItExists();
 
-        // Mock study.
+        // Mock app.
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // Single arg success.

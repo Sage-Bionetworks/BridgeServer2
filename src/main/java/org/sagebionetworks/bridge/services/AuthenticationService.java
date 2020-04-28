@@ -158,7 +158,7 @@ public class AuthenticationService {
      * account is updated, and takes the updated CriteriaContext to calculate the current state of the user. We 
      * do not rotate the reauthentication token just because the user updates their session.
      * @param app
-     *      the user's study
+     *      the user's app
      * @param context
      *      an updated set of criteria for calculating the user's consent status
      * @return

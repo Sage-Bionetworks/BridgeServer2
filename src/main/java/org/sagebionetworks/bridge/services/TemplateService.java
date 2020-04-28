@@ -373,7 +373,7 @@ public class TemplateService {
     }
     
     public void deleteTemplate(String appId, String guid) {
-        // This not only verifies the template exists, it verifies it is in the caller's study
+        // This not only verifies the template exists, it verifies it is in the caller's app
         Template existing = getTemplate(appId, guid);
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Template.class);

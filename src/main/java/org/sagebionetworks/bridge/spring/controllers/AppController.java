@@ -137,7 +137,7 @@ public class AppController extends BaseController {
         return appService.getApp(appId, true);
     }
 
-    // You can get a truncated view of studies with either format=summary or summary=true;
+    // You can get a truncated view of apps with either format=summary or summary=true;
     // the latter allows us to make this a boolean flag in the Java client libraries.
     
     @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
@@ -156,7 +156,7 @@ public class AppController extends BaseController {
         }
         getAuthenticatedSession(SUPERADMIN);
 
-        // otherwise, return all studies including deactivated ones
+        // otherwise, return all apps including deactivated ones
         return BridgeObjectMapper.get().writeValueAsString(
                 new ResourceList<>(apps).withRequestParam("summary", false));
     }
@@ -211,7 +211,7 @@ public class AppController extends BaseController {
     @PostMapping(path = {"/v1/apps/self/synapseProject", "/v3/studies/self/synapseProject"})
     @ResponseStatus(HttpStatus.CREATED)
     public SynapseProjectIdTeamIdHolder createSynapse() throws SynapseException {
-        // first get current study
+        // first get current app
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
 
@@ -222,7 +222,7 @@ public class AppController extends BaseController {
         return new SynapseProjectIdTeamIdHolder(app.getSynapseProjectId(), app.getSynapseDataAccessTeamId());
     }
 
-    // since only admin can delete study, no need to check if return results should contain deactivated ones
+    // since only admin can delete app, no need to check if return results should contain deactivated ones
     @DeleteMapping(path = {"/v1/apps/{appId}", "/v3/studies/{appId}"})
     public StatusMessage deleteApp(@PathVariable String appId,
             @RequestParam(defaultValue = "false") boolean physical) {
@@ -261,7 +261,7 @@ public class AppController extends BaseController {
         return new EmailVerificationStatusHolder(status);
     }
 
-    /** Resends the verification email for the current study's email. */
+    /** Resends the verification email for the current app's email. */
     @PostMapping(path = {"/v1/apps/self/emails/resendVerify", "/v3/studies/self/emails/resendVerify"})
     public StatusMessage resendVerifyEmail(@RequestParam(required = false) String type) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -272,7 +272,7 @@ public class AppController extends BaseController {
 
     /**
      * Verifies the emails for the app. Since this comes in from an email with a token, you don't need to be
-     * authenticated. The token itself knows what study this is for.
+     * authenticated. The token itself knows what app this is for.
      */
     @PostMapping(path = {"/v1/apps/{appId}/emails/verify", "/v3/studies/{appId}/emails/verify"})
     public StatusMessage verifyEmail(@PathVariable String appId, @RequestParam(required = false) String token,
@@ -282,7 +282,7 @@ public class AppController extends BaseController {
         return CONSENT_EMAIL_VERIFIED_MSG;
     }
 
-    // Helper method to parse and validate the email type for study email verification workflow. We do verification
+    // Helper method to parse and validate the email type for app email verification workflow. We do verification
     // here so that the service can just deal with a clean enum.
     private static StudyEmailType parseEmailType(String typeStr) {
         if (StringUtils.isBlank(typeStr)) {
@@ -319,7 +319,7 @@ public class AppController extends BaseController {
     }
 
     /**
-     * Another version of getUploads for workers to specify any study ID to get uploads
+     * Another version of getUploads for workers to specify any app ID to get uploads
      */
     @GetMapping(path = {"/v1/apps/{appId}/uploads", "/v3/studies/{appId}/uploads"})
     public ForwardCursorPagedResourceList<UploadView> getUploadsForApp(@PathVariable String appId,

@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 
 /**
- * A DAO for managing external identifiers. For studies utilizing strict validation of external identifiers, they must be 
+ * A DAO for managing external identifiers. For apps utilizing strict validation of external identifiers, they must be 
  * selected from a known list of identifiers, uploaded by study designers. An ID will not be assigned to two different users 
  * or re-assigned to another user if assigned.
  */

@@ -158,7 +158,7 @@ public class AppService {
         this.synapseTrackingViewId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
     }
 
-    /** Compound activity definition service, used to clean up deleted studies. This is set by Spring. */
+    /** Compound activity definition service, used to clean up deleted apps. This is set by Spring. */
     @Autowired
     final void setCompoundActivityDefinitionService(
             CompoundActivityDefinitionService compoundActivityDefinitionService) {
@@ -239,11 +239,11 @@ public class AppService {
         }
         if (app != null) {
             // If it it exists and has been deactivated, and this call is not supposed to retrieve deactivated
-            // studies, treat it as if it doesn't exist.
+            // apps, treat it as if it doesn't exist.
             if (!app.isActive() && !includeDeleted) {
                 throw new EntityNotFoundException(App.class);
             }
-            // Because these templates do not exist in all studies, add the defaults where they are null
+            // Because these templates do not exist in all app, add the defaults where they are null
             if (app.getPasswordPolicy() == null) {
                 app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
             }
@@ -271,7 +271,7 @@ public class AppService {
         
         Errors errors = Validate.getErrorsFor(studyAndUsers);
         
-        // Validate StudyAndUsers
+        // Validate AppAndUsers
         Validate.entity(studyAndUsersValidator, errors, studyAndUsers);
         Validate.throwException(errors, studyAndUsers);
         
@@ -320,7 +320,7 @@ public class AppService {
         }
 
         // If reauth isn't set on app creation, set it to true. We only do this at app creation and not on update,
-        // because we don't want to suddenly be creating reauth tokens for old studies that don't use reauth.
+        // because we don't want to suddenly be creating reauth tokens for old apps that don't use reauth.
         if (app.isReauthenticationEnabled() == null) {
             app.setReauthenticationEnabled(true);
         }
@@ -349,7 +349,7 @@ public class AppService {
         }   
         app.setDefaultTemplates(map);
 
-        // do not create certs for whitelisted studies (legacy studies)
+        // do not create certs for whitelisted apps (legacy apps)
         if (!appWhitelist.contains(app.getIdentifier())) {
             uploadCertService.createCmsKeyPair(app.getIdentifier());
         }
@@ -522,7 +522,7 @@ public class AppService {
             throw new BadRequestException("App cannot be deleted through an update.");
         }
 
-        // With the introduction of the session verification email, studies won't have all the templates
+        // With the introduction of the session verification email, apps won't have all the templates
         // that are normally required. So set it if someone tries to update a app, to a default value.
         if (app.getPasswordPolicy() == null) {
             app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
@@ -531,7 +531,7 @@ public class AppService {
         Validate.entityThrowingException(validator, app);
 
         if (originalApp.isConsentNotificationEmailVerified() == null) {
-            // Studies before the introduction of the consentNotificationEmailVerified flag have it set to null. For
+            // Apps before the introduction of the consentNotificationEmailVerified flag have it set to null. For
             // backwards compatibility, treat this as "true". If these aren't actually verified, we'll handle it on a
             // case-by-case basis.
             app.setConsentNotificationEmailVerified(true);

@@ -24,7 +24,7 @@ public class SharedModuleController extends BaseController {
         this.moduleService = moduleService;
     }
 
-    /** Imports a specific module version into the current study. */
+    /** Imports a specific module version into the current app. */
     @PostMapping("/v3/sharedmodules/{moduleId}/versions/{moduleVersion}/import")
     public SharedModuleImportStatus importModuleByIdAndVersion(@PathVariable String moduleId,
             @PathVariable int moduleVersion) {
@@ -34,7 +34,7 @@ public class SharedModuleController extends BaseController {
         return moduleService.importModuleByIdAndVersion(studyId, moduleId, moduleVersion);
     }
 
-    /** Imports the latest published version of a module into the current study. */
+    /** Imports the latest published version of a module into the current app. */
     @PostMapping("/v3/sharedmodules/{moduleId}/import")
     public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(@PathVariable String moduleId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);

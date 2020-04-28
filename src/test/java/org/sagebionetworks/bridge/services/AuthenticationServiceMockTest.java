@@ -1102,7 +1102,7 @@ public class AuthenticationServiceMockTest {
     
     @Test
     public void generatedPasswordPassesValidation() {
-        // This is a very large password, which you could set in a study like this
+        // This is a very large password, which you could set in a app like this
         String password = service.generatePassword(100);
 
         Errors errors = Validate.getErrorsFor(password);
