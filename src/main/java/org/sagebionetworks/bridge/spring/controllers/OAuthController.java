@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.OAuthService;
 
 @CrossOrigin

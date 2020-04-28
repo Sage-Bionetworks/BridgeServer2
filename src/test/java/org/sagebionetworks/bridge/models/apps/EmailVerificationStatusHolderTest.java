@@ -1,8 +1,9 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.apps;
 
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.apps.EmailVerificationStatusHolder;
 import org.sagebionetworks.bridge.services.EmailVerificationStatus;
 
 import static org.testng.Assert.assertEquals;

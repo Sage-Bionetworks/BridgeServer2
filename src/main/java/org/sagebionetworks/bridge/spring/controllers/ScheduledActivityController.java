@@ -38,10 +38,10 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.time.DateUtils;
 

@@ -7,7 +7,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 
 @BridgeTypeName("TemplateRevision")
 @JsonDeserialize(as=HibernateTemplateRevision.class)

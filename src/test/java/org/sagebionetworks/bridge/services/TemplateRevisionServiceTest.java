@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;

@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static javax.mail.Part.ATTACHMENT;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
-import static org.sagebionetworks.bridge.models.studies.MimeType.PDF;
-import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.PDF;
+import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.services.email.EmailType.EMAIL_SIGN_IN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -16,7 +16,7 @@ import javax.mail.internet.MimeBodyPart;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.Sets;

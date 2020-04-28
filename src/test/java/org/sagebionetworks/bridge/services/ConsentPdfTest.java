@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 
 public class ConsentPdfTest {

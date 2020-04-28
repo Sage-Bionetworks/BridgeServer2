@@ -27,9 +27,9 @@ import org.sagebionetworks.bridge.cache.ViewCache;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.AndroidAppSiteAssociation;
 import org.sagebionetworks.bridge.models.AppleAppSiteAssociation;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 import org.sagebionetworks.bridge.services.UrlShortenerService;
 
 /**

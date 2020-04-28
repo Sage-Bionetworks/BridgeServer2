@@ -41,9 +41,9 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 import org.sagebionetworks.bridge.services.OAuthProviderService.Response;
 
 import io.jsonwebtoken.Claims;

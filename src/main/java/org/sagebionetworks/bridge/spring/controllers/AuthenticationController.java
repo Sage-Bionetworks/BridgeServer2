@@ -35,8 +35,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 

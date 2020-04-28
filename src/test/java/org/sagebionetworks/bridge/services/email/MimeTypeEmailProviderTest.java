@@ -6,7 +6,7 @@ import javax.mail.MessagingException;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 public class MimeTypeEmailProviderTest {
     static class MimeTypeEmailProviderImpl extends MimeTypeEmailProvider {

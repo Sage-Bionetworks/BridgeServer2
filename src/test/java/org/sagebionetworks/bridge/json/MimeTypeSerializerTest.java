@@ -10,7 +10,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 

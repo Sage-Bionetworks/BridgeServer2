@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 
 import static org.testng.Assert.assertEquals;
 

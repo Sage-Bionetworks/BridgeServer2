@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -12,8 +12,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 

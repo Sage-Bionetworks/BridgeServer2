@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.spring.controllers.TemplateRevisionController.PUBLISHED_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;

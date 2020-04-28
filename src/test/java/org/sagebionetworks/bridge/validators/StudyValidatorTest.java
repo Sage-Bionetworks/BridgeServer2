@@ -18,11 +18,11 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
-import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
+import org.sagebionetworks.bridge.models.apps.OAuthProviderTest;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 

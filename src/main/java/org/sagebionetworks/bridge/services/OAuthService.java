@@ -14,11 +14,12 @@ import org.sagebionetworks.bridge.dao.OAuthAccessGrantDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessToken;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
-import org.sagebionetworks.bridge.models.studies.App;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -5,7 +5,7 @@ import java.util.Set;
 import javax.mail.MessagingException;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 import com.google.common.collect.Iterables;
 

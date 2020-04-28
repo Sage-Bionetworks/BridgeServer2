@@ -17,7 +17,7 @@ import org.jsoup.safety.Whitelist;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 import com.google.common.collect.Lists;
 

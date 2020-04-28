@@ -10,8 +10,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.PublishRequest;
