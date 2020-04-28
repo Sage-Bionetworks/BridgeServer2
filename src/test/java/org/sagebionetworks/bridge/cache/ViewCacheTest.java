@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

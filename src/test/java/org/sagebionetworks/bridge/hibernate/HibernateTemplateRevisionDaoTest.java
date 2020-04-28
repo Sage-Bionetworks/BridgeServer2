@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.hibernate.HibernateTemplateRevisionDao.
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.ResourceList.TOTAL;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;

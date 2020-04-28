@@ -2,10 +2,10 @@ package org.sagebionetworks.bridge.models;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 
 /**
  * A model of the JSON we return to iOS clients. For iOS clients, one object encompasses all the 

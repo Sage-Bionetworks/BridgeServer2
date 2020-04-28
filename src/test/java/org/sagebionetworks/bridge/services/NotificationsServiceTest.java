@@ -31,10 +31,10 @@ import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.studies.App;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.model.InvalidParameterException;

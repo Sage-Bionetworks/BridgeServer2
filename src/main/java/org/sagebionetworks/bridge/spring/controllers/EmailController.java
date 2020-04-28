@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 @CrossOrigin
 @RestController

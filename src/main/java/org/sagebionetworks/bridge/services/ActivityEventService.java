@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 

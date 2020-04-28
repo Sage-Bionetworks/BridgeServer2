@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 
 /**
  * A model of the JSON we produce to associate app links on Android with our server. The JSON 

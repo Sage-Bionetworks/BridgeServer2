@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;

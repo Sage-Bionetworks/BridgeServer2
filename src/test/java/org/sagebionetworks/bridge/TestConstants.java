@@ -18,12 +18,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 

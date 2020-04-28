@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;

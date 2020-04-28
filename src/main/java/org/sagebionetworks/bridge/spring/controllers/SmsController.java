@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.SmsService;
 

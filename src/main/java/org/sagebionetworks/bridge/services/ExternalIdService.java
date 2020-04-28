@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.validators.ExternalIdValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 

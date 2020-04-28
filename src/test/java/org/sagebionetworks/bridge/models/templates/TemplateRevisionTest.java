@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.models.templates;
 
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 

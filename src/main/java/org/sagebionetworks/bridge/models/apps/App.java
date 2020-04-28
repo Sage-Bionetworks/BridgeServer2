@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.apps;
 
 import java.util.List;
 import java.util.Map;

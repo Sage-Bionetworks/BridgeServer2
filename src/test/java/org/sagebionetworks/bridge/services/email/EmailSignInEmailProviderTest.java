@@ -9,8 +9,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 public class EmailSignInEmailProviderTest {

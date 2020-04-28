@@ -55,12 +55,12 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidatorTest;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 

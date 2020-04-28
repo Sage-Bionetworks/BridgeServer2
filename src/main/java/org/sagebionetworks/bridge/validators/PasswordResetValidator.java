@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.services.AppService;
 
 import org.springframework.beans.factory.annotation.Autowired;

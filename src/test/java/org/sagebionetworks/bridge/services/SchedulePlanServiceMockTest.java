@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -36,7 +37,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 

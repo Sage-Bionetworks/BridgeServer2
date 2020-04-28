@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.joda.time.DateTime;
 
-import org.sagebionetworks.bridge.models.studies.MimeType;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateRevisionId;
 

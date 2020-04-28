@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.json;
 
-import org.sagebionetworks.bridge.models.studies.MimeType;
-
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -10,6 +8,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.Deserializers.Base;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import org.sagebionetworks.bridge.models.apps.MimeType;
 
 @SuppressWarnings("serial")
 class LowercaseEnumModule extends SimpleModule {

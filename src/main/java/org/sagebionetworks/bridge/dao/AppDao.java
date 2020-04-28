@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 public interface AppDao {
 

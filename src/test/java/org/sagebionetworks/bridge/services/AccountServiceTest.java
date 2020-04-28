@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 

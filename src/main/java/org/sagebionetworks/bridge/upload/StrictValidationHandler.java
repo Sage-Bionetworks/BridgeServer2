@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;

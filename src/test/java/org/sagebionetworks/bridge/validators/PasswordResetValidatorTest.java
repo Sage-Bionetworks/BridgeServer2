@@ -14,8 +14,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.services.AppService;
 
 public class PasswordResetValidatorTest {

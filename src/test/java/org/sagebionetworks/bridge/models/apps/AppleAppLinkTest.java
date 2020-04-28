@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.apps;
 
 import static org.testng.Assert.assertEquals;
 
@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 
 import org.testng.annotations.Test;
+
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 

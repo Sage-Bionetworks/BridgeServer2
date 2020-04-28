@@ -9,8 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;

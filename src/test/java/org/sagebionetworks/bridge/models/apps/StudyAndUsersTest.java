@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.studies;
+package org.sagebionetworks.bridge.models.apps;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -15,6 +15,8 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
 
 public class StudyAndUsersTest {
     private static final String TEST_STUDY_NAME = "test=study-name";
