@@ -188,9 +188,9 @@ public class AppServiceTest extends Mockito {
                 "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new AppValidator());
         
-        AppAndUsersValidator studyAndUsersValidator = new AppAndUsersValidator();
-        studyAndUsersValidator.setSynapseClient(mockSynapseClient);
-        service.setStudyAndUsersValidator(studyAndUsersValidator);
+        AppAndUsersValidator appAndUsersValidator = new AppAndUsersValidator();
+        appAndUsersValidator.setSynapseClient(mockSynapseClient);
+        service.setAppAndUsersValidator(appAndUsersValidator);
 
         when(service.getNameScopingToken()).thenReturn(TEST_NAME_SCOPING_TOKEN);
         
@@ -924,7 +924,7 @@ public class AppServiceTest extends Mockito {
                 .build();
         
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
-        AppAndUsers mockStudyAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
+        AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
 
         // spy
@@ -944,7 +944,7 @@ public class AppServiceTest extends Mockito {
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(mockIdentifierHolder);
 
         // execute
-        service.createAppAndUsers(mockStudyAndUsers);
+        service.createAppAndUsers(mockAppAndUsers);
 
         // verify
         verify(mockParticipantService).createParticipant(app, mockUser1, false);

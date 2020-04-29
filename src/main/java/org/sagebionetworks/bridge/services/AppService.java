@@ -118,7 +118,7 @@ public class AppService {
     private UploadCertificateService uploadCertService;
     private AppDao appDao;
     private AppValidator validator;
-    private AppAndUsersValidator studyAndUsersValidator;
+    private AppAndUsersValidator appAndUsersValidator;
     private CacheProvider cacheProvider;
     private SubpopulationService subpopService;
     private NotificationTopicService topicService;
@@ -180,8 +180,8 @@ public class AppService {
         this.validator = validator;
     }
     @Autowired
-    final void setStudyAndUsersValidator(AppAndUsersValidator studyAndUsersValidator) {
-        this.studyAndUsersValidator = studyAndUsersValidator;
+    final void setAppAndUsersValidator(AppAndUsersValidator appAndUsersValidator) {
+        this.appAndUsersValidator = appAndUsersValidator;
     }
     @Autowired
     final void setAppDao(AppDao appDao) {
@@ -263,41 +263,41 @@ public class AppService {
         return appDao.getApps();
     }
 
-    public App createAppAndUsers(AppAndUsers studyAndUsers) throws SynapseException {
-        checkNotNull(studyAndUsers, Validate.CANNOT_BE_NULL, "app and users");
+    public App createAppAndUsers(AppAndUsers appAndUsers) throws SynapseException {
+        checkNotNull(appAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
-        App app = studyAndUsers.getApp();
+        App app = appAndUsers.getApp();
         StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService, app, true);
         
-        Errors errors = Validate.getErrorsFor(studyAndUsers);
+        Errors errors = Validate.getErrorsFor(appAndUsers);
         
         // Validate AppAndUsers
-        Validate.entity(studyAndUsersValidator, errors, studyAndUsers);
-        Validate.throwException(errors, studyAndUsers);
+        Validate.entity(appAndUsersValidator, errors, appAndUsers);
+        Validate.throwException(errors, appAndUsers);
         
         // Validate each StudyParticipant object
-        for (int i=0; i < studyAndUsers.getUsers().size(); i++) {
+        for (int i=0; i < appAndUsers.getUsers().size(); i++) {
             errors.pushNestedPath("users["+i+"]");
-            StudyParticipant participant = studyAndUsers.getUsers().get(i);
+            StudyParticipant participant = appAndUsers.getUsers().get(i);
             Validate.entity(val, errors, participant);
             errors.popNestedPath();
         }
-        Validate.throwException(errors, studyAndUsers);
+        Validate.throwException(errors, appAndUsers);
 
         // Create app
-        app = createApp(studyAndUsers.getApp());
+        app = createApp(appAndUsers.getApp());
 
         // Create users and send password reset email
-        for (StudyParticipant user: studyAndUsers.getUsers()) {
+        for (StudyParticipant user: appAndUsers.getUsers()) {
             IdentifierHolder identifierHolder = participantService.createParticipant(app, user, false);
             // send resetting password email as well
             participantService.requestResetPassword(app, identifierHolder.getIdentifier());
         }
         
         // Add admins and users to the Synapse project and access teams. All IDs have been validated.
-        List<String> synapseUserIds = studyAndUsers.getUsers().stream()
+        List<String> synapseUserIds = appAndUsers.getUsers().stream()
                 .map(StudyParticipant::getSynapseUserId).collect(toList());
-        createSynapseProjectTeam(studyAndUsers.getAdminIds(), synapseUserIds, app);
+        createSynapseProjectTeam(appAndUsers.getAdminIds(), synapseUserIds, app);
 
         return app;
     }

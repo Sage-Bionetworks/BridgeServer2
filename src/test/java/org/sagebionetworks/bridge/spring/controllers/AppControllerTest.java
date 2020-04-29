@@ -284,8 +284,8 @@ public class AppControllerTest extends Mockito {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        AppAndUsers mockStudyAndUsers = new AppAndUsers(adminIds, app, mockUsers);
-        TestUtils.mockRequestBody(mockRequest, mockStudyAndUsers);
+        AppAndUsers mockAppAndUsers = new AppAndUsers(adminIds, app, mockUsers);
+        TestUtils.mockRequestBody(mockRequest, mockAppAndUsers);
 
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
