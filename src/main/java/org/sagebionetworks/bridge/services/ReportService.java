@@ -86,7 +86,7 @@ public class ReportService {
     /**
      * Return set of study report records based on the provided local date range. Substudy memberships are enforced.
      */
-    public DateRangeResourceList<? extends ReportData> getStudyReport(String studyId, String identifier,
+    public DateRangeResourceList<? extends ReportData> getStudyReport(String appId, String identifier,
             LocalDate startDate, LocalDate endDate) {
         
         RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
@@ -96,7 +96,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -110,7 +110,7 @@ public class ReportService {
      * Return set of participant report records based on the provided local date range. Substudy memberships are
      * enforced.
      */
-    public DateRangeResourceList<? extends ReportData> getParticipantReport(String studyId, String identifier,
+    public DateRangeResourceList<? extends ReportData> getParticipantReport(String appId, String identifier,
             String healthCode, LocalDate startDate, LocalDate endDate) {
         
         RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
@@ -121,7 +121,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -134,7 +134,7 @@ public class ReportService {
     /**
      * Return set of participant report records based on the provided datetime range. Substudy memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String studyId,
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String appId,
             final String identifier, final String healthCode, final DateTime startTime, final DateTime endTime,
             final String offsetKey, final int pageSize) {
         
@@ -147,7 +147,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -160,7 +160,7 @@ public class ReportService {
     /**
      * Return set of study report records based on the provided datetime range. Substudy memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String studyId,
+    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String appId,
             final String identifier, final DateTime startTime, final DateTime endTime, final String offsetKey,
             final int pageSize) {
         
@@ -172,7 +172,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -192,13 +192,13 @@ public class ReportService {
      * the user locks themselves out of the app we do not prevent it). On subsequent saves, the substudy 
      * memberships will be enforced based on the existing report index.
      */
-    public void saveStudyReport(String studyId, String identifier, ReportData reportData) {
+    public void saveStudyReport(String appId, String identifier, ReportData reportData) {
         checkNotNull(reportData);
         
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -221,7 +221,7 @@ public class ReportService {
      * no substudy memberships, or it must be a subset of the substudies assigned to the caller. If it is a 
      * subsequent record, then substudy memberships will be enforced based on the existing report index.
      */
-    public void saveParticipantReport(String studyId, String identifier, String healthCode,
+    public void saveParticipantReport(String appId, String identifier, String healthCode,
             ReportData reportData) {
         checkNotNull(reportData);
         
@@ -229,7 +229,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -249,11 +249,11 @@ public class ReportService {
     /**
      * Delete all records for a study report. Substudy memberships will be enforced.
      */
-    public void deleteStudyReport(String studyId, String identifier) {
+    public void deleteStudyReport(String appId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -267,7 +267,7 @@ public class ReportService {
     /**
      * Delete one record of a study report. Substudy memberships will be enforced.
      */
-    public void deleteStudyReportRecord(String studyId, String identifier, String date) {
+    public void deleteStudyReportRecord(String appId, String identifier, String date) {
         if (StringUtils.isBlank(date)) {
             throw new BadRequestException(RECORD_DATE_MISSING_MSG);
         }
@@ -275,7 +275,7 @@ public class ReportService {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -287,7 +287,7 @@ public class ReportService {
         // If this is the last key visible in the window, you can delete the index because this is an app record
         LocalDate startDate = LocalDate.now().minusDays(MAX_RANGE_DAYS);
         LocalDate endDate = LocalDate.now();
-        DateRangeResourceList<? extends ReportData> results = getStudyReport(studyId, identifier, startDate, endDate);
+        DateRangeResourceList<? extends ReportData> results = getStudyReport(appId, identifier, startDate, endDate);
         if (results.getItems().isEmpty()) {
             reportIndexDao.removeIndex(key);
         }
@@ -296,22 +296,22 @@ public class ReportService {
     /**
      * Return all report indices for the supplied type (participant or study). No substudy memberships are enforced.
      */
-    public ReportTypeResourceList<? extends ReportIndex> getReportIndices(String studyId, ReportType reportType) {
-        checkNotNull(studyId);
+    public ReportTypeResourceList<? extends ReportIndex> getReportIndices(String appId, ReportType reportType) {
+        checkNotNull(appId);
         checkNotNull(reportType);
         
-        return reportIndexDao.getIndices(studyId, reportType);
+        return reportIndexDao.getIndices(appId, reportType);
     }
     
     /**
      * Delete all records of a participant report. Substudy memberships are enforced. 
      */
-    public void deleteParticipantReport(String studyId, String identifier, String healthCode) {
+    public void deleteParticipantReport(String appId, String identifier, String healthCode) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -324,7 +324,7 @@ public class ReportService {
     /**
      * Delete one record of a participant report. Substudy memberships are enforced. 
      */
-    public void deleteParticipantReportRecord(String studyId, String identifier, String date, String healthCode) {
+    public void deleteParticipantReportRecord(String appId, String identifier, String date, String healthCode) {
         if (StringUtils.isBlank(date)) {
             throw new BadRequestException(RECORD_DATE_MISSING_MSG);
         }
@@ -333,7 +333,7 @@ public class ReportService {
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
@@ -348,13 +348,13 @@ public class ReportService {
      * delete these because we cannot determine all individual records have been deleted without a table scan, 
      * but this method is provided for tests. 
      */
-    public void deleteParticipantReportIndex(String studyId, String identifier) {
+    public void deleteParticipantReportIndex(String appId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
              // force INDEX key to be generated event for participant index (healthCode not relevant for this)
                 .withHealthCode("dummy-value") 
                 .withReportType(ReportType.PARTICIPANT)
                 .withIdentifier(identifier)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         
         ReportIndex index = reportIndexDao.getIndex(key);
         if (!canAccess(index)) {
@@ -367,14 +367,14 @@ public class ReportService {
      * Update a report index. Substudy memberships are enforced. Only a user who is not associated to any substudies 
      * may change the substudy associations of the report index.
      */
-    public void updateReportIndex(String studyId, ReportType reportType, ReportIndex index) {
+    public void updateReportIndex(String appId, ReportType reportType, ReportIndex index) {
         if (reportType == ReportType.PARTICIPANT) {
             index.setPublic(false);
         }
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
                 .withIdentifier(index.getIdentifier())
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex existingIndex = reportIndexDao.getIndex(key);

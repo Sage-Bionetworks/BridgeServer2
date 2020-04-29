@@ -88,10 +88,10 @@ public class HibernateAccount implements Account {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(DateTime createdOn, String studyId, String firstName, String lastName,
+    public HibernateAccount(DateTime createdOn, String appId, String firstName, String lastName,
             String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
-        this.appId = studyId;
+        this.appId = appId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;

@@ -563,7 +563,7 @@ public class ParticipantControllerTest extends Mockito {
     public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withAppId("some-other-study").build();
+                .withAppId("some-other-app").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
@@ -608,7 +608,7 @@ public class ParticipantControllerTest extends Mockito {
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withAppId("some-other-study").build();
+                .withAppId("some-other-app").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(app.getIdentifier(), "userId");

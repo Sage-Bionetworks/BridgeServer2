@@ -65,9 +65,9 @@ public class HibernateSubstudyDaoTest {
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
                 eq(null), eq(null), eq(HibernateSubstudy.class));
         
-        assertEquals(queryCaptor.getValue(), "from HibernateSubstudy as substudy where studyId=:studyId");
+        assertEquals(queryCaptor.getValue(), "from HibernateSubstudy as substudy where appId=:appId");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TEST_APP_ID);
+        assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
 
     @Test
@@ -82,9 +82,9 @@ public class HibernateSubstudyDaoTest {
                 eq(null), eq(null), eq(HibernateSubstudy.class));
         
         assertEquals(queryCaptor.getValue(),
-                "from HibernateSubstudy as substudy where studyId=:studyId and deleted != 1");
+                "from HibernateSubstudy as substudy where appId=:appId and deleted != 1");
         Map<String,Object> parameters = paramsCaptor.getValue();
-        assertEquals(parameters.get("studyId"), TEST_APP_ID);
+        assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
     
     @Test

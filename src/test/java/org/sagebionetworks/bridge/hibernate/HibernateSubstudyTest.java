@@ -40,6 +40,7 @@ public class HibernateSubstudyTest {
         assertEquals(node.get("version").longValue(), 3L);
         assertEquals(node.get("type").textValue(), "Substudy");
         assertNull(node.get("studyId"));
+        assertNull(node.get("appId"));
         
         Substudy deser = BridgeObjectMapper.get().readValue(node.toString(), Substudy.class);
         assertEquals(deser.getId(), "oneId");

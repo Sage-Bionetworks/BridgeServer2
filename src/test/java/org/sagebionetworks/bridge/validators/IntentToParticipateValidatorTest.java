@@ -45,7 +45,7 @@ public class IntentToParticipateValidatorTest {
     }
     
     @Test
-    public void studyRequired() {
+    public void appIdRequired() {
         IntentToParticipate intent = builder().withAppId(null).build();
         assertValidatorMessage(INSTANCE, intent, "appId", "is required");
     }

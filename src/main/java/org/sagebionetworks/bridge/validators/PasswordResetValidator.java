@@ -37,7 +37,7 @@ public class PasswordResetValidator implements Validator {
             errors.rejectValue("password", "is required");
         }
         if (StringUtils.isBlank(passwordReset.getAppId())) {
-            errors.rejectValue("study", "is required");
+            errors.rejectValue("appId", "is required");
         }
         if (errors.hasErrors()) {
             return;

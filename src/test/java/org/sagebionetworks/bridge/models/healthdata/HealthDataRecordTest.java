@@ -57,7 +57,7 @@ public class HealthDataRecordTest {
         assertEquals(record.getHealthCode(), "dummy healthcode");
         assertNull(record.getId());
         assertSame(record.getMetadata(), DUMMY_METADATA);
-        assertEquals(record.getAppId(), "dummy study");
+        assertEquals(record.getAppId(), "dummy app");
         assertEquals(record.getUploadDate(), UPLOAD_DATE);
         assertEquals(record.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(record.getUserSharingScope(), SharingScope.NO_SHARING);
@@ -282,7 +282,7 @@ public class HealthDataRecordTest {
         record.setData(DUMMY_DATA);
         record.setHealthCode("dummy healthcode");
         record.setMetadata(DUMMY_METADATA);
-        record.setAppId("dummy study");
+        record.setAppId("dummy app");
         record.setUploadDate(UPLOAD_DATE);
         record.setUserDataGroups(TestConstants.USER_DATA_GROUPS);
         record.setUserSharingScope(SharingScope.NO_SHARING);

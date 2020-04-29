@@ -227,7 +227,7 @@ public class NotificationsService {
 
             try {
                 PublishResult result = snsClient.publish(request);
-                LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", study=" +
+                LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", appId=" +
                         appId + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);

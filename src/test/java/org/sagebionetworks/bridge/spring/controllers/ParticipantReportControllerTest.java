@@ -120,8 +120,8 @@ public class ParticipantReportControllerTest extends Mockito {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        DynamoApp study = new DynamoApp();
-        study.setIdentifier(TEST_APP_ID);
+        DynamoApp app = new DynamoApp();
+        app.setIdentifier(TEST_APP_ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(DEVELOPER)).build();
@@ -138,7 +138,7 @@ public class ParticipantReportControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setConsentStatuses(statuses);
         
-        doReturn(study).when(mockAppService).getApp(TEST_APP_ID);
+        doReturn(app).when(mockAppService).getApp(TEST_APP_ID);
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(session).when(controller).getSessionIfItExists();
