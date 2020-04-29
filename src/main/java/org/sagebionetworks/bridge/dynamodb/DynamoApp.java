@@ -29,7 +29,7 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 @DynamoDBTable(tableName = "Study")
-@BridgeTypeName("Study")
+@BridgeTypeName("App")
 @JsonFilter("filter")
 public final class DynamoApp implements App {
     

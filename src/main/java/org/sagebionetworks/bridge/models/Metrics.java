@@ -101,7 +101,7 @@ public class Metrics {
     }
 
     public void setAppId(String appId) {
-        put("appId", appId);
+        put("app_id", appId);
     }
 
     public void setUserId(String userId) {

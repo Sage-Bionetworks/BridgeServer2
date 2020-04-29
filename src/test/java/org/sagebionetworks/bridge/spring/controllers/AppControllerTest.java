@@ -21,7 +21,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.getValidApp;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.services.EmailVerificationStatus.VERIFIED;
-import static org.sagebionetworks.bridge.services.StudyEmailType.CONSENT_NOTIFICATION;
+import static org.sagebionetworks.bridge.services.AppEmailType.CONSENT_NOTIFICATION;
 import static org.sagebionetworks.bridge.spring.controllers.AppController.CONSENT_EMAIL_VERIFIED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.AppController.RESEND_EMAIL_MSG;
 import static org.testng.Assert.assertEquals;
@@ -73,7 +73,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.EmailVerificationStatusHolder;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -138,7 +138,7 @@ public class AppControllerTest extends Mockito {
     ArgumentCaptor<App> appCaptor;
     
     @Captor
-    ArgumentCaptor<StudyAndUsers> studyAndUsersCaptor;
+    ArgumentCaptor<AppAndUsers> appAndUsersCaptor;
     
     private App app;
     
@@ -284,12 +284,12 @@ public class AppControllerTest extends Mockito {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        StudyAndUsers mockStudyAndUsers = new StudyAndUsers(adminIds, app, mockUsers);
+        AppAndUsers mockStudyAndUsers = new AppAndUsers(adminIds, app, mockUsers);
         TestUtils.mockRequestBody(mockRequest, mockStudyAndUsers);
 
         // stub
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
-        ArgumentCaptor<StudyAndUsers> argumentCaptor = ArgumentCaptor.forClass(StudyAndUsers.class);
+        ArgumentCaptor<AppAndUsers> argumentCaptor = ArgumentCaptor.forClass(AppAndUsers.class);
         when(mockAppService.createAppAndUsers(argumentCaptor.capture())).thenReturn(app);
 
         // execute
@@ -297,8 +297,8 @@ public class AppControllerTest extends Mockito {
         
         // verify
         verify(mockAppService, times(1)).createAppAndUsers(any());
-        StudyAndUsers capObj = argumentCaptor.getValue();
-        assertEquals(capObj.getStudy(), app);
+        AppAndUsers capObj = argumentCaptor.getValue();
+        assertEquals(capObj.getApp(), app);
         assertEquals(capObj.getUsers(), mockUsers);
         assertEquals(capObj.getAdminIds(), adminIds);
         assertEquals(result.getVersion(), app.getVersion());
@@ -723,7 +723,7 @@ public class AppControllerTest extends Mockito {
         when(mockAppService.createApp(any())).thenReturn(created);
         
         App newApp = App.create();
-        newApp.setName("some study");
+        newApp.setName("some app");
         mockRequestBody(mockRequest, newApp);
         
         VersionHolder keys = controller.createApp();
@@ -753,20 +753,20 @@ public class AppControllerTest extends Mockito {
         App newApp = App.create();
         newApp.setName("some app");
         
-        StudyAndUsers studyAndUsers = new StudyAndUsers(
+        AppAndUsers appAndUsers = new AppAndUsers(
                 ImmutableList.of("admin1", "admin2"), newApp,
                 ImmutableList.of(new StudyParticipant.Builder().build()));
-        mockRequestBody(mockRequest, studyAndUsers);
+        mockRequestBody(mockRequest, appAndUsers);
         
         VersionHolder keys = controller.createAppAndUsers();
         assertEquals(keys.getVersion(), Long.valueOf(3L));
         
-        verify(mockAppService).createAppAndUsers(studyAndUsersCaptor.capture());
+        verify(mockAppService).createAppAndUsers(appAndUsersCaptor.capture());
         
-        StudyAndUsers captured =  studyAndUsersCaptor.getValue();
+        AppAndUsers captured =  appAndUsersCaptor.getValue();
         assertEquals(captured.getAdminIds(), ImmutableList.of("admin1", "admin2"));
         assertEquals(captured.getUsers().size(), 1);
-        assertEquals(captured.getStudy(), newApp);
+        assertEquals(captured.getApp(), newApp);
     }
         
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -782,7 +782,7 @@ public class AppControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = ".*Admin cannot delete the app they are associated with.*")
     public void deleteAppRejectsCallerInStudy() throws Exception {
-        // API is protected by the whitelist so this test must target some other study
+        // API is protected by the whitelist so this test must target some other app
         when(mockSession.getAppId()).thenReturn("other-app");
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         

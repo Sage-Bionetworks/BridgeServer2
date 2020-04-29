@@ -61,7 +61,7 @@ public class CacheProviderMockTest {
     private static final CacheKey CACHE_KEY = CacheKey.app("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String REQUEST_INFO_KEY = "userId:request-info";
-    private static final String STUDY_ID_KEY = TEST_APP_ID + ":App";
+    private static final String TEST_ID_KEY = TEST_APP_ID + ":App";
     private static final String USER_ID = "userId";
     private static final String ENCRYPTED_SESSION_TOKEN = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
     private static final String DECRYPTED_SESSION_TOKEN = "ccea2978-f5b9-4377-8194-f887a3e2a19b";
@@ -86,7 +86,7 @@ public class CacheProviderMockTest {
 
         final App app = TestUtils.getValidApp(CacheProviderMockTest.class);
         app.setIdentifier("test");
-        app.setName("This is a test study");
+        app.setName("This is a test app");
         String json = BridgeObjectMapper.get().writeValueAsString(app);
         assertTrue(json != null && json.length() > 0);
 
@@ -585,36 +585,36 @@ public class CacheProviderMockTest {
     }
 
     @Test
-    public void setStudy() throws Exception {
+    public void setApp() throws Exception {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         String ser = BridgeObjectMapper.get().writeValueAsString(app);
 
         when(jedisOps.setex(any(), anyInt(), any())).thenReturn("OK");
 
-        cacheProvider.setStudy(app);
+        cacheProvider.setApp(app);
 
-        verify(jedisOps).setex(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
+        verify(jedisOps).setex(TEST_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS, ser);
     }
 
     @Test
-    public void getStudy() throws Exception {
+    public void getApp() throws Exception {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         String ser = BridgeObjectMapper.get().writeValueAsString(app);
 
-        when(jedisOps.get(STUDY_ID_KEY)).thenReturn(ser);
+        when(jedisOps.get(TEST_ID_KEY)).thenReturn(ser);
 
-        App returned = cacheProvider.getStudy(TEST_APP_ID);
+        App returned = cacheProvider.getApp(TEST_APP_ID);
         assertEquals(app, returned);
 
-        verify(jedisOps).get(STUDY_ID_KEY);
-        verify(jedisOps).expire(STUDY_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        verify(jedisOps).get(TEST_ID_KEY);
+        verify(jedisOps).expire(TEST_ID_KEY, BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
     }
 
     @Test
-    public void removeStudy() {
-        cacheProvider.removeStudy(TEST_APP_ID);
-        verify(jedisOps).del(STUDY_ID_KEY);
+    public void removeApp() {
+        cacheProvider.removeApp(TEST_APP_ID);
+        verify(jedisOps).del(TEST_ID_KEY);
     }
 }

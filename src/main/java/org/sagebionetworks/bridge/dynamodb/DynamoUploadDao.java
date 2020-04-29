@@ -191,9 +191,9 @@ public class DynamoUploadDao implements UploadDao {
 
     /** {@inheritDoc} */
     @Override
-    public ForwardCursorPagedResourceList<Upload> getAppUploads(String studyId, DateTime startTime,
+    public ForwardCursorPagedResourceList<Upload> getAppUploads(String appId, DateTime startTime,
             DateTime endTime, int pageSize, String offsetKey) {
-        checkNotNull(studyId);
+        checkNotNull(appId);
 
         // Just set a sane upper limit on this.
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -202,7 +202,7 @@ public class DynamoUploadDao implements UploadDao {
 
         // only query one page each time client calling this method
         QueryResultPage<DynamoUpload2> page = mapper.queryPage(DynamoUpload2.class,
-                createGetQuery(studyId, startTime, endTime, offsetKey, pageSize));
+                createGetQuery(appId, startTime, endTime, offsetKey, pageSize));
 
         Map<String, List<Object>> resultMap = mapper.batchLoad(page.getResults());
         List<Upload> uploadList = new ArrayList<>();
@@ -228,10 +228,10 @@ public class DynamoUploadDao implements UploadDao {
                 .withRequestParam(ResourceList.END_TIME, endTime);
     }
 
-    private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(String studyId, DateTime startTime, DateTime endTime,
-                                                                             String offsetKey, int pageSize) {
+    private DynamoDBQueryExpression<DynamoUpload2> createGetQuery(String appId, DateTime startTime, DateTime endTime,
+            String offsetKey, int pageSize) {
 
-        DynamoDBQueryExpression<DynamoUpload2> query = createCountQuery(studyId, startTime, endTime);
+        DynamoDBQueryExpression<DynamoUpload2> query = createCountQuery(appId, startTime, endTime);
         if (offsetKey != null) {
             // load table again to get the one last evaluated upload
             DynamoUpload2 retLastEvaluatedUpload = mapper.load(DynamoUpload2.class, offsetKey);
@@ -241,7 +241,7 @@ public class DynamoUploadDao implements UploadDao {
             Map<String,AttributeValue> map = new HashMap<>();
             map.put(UPLOAD_ID, new AttributeValue().withS(offsetKey));
             map.put(REQUESTED_ON, new AttributeValue().withN(String.valueOf(retLastEvaluatedUpload.getRequestedOn())));
-            map.put(STUDY_ID, new AttributeValue().withS(studyId));
+            map.put(STUDY_ID, new AttributeValue().withS(appId));
             query.withExclusiveStartKey(map);
         }
         query.withLimit(pageSize);

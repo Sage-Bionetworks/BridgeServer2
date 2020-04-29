@@ -13,6 +13,12 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AccountIdValidatorTest {
     @Test
+    public void validAccountIdWithEmailAndStudy() throws Exception {
+        AccountId accountId = createId("{'study': '" + TEST_APP_ID + "', 'email':'email@email.com'}");
+        Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
+    }
+    
+    @Test
     public void validAccountIdWithEmail() {
         AccountId accountId = AccountId.forEmail(TEST_APP_ID, "email@email.com");
         Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
@@ -31,26 +37,26 @@ public class AccountIdValidatorTest {
     }
     
     @Test
-    public void studyRequired() throws Exception {
+    public void appIdequired() throws Exception {
         AccountId accountId = createId("{'email':'email@email.com'}");
-        assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId, "study", "is required");
+        assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId, "appId", "is required");
     }
     
     @Test
     public void emailRequired() throws Exception {
-        AccountId accountId = createId("{'study':'api'}");
+        AccountId accountId = createId("{'appId':'api'}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId, "email", "is required");
     }
     
     @Test
     public void phoneRequired() throws Exception {
-        AccountId accountId = createId("{'study':'api'}");
+        AccountId accountId = createId("{'appId':'api'}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", "is required");
     }
     
     @Test
     public void phoneValid() throws Exception {
-        AccountId accountId = createId("{'study':'api','phone':{'number':'4082588569','regionCode':'MX'}}");
+        AccountId accountId = createId("{'appId':'api','phone':{'number':'4082588569','regionCode':'MX'}}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", "does not appear to be a phone number");
     }
     

@@ -15,10 +15,10 @@ public class AccountSummarySearchValidator implements Validator {
     public static final String DATE_RANGE_ERROR = "startDate should be before endDate";
     public static final String PAGE_RANGE_ERROR = "must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
 
-    private Set<String> studyDataGroups;
+    private Set<String> appDataGroups;
     
-    public AccountSummarySearchValidator(Set<String> studyDataGroups) {
-        this.studyDataGroups = studyDataGroups;
+    public AccountSummarySearchValidator(Set<String> appDataGroups) {
+        this.appDataGroups = appDataGroups;
     }
     
     @Override
@@ -42,13 +42,13 @@ public class AccountSummarySearchValidator implements Validator {
             errors.reject(DATE_RANGE_ERROR);
         }
         if (!search.getAllOfGroups().isEmpty()) {
-            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(studyDataGroups, search.getAllOfGroups());
+            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(appDataGroups, search.getAllOfGroups());
             for (String errorMsg : errorMessages) {
                 errors.rejectValue("allOfGroups", errorMsg);    
             }
         }
         if (!search.getNoneOfGroups().isEmpty()) {
-            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(studyDataGroups, search.getNoneOfGroups());
+            List<String> errorMessages = CriteriaUtils.validateSetItemsExist(appDataGroups, search.getNoneOfGroups());
             for (String errorMsg : errorMessages) {
                 errors.rejectValue("noneOfGroups", errorMsg);    
             }

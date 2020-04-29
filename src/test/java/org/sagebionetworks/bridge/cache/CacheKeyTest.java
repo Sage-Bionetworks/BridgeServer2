@@ -116,7 +116,7 @@ public class CacheKeyTest {
     }
     
     @Test
-    public void study() {
+    public void app() {
         assertEquals(CacheKey.app(TEST_APP_ID).toString(), TEST_APP_ID + ":App");
     }    
     

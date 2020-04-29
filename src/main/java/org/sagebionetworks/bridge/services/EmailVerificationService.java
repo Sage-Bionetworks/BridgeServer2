@@ -35,7 +35,7 @@ import com.amazonaws.services.simpleemail.model.VerifyEmailIdentityRequest;
 
 /**
  * Service to verify an email address can be used to send SES emails. Will be called independently of
- * the study APIs that retrieve a cached app, because it needs to be cached on a very different time period 
+ * the app APIs that retrieve a cached app, because it needs to be cached on a very different time period 
  * from apps (apps can be cached forever, while this status updates outside the system and should be 
  * held for much shorter time period).
  */

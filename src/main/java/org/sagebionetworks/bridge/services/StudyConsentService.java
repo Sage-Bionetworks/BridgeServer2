@@ -315,7 +315,7 @@ public class StudyConsentService {
     }
     
     private void publishFormatsToS3(App app, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> XML_ESCAPER.translate(value));
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app, (value) -> XML_ESCAPER.translate(value));
         map.putAll(SIGNATURE_BLOCK_VARS);
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 

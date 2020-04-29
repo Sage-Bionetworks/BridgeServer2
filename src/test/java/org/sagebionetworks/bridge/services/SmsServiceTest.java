@@ -307,7 +307,7 @@ public class SmsServiceTest {
         assertEquals(loggedMessage.getMessageBody(), expectedMessage);
         assertEquals(loggedMessage.getMessageId(), MESSAGE_ID);
         assertEquals(loggedMessage.getSmsType(), expectedSmsType);
-        assertEquals(loggedMessage.getStudyId(), TEST_APP_ID);
+        assertEquals(loggedMessage.getAppId(), TEST_APP_ID);
     }
 
     private void verifyHealthData(StudyParticipant expectedParticipant, DateTimeZone expectedTimeZone,
@@ -367,7 +367,7 @@ public class SmsServiceTest {
         message.setMessageId(MESSAGE_ID);
         message.setMessageBody(MESSAGE_BODY);
         message.setSmsType(SmsType.PROMOTIONAL);
-        message.setStudyId(TEST_APP_ID);
+        message.setAppId(TEST_APP_ID);
         return message;
     }
 

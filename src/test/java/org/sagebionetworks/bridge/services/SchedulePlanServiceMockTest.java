@@ -355,6 +355,7 @@ public class SchedulePlanServiceMockTest {
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
         plan.setAppId(TEST_APP_ID);
+        plan.setAppId("study-key");
         plan.setGuid("BBB");
         return plan;
     }

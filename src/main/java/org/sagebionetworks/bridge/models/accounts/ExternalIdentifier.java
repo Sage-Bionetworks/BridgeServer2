@@ -13,15 +13,15 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as=DynamoExternalIdentifier.class)
 public interface ExternalIdentifier extends BridgeEntity {
 
-    static ExternalIdentifier create(String studyId, String identifier) {
-        if (isBlank(studyId)) {
-            throw new BadRequestException("studyId cannot be null or blank");
+    static ExternalIdentifier create(String appId, String identifier) {
+        if (isBlank(appId)) {
+            throw new BadRequestException("appId cannot be null or blank");
         }
-        return new DynamoExternalIdentifier(studyId, identifier);
+        return new DynamoExternalIdentifier(appId, identifier);
     }
     
-    String getStudyId();
-    void setStudyId(String studyId);
+    String getAppId();
+    void setAppId(String appId);
     
     String getSubstudyId();
     void setSubstudyId(String substudyId);

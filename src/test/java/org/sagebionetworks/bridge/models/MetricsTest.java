@@ -95,13 +95,13 @@ public class MetricsTest {
         Metrics metrics = new Metrics(requestId);
         metrics.setAppId(null);
         String json = metrics.toJsonString();
-        assertFalse(json.contains("\"appId\":"));
+        assertFalse(json.contains("\"app_id\":"));
         metrics.setAppId(" ");
         json = metrics.toJsonString();
-        assertFalse(json.contains("\"appId\":"));
+        assertFalse(json.contains("\"app_id\":"));
         metrics.setAppId(TEST_APP_ID);
         json = metrics.toJsonString();
-        assertTrue(json.contains("\"appId\":\""+TEST_APP_ID+"\""));
+        assertTrue(json.contains("\"app_id\":\""+TEST_APP_ID+"\""));
     }
 
     @Test

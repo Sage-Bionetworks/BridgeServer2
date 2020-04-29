@@ -298,7 +298,7 @@ public class AuthenticationService {
             accountWorkflowService.resendVerificationToken(type, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
+            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
                     + accountId.getAppId() + "'");
         }
     }
@@ -313,7 +313,7 @@ public class AuthenticationService {
             accountWorkflowService.requestResetPassword(app, isStudyAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Request reset password request for unregistered email in study '"+signIn.getAppId()+"'");
+            LOG.info("Request reset password request for unregistered email in app '"+signIn.getAppId()+"'");
         }
     }
 
@@ -528,8 +528,8 @@ public class AuthenticationService {
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
-    private void clearSession(String studyId, String userId) {
-        AccountId accountId = AccountId.forId(studyId, userId);
+    private void clearSession(String appId, String userId) {
+        AccountId accountId = AccountId.forId(appId, userId);
         accountService.deleteReauthToken(accountId);
         cacheProvider.removeSessionByUserId(userId);
     }

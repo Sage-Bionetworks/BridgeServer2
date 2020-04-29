@@ -1,17 +1,20 @@
 package org.sagebionetworks.bridge.models.apps;
 
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 
-public final class StudyAndUsers implements BridgeEntity {
+public final class AppAndUsers implements BridgeEntity {
     private final List<String> adminIds;
     private final App app;
     private final List<StudyParticipant> users;
 
-    public StudyAndUsers(@JsonProperty("adminIds") List<String> adminIds, @JsonProperty("study") App app,
+    public AppAndUsers(@JsonProperty("adminIds") List<String> adminIds,
+            @JsonAlias("study") @JsonProperty("app") App app, 
             @JsonProperty("users") List<StudyParticipant> users) {
         this.adminIds = adminIds;
         this.app = app;
@@ -26,7 +29,7 @@ public final class StudyAndUsers implements BridgeEntity {
         return users;
     }
 
-    public App getStudy() {
+    public App getApp() {
         return app;
     }
 }

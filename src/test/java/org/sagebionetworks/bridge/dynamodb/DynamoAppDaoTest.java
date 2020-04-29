@@ -40,7 +40,7 @@ public class DynamoAppDaoTest extends Mockito {
     PaginatedScanList<DynamoApp> mockScanList;
     
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
     
     @InjectMocks
     DynamoAppDao dao;
@@ -50,7 +50,7 @@ public class DynamoAppDaoTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         BridgeConfig config = mock(BridgeConfig.class);
-        when(config.getPropertyAsList(APP_WHITELIST_PROPERTY)).thenReturn(ImmutableList.of("whitelisted-study"));
+        when(config.getPropertyAsList(APP_WHITELIST_PROPERTY)).thenReturn(ImmutableList.of("whitelisted-app"));
         dao.setBridgeConfig(config);
     }
     
@@ -62,9 +62,9 @@ public class DynamoAppDaoTest extends Mockito {
         boolean returned = dao.doesIdentifierExist(TEST_APP_ID);
         assertTrue(returned);
         
-        verify(mockMapper).load(studyCaptor.capture());
+        verify(mockMapper).load(appCaptor.capture());
         
-        App app = studyCaptor.getValue();
+        App app = appCaptor.getValue();
         assertEquals(app.getIdentifier(), TEST_APP_ID);
     }
     
@@ -82,8 +82,8 @@ public class DynamoAppDaoTest extends Mockito {
         App result = dao.getApp(TEST_APP_ID);
         assertSame(result, saved);
         
-        verify(mockMapper).load(studyCaptor.capture());
-        App key = studyCaptor.getValue();
+        verify(mockMapper).load(appCaptor.capture());
+        App key = appCaptor.getValue();
         assertEquals(key.getIdentifier(), TEST_APP_ID);
     }
     
@@ -171,7 +171,7 @@ public class DynamoAppDaoTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteStudyRespectsWhitelist() {
         App app = App.create();
-        app.setIdentifier("whitelisted-study");
+        app.setIdentifier("whitelisted-app");
         
         dao.deleteApp(app);
     }
@@ -185,8 +185,8 @@ public class DynamoAppDaoTest extends Mockito {
         
         dao.deactivateApp(TEST_APP_ID);
         
-        verify(mockMapper).save(studyCaptor.capture());
-        assertFalse(studyCaptor.getValue().isActive());
+        verify(mockMapper).save(appCaptor.capture());
+        assertFalse(appCaptor.getValue().isActive());
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -196,6 +196,6 @@ public class DynamoAppDaoTest extends Mockito {
         app.setVersion(2L);
         when(mockMapper.load(any())).thenReturn(app);
         
-        dao.deactivateApp("whitelisted-study");
+        dao.deactivateApp("whitelisted-app");
     }    
 }

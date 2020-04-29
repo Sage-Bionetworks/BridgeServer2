@@ -1,3 +1,4 @@
+
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -53,13 +54,13 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier,
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String appId,
             boolean includeDeleted) {
         checkNotNull(clientInfo);
-        checkNotNull(studyIdentifier);
+        checkNotNull(appId);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setAppId(studyIdentifier);
+        plan.setAppId(appId);
         
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
@@ -81,11 +82,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public SchedulePlan getSchedulePlan(String studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier);
+    public SchedulePlan getSchedulePlan(String appId, String guid) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
-        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+        SchedulePlan plan = getSchedulePlanInternal(appId, guid);
         if (plan == null) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
@@ -93,11 +94,11 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public SchedulePlan createSchedulePlan(String studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier);
+    public SchedulePlan createSchedulePlan(String appId, SchedulePlan plan) {
+        checkNotNull(appId);
         checkNotNull(plan);
         
-        plan.setAppId(studyIdentifier);
+        plan.setAppId(appId);
         plan.setGuid(generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setDeleted(false);
@@ -109,16 +110,16 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public SchedulePlan updateSchedulePlan(String studyIdentifier, SchedulePlan plan) {
-        checkNotNull(studyIdentifier);
+    public SchedulePlan updateSchedulePlan(String appId, SchedulePlan plan) {
+        checkNotNull(appId);
         checkNotNull(plan);
 
-        SchedulePlan saved = getSchedulePlan(studyIdentifier, plan.getGuid());
+        SchedulePlan saved = getSchedulePlan(appId, plan.getGuid());
         // if saved == null, getSchedulePlan() throws EntityNotFoundException
         if (saved.isDeleted() && plan.isDeleted()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        plan.setAppId(studyIdentifier);
+        plan.setAppId(appId);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
         forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
@@ -127,8 +128,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
 
     @Override
-    public void deleteSchedulePlan(String studyIdentifier, String guid) {
-        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+    public void deleteSchedulePlan(String appId, String guid) {
+        SchedulePlan plan = getSchedulePlanInternal(appId, guid);
         if (plan == null || plan.isDeleted()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
@@ -137,8 +138,8 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
     }
     
     @Override
-    public void deleteSchedulePlanPermanently(String studyIdentifier, String guid) {
-        SchedulePlan plan = getSchedulePlanInternal(studyIdentifier, guid);
+    public void deleteSchedulePlanPermanently(String appId, String guid) {
+        SchedulePlan plan = getSchedulePlanInternal(appId, guid);
         if (plan == null) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
@@ -146,12 +147,12 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         mapper.delete(plan);
     }
 
-    private SchedulePlan getSchedulePlanInternal(String studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier);
+    private SchedulePlan getSchedulePlanInternal(String appId, String guid) {
+        checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setAppId(studyIdentifier);
+        plan.setAppId(appId);
         
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);

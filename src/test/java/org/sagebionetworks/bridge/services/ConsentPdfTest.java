@@ -41,7 +41,7 @@ public class ConsentPdfTest {
                 "conf/app-defaults/consent-page.xhtml").getFile()));
         
         app = new DynamoApp();
-        app.setName("Study Name");
+        app.setName("App Name");
         app.setSponsorName("Sponsor Name");
         app.setSupportEmail("sender@default.com");
         app.setConsentNotificationEmail("consent@consent.com");
@@ -187,7 +187,7 @@ public class ConsentPdfTest {
     private static void validateDocBody(String bodyContent) throws Exception {
         String dateStr = ConsentPdf.FORMATTER.print(DateTime.now());
         assertTrue(bodyContent.contains(dateStr), "Signing date correct");
-        assertTrue(bodyContent.contains("<title>Study Name Consent To Research</title>"), "Study name correct");
+        assertTrue(bodyContent.contains("<title>App Name Consent To Research</title>"), "App name correct");
         assertTrue(bodyContent.contains(">Test Person<"), "Name correct");
         assertTrue(bodyContent.contains(">email@email.com<"), "User email correct");
         assertTrue(bodyContent.contains(">Not Sharing<"), "Sharing correct");

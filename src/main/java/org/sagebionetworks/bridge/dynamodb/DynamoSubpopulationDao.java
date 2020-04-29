@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 @Component
 public class DynamoSubpopulationDao implements SubpopulationDao {
     
-    static final String CANNOT_DELETE_DEFAULT_SUBPOP_MSG = "Cannot delete the default subpopulation for a study.";
+    static final String CANNOT_DELETE_DEFAULT_SUBPOP_MSG = "Cannot delete the default subpopulation for an app.";
     private DynamoDBMapper mapper;
     private CriteriaDao criteriaDao;
 
@@ -91,9 +91,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public List<Subpopulation> getSubpopulations(String studyId, boolean createDefault, boolean includeDeleted) {
+    public List<Subpopulation> getSubpopulations(String appId, boolean createDefault, boolean includeDeleted) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setAppId(studyId);
+        hashKey.setAppId(appId);
         
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
@@ -103,7 +103,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         // no new apps will be created without a default subpopulation.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
         if (createDefault && subpops.isEmpty()) {
-            Subpopulation subpop = createDefaultSubpopulation(studyId);
+            Subpopulation subpop = createDefaultSubpopulation(appId);
             return ImmutableList.of(subpop);
         }
         // Now filter out deleted subpopulations, if requested
@@ -118,10 +118,10 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation createDefaultSubpopulation(String studyId) {
+    public Subpopulation createDefaultSubpopulation(String appId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
-        subpop.setAppId(studyId);
-        subpop.setGuidString(studyId);
+        subpop.setAppId(appId);
+        subpop.setGuidString(appId);
         subpop.setName("Default Consent Group");
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
@@ -140,9 +140,9 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
+    public Subpopulation getSubpopulation(String appId, SubpopulationGuid subpopGuid) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
-        hashKey.setAppId(studyId);
+        hashKey.setAppId(appId);
         hashKey.setGuidString(subpopGuid.getGuid());
         
         Subpopulation subpop = mapper.load(hashKey);
@@ -155,8 +155,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public void deleteSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
-        Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
+    public void deleteSubpopulation(String appId, SubpopulationGuid subpopGuid) {
+        Subpopulation subpop = getSubpopulation(appId, subpopGuid);
         
         if (subpop.isDeleted()) {
             throw new EntityNotFoundException(Subpopulation.class);
@@ -169,8 +169,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public void deleteSubpopulationPermanently(String studyId, SubpopulationGuid subpopGuid) {
-        Subpopulation subpop = getSubpopulation(studyId, subpopGuid);
+    public void deleteSubpopulationPermanently(String appId, SubpopulationGuid subpopGuid) {
+        Subpopulation subpop = getSubpopulation(appId, subpopGuid);
 
         criteriaDao.deleteCriteria(subpop.getCriteria().getKey());
         mapper.delete(subpop);

@@ -52,6 +52,7 @@ public class DynamoSchedulePlanTest {
         assertEquals(node.get("label").textValue(), "Label");
         assertTrue(node.get("deleted").booleanValue());
         assertNull(node.get("studyKey"));
+        assertNull(node.get("appId"));
         assertNotNull(node.get("strategy"));
         assertEquals(DateTime.parse(node.get("modifiedOn").asText()), datetime);
 
@@ -67,8 +68,8 @@ public class DynamoSchedulePlanTest {
     }
     
     @Test
-    public void jsonStudyKeyIsIgnored() throws Exception {
-        String json = TestUtils.createJson("{'studyKey':'study-key'}");
+    public void jsonAppIdIsIgnored() throws Exception {
+        String json = TestUtils.createJson("{'appId':'ignore-me'}");
         
         SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         assertNull(plan.getAppId());
