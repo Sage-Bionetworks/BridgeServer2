@@ -248,8 +248,8 @@ public final class DynamoApp implements App {
 
     /** {@inheritDoc} */
     @Override
-    public void setAppIdExcludedInExport(boolean studyIdExcludedInExport) {
-        this.appIdExcludedInExport = studyIdExcludedInExport;
+    public void setAppIdExcludedInExport(boolean appIdExcludedInExport) {
+        this.appIdExcludedInExport = appIdExcludedInExport;
     }
     
     // for backwards compatibility, we must continue to expose this property

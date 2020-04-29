@@ -134,9 +134,9 @@ public class UserManagementControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(UserManagementController.class);
         assertPost(UserManagementController.class, "signInForSuperAdmin");
-        assertPost(UserManagementController.class, "changeStudyForAdmin");
+        assertPost(UserManagementController.class, "changeAppForAdmin");
         assertCreate(UserManagementController.class, "createUser");
-        assertCreate(UserManagementController.class, "createUserWithStudyId");
+        assertCreate(UserManagementController.class, "createUserWithAppId");
         assertDelete(UserManagementController.class, "deleteUser");
     }
 
@@ -211,7 +211,7 @@ public class UserManagementControllerTest extends Mockito {
         nextApp.setIdentifier("nextStudy");
         when(mockAppService.getApp("nextStudy")).thenReturn(nextApp);
 
-        controller.changeStudyForAdmin();
+        controller.changeAppForAdmin();
         assertEquals(session.getAppId(), "nextStudy");
         verify(mockCacheProvider).setUserSession(session);
     }
@@ -225,7 +225,7 @@ public class UserManagementControllerTest extends Mockito {
         SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
         
-        controller.changeStudyForAdmin();
+        controller.changeAppForAdmin();
     }
 
     @Test
@@ -246,7 +246,7 @@ public class UserManagementControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         // same app id as above test
-        StatusMessage result = controller.createUserWithStudyId(TEST_APP_ID);
+        StatusMessage result = controller.createUserWithAppId(TEST_APP_ID);
         assertEquals(result, UserManagementController.CREATED_MSG);
     }
     
@@ -256,7 +256,7 @@ public class UserManagementControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        controller.createUserWithStudyId(TEST_APP_ID);
+        controller.createUserWithAppId(TEST_APP_ID);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -274,7 +274,7 @@ public class UserManagementControllerTest extends Mockito {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         
-        controller.createUserWithStudyId(TEST_APP_ID);
+        controller.createUserWithAppId(TEST_APP_ID);
     }
     
     @Test

@@ -115,14 +115,14 @@ public class HibernateAccountDao implements AccountDao {
         return Optional.of(account);
     }
     
-    QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
+    QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
         RequestContext context = BridgeUtils.getRequestContext();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
         builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
         builder.append("WITH acct.id = acctSubstudy.accountId");
-        builder.append("WHERE acct.appId = :appId", "appId", studyId);
+        builder.append("WHERE acct.appId = :appId", "appId", appId);
 
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();

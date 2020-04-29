@@ -59,16 +59,16 @@ public class ScheduleControllerTest extends Mockito {
     @Mock
     HttpServletResponse mockResponse;
     
-    String studyId;
+    String appId;
     
     @BeforeMethod
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        studyId = TestUtils.randomName(ScheduleControllerTest.class);
+        appId = TestUtils.randomName(ScheduleControllerTest.class);
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("app name/9");
         
-        List<SchedulePlan> plans = TestUtils.getSchedulePlans(studyId);
+        List<SchedulePlan> plans = TestUtils.getSchedulePlans(appId);
         
         // Add a plan that will returns null for a schedule, this is not included in the final list.
         // This is now possible and should not cause an error or a gap in the returned array.
@@ -88,10 +88,10 @@ public class ScheduleControllerTest extends Mockito {
         });
         plans.add(plan);
         
-        when(mockSchedulePlanService.getSchedulePlans(clientInfo, studyId, false)).thenReturn(plans);
+        when(mockSchedulePlanService.getSchedulePlans(clientInfo, appId, false)).thenReturn(plans);
         
         UserSession session = new UserSession();
-        session.setAppId(studyId);
+        session.setAppId(appId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());

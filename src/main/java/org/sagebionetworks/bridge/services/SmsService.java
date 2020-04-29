@@ -120,7 +120,7 @@ public class SmsService {
         PublishResult result = snsClient.publish(provider.getSmsRequest());
         messageId = result.getMessageId();
 
-        LOG.info("Sent SMS message, study=" + app.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
+        LOG.info("Sent SMS message, app=" + app.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
                 BridgeUtils.getRequestContext().getId());
 
         // Log SMS message.
@@ -179,11 +179,11 @@ public class SmsService {
     }
 
     // Helper method to init the SMS log schema for the app.
-    private void initMessageLogSchema(String studyId) {
+    private void initMessageLogSchema(String appId) {
         // See if schema already exists.
         UploadSchema existingSchema = null;
         try {
-            existingSchema = schemaService.getUploadSchemaByIdAndRev(studyId, MESSAGE_LOG_SCHEMA_ID,
+            existingSchema = schemaService.getUploadSchemaByIdAndRev(appId, MESSAGE_LOG_SCHEMA_ID,
                     MESSAGE_LOG_SCHEMA_REV);
         } catch (EntityNotFoundException ex) {
             // Suppress exception. If get throws, messageLogSchema will be null.
@@ -208,7 +208,7 @@ public class SmsService {
                         .withUnboundedText(true).build());
         schemaToCreate.setFieldDefinitions(fieldDefList);
 
-        schemaService.createSchemaRevisionV4(studyId, schemaToCreate);
+        schemaService.createSchemaRevisionV4(appId, schemaToCreate);
     }
 
     /** Gets the message we most recently sent to the given phone number. */

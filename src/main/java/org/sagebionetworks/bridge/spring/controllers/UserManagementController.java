@@ -74,8 +74,8 @@ public class UserManagementController extends BaseController {
      * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
      */
     @Deprecated
-    @PostMapping("/v3/auth/admin/study")
-    public JsonNode changeStudyForAdmin() {
+    @PostMapping(path = {"/v3/auth/admin/app", "/v3/auth/admin/study"})
+    public JsonNode changeAppForAdmin() {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         // The only part of this payload we care about is the app property
@@ -113,7 +113,7 @@ public class UserManagementController extends BaseController {
      */
     @PostMapping(path = {"/v1/apps/{appId}/users", "/v3/studies/{appId}/users"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithStudyId(@PathVariable String appId) {
+    public StatusMessage createUserWithAppId(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
         App app = appService.getApp(appId);
         

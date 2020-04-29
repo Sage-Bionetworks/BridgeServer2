@@ -24,7 +24,7 @@ public final class SubstudyId implements Serializable {
         this.id = id;
     }
     
-    public String getStudyId() {
+    public String getAppId() {
         return appId;
     }
     

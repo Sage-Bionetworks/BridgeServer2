@@ -29,8 +29,8 @@ public class HibernateSubstudyDao implements SubstudyDao {
     public List<Substudy> getSubstudies(String appId, boolean includeDeleted) {
         checkNotNull(appId);
         
-        Map<String,Object> parameters = ImmutableMap.of("studyId", appId);
-        String query = "from HibernateSubstudy as substudy where studyId=:studyId";
+        Map<String,Object> parameters = ImmutableMap.of("appId", appId);
+        String query = "from HibernateSubstudy as substudy where studyId=:appId";
         if (!includeDeleted) {
             query += " and deleted != 1";
         }

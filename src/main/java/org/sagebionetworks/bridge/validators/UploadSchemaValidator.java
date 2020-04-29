@@ -44,7 +44,7 @@ public class UploadSchemaValidator implements Validator {
      *     <li>revision is zero or negative</li>
      *     <li>schemaId is blank</li>
      *     <li>schemaType is null</li>
-     *     <li>studyId is blank</li>
+     *     <li>appId is blank</li>
      *   </ul>
      * </p>
      *

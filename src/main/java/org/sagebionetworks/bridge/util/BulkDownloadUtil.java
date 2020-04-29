@@ -87,7 +87,7 @@ public class BulkDownloadUtil {
         // process uploads
         for (UploadObject uploadObj : uploads) {
             UploadValidationContext ctx = new UploadValidationContext();
-            ctx.setAppId(uploadObj.studyId);
+            ctx.setAppId(uploadObj.appId);
             ctx.setUpload(uploadObj.metadata);
 
             // Make temp dir within temp dir.
@@ -101,7 +101,7 @@ public class BulkDownloadUtil {
                 System.out.println(String.format(
                         "Error downloading file %s from S3 with uploadId %s from study %s, healthCode %s, timestamp " +
                                 "%s: %s",
-                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
+                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
                 continue;
@@ -112,7 +112,7 @@ public class BulkDownloadUtil {
             } catch (Exception ex) {
                 System.out.println(String.format(
                         "Error decrypting file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
-                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
+                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
                 System.out.println("Falling back to non-decrypted data.");
@@ -124,7 +124,7 @@ public class BulkDownloadUtil {
             } catch (Exception ex) {
                 System.out.println(String.format(
                         "Error unzipping file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
-                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.studyId,
+                        uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
                 System.out.println("Will write zipped file to disk.");
@@ -160,20 +160,20 @@ public class BulkDownloadUtil {
         System.out.println("Downloading files from S3 and cross-referencing study ID from health code...");
         List<UploadObject> uploads = new ArrayList<>();
         for (DynamoUpload2 oneUploadMetadata : uploadMetadataList) {
-            String studyId = oneUploadMetadata.getAppId();
+            String appId = oneUploadMetadata.getAppId();
 
-            uploads.add(new UploadObject(oneUploadMetadata, studyId));
+            uploads.add(new UploadObject(oneUploadMetadata, appId));
         }
         return uploads;
     }
 
     private static class UploadObject {
         private final DynamoUpload2 metadata;
-        private final String studyId;
+        private final String appId;
 
-        private UploadObject(DynamoUpload2 metadata, String studyId) {
+        private UploadObject(DynamoUpload2 metadata, String appId) {
             this.metadata = metadata;
-            this.studyId = studyId;
+            this.appId = appId;
         }
     }
 }

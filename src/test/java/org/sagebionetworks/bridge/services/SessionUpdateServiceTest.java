@@ -193,10 +193,10 @@ public class SessionUpdateServiceTest {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
         
-        service.updateStudy(session, "new-study");
+        service.updateStudy(session, "new-app");
         
         verify(mockCacheProvider).setUserSession(session);
-        assertEquals(session.getAppId(), "new-study");
+        assertEquals(session.getAppId(), "new-app");
     }
     
     @Test

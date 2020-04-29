@@ -259,7 +259,7 @@ public class StudyConsentService {
      * as inactive.
      *
      * @param app
-     *            study for this consent
+     *            app for this consent
      * @param subpop
      *            the subpopulation associated with this consent
      * @param timestamp

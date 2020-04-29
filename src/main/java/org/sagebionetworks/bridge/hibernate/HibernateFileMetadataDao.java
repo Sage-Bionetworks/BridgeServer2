@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.files.FileMetadata;
 public class HibernateFileMetadataDao implements FileMetadataDao {
     static final String SELECT_COUNT = "SELECT count(guid) "; 
     static final String DELETE = "DELETE ";
-    static final String FROM_FILE = "FROM FileMetadata WHERE studyId = :studyId";
+    static final String FROM_FILE = "FROM FileMetadata WHERE studyId = :appId";
     static final String WO_DELETED = " AND deleted = 0";
     static final String WITH_GUID = " AND guid = :guid";
     static final String ORDER_BY = " ORDER BY name";    
@@ -37,7 +37,7 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
         checkNotNull(appId);
         checkNotNull(guid);
         
-        Map<String, Object> params = ImmutableMap.of("studyId", appId, "guid", guid);
+        Map<String, Object> params = ImmutableMap.of("appId", appId, "guid", guid);
 
         List<FileMetadata> files = hibernateHelper.queryGet(FROM_FILE+WITH_GUID, params, null, null, FileMetadata.class);
         return (files.isEmpty()) ? Optional.empty() : Optional.of(files.get(0));
@@ -50,7 +50,7 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
         String countQuery = SELECT_COUNT+FROM_FILE + (!includeDeleted ? WO_DELETED : "");
         String getQuery = FROM_FILE + (!includeDeleted ? WO_DELETED : "") + ORDER_BY;
 
-        Map<String,Object> params = ImmutableMap.of("studyId", appId);
+        Map<String,Object> params = ImmutableMap.of("appId", appId);
         int count = hibernateHelper.queryCount(countQuery, params);
         
         List<FileMetadata> files = hibernateHelper.queryGet(getQuery, params, offset, limit, FileMetadata.class);
@@ -93,6 +93,6 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     public void deleteAllStudyFiles(String appId) {
         checkNotNull(appId);
         
-        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("studyId", appId));   
+        hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("appId", appId));   
     }
 }

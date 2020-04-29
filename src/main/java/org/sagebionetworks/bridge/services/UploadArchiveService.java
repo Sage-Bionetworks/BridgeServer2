@@ -82,21 +82,21 @@ public class UploadArchiveService {
      * Encrypts the specified data, using the encryption materials for the specified app.
      *
      * @param appId
-     *         appId, must be non-null, non-empty, and refer to a valid study
+     *         appId, must be non-null, non-empty, and refer to a valid app
      * @param bytes
      *         data to encrypt, must be non-null
      * @return encrypted data as a byte array
      * @throws BridgeServiceException
      *         if we fail to load the encryptor, or if encryption fails
      */
-    public byte[] encrypt(String studyId, byte[] bytes) throws BridgeServiceException {
+    public byte[] encrypt(String appId, byte[] bytes) throws BridgeServiceException {
         // validate
-        checkNotNull(studyId);
-        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(appId);
+        checkArgument(StringUtils.isNotBlank(appId));
         checkNotNull(bytes);
 
         // get encryptor from cache
-        CmsEncryptor encryptor = getEncryptorForStudy(studyId);
+        CmsEncryptor encryptor = getEncryptorForApp(appId);
 
         // encrypt
         byte[] encryptedData;
@@ -112,22 +112,22 @@ public class UploadArchiveService {
      * Decrypts the specified data, using the encryption materials for the specified app.
      *
      * @param appId
-     *         appId, must be non-null, non-empty, and refer to a valid study
+     *         appId, must be non-null, non-empty, and refer to a valid app
      * @param bytes
      *         data to decrypt, must be non-null
      * @return decrypted data as a byte array
      * @throws BridgeServiceException
      *         if we fail to load the encryptor, or if decryption fails
      */
-    public byte[] decrypt(String studyId, byte[] bytes) throws BridgeServiceException {
+    public byte[] decrypt(String appId, byte[] bytes) throws BridgeServiceException {
         // validate
-        checkNotNull(studyId);
-        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(appId);
+        checkArgument(StringUtils.isNotBlank(appId));
         checkNotNull(bytes);
 
         // decrypt
         try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-             InputStream decryptedStream = decrypt(studyId, byteArrayInputStream)) {
+             InputStream decryptedStream = decrypt(appId, byteArrayInputStream)) {
             return ByteStreams.toByteArray(decryptedStream);
         } catch (IOException ex) {
             throw new BridgeServiceException(ex);
@@ -138,14 +138,14 @@ public class UploadArchiveService {
      * Decrypts the specified data stream, using the encryption materials for the specified app, and returns the a
      * stream of decrypted data. The caller is responsible for closing both streams.
      */
-    public InputStream decrypt(String studyId, InputStream source) {
+    public InputStream decrypt(String appId, InputStream source) {
         // validate
-        checkNotNull(studyId);
-        checkArgument(StringUtils.isNotBlank(studyId));
+        checkNotNull(appId);
+        checkArgument(StringUtils.isNotBlank(appId));
         checkNotNull(source);
 
         // get encryptor from cache
-        CmsEncryptor encryptor = getEncryptorForStudy(studyId);
+        CmsEncryptor encryptor = getEncryptorForApp(appId);
 
         // decrypt
         try {
@@ -164,15 +164,15 @@ public class UploadArchiveService {
      * @throws BridgeServiceException
      *         if we fail to load the encryptor, or if the encryptor can't be found
      */
-    private CmsEncryptor getEncryptorForStudy(String studyId) throws BridgeServiceException {
+    private CmsEncryptor getEncryptorForApp(String appId) throws BridgeServiceException {
         CmsEncryptor encryptor;
         try {
-            encryptor = cmsEncryptorCache.get(studyId);
+            encryptor = cmsEncryptorCache.get(appId);
         } catch (ExecutionException | UncheckedExecutionException ex) {
             throw new BridgeServiceException(ex);
         }
         if (encryptor == null) {
-            throw new BridgeServiceException(String.format("No encrypt for study %s", studyId));
+            throw new BridgeServiceException(String.format("No encrypt for app %s", appId));
         }
         return encryptor;
     }

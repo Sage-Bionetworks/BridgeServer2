@@ -475,7 +475,7 @@ public class SurveyControllerTest extends Mockito {
         verifyNoMoreInteractions(mockSurveyService);
     }
     
-    // There's no such thing as not being able to create a study from another app. If
+    // There's no such thing as not being able to create an app from another app. If
     // you create a survey, it's in your app.
 
     @Test

@@ -56,7 +56,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         assertSame(returned.get(), metadata);
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
         assertEquals(map.get("guid"), GUID);
     }
 
@@ -87,7 +87,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
     }
     
     @Test
@@ -166,6 +166,6 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         dao.deleteAllStudyFiles(TEST_APP_ID);
         
         verify(mockHibernateHelper).query(eq(DELETE + FROM_FILE), paramsCaptor.capture());
-        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

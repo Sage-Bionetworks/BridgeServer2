@@ -117,6 +117,7 @@ public class SubpopulationControllerTest extends Mockito {
 
         JsonNode node = BridgeObjectMapper.get().readTree(result);
         JsonNode oneSubpop = node.get("items").get(0);
+        assertNull(oneSubpop.get("appId"));
         assertNull(oneSubpop.get("studyIdentifier"));
 
         ResourceList<Subpopulation> rList = BridgeObjectMapper.get().readValue(result, SUBPOP_TYPE_REF);
@@ -205,6 +206,7 @@ public class SubpopulationControllerTest extends Mockito {
         JsonNode node = BridgeObjectMapper.get().readTree(result);
         assertEquals("Subpopulation", node.get("type").asText());
         assertEquals("AAA", node.get("guid").asText());
+        assertNull(node.get("appId"));
         assertNull(node.get("studyIdentifier"));
 
         verify(mockSubpopService).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);

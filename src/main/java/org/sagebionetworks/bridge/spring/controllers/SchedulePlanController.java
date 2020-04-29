@@ -42,11 +42,11 @@ public class SchedulePlanController extends BaseController {
         this.schedulePlanService = schedulePlanService;
     }
     
-    @GetMapping("/v3/studies/{studyId}/scheduleplans")
-    public ResourceList<SchedulePlan> getSchedulePlansForWorker(@PathVariable String studyId,
+    @GetMapping(path = {"/v1/apps/{appId}/scheduleplans", "/v3/studies/{appId}/scheduleplans"})
+    public ResourceList<SchedulePlan> getSchedulePlansForWorker(@PathVariable String appId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         getAuthenticatedSession(WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         
         List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT,
                 app.getIdentifier(), includeDeleted);
@@ -56,10 +56,10 @@ public class SchedulePlanController extends BaseController {
     @GetMapping("/v3/scheduleplans")
     public ResourceList<SchedulePlan> getSchedulePlans(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        String studyId = session.getAppId();
+        String appId = session.getAppId();
 
         // We don't filter plans when we return a list of all of them for developers.
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, studyId,
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, appId,
                 includeDeleted);
         return new ResourceList<>(plans);
     }
@@ -78,9 +78,9 @@ public class SchedulePlanController extends BaseController {
     @GetMapping("/v3/scheduleplans/{guid}")
     public SchedulePlan getSchedulePlan(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
-        String studyId = session.getAppId();
+        String appId = session.getAppId();
         
-        return schedulePlanService.getSchedulePlan(studyId, guid);
+        return schedulePlanService.getSchedulePlan(appId, guid);
     }
 
     @PostMapping("/v3/scheduleplans/{guid}")
@@ -99,12 +99,12 @@ public class SchedulePlanController extends BaseController {
     public StatusMessage deleteSchedulePlan(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        String studyId = session.getAppId();
+        String appId = session.getAppId();
         
         if (physical && session.isInRole(ADMIN)) {
-            schedulePlanService.deleteSchedulePlanPermanently(studyId, guid);
+            schedulePlanService.deleteSchedulePlanPermanently(appId, guid);
         } else {
-            schedulePlanService.deleteSchedulePlan(studyId, guid);
+            schedulePlanService.deleteSchedulePlan(appId, guid);
         }
         return DELETE_MSG;
     }

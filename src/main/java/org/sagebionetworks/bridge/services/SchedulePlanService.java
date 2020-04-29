@@ -46,13 +46,13 @@ public class SchedulePlanService {
         this.substudyService = substudyService;
     }
 
-    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier,
+    public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String appId,
             boolean includeDeleted) {
-        return schedulePlanDao.getSchedulePlans(clientInfo, studyIdentifier, includeDeleted);
+        return schedulePlanDao.getSchedulePlans(clientInfo, appId, includeDeleted);
     }
 
-    public SchedulePlan getSchedulePlan(String studyIdentifier, String guid) {
-        return schedulePlanDao.getSchedulePlan(studyIdentifier, guid);
+    public SchedulePlan getSchedulePlan(String appId, String guid) {
+        return schedulePlanDao.getSchedulePlan(appId, guid);
     }
 
     public SchedulePlan createSchedulePlan(App app, SchedulePlan plan) {
@@ -120,18 +120,18 @@ public class SchedulePlanService {
         return schedulePlanDao.updateSchedulePlan(plan.getAppId(), plan);
     }
 
-    public void deleteSchedulePlan(String studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier);
+    public void deleteSchedulePlan(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(isNotBlank(guid));
         
-        schedulePlanDao.deleteSchedulePlan(studyIdentifier, guid);
+        schedulePlanDao.deleteSchedulePlan(appId, guid);
     }
     
-    public void deleteSchedulePlanPermanently(String studyIdentifier, String guid) {
-        checkNotNull(studyIdentifier);
+    public void deleteSchedulePlanPermanently(String appId, String guid) {
+        checkNotNull(appId);
         checkNotNull(isNotBlank(guid));
         
-        schedulePlanDao.deleteSchedulePlanPermanently(studyIdentifier, guid);
+        schedulePlanDao.deleteSchedulePlanPermanently(appId, guid);
     }
     
     /**
@@ -155,31 +155,31 @@ public class SchedulePlanService {
      * the clients have come to depend on the presence of the identifier key, and this is more efficient than 
      * looking it up on every read.
      * 
-     * @param studyId
+     * @param appId
      * @param activity
      * @return
      */
-    private void lookupSurveyReferenceIdentifiers(String studyId, SchedulePlan plan) {
+    private void lookupSurveyReferenceIdentifiers(String appId, SchedulePlan plan) {
         for (Schedule schedule : plan.getStrategy().getAllPossibleSchedules()) {
             for (int i=0; i < schedule.getActivities().size(); i++) {
                 Activity activity = schedule.getActivities().get(i);
-                activity = updateActivityWithSurveyIdentifier(studyId, activity);
+                activity = updateActivityWithSurveyIdentifier(appId, activity);
                 schedule.getActivities().set(i, activity);
             }
         }
     }
 
-    private Activity updateActivityWithSurveyIdentifier(String studyId, Activity activity) {
+    private Activity updateActivityWithSurveyIdentifier(String appId, Activity activity) {
         if (activity.getSurvey() != null) {
             SurveyReference ref = activity.getSurvey();
             
             if (ref.getCreatedOn() == null) { // pointer to most recently published survey
-                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, ref.getGuid(), false);
+                Survey survey = surveyService.getSurveyMostRecentlyPublishedVersion(appId, ref.getGuid(), false);
                 return new Activity.Builder().withActivity(activity)
                         .withPublishedSurvey(survey.getIdentifier(), survey.getGuid()).build();
             } else {
                 GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref.getGuid(), ref.getCreatedOn().getMillis());
-                Survey survey = surveyService.getSurvey(studyId, keys, false, true);
+                Survey survey = surveyService.getSurvey(appId, keys, false, true);
                 return new Activity.Builder().withActivity(activity)
                         .withSurvey(survey.getIdentifier(), ref.getGuid(), ref.getCreatedOn()).build();
             }

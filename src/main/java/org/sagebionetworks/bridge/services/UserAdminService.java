@@ -117,7 +117,7 @@ public class UserAdminService {
      */
     public UserSession createUser(App app, StudyParticipant participant, SubpopulationGuid subpopGuid,
             boolean signUserIn, boolean consentUser) {
-        checkNotNull(app, "Study cannot be null");
+        checkNotNull(app, "App cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
         // Validate app + email or phone. This is the minimum we need to create a functional account.

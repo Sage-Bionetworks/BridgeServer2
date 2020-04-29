@@ -463,7 +463,7 @@ public class TemplateServiceTest extends Mockito {
         Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
         
         Template template = Template.create();
-        template.setAppId("some-other-study-id");
+        template.setAppId("some-other-app-id");
         template.setGuid(GUID1);
         template.setName("Test");
         // Change these... they will be changed back

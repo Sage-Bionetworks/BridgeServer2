@@ -45,6 +45,7 @@ public class FileMetadataTest extends Mockito {
         assertEquals(node.get("modifiedOn").textValue(), TIMESTAMP.plusHours(1).toString());        
         assertEquals(node.get("type").textValue(), "FileMetadata");
         assertNull(node.get("studyId"));
+        assertNull(node.get("appId"));
         
         FileMetadata deser = BridgeObjectMapper.get().readValue(node.toString(), FileMetadata.class);
         assertNull(deser.getAppId());
