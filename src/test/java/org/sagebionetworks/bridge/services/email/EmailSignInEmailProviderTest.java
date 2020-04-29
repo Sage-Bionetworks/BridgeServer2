@@ -16,10 +16,10 @@ import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 public class EmailSignInEmailProviderTest {
 
     private static final String RECIPIENT_EMAIL = "recipient@recipient.com";
-    private static final String SUBJECT_TEMPLATE = "${studyName} sign in link";
+    private static final String SUBJECT_TEMPLATE = "${appName} sign in link";
     private static final String BODY_TEMPLATE = "Click here to sign in: <a href=\"" +
-            "https://${host}/mobile/startSession.html?email=${email}&study=${studyId}&token=${token}\""+
-            ">https://${host}/mobile/startSession.html?email=${email}&study=${studyId}&token=${token}</a>";
+            "https://${host}/mobile/startSession.html?email=${email}&appId=${appId}&token=${token}\""+
+            ">https://${host}/mobile/startSession.html?email=${email}&appId=${appId}&token=${token}</a>";
 
     @Test
     public void testProvider() throws Exception {
@@ -36,13 +36,13 @@ public class EmailSignInEmailProviderTest {
         // Verifying in particular that all instances of a template variable are replaced
         // in the template.
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withToken("email", BridgeUtils.encodeURIComponent(RECIPIENT_EMAIL))
                 .withToken("token", "ABC").build();
         
-        String url = String.format("https://%s/mobile/startSession.html?email=%s&study=foo&token=ABC", 
+        String url = String.format("https://%s/mobile/startSession.html?email=%s&appId=foo&token=ABC", 
                 BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws"),
                 URLEncoder.encode(RECIPIENT_EMAIL, "UTF-8"));
         

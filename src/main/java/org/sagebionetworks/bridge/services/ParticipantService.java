@@ -821,7 +821,7 @@ public class ParticipantService {
                 .withPhone(account.getPhone())
                 .withTemplateRevision(revision)
                 .withPromotionType()
-                .withStudy(app);
+                .withApp(app);
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
         }

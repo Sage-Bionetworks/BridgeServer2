@@ -155,7 +155,7 @@ public class AppServiceTest extends Mockito {
     @Captor
     ArgumentCaptor<Team> teamCaptor;
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
     @Captor
     ArgumentCaptor<Template> templateCaptor;
 
@@ -183,9 +183,10 @@ public class AppServiceTest extends Mockito {
 
         // Mock templates
         service.setAppEmailVerificationTemplateSubject(mockTemplateAsSpringResource(
-                "Verify your study email"));
+                "Verify your app email"));
         service.setAppEmailVerificationTemplate(mockTemplateAsSpringResource(
-                "Click here ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
+                "Click here ${appEmailVerificationUrl} ${appEmailVerificationExpirationPeriod}" + 
+                " ${studyEmailVerificationUrl} ${studyEmailVerificationExpirationPeriod}"));
         service.setValidator(new AppValidator());
         
         AppAndUsersValidator appAndUsersValidator = new AppAndUsersValidator();
@@ -202,7 +203,7 @@ public class AppServiceTest extends Mockito {
         when(mockTemplateService.createTemplate(any(), any())).thenReturn(keys);
         
         when(mockAppDao.createApp(any())).thenAnswer(invocation -> {
-            // Return the same study, except set version to 1.
+            // Return the same app, except set version to 1.
             App app = invocation.getArgument(0);
             app.setVersion(1L);
             return app;
@@ -317,10 +318,11 @@ public class AppServiceTest extends Mockito {
         assertEquals(email.getType(), EmailType.VERIFY_CONSENT_EMAIL);
         String body = (String) email.getMessageParts().get(0).getContent();
 
-        assertTrue(body.contains("/vse?study="+ TEST_APP_ID + "&token=" +
+        assertTrue(body.contains("/vse?appId="+ TEST_APP_ID + "&token=" +
                 VERIFICATION_TOKEN + "&type=consent_notification"));
         assertTrue(email.getSenderAddress().contains(SUPPORT_EMAIL));
         assertEquals(emailProviderCaptor.getValue().getTokenMap().get("studyEmailVerificationExpirationPeriod"), "1 day");
+        assertEquals(emailProviderCaptor.getValue().getTokenMap().get("appEmailVerificationExpirationPeriod"), "1 day");
         
         List<String> recipientList = email.getRecipientAddresses();
         assertEquals(recipientList.size(), 1);
@@ -451,7 +453,7 @@ public class AppServiceTest extends Mockito {
     public void verifyEmailMismatchedStudy() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
-                "   \"studyId\":\"wrong-study\",\n" +
+                "   \"appId\":\"wrong-app\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
@@ -469,7 +471,7 @@ public class AppServiceTest extends Mockito {
     public void verifyEmailNoEmail() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
-                "   \"studyId\":\"" + TEST_APP_ID + "\",\n" +
+                "   \"appId\":\"" + TEST_APP_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
@@ -487,7 +489,7 @@ public class AppServiceTest extends Mockito {
     public void verifyEmailMismatchedEmail() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
-                "   \"studyId\":\"" + TEST_APP_ID + "\",\n" +
+                "   \"appId\":\"" + TEST_APP_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
@@ -505,7 +507,7 @@ public class AppServiceTest extends Mockito {
     public void verifyEmailSuccess() {
         // Mock Cache Provider.
         String verificationDataJson = "{\n" +
-                "   \"studyId\":\"" + TEST_APP_ID + "\",\n" +
+                "   \"appId\":\"" + TEST_APP_ID + "\",\n" +
                 "   \"email\":\"correct-email@example.com\"\n" +
                 "}";
         when(mockCacheProvider.getObject(VER_CACHE_KEY, String.class)).thenReturn(verificationDataJson);
@@ -994,8 +996,8 @@ public class AppServiceTest extends Mockito {
 
         service.createAppAndUsers(mockStudyAndUsers);
         
-        verify(mockAppDao).createApp(studyCaptor.capture());
-        assertNotNull(studyCaptor.getValue().getPasswordPolicy());
+        verify(mockAppDao).createApp(appCaptor.capture());
+        assertNotNull(appCaptor.getValue().getPasswordPolicy());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -1315,7 +1317,7 @@ public class AppServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class)
-    public void createSynapseProjectTeamNullStudyName() throws Exception {
+    public void createSynapseProjectTeamNullAppName() throws Exception {
         // mock
         App app = getTestStudy();
         app.setExternalIdRequiredOnSignup(false);
@@ -1327,7 +1329,7 @@ public class AppServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class)
-    public void createSynapseProjectTeamBadStudyName() throws Exception {
+    public void createSynapseProjectTeamBadAppName() throws Exception {
         // mock
         App app = getTestStudy();
         app.setExternalIdRequiredOnSignup(false);
@@ -1517,7 +1519,7 @@ public class AppServiceTest extends Mockito {
     // Tests from the Play-based AppServiceTest.java in BridgePF
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void studyIsValidated() {
+    public void appIsValidated() {
         App testApp = new DynamoApp();
         testApp.setName("Belgian Waffles [Test]");
         service.createApp(testApp);
@@ -1584,9 +1586,9 @@ public class AppServiceTest extends Mockito {
         // A default, active consent should be created for the app.
         verify(mockSubpopService).createDefaultSubpopulation(app);
 
-        verify(mockAppDao).createApp(studyCaptor.capture());
+        verify(mockAppDao).createApp(appCaptor.capture());
 
-        App newApp = studyCaptor.getValue();
+        App newApp = appCaptor.getValue();
         assertTrue(newApp.isActive());
         assertFalse(newApp.isStrictUploadValidationEnabled());
         assertTrue(newApp.isAppIdExcludedInExport());

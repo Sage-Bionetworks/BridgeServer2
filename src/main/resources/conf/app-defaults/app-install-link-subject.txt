@@ -1,1 +1,1 @@
-Install the ${studyName} app!
+Install the ${appName} app!

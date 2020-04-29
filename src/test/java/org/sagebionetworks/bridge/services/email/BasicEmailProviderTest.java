@@ -36,13 +36,14 @@ public class BasicEmailProviderTest {
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
-        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
+        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} "+
+            "${appName} ${appShortName} ${appId} ${sponsorName} ${supportEmail} "+
             "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}");
         revision.setMimeType(HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-            .withStudy(app)
+            .withApp(app)
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withTemplateRevision(revision)
@@ -66,7 +67,7 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
         assertEquals(bodyString,
-                "Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
+                "Name ShortName id Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
     }
 
     @Test
@@ -83,7 +84,7 @@ public class BasicEmailProviderTest {
 
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
-                .withOverrideSenderEmail("example@example.com").withStudy(app).build();
+                .withOverrideSenderEmail("example@example.com").withApp(app).build();
 
         // Check provider attributes
         assertEquals(provider.getPlainSenderEmail(), "example@example.com");
@@ -98,7 +99,7 @@ public class BasicEmailProviderTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
                 .withRecipientEmail("email@email.com")
-                .withOverrideSenderEmail("example@example.com").withStudy(App.create()).build();
+                .withOverrideSenderEmail("example@example.com").withApp(App.create()).build();
         
         Map<String,String> tokenMap = provider.getTokenMap();
         assertNull(tokenMap.get("supportName"));
@@ -116,7 +117,7 @@ public class BasicEmailProviderTest {
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
                 .withTemplateRevision(revision)
-                .withStudy(App.create()).build();
+                .withApp(App.create()).build();
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         

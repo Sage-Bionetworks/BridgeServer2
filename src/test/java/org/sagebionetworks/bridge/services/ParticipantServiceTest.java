@@ -2585,7 +2585,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
 
@@ -2601,7 +2601,7 @@ public class ParticipantServiceTest extends Mockito {
     public void sendSmsMessageThrowsIfNoPhone() { 
         when(accountService.getAccount(any())).thenReturn(account);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }
@@ -2612,7 +2612,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }

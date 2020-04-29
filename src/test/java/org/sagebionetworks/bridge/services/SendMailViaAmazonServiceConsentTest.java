@@ -115,7 +115,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -156,7 +156,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -203,7 +203,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -231,7 +231,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();

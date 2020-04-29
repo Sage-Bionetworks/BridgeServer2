@@ -110,7 +110,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private TemplateRevision revision;
         private EmailType type;
 
-        public Builder withStudy(App app) {
+        public Builder withApp(App app) {
             this.app = app;
             return this;
         }

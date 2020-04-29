@@ -1,6 +1,6 @@
 <p>Hi,</p>
 
-<p>For your reference, here’s a copy of the consent agreement you just signed to participate in ${studyName}.</p>
+<p>For your reference, here’s a copy of the consent agreement you just signed to participate in ${appName}.</p>
 
 <p>Regards,</p>
 

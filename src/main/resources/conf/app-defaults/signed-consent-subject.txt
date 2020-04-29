@@ -1,1 +1,1 @@
-Your consent agreement for participating in ${studyName}
+Your consent agreement for participating in ${appName}

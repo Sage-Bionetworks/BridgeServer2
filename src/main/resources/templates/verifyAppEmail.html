@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title th:text="${studyName + ' Email Verification'}"></title>
-    <meta name="studyName" th:content="${studyName}">
+    <title th:text="${appName + ' Email Verification'}"></title>
+    <meta name="appName" th:content="${appName}">
     <link href="//assets.sagebridge.org/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
     <link href="//assets.sagebridge.org/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
 </head>
@@ -17,7 +17,7 @@
 
 <script src="//assets.sagebridge.org/jquery-2.1.3.min.js"></script>
 <script>
-var studyName = document.head.querySelector("meta[name='studyName']").getAttribute('content');
+var appName = document.head.querySelector("meta[name='appName']").getAttribute('content');
 
 var params = {};
 location.search.substr(1).split("&").forEach(function(item) {
@@ -26,19 +26,19 @@ location.search.substr(1).split("&").forEach(function(item) {
 });
 
 setTimeout(function() {
-    $("#logo").attr("src", "//assets.sagebridge.org/mobile/images/" + params.study + ".svg");
+    $("#logo").attr("src", "//assets.sagebridge.org/mobile/images/" + params.appId + ".svg");
 }, 1);
 
 function success() {
-    $("#m1").text("The email address for study " + studyName + " has now been verified.");
+    $("#m1").text("The email address for app " + appName + " has now been verified.");
 }
 function failure() {
-    $("#m1").text("The email address for study " + studyName + " could not be verified.");
+    $("#m1").text("The email address for app " + appName + " could not be verified.");
     $("#m2").html("Please refresh the page; if the problem persists, contact Bridge support to receive further assistance.");
 }
 try {
-    if (!params.study) {
-        throw new Error("No study");
+    if (!params.appId) {
+        throw new Error("No app");
     }
     if (!params.token) {
         throw new Error("No token");
@@ -48,7 +48,7 @@ try {
     }
     var p = $.ajax({
         type: "POST",
-        url: "/v3/studies/" + params.study + "/emails/verify?token=" + params.token + "&type=" + params.type
+        url: "/v1/apps/" + params.appId + "/emails/verify?token=" + params.token + "&type=" + params.type
     });
     p.done(success).fail(failure);
 } catch(e) { // happens if the query string is wrong.

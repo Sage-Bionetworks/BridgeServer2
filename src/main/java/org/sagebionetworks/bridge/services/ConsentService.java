@@ -233,7 +233,7 @@ public class ConsentService {
                 TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
-                        .withStudy(app)
+                        .withApp(app)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -405,7 +405,7 @@ public class ConsentService {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                    .withStudy(app)
+                    .withApp(app)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
@@ -436,7 +436,7 @@ public class ConsentService {
         TemplateRevision revision = templateService.getRevisionForUser(app, SMS_SIGNED_CONSENT);
 
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withTransactionType()

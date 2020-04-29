@@ -377,7 +377,7 @@ public class BaseControllerTest extends Mockito {
     }
 
     @Test
-    public void getCriteriaContextWithStudyId() {
+    public void getCriteriaContextWithAppId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en"))
