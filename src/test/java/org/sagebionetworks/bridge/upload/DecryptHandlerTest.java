@@ -39,16 +39,16 @@ public class DecryptHandlerTest {
         fileHelper.writeBytes(dataFile, dataFileContent);
 
         // inputs
-        DynamoApp study = TestUtils.getValidApp(DecryptHandlerTest.class);
+        DynamoApp app = TestUtils.getValidApp(DecryptHandlerTest.class);
 
         UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setAppId(study.getIdentifier());
+        ctx.setAppId(app.getIdentifier());
         ctx.setTempDir(tmpDir);
         ctx.setDataFile(dataFile);
 
         // mock UploadArchiveService
         UploadArchiveService mockSvc = mock(UploadArchiveService.class);
-        when(mockSvc.decrypt(eq(study.getIdentifier()), any(InputStream.class))).thenReturn(new ByteArrayInputStream(
+        when(mockSvc.decrypt(eq(app.getIdentifier()), any(InputStream.class))).thenReturn(new ByteArrayInputStream(
                 "decrypted test data".getBytes(Charsets.UTF_8)));
 
         // set up test handler
@@ -66,7 +66,7 @@ public class DecryptHandlerTest {
 
         // Verify the correct file data was passed into the decryptor.
         ArgumentCaptor<InputStream> encryptedInputStreamCaptor = ArgumentCaptor.forClass(InputStream.class);
-        verify(mockSvc).decrypt(eq(study.getIdentifier()), encryptedInputStreamCaptor.capture());
+        verify(mockSvc).decrypt(eq(app.getIdentifier()), encryptedInputStreamCaptor.capture());
         InputStream encryptedInputStream = encryptedInputStreamCaptor.getValue();
         assertEquals(ByteStreams.toByteArray(encryptedInputStream), dataFileContent);
     }

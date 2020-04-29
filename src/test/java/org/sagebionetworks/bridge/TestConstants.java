@@ -138,13 +138,13 @@ public class TestConstants {
             Lists.newArrayList("sha256_cert_fingerprints3"));
     public static final AndroidAppLink ANDROID_APP_LINK_4 = new AndroidAppLink("namespace4", "package_name4",
             Lists.newArrayList("sha256_cert_fingerprints4"));
-    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("studyId",
+    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("appId",
             Lists.newArrayList("/appId/", "/appId/*"));
-    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("studyId2",
+    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("appId2",
             Lists.newArrayList("/appId2/", "/appId2/*"));
-    public static final AppleAppLink APPLE_APP_LINK_3 = new AppleAppLink("studyId3",
+    public static final AppleAppLink APPLE_APP_LINK_3 = new AppleAppLink("appId3",
             Lists.newArrayList("/appId3/", "/appId3/*"));
-    public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
+    public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("appId4",
             Lists.newArrayList("/appId4/", "/appId4/*"));
     
     public static final Activity ACTIVITY_1 = new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")

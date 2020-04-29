@@ -75,7 +75,7 @@ public class ABTestScheduleStrategyTest {
 
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
-        newPlan.setStudyKey(plan.getStudyKey()); // not serialized.
+        newPlan.setAppId(plan.getAppId()); // not serialized.
 
         assertEquals(newPlan, plan, "Plan with AB testing strategy was serialized/deserialized");
 
@@ -132,7 +132,7 @@ public class ABTestScheduleStrategyTest {
         // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

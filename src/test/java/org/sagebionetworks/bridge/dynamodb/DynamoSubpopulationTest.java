@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -58,7 +59,7 @@ public class DynamoSubpopulationTest {
         assertTrue(node.get("defaultGroup").booleanValue());
         assertTrue(node.get("autoSendConsentSuppressed").booleanValue());
         assertTrue(node.get("deleted").booleanValue()); // users do not see this flag, they never get deleted items
-        assertEquals(node.get("appId").textValue(), "study-key");
+        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").longValue(), 3L);
         
@@ -79,7 +80,7 @@ public class DynamoSubpopulationTest {
         
         Subpopulation newSubpop = BridgeObjectMapper.get().treeToValue(node, Subpopulation.class);
         // Not serialized, these values have to be added back to have equal objects 
-        newSubpop.setAppId("study-key");
+        newSubpop.setAppId(TEST_APP_ID);
         
         assertEquals(newSubpop, subpop);
         
@@ -105,7 +106,7 @@ public class DynamoSubpopulationTest {
         subpop.setName("Name");
         subpop.setDescription("Description");
         subpop.setGuidString("guid");
-        subpop.setAppId("study-key");
+        subpop.setAppId(TEST_APP_ID);
         subpop.setRequired(true);
         subpop.setDefaultGroup(true);
         subpop.setPublishedConsentCreatedOn(PUBLISHED_CONSENT_TIMESTAMP.getMillis());
@@ -139,7 +140,7 @@ public class DynamoSubpopulationTest {
         String json = Subpopulation.SUBPOP_WRITER.writeValueAsString(subpop);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
 
-        assertNull(node.get("studyIdentifier"));
+        assertNull(node.get("appId"));
     }
     
     @Test

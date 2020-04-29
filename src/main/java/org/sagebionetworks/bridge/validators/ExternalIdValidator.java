@@ -40,20 +40,20 @@ public class ExternalIdValidator implements Validator {
             errors.rejectValue("identifier", msg);
         }
         if (!isV3) {
-            String studyId = StringUtils.isBlank(extId.getStudyId()) ? 
-                    null : extId.getStudyId();
+            String appId = StringUtils.isBlank(extId.getAppId()) ? 
+                    null : extId.getAppId();
             if (StringUtils.isBlank(extId.getSubstudyId())) {
                 errors.rejectValue("substudyId", "cannot be null or blank");
-            } else if (substudyService.getSubstudy(studyId, extId.getSubstudyId(), false) == null) {
+            } else if (substudyService.getSubstudy(appId, extId.getSubstudyId(), false) == null) {
                 errors.rejectValue("substudyId", "is not a valid substudy");
             } else if (!callerSubstudies.isEmpty() && !callerSubstudies.contains(extId.getSubstudyId())) {
                 errors.rejectValue("substudyId", "is not a valid substudy");
             }
         }
-        if (StringUtils.isBlank(extId.getStudyId())) {
-            errors.rejectValue("studyId", "cannot be null or blank");
-        } else if (!extId.getStudyId().equals(callerAppId)) {
-            errors.rejectValue("studyId", "is not a valid study");
+        if (StringUtils.isBlank(extId.getAppId())) {
+            errors.rejectValue("appId", "cannot be null or blank");
+        } else if (!extId.getAppId().equals(callerAppId)) {
+            errors.rejectValue("appId", "is not a valid app");
         }
     }
 }

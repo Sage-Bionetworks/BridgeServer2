@@ -79,8 +79,8 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
             appService.getApp(API_APP_ID);
         } catch (EntityNotFoundException e) {
             App app = App.create();
-            app.setName("Test Study");
-            app.setShortName("TestStudy");
+            app.setName("Test App");
+            app.setShortName("TestApp");
             app.setIdentifier(API_APP_ID);
             app.setReauthenticationEnabled(false);
             app.setSponsorName("Sage Bionetworks");

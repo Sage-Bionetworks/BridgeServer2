@@ -25,6 +25,6 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
         if (loaded == null) {
             return null;
         }
-        return loaded.getStudyIdentifier();
+        return loaded.getAppId();
     }
 }

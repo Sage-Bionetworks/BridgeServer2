@@ -107,7 +107,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         SchedulePlan schedulePlan = new DynamoSchedulePlan();
         schedulePlan.setGuid(GUID);
         schedulePlan.setLabel("Schedule Plan");
-        schedulePlan.setStudyKey(TEST_APP_ID);
+        schedulePlan.setAppId(TEST_APP_ID);
         schedulePlan.setDeleted(false);
         
         Schedule schedule = TestUtils.getSchedule("My Schedule");
@@ -129,7 +129,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
         
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getStudyKey(), TEST_APP_ID);
+        assertEquals(queryCaptor.getValue().getHashKeyValues().getAppId(), TEST_APP_ID);
     }
     
     @Test
@@ -211,7 +211,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         SchedulePlan update = SchedulePlan.create();
         update.setGuid(schedulePlan.getGuid());
         update.setLabel(schedulePlan.getLabel());
-        update.setStudyKey(schedulePlan.getStudyKey());
+        update.setAppId(schedulePlan.getAppId());
         
         // But modify the criteria...
         Schedule schedule = TestUtils.getSchedule("My Schedule");
@@ -414,7 +414,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         
         // This creates a criteria schedule plan which is the most complicated to persist.
         SchedulePlan plan = constructSchedulePlan();
-        plan.setStudyKey(null); // not allowed, should be set to app argument
+        plan.setAppId(null); // not allowed, should be set to app argument
         plan.setDeleted(true); // not allowed, should be set to false
         plan.setVersion(1L); // not allowed, should be set to null
         Criteria criteria = ((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().get(0).getCriteria();
@@ -430,7 +430,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         verify(mockMapper).save(schedulePlanCaptor.capture());
         SchedulePlan persisted = schedulePlanCaptor.getValue();
 
-        assertEquals(persisted.getStudyKey(), TEST_APP_ID);
+        assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertEquals(persisted.getGuid(), GUID);
         assertEquals(persisted.getModifiedOn(), TIMESTAMP.getMillis());
         assertFalse(persisted.isDeleted());
@@ -450,16 +450,16 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
         
         SchedulePlan plan = constructSchedulePlan();
-        plan.setStudyKey(null); // this will be set
+        plan.setAppId(null); // this will be set
         plan.setModifiedOn(0L); // this will be set
         
         SchedulePlan returned = dao.updateSchedulePlan(TEST_APP_ID, plan);
-        assertEquals(returned.getStudyKey(), TEST_APP_ID);
+        assertEquals(returned.getAppId(), TEST_APP_ID);
         assertEquals(returned.getModifiedOn(), TIMESTAMP.getMillis());
         
         verify(mockMapper).queryPage(eq(DynamoSchedulePlan.class), queryCaptor.capture());
         DynamoDBQueryExpression<DynamoSchedulePlan> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getStudyKey(), TEST_APP_ID);
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
         Condition cond = query.getRangeKeyConditions().get("guid");
         assertEquals(cond.getComparisonOperator(), EQ.name());
         assertEquals(cond.getAttributeValueList().get(0).getS(), GUID);
@@ -473,7 +473,7 @@ public class DynamoSchedulePlanDaoMockTest extends Mockito {
         SchedulePlan persisted = schedulePlanCaptor.getValue();
 
         // verify the schedule plan was updated with key fields
-        assertEquals(persisted.getStudyKey(), TEST_APP_ID);
+        assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertEquals(persisted.getModifiedOn(), TIMESTAMP.getMillis());
         assertSame(returned, plan);
     }

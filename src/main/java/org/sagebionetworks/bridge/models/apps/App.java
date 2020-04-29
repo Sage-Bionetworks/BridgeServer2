@@ -136,7 +136,7 @@ public interface App extends BridgeEntity {
     boolean isAppIdExcludedInExport();
 
     /** @see #isAppIdExcludedInExport */
-    void setAppIdExcludedInExport(boolean studyIdExcludedInExport);
+    void setAppIdExcludedInExport(boolean appIdExcludedInExport);
 
     /**
      * The email address that will be given to study participants and other end user for all support 

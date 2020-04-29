@@ -214,14 +214,14 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
+        String appId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the app session to match the subpopulation in the unconsented status map
-        session.setAppId(studyId);
+        session.setAppId(appId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockAppService.getApp(studyId)).thenReturn(app);
+        when(mockAppService.getApp(appId)).thenReturn(app);
         
         JsonNode result = controller.giveV1();
         
@@ -241,14 +241,14 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
+        String appId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the app session to match the subpopulation in the unconsented status map
-        session.setAppId(studyId);
+        session.setAppId(appId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockAppService.getApp(studyId)).thenReturn(app);
+        when(mockAppService.getApp(appId)).thenReturn(app);
         
         JsonNode result = controller.giveV2();
         

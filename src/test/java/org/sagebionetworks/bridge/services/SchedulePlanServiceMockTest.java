@@ -217,7 +217,7 @@ public class SchedulePlanServiceMockTest {
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.createSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        assertEquals(plan.getAppId(), "another-study");
     }
     
     @Test
@@ -229,7 +229,7 @@ public class SchedulePlanServiceMockTest {
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
         plan = service.updateSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        assertEquals(plan.getAppId(), "another-study");
     }
     
     @Test
@@ -354,7 +354,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
-        plan.setStudyKey("study-key");
+        plan.setAppId("study-key");
         plan.setGuid("BBB");
         return plan;
     }

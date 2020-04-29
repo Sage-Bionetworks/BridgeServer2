@@ -484,12 +484,12 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummaryList.size(), 2);
 
         assertEquals(accountSummaryList.get(0).getId(), "account-1");
-        assertEquals(accountSummaryList.get(0).getStudyId(), TEST_APP_ID);
+        assertEquals(accountSummaryList.get(0).getAppId(), TEST_APP_ID);
         assertEquals(accountSummaryList.get(0).getEmail(), "email1@example.com");
         assertEquals(accountSummaryList.get(0).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
         assertEquals(accountSummaryList.get(1).getId(), "account-2");
-        assertEquals(accountSummaryList.get(1).getStudyId(), TEST_APP_ID);
+        assertEquals(accountSummaryList.get(1).getAppId(), TEST_APP_ID);
         assertEquals(accountSummaryList.get(1).getEmail(), "email2@example.com");
         assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
@@ -743,7 +743,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
         assertEquals(accountSummary.getId(), ACCOUNT_ID);
-        assertEquals(accountSummary.getStudyId(), TEST_APP_ID);
+        assertEquals(accountSummary.getAppId(), TEST_APP_ID);
         assertEquals(accountSummary.getEmail(), EMAIL);
         assertEquals(accountSummary.getPhone(), PHONE);
         assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA", "substudyB", "externalIdB"));

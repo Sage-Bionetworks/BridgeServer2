@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -23,7 +24,7 @@ public class DynamoSmsMessage implements SmsMessage {
     private String messageBody;
     private String messageId;
     private SmsType smsType;
-    private String studyId;
+    private String appId;
 
     /** {@inheritDoc} */
     @DynamoDBHashKey
@@ -106,13 +107,19 @@ public class DynamoSmsMessage implements SmsMessage {
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-sentOn-index")
     @Override
-    public String getStudyId() {
-        return studyId;
+    public String getAppId() {
+        return appId;
     }
 
     /** {@inheritDoc} */
     @Override
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+    
+    // Maintain this property for backwards compatibility
+    @DynamoDBIgnore
+    public String getStudyId() {
+        return appId;
     }
 }

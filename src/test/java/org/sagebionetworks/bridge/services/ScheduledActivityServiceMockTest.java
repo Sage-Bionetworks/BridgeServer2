@@ -851,7 +851,7 @@ public class ScheduledActivityServiceMockTest {
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(TEST_APP_ID);
+        plan.setAppId(TEST_APP_ID);
         plan.setStrategy(strategy);
         return plan;
     }

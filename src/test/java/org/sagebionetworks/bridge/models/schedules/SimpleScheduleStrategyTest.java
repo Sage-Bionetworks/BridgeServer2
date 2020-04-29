@@ -54,14 +54,14 @@ public class SimpleScheduleStrategyTest {
 
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         plan.setStrategy(strategy);
 
         String output = MAPPER.writeValueAsString(plan);
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
 
-        newPlan.setStudyKey(plan.getStudyKey()); // not serialized
+        newPlan.setAppId(plan.getAppId()); // not serialized
         assertEquals(newPlan, plan, "Plan with simple strategy was serialized/deserialized");
 
         SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy) newPlan.getStrategy();

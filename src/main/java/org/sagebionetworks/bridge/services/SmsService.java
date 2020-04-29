@@ -131,7 +131,7 @@ public class SmsService {
         smsMessage.setMessageBody(message);
         smsMessage.setMessageId(messageId);
         smsMessage.setSmsType(provider.getSmsTypeEnum());
-        smsMessage.setStudyId(app.getIdentifier());
+        smsMessage.setAppId(app.getIdentifier());
 
         // Fetch participant, if it exists.
         StudyParticipant participant = null;

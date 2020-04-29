@@ -24,7 +24,7 @@ public class EmailSignInEmailProviderTest {
     @Test
     public void testProvider() throws Exception {
         App app = new DynamoApp();
-        app.setName("Study name");
+        app.setName("App name");
         app.setIdentifier("foo");
         app.setSupportEmail("support@email.com");
         
@@ -49,9 +49,9 @@ public class EmailSignInEmailProviderTest {
         String finalBody = String.format("Click here to sign in: <a href=\"%s\">%s</a>", url, url);
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"Study name\" <support@email.com>");
+        assertEquals(email.getSenderAddress(), "\"App name\" <support@email.com>");
         assertEquals(email.getRecipientAddresses().get(0), RECIPIENT_EMAIL);
-        assertEquals(email.getSubject(), "Study name sign in link");
+        assertEquals(email.getSubject(), "App name sign in link");
         assertEquals(email.getMessageParts().get(0).getContent(), finalBody);
     }
     

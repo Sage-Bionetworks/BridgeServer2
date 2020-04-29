@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.collections.Lists.newArrayList;
 
@@ -20,34 +21,34 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.apps.StudyAndUsers;
+import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 
-public class StudyAndUsersValidatorTest extends Mockito {
+public class AppAndUsersValidatorTest extends Mockito {
 
     @Mock
     SynapseClient mockSynapseClient;
     
-    StudyAndUsersValidator validator;
+    AppAndUsersValidator validator;
     
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
-        validator = new StudyAndUsersValidator();
+        validator = new AppAndUsersValidator();
         validator.setSynapseClient(mockSynapseClient);
     }
     
     @Test
-    public void validStudyAndUsers() throws Exception {
+    public void validAppAndUsers() throws Exception {
         // The synapse client as mocked, throws no exception that would make the IDs used
         // here invalid.
         
         List<String> adminIds = ImmutableList.of("abc", "def", "ghi");
         
         App app = App.create();
-        app.setIdentifier("test-identifier");
+        app.setIdentifier(TEST_APP_ID);
         app.setName("Test Name");
         app.setSponsorName("Test Sponsor Name");
         
@@ -57,25 +58,25 @@ public class StudyAndUsersValidatorTest extends Mockito {
                 .withRoles(ImmutableSet.of(RESEARCHER)).build();
         List<StudyParticipant> userIds = ImmutableList.of(user1, user2);
         
-        StudyAndUsers model = new StudyAndUsers(adminIds, app, userIds);
+        AppAndUsers model = new AppAndUsers(adminIds, app, userIds);
         Validate.entityThrowingException(validator, model);
     }
     
     @Test
     public void adminIdsNull() {
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of());
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of());
         assertValidatorMessage(validator, model, "adminIds", "are required");
     }
     
     @Test
     public void adminIdsEmpty() {
-        StudyAndUsers model = new StudyAndUsers(ImmutableList.of(), App.create(), ImmutableList.of());
+        AppAndUsers model = new AppAndUsers(ImmutableList.of(), App.create(), ImmutableList.of());
         assertValidatorMessage(validator, model, "adminIds", "are required");
     }
 
     @Test
     public void adminIdNull() {
-        StudyAndUsers model = new StudyAndUsers(newArrayList((String)null), App.create(), ImmutableList.of());
+        AppAndUsers model = new AppAndUsers(newArrayList((String)null), App.create(), ImmutableList.of());
         assertValidatorMessage(validator, model, "adminIds[0]", "cannot be blank or null");
     }
     
@@ -83,7 +84,7 @@ public class StudyAndUsersValidatorTest extends Mockito {
     public void adminIdInvalid() throws SynapseException {
         when(mockSynapseClient.getUserProfile("userId")).thenThrow(new SynapseNotFoundException());
         
-        StudyAndUsers model = new StudyAndUsers(newArrayList("userId"), App.create(), ImmutableList.of());
+        AppAndUsers model = new AppAndUsers(newArrayList("userId"), App.create(), ImmutableList.of());
         assertValidatorMessage(validator, model, "adminIds[0]", "is invalid");
         
         verify(mockSynapseClient).getUserProfile("userId");
@@ -91,20 +92,20 @@ public class StudyAndUsersValidatorTest extends Mockito {
     
     @Test
     public void usersNull() {
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), null);
+        AppAndUsers model = new AppAndUsers(null, App.create(), null);
         assertValidatorMessage(validator, model, "users", "are required");
     }
     
     @Test
     public void usersEmpty() {
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of());
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of());
         assertValidatorMessage(validator, model, "users", "are required");
     }
     
     @Test
     public void userSynapseUserIdNull() {
         StudyParticipant participant = new StudyParticipant.Builder().build();
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of(participant));
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
         assertValidatorMessage(validator, model, "users[0].synapseUserId", "cannot be blank");
     }
     
@@ -113,7 +114,7 @@ public class StudyAndUsersValidatorTest extends Mockito {
         when(mockSynapseClient.getUserProfile("userId")).thenThrow(new SynapseNotFoundException());
         
         StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("userId").build();
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of(participant));
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
         assertValidatorMessage(validator, model, "users[0].synapseUserId", "is invalid");
         
         verify(mockSynapseClient).getUserProfile("userId");
@@ -122,47 +123,47 @@ public class StudyAndUsersValidatorTest extends Mockito {
     @Test
     public void userRolesNull() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(null).build();
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of(participant));
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
         assertValidatorMessage(validator, model, "users[0].roles", "should have at least one role");
     }
     
     @Test
     public void userRolesEmpty() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of()).build();
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of(participant));
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
         assertValidatorMessage(validator, model, "users[0].roles", "should have at least one role");
     }
     
     @Test
     public void userRolesInvalid() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(WORKER, SUPERADMIN)).build();
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), ImmutableList.of(participant));
+        AppAndUsers model = new AppAndUsers(null, App.create(), ImmutableList.of(participant));
         assertValidatorMessage(validator, model, "users[0].roles", "can only have roles developer and/or researcher");
     }
     
     @Test
     public void studyNull() {
-        StudyAndUsers model = new StudyAndUsers(null, null, null);
-        assertValidatorMessage(validator, model, "study", "cannot be null");
+        AppAndUsers model = new AppAndUsers(null, null, null);
+        assertValidatorMessage(validator, model, "app", "cannot be null");
     }
     
     @Test
     public void studyNameInvalidForSynapse() {
         App app = App.create();
         app.setName("  "); // blank is not okay
-        StudyAndUsers model = new StudyAndUsers(null, app, null);
-        assertValidatorMessage(validator, model, "study.name", "is an invalid Synapse project name");
+        AppAndUsers model = new AppAndUsers(null, app, null);
+        assertValidatorMessage(validator, model, "app.name", "is an invalid Synapse project name");
     }
     
     @Test
     public void studySponsorNameRequired() { 
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), null);
-        assertValidatorMessage(validator, model, "study.sponsorName", "is required");
+        AppAndUsers model = new AppAndUsers(null, App.create(), null);
+        assertValidatorMessage(validator, model, "app.sponsorName", "is required");
     }
     
     @Test
     public void studyIdentifierRequired() { 
-        StudyAndUsers model = new StudyAndUsers(null, App.create(), null);
-        assertValidatorMessage(validator, model, "study.identifier", "is required");
+        AppAndUsers model = new AppAndUsers(null, App.create(), null);
+        assertValidatorMessage(validator, model, "app.identifier", "is required");
     }
 }

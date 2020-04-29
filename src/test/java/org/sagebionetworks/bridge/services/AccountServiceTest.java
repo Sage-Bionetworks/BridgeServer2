@@ -752,7 +752,7 @@ public class AccountServiceTest extends Mockito {
         // App passed into createAccount() takes precedence over appId in the Account object. To test this, make
         // the account have a different app.
         Account account = mockGetAccountById(ACCOUNT_ID, true);
-        account.setAppId("wrong-study");
+        account.setAppId("wrong-app");
 
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
