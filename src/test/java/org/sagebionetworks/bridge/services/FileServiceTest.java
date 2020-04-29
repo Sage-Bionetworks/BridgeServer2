@@ -257,7 +257,7 @@ public class FileServiceTest extends Mockito {
     public void deleteAllStudyFiles() {
         service.deleteAllStudyFiles(TEST_APP_ID);
         
-        verify(mockFileDao).deleteAllStudyFiles(TEST_APP_ID);
+        verify(mockFileDao).deleteAllAppFiles(TEST_APP_ID);
     }
     
     @Test

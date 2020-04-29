@@ -59,7 +59,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         checkNotNull(studyIdentifier);
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(studyIdentifier);
+        plan.setAppId(studyIdentifier);
         
         DynamoDBQueryExpression<DynamoSchedulePlan> query = new DynamoDBQueryExpression<DynamoSchedulePlan>();
         query.withScanIndexForward(false);
@@ -97,7 +97,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         checkNotNull(studyIdentifier);
         checkNotNull(plan);
         
-        plan.setStudyKey(studyIdentifier);
+        plan.setAppId(studyIdentifier);
         plan.setGuid(generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         plan.setDeleted(false);
@@ -118,7 +118,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         if (saved.isDeleted() && plan.isDeleted()) {
             throw new EntityNotFoundException(SchedulePlan.class);
         }
-        plan.setStudyKey(studyIdentifier);
+        plan.setAppId(studyIdentifier);
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
         
         forEachCriteria(plan, scheduleCriteria -> persistCriteria(scheduleCriteria));
@@ -151,7 +151,7 @@ public class DynamoSchedulePlanDao implements SchedulePlanDao {
         checkArgument(isNotBlank(guid));
         
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
-        plan.setStudyKey(studyIdentifier);
+        plan.setAppId(studyIdentifier);
         
         Condition condition = new Condition();
         condition.withComparisonOperator(ComparisonOperator.EQ);

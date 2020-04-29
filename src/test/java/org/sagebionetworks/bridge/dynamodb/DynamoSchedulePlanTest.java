@@ -38,7 +38,7 @@ public class DynamoSchedulePlanTest {
         plan.setLabel("Label");
         plan.setGuid("guid");
         plan.setModifiedOn(datetime.getMillis());
-        plan.setStudyKey(TEST_APP_ID);
+        plan.setAppId(TEST_APP_ID);
         plan.setVersion(2L);
         plan.setDeleted(true);
         plan.setStrategy(strategy);
@@ -71,11 +71,11 @@ public class DynamoSchedulePlanTest {
         String json = TestUtils.createJson("{'studyKey':'study-key'}");
         
         SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
-        assertNull(plan.getStudyKey());
+        assertNull(plan.getAppId());
         
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         plan = DynamoSchedulePlan.fromJson(node);
-        assertNull(plan.getStudyKey());
+        assertNull(plan.getAppId());
     }
 
     @Test(expectedExceptions = BadRequestException.class)

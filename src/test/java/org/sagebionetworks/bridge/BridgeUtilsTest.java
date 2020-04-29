@@ -513,7 +513,7 @@ public class BridgeUtilsTest {
         App app = TestUtils.getValidApp(BridgeUtilsTest.class);
         app.setConsentNotificationEmail(null);
         
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app);
         assertNull(map.get("consentEmail"));
     }
     

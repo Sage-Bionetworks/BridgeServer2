@@ -230,7 +230,7 @@ public class ScheduledActivityServiceDuplicateTest {
             String[] record = SCHEDULE_PLAN_RECORDS[i];
             
             DynamoSchedulePlan plan = new DynamoSchedulePlan();
-            plan.setStudyKey(record[0]);
+            plan.setAppId(record[0]);
             plan.setGuid(record[1]);
             plan.setLabel(record[2]);
             plan.setModifiedOn(Long.parseLong(record[3]));

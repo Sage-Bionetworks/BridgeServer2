@@ -304,7 +304,7 @@ public class BridgeUtils {
         return map;
     }
     
-    public static Map<String,String> studyTemplateVariables(App app) {
+    public static Map<String,String> appTemplateVariables(App app) {
         return studyTemplateVariables(app, null);
     }
     

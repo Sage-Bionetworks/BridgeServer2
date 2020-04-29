@@ -203,7 +203,7 @@ class OAuthProviderService {
             throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
         }
         if (authToken.getAppId() == null) {
-            throw new BadRequestException("Study ID required");
+            throw new BadRequestException("App ID required");
         }
         if (authToken.getAuthToken() == null) {
             throw new BadRequestException("Authorization token required");

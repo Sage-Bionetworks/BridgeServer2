@@ -55,7 +55,7 @@ public class CriteriaScheduleStrategyTest {
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
-        PLAN.setStudyKey(TEST_APP_ID);
+        PLAN.setAppId(TEST_APP_ID);
     }
     
     private CriteriaScheduleStrategy strategy;

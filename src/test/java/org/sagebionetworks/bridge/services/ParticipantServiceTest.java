@@ -112,16 +112,16 @@ public class ParticipantServiceTest extends Mockito {
     private static final DateTime ENROLLMENT_DATETIME = DateTime.parse("2019-07-31T21:42:44.019-0700");
     private static final RequestInfo REQUEST_INFO = new RequestInfo.Builder().withClientInfo(CLIENT_INFO)
             .withLanguages(TestConstants.LANGUAGES).withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
-    private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
-    private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
+    private static final Set<String> APP_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
+    private static final Set<String> APP_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Phone PHONE = TestConstants.PHONE;
     private static final App APP = App.create();
     static {
         APP.setIdentifier(TEST_APP_ID);
         APP.setHealthCodeExportEnabled(true);
-        APP.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
-        APP.setDataGroups(STUDY_DATA_GROUPS);
+        APP.setUserProfileAttributes(APP_PROFILE_ATTRS);
+        APP.setDataGroups(APP_DATA_GROUPS);
         APP.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         APP.getUserProfileAttributes().add("can_be_recontacted");
     }
@@ -155,7 +155,7 @@ public class ParticipantServiceTest extends Mockito {
             .withSharingScope(ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
             .withRoles(DEV_CALLER_ROLES)
-            .withDataGroups(STUDY_DATA_GROUPS)
+            .withDataGroups(APP_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
             .withStatus(DISABLED)
@@ -232,7 +232,7 @@ public class ParticipantServiceTest extends Mockito {
     ArgumentCaptor<Account> accountCaptor;
 
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
     
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
@@ -3382,8 +3382,8 @@ public class ParticipantServiceTest extends Mockito {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         app.setHealthCodeExportEnabled(true);
-        app.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
-        app.setDataGroups(STUDY_DATA_GROUPS);
+        app.setUserProfileAttributes(APP_PROFILE_ATTRS);
+        app.setDataGroups(APP_DATA_GROUPS);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         app.getUserProfileAttributes().add("can_be_recontacted");
         return app;

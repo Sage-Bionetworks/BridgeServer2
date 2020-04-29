@@ -426,19 +426,19 @@ public class TestUtils {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
         plan.setStrategy(getStrategy("P3D", getActivity1()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         plan.setStrategy(getStrategy("P1D", getActivity2()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
         plan.setStrategy(getStrategy("P2D", getActivity3()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         return plans;
@@ -474,7 +474,7 @@ public class TestUtils {
         plan.setLabel("Simple Test Plan");
         plan.setGuid("GGG");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -572,7 +572,7 @@ public class TestUtils {
         plan.setGuid("AAA");
         plan.setLabel("Test A/B Schedule");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
 
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(40, schedule1);

@@ -211,25 +211,25 @@ public class SchedulePlanServiceMockTest {
     }
     @Test
     public void schedulePlanSetsStudyIdentifierOnCreate() {
-        DynamoApp anotherStudy = getAnotherStudy();
+        DynamoApp anotherApp = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
         
-        plan = service.createSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        plan = service.createSchedulePlan(anotherApp, plan);
+        assertEquals(plan.getAppId(), "another-app");
     }
     
     @Test
     public void schedulePlanSetsStudyIdentifierOnUpdate() {
-        DynamoApp anotherStudy = getAnotherStudy();
+        DynamoApp anotherApp = getAnotherStudy();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
-        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy.getIdentifier(), plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(anotherApp.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
-        plan = service.updateSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        plan = service.updateSchedulePlan(anotherApp, plan);
+        assertEquals(plan.getAppId(), "another-app");
     }
     
     @Test
@@ -323,7 +323,7 @@ public class SchedulePlanServiceMockTest {
     
     private DynamoApp getAnotherStudy() {
         DynamoApp anotherStudy = new DynamoApp();
-        anotherStudy.setIdentifier("another-study");
+        anotherStudy.setIdentifier("another-app");
         anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
         return anotherStudy;
     }
@@ -354,7 +354,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
-        plan.setStudyKey("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setGuid("BBB");
         return plan;
     }

@@ -169,7 +169,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             checkNotNull(app);
             checkNotNull(revision);
             
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
+            tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             

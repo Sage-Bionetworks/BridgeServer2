@@ -59,7 +59,7 @@ public final class MimeTypeEmail {
     }
 
     /**
-     * Addresses can be submitted in forms such as "Study A, B, and C <study@study.com>" and need to be escaped. This 
+     * Addresses can be submitted in forms such as "App A, B, and C <app@app.com>" and need to be escaped. This 
      * method will do that if necessary.
      */
     private static String escapeEmailAddress(String address) {
