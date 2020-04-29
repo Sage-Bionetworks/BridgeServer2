@@ -485,7 +485,7 @@ public class BaseControllerTest extends Mockito {
         ObjectNode node = metrics.getJson();
         assertEquals(node.get("session_id").textValue(), "internalSessionToken");
         assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("app_id").textValue(), TEST_APP_ID);
     }
     
     @Test
