@@ -66,7 +66,7 @@ public class ReportDataKeyValidatorTest {
     }
     
     @Test
-    public void appIdentifierMissing() {
+    public void appIdMissing() {
         test(() -> {
             new ReportDataKey.Builder()
                     .withIdentifier("foo")
