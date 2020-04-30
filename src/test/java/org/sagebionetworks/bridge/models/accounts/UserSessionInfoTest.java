@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -52,7 +53,7 @@ public class UserSessionInfoTest {
         session.setInternalSessionToken("internal");
         session.setSessionToken("external");
         session.setReauthToken("reauthToken");
-        session.setAppId("study-identifier");
+        session.setAppId(TEST_APP_ID);
         
         JsonNode node = UserSessionInfo.toJSON(session);
         assertEquals(node.get("firstName").textValue(), "first name");

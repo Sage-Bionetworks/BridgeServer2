@@ -142,13 +142,13 @@ public class AppAndUsersValidatorTest extends Mockito {
     }
     
     @Test
-    public void studyNull() {
+    public void appNull() {
         AppAndUsers model = new AppAndUsers(null, null, null);
         assertValidatorMessage(validator, model, "app", "cannot be null");
     }
     
     @Test
-    public void studyNameInvalidForSynapse() {
+    public void appNameInvalidForSynapse() {
         App app = App.create();
         app.setName("  "); // blank is not okay
         AppAndUsers model = new AppAndUsers(null, app, null);
@@ -156,13 +156,13 @@ public class AppAndUsersValidatorTest extends Mockito {
     }
     
     @Test
-    public void studySponsorNameRequired() { 
+    public void appSponsorNameRequired() { 
         AppAndUsers model = new AppAndUsers(null, App.create(), null);
         assertValidatorMessage(validator, model, "app.sponsorName", "is required");
     }
     
     @Test
-    public void studyIdentifierRequired() { 
+    public void appIdentifierRequired() { 
         AppAndUsers model = new AppAndUsers(null, App.create(), null);
         assertValidatorMessage(validator, model, "app.identifier", "is required");
     }

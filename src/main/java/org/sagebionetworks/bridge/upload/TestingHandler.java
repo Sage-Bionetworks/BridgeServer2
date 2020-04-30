@@ -55,7 +55,7 @@ public class TestingHandler implements UploadValidationHandler {
             testHandler.handle(testContext);
         } catch (RuntimeException | UploadValidationException ex) {
             logger.warn(String.format(
-                    "Test handler %s failed for study %s, upload %s, filename %s: %s",
+                    "Test handler %s failed for app %s, upload %s, filename %s: %s",
                     testHandler.getClass().getName(), productionContext.getAppId(),
                     productionContext.getUpload().getUploadId(), productionContext.getUpload().getFilename(),
                     ex.getMessage()), ex);
@@ -67,7 +67,7 @@ public class TestingHandler implements UploadValidationHandler {
             contextValidator.validate(productionContext, testContext);
         } catch (RuntimeException | UploadValidationException ex) {
             logger.warn(String.format(
-                    "Test validation failed for validator %s, study %s, upload %s, filename %s: %s",
+                    "Test validation failed for validator %s, app %s, upload %s, filename %s: %s",
                     contextValidator.getClass().getName(), productionContext.getAppId(),
                     productionContext.getUpload().getUploadId(), productionContext.getUpload().getFilename(),
                     ex.getMessage()), ex);

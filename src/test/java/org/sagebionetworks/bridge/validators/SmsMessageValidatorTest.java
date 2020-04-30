@@ -134,24 +134,24 @@ public class SmsMessageValidatorTest {
     }
 
     @Test
-    public void nullStudyId() {
+    public void nullAppId() {
         SmsMessage message = makeValidSmsMessage();
         message.setAppId(null);
-        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "studyId", "is required");
+        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "appId", "is required");
     }
 
     @Test
-    public void emptyStudyId() {
+    public void emptyAppId() {
         SmsMessage message = makeValidSmsMessage();
         message.setAppId("");
-        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "studyId", "is required");
+        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "appId", "is required");
     }
 
     @Test
-    public void blankStudyId() {
+    public void blankAppId() {
         SmsMessage message = makeValidSmsMessage();
         message.setAppId("   ");
-        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "studyId", "is required");
+        assertValidatorMessage(SmsMessageValidator.INSTANCE, message, "appId", "is required");
     }
 
     private static SmsMessage makeValidSmsMessage() {

@@ -144,7 +144,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(true).when(mockWorkerSession).isInRole(Roles.WORKER);
         
         doReturn("consented-user-health-code").when(mockConsentedUserSession).getHealthCode();
-        doReturn("consented-user-study-id").when(mockConsentedUserSession).getAppId();
+        doReturn("consented-user-app-id").when(mockConsentedUserSession).getAppId();
         doReturn("userId").when(mockConsentedUserSession).getId();
         doReturn(new StudyParticipant.Builder().build()).when(mockConsentedUserSession).getParticipant();
         
@@ -175,7 +175,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void uploadCompleteAcceptsWorker() throws Exception {
-        upload.setAppId("consented-user-study-id");
+        upload.setAppId("consented-user-app-id");
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();
 
@@ -184,7 +184,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
+        verify(mockUploadService).uploadComplete(eq("consented-user-app-id"),
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals(upload.getHealthCode(), "consented-user-health-code");
@@ -227,7 +227,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
+        verify(mockUploadService).uploadComplete(eq("consented-user-app-id"),
                 eq(UploadCompletionClient.APP), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
         assertEquals("consented-user-health-code", upload.getHealthCode());
@@ -270,7 +270,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
+        verify(mockUploadService).uploadComplete(eq("consented-user-app-id"),
                 eq(UploadCompletionClient.APP), any(), eq(false));
         verify(mockUploadService).pollUploadValidationStatusUntilComplete(UPLOAD_ID);
         verify(mockUploadService, never()).getUploadValidationStatus(any());
@@ -287,7 +287,7 @@ public class UploadControllerTest extends Mockito {
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockUploadService).uploadComplete(eq("consented-user-study-id"),
+        verify(mockUploadService).uploadComplete(eq("consented-user-app-id"),
                 eq(UploadCompletionClient.APP), any(), eq(true));
         verify(mockUploadService).getUploadValidationStatus(UPLOAD_ID);
         verify(mockUploadService, never()).pollUploadValidationStatusUntilComplete(any());
@@ -340,7 +340,7 @@ public class UploadControllerTest extends Mockito {
         record.setHealthCode(HEALTH_CODE);
 
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setAppId("some-other-study");
+        upload.setAppId("some-other-app");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 
@@ -359,7 +359,7 @@ public class UploadControllerTest extends Mockito {
         record.setHealthCode(HEALTH_CODE);
 
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setAppId("some-other-study");
+        upload.setAppId("some-other-app");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 
@@ -401,7 +401,7 @@ public class UploadControllerTest extends Mockito {
     public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        when(mockResearcherSession.getAppId()).thenReturn("researcher-study-id");
+        when(mockResearcherSession.getAppId()).thenReturn("researcher-app-id");
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppId(TEST_APP_ID);
@@ -410,7 +410,7 @@ public class UploadControllerTest extends Mockito {
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setAppId("researcher-study-id");
+        upload.setAppId("researcher-app-id");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 
@@ -427,13 +427,13 @@ public class UploadControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
 
         HealthDataRecord record = HealthDataRecord.create();
-        record.setAppId("some-other-study");
+        record.setAppId("some-other-app");
         record.setUploadId(UPLOAD_ID);
         record.setHealthCode(HEALTH_CODE);
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(record);
         
         DynamoUpload2 upload = new DynamoUpload2();
-        upload.setAppId("some-other-study");
+        upload.setAppId("some-other-app");
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
         UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
 

@@ -47,8 +47,8 @@ public class SessionUpdateService {
         cacheProvider.setUserSession(session);
     }
     
-    public void updateStudy(UserSession session, String studyId) {
-        session.setAppId(studyId);
+    public void updateStudy(UserSession session, String appId) {
+        session.setAppId(appId);
         cacheProvider.setUserSession(session);
     }
 

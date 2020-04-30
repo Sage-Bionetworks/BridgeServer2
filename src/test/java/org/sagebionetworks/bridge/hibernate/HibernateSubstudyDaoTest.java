@@ -99,7 +99,7 @@ public class HibernateSubstudyDaoTest {
         
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "id");
-        assertEquals(substudyId.getStudyId(), TEST_APP_ID);
+        assertEquals(substudyId.getAppId(), TEST_APP_ID);
     }
     
     @Test
@@ -137,7 +137,7 @@ public class HibernateSubstudyDaoTest {
         verify(hibernateHelper).deleteById(eq(HibernateSubstudy.class), substudyIdCaptor.capture());
         SubstudyId substudyId = substudyIdCaptor.getValue();
         assertEquals(substudyId.getId(), "oneId");
-        assertEquals(substudyId.getStudyId(), TEST_APP_ID);
+        assertEquals(substudyId.getAppId(), TEST_APP_ID);
     }    
 
     @Test(expectedExceptions = PersistenceException.class)

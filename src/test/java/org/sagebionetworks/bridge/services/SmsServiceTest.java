@@ -60,7 +60,7 @@ public class SmsServiceTest {
     private static final long MOCK_NOW_MILLIS = DateUtils.convertToMillisFromEpoch("2018-10-17T16:21:52.749Z");
     private static final String PHONE_NUMBER = "+12065550123";
     private static final long SENT_ON = 1539732997760L;
-    private static final String STUDY_SHORT_NAME = "My Study";
+    private static final String APP_SHORT_NAME = "My App";
     private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(-7);
     private static final String USER_ID = "test-user";
     private static final TemplateRevision REVISION = TemplateRevision.create();
@@ -101,7 +101,7 @@ public class SmsServiceTest {
         // Mock app service. This is only used to get the app short name.
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        app.setShortName(STUDY_SHORT_NAME);
+        app.setShortName(APP_SHORT_NAME);
 
         // Mock other DAOs and services.
         mockHealthDataService = mock(HealthDataService.class);
@@ -146,7 +146,7 @@ public class SmsServiceTest {
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue(),
                 "Transactional");
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue(),
-                STUDY_SHORT_NAME);
+                APP_SHORT_NAME);
 
         // We log the SMS message to DDB and to health data.
         verifyLoggedSmsMessage(HEALTH_CODE, MESSAGE_BODY, SmsType.TRANSACTIONAL);
@@ -176,7 +176,7 @@ public class SmsServiceTest {
         assertEquals(request.getMessage(), MESSAGE_BODY);
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_TYPE).getStringValue(), "Promotional");
         assertEquals(request.getMessageAttributes().get(BridgeConstants.AWS_SMS_SENDER_ID).getStringValue(),
-                STUDY_SHORT_NAME);
+                APP_SHORT_NAME);
 
         // We log the SMS message to DDB and to health data.
         verifyLoggedSmsMessage(HEALTH_CODE, MESSAGE_BODY, SmsType.PROMOTIONAL);

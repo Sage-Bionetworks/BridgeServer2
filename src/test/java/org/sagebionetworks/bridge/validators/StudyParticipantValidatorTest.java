@@ -36,8 +36,8 @@ import com.google.common.collect.Sets;
 
 public class StudyParticipantValidatorTest {
     
-    private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
-    private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
+    private static final Set<String> APP_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
+    private static final Set<String> APP_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
     private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_APP_ID, "id");
     private App app;
 
@@ -60,8 +60,8 @@ public class StudyParticipantValidatorTest {
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
         app.setHealthCodeExportEnabled(true);
-        app.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
-        app.setDataGroups(STUDY_DATA_GROUPS);
+        app.setUserProfileAttributes(APP_PROFILE_ATTRS);
+        app.setDataGroups(APP_DATA_GROUPS);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         app.getUserProfileAttributes().add("phone");
     }
@@ -81,8 +81,8 @@ public class StudyParticipantValidatorTest {
                 .build();
         assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, synapseUserId or externalId is required");
         assertValidatorMessage(validator, participant, "externalId", "is required");
-        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
-        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
+        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for app (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for app (use attr1, attr2, phone)");
         assertValidatorMessage(validator, participant, "password", "must be at least 8 characters");
         assertValidatorMessage(validator, participant, "password", "must contain at least one number (0-9)");
         assertValidatorMessage(validator, participant, "password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
@@ -110,8 +110,8 @@ public class StudyParticipantValidatorTest {
             assertNull(e.getErrors().get("externalId"));
             assertNull(e.getErrors().get("password"));
         }
-        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for study (use group1, group2, bluebell)");
-        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for study (use attr1, attr2, phone)");
+        assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for app (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for app (use attr1, attr2, phone)");
     }
     
     @Test
@@ -236,7 +236,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validatesDataGroupsValidIfSupplied() {
         validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
-        assertValidatorMessage(validator, withDataGroup("squirrel"), "dataGroups", "'squirrel' is not defined for study (use group1, group2, bluebell)");
+        assertValidatorMessage(validator, withDataGroup("squirrel"), "dataGroups", "'squirrel' is not defined for app (use group1, group2, bluebell)");
     }
     
     @Test

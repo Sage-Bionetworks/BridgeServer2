@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
@@ -60,7 +61,7 @@ public class UserSessionTest {
         session.setAuthenticated(true);
         session.setEnvironment(PROD);
         session.setIpAddress("ip address");
-        session.setAppId("study-key");
+        session.setAppId(TEST_APP_ID);
         session.setReauthToken("reauthToken");
         session.setConsentStatuses(statuses);
         

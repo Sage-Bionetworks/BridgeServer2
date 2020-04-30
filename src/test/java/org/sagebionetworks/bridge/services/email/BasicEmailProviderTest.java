@@ -36,7 +36,8 @@ public class BasicEmailProviderTest {
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
-        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
+        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} "+
+                "${appName} ${appShortName} ${appId} ${sponsorName} ${supportEmail} "+
             "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}");
         revision.setMimeType(HTML); 
         
@@ -66,7 +67,7 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
         assertEquals(bodyString,
-                "Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
+                "Name ShortName id Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
     }
 
     @Test

@@ -275,6 +275,9 @@ public class BridgeUtils {
      *  <li>studyName = app.getName()</li>
      *  <li>studyShortName = app.getShortName()</li>
      *  <li>studyId = app.getIdentifier()</li>
+     *  <li>appName = app.getName()</li>
+     *  <li>appShortName = app.getShortName()</li>
+     *  <li>appId = app.getIdentifier()</li>
      *  <li>sponsorName = app.getSponsorName()</li>
      *  <li>supportEmail = app.getSupportEmail()</li>
      *  <li>technicalEmail = app.getTechnicalEmail()</li>
@@ -286,6 +289,9 @@ public class BridgeUtils {
         map.put("studyName", app.getName());
         map.put("studyShortName", app.getShortName());
         map.put("studyId", app.getIdentifier());
+        map.put("appName", app.getName());
+        map.put("appShortName", app.getShortName());
+        map.put("appId", app.getIdentifier());
         map.put("sponsorName", app.getSponsorName());
         map.put("supportEmail", 
                 Iterables.getFirst(commaListToOrderedSet(app.getSupportEmail()), ""));

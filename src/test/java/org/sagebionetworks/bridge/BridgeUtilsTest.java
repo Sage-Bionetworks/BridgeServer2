@@ -500,6 +500,9 @@ public class BridgeUtilsTest {
         assertEquals(map.get("studyName"), "name2");
         assertEquals(map.get("studyShortName"), "shortName");
         assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appName"), "name2");
+        assertEquals(map.get("appShortName"), "shortName");
+        assertEquals(map.get("appId"), TEST_APP_ID);
         assertEquals(map.get("sponsorName"), "sponsorName2");
         assertEquals(map.get("supportEmail"), "supportEmail2");
         assertEquals(map.get("technicalEmail"), "technicalEmail2");

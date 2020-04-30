@@ -176,8 +176,8 @@ public class ParticipantController extends BaseController {
         return new StatusMessage("User deleted.");
     }
 
-    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/activityEvents",
-            "/v3/studies/{appId}/participants/{userId}/activityEvents"})
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activityEvents",
+            "/v3/studies/{appId}/participants/{userId}/activityEvents" })
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String appId,
             @PathVariable String userId) {
         getAuthenticatedSession(Roles.WORKER);
@@ -186,9 +186,9 @@ public class ParticipantController extends BaseController {
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
     
-    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
-            "/v3/studies/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}"}, produces = {
-            APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
+            "/v3/studies/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}" }, produces = {
+                    APPLICATION_JSON_UTF8_VALUE })
     public String getActivityHistoryForWorkerV3(@PathVariable String appId, @PathVariable String userId,
             @PathVariable String activityType, @PathVariable String referentGuid,
             @RequestParam(required = false) String scheduledOnStart,
@@ -307,8 +307,8 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}",
-            "/v3/studies/{appId}/participants/{userId}" }, produces = { APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path= {"/v1/apps/{appId}/participants/{userId}",
+            "/v3/studies/{appId}/participants/{userId}"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipantForWorker(@PathVariable String appId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
@@ -320,8 +320,9 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/requestInfo",
-            "/v3/studies/{appId}/participants/{userId}/requestInfo" }, produces = { APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/requestInfo",
+            "/v3/studies/{appId}/participants/{userId}/requestInfo"}, produces = {
+            APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfoForWorker(@PathVariable String appId, @PathVariable String userId)
             throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
@@ -528,8 +529,8 @@ public class ParticipantController extends BaseController {
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
 
-    @PostMapping(path = { "/v1/apps/{appId}/participants/{userId}/sendSmsMessage",
-            "/v3/studies/{appId}/participants/{userId}/sendSmsMessage" })
+    @PostMapping(path = {"/v1/apps/{appId}/participants/{userId}/sendSmsMessage",
+            "/v3/studies/{appId}/participants/{userId}/sendSmsMessage"})
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendSmsMessageForWorker(@PathVariable String appId, @PathVariable String userId) {
         getAuthenticatedSession(WORKER);

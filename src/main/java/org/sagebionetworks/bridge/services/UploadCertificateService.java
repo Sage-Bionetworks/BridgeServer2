@@ -55,9 +55,9 @@ public class UploadCertificateService {
     /**
      * Creates a CMS key pair for a particular app and save it in permanent storage.
      */
-    public void createCmsKeyPair(final String studyIdentifier) {
-        checkNotNull(studyIdentifier);
-        String pemFilename = getPemFilename(studyIdentifier);
+    public void createCmsKeyPair(final String appId) {
+        checkNotNull(appId);
+        String pemFilename = getPemFilename(appId);
         if (!s3CmsClient.doesObjectExist(PRIVATE_KEY_BUCKET, pemFilename) ||
                 !s3CmsClient.doesObjectExist(CERT_BUCKET, pemFilename)) {
             final KeyPair keyPair = KeyPairFactory.newRsa2048();
@@ -79,17 +79,17 @@ public class UploadCertificateService {
     }
 
     // Helper function to get the PEM filename. Package-scoped to facilitate unit tests.
-    static String getPemFilename(String studyId) {
-        return studyId + ".pem";
+    static String getPemFilename(String appId) {
+        return appId + ".pem";
     }
 
     /**
      * Get the PEM file for the public key of the CMS key pair. App developers need 
      * access to this certificate to encrypt data they send to us.
      */
-    public String getPublicKeyAsPem(String studyIdentifier) {
+    public String getPublicKeyAsPem(String appId) {
         try {
-            return s3CmsHelper.readS3FileAsString(CERT_BUCKET, getPemFilename(studyIdentifier));
+            return s3CmsHelper.readS3FileAsString(CERT_BUCKET, getPemFilename(appId));
         } catch (IOException e) {
             throw new BridgeServiceException(e);
         }

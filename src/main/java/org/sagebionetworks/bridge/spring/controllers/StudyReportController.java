@@ -92,12 +92,12 @@ public class StudyReportController extends BaseController {
     /**
      * Get a study report *if* it is marked public, as this call does not require the user to be authenticated.
      */
-    @GetMapping("/v3/studies/{studyId}/reports/{identifier}")
-    public DateRangeResourceList<? extends ReportData> getPublicStudyReport(@PathVariable String studyId,
+    @GetMapping(path = { "/v1/apps/{appId}/reports/{identifier}", "/v3/studies/{appId}/reports/{identifier}" })
+    public DateRangeResourceList<? extends ReportData> getPublicStudyReport(@PathVariable String appId,
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
 
-        verifyIndexIsPublic(studyId, identifier);
+        verifyIndexIsPublic(appId, identifier);
         // We do not want to inherit a user's session information, if a session token is being 
         // passed to this method.
         setRequestContext(NULL_INSTANCE);
@@ -105,7 +105,7 @@ public class StudyReportController extends BaseController {
         LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
         
-        return reportService.getStudyReport(studyId, identifier, startDateObj, endDateObj);
+        return reportService.getStudyReport(appId, identifier, startDateObj, endDateObj);
     }
     
     /**
@@ -145,15 +145,15 @@ public class StudyReportController extends BaseController {
     /**
      * A similar method as above but specifying study id only for WORKER
      */
-    @PostMapping("/v3/studies/{studyId}/reports/{identifier}")
+    @PostMapping(path = { "/v1/apps/{appId}/reports/{identifier}", "/v3/studies/{appId}/reports/{identifier}" })
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveStudyReportForWorker(@PathVariable String studyId, @PathVariable String identifier) {
+    public StatusMessage saveStudyReportForWorker(@PathVariable String appId, @PathVariable String identifier) {
         getAuthenticatedSession(WORKER);
 
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
 
-        reportService.saveStudyReport(studyId, identifier, reportData);
+        reportService.saveStudyReport(appId, identifier, reportData);
 
         return SAVED_MSG;
     }
@@ -218,11 +218,11 @@ public class StudyReportController extends BaseController {
         return UPDATED_MSG;
     }
 
-    private void verifyIndexIsPublic(final String studyId, final String identifier) {
+    private void verifyIndexIsPublic(final String appId, final String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withIdentifier(identifier)
                 .withReportType(STUDY)
-                .withAppId(studyId).build();
+                .withAppId(appId).build();
         
         ReportIndex index = reportService.getReportIndex(key);
         if (index == null || !index.isPublic()) {

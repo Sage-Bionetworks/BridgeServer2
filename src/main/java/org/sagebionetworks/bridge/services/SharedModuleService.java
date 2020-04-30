@@ -54,7 +54,7 @@ public class SharedModuleService {
     }
 
     /** Imports a specific module version into the specified app. */
-    public SharedModuleImportStatus importModuleByIdAndVersion(String studyId, String moduleId,
+    public SharedModuleImportStatus importModuleByIdAndVersion(String appId, String moduleId,
             int moduleVersion) {
         // appId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
@@ -66,11 +66,11 @@ public class SharedModuleService {
 
         // Get metadata and import.
         SharedModuleMetadata metadata = moduleMetadataService.getMetadataByIdAndVersion(moduleId, moduleVersion);
-        return importModule(studyId, metadata);
+        return importModule(appId, metadata);
     }
 
     /** Imports the latest published version of a module into the specified app. */
-    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String studyId, String moduleId) {
+    public SharedModuleImportStatus importModuleByIdLatestPublishedVersion(String appId, String moduleId) {
         // appId is provided by the controller. Validate the rest of the args.
         if (StringUtils.isBlank(moduleId)) {
             throw new BadRequestException("module ID must be specified");
@@ -86,11 +86,11 @@ public class SharedModuleService {
             // Error, because this represents a coding error that we should fix.
             LOG.error("Module " + moduleId + " has more than one most recent publisher version.");
         }
-        return importModule(studyId, metadataList.get(0));
+        return importModule(appId, metadataList.get(0));
     }
 
     // Helper method to import a module given the module metadata object.
-    private SharedModuleImportStatus importModule(String studyId, SharedModuleMetadata metadata) {
+    private SharedModuleImportStatus importModule(String appId, SharedModuleMetadata metadata) {
         // Callers will have passed in a non-null metadata object. This preconditions check is just to check against
         // bad coding.
         checkNotNull(metadata, "metadata must be specified");
@@ -108,7 +108,7 @@ public class SharedModuleService {
             schema.setModuleId(moduleId);
             schema.setModuleVersion(moduleVersion);
 
-            schemaService.createSchemaRevisionV4(studyId, schema);
+            schemaService.createSchemaRevisionV4(appId, schema);
 
             // Schema ID and rev are the same in the shared app and in the local app.
             return new SharedModuleImportStatus(schemaId, schemaRev);
@@ -125,7 +125,7 @@ public class SharedModuleService {
             sharedSurvey.setModuleVersion(moduleVersion);
 
             // Survey keys don't include appId. Instead, we need to set the appId directly in the survey object.
-            sharedSurvey.setAppId(studyId);
+            sharedSurvey.setAppId(appId);
             Survey localSurvey = surveyService.createSurvey(sharedSurvey);
             GuidCreatedOnVersionHolder localSurveyKey = new GuidCreatedOnVersionHolderImpl(localSurvey.getGuid(),
                     localSurvey.getCreatedOn());
@@ -135,7 +135,7 @@ public class SharedModuleService {
             //
             // Cut a new schema rev, because if somehow this conflicts with an existing survey, we want to have a clean
             // version so it doesn't get munged with an "unofficial" version.
-            surveyService.publishSurvey(studyId, localSurveyKey, true);
+            surveyService.publishSurvey(appId, localSurveyKey, true);
 
             // Survey GUID and createdOn are changed when we create the survey in a new app. Return the new ones.
             return new SharedModuleImportStatus(localSurveyKey.getGuid(), localSurveyKey.getCreatedOn());

@@ -625,8 +625,8 @@ public class AccountWorkflowService {
         return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
     }
     
-    private String getEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
+    private String getEmailSignInURL(String email, String appId, String token) {
+        return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, appId, email, appId, token);
     }
     
     private String getVerifyEmailURL(App app, String sptoken) {
@@ -637,8 +637,8 @@ public class AccountWorkflowService {
         return formatWithEncodedArgs(OLD_RESET_PASSWORD_URL, app.getIdentifier(), sptoken);
     }
     
-    private String getShortEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, token);
+    private String getShortEmailSignInURL(String email, String appId, String token) {
+        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, appId, email, token);
     }
     
     private String getShortVerifyEmailURL(App app, String sptoken) {
