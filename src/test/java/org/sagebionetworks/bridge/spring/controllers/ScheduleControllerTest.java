@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.testng.Assert.assertEquals;
@@ -135,7 +136,7 @@ public class ScheduleControllerTest extends Mockito {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("Label");
         plan.setGuid("BBB");
-        plan.setAppId("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setStrategy(strategy);
         plans.add(plan);
 
@@ -149,7 +150,7 @@ public class ScheduleControllerTest extends Mockito {
         plan = new DynamoSchedulePlan();
         plan.setLabel("Label");
         plan.setGuid("BBB");
-        plan.setAppId("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setStrategy(strategy);
         plans.add(plan);
         

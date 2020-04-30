@@ -21,24 +21,24 @@ public class MimeTypeEmailProviderTest {
     @Test
     public void works() {
         App app = App.create();
-        app.setName("Very Useful Study 🐶");
+        app.setName("Very Useful App 🐶");
         app.setSupportEmail("support@support.com");
         
         MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(app);
         
         assertEquals(provider.getPlainSenderEmail(), "support@support.com");
-        assertEquals(provider.getFormattedSenderEmail(), "Very Useful Study 🐶 <support@support.com>");
+        assertEquals(provider.getFormattedSenderEmail(), "Very Useful App 🐶 <support@support.com>");
     }
     
     @Test
     public void worksWithMultipleAddresses() {
         App app = App.create();
-        app.setName("Very Useful Study 🐶");
+        app.setName("Very Useful App 🐶");
         app.setSupportEmail("support@support.com,email@email.com");
         
         MimeTypeEmailProvider provider = new MimeTypeEmailProviderImpl(app);
         
         assertEquals(provider.getPlainSenderEmail(), "support@support.com");
-        assertEquals(provider.getFormattedSenderEmail(), "Very Useful Study 🐶 <support@support.com>");
+        assertEquals(provider.getFormattedSenderEmail(), "Very Useful App 🐶 <support@support.com>");
     }
 }

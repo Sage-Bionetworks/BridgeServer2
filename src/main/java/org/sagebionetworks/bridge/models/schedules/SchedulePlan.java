@@ -21,7 +21,7 @@ public interface SchedulePlan extends BridgeEntity {
     void setLabel(String label);
     
     String getAppId();
-    void setAppId(String studyKey);
+    void setAppId(String appId);
     
     long getModifiedOn();
     void setModifiedOn(long modifiedOn);

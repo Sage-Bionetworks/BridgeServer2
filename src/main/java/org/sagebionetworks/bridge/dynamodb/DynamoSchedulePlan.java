@@ -185,8 +185,8 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     @Override
     public String toString() {
-        return String.format("DynamoSchedulePlan [appId=%s, guid=%s, label=%s, modifiedOn=%s, strategy=%s, deleted=%s]",
-            appId, guid, label, modifiedOn, strategy, deleted);
+        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s, deleted=%s]",
+            guid, label, appId, modifiedOn, strategy, deleted);
     }
 
 }

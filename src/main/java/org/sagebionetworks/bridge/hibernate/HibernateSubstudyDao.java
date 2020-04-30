@@ -30,7 +30,7 @@ public class HibernateSubstudyDao implements SubstudyDao {
         checkNotNull(appId);
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
-        String query = "from HibernateSubstudy as substudy where studyId=:appId";
+        String query = "from HibernateSubstudy as substudy where appId=:appId";
         if (!includeDeleted) {
             query += " and deleted != 1";
         }

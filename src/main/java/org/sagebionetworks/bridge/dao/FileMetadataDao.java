@@ -16,5 +16,5 @@ public interface FileMetadataDao {
     
     void deleteFilePermanently(String appId, String guid);
     
-    void deleteAllStudyFiles(String appId);
+    void deleteAllAppFiles(String appId);
 }

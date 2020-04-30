@@ -152,7 +152,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     @Test
     public void deleteFilePermanentlyWrongStudy() {
         FileMetadata metadata = new FileMetadata();
-        metadata.setAppId("some-other-study");
+        metadata.setAppId("some-other-app");
         when(mockHibernateHelper.getById(FileMetadata.class, GUID)).thenReturn(metadata);
         
         dao.deleteFilePermanently(TEST_APP_ID, GUID);
@@ -163,7 +163,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     
     @Test
     public void deleteAllStudyFiles() {
-        dao.deleteAllStudyFiles(TEST_APP_ID);
+        dao.deleteAllAppFiles(TEST_APP_ID);
         
         verify(mockHibernateHelper).query(eq(DELETE + FROM_FILE), paramsCaptor.capture());
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);

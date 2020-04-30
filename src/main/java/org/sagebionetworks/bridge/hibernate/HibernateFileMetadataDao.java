@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.files.FileMetadata;
 public class HibernateFileMetadataDao implements FileMetadataDao {
     static final String SELECT_COUNT = "SELECT count(guid) "; 
     static final String DELETE = "DELETE ";
-    static final String FROM_FILE = "FROM FileMetadata WHERE studyId = :appId";
+    static final String FROM_FILE = "FROM FileMetadata WHERE appId = :appId";
     static final String WO_DELETED = " AND deleted = 0";
     static final String WITH_GUID = " AND guid = :guid";
     static final String ORDER_BY = " ORDER BY name";    
@@ -90,7 +90,7 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     }
     
     @Override
-    public void deleteAllStudyFiles(String appId) {
+    public void deleteAllAppFiles(String appId) {
         checkNotNull(appId);
         
         hibernateHelper.query(DELETE+FROM_FILE, ImmutableMap.of("appId", appId));   

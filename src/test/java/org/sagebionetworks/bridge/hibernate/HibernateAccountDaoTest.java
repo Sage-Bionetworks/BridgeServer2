@@ -72,7 +72,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     private static final String SUBSTUDY_A = "substudyA";
     private static final String SUBSTUDY_B = "substudyB";
-    private static final Map<String, Object> STUDY_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
+    private static final Map<String, Object> APP_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
             .put("appId", TEST_APP_ID).build();
     private static final Map<String, Object> EMAIL_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
             .put("appId", TEST_APP_ID).put("email", EMAIL).build();
@@ -169,7 +169,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void updateAccountAllowsIdentifierUpdate() {
         // This call will allow identifiers/verification status to be updated.
         HibernateAccount persistedAccount = new HibernateAccount();
-        persistedAccount.setAppId("persisted-study");
+        persistedAccount.setAppId("persisted-app");
         persistedAccount.setEmail("persisted@example.com");
         persistedAccount.setCreatedOn(new DateTime(1234L));
         persistedAccount.setPasswordModifiedOn(new DateTime(5678L));
@@ -232,7 +232,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setHealthCode(null);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
-        // execute and validate - just validate ID, study, and email, and health code mapping
+        // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
         assertEquals(account.getId(), ACCOUNT_ID);
         assertEquals(account.getAppId(), TEST_APP_ID);
@@ -261,7 +261,7 @@ public class HibernateAccountDaoTest extends Mockito {
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate
-        AccountId wrongStudy = AccountId.forId("wrong-study", ACCOUNT_ID);
+        AccountId wrongStudy = AccountId.forId("wrong-app", ACCOUNT_ID);
         Optional<Account> opt = dao.getAccount(wrongStudy);
         assertFalse(opt.isPresent());
         
@@ -280,7 +280,7 @@ public class HibernateAccountDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        // execute and validate - just validate ID, study, and email, and health code mapping
+        // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
         assertEquals(account.getId(), ACCOUNT_ID);
         assertEquals(account.getAppId(), TEST_APP_ID);
@@ -309,7 +309,7 @@ public class HibernateAccountDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        // execute and validate - just validate ID, study, and email, and health code mapping
+        // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
         assertEquals(account.getId(), ACCOUNT_ID);
         assertEquals(account.getAppId(), TEST_APP_ID);
@@ -479,7 +479,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("pageSize"), 5);
 
-        // just ID, study, and email is sufficient
+        // just ID, app, and email is sufficient
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
         assertEquals(accountSummaryList.size(), 2);
 
@@ -494,8 +494,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
         // verify hibernate calls
-        verify(mockHibernateHelper).queryGet(expQuery, STUDY_QUERY_PARAMS, 10, 5, HibernateAccount.class);
-        verify(mockHibernateHelper).queryCount(expCountQuery, STUDY_QUERY_PARAMS);
+        verify(mockHibernateHelper).queryGet(expQuery, APP_QUERY_PARAMS, 10, 5, HibernateAccount.class);
+        verify(mockHibernateHelper).queryCount(expCountQuery, APP_QUERY_PARAMS);
     }
 
     @Test
@@ -925,8 +925,8 @@ public class HibernateAccountDaoTest extends Mockito {
     }
 
     @Test
-    public void getStudyIdsForUser() throws Exception {
-        List<String> queryResult = ImmutableList.of("studyA", "studyB");
+    public void getAppIdsForUser() throws Exception {
+        List<String> queryResult = ImmutableList.of("appA", "appB");
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(String.class))).thenReturn(queryResult);
         
         List<String> results = dao.getAppIdForUser(SYNAPSE_USER_ID);
@@ -939,7 +939,7 @@ public class HibernateAccountDaoTest extends Mockito {
     }
     
     @Test
-    public void getStudyIdsForUserNoSynapseUserId() throws Exception {
+    public void getAppIdsForUserNoSynapseUserId() throws Exception {
         List<String> results = dao.getAppIdForUser(null);
         assertTrue(results.isEmpty());
     }

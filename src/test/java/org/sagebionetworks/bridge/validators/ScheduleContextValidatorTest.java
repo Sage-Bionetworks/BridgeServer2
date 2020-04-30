@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -49,7 +50,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void endsOnAfterNow() {
         ScheduleContext context = new ScheduleContext.Builder()
-            .withAppId("study-id")
+            .withAppId(TEST_APP_ID)
             .withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(DateTime.now().minusHours(1)).withHealthCode("healthCode").build();
         try {
@@ -65,7 +66,7 @@ public class ScheduleContextValidatorTest {
         // Setting this two days past the maximum. Will always fail.
         DateTime endsOn = DateTime.now().plusDays(ScheduleContextValidator.MAX_DATE_RANGE_IN_DAYS+2);
         ScheduleContext context = new ScheduleContext.Builder()
-            .withAppId("study-id").withInitialTimeZone(DateTimeZone.UTC)
+            .withAppId(TEST_APP_ID).withInitialTimeZone(DateTimeZone.UTC)
             .withEndsOn(endsOn).withHealthCode("healthCode").build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -78,7 +79,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void minimumActivitiesAreGreaterThanZero() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withAppId("study-id")
+                .withAppId(TEST_APP_ID)
                 .withMinimumPerSchedule(-1).build();
         try {
             Validate.nonEntityThrowingException(validator, context);
@@ -91,7 +92,7 @@ public class ScheduleContextValidatorTest {
     @Test
     public void minimumActivitiesAreNotGreaterThanMax() {
         ScheduleContext context = new ScheduleContext.Builder()
-                .withAppId("study-id")
+                .withAppId(TEST_APP_ID)
                 .withMinimumPerSchedule(ScheduleContextValidator.MAX_MIN_ACTIVITY_COUNT + 1).build();
         try {
             Validate.nonEntityThrowingException(validator, context);

@@ -102,7 +102,7 @@ public class ParticipantReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for participant reports in this study.
+     * Get a list of the identifiers used for participant reports in this app.
      */
     @GetMapping("/v3/participants/reports")
     public ReportTypeResourceList<? extends ReportIndex> listParticipantReportIndices() {
@@ -133,14 +133,13 @@ public class ParticipantReportController extends BaseController {
     }
 
     /** Worker API to get reports for the given user in the given app by date. */
-    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/reports/{reportId}",
-            "/v3/studies/{appId}/participants/{userId}/reports/{reportId}"})
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/reports/{reportId}",
+            "/v3/studies/{appId}/participants/{userId}/reports/{reportId}" })
     public DateRangeResourceList<? extends ReportData> getParticipantReportForWorker(@PathVariable String appId,
             @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternal(appId, userId, reportId, startDate,
-                endDate);
+        return getParticipantReportInternal(appId, userId, reportId, startDate, endDate);
     }
 
     private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, String userId, String reportId,
@@ -174,8 +173,7 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternalV4(appId, userId, reportId, startTime, endTime,
-                offsetKey, pageSize);
+        return getParticipantReportInternalV4(appId, userId, reportId, startTime, endTime, offsetKey, pageSize);
     }
 
     // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
