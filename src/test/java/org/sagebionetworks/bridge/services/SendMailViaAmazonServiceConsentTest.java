@@ -47,7 +47,7 @@ import org.testng.annotations.Test;
  */
 public class SendMailViaAmazonServiceConsentTest {
     private static final String SUPPORT_EMAIL = "app-support-email@study.com";
-    private static final String FROM_STUDY_AS_FORMATTED = "\"Test App (Sage)\" <"+SUPPORT_EMAIL+">";
+    private static final String FROM_APP_AS_FORMATTED = "\"Test App (Sage)\" <"+SUPPORT_EMAIL+">";
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
@@ -126,7 +126,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals(req.getSource(), FROM_STUDY_AS_FORMATTED, "Correct sender");
+        assertEquals(req.getSource(), FROM_APP_AS_FORMATTED, "Correct sender");
 
         // validate to
         List<String> toList = req.getDestinations();
@@ -168,7 +168,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals(req.getSource(), FROM_STUDY_AS_FORMATTED, "Correct sender");
+        assertEquals(req.getSource(), FROM_APP_AS_FORMATTED, "Correct sender");
 
         // validate to
         List<String> toList = req.getDestinations();

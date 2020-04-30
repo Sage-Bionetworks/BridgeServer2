@@ -22,7 +22,7 @@ public abstract class MimeTypeEmailProvider {
      * email as <code>"App Name" &lt;email@email.com&gtl</code>, This method returns only <code>email@email.com</code>.
      */
     public String getPlainSenderEmail() {
-        Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(getStudy().getSupportEmail());
+        Set<String> senderEmails = BridgeUtils.commaListToOrderedSet(getApp().getSupportEmail());
         return Iterables.getFirst(senderEmails, null);
     }
     
@@ -33,9 +33,9 @@ public abstract class MimeTypeEmailProvider {
      */
     public String getFormattedSenderEmail() {
         String senderEmail = getPlainSenderEmail();
-        return String.format("%s <%s>", getStudy().getName(), senderEmail);
+        return String.format("%s <%s>", getApp().getName(), senderEmail);
     }
-    public App getStudy() {
+    public App getApp() {
         return app;
     }
     

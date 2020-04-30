@@ -149,7 +149,7 @@ public class ConsentControllerTest extends Mockito {
         assertGet(ConsentController.class, "getConsentSignatureV2");
         assertCreate(ConsentController.class, "giveV3");
         assertPost(ConsentController.class, "withdrawConsentV2");
-        assertPost(ConsentController.class, "withdrawFromStudy");
+        assertPost(ConsentController.class, "withdrawFromApp");
         assertPost(ConsentController.class, "resendConsentAgreement");
     }
     
@@ -347,7 +347,7 @@ public class ConsentControllerTest extends Mockito {
     }
     
     @Test
-    public void withdrawFromStudy() throws Exception {
+    public void withdrawFromApp() throws Exception {
         mockRequestBody(mockRequest, WITHDRAWAL);
 
         when(mockConfig.get("domain")).thenReturn("domain");
@@ -355,11 +355,11 @@ public class ConsentControllerTest extends Mockito {
         // You do not need to be fully consented for this call to succeed.
         doReturn(session).when(controller).getAuthenticatedSession();
         
-        StatusMessage result = controller.withdrawFromStudy();
+        StatusMessage result = controller.withdrawFromApp();
         
         assertEquals(result.getMessage(), "Signed out.");
         
-        verify(mockConsentService).withdrawFromStudy(app, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
+        verify(mockConsentService).withdrawFromApp(app, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
         verify(mockAuthService).signOut(session);
 
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);

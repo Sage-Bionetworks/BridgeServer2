@@ -116,7 +116,7 @@ public class SignInTest {
         JsonNode node = BridgeObjectMapper.get().readTree(TestUtils.createJson("{"+
                 "'username':'emailValue',"+
                 "'password':'passwordValue',"+
-                "'study':'" + TEST_APP_ID + "',"+
+                "'appId':'" + TEST_APP_ID + "',"+
                 "'token':'tokenValue',"+
                 "'reauthToken':'reauthTokenValue'"+
                 "}"));

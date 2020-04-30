@@ -685,9 +685,9 @@ public final class DynamoApp implements App {
     @Override
     public String toString() {
         return String.format(
-                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
+                "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
-                        + "studyIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
+                        + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, strictUploadValidationEnabled=%s, "

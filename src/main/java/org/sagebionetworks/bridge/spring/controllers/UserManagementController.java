@@ -61,7 +61,7 @@ public class UserManagementController extends BaseController {
         }
         
         // Now act as if the user is in the app that was requested
-        sessionUpdateService.updateStudy(session, originSignIn.getAppId());
+        sessionUpdateService.updateApp(session, originSignIn.getAppId());
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
@@ -84,7 +84,7 @@ public class UserManagementController extends BaseController {
 
         // Verify it's correct
         App app = appService.getApp(appId);
-        sessionUpdateService.updateStudy(session, app.getIdentifier());
+        sessionUpdateService.updateApp(session, app.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
     }

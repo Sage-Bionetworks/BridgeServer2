@@ -91,7 +91,7 @@ public class AppService {
     private static final Logger LOG = LoggerFactory.getLogger(AppService.class);
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
-    static final String CONFIG_APP_WHITELIST = "study.whitelist";
+    static final String CONFIG_APP_WHITELIST = "app.whitelist";
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
     static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
@@ -633,12 +633,12 @@ public class AppService {
             appDao.deleteApp(existing);
 
             // delete app data
-            templateService.deleteTemplatesForStudy(existing.getIdentifier());
+            templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());
-            fileService.deleteAllStudyFiles(existing.getIdentifier());
+            fileService.deleteAllAppFiles(existing.getIdentifier());
         }
 
         cacheProvider.removeApp(identifier);

@@ -328,7 +328,7 @@ public class ConsentService {
      * there are apps with distinct and separate consents, you can also selectively withdraw from the consent for 
      * a specific subpopulation without dropping out of the app.
      */
-    public void withdrawFromStudy(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromApp(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);

@@ -60,7 +60,7 @@ public class ExportViaSqsServiceTest {
 
         String sqsMessageText = sqsMessageCaptor.getValue();
         JsonNode sqsMessageNode = JSON_OBJECT_MAPPER.readTree(sqsMessageText);
-        assertEquals(sqsMessageNode.size(), 4);
+        assertEquals(sqsMessageNode.size(), 5);
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_END_DATE_TIME).textValue(),
                 EXPECTED_END_DATE_TIME_STRING);
         assertEquals(sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_TAG).textValue(), "On-Demand Export appId="
@@ -70,5 +70,9 @@ public class ExportViaSqsServiceTest {
         JsonNode appWhitelistNode = sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_APP_WHITELIST);
         assertEquals(appWhitelistNode.size(), 1);
         assertEquals(appWhitelistNode.get(0).textValue(), TEST_APP_ID);
+        
+        JsonNode studyWhitelistNode = sqsMessageNode.get(ExportViaSqsService.REQUEST_KEY_STUDY_WHITELIST);
+        assertEquals(studyWhitelistNode.size(), 1);
+        assertEquals(studyWhitelistNode.get(0).textValue(), TEST_APP_ID);
     }
 }

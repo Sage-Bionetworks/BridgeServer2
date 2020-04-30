@@ -220,7 +220,7 @@ public class FPHSControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void addIdentifiersOKRejectsStudyAdmin() throws Exception {
+    public void addIdentifiersOKRejectsAppAdmin() throws Exception {
         FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         mockRequestBody(mockRequest, ImmutableList.of(id1, id2));

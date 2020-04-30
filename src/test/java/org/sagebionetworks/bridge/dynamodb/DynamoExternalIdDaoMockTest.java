@@ -146,7 +146,7 @@ public class DynamoExternalIdDaoMockTest {
         assertEquals(assignmentCondition.getComparisonOperator(), NOT_NULL.toString());
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_APP_ID);
+        assertEquals(map.get(DynamoExternalIdDao.APP_ID).getS(), TEST_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "offsetKey");
 
         assertEquals(query.getReturnConsumedCapacity(), ReturnConsumedCapacity.TOTAL.toString());
@@ -473,7 +473,7 @@ public class DynamoExternalIdDaoMockTest {
         DynamoDBQueryExpression<DynamoExternalIdentifier> query = queryCaptor.getValue();
 
         Map<String, AttributeValue> map = query.getExclusiveStartKey();
-        assertEquals(map.get(DynamoExternalIdDao.STUDY_ID).getS(), TEST_APP_ID);
+        assertEquals(map.get(DynamoExternalIdDao.APP_ID).getS(), TEST_APP_ID);
         assertEquals(map.get(DynamoExternalIdDao.IDENTIFIER).getS(), "CCCCC");
 
         DynamoExternalIdentifier id = query.getHashKeyValues();

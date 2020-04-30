@@ -19,6 +19,12 @@ public class AccountIdValidatorTest {
     }
     
     @Test
+    public void validAccountIdWithEmailAndAppId() throws Exception {
+        AccountId accountId = createId("{'appId': '" + TEST_APP_ID + "', 'email':'email@email.com'}");
+        Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
+    }
+    
+    @Test
     public void validAccountIdWithEmail() {
         AccountId accountId = AccountId.forEmail(TEST_APP_ID, "email@email.com");
         Validate.entityThrowingException(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId);
@@ -44,19 +50,20 @@ public class AccountIdValidatorTest {
     
     @Test
     public void emailRequired() throws Exception {
-        AccountId accountId = createId("{'appId':'api'}");
+        AccountId accountId = createId("{'appId':'" + TEST_APP_ID + "'}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.EMAIL), accountId, "email", "is required");
     }
     
     @Test
     public void phoneRequired() throws Exception {
-        AccountId accountId = createId("{'appId':'api'}");
+        AccountId accountId = createId("{'appId':'" + TEST_APP_ID + "'}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", "is required");
     }
     
     @Test
     public void phoneValid() throws Exception {
-        AccountId accountId = createId("{'appId':'api','phone':{'number':'4082588569','regionCode':'MX'}}");
+        AccountId accountId = createId("{'appId':'" + TEST_APP_ID + "','phone':"+
+                "{'number':'4082588569','regionCode':'MX'}}");
         assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", "does not appear to be a phone number");
     }
     

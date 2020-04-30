@@ -32,8 +32,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
-@Component("defaultStudyBootstrapper")
-public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
+@Component
+public class DefaultAppBootstrapper  implements ApplicationListener<ContextRefreshedEvent> {
 
     static final SubpopulationGuid SHARED_SUBPOP = SubpopulationGuid.create(SHARED_APP_ID);
     static final SubpopulationGuid API_SUBPOP = SubpopulationGuid.create(API_APP_ID);
@@ -55,7 +55,7 @@ public class DefaultStudyBootstrapper  implements ApplicationListener<ContextRef
     private final AnnotationBasedTableCreator annotationBasedTableCreator;
 
     @Autowired
-    public DefaultStudyBootstrapper(UserAdminService userAdminService, AppService appService,
+    public DefaultAppBootstrapper(UserAdminService userAdminService, AppService appService,
             AnnotationBasedTableCreator annotationBasedTableCreator, DynamoInitializer dynamoInitializer) {
         this.userAdminService = userAdminService;
         this.appService = appService;

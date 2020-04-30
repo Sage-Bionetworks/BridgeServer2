@@ -327,7 +327,7 @@ public class AccountWorkflowService {
      * this method fails silently if the email or phone number cannot be found in the system, 
      * to prevent account enumeration attacks. 
      */
-    public void requestResetPassword(App app, boolean isStudyAdmin, AccountId accountId) {
+    public void requestResetPassword(App app, boolean isAppAdmin, AccountId accountId) {
         checkNotNull(accountId);
         checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
@@ -335,8 +335,8 @@ public class AccountWorkflowService {
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
-            boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
-            boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
+            boolean emailVerified = isAppAdmin || Boolean.TRUE.equals(account.getEmailVerified());
+            boolean phoneVerified = isAppAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
             if (account.getEmail() != null && emailVerified) {
                 TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_RESET_PASSWORD);
                 sendPasswordResetRelatedEmail(app, account.getEmail(), false, revision);
@@ -373,9 +373,9 @@ public class AccountWorkflowService {
         if (includeEmailSignIn && app.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
-                signIn, false, this::getNextToken, (theStudy, account, token) -> {
+                signIn, false, this::getNextToken, (theApp, account, token) -> {
                     // get and add the sign in URLs.
-                    String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
+                    String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theApp.getIdentifier(), token);
                     
                     // Put the components in separately, in case we want to alter the URL in a specific template.
                     builder.withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()));
@@ -410,7 +410,7 @@ public class AccountWorkflowService {
         if (includePhoneSignIn && app.isPhoneSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
-                signIn, false, this::getNextPhoneToken, (theStudy, account2, token) -> {
+                signIn, false, this::getNextPhoneToken, (theApp, account2, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
                     builder.withToken(TOKEN_KEY, formattedToken);
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);

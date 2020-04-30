@@ -131,22 +131,22 @@ public class AccountIdTest {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void cannotCreateIdObjectWithNoStudy() {
+    public void cannotCreateIdObjectWithNoAppId() {
         AccountId.forId(null, USER_ID);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void cannotCreateIdObjectWithNoStudyOrEmail() {
+    public void cannotCreateIdObjectWithNoAppIdOrEmail() {
         AccountId.forEmail(null, null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void cannotCreateIdObjectWithNoStudyOrId() {
+    public void cannotCreateIdObjectWithNoAppIdOrId() {
         AccountId.forId(null, null);
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void cannotCreateIdObjectWithNoStudyOrPhone() {
+    public void cannotCreateIdObjectWithNoAppIdOrPhone() {
         AccountId.forPhone(null, null);
     }
     

@@ -14,8 +14,7 @@ public enum Roles {
     SUPERADMIN;
     
     /**
-     * This user has a role that marks the user as a user of the non-participant APIs and/or the 
-     * Bridge Study Manager.
+     * This user has a role that marks the user as a user of the non-participant APIs.
      */
     public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, ADMIN, WORKER, SUPERADMIN);
     

@@ -42,12 +42,12 @@ public class AppValidatorTest {
     private DynamoApp app;
     
     @BeforeMethod
-    public void createValidStudy() {
+    public void createValidApp() {
         app = TestUtils.getValidApp(AppValidatorTest.class);
     }
     
     @Test
-    public void acceptsValidStudy() {
+    public void acceptsValidApp() {
         AndroidAppLink androidAppLink = new AndroidAppLink("org.sagebionetworks.bridge", "APP", Lists.newArrayList(
                 "14:6D:E9:83:C5:73:06:50:D8:EE:B9:95:2F:34:FC:64:16:A0:83:42:E6:1D:BE:A8:8A:04:96:B2:3F:CF:44:E5"));
         List<AndroidAppLink> androidAppLinks = Lists.newArrayList(androidAppLink);
@@ -347,13 +347,13 @@ public class AppValidatorTest {
     }
 
     @Test
-    public void publicStudyWithoutExternalIdOnSignUpIsValid() {
+    public void publicAppWithoutExternalIdOnSignUpIsValid() {
         app.setExternalIdRequiredOnSignup(false);
         Validate.entityThrowingException(INSTANCE, app);
     }
 
     @Test
-    public void nonPublicStudiesMustRequireExternalIdOnSignUp() {
+    public void nonPublicAppsMustRequireExternalIdOnSignUp() {
         app.setEmailVerificationEnabled(false);
         app.setExternalIdRequiredOnSignup(false);
         assertValidatorMessage(INSTANCE, app, "externalIdRequiredOnSignup",

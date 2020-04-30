@@ -187,24 +187,24 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void getUploadWithoutStudyId() {
+    public void getUploadWithoutAppId() {
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("healthCode");
         when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
 
-        when(healthCodeDao.getStudyIdentifier(upload.getHealthCode())).thenReturn(TEST_APP_ID);
+        when(healthCodeDao.getAppId(upload.getHealthCode())).thenReturn(TEST_APP_ID);
 
         Upload retVal = dao.getUpload("test-get-upload");
         assertEquals(retVal.getAppId(), TEST_APP_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getUploadWithoutStudyIdAndNoHealthCodeRecord() {
+    public void getUploadWithoutAppIdAndNoHealthCodeRecord() {
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setHealthCode("healthCode");
         when(mockMapper.load(uploadCaptor.capture())).thenReturn(upload);
 
-        when(healthCodeDao.getStudyIdentifier(upload.getHealthCode())).thenReturn(null);
+        when(healthCodeDao.getAppId(upload.getHealthCode())).thenReturn(null);
 
         dao.getUpload("test-get-upload");
     }
@@ -399,7 +399,7 @@ public class DynamoUploadDaoMockTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void getStudyUploadsPagingWorks() throws Exception {
+    public void getAppUploadsPagingWorks() throws Exception {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 2;
@@ -450,7 +450,7 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test
-    public void getStudyUploadsBadOffsetKey() {
+    public void getAppUploadsBadOffsetKey() {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
         int pageSize = 2;
@@ -464,7 +464,7 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void getStudyUploadsMinPageSizeEnforced() {
+    public void getAppUploadsMinPageSizeEnforced() {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 
@@ -472,7 +472,7 @@ public class DynamoUploadDaoMockTest {
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void getStudyUploadsMaxPageSizeEnforced() {
+    public void getAppUploadsMaxPageSizeEnforced() {
         DateTime startTime = DateTime.now().minusDays(4);
         DateTime endTime = DateTime.now();
 

@@ -710,7 +710,7 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawFromStudy(App app, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromApp(App app, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(withdrawal);
@@ -718,7 +718,7 @@ public class ParticipantService {
 
         StudyParticipant participant = getParticipant(app, userId, false);
 
-        consentService.withdrawFromStudy(app, participant, withdrawal, withdrewOn);
+        consentService.withdrawFromApp(app, participant, withdrawal, withdrewOn);
     }
 
     public void withdrawConsent(App app, String userId,

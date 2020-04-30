@@ -189,11 +189,11 @@ public class SessionUpdateServiceTest {
     }
 
     @Test
-    public void updateStudy() {
+    public void updateApp() {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
         
-        service.updateStudy(session, "new-app");
+        service.updateApp(session, "new-app");
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(session.getAppId(), "new-app");

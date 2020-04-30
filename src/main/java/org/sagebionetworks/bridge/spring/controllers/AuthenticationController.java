@@ -314,7 +314,7 @@ public class AuthenticationController extends BaseController {
         // Cross app administrator can switch to any app. Implement this here because clients 
         // cannot tell who is a cross-app administrator once they've switched apps.
         if (session.isInRole(SUPERADMIN)) {
-            sessionUpdateService.updateStudy(session, targetApp.getIdentifier());
+            sessionUpdateService.updateApp(session, targetApp.getIdentifier());
             return UserSessionInfo.toJSON(session);
         }
         // Otherwise, verify the user has access to this app

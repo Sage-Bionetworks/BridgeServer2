@@ -43,7 +43,7 @@ public class ScheduleContextTest {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void requiresStudyId() {
+    public void requiresAppId() {
         new ScheduleContext.Builder().build();
     }
     

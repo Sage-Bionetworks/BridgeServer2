@@ -356,7 +356,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }
     
     @Test
-    public void resendEmailVerificationTokenFailsWithMissingStudy() {
+    public void resendEmailVerificationTokenFailsWithMissingApp() {
         when(mockAppService.getApp(TEST_APP_ID)).thenThrow(new EntityNotFoundException(App.class));
         
         try {
@@ -396,7 +396,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }
     
     @Test
-    public void resendPhoneVerificationTokenFailsWithMissingStudy() {
+    public void resendPhoneVerificationTokenFailsWithMissingApp() {
         when(mockAppService.getApp(TEST_APP_ID)).thenThrow(new EntityNotFoundException(App.class));
         
         try {
@@ -946,7 +946,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
         
-        assertEquals(smsMessageProviderCaptor.getValue().getStudy(), app);
+        assertEquals(smsMessageProviderCaptor.getValue().getApp(), app);
         assertEquals(smsMessageProviderCaptor.getValue().getPhone(), TestConstants.PHONE);
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
@@ -1155,7 +1155,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertTrue(provider.getTokenMap().get("shortUrl").contains("/s/" + TEST_APP_ID));
         assertTrue(provider.getTokenMap().get("url").contains(token));
         assertTrue(provider.getTokenMap().get("shortUrl").contains(token));
-        assertEquals(provider.getStudy(), app);
+        assertEquals(provider.getApp(), app);
         assertEquals(Iterables.getFirst(provider.getRecipientEmails(), null), EMAIL);
         assertEquals(provider.getMimeTypeEmail().getMessageParts().get(0).getContent(), "Body " + provider.getTokenMap().get("token"));
         assertEquals(provider.getType(), EmailType.EMAIL_SIGN_IN);
@@ -1183,7 +1183,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }    
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void emailSignInRequestMissingStudy() {
+    public void emailSignInRequestMissingApp() {
         SignIn signInRequest = new SignIn.Builder().withEmail(EMAIL).withToken(TOKEN).build();
 
         service.requestEmailSignIn(signInRequest);
@@ -1293,7 +1293,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(PHONE_SIGNIN_CACHE_KEY, "123456", SIGNIN_EXPIRE_IN_SECONDS);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
 
-        assertEquals(smsMessageProviderCaptor.getValue().getStudy(), app);
+        assertEquals(smsMessageProviderCaptor.getValue().getApp(), app);
         assertEquals(smsMessageProviderCaptor.getValue().getPhone(), TestConstants.PHONE);
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();

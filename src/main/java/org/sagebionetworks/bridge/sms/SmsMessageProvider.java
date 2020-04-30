@@ -34,7 +34,7 @@ public class SmsMessageProvider {
         this.tokenMap = tokenMap;
     }
 
-    public App getStudy() {
+    public App getApp() {
         return app;
     }
     public TemplateRevision getTemplateRevision() {

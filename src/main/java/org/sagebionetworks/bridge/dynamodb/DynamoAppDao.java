@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DynamoAppDao implements AppDao {
-    static final String APP_WHITELIST_PROPERTY = "study.whitelist";
+    static final String APP_WHITELIST_PROPERTY = "app.whitelist";
     
     private Set<String> appWhitelist;
 

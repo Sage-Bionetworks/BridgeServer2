@@ -1805,9 +1805,9 @@ public class ParticipantServiceTest extends Mockito {
         Withdrawal withdrawal = new Withdrawal("Reasons");
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(APP, ID, withdrawal, withdrewOn);
+        participantService.withdrawFromApp(APP, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawFromStudy(eq(APP), participantCaptor.capture(),
+        verify(consentService).withdrawFromApp(eq(APP), participantCaptor.capture(),
             eq(withdrawal), eq(withdrewOn));
         assertEquals(participantCaptor.getValue().getId(), ID);
     }

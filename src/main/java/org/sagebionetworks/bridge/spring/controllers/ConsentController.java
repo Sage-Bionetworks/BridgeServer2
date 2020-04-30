@@ -141,13 +141,13 @@ public class ConsentController extends BaseController {
     }
     
     @PostMapping("/v3/consents/withdraw")
-    public StatusMessage withdrawFromStudy() {
+    public StatusMessage withdrawFromApp() {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         App app = appService.getApp(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawFromStudy(app, session.getParticipant(), withdrawal, withdrewOn);
+        consentService.withdrawFromApp(app, session.getParticipant(), withdrawal, withdrewOn);
         
         authenticationService.signOut(session);
         

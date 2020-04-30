@@ -74,7 +74,7 @@ public class AppController extends BaseController {
     };
 
     private final Set<String> appWhitelist = Collections
-            .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("study.whitelist")));
+            .unmodifiableSet(new HashSet<>(BridgeConfigFactory.getConfig().getPropertyAsList("app.whitelist")));
 
     private UploadCertificateService uploadCertificateService;
 
