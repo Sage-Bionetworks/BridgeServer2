@@ -328,10 +328,10 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, String studyId) {
+    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, String appId) {
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         // The history includes all subpopulations whether they match the user or not.
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(studyId, false);
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(appId, false);
         for (Subpopulation subpop : subpopulations) {
             // always returns a list, even if empty
             List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
@@ -994,8 +994,8 @@ public class ParticipantService {
         account.setRoles(newRoleSet);
     }
     
-    private Account getAccountThrowingException(String studyId, String id) {
-        return getAccountThrowingException(AccountId.forId(studyId, id));
+    private Account getAccountThrowingException(String appId, String id) {
+        return getAccountThrowingException(AccountId.forId(appId, id));
     }
     
     private Account getAccountThrowingException(AccountId accountId) {

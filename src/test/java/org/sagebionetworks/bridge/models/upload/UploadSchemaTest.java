@@ -296,6 +296,7 @@ public class UploadSchemaTest {
         assertEquals(jsonNode.get("schemaId").textValue(), "test-schema");
         assertEquals(jsonNode.get("schemaType").textValue(), "ios_survey");
         assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(jsonNode.get("appId").textValue(), TEST_APP_ID);
         assertEquals(jsonNode.get("surveyGuid").textValue(), "survey-guid");
         assertEquals(jsonNode.get("type").textValue(), "UploadSchema");
         assertTrue(jsonNode.get("deleted").booleanValue());

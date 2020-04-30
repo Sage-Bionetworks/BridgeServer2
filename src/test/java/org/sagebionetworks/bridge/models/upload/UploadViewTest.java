@@ -90,6 +90,7 @@ public class UploadViewTest {
         assertEquals(recordNode.get("schemaId").textValue(), "schema-id");
         assertEquals(recordNode.get("schemaRevision").intValue(), 5);
         assertEquals(recordNode.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(recordNode.get("appId").textValue(), TEST_APP_ID);
         assertEquals(recordNode.get("uploadDate").textValue(), "2016-10-10");
         assertEquals(recordNode.get("uploadId").textValue(), "upload-id");
         assertEquals(recordNode.get("uploadedOn").textValue(), REQUESTED_ON.toString());

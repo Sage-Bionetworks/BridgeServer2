@@ -36,7 +36,7 @@ class ReferenceResolver {
     private final UploadSchemaService schemaService;
     private final SurveyService surveyService;
     private final ClientInfo clientInfo;
-    private final String studyId;
+    private final String appId;
     
     private final Map<String,SurveyReference> surveyReferences;
     private final Map<String,SchemaReference> schemaReferences;
@@ -48,14 +48,14 @@ class ReferenceResolver {
     ReferenceResolver(CompoundActivityDefinitionService compoundActivityDefinitionService,
             UploadSchemaService schemaService, SurveyService surveyService,
             Map<String, SurveyReference> surveyReferences, Map<String, SchemaReference> schemaReferences,
-            ClientInfo clientInfo, String studyId) {
+            ClientInfo clientInfo, String appId) {
         this.compoundActivityDefinitionService = compoundActivityDefinitionService;
         this.schemaService = schemaService;
         this.surveyService = surveyService;
         this.surveyReferences = surveyReferences;
         this.schemaReferences = schemaReferences;
         this.clientInfo = clientInfo;
-        this.studyId = studyId;
+        this.appId = appId;
     }
 
     void resolve(ScheduledActivity schActivity) {
@@ -110,7 +110,7 @@ class ReferenceResolver {
                 // Compound activity has no schemas or surveys defined. Resolve it with its definition.
                 CompoundActivityDefinition compoundActivityDef;
                 try {
-                    compoundActivityDef = compoundActivityDefinitionService.getCompoundActivityDefinition(studyId,
+                    compoundActivityDef = compoundActivityDefinitionService.getCompoundActivityDefinition(appId,
                             taskId);
                 } catch (EntityNotFoundException ex) {
                     LOG.error("Schedule references non-existent compound activity " + taskId);
@@ -175,7 +175,7 @@ class ReferenceResolver {
         if (resolvedSchemaRef == null) {
             UploadSchema schema;
             try {
-                schema = schemaService.getLatestUploadSchemaRevisionForAppVersion(studyId, schemaId, clientInfo);
+                schema = schemaService.getLatestUploadSchemaRevisionForAppVersion(appId, schemaId, clientInfo);
             } catch (EntityNotFoundException ex) {
                 LOG.error("Schedule references non-existent schema " + schemaId);
                 return null;
@@ -200,7 +200,7 @@ class ReferenceResolver {
         if (resolvedSurveyRef == null) {
             Survey survey;
             try {
-                survey = surveyService.getSurveyMostRecentlyPublishedVersion(studyId, surveyGuid, false);
+                survey = surveyService.getSurveyMostRecentlyPublishedVersion(appId, surveyGuid, false);
             } catch (EntityNotFoundException ex) {
                 LOG.error("Schedule references non-existent survey " + surveyGuid);
                 return null;

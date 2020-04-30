@@ -32,12 +32,12 @@ public class HibernateTemplateDao implements TemplateDao {
     private static final String SELECT_COUNT = "SELECT count(guid) ";
     
     private static final String GET_ALL = "FROM HibernateTemplate as template " + 
-            "WHERE templateType = :templateType AND studyId = :appId ORDER BY createdOn DESC";
+            "WHERE templateType = :templateType AND appId = :appId ORDER BY createdOn DESC";
     
     private static final String GET_ACTIVE = "FROM HibernateTemplate as template " + 
-            "WHERE templateType = :templateType AND studyId = :appId AND deleted = 0 ORDER BY createdOn DESC";
+            "WHERE templateType = :templateType AND appId = :appId AND deleted = 0 ORDER BY createdOn DESC";
     
-    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE studyId = :appId";
+    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE appId = :appId";
     
     private HibernateHelper hibernateHelper;
     

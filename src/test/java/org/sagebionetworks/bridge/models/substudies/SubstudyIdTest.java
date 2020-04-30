@@ -18,9 +18,9 @@ public class SubstudyIdTest {
     
     @Test
     public void test() {
-        SubstudyId studyId = new SubstudyId(TEST_APP_ID, "id");
+        SubstudyId substudyId = new SubstudyId(TEST_APP_ID, "id");
         
-        assertEquals(studyId.getStudyId(), TEST_APP_ID);
-        assertEquals(studyId.getId(), "id");
+        assertEquals(substudyId.getAppId(), TEST_APP_ID);
+        assertEquals(substudyId.getId(), "id");
     }    
 }

@@ -93,7 +93,7 @@ public class SignInTest {
                 "'email':'emailValue',"+
                 "'externalId':'external-id',"+
                 "'password':'passwordValue',"+
-                "'study':'studyValue',"+
+                "'appId':'appValue',"+
                 "'token':'tokenValue',"+
                 "'phone':{'number':'"+PHONE.getNumber()+"',"+
                     "'regionCode':'"+PHONE.getRegionCode()+"'},"+
@@ -104,7 +104,7 @@ public class SignInTest {
         assertEquals(signIn.getEmail(), "emailValue");
         assertEquals(signIn.getExternalId(), "external-id");
         assertEquals(signIn.getPassword(), "passwordValue");
-        assertEquals(signIn.getAppId(), "studyValue");
+        assertEquals(signIn.getAppId(), "appValue");
         assertEquals(signIn.getToken(), "tokenValue");
         assertEquals(signIn.getPhone().getNumber(), PHONE.getNumber());
         assertEquals(signIn.getPhone().getRegionCode(), PHONE.getRegionCode());

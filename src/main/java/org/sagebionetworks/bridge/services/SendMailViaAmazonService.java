@@ -40,7 +40,7 @@ public class SendMailViaAmazonService implements SendMailService {
 
     private static final Logger logger = LoggerFactory.getLogger(SendMailViaAmazonService.class);
     private static final Region REGION = Region.getRegion(Regions.US_EAST_1);
-    public static final String UNVERIFIED_EMAIL_ERROR = "Bridge cannot send email until you verify Amazon SES can send using your study's support email address";
+    public static final String UNVERIFIED_EMAIL_ERROR = "Bridge cannot send email until you verify Amazon SES can send using your app's support email address";
 
     private AmazonSimpleEmailServiceClient emailClient;
     private EmailVerificationService emailVerificationService;
@@ -78,7 +78,7 @@ public class SendMailViaAmazonService implements SendMailService {
         }
     }
 
-    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email, String studyId)
+    private void sendEmail(String senderEmail, String recipient, MimeTypeEmail email, String appId)
             throws AmazonClientException, MessagingException, IOException {
         
         Session mailSession = Session.getInstance(new Properties(), null);
@@ -107,7 +107,7 @@ public class SendMailViaAmazonService implements SendMailService {
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
         logger.info("Sent email to SES with messageID " + result.getMessageId() + " with type " +
-                        email.getType() + " for study " + studyId + " and request " + BridgeUtils.getRequestContext().getId());
+                        email.getType() + " for app " + appId + " and request " + BridgeUtils.getRequestContext().getId());
     }
     
 }

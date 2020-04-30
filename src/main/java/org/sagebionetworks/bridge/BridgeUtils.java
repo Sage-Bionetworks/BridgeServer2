@@ -275,6 +275,9 @@ public class BridgeUtils {
      *  <li>studyName = app.getName()</li>
      *  <li>studyShortName = app.getShortName()</li>
      *  <li>studyId = app.getIdentifier()</li>
+     *  <li>appName = app.getName()</li>
+     *  <li>appShortName = app.getShortName()</li>
+     *  <li>appId = app.getIdentifier()</li>
      *  <li>sponsorName = app.getSponsorName()</li>
      *  <li>supportEmail = app.getSupportEmail()</li>
      *  <li>technicalEmail = app.getTechnicalEmail()</li>

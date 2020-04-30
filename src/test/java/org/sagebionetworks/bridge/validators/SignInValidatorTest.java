@@ -24,7 +24,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void emailSignInRequestInvalid() {
-        assertValidatorMessage(SignInValidator.EMAIL_SIGNIN_REQUEST, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.EMAIL_SIGNIN_REQUEST, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN_REQUEST, EMPTY_SIGNIN, "email", "is required");
     }
     @Test
@@ -34,7 +34,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void emailSignInInvalid() {
-        assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, EMPTY_SIGNIN, "email", "is required");
         assertValidatorMessage(SignInValidator.EMAIL_SIGNIN, EMPTY_SIGNIN, "token", "is required");
     }
@@ -45,7 +45,7 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInRequestInvalid() {
-        assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN_REQUEST, EMPTY_SIGNIN, "phone", "is required");
     }
     @Test
@@ -55,14 +55,14 @@ public class SignInValidatorTest {
     }
     @Test
     public void phoneSignInInvalid() {
-        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "phone", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, EMPTY_SIGNIN, "token", "is required");
     }
     @Test
     public void phoneSignInInvalidPhoneFields() {
         SignIn missingPhoneFields = new SignIn.Builder().withPhone(new Phone(null,null)).build();
-        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "study", "is required");
+        assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "appId", "is required");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "phone", "does not appear to be a phone number");
         assertValidatorMessage(SignInValidator.PHONE_SIGNIN, missingPhoneFields, "token", "is required");
     }
@@ -89,7 +89,7 @@ public class SignInValidatorTest {
     @Test
     public void passwordSignInInvalid() {
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
-        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.PASSWORD_SIGNIN, EMPTY_SIGNIN, "password", "is required");
     }
     @Test
@@ -115,7 +115,7 @@ public class SignInValidatorTest {
     @Test
     public void reauthInvalid() {
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
-        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "appId", "is required");
         assertValidatorMessage(SignInValidator.REAUTH_SIGNIN, EMPTY_SIGNIN, "reauthToken", "is required");
     }
     @Test
@@ -129,7 +129,7 @@ public class SignInValidatorTest {
     @Test
     public void requestResetPassword() {
         assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
-        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.REQUEST_RESET_PASSWORD, EMPTY_SIGNIN, "appId", "is required");
     }
     @Test
     public void minimalOK() {
@@ -142,7 +142,7 @@ public class SignInValidatorTest {
     @Test
     public void minimal() {
         assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "SignIn", "email, phone, or external ID is required");
-        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "study", "is required");
+        assertValidatorMessage(SignInValidator.MINIMAL, EMPTY_SIGNIN, "appId", "is required");
     }
     @Test
     public void blankExternalIdSignInInvalid() {

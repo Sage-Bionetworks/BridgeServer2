@@ -379,7 +379,7 @@ public class StrictValidationHandlerTest {
     }
 
     @Test
-    public void studyConfiguredToNotThrow() throws Exception {
+    public void appConfiguredToNotThrow() throws Exception {
         // additional field defs
         List<UploadFieldDefinition> additionalFieldDefList = ImmutableList.of(
                 new UploadFieldDefinition.Builder().withName("missing required field")

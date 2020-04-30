@@ -118,7 +118,7 @@ public class StudyParticipantValidator implements Validator {
     }
     
     private String messageForSet(Set<String> set, String fieldName) {
-        return String.format("'%s' is not defined for study (use %s)", 
+        return String.format("'%s' is not defined for app (use %s)", 
                 fieldName, BridgeUtils.COMMA_SPACE_JOINER.join(set));
     }
 }

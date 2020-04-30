@@ -151,7 +151,7 @@ public class FileService {
     public void deleteAllStudyFiles(String appId) {
         checkNotNull(appId);
         
-        fileMetadataDao.deleteAllStudyFiles(appId);
+        fileMetadataDao.deleteAllAppFiles(appId);
     }
     
     public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {

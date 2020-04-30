@@ -30,9 +30,9 @@ public class SmsMessageProviderTest {
         app.setConsentNotificationEmail("consent@email.com,consent2@email.com");
 
         TemplateRevision revision = TemplateRevision.create();
-        revision.setDocumentContent("${studyShortName} ${url} ${supportEmail} ${expirationPeriod}");
+        revision.setDocumentContent("${studyShortName} ${appShortName} ${url} ${supportEmail} ${expirationPeriod}");
         
-        String expectedMessage = "ShortName some-url support@email.com 4 hours";
+        String expectedMessage = "ShortName ShortName some-url support@email.com 4 hours";
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
@@ -60,6 +60,9 @@ public class SmsMessageProviderTest {
         assertEquals(provider.getTokenMap().get("studyName"), "Name");
         assertEquals(provider.getTokenMap().get("studyShortName"), "ShortName");
         assertEquals(provider.getTokenMap().get("studyId"), TEST_APP_ID);
+        assertEquals(provider.getTokenMap().get("appName"), "Name");
+        assertEquals(provider.getTokenMap().get("appShortName"), "ShortName");
+        assertEquals(provider.getTokenMap().get("appId"), TEST_APP_ID);
         assertEquals(provider.getTokenMap().get("sponsorName"), "SponsorName");
         assertEquals(provider.getTokenMap().get("supportEmail"), "support@email.com");
         assertEquals(provider.getTokenMap().get("technicalEmail"), "tech@email.com");
@@ -71,7 +74,7 @@ public class SmsMessageProviderTest {
         // Set up dependencies
         App app = App.create();
         TemplateRevision revision = TemplateRevision.create();
-        revision.setDocumentContent("${studyShortName} ${url} ${supportEmail}");
+        revision.setDocumentContent("${appShortName} ${url} ${supportEmail}");
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()

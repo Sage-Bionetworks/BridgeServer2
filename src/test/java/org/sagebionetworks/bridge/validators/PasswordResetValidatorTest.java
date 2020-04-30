@@ -66,9 +66,9 @@ public class PasswordResetValidatorTest {
     }
     
     @Test
-    public void studyRequired() {
+    public void appIdRequired() {
         validate(new PasswordReset("asdfasdf", "token", ""), (e) -> {
-            assertError(e, "study", "is required");
+            assertError(e, "appId", "is required");
         });
     }
     

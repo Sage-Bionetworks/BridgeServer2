@@ -60,6 +60,6 @@ public interface SmsMessage extends BridgeEntity {
     /** The app on whose behalf we sent the message. */
     String getAppId();
 
-    /** @see #getStudyId */
-    void setAppId(String studyId);
+    /** @see #getAppId */
+    void setAppId(String appId);
 }

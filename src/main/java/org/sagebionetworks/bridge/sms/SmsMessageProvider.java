@@ -69,7 +69,7 @@ public class SmsMessageProvider {
     public PublishRequest getSmsRequest() {
         Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
         smsAttributes.put(BridgeConstants.AWS_SMS_TYPE, attribute(getSmsType()));
-        smsAttributes.put(BridgeConstants.AWS_SMS_SENDER_ID, attribute(tokenMap.get("studyShortName")));
+        smsAttributes.put(BridgeConstants.AWS_SMS_SENDER_ID, attribute(tokenMap.get("appShortName")));
         // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
         // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
 

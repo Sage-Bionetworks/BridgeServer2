@@ -46,8 +46,8 @@ import org.testng.annotations.Test;
  * are in a separate class.
  */
 public class SendMailViaAmazonServiceConsentTest {
-    private static final String SUPPORT_EMAIL = "study-support-email@study.com";
-    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
+    private static final String SUPPORT_EMAIL = "app-support-email@study.com";
+    private static final String FROM_STUDY_AS_FORMATTED = "\"Test App (Sage)\" <"+SUPPORT_EMAIL+">";
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
@@ -67,7 +67,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 "conf/app-defaults/consent-page.xhtml").getFile()));
         
         app = new DynamoApp();
-        app.setName("Test Study (Sage)");
+        app.setName("Test App (Sage)");
         app.setIdentifier(TEST_APP_ID);
         app.setSupportEmail(SUPPORT_EMAIL);
 
@@ -92,7 +92,7 @@ public class SendMailViaAmazonServiceConsentTest {
         subpopulation.setGuidString(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(mock(StudyConsent.class), 
-            "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+            "<document>Had this been a real app: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(view);

@@ -44,8 +44,8 @@ public class UploadValidationService {
      * @param upload
      *         upload metadata object for the upload
      */
-    public void validateUpload(@Nonnull String study, @Nonnull Upload upload) {
-        UploadValidationTask task = taskFactory.newTask(study, upload);
+    public void validateUpload(@Nonnull String appId, @Nonnull Upload upload) {
+        UploadValidationTask task = taskFactory.newTask(appId, upload);
         asyncExecutorService.execute(task);
     }
 }

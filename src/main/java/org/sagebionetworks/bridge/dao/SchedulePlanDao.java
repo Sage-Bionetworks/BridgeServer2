@@ -7,7 +7,7 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 
 public interface SchedulePlanDao {
 
-    List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String studyIdentifier, boolean includeDeleted);
+    List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String appId, boolean includeDeleted);
     
     SchedulePlan getSchedulePlan(String appId, String guid);
     

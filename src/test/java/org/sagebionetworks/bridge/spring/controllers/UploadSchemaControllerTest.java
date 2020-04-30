@@ -388,6 +388,7 @@ public class UploadSchemaControllerTest extends Mockito {
         node.put("revision", revision);
 
         // Server returns schemas with app IDs (which are filtered out selectively in some methods).
+        node.put("appId", TEST_APP_ID);
         node.put("studyId", TEST_APP_ID);
 
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);

@@ -70,7 +70,7 @@ public class IdentifierUpdateValidatorTest {
                 .withReauthToken("ABDC").build();
         
         IdentifierUpdate update = new IdentifierUpdate(reauth, null, PHONE, UPDATED_EXTERNAL_ID, SYNAPSE_USER_ID);
-        assertValidatorMessage(validator, update, "signIn.study", "is required");
+        assertValidatorMessage(validator, update, "signIn.appId", "is required");
     }
     
     @Test

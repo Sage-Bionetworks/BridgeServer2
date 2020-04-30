@@ -48,7 +48,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 public class HibernateHelperTest {
     private static final String QUERY = "from DummyTable";
     private static final Map<String, Object> PARAMETERS = new ImmutableMap.Builder<String, Object>().put("id", 10L)
-            .put("studyId", TEST_APP_ID).build();
+            .put("appId", TEST_APP_ID).build();
     private static final RuntimeException TEST_EXCEPTION = new RuntimeException();
 
     private HibernateHelper helper;
@@ -197,7 +197,7 @@ public class HibernateHelperTest {
         int count = helper.queryCount(QUERY, PARAMETERS);
         assertEquals(count, 42);
         
-        verify(mockQuery).setParameter("studyId", TEST_APP_ID);
+        verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).setParameter("id", 10L);
     }
 
@@ -242,7 +242,7 @@ public class HibernateHelperTest {
         List<Object> helperOutputList = helper.queryGet(QUERY, PARAMETERS, null, null, Object.class);
         assertSame(helperOutputList, hibernateOutputList);
         
-        verify(mockQuery).setParameter("studyId", TEST_APP_ID);
+        verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).setParameter("id", 10L);
     }
 
@@ -271,7 +271,7 @@ public class HibernateHelperTest {
         int numRows = helper.queryUpdate(QUERY, PARAMETERS);
         assertEquals(numRows, 7);
         
-        verify(mockQuery).setParameter("studyId", TEST_APP_ID);
+        verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).setParameter("id", 10L);
     }
     
@@ -284,7 +284,7 @@ public class HibernateHelperTest {
         
         verify(mockSession).createQuery(QUERY);
         verify(mockQuery).setParameter("id", 10L);
-        verify(mockQuery).setParameter("studyId", TEST_APP_ID);
+        verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).executeUpdate();
     }
 

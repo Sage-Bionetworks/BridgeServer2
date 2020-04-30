@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -60,10 +61,10 @@ public class SchedulePlanValidatorTest {
     }
     
     @Test
-    public void studyKeyRequired() {
+    public void appIdRequired() {
         SchedulePlan plan = getValidSimpleStrategy();
         plan.setAppId(null);
-        assertMessage(plan, "studyKey cannot be missing, null, or blank", "studyKey");
+        assertMessage(plan, "appId cannot be missing, null, or blank", "appId");
     }
 
     @Test
@@ -127,7 +128,7 @@ public class SchedulePlanValidatorTest {
         // This is valid, then you can manipulate it to invalidate it.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("a label");
-        plan.setAppId("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -140,7 +141,7 @@ public class SchedulePlanValidatorTest {
         // This is valid, then you can manipulate it to invalidate it.
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("a label");
-        plan.setAppId("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setStrategy(strategy);
         return plan;
     }
