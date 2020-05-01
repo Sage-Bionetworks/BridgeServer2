@@ -166,7 +166,7 @@ public class ParticipantReportController extends BaseController {
     }
 
     /** Worker API to get reports for the given user in the given app by date-time. */
-    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/reports/{reportId}",
+    @GetMapping(path = {"/v2/apps/{appId}/participants/{userId}/reports/{reportId}",
             "/v4/studies/{appId}/participants/{userId}/reports/{reportId}"})
     public ForwardCursorPagedResourceList<ReportData> getParticipantReportForWorkerV4(@PathVariable String appId,
             @PathVariable String userId, @PathVariable String reportId,
