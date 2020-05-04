@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
-import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.API_SUBPOP;
-import static org.sagebionetworks.bridge.DefaultStudyBootstrapper.SHARED_SUBPOP;
+import static org.sagebionetworks.bridge.DefaultAppBootstrapper.API_SUBPOP;
+import static org.sagebionetworks.bridge.DefaultAppBootstrapper.SHARED_SUBPOP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -54,7 +54,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     DynamoInitializer mockDynamoInitializer; 
 
     @InjectMocks
-    DefaultStudyBootstrapper defaultStudyBootstrapper;
+    DefaultAppBootstrapper defaultStudyBootstrapper;
     
     @Captor
     ArgumentCaptor<App> appCaptor;

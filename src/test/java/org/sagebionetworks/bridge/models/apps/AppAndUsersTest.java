@@ -94,10 +94,10 @@ public class AppAndUsersTest {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         List<String> adminIds = ImmutableList.of(TEST_ADMIN_ID_1, TEST_ADMIN_ID_2);
 
-        AppAndUsers retStudyAndUsers = BridgeObjectMapper.get().readValue(json, AppAndUsers.class);
-        List<String> retAdminIds = retStudyAndUsers.getAdminIds();
-        App retApp = retStudyAndUsers.getApp();
-        List<StudyParticipant> userList = retStudyAndUsers.getUsers();
+        AppAndUsers retAppAndUsers = BridgeObjectMapper.get().readValue(json, AppAndUsers.class);
+        List<String> retAdminIds = retAppAndUsers.getAdminIds();
+        App retApp = retAppAndUsers.getApp();
+        List<StudyParticipant> userList = retAppAndUsers.getUsers();
 
         // verify
         assertEquals(retAdminIds, adminIds);

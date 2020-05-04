@@ -307,7 +307,7 @@ public class ParticipantControllerTest extends Mockito {
         assertPost(ParticipantController.class, "resendEmailVerification");
         assertPost(ParticipantController.class, "resendPhoneVerification");
         assertPost(ParticipantController.class, "resendConsentAgreement");
-        assertPost(ParticipantController.class, "withdrawFromStudy");
+        assertPost(ParticipantController.class, "withdrawFromApp");
         assertPost(ParticipantController.class, "withdrawConsent");
         assertGet(ParticipantController.class, "getUploads");
         assertGet(ParticipantController.class, "getNotificationRegistrations");
@@ -991,9 +991,9 @@ public class ParticipantControllerTest extends Mockito {
             String json = "{\"reason\":\"Because, reasons.\"}";
             mockRequestBody(mockRequest, json);
 
-            controller.withdrawFromStudy(USER_ID);
+            controller.withdrawFromApp(USER_ID);
 
-            verify(mockParticipantService).withdrawFromStudy(app, USER_ID, new Withdrawal("Because, reasons."),
+            verify(mockParticipantService).withdrawFromApp(app, USER_ID, new Withdrawal("Because, reasons."),
                     20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();

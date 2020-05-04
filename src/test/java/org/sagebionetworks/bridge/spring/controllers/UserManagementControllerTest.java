@@ -239,7 +239,7 @@ public class UserManagementControllerTest extends Mockito {
     }
 
     @Test
-    public void createdResponseReturnsJSONPayloadWithStudyId() throws Exception {
+    public void createdResponseReturnsJSONPayloadWithAppId() throws Exception {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
@@ -251,7 +251,7 @@ public class UserManagementControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createUserWithStudyIdRejectsStudyAdmin() throws Exception {
+    public void createUserWithAppIdRejectsStudyAdmin() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
@@ -270,7 +270,7 @@ public class UserManagementControllerTest extends Mockito {
 
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
-    public void createUserWithStudyIdBadJson() throws Exception {
+    public void createUserWithAppIdBadJson() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         

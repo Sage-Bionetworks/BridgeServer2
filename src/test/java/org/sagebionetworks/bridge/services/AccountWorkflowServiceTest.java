@@ -164,20 +164,20 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        mockRevision(EMAIL_VERIFY_EMAIL, "VE ${studyName}", "Body ${url} ${emailVerificationUrl}", TEXT);
-        mockRevision(EMAIL_RESET_PASSWORD, "RP ${studyName}", "Body ${url} ${resetPasswordUrl}", TEXT);
-        mockRevision(EMAIL_ACCOUNT_EXISTS, "AE ${studyName}", "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}",
+        mockRevision(EMAIL_VERIFY_EMAIL, "VE ${appName}", "Body ${url} ${emailVerificationUrl}", TEXT);
+        mockRevision(EMAIL_RESET_PASSWORD, "RP ${appName}", "Body ${url} ${resetPasswordUrl}", TEXT);
+        mockRevision(EMAIL_ACCOUNT_EXISTS, "AE ${appName}", "Body ${url} ${resetPasswordUrl} ${emailSignInUrl}",
                 TEXT);
         mockRevision(EMAIL_SIGN_IN, "subject", "Body ${token}", TEXT);
-        mockRevision(SMS_PHONE_SIGN_IN, null, "Enter ${token} to sign in to ${studyShortName}", TEXT);
-        mockRevision(SMS_RESET_PASSWORD, null, "Reset ${studyShortName} password: ${resetPasswordUrl}", TEXT);
+        mockRevision(SMS_PHONE_SIGN_IN, null, "Enter ${token} to sign in to ${appShortName}", TEXT);
+        mockRevision(SMS_RESET_PASSWORD, null, "Reset ${appShortName} password: ${resetPasswordUrl}", TEXT);
         mockRevision(SMS_ACCOUNT_EXISTS, null,
-                "Account for ${studyShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}", TEXT);
+                "Account for ${appShortName} already exists. Reset password: ${resetPasswordUrl} or ${token}", TEXT);
         mockRevision(SMS_VERIFY_PHONE, null, "Verify phone with ${token}", TEXT);
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        app.setName("This study name");
+        app.setName("This app name");
         app.setShortName("ShortName");
         app.setSupportEmail(SUPPORT_EMAIL);
 
@@ -248,14 +248,14 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(tokens.get("emailVerificationExpirationPeriod"), "2 hours");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"This study name\" <support@support.com>");
+        assertEquals(email.getSenderAddress(), "\"This app name\" <support@support.com>");
         assertEquals(email.getRecipientAddresses().size(), 1);
         assertEquals(email.getRecipientAddresses().get(0), EMAIL);
-        assertEquals(email.getSubject(), "VE This study name");
+        assertEquals(email.getSubject(), "VE This app name");
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertTrue(bodyString.contains("/mobile/verifyEmail.html?study=" + TEST_APP_ID + "&sptoken="+SPTOKEN));
-        assertTrue(bodyString.contains("/ve?study=" + TEST_APP_ID + "&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/mobile/verifyEmail.html?appId=" + TEST_APP_ID + "&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/ve?appId=" + TEST_APP_ID + "&sptoken="+SPTOKEN));
         assertEquals(email.getType(), EmailType.VERIFY_EMAIL);
 
         // Verify throttling cache calls.
@@ -356,7 +356,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }
     
     @Test
-    public void resendEmailVerificationTokenFailsWithMissingStudy() {
+    public void resendEmailVerificationTokenFailsWithMissingApp() {
         when(mockAppService.getApp(TEST_APP_ID)).thenThrow(new EntityNotFoundException(App.class));
         
         try {
@@ -396,7 +396,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }
     
     @Test
-    public void resendPhoneVerificationTokenFailsWithMissingStudy() {
+    public void resendPhoneVerificationTokenFailsWithMissingApp() {
         when(mockAppService.getApp(TEST_APP_ID)).thenThrow(new EntityNotFoundException(App.class));
         
         try {
@@ -423,7 +423,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyEmail() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-            createJson("{'studyId':'"+TEST_APP_ID+"','type':'email','userId':'userId',"+
+            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId',"+
                     "'expiresOn':"+ TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -452,7 +452,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyNoAccount() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'studyId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
+                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
                         + TIMESTAMP.getMillis() + "}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
@@ -465,7 +465,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyWithMismatchedChannel() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'studyId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
+                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
                         + TIMESTAMP.getMillis() + "}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
@@ -479,7 +479,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyEmailExpired() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                createJson("{'studyId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
+                createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
                         + TIMESTAMP.getMillis() + "}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -493,7 +493,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyEmailAlreadyVerified() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-            createJson("{'studyId':'"+TEST_APP_ID+"','type':'email','userId':'userId','expiresOn':"+
+            createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -517,7 +517,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyPhone() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
+                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -535,7 +535,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyPhoneAlreadyVerified() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis());
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
+                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -551,7 +551,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void verifyPhoneExpired() {
         when(service.getDateTimeInMillis()).thenReturn(TIMESTAMP.getMillis()+1);
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
+                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
@@ -564,7 +564,7 @@ public class AccountWorkflowServiceTest extends Mockito {
             expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
     public void verifyEmailViaPhoneFails() {
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'email','userId':'userId'}"));
+                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId'}"));
         
         Verification verification = new Verification(SPTOKEN);
         service.verifyChannel(ChannelType.PHONE, verification);
@@ -576,7 +576,7 @@ public class AccountWorkflowServiceTest extends Mockito {
             expectedExceptionsMessageRegExp=VERIFY_TOKEN_EXPIRED)
     public void verifyPhoneViaEmailFails() {
         when(mockCacheProvider.getObject(SPTOKEN_CACHE_KEY, String.class)).thenReturn(
-                TestUtils.createJson("{'studyId':'"+TEST_APP_ID+"','type':'phone','userId':'userId'}"));
+                TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId'}"));
         
         Verification verification = new Verification(SPTOKEN);
         service.verifyChannel(ChannelType.EMAIL, verification);
@@ -611,16 +611,16 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(provider.getTokenMap().get("expirationWindow"), "2");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"This study name\" <support@support.com>");
+        assertEquals(email.getSenderAddress(), "\"This app name\" <support@support.com>");
         assertEquals(email.getRecipientAddresses().size(), 1);
         assertEquals(email.getRecipientAddresses().get(0), EMAIL);
-        assertEquals(email.getSubject(), "AE This study name");
+        assertEquals(email.getSubject(), "AE This app name");
         assertEquals(email.getType(), EmailType.RESET_PASSWORD);
         
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertTrue(bodyString.contains("/mobile/resetPassword.html?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
-        assertTrue(bodyString.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/mobile/resetPassword.html?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         // This was recently added and is only used in one app where we've hard-coded it. Remove it
         // so that ${url} continues to work for the reset password link. We're moving all links 
         // towad the short form, in stepped releases.
@@ -661,15 +661,15 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(provider.getTokenMap().get("expirationWindow"), "2");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"This study name\" <support@support.com>");
+        assertEquals(email.getSenderAddress(), "\"This app name\" <support@support.com>");
         assertEquals(email.getRecipientAddresses().size(), 1);
         assertEquals(email.getRecipientAddresses().get(0), EMAIL);
-        assertEquals(email.getSubject(), "AE This study name");
+        assertEquals(email.getSubject(), "AE This app name");
         
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertTrue(bodyString.contains("/mobile/resetPassword.html?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
-        assertTrue(bodyString.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/mobile/resetPassword.html?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         assertTrue(bodyString.contains("${emailSignInUrl}"));
         
         // The remaining template variables have been replaced.
@@ -768,7 +768,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
-        assertTrue(message.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(message.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         assertTrue(message.contains(" or "+PHONE_TOKEN.substring(0,3) + "-" + PHONE_TOKEN.substring(3,6)));
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
     }
@@ -791,7 +791,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Account for ShortName already exists. Reset password: "));
-        assertTrue(message.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(message.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         assertTrue(message.contains(" or ${token}"));
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         verify(service, never()).getNextPhoneToken();
@@ -923,13 +923,13 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertEquals(provider.getTokenMap().get("expirationPeriod"), "2 hours");
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"This study name\" <support@support.com>");
+        assertEquals(email.getSenderAddress(), "\"This app name\" <support@support.com>");
         assertEquals(email.getRecipientAddresses().size(), 1);
         assertEquals(email.getRecipientAddresses().get(0), EMAIL);
-        assertEquals(email.getSubject(), "RP This study name");
+        assertEquals(email.getSubject(), "RP This app name");
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertTrue(bodyString.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(bodyString.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         assertEquals(email.getType(), EmailType.RESET_PASSWORD);
         verifyNoMoreInteractions(mockCacheProvider);
     }
@@ -946,12 +946,12 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
         
-        assertEquals(smsMessageProviderCaptor.getValue().getStudy(), app);
+        assertEquals(smsMessageProviderCaptor.getValue().getApp(), app);
         assertEquals(smsMessageProviderCaptor.getValue().getPhone(), TestConstants.PHONE);
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
         assertTrue(message.contains("Reset ShortName password: "));
-        assertTrue(message.contains("/rp?study="+TEST_APP_ID+"&sptoken="+SPTOKEN));
+        assertTrue(message.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         
         Phone captured = BridgeObjectMapper.get().readValue(stringCaptor.getValue(), Phone.class);
         assertEquals(captured, TestConstants.PHONE); 
@@ -1155,7 +1155,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertTrue(provider.getTokenMap().get("shortUrl").contains("/s/" + TEST_APP_ID));
         assertTrue(provider.getTokenMap().get("url").contains(token));
         assertTrue(provider.getTokenMap().get("shortUrl").contains(token));
-        assertEquals(provider.getStudy(), app);
+        assertEquals(provider.getApp(), app);
         assertEquals(Iterables.getFirst(provider.getRecipientEmails(), null), EMAIL);
         assertEquals(provider.getMimeTypeEmail().getMessageParts().get(0).getContent(), "Body " + provider.getTokenMap().get("token"));
         assertEquals(provider.getType(), EmailType.EMAIL_SIGN_IN);
@@ -1183,7 +1183,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     }    
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void emailSignInRequestMissingStudy() {
+    public void emailSignInRequestMissingApp() {
         SignIn signInRequest = new SignIn.Builder().withEmail(EMAIL).withToken(TOKEN).build();
 
         service.requestEmailSignIn(signInRequest);
@@ -1293,7 +1293,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockCacheProvider).setObject(PHONE_SIGNIN_CACHE_KEY, "123456", SIGNIN_EXPIRE_IN_SECONDS);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
 
-        assertEquals(smsMessageProviderCaptor.getValue().getStudy(), app);
+        assertEquals(smsMessageProviderCaptor.getValue().getApp(), app);
         assertEquals(smsMessageProviderCaptor.getValue().getPhone(), TestConstants.PHONE);
         assertEquals(smsMessageProviderCaptor.getValue().getSmsType(), "Transactional");
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();

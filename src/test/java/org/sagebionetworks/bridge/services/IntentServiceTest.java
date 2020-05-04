@@ -138,7 +138,7 @@ public class IntentServiceTest {
         verify(mockSmsService).sendSmsMessage(isNull(), smsMessageProviderCaptor.capture());
 
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
-        assertEquals(provider.getStudy(), mockApp);
+        assertEquals(provider.getApp(), mockApp);
         assertEquals(provider.getPhone(), intent.getPhone());
         assertEquals(provider.getSmsRequest().getMessage(), "this-is-a-link");
         assertEquals(provider.getSmsType(), "Transactional");
@@ -176,7 +176,7 @@ public class IntentServiceTest {
         verify(mockSmsService).sendSmsMessage(isNull(), smsMessageProviderCaptor.capture());
 
         SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
-        assertEquals(provider.getStudy(), mockApp);
+        assertEquals(provider.getApp(), mockApp);
         assertEquals(provider.getPhone(), intent.getPhone());
         assertEquals(provider.getSmsRequest().getMessage(), "this-is-a-link");
         assertEquals(provider.getSmsType(), "Transactional");        
@@ -215,7 +215,7 @@ public class IntentServiceTest {
         verify(mockSendMailService).sendEmail(mimeTypeEmailProviderCaptor.capture());
 
         BasicEmailProvider provider = (BasicEmailProvider)mimeTypeEmailProviderCaptor.getValue();
-        assertEquals(provider.getStudy(), mockApp);
+        assertEquals(provider.getApp(), mockApp);
         assertEquals(Iterables.getFirst(provider.getRecipientEmails(), null), "email@email.com");
         assertEquals(provider.getType(), EmailType.APP_INSTALL);
         
@@ -244,17 +244,17 @@ public class IntentServiceTest {
         Map<String,String> installLinks = Maps.newHashMap();
         installLinks.put("Android", "this-is-a-link");
         
-        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), "testStudy",
+        CacheKey cacheKey = CacheKey.itp(SubpopulationGuid.create("subpopGuid"), TEST_APP_ID,
                 TestConstants.PHONE);
         
-        when(mockApp.getIdentifier()).thenReturn("testStudy");
+        when(mockApp.getIdentifier()).thenReturn(TEST_APP_ID);
         when(mockAppService.getApp(intent.getAppId())).thenReturn(mockApp);
         when(mockCacheProvider.getObject(cacheKey, IntentToParticipate.class))
                 .thenReturn(intent);
 
         service.submitIntentToParticipate(intent);
         
-        verify(mockSubpopService).getSubpopulation(eq("testStudy"), subpopGuidCaptor.capture());
+        verify(mockSubpopService).getSubpopulation(eq(TEST_APP_ID), subpopGuidCaptor.capture());
         assertEquals(subpopGuidCaptor.getValue().getGuid(), intent.getSubpopGuid());
 
         // These are not called.

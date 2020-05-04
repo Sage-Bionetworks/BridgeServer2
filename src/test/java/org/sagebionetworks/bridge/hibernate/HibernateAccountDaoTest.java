@@ -254,18 +254,18 @@ public class HibernateAccountDaoTest extends Mockito {
     }
 
     @Test
-    public void getByIdWrongStudy() throws Exception {
+    public void getByIdWrongApp() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         hibernateAccount.setHealthCode(null);
         hibernateAccount.setAppId(TEST_APP_ID);
         when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
 
         // execute and validate
-        AccountId wrongStudy = AccountId.forId("wrong-app", ACCOUNT_ID);
-        Optional<Account> opt = dao.getAccount(wrongStudy);
+        AccountId wrongApp = AccountId.forId("wrong-app", ACCOUNT_ID);
+        Optional<Account> opt = dao.getAccount(wrongApp);
         assertFalse(opt.isPresent());
         
-        verify(mockHibernateHelper).getById(HibernateAccount.class, wrongStudy.getUnguardedAccountId().getId());
+        verify(mockHibernateHelper).getById(HibernateAccount.class, wrongApp.getUnguardedAccountId().getId());
     }
     
     @Test

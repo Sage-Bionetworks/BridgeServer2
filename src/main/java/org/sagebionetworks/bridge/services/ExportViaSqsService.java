@@ -25,7 +25,8 @@ public class ExportViaSqsService implements ExportService {
     // constants - these are package scoped so unit tests can access them
     static final String CONFIG_KEY_EXPORTER_SQS_QUEUE_URL = "exporter.request.sqs.queue.url";
     static final String REQUEST_KEY_END_DATE_TIME = "endDateTime";
-    static final String REQUEST_KEY_APP_WHITELIST = "studyWhitelist";
+    static final String REQUEST_KEY_STUDY_WHITELIST = "studyWhitelist";
+    static final String REQUEST_KEY_APP_WHITELIST = "appWhitelist";
     static final String REQUEST_KEY_TAG = "tag";
     static final String REQUEST_KEY_USE_LAST_EXPORT_TIME = "useLastExportTime";
 
@@ -61,6 +62,7 @@ public class ExportViaSqsService implements ExportService {
         ObjectNode requestNode = JSON_OBJECT_MAPPER.createObjectNode();
         requestNode.put(REQUEST_KEY_END_DATE_TIME, endDateTimeStr);
         requestNode.set(REQUEST_KEY_APP_WHITELIST, appWhitelistNode);
+        requestNode.set(REQUEST_KEY_STUDY_WHITELIST, appWhitelistNode);
         requestNode.put(REQUEST_KEY_TAG, tag);
         requestNode.put(REQUEST_KEY_USE_LAST_EXPORT_TIME, true);
 

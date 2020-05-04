@@ -34,7 +34,7 @@ public class CriteriaContextTest {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void requiresStudyIdentifier() {
+    public void requiresAppId() {
         new CriteriaContext.Builder().withUserId(USER_ID).build();
     }
     

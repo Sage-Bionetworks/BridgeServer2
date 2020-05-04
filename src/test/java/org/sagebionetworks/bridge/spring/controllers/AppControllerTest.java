@@ -558,10 +558,10 @@ public class AppControllerTest extends Mockito {
         testApp1.setName("test_app_1");
         testApp1.setActive(true);
 
-        DynamoApp testStudy2 = new DynamoApp();
-        testStudy2.setName("test_app_2");
+        DynamoApp testApp2 = new DynamoApp();
+        testApp2.setName("test_app_2");
 
-        List<App> apps = ImmutableList.of(testApp1, testStudy2);
+        List<App> apps = ImmutableList.of(testApp1, testApp2);
         doReturn(apps).when(mockAppService).getApps();
 
         String result = controller.getAllApps("summary", null);
@@ -612,7 +612,7 @@ public class AppControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateAppRejectsStudyAdmin() throws Exception {
+    public void updateAppRejectsAppAdmin() throws Exception {
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().
                 withRoles(ImmutableSet.of(ADMIN)).build());
@@ -642,7 +642,7 @@ public class AppControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getAllAppsFullStudyRejectsStudyAdmin() throws Exception {
+    public void getAllAppsFullAppRejectsAppAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
         when(mockSession.isAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
@@ -781,7 +781,7 @@ public class AppControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = ".*Admin cannot delete the app they are associated with.*")
-    public void deleteAppRejectsCallerInStudy() throws Exception {
+    public void deleteAppRejectsCallerInApp() throws Exception {
         // API is protected by the whitelist so this test must target some other app
         when(mockSession.getAppId()).thenReturn("other-app");
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
@@ -836,7 +836,7 @@ public class AppControllerTest extends Mockito {
     }
     
     @Test
-    public void getAppMembershipsForCrossStudyAdmin() throws Exception {
+    public void getAppMembershipsForCrossAppAdmin() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
                 .withRoles(ImmutableSet.of(ADMIN)).withEmailVerified(true)
                 .withSynapseUserId(SYNAPSE_USER_ID).build();

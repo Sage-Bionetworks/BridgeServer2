@@ -367,14 +367,14 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void nonSharedStudyCantCreate() throws Exception {
+    public void nonSharedAppCantCreate() throws Exception {
         // Set session to return API app instead. This will cause the server to throw an 403 Unauthorized.
         mockSession.setAppId(TEST_APP_ID);
         controller.createMetadata();
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void nonSharedStudyCantDeleteByIdAllVersions() throws Exception {
+    public void nonSharedAppCantDeleteByIdAllVersions() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         
         // Set session to return API app instead. This will cause the server to throw an 403 Unauthorized.
@@ -383,7 +383,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void nonSharedStudyCantDeleteByIdAndVersion() throws Exception {
+    public void nonSharedAppCantDeleteByIdAndVersion() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         // Set session to return API app instead. This will cause the server to throw an 403 Unauthorized.
         mockSession.setAppId(TEST_APP_ID);
@@ -391,7 +391,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void nonSharedStudyUpdate() throws Exception {
+    public void nonSharedAppUpdate() throws Exception {
         // Set session to return API app instead. This will cause the server to throw an 403 Unauthorized.
         mockSession.setAppId(TEST_APP_ID);
         controller.updateMetadata(MODULE_ID, MODULE_VERSION);

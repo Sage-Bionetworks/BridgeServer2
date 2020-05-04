@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title th:text="${studyName} + ' Email Verification'"></title>
-    <meta name="studyName" th:content="${studyName}">
+    <title th:text="${appName} + ' Email Verification'"></title>
+    <meta name="appName" th:content="${appName}">
     <meta name="supportEmail" th:content="${supportEmail}">
     <link href="//assets.sagebridge.org/mobile/styles/normalize.css" type="text/css" rel="stylesheet"/>
     <link href="//assets.sagebridge.org/mobile/styles/mobile.css" type="text/css" rel="stylesheet"/>
@@ -19,7 +19,7 @@
 
 <script src="//assets.sagebridge.org/jquery-2.1.3.min.js"></script>
 <script>
-var studyName = document.head.querySelector("meta[name='studyName']").getAttribute('content');
+var appName = document.head.querySelector("meta[name='appName']").getAttribute('content');
 var supportEmail = document.head.querySelector("meta[name='supportEmail']").getAttribute('content');
 
 var params = {};
@@ -30,20 +30,20 @@ location.search.substr(1).split("&").forEach(function(item) {
 
 function success() {
     $("#m1").text("Your email address has now been verified.");
-    $("#m2").html("You can now leave this web page and go back to the "+studyName+" application.");
+    $("#m2").html("You can now leave this web page and go back to the "+appName+" application.");
 }
 function failure(message) {
     $("#m1").text(message);
     $("#m2").html("Contact <a href='mailto:"+supportEmail+"'>"+supportEmail+"</a> to receive further assistance.");
 }
 try {
-    if (!params.study) {
-        throw new Error("No study");
+    if (!params.appId) {
+        throw new Error("No app");
     }
     var p = $.ajax({
         type: "POST",
         url: "/v3/auth/verifyEmail",
-        data: JSON.stringify({"sptoken":params.sptoken, "study": params.study}),
+        data: JSON.stringify({"sptoken":params.sptoken, "appId": params.appId}),
         contentType: "application/json; charset=utf-8",
         dataType: "json"
     });

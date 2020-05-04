@@ -6,5 +6,5 @@ public interface HealthCodeDao {
      * the health code does not exist. This DAO exists for legacy uploads that 
      * do not have a appId associated with them.
      */
-    String getStudyIdentifier(String healthCode);
+    String getAppId(String healthCode);
 }

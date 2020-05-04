@@ -124,7 +124,7 @@ public class DynamoUploadDao implements UploadDao {
             // Very old uploads (2+ years ago) did not have appId set; for these we must do 
             // a lookup in the legacy DynamoHealthCode table.
             if (upload.getAppId() == null) { 
-                String appId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+                String appId = healthCodeDao.getAppId(upload.getHealthCode());
                 if (appId == null) {
                     throw new EntityNotFoundException(DynamoApp.class,
                             "App not found for upload. User may have been deleted from system.");

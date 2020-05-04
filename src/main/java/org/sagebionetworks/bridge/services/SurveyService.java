@@ -210,8 +210,7 @@ public class SurveyService {
      * <p>Physically remove the survey from the database. This API is mostly for test and early development 
      * clean up, so it ignores the publication flag, however, we do enforce some constraints:</p>
      * <ol>
-     *  <li>if a schedule references a specific survey version, don't allow it to be deleted. You can't 
-     *      make these through the Bridge Study Manager, but they're allowable in the API;</li>
+     *  <li>if a schedule references a specific survey version, don't allow it to be deleted;</li>
      *      
      *  <li>if a schedule references the most-recently published version of a survey, verify this delete 
      *      is not removing the last published instance of the survey. This is the more common case 

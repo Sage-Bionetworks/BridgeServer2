@@ -37,7 +37,7 @@ public class HibernateTemplateDao implements TemplateDao {
     private static final String GET_ACTIVE = "FROM HibernateTemplate as template " + 
             "WHERE templateType = :templateType AND appId = :appId AND deleted = 0 ORDER BY createdOn DESC";
     
-    private static final String DELETE_STUDY = "DELETE FROM HibernateTemplate WHERE appId = :appId";
+    private static final String DELETE_APP = "DELETE FROM HibernateTemplate WHERE appId = :appId";
     
     private HibernateHelper hibernateHelper;
     
@@ -105,6 +105,6 @@ public class HibernateTemplateDao implements TemplateDao {
     
     @Override
     public void deleteTemplatesForApp(String appId) {
-        hibernateHelper.query(DELETE_STUDY, ImmutableMap.of("appId", appId));
+        hibernateHelper.query(DELETE_APP, ImmutableMap.of("appId", appId));
     }
 }

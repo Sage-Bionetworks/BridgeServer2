@@ -148,7 +148,7 @@ public class ExternalIdValidatorTest {
     }
     
     @Test
-    public void appIdMustBeCallersStudyId() { 
+    public void appIdMustBeCallersAppId() { 
         // This fails because we have not set a context with this app ID.
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         

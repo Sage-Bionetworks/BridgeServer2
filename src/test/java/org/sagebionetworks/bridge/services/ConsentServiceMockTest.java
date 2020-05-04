@@ -390,10 +390,10 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawFromStudyWithEmail() throws Exception {
+    public void withdrawFromAppWithEmail() throws Exception {
         setupWithdrawTest();
 
-        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
@@ -433,12 +433,12 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawFromStudyWithPhone() {
+    public void withdrawFromAppWithPhone() {
         account.setPhone(TestConstants.PHONE);
         account.setHealthCode(PARTICIPANT.getHealthCode());
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
-        consentService.withdrawFromStudy(app, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromApp(app, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
@@ -455,7 +455,7 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawFromStudyRemovesDataGroups() {
+    public void withdrawFromAppRemovesDataGroups() {
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
 
         Set<String> dataGroups = new HashSet<>(TestConstants.USER_DATA_GROUPS);
@@ -467,7 +467,7 @@ public class ConsentServiceMockTest {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
 
-        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
@@ -507,20 +507,20 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawFromStudyNotificationEmailVerifiedNull() throws Exception {
+    public void withdrawFromAppNotificationEmailVerifiedNull() throws Exception {
         setupWithdrawTest();
         app.setConsentNotificationEmailVerified(null);
-        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // For backwards-compatibility, verified=null means the email is verified.
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
     }
 
     @Test
-    public void withdrawAllWithNotificationEmailVerifiedFalse() throws Exception {
+    public void withdrawFromAppWithNotificationEmailVerifiedFalse() throws Exception {
         setupWithdrawTest();
         app.setConsentNotificationEmailVerified(false);
-        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
         // verified=false means the email is never sent.
         verify(sendMailService, never()).sendEmail(any());
@@ -675,13 +675,13 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void withdrawAllConsentsNoConsentAdministratorEmail() {
+    public void withdrawFromAppConsentsNoConsentAdministratorEmail() {
         setupWithdrawTest(true, true);
         app.setConsentNotificationEmail(null);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SECOND_SUBPOP)).thenReturn(subpopulation);
 
-        consentService.withdrawFromStudy(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
         verify(sendMailService, never()).sendEmail(any());
     }
@@ -876,7 +876,7 @@ public class ConsentServiceMockTest {
 
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), PHONE_PARTICIPANT.getPhone());
-        assertEquals(provider.getStudy(), app);
+        assertEquals(provider.getApp(), app);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
         assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());
@@ -949,7 +949,7 @@ public class ConsentServiceMockTest {
 
         SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), PHONE_PARTICIPANT.getPhone());
-        assertEquals(provider.getStudy(), app);
+        assertEquals(provider.getApp(), app);
         assertEquals(provider.getSmsType(), "Transactional");
         assertEquals(provider.getTokenMap().get("consentUrl"), SHORT_URL);
         assertEquals(provider.getTemplateRevision().getDocumentContent(), revision.getDocumentContent());

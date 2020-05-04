@@ -65,7 +65,7 @@ public class SendMailViaAmazonService implements SendMailService {
             String fullSenderEmail = provider.getMimeTypeEmail().getSenderAddress();
             MimeTypeEmail email = provider.getMimeTypeEmail();
             for (String recipient: email.getRecipientAddresses()) {
-                sendEmail(fullSenderEmail, recipient, email, provider.getStudy().getIdentifier());
+                sendEmail(fullSenderEmail, recipient, email, provider.getApp().getIdentifier());
             }
         } catch (MessageRejectedException ex) {
             // This happens if the sender email is not verified in SES. In general, it's not useful to app users to

@@ -194,19 +194,19 @@ public class UploadControllerTest extends Mockito {
     }
     
     @Test
-    public void uploadCompleteWithMissingStudyId() throws Exception {
+    public void uploadCompleteWithMissingAppId() throws Exception {
         upload.setAppId(null); // no appId, must look up by healthCode
         upload.setHealthCode(HEALTH_CODE);
         // setup controller
         doReturn(mockWorkerSession).when(controller).getAuthenticatedSession();
-        doReturn(TEST_APP_ID).when(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
+        doReturn(TEST_APP_ID).when(mockHealthCodeDao).getAppId(HEALTH_CODE);
 
         // execute and validate
         String result = controller.uploadComplete(UPLOAD_ID, false, false);
         validateValidationStatus(result);
 
         // verify back-end calls
-        verify(mockHealthCodeDao).getStudyIdentifier(HEALTH_CODE);
+        verify(mockHealthCodeDao).getAppId(HEALTH_CODE);
         verify(mockUploadService).uploadComplete(eq(TEST_APP_ID),
                 eq(UploadCompletionClient.S3_WORKER), uploadCaptor.capture(), eq(false));
         Upload upload = uploadCaptor.getValue();
@@ -237,7 +237,7 @@ public class UploadControllerTest extends Mockito {
     }
     
     @Test
-    public void differentUserInSameStudyCannotCompleteUpload() throws Exception {
+    public void differentUserInSameAppCannotCompleteUpload() throws Exception {
         // setup controller
         doReturn("other-health-code").when(mockOtherUserSession).getHealthCode();
         doReturn(false).when(mockOtherUserSession).isInRole(Roles.WORKER);
@@ -332,7 +332,7 @@ public class UploadControllerTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp=".*App admin cannot retrieve upload in another app.*")
-    public void getUploadByIdRejectsStudyAdmin() {
+    public void getUploadByIdRejectsAppAdmin() {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
 
@@ -398,7 +398,7 @@ public class UploadControllerTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp=".*App admin cannot retrieve upload in another app.*")
-    public void getUploadByRecordIdRejectsStudyAdmin() throws Exception {
+    public void getUploadByRecordIdRejectsAppAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
         doReturn(USER_ID).when(mockResearcherSession).getId();
         when(mockResearcherSession.getAppId()).thenReturn("researcher-app-id");

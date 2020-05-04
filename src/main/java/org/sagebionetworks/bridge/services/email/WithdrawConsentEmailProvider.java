@@ -43,9 +43,9 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         this.recipients = Lists.newArrayList();
         // Check if consent notification email is verified. For backwards-compatibility, a null 
         // value means the email is verified.
-        Boolean consentNotificationEmailVerified = getStudy().isConsentNotificationEmailVerified();
+        Boolean consentNotificationEmailVerified = getApp().isConsentNotificationEmailVerified();
         if (consentNotificationEmailVerified == null || consentNotificationEmailVerified) {
-            Set<String> studyRecipients = commaListToOrderedSet(getStudy().getConsentNotificationEmail());
+            Set<String> studyRecipients = commaListToOrderedSet(getApp().getConsentNotificationEmail());
             recipients.addAll( studyRecipients );
         }
     }
@@ -58,7 +58,7 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
     public MimeTypeEmail getMimeTypeEmail() throws MessagingException {
         MimeTypeEmailBuilder builder = new MimeTypeEmailBuilder();
 
-        String subject = String.format(CONSENT_EMAIL_SUBJECT, getStudy().getName());
+        String subject = String.format(CONSENT_EMAIL_SUBJECT, getApp().getName());
         builder.withSubject(subject);
 
         final String sendFromEmail = getFormattedSenderEmail();

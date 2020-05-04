@@ -233,7 +233,7 @@ public class ConsentService {
                 TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
-                        .withStudy(app)
+                        .withApp(app)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -328,7 +328,7 @@ public class ConsentService {
      * there are apps with distinct and separate consents, you can also selectively withdraw from the consent for 
      * a specific subpopulation without dropping out of the app.
      */
-    public void withdrawFromStudy(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromApp(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
@@ -405,7 +405,7 @@ public class ConsentService {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                    .withStudy(app)
+                    .withApp(app)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
@@ -436,7 +436,7 @@ public class ConsentService {
         TemplateRevision revision = templateService.getRevisionForUser(app, SMS_SIGNED_CONSENT);
 
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withTransactionType()

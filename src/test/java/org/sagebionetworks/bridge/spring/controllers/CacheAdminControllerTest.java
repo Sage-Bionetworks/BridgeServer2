@@ -94,7 +94,7 @@ public class CacheAdminControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void listItemsRejectsStudyAdmin() throws Exception {
+    public void listItemsRejectsAppAdmin() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
         
@@ -117,7 +117,7 @@ public class CacheAdminControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void removeItemRejectsStudyAdmin() throws Exception {
+    public void removeItemRejectsAppAdmin() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
         

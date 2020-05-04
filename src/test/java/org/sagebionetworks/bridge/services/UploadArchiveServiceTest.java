@@ -66,17 +66,17 @@ public class UploadArchiveServiceTest {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void encryptNullStudyId() {
+    public void encryptNullAppId() {
         archiveService.encrypt(null, PLAIN_TEXT_DATA);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void encryptEmptyStudyId() {
+    public void encryptEmptyAppId() {
         archiveService.encrypt("", PLAIN_TEXT_DATA);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void encryptBlankStudyId() {
+    public void encryptBlankAppId() {
         archiveService.encrypt("   ", PLAIN_TEXT_DATA);
     }
 
@@ -99,17 +99,17 @@ public class UploadArchiveServiceTest {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void decryptBytesNullStudyId() {
+    public void decryptBytesNullAppId() {
         archiveService.decrypt(null, encryptedData);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void decryptBytesEmptyStudyId() {
+    public void decryptBytesEmptyAppId() {
         archiveService.decrypt("", encryptedData);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void decryptBytesBlankStudyId() {
+    public void decryptBytesBlankAppId() {
         archiveService.decrypt("   ", encryptedData);
     }
 
@@ -119,21 +119,21 @@ public class UploadArchiveServiceTest {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void decryptStreamNullStudyId() throws Exception {
+    public void decryptStreamNullAppId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt(null, encryptedInputStream);
         }
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void decryptStreamEmptyStudyId() throws Exception {
+    public void decryptStreamEmptyAppId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt("", encryptedInputStream);
         }
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void decryptStreamBlankStudyId() throws Exception {
+    public void decryptStreamBlankAppId() throws Exception {
         try (InputStream encryptedInputStream = new ByteArrayInputStream(encryptedData)) {
             archiveService.decrypt("   ", encryptedInputStream);
         }

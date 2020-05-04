@@ -61,7 +61,7 @@ public class SendMailViaAmazonServiceTest {
         revision.setMimeType(HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withTemplateRevision(revision)
                 .build();
@@ -84,7 +84,7 @@ public class SendMailViaAmazonServiceTest {
         revision.setMimeType(MimeType.HTML);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withRecipientEmail(RECIPIENT_EMAIL)
                 .withTemplateRevision(revision)
                 .build();

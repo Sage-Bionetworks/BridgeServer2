@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.services.UrlShortenerService;
  * A controller for the few non-REST endpoints in our application.
  */
 @CrossOrigin
-@Controller("applicationController")
+@Controller
 public class ApplicationController extends BaseController {
     static final String ROBOTS_TXT_CONTENT = "# robotstxt.org\n\nUser-agent: *\n";
 
@@ -44,9 +44,9 @@ public class ApplicationController extends BaseController {
     private static final class AndroidAppLinkList extends ArrayList<AndroidAppSiteAssociation> {};
 
     static final String PASSWORD_DESCRIPTION = "passwordDescription";
-    static final String STUDY_NAME = "studyName";
+    static final String APP_NAME = "appName";
     static final String SUPPORT_EMAIL = "supportEmail";
-    static final String STUDY_ID = "studyId";
+    static final String APP_ID = "appId";
     
     private ViewCache viewCache;
     
@@ -72,49 +72,56 @@ public class ApplicationController extends BaseController {
         return "index";
     }
     
-    @GetMapping({"/mobile/verifyStudyEmail.html", "/vse"})
-    public String verifyStudyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
-        App app = appService.getApp(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        return "verifyStudyEmail";
+    @GetMapping({"/mobile/verifyStudyEmail.html", "/mobile/verifyAppEmail.html", "/vse", "/vae"})
+    public String verifyAppEmail(Model model, 
+            @RequestParam(name="appId", required=false) String appId,
+            @RequestParam(name="study", required=false) String studyId) {
+        App app = appService.getApp(appId != null ? appId : studyId);
+        model.addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        return "verifyAppEmail";
     }
     
     @GetMapping({"/mobile/verifyEmail.html", "/ve"})
-    public String verifyEmail(Model model, @RequestParam(name="study", required=false) String studyId) {
-        App app = appService.getApp(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+    public String verifyEmail(Model model, 
+            @RequestParam(name="appId", required=false) String appId,
+            @RequestParam(name="study", required=false) String studyId) {
+        App app = appService.getApp(appId != null ? appId : studyId);
+        model.addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         model.addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
-        model.addAttribute(STUDY_ID, app.getIdentifier());
+        model.addAttribute(APP_ID, app.getIdentifier());
         return "verifyEmail";
     }
     
     @GetMapping({"/mobile/resetPassword.html", "/rp"})
-    public String resetPassword(Model model, @RequestParam(name="study", required=false) String studyId) {
-        App app = appService.getApp(studyId);
+    public String resetPassword(Model model, 
+            @RequestParam(name="appId", required=false) String appId,
+            @RequestParam(name="study", required=false) String studyId) {
+        App app = appService.getApp(appId != null ? appId : studyId);
         String passwordDescription = BridgeUtils.passwordPolicyDescription(app.getPasswordPolicy());
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         model.addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
-        model.addAttribute(STUDY_ID, app.getIdentifier());
+        model.addAttribute(APP_ID, app.getIdentifier());
         model.addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
         return "resetPassword";
     }
     
     /* Full URL to phone will include email and token, but these are not required for the error page. */
-    @GetMapping({"/mobile/{studyId}/startSession.html", "/s/{studyId}"})
-    public String startSessionWithPath(Model model, @PathVariable String studyId) {
-        App app = appService.getApp(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        model.addAttribute(STUDY_ID, app.getIdentifier());
+    @GetMapping({"/mobile/{appId}/startSession.html", "/s/{appId}"})
+    public String startSessionWithPath(Model model, @PathVariable String appId) {
+        App app = appService.getApp(appId);
+        model.addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(APP_ID, app.getIdentifier());
         return "startSession";
     }
     
     /* Full URL to phone will include email and token, but these are not required for the error page. */
     @GetMapping("/mobile/startSession.html")
     public String startSessionWithQueryParam(Model model,
+            @RequestParam(name = "appId", required = false) String appId,
             @RequestParam(name = "study", required = false) String studyId) {
-        App app = appService.getApp(studyId);
-        model.addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        model.addAttribute(STUDY_ID, app.getIdentifier());
+        App app = appService.getApp(appId != null ? appId : studyId);
+        model.addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        model.addAttribute(APP_ID, app.getIdentifier());
         return "startSession";
     }
     

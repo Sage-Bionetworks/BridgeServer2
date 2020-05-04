@@ -1,4 +1,4 @@
-<p>You have signed up for ${studyName}, but our records indicate you already have an account for this study. </p>
+<p>You have signed up for ${appName}, but our records indicate you already have an account for this study. </p>
 
 <p>You can sign in using your original password. If you have forgotten it, and you wish to reset it, please click on this link or cut and paste this URL into your browser (link expires in ${resetPasswordExpirationPeriod}):</p>
 

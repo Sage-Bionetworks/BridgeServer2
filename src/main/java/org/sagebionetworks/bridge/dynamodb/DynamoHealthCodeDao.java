@@ -18,7 +18,7 @@ public class DynamoHealthCodeDao implements HealthCodeDao {
     }
 
     @Override
-    public String getStudyIdentifier(final String code) {
+    public String getAppId(final String code) {
         DynamoHealthCode key = new DynamoHealthCode();
         key.setCode(code);
         DynamoHealthCode loaded = mapper.load(key);

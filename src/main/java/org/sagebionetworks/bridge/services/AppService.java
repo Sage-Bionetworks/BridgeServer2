@@ -91,12 +91,12 @@ public class AppService {
     private static final Logger LOG = LoggerFactory.getLogger(AppService.class);
 
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
-    static final String CONFIG_APP_WHITELIST = "study.whitelist";
+    static final String CONFIG_APP_WHITELIST = "app.whitelist";
     static final String CONFIG_KEY_SUPPORT_EMAIL_PLAIN = "support.email.plain";
     static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
-    private static final String VERIFY_APP_EMAIL_URL = "%s/vse?study=%s&token=%s&type=%s";
+    private static final String VERIFY_APP_EMAIL_URL = "%s/vse?appId=%s&token=%s&type=%s";
     static final int VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
     static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
@@ -105,7 +105,7 @@ public class AppService {
     private static final String STUDY_EMAIL_VERIFICATION_URL = "studyEmailVerificationUrl";
     private static final String STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "studyEmailVerificationExpirationPeriod";
     private static final String APP_EMAIL_VERIFICATION_URL = "appEmailVerificationUrl";
-    private static final String APP_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "apEmailVerificationExpirationPeriod";
+    private static final String APP_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "appEmailVerificationExpirationPeriod";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     public static final Set<ACCESS_TYPE> READ_DOWNLOAD_ACCESS = ImmutableSet.of(ACCESS_TYPE.READ, ACCESS_TYPE.DOWNLOAD);
 
@@ -633,12 +633,12 @@ public class AppService {
             appDao.deleteApp(existing);
 
             // delete app data
-            templateService.deleteTemplatesForStudy(existing.getIdentifier());
+            templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());
-            fileService.deleteAllStudyFiles(existing.getIdentifier());
+            fileService.deleteAllAppFiles(existing.getIdentifier());
         }
 
         cacheProvider.removeApp(identifier);
@@ -714,7 +714,7 @@ public class AppService {
         revision.setDocumentContent(appEmailVerificationTemplate);
         revision.setMimeType(HTML);
 
-        BasicEmailProvider provider = new BasicEmailProvider.Builder().withStudy(app).withTemplateRevision(revision)
+        BasicEmailProvider provider = new BasicEmailProvider.Builder().withApp(app).withTemplateRevision(revision)
                 .withOverrideSenderEmail(bridgeSupportEmailPlain).withRecipientEmail(email)
                 .withToken(STUDY_EMAIL_VERIFICATION_URL, shortUrl)
                 .withExpirationPeriod(STUDY_EMAIL_VERIFICATION_EXPIRATION_PERIOD, VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS)

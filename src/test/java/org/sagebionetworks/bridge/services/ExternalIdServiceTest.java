@@ -129,7 +129,7 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void createExternalIdEnforcesStudyId() {
+    public void createExternalIdEnforcesAppId() {
         when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false))
             .thenReturn(Substudy.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());

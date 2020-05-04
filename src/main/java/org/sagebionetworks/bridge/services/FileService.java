@@ -148,7 +148,7 @@ public class FileService {
         fileMetadataDao.deleteFilePermanently(appId, guid);
     }
     
-    public void deleteAllStudyFiles(String appId) {
+    public void deleteAllAppFiles(String appId) {
         checkNotNull(appId);
         
         fileMetadataDao.deleteAllAppFiles(appId);

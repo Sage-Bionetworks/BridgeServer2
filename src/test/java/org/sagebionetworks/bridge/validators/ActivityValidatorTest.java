@@ -81,7 +81,7 @@ public class ActivityValidatorTest {
     }
     
     @Test
-    public void rejectsTaskIdentifierNotDeclaredForStudy() {
+    public void rejectsTaskIdentifierNotDeclaredForApp() {
         Activity activity = new Activity.Builder().withLabel("Label").withTask("foo").build();
         assertValidatorMessage(VALIDATOR, activity, "task.identifier", "'foo' is not in enumeration: <no task identifiers declared>");
     }

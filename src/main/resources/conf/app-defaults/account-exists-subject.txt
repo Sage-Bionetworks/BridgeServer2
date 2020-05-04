@@ -1,1 +1,1 @@
-Your ${studyName} account
+Your ${appName} account

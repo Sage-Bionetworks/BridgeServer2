@@ -125,7 +125,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
         logger.warn(loggedErrorMessage);
 
         // Further action depends on validation strictness.
-        UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForStudy(context
+        UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForApp(context
                 .getAppId());
         switch (uploadValidationStrictness) {
             case WARNING:
@@ -145,7 +145,7 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * Returns what level of validation strictness we should use, based on app configs. Package-scoped to facilitate
      * unit tests.
      */
-    UploadValidationStrictness getUploadValidationStrictnessForStudy(String appId) {
+    UploadValidationStrictness getUploadValidationStrictnessForApp(String appId) {
         App app = appService.getApp(appId);
 
         // First check UploadValidationStrictness.

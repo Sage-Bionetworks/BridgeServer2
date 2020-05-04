@@ -57,7 +57,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
     static final String SUBSTUDY_ID = "substudyId";
-    static final String STUDY_ID = "studyId";
+    static final String APP_ID = "studyId";
 
     private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
@@ -236,7 +236,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
 
         if (offsetKey != null) {
             Map<String, AttributeValue> map = new HashMap<>();
-            map.put(STUDY_ID, new AttributeValue().withS(appId));
+            map.put(APP_ID, new AttributeValue().withS(appId));
             map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
             query.withExclusiveStartKey(map);
         }

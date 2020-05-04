@@ -210,8 +210,8 @@ public class SchedulePlanServiceMockTest {
         
     }
     @Test
-    public void schedulePlanSetsStudyIdentifierOnCreate() {
-        DynamoApp anotherApp = getAnotherStudy();
+    public void schedulePlanSetsAppIdOnCreate() {
+        DynamoApp anotherApp = getAnotherApp();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
@@ -221,8 +221,8 @@ public class SchedulePlanServiceMockTest {
     }
     
     @Test
-    public void schedulePlanSetsStudyIdentifierOnUpdate() {
-        DynamoApp anotherApp = getAnotherStudy();
+    public void schedulePlanSetsAppIdOnUpdate() {
+        DynamoApp anotherApp = getAnotherApp();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.getSchedulePlan(anotherApp.getIdentifier(), plan.getGuid())).thenReturn(plan);
@@ -321,11 +321,11 @@ public class SchedulePlanServiceMockTest {
         return plan;
     }
     
-    private DynamoApp getAnotherStudy() {
-        DynamoApp anotherStudy = new DynamoApp();
-        anotherStudy.setIdentifier("another-app");
-        anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
-        return anotherStudy;
+    private DynamoApp getAnotherApp() {
+        DynamoApp anotherApp = new DynamoApp();
+        anotherApp.setIdentifier("another-app");
+        anotherApp.setTaskIdentifiers(Sets.newHashSet("CCC"));
+        return anotherApp;
     }
     
     private SchedulePlan constructSimpleSchedulePlan() {
@@ -355,7 +355,6 @@ public class SchedulePlanServiceMockTest {
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
         plan.setAppId(TEST_APP_ID);
-        plan.setAppId("study-key");
         plan.setGuid("BBB");
         return plan;
     }

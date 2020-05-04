@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertContentType;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.APP_ID;
+import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.APP_NAME;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.PASSWORD_DESCRIPTION;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.ROBOTS_TXT_CONTENT;
-import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.STUDY_ID;
-import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.STUDY_NAME;
 import static org.sagebionetworks.bridge.spring.controllers.ApplicationController.SUPPORT_EMAIL;
 import static org.testng.Assert.assertEquals;
 
@@ -77,7 +77,7 @@ public class ApplicationControllerTest extends Mockito {
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
-        app.setName("<Test Study>");
+        app.setName("<Test App>");
         app.setSupportEmail("support@email.com");
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         
@@ -96,11 +96,11 @@ public class ApplicationControllerTest extends Mockito {
         assertGet(ApplicationController.class, "getRobots", "/robots.txt");
         assertContentType(ApplicationController.class, "getRobots", "text/plain");
         assertGet(ApplicationController.class, "loadApp", "/", "/index.html");
-        assertGet(ApplicationController.class, "verifyStudyEmail", "/vse", "/mobile/verifyStudyEmail.html");
+        assertGet(ApplicationController.class, "verifyAppEmail", "/vse", "/vae", "/mobile/verifyStudyEmail.html", "/mobile/verifyAppEmail.html");
         assertGet(ApplicationController.class, "verifyEmail", "/ve", "/mobile/verifyEmail.html");
         assertGet(ApplicationController.class, "resetPassword", "/rp", "/mobile/resetPassword.html");
-        assertGet(ApplicationController.class, "startSessionWithPath", "/s/{studyId}",
-                "/mobile/{studyId}/startSession.html");
+        assertGet(ApplicationController.class, "startSessionWithPath", "/s/{appId}",
+                "/mobile/{appId}/startSession.html");
         assertGet(ApplicationController.class, "startSessionWithQueryParam", "/mobile/startSession.html");
         assertGet(ApplicationController.class, "androidAppLinks", "/.well-known/assetlinks.json");
         assertGet(ApplicationController.class, "appleAppLinks", "/.well-known/apple-app-site-association");
@@ -108,47 +108,92 @@ public class ApplicationControllerTest extends Mockito {
     }
     
     @Test
-    public void verifyEmailWorks() throws Exception {
-        String templateName = controller.verifyEmail(model, TEST_APP_ID);
+    public void verifyEmailWorksWithAppId() throws Exception {
+        String templateName = controller.verifyEmail(model, TEST_APP_ID, null);
         
         assertEquals(templateName, "verifyEmail");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
-        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
+        verify(appService).getApp(TEST_APP_ID);
+    }
+    
+    @Test
+    public void verifyEmailWorksWithStudyId() throws Exception {
+        String templateName = controller.verifyEmail(model, null, TEST_APP_ID);
+        
+        assertEquals(templateName, "verifyEmail");
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
         verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
-    public void verifyStudyEmailWorks() throws Exception {
-        String templateName = controller.verifyStudyEmail(model, TEST_APP_ID);
+    public void verifyAppEmailWorksWithAppId() throws Exception {
+        String templateName = controller.verifyAppEmail(model, TEST_APP_ID, null);
 
-        assertEquals(templateName, "verifyStudyEmail");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        assertEquals(templateName, "verifyAppEmail");
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(appService).getApp(TEST_APP_ID);
+    }
+    
+    @Test
+    public void verifyAppEmailWorksWithStudyId() throws Exception {
+        String templateName = controller.verifyAppEmail(model, null, TEST_APP_ID);
+
+        assertEquals(templateName, "verifyAppEmail");
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
-    public void resetPasswordWorks() throws Exception {
-        String templateName = controller.resetPassword(model, TEST_APP_ID);
+    public void resetPasswordWorksWithAppId() throws Exception {
+        String templateName = controller.resetPassword(model, TEST_APP_ID, null);
         
         assertEquals(templateName, "resetPassword");
         String passwordDescription = BridgeUtils.passwordPolicyDescription(app.getPasswordPolicy());
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
         verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
-        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
+        verify(model).addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
+        verify(appService).getApp(TEST_APP_ID);
+    }
+    
+    @Test
+    public void resetPasswordWorksWithStudyId() throws Exception {
+        String templateName = controller.resetPassword(model, null, TEST_APP_ID);
+        
+        assertEquals(templateName, "resetPassword");
+        String passwordDescription = BridgeUtils.passwordPolicyDescription(app.getPasswordPolicy());
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(SUPPORT_EMAIL, app.getSupportEmail());
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
         verify(model).addAttribute(PASSWORD_DESCRIPTION, passwordDescription);
         verify(appService).getApp(TEST_APP_ID);
     }
 
     @Test
-    public void startSessionWorksWithRequestParam() throws Exception {
+    public void startSessionWorksWithRequestParamWithAppId() throws Exception {
         UserSession session = new UserSession();
         session.setSessionToken("ABC");
         
-        String templateName = controller.startSessionWithQueryParam(model, TEST_APP_ID);
+        String templateName = controller.startSessionWithQueryParam(model, TEST_APP_ID, null);
         assertEquals(templateName, "startSession");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
+        verify(appService).getApp(TEST_APP_ID);
+    }
+    
+    @Test
+    public void startSessionWorksWithRequestParamWithStudyId() throws Exception {
+        UserSession session = new UserSession();
+        session.setSessionToken("ABC");
+        
+        String templateName = controller.startSessionWithQueryParam(model, null, TEST_APP_ID);
+        assertEquals(templateName, "startSession");
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
         verify(appService).getApp(TEST_APP_ID);
     }
 
@@ -159,23 +204,23 @@ public class ApplicationControllerTest extends Mockito {
         
         String templateName = controller.startSessionWithPath(model, TEST_APP_ID);
         assertEquals(templateName, "startSession");
-        verify(model).addAttribute(STUDY_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
-        verify(model).addAttribute(STUDY_ID, app.getIdentifier());
+        verify(model).addAttribute(APP_NAME, HtmlUtils.htmlEscape(app.getName(), "UTF-8"));
+        verify(model).addAttribute(APP_ID, app.getIdentifier());
         verify(appService).getApp(TEST_APP_ID);
     }
     
     @Test
     public void androidAppLinks() throws Exception {
-        DynamoApp study2 = new DynamoApp();
-        study2.setIdentifier(TEST_APP_ID);
-        study2.setSupportEmail("support@email.com");
-        study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
+        DynamoApp app2 = new DynamoApp();
+        app2.setIdentifier(TEST_APP_ID);
+        app2.setSupportEmail("support@email.com");
+        app2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        doReturn(ImmutableList.of(app, app2)).when(appService).getApps();
         
         app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK);
         app.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_2);
-        study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_3);
-        study2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_4);
+        app2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_3);
+        app2.getAndroidAppLinks().add(TestConstants.ANDROID_APP_LINK_4);
         
         String json = controller.androidAppLinks();
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -192,16 +237,16 @@ public class ApplicationControllerTest extends Mockito {
 
     @Test
     public void appleAppLinks() throws Exception {
-        DynamoApp study2 = new DynamoApp();
-        study2.setIdentifier(TEST_APP_ID);
-        study2.setSupportEmail("support@email.com");
-        study2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
-        doReturn(ImmutableList.of(app, study2)).when(appService).getApps();
+        DynamoApp app2 = new DynamoApp();
+        app2.setIdentifier(TEST_APP_ID);
+        app2.setSupportEmail("support@email.com");
+        app2.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
+        doReturn(ImmutableList.of(app, app2)).when(appService).getApps();
         
         app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK);
         app.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_2);
-        study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_3);
-        study2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_4);
+        app2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_3);
+        app2.getAppleAppLinks().add(TestConstants.APPLE_APP_LINK_4);
 
         String json = controller.appleAppLinks();
         JsonNode node = BridgeObjectMapper.get().readTree(json);

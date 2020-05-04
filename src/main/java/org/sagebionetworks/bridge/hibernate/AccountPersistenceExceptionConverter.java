@@ -65,8 +65,8 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 EntityAlreadyExistsException eae = null;
                 if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
                     // We do not know which external ID is the conflict without parsing the error message. 
-                    // Try them until we find one. This external ID could be in a sub-study the caller is 
-                    // not associated to, but external IDs have to be unique at the scope of the study, 
+                    // Try them until we find one. This external ID could be in a substudy the caller is 
+                    // not associated to, but external IDs have to be unique at the scope of the app, 
                     // so the external ID must be exposed to the caller to troubleshoot.
                     for (String externalId : BridgeUtils.collectExternalIds(account)) {
                         eae = createEntityAlreadyExistsException("External ID",

@@ -106,7 +106,7 @@ public class SmsService {
      */
     public void sendSmsMessage(String userId, SmsMessageProvider provider) {
         checkNotNull(provider);
-        App app = provider.getStudy();
+        App app = provider.getApp();
         Phone recipientPhone = provider.getPhone();
         String message = provider.getFormattedMessage();
 

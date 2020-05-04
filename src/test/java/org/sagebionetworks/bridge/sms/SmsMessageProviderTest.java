@@ -36,7 +36,7 @@ public class SmsMessageProviderTest {
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-            .withStudy(app)
+            .withApp(app)
             .withPhone(TestConstants.PHONE)
             .withTemplateRevision(revision)
             .withTransactionType()
@@ -78,7 +78,7 @@ public class SmsMessageProviderTest {
         
         // Create
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-            .withStudy(app)
+            .withApp(app)
             .withPhone(TestConstants.PHONE)
             .withTemplateRevision(revision)
             .withPromotionType()
@@ -90,7 +90,7 @@ public class SmsMessageProviderTest {
     @Test
     public void nullTokenMapEntryDoesntBreakMap() {
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(App.create())
+                .withApp(App.create())
                 .withPhone(TestConstants.PHONE)
                 .withTemplateRevision(TemplateRevision.create())
                 .withPromotionType()
@@ -103,7 +103,7 @@ public class SmsMessageProviderTest {
     @Test
     public void canConstructPromotionalMessage() {
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(App.create())
+                .withApp(App.create())
                 .withPhone(TestConstants.PHONE)
                 .withTemplateRevision(TemplateRevision.create())
                 .withPromotionType().build();

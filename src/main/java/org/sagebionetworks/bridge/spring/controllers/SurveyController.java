@@ -88,7 +88,7 @@ public class SurveyController extends BaseController {
      *            app to get surveys for
      * @return list of the most recently published version of every survey in the app
      */
-    @GetMapping(path = {"/v1/app/{appId}/surveys/published", "/v3/studies/{appId}/surveys/published"})
+    @GetMapping(path = {"/v1/apps/{appId}/surveys/published", "/v3/studies/{appId}/surveys/published"})
     public ResourceList<Survey> getAllSurveysMostRecentlyPublishedVersionForApp(@PathVariable String appId,
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
         getAuthenticatedSession(WORKER);

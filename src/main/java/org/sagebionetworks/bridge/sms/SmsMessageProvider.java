@@ -34,7 +34,7 @@ public class SmsMessageProvider {
         this.tokenMap = tokenMap;
     }
 
-    public App getStudy() {
+    public App getApp() {
         return app;
     }
     public TemplateRevision getTemplateRevision() {
@@ -90,7 +90,7 @@ public class SmsMessageProvider {
         private SmsType smsType;
         private TemplateRevision revision;
 
-        public Builder withStudy(App app) {
+        public Builder withApp(App app) {
             this.app = app;
             return this;
         }
@@ -126,8 +126,9 @@ public class SmsMessageProvider {
             tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
             
             // overwriting the app's short name field with a default value, if needed
+            String studyShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();
             String appShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();
-            tokenMap.put("studyShortName", appShortName);
+            tokenMap.put("studyShortName", studyShortName);
             tokenMap.put("appShortName", appShortName);
             // remove nulls, these will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);

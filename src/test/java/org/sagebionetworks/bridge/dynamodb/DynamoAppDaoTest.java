@@ -75,7 +75,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test
-    public void getStudy() {
+    public void getApp() {
         DynamoApp saved = new DynamoApp();
         doReturn(saved).when(mockMapper).load(any());
         
@@ -88,12 +88,12 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getStudyNotFound() {
+    public void getAppNotFound() {
         dao.getApp(TEST_APP_ID);   
     }
     
     @Test
-    public void getStudies() {
+    public void getApps() {
         List<App> saved = ImmutableList.of(App.create(), App.create());
         when(mockScanList.toArray()).thenReturn(saved.toArray());
         when(mockMapper.scan(eq(DynamoApp.class), any(DynamoDBScanExpression.class))).thenReturn(mockScanList);
@@ -106,7 +106,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test
-    public void createStudy() {
+    public void createApp() {
         App app = App.create();
         
         dao.createApp(app);
@@ -115,7 +115,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void createStudyFailsIfVersionPresent() {
+    public void createAppFailsIfVersionPresent() {
         App app = App.create();
         app.setVersion(2L);
         
@@ -123,7 +123,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
-    public void createStudyConditionalCheckFailedException() {
+    public void createAppConditionalCheckFailedException() {
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).save(any());
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -132,7 +132,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test
-    public void updateStudy() {
+    public void updateApp() {
         App app = App.create();
         app.setVersion(2L);
         
@@ -142,14 +142,14 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void updateStudyWithoutVersionFails() {
+    public void updateAppWithoutVersionFails() {
         App app = App.create();
         
         dao.updateApp(app);
     }
     
     @Test(expectedExceptions = ConcurrentModificationException.class)
-    public void updateStudyConditionalCheckFailedException() {
+    public void updateAppConditionalCheckFailedException() {
         doThrow(new ConditionalCheckFailedException("")).when(mockMapper).save(any());
         
         App app = App.create();
@@ -159,7 +159,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test
-    public void deleteStudy() {
+    public void deleteApp() {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         
@@ -169,7 +169,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void deleteStudyRespectsWhitelist() {
+    public void deleteAppRespectsWhitelist() {
         App app = App.create();
         app.setIdentifier("whitelisted-app");
         
@@ -177,7 +177,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test
-    public void deactivateStudy() {
+    public void deactivateApp() {
         App app = App.create();
         app.setActive(true);
         app.setVersion(2L);
@@ -190,7 +190,7 @@ public class DynamoAppDaoTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void deactivateStudyRespectsWhitelist() {
+    public void deactivateAppRespectsWhitelist() {
         App app = App.create();
         app.setActive(true);
         app.setVersion(2L);

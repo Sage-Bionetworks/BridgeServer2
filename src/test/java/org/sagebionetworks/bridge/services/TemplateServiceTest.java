@@ -679,8 +679,8 @@ public class TemplateServiceTest extends Mockito {
     }
     
     @Test
-    public void deleteTemplatesForStudy() {
-        service.deleteTemplatesForStudy(TEST_APP_ID);
+    public void deleteTemplatesForApp() {
+        service.deleteTemplatesForApp(TEST_APP_ID);
         
         verify(mockTemplateDao).deleteTemplatesForApp(TEST_APP_ID);
     }

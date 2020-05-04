@@ -130,7 +130,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -161,7 +161,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -187,7 +187,7 @@ public class SmsServiceTest {
     public void sendSmsMessage_NullUserIdOkay() throws Exception {
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -208,7 +208,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -229,7 +229,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -251,7 +251,7 @@ public class SmsServiceTest {
 
         // Set up test and execute.
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(REVISION)
                 .withPromotionType()
                 .withPhone(TestConstants.PHONE).build();
@@ -288,7 +288,7 @@ public class SmsServiceTest {
         revision.setDocumentContent(randomAlphabetic(601));
         
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withTransactionType()
                 .withPhone(TestConstants.PHONE).build();

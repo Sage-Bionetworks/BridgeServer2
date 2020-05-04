@@ -99,7 +99,7 @@ public class BulkDownloadUtil {
                 s3DownloadHandler.handle(ctx);
             } catch (Exception ex) {
                 System.out.println(String.format(
-                        "Error downloading file %s from S3 with uploadId %s from study %s, healthCode %s, timestamp " +
+                        "Error downloading file %s from S3 with uploadId %s from app %s, healthCode %s, timestamp " +
                                 "%s: %s",
                         uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
@@ -111,7 +111,7 @@ public class BulkDownloadUtil {
                 decryptHandler.handle(ctx);
             } catch (Exception ex) {
                 System.out.println(String.format(
-                        "Error decrypting file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
+                        "Error decrypting file %s with uploadId %s from app %s, healthCode %s, timestamp %s: %s",
                         uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
@@ -123,7 +123,7 @@ public class BulkDownloadUtil {
                 unzipHandler.handle(ctx);
             } catch (Exception ex) {
                 System.out.println(String.format(
-                        "Error unzipping file %s with uploadId %s from study %s, healthCode %s, timestamp %s: %s",
+                        "Error unzipping file %s with uploadId %s from app %s, healthCode %s, timestamp %s: %s",
                         uploadObj.metadata.getFilename(), uploadObj.metadata.getUploadId(), uploadObj.appId,
                         uploadObj.metadata.getHealthCode(),
                         uploadObj.metadata.getUploadDate().toString(ISODateTimeFormat.date()), ex.getMessage()));
@@ -157,7 +157,7 @@ public class BulkDownloadUtil {
         }
         System.out.println(String.format("Got %s results from DDB Upload table", uploadMetadataList.size()));
 
-        System.out.println("Downloading files from S3 and cross-referencing study ID from health code...");
+        System.out.println("Downloading files from S3 and cross-referencing app ID from health code...");
         List<UploadObject> uploads = new ArrayList<>();
         for (DynamoUpload2 oneUploadMetadata : uploadMetadataList) {
             String appId = oneUploadMetadata.getAppId();

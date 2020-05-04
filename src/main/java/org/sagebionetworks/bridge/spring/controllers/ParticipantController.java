@@ -455,16 +455,16 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
-    public StatusMessage withdrawFromStudy(@PathVariable String userId) {
+    public StatusMessage withdrawFromApp(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(app, userId, withdrawal, withdrewOn);
+        participantService.withdrawFromApp(app, userId, withdrawal, withdrewOn);
         
-        return new StatusMessage("User has been withdrawn from the study.");
+        return new StatusMessage("User has been withdrawn from one or more studies in the app.");
     }
 
     @PostMapping("/v3/participants/{userId}/consents/{guid}/withdraw")

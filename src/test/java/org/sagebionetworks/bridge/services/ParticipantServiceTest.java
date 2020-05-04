@@ -1805,9 +1805,9 @@ public class ParticipantServiceTest extends Mockito {
         Withdrawal withdrawal = new Withdrawal("Reasons");
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(APP, ID, withdrawal, withdrewOn);
+        participantService.withdrawFromApp(APP, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawFromStudy(eq(APP), participantCaptor.capture(),
+        verify(consentService).withdrawFromApp(eq(APP), participantCaptor.capture(),
             eq(withdrawal), eq(withdrewOn));
         assertEquals(participantCaptor.getValue().getId(), ID);
     }
@@ -2585,7 +2585,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
 
@@ -2601,7 +2601,7 @@ public class ParticipantServiceTest extends Mockito {
     public void sendSmsMessageThrowsIfNoPhone() { 
         when(accountService.getAccount(any())).thenReturn(account);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }
@@ -2612,7 +2612,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }
