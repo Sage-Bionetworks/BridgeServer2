@@ -38,9 +38,9 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoSurvey;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -69,6 +69,7 @@ public class UploadHandlersEndToEndTest {
     private static final String HEALTH_CODE = "health-code";
     private static final byte[] METADATA_JSON_CONTENT = "{\"my-meta-key\":\"my-meta-value\"}".getBytes();
     private static final String PHONE_INFO = "Unit Test Hardware";
+    private static final String UPLOAD_FILENAME = "upload-filename";
     private static final String UPLOAD_ID = "upload-id";
     private static final DateTime STUDY_START_TIME = DateTime.parse("2015-03-28T15:44:26.804-0700");
 
@@ -79,6 +80,8 @@ public class UploadHandlersEndToEndTest {
     private static final DateTime MOCK_NOW = DateTime.parse("2016-06-03T11:33:55.777-0700");
     private static final long MOCK_NOW_MILLIS = MOCK_NOW.getMillis();
     private static final LocalDate MOCK_TODAY = MOCK_NOW.toLocalDate();
+
+    private static final String RAW_ZIP_FILENAME = UPLOAD_ID + "-raw.zip";
 
     private static final DynamoApp STUDY = new DynamoApp();
     static {
@@ -96,20 +99,15 @@ public class UploadHandlersEndToEndTest {
     private static final String SURVEY_SCHEMA_NAME = "My Survey";
     private static final int SURVEY_SCHEMA_REV = 2;
 
-    private static final DynamoUpload2 UPLOAD = new DynamoUpload2();
-    static {
-        UPLOAD.setHealthCode(HEALTH_CODE);
-        UPLOAD.setUploadId(UPLOAD_ID);
-    }
-
     private InMemoryFileHelper inMemoryFileHelper;
     private HealthDataService mockHealthDataService;
     private UploadDao mockUploadDao;
     private S3Helper mockS3UploadHelper;
     private ArgumentCaptor<ObjectMetadata> metadataCaptor;
+    private byte[] rawFile;
     private HealthDataRecord savedRecord;
+    private Upload upload;
     private Map<String, byte[]> uploadedFileContentMap;
-    private byte[] zippedFile;
 
     @BeforeClass
     public static void mockDateTime() {
@@ -126,6 +124,11 @@ public class UploadHandlersEndToEndTest {
         savedRecord = null;
         uploadedFileContentMap = new HashMap<>();
         metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
+
+        upload = Upload.create();
+        upload.setFilename(UPLOAD_FILENAME);
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setUploadId(UPLOAD_ID);
 
         // Mock HealthDataService.createOrUpdateRecord()
         when(mockHealthDataService.createOrUpdateRecord(any(HealthDataRecord.class))).thenAnswer(
@@ -170,23 +173,30 @@ public class UploadHandlersEndToEndTest {
         DateTimeUtils.setCurrentMillisSystem();
     }
 
-    private void test(UploadSchema schema, Survey survey, Map<String, String> fileMap) throws Exception {
-        // fileMap is in strings. Convert to bytes so we can use the Zipper.
-        Map<String, byte[]> fileBytesMap = new HashMap<>();
-        for (Map.Entry<String, String> oneFile : fileMap.entrySet()) {
-            String filename = oneFile.getKey();
-            String fileString = oneFile.getValue();
-            fileBytesMap.put(filename, fileString.getBytes(Charsets.UTF_8));
-        }
-
-        // Add metadata.json to the fileBytesMap.
-        fileBytesMap.put("metadata.json", METADATA_JSON_CONTENT);
-
-        // For zipping, we use the real service.
+    private void test(UploadSchema schema, Survey survey, Map<String, String> fileMap, String nonZippedFileContent)
+            throws Exception {
+        // Set up zip service.
         UploadArchiveService unzipService = new UploadArchiveService();
-        unzipService.setMaxNumZipEntries(1000000);
-        unzipService.setMaxZipEntrySize(1000000);
-        zippedFile = unzipService.zip(fileBytesMap);
+        if (upload.isZipped()) {
+            // fileMap is in strings. Convert to bytes so we can use the Zipper.
+            Map<String, byte[]> fileBytesMap = new HashMap<>();
+            for (Map.Entry<String, String> oneFile : fileMap.entrySet()) {
+                String filename = oneFile.getKey();
+                String fileString = oneFile.getValue();
+                fileBytesMap.put(filename, fileString.getBytes(Charsets.UTF_8));
+            }
+
+            // Add metadata.json to the fileBytesMap.
+            fileBytesMap.put("metadata.json", METADATA_JSON_CONTENT);
+
+            // For zipping, we use the real service.
+            unzipService.setMaxNumZipEntries(1000000);
+            unzipService.setMaxZipEntrySize(1000000);
+            rawFile = unzipService.zip(fileBytesMap);
+        } else {
+            // If it's not zipped, use the nonZippedFileContent as the raw file.
+            rawFile = nonZippedFileContent.getBytes(Charsets.UTF_8);
+        }
 
         // Set up UploadFileHelper
         DigestUtils mockMd5DigestUtils = mock(DigestUtils.class);
@@ -203,7 +213,7 @@ public class UploadHandlersEndToEndTest {
         S3Helper mockS3DownloadHelper = mock(S3Helper.class);
         doAnswer(invocation -> {
             File destFile = invocation.getArgument(2);
-            inMemoryFileHelper.writeBytes(destFile, zippedFile);
+            inMemoryFileHelper.writeBytes(destFile, rawFile);
 
             // Required return
             return null;
@@ -314,7 +324,7 @@ public class UploadHandlersEndToEndTest {
         taskFactory.setHealthDataService(mockHealthDataService);
 
         // create task, execute
-        UploadValidationTask task = taskFactory.newTask(TEST_APP_ID, UPLOAD);
+        UploadValidationTask task = taskFactory.newTask(TEST_APP_ID, upload);
         task.run();
     }
 
@@ -380,7 +390,7 @@ public class UploadHandlersEndToEndTest {
         survey.setSchemaRevision(SURVEY_SCHEMA_REV);
 
         // execute
-        test(schema, survey, fileMap);
+        test(schema, survey, fileMap, null);
 
         // verify created record
         ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
@@ -430,10 +440,10 @@ public class UploadHandlersEndToEndTest {
         assertEquals(deliciousNode.get(1).textValue(), "Maybe");
 
         // We upload the unencrypted zipped file back to S3.
-        validateRawDataAttachment();
+        validateRawDataAttachment(RAW_ZIP_FILENAME);
 
         // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
+        verify(mockUploadDao).writeValidationStatus(upload, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
 
     @Test
@@ -593,7 +603,7 @@ public class UploadHandlersEndToEndTest {
                 .put("empty_attachment", "").build();
 
         // execute
-        test(schema, null, fileMap);
+        test(schema, null, fileMap, null);
 
         // verify created record
         ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
@@ -662,10 +672,10 @@ public class UploadHandlersEndToEndTest {
         assertEquals(metadataCaptor.getValue().getSSEAlgorithm(), ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
         // We upload the unencrypted zipped file back to S3.
-        validateRawDataAttachment();
+        validateRawDataAttachment(RAW_ZIP_FILENAME);
 
         // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
+        verify(mockUploadDao).writeValidationStatus(upload, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
 
     @Test
@@ -735,7 +745,7 @@ public class UploadHandlersEndToEndTest {
                 .put("dummy", "dummy content").build();
 
         // Execute.
-        test(null, null, fileMap);
+        test(null, null, fileMap, null);
 
         // Verify created record.
         ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
@@ -752,10 +762,54 @@ public class UploadHandlersEndToEndTest {
 
         // Only 1 attachment, and that's raw data.
         assertEquals(uploadedFileContentMap.size(), 1);
-        validateRawDataAttachment();
+        validateRawDataAttachment(RAW_ZIP_FILENAME);
 
         // verify upload dao write validation status
-        verify(mockUploadDao).writeValidationStatus(UPLOAD, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
+        verify(mockUploadDao).writeValidationStatus(upload, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
+    }
+
+    @Test
+    public void nonZipped() throws Exception {
+        // Execute.
+        upload.setZipped(false);
+        String rawFileContent = "dummy content";
+        test(null, null, null, rawFileContent);
+
+        // Verify created record.
+        ArgumentCaptor<HealthDataRecord> recordCaptor = ArgumentCaptor.forClass(HealthDataRecord.class);
+        verify(mockHealthDataService).createOrUpdateRecord(recordCaptor.capture());
+
+        // These attributes are still parsed in.
+        HealthDataRecord record = recordCaptor.getValue();
+        assertEquals(record.getCreatedOn().longValue(), MOCK_NOW_MILLIS);
+        assertEquals(record.getHealthCode(), HEALTH_CODE);
+        assertEquals(record.getAppId(), TEST_APP_ID);
+        assertEquals(record.getUploadDate(), MOCK_TODAY);
+        assertEquals(record.getUploadId(), UPLOAD_ID);
+        assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
+        assertEquals(record.getUserSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
+        assertEquals(record.getUserExternalId(), EXTERNAL_ID);
+        assertEquals(record.getUserDataGroups(), DATA_GROUP_SET);
+
+        // These attributes are not.
+        assertNull(record.getAppVersion());
+        assertNull(record.getCreatedOnTimeZone());
+        assertNull(record.getPhoneInfo());
+        assertNull(record.getMetadata());
+        assertNull(record.getSchemaId());
+        assertNull(record.getSchemaRevision());
+        assertNull(record.getUserMetadata());
+
+        // Data map is empty. No schema means no data parsed.
+        JsonNode dataNode = record.getData();
+        assertEquals(dataNode.size(), 0);
+
+        // Only 1 attachment, and that's raw data.
+        assertEquals(uploadedFileContentMap.size(), 1);
+        validateRawDataAttachment(UPLOAD_ID + "-" + UPLOAD_FILENAME);
+
+        // verify upload dao write validation status
+        verify(mockUploadDao).writeValidationStatus(upload, UploadStatus.SUCCEEDED, ImmutableList.of(), UPLOAD_ID);
     }
 
     private void validateTextAttachment(String expected, String attachmentId) {
@@ -763,12 +817,11 @@ public class UploadHandlersEndToEndTest {
         assertEquals(new String(uploadedFileContent, Charsets.UTF_8), expected);
     }
 
-    private void validateRawDataAttachment() {
-        String expectedRawDataAttachmentId = UPLOAD_ID + "-raw.zip";
-        verify(mockS3UploadHelper).writeFileToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(expectedRawDataAttachmentId),
+    private void validateRawDataAttachment(String expectedFilename) {
+        verify(mockS3UploadHelper).writeFileToS3(eq(TestConstants.ATTACHMENT_BUCKET), eq(expectedFilename),
                 any(), metadataCaptor.capture());
-        byte[] rawDataBytes = uploadedFileContentMap.get(expectedRawDataAttachmentId);
-        assertEquals(rawDataBytes, zippedFile);
+        byte[] rawDataBytes = uploadedFileContentMap.get(expectedFilename);
+        assertEquals(rawDataBytes, rawFile);
         assertEquals(metadataCaptor.getValue().getSSEAlgorithm(), ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
     }
 }

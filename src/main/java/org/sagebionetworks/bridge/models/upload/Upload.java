@@ -19,11 +19,24 @@ public interface Upload {
      */
     boolean canBeValidated();
 
+    /** Upload content length in bytes. */
+    long getContentLength();
+    void setContentLength(long contentLength);
+
+    /** The base64-encoded, 128-bit MD5 digest of the object body. */
+    String getContentMd5();
+    void setContentMd5(String contentMd5);
+
     /** The original ID that this upload is a duplicate of, or null if this upload is not a duplicate. */
     String getDuplicateUploadId();
 
+    /** True if the upload is encrypted. False if it is not encrypted. */
+    boolean isEncrypted();
+    void setEncrypted(boolean encrypted);
+
     /** Name of the file to upload. */
     String getFilename();
+    void setFilename(String filename);
 
     /** Health code of the user from which this upload originates from. */
     String getHealthCode();
@@ -45,6 +58,7 @@ public interface Upload {
 
     /** Represents upload status, such as requested, validation in progress, validation failed, or succeeded. */
     UploadStatus getStatus();
+    void setStatus(UploadStatus status);
 
     /**
      * <p>
@@ -62,18 +76,21 @@ public interface Upload {
      * <p>The UTC timestamp of the time when the server creates the initial REQUESTED upload record.</p>
      */
     long getRequestedOn();
+    void setRequestedOn(long requestedOn);
     
     /**
      * <p>The UTC timestamp of the time when the upload record is updated based on a completed call by any external 
      * client (either the S3 event listener or the mobile client). </p>
      */
     long getCompletedOn();
+    void setCompletedOn(long completedOn);
     
     /**
      * <p>A string indicating the client that completed the upload. The two current clients are "s3 listener" and 
      * "mobile client". </p>
      */
     UploadCompletionClient getCompletedBy();
+    void setCompletedBy(UploadCompletionClient completedBy);
     
     /**
      * <p>The app ID for this upload.</p>
@@ -85,6 +102,10 @@ public interface Upload {
 
     /** @see #getUploadId */
     void setUploadId(String uploadId);
+
+    /** True if the upload is zipped. False if it is a single file. */
+    boolean isZipped();
+    void setZipped(boolean zipped);
 
     /**
      * List of validation messages, generally contains error messages. Since a single upload file may fail validation

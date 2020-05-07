@@ -134,6 +134,40 @@ public class InitRecordHandlerTest {
         assertTrue(context.getMessageList().isEmpty());
     }
 
+    @Test
+    public void notZipped() throws Exception {
+        // Set up context with an upload that isn't zipped.
+        UploadValidationContext context = new UploadValidationContext();
+        context.setAppId(TEST_APP_ID);
+
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setUploadId(UPLOAD_ID);
+        upload.setZipped(false);
+        context.setUpload(upload);
+
+        // Execute.
+        handler.handle(context);
+
+        // These attributes are still parsed in.
+        HealthDataRecord record = context.getHealthDataRecord();
+        assertEquals(record.getHealthCode(), HEALTH_CODE);
+        assertEquals(record.getAppId(), TEST_APP_ID);
+        assertEquals(record.getUploadDate(), MOCK_NOW_DATE);
+        assertEquals(record.getUploadId(), UPLOAD_ID);
+        assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
+        assertNotNull(record.getData());
+
+        // These attributes are not.
+        assertNull(record.getAppVersion());
+        assertNull(record.getPhoneInfo());
+        assertNull(record.getMetadata());
+        assertNull(record.getUserMetadata());
+
+        // No messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
     private static void validateCommonContextAttributes(UploadValidationContext context) {
         // Validate health data record props.
         HealthDataRecord record = context.getHealthDataRecord();

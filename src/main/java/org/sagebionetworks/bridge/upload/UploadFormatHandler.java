@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.json.JsonUtils;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
+import org.sagebionetworks.bridge.time.DateUtils;
 
 /**
  * This handler reads the "format" field form info.json, and then determines whether to call IosSchemaValidationHandler
@@ -35,8 +37,16 @@ public class UploadFormatHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
-        // info.json is guaranteed to exist because of InitRecordHandler.
+        // Set the default createdOn to the current time. The other handlers can overwrite it as needed.
+        // Don't set a timezone, since it's indeterminate.
+        HealthDataRecord record = context.getHealthDataRecord();
+        record.setCreatedOn(DateUtils.getCurrentMillisFromEpoch());
+
         JsonNode infoJson = context.getInfoJsonNode();
+        if (infoJson == null) {
+            // info.json is NOT guaranteed to exist. If it doesn't, assume there's no format, and skip the below.
+            return;
+        }
 
         // Parse upload format. If not specified, it defaults to v1_legacy.
         UploadFormat format = UploadFormat.V1_LEGACY;

@@ -54,8 +54,6 @@ import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.QueryResult;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -513,11 +511,8 @@ public class DynamoUploadDaoMockTest {
 
     private static UploadRequest createUploadRequest() {
         final String text = "test upload dao";
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("name", "test-upload-dao-filename");
-        node.put("contentType", "text/plain");
-        node.put("contentLength", text.getBytes().length);
-        node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(text)));
-        return UploadRequest.fromJson(node);
+        return new UploadRequest.Builder().withName("test-upload-dao-filename").withContentType("text/plain")
+                .withContentLength((long) text.getBytes().length)
+                .withContentMd5(Base64.encodeBase64String(DigestUtils.md5(text))).build();
     }
 }

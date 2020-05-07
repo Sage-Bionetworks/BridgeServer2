@@ -8,7 +8,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import java.util.EnumSet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -84,7 +83,7 @@ public class UploadController extends BaseController {
     @PostMapping({"/v3/uploads", "/api/v1/upload"})
     public UploadSession upload() {
         UserSession session = getAuthenticatedAndConsentedSession();
-        UploadRequest uploadRequest = UploadRequest.fromJson(parseJson(JsonNode.class));
+        UploadRequest uploadRequest = parseJson(UploadRequest.class);
         UploadSession uploadSession = uploadService.createUpload(session.getAppId(), session.getParticipant(),
                 uploadRequest);
         final Metrics metrics = getMetrics();

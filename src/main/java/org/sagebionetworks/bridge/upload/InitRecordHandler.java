@@ -58,6 +58,12 @@ public class InitRecordHandler implements UploadValidationHandler {
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
         record.setData(dataMap);
 
+        if (!upload.isZipped()) {
+            // Shortcut: If the upload is not zipped, it doesn't have an info.json or a metadata.json. We can skip all
+            // of the below.
+            return;
+        }
+
         // Transcribe data from info.json. appVersion and phoneInfo are top-level attributes. For backwards
         // compatibility, metadata is info.json verbatim.
         JsonNode infoJson = parseFileAsJson(unzippedDataFileMap, UploadUtil.FILENAME_INFO_JSON);
