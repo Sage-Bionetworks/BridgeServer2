@@ -9,8 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.amazonaws.services.sns.model.MessageAttributeValue;
@@ -34,7 +34,7 @@ public class SmsMessageProvider {
         this.tokenMap = tokenMap;
     }
 
-    public App getStudy() {
+    public App getApp() {
         return app;
     }
     public TemplateRevision getTemplateRevision() {
@@ -69,7 +69,7 @@ public class SmsMessageProvider {
     public PublishRequest getSmsRequest() {
         Map<String, MessageAttributeValue> smsAttributes = Maps.newHashMap();
         smsAttributes.put(BridgeConstants.AWS_SMS_TYPE, attribute(getSmsType()));
-        smsAttributes.put(BridgeConstants.AWS_SMS_SENDER_ID, attribute(tokenMap.get("studyShortName")));
+        smsAttributes.put(BridgeConstants.AWS_SMS_SENDER_ID, attribute(tokenMap.get("appShortName")));
         // Costs seem too low to worry about this, but if need be, this is how we'd cap it.
         // smsAttributes.put("AWS.SNS.SMS.MaxPrice", attribute("0.50")); max price set to $.50
 
@@ -90,7 +90,7 @@ public class SmsMessageProvider {
         private SmsType smsType;
         private TemplateRevision revision;
 
-        public Builder withStudy(App app) {
+        public Builder withApp(App app) {
             this.app = app;
             return this;
         }
@@ -123,11 +123,13 @@ public class SmsMessageProvider {
             checkNotNull(revision);
             checkNotNull(phone);
             checkNotNull(smsType);
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
+            tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
             
             // overwriting the app's short name field with a default value, if needed
             String studyShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();
+            String appShortName = StringUtils.isBlank(app.getShortName()) ? "Bridge" : app.getShortName();
             tokenMap.put("studyShortName", studyShortName);
+            tokenMap.put("appShortName", appShortName);
             // remove nulls, these will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
 

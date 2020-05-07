@@ -53,8 +53,8 @@ public class SmsMessageValidator implements Validator {
             }
 
             // appId
-            if (StringUtils.isBlank(message.getStudyId())) {
-                errors.rejectValue("studyId", "is required");
+            if (StringUtils.isBlank(message.getAppId())) {
+                errors.rejectValue("appId", "is required");
             }
         }
     }

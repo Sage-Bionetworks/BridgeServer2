@@ -106,12 +106,12 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -307,7 +307,7 @@ public class ParticipantControllerTest extends Mockito {
         assertPost(ParticipantController.class, "resendEmailVerification");
         assertPost(ParticipantController.class, "resendPhoneVerification");
         assertPost(ParticipantController.class, "resendConsentAgreement");
-        assertPost(ParticipantController.class, "withdrawFromStudy");
+        assertPost(ParticipantController.class, "withdrawFromApp");
         assertPost(ParticipantController.class, "withdrawConsent");
         assertGet(ParticipantController.class, "getUploads");
         assertGet(ParticipantController.class, "getNotificationRegistrations");
@@ -563,7 +563,7 @@ public class ParticipantControllerTest extends Mockito {
     public void getParticipantRequestInfoOnlyReturnsCurrentStudyInfo() throws Exception {
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withAppId("some-other-study").build();
+                .withAppId("some-other-app").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfo("userId");
@@ -608,7 +608,7 @@ public class ParticipantControllerTest extends Mockito {
         
         RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent("app/20")
                 .withTimeZone(DateTimeZone.forOffsetHours(-7))
-                .withAppId("some-other-study").build();
+                .withAppId("some-other-app").build();
 
         doReturn(requestInfo).when(mockRequestInfoService).getRequestInfo("userId");
         controller.getRequestInfoForWorker(app.getIdentifier(), "userId");
@@ -991,9 +991,9 @@ public class ParticipantControllerTest extends Mockito {
             String json = "{\"reason\":\"Because, reasons.\"}";
             mockRequestBody(mockRequest, json);
 
-            controller.withdrawFromStudy(USER_ID);
+            controller.withdrawFromApp(USER_ID);
 
-            verify(mockParticipantService).withdrawFromStudy(app, USER_ID, new Withdrawal("Because, reasons."),
+            verify(mockParticipantService).withdrawFromApp(app, USER_ID, new Withdrawal("Because, reasons."),
                     20000);
         } finally {
             DateTimeUtils.setCurrentMillisSystem();

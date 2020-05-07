@@ -18,8 +18,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -43,7 +43,7 @@ public class ABTestScheduleStrategyTest {
 
     @BeforeMethod
     public void before() {
-        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidApp(ScheduleStrategyTest.class);
         healthCodes = Lists.newArrayList();
         for (int i = 0; i < 1000; i++) {
             healthCodes.add(BridgeUtils.generateGuid());
@@ -75,7 +75,7 @@ public class ABTestScheduleStrategyTest {
 
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
-        newPlan.setStudyKey(plan.getStudyKey()); // not serialized.
+        newPlan.setAppId(plan.getAppId()); // not serialized.
 
         assertEquals(newPlan, plan, "Plan with AB testing strategy was serialized/deserialized");
 
@@ -132,7 +132,7 @@ public class ABTestScheduleStrategyTest {
         // plan.setGuid("a71eecc3-5e75-4a11-91f4-c587999cbb20");
         plan.setGuid(BridgeUtils.generateGuid());
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         plan.setStrategy(createABTestStrategy());
         return plan;
     }

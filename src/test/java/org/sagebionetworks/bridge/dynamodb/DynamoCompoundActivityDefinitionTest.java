@@ -136,6 +136,7 @@ public class DynamoCompoundActivityDefinitionTest {
         String publicJsonText = CompoundActivityDefinition.PUBLIC_DEFINITION_WRITER.writeValueAsString(def);
         JsonNode publicJsonNode = BridgeObjectMapper.get().readTree(publicJsonText);
         assertNull(publicJsonNode.get("studyId"));
+        assertNull(publicJsonNode.get("appId"));
         assertEquals(publicJsonNode.get("taskId").textValue(), "test-task");
         assertEquals(publicJsonNode.get("type").textValue(), "CompoundActivityDefinition");
     }

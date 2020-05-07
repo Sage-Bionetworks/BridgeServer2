@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -119,13 +119,13 @@ public class StrictValidationHandler implements UploadValidationHandler {
 
         // log warning
         String combinedErrorMessage = ERROR_MESSAGE_JOINER.join(errorList);
-        String loggedErrorMessage = "Strict upload validation error in study " + context.getAppId()
+        String loggedErrorMessage = "Strict upload validation error in app " + context.getAppId()
                 + ", schema " + schemaId + "-v" + schemaRev + ", upload " + context.getUploadId() + ": " +
                 combinedErrorMessage;
         logger.warn(loggedErrorMessage);
 
         // Further action depends on validation strictness.
-        UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForStudy(context
+        UploadValidationStrictness uploadValidationStrictness = getUploadValidationStrictnessForApp(context
                 .getAppId());
         switch (uploadValidationStrictness) {
             case WARNING:
@@ -145,8 +145,8 @@ public class StrictValidationHandler implements UploadValidationHandler {
      * Returns what level of validation strictness we should use, based on app configs. Package-scoped to facilitate
      * unit tests.
      */
-    UploadValidationStrictness getUploadValidationStrictnessForStudy(String studyId) {
-        App app = appService.getApp(studyId);
+    UploadValidationStrictness getUploadValidationStrictnessForApp(String appId) {
+        App app = appService.getApp(appId);
 
         // First check UploadValidationStrictness.
         UploadValidationStrictness uploadValidationStrictness = app.getUploadValidationStrictness();

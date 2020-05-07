@@ -39,7 +39,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.AppService;
@@ -140,7 +140,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         verify(mockService).createExternalId(externalIdCaptor.capture(), eq(false));
 
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
-        assertEquals(retrievedId.getStudyId(), TEST_APP_ID);
+        assertEquals(retrievedId.getAppId(), TEST_APP_ID);
         assertEquals(retrievedId.getSubstudyId(), "substudyId");
         assertEquals(retrievedId.getIdentifier(), "identifier");
     }
@@ -155,7 +155,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
         verify(mockService).deleteExternalIdPermanently(eq(app), externalIdCaptor.capture());
         assertEquals(externalIdCaptor.getValue().getIdentifier(), "externalId");
-        assertEquals(externalIdCaptor.getValue().getStudyId(), TEST_APP_ID);
+        assertEquals(externalIdCaptor.getValue().getAppId(), TEST_APP_ID);
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)

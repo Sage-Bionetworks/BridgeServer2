@@ -35,14 +35,14 @@ public class DynamoHealthCodeDaoTest {
     
 
     @Test
-    public void successfullyRetrieveStudyId() {
+    public void successfullyRetrieveAppId() {
         DynamoHealthCode code = new DynamoHealthCode();
         code.setCode("healthCode");
-        code.setStudyIdentifier(TEST_APP_ID);
+        code.setAppId(TEST_APP_ID);
         code.setVersion(1L);
         when(mapper.load(any())).thenReturn(code);
         
-        String result = healthCodeDao.getStudyIdentifier("healthCode");
+        String result = healthCodeDao.getAppId("healthCode");
         
         verify(mapper).load(codeCaptor.capture());
         
@@ -54,6 +54,6 @@ public class DynamoHealthCodeDaoTest {
     public void noRecord() {
         when(mapper.load(any())).thenReturn(null);
         
-        assertNull(healthCodeDao.getStudyIdentifier("healthCode"));
+        assertNull(healthCodeDao.getAppId("healthCode"));
     }
 }

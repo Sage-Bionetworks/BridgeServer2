@@ -35,8 +35,8 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.AccountWorkflowService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -314,7 +314,7 @@ public class AuthenticationController extends BaseController {
         // Cross app administrator can switch to any app. Implement this here because clients 
         // cannot tell who is a cross-app administrator once they've switched apps.
         if (session.isInRole(SUPERADMIN)) {
-            sessionUpdateService.updateStudy(session, targetApp.getIdentifier());
+            sessionUpdateService.updateApp(session, targetApp.getIdentifier());
             return UserSessionInfo.toJSON(session);
         }
         // Otherwise, verify the user has access to this app

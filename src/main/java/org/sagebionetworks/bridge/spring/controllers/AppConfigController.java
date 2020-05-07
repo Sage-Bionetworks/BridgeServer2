@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AppConfigService;
 
 @CrossOrigin
@@ -54,7 +54,7 @@ public class AppConfigController extends BaseController {
 
     @GetMapping(path = { "/v1/apps/{appId}/appconfig", "/v3/studies/{appId}/appconfig" }, 
             produces = { APPLICATION_JSON_UTF8_VALUE })
-    public String getStudyAppConfig(@PathVariable String appId) {
+    public String getAppConfigByCriteria(@PathVariable String appId) {
         App app = appService.getApp(appId);
         
         RequestContext reqContext = BridgeUtils.getRequestContext();

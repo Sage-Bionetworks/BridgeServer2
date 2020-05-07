@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -38,7 +38,7 @@ public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
     
-    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.studyId, "+
+    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "+
             "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
             "acct.synapseUserId) FROM HibernateAccount AS acct";
             
@@ -66,7 +66,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         QueryBuilder query = new QueryBuilder();
         query.append(
-            "SELECT DISTINCT acct.studyId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
+            "SELECT DISTINCT acct.appId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
             "synapseUserId", synapseUserId);
         return hibernateHelper.queryGet(query.getQuery(), query.getParameters(), null, null, String.class);
     }
@@ -115,14 +115,14 @@ public class HibernateAccountDao implements AccountDao {
         return Optional.of(account);
     }
     
-    QueryBuilder makeQuery(String prefix, String studyId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
+    QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
         RequestContext context = BridgeUtils.getRequestContext();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
         builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
         builder.append("WITH acct.id = acctSubstudy.accountId");
-        builder.append("WHERE acct.studyId = :studyId", "studyId", studyId);
+        builder.append("WHERE acct.appId = :appId", "appId", appId);
 
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
@@ -225,7 +225,7 @@ public class HibernateAccountDao implements AccountDao {
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        String studyId = hibernateAccount.getAppId();
+        String appId = hibernateAccount.getAppId();
         
         // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
         // to limit the data you retrieve from a table. May need to manually construct the objects to 
@@ -244,6 +244,6 @@ public class HibernateAccountDao implements AccountDao {
         return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
                 hibernateAccount.getEmail(), hibernateAccount.getSynapseUserId(), hibernateAccount.getPhone(),
                 assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
-                hibernateAccount.getStatus(), studyId, assoc.getSubstudyIdsVisibleToCaller());
+                hibernateAccount.getStatus(), appId, assoc.getSubstudyIdsVisibleToCaller());
     }
 }

@@ -29,6 +29,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Criteria;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CriteriaScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
@@ -36,7 +37,6 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleCriteria;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 
@@ -210,26 +210,26 @@ public class SchedulePlanServiceMockTest {
         
     }
     @Test
-    public void schedulePlanSetsStudyIdentifierOnCreate() {
-        DynamoApp anotherStudy = getAnotherStudy();
+    public void schedulePlanSetsAppIdOnCreate() {
+        DynamoApp anotherApp = getAnotherApp();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
         when(mockSchedulePlanDao.createSchedulePlan(any(), any())).thenReturn(plan);
         
-        plan = service.createSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        plan = service.createSchedulePlan(anotherApp, plan);
+        assertEquals(plan.getAppId(), "another-app");
     }
     
     @Test
-    public void schedulePlanSetsStudyIdentifierOnUpdate() {
-        DynamoApp anotherStudy = getAnotherStudy();
+    public void schedulePlanSetsAppIdOnUpdate() {
+        DynamoApp anotherApp = getAnotherApp();
         SchedulePlan plan = constructSimpleSchedulePlan();
         // Just pass it back, the service should set the appId
-        when(mockSchedulePlanDao.getSchedulePlan(anotherStudy.getIdentifier(), plan.getGuid())).thenReturn(plan);
+        when(mockSchedulePlanDao.getSchedulePlan(anotherApp.getIdentifier(), plan.getGuid())).thenReturn(plan);
         when(mockSchedulePlanDao.updateSchedulePlan(any(), any())).thenReturn(plan);
         
-        plan = service.updateSchedulePlan(anotherStudy, plan);
-        assertEquals(plan.getStudyKey(), "another-study");
+        plan = service.updateSchedulePlan(anotherApp, plan);
+        assertEquals(plan.getAppId(), "another-app");
     }
     
     @Test
@@ -321,11 +321,11 @@ public class SchedulePlanServiceMockTest {
         return plan;
     }
     
-    private DynamoApp getAnotherStudy() {
-        DynamoApp anotherStudy = new DynamoApp();
-        anotherStudy.setIdentifier("another-study");
-        anotherStudy.setTaskIdentifiers(Sets.newHashSet("CCC"));
-        return anotherStudy;
+    private DynamoApp getAnotherApp() {
+        DynamoApp anotherApp = new DynamoApp();
+        anotherApp.setIdentifier("another-app");
+        anotherApp.setTaskIdentifiers(Sets.newHashSet("CCC"));
+        return anotherApp;
     }
     
     private SchedulePlan constructSimpleSchedulePlan() {
@@ -354,7 +354,7 @@ public class SchedulePlanServiceMockTest {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setLabel("This is a label");
         plan.setStrategy(strategy);
-        plan.setStudyKey("study-key");
+        plan.setAppId(TEST_APP_ID);
         plan.setGuid("BBB");
         return plan;
     }

@@ -135,7 +135,7 @@ public class UploadController extends BaseController {
         if (session.isInRole(Roles.WORKER)) {
             appId = upload.getAppId();
             if (appId == null) {
-                appId = healthCodeDao.getStudyIdentifier(upload.getHealthCode());
+                appId = healthCodeDao.getAppId(upload.getHealthCode());
             }
             uploadCompletionClient = UploadCompletionClient.S3_WORKER;
         } else {

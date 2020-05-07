@@ -48,7 +48,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AppConfigService;
 import org.sagebionetworks.bridge.services.AppService;
 
@@ -128,7 +128,7 @@ public class AppConfigControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(AppConfigController.class);
-        assertGet(AppConfigController.class, "getStudyAppConfig");
+        assertGet(AppConfigController.class, "getAppConfigByCriteria");
         assertGet(AppConfigController.class, "getAppConfigs");
         assertCreate(AppConfigController.class, "createAppConfig");
         assertGet(AppConfigController.class, "getAppConfig");
@@ -137,7 +137,7 @@ public class AppConfigControllerTest extends Mockito {
     }
     
     @Test
-    public void getStudyAppConfig() throws Exception {
+    public void getAppConfigByCriteria() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
@@ -145,7 +145,7 @@ public class AppConfigControllerTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(contextCaptor.capture(), eq(true))).thenReturn(appConfig);
         
-        String string = controller.getStudyAppConfig(TEST_APP_ID);
+        String string = controller.getAppConfigByCriteria(TEST_APP_ID);
         AppConfig returnedValue = BridgeObjectMapper.get().readValue(string, AppConfig.class);
         assertEquals(returnedValue, appConfig);
         
@@ -254,7 +254,7 @@ public class AppConfigControllerTest extends Mockito {
     }
 
     @Test
-    public void getStudyAppConfigAddsToCache() throws Exception {
+    public void getAppConfigByCriteriaAddsToCache() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
@@ -262,7 +262,7 @@ public class AppConfigControllerTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockService.getAppConfigForUser(any(), eq(true))).thenReturn(appConfig);
         
-        controller.getStudyAppConfig(TEST_APP_ID);
+        controller.getAppConfigByCriteria(TEST_APP_ID);
         
         verify(mockCacheProvider).addCacheKeyToSet(CACHE_KEY, "26:iPhone OS:en:" + TEST_APP_ID + ":AppConfig:view");
     }

@@ -53,7 +53,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
@@ -149,7 +149,7 @@ public class ConsentControllerTest extends Mockito {
         assertGet(ConsentController.class, "getConsentSignatureV2");
         assertCreate(ConsentController.class, "giveV3");
         assertPost(ConsentController.class, "withdrawConsentV2");
-        assertPost(ConsentController.class, "withdrawFromStudy");
+        assertPost(ConsentController.class, "withdrawFromApp");
         assertPost(ConsentController.class, "resendConsentAgreement");
     }
     
@@ -214,14 +214,14 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
+        String appId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the app session to match the subpopulation in the unconsented status map
-        session.setAppId(studyId);
+        session.setAppId(appId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockAppService.getApp(studyId)).thenReturn(app);
+        when(mockAppService.getApp(appId)).thenReturn(app);
         
         JsonNode result = controller.giveV1();
         
@@ -241,14 +241,14 @@ public class ConsentControllerTest extends Mockito {
                 "'imageData':'data:asdf','imageMimeType':'image/png','scope':'no_sharing'}");
         mockRequestBody(mockRequest, json);
         
-        String studyId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
+        String appId = TestConstants.REQUIRED_UNSIGNED.getSubpopulationGuid();
         
         // Need to adjust the app session to match the subpopulation in the unconsented status map
-        session.setAppId(studyId);
+        session.setAppId(appId);
         when(mockAuthService.getSession(any(), any())).thenReturn(updatedSession);
         doReturn(session).when(controller).getAuthenticatedSession();
         when(mockConsentService.getConsentStatuses(any())).thenReturn(TestConstants.UNCONSENTED_STATUS_MAP);
-        when(mockAppService.getApp(studyId)).thenReturn(app);
+        when(mockAppService.getApp(appId)).thenReturn(app);
         
         JsonNode result = controller.giveV2();
         
@@ -347,7 +347,7 @@ public class ConsentControllerTest extends Mockito {
     }
     
     @Test
-    public void withdrawFromStudy() throws Exception {
+    public void withdrawFromApp() throws Exception {
         mockRequestBody(mockRequest, WITHDRAWAL);
 
         when(mockConfig.get("domain")).thenReturn("domain");
@@ -355,11 +355,11 @@ public class ConsentControllerTest extends Mockito {
         // You do not need to be fully consented for this call to succeed.
         doReturn(session).when(controller).getAuthenticatedSession();
         
-        StatusMessage result = controller.withdrawFromStudy();
+        StatusMessage result = controller.withdrawFromApp();
         
         assertEquals(result.getMessage(), "Signed out.");
         
-        verify(mockConsentService).withdrawFromStudy(app, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
+        verify(mockConsentService).withdrawFromApp(app, session.getParticipant(), WITHDRAWAL, TIMESTAMP.getMillis());
         verify(mockAuthService).signOut(session);
 
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);

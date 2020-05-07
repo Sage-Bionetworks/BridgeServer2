@@ -105,7 +105,7 @@ public class SharedModuleMetadataServiceTest {
     }
 
     @Test(expectedExceptions = BadRequestException.class)
-    public void createSurveyWithInvalidStudyId() {
+    public void createSurveyWithInvalidAppId() {
         GuidCreatedOnVersionHolder holder = new GuidCreatedOnVersionHolderImpl("some-id", 1L);
         when(mockSurveyService.getSurvey(eq(SHARED_APP_ID), eq(holder), eq(false), eq(false))).thenReturn(null);
         

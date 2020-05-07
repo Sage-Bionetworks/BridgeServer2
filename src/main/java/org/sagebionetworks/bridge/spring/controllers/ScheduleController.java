@@ -72,18 +72,18 @@ public class ScheduleController extends BaseController {
     
     private List<Schedule> getSchedulesInternal() {
         UserSession session = getAuthenticatedAndConsentedSession();
-        String studyId = session.getAppId();
+        String appId = session.getAppId();
         
         ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
 
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))
-                .withAppId(studyId)
+                .withAppId(appId)
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withClientInfo(clientInfo).build();
         
-        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, studyId, false);
+        List<SchedulePlan> plans = schedulePlanService.getSchedulePlans(clientInfo, appId, false);
 
         List<Schedule> schedules = Lists.newArrayListWithCapacity(plans.size());
         for (SchedulePlan plan : plans) {

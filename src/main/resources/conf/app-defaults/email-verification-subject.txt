@@ -1,1 +1,1 @@
-Verify your ${studyName} account
+Verify your ${appName} account

@@ -55,12 +55,12 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidatorTest;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 
@@ -480,7 +480,7 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void studyTemplateVariblesWorks() {
+    public void appTemplateVariblesWorks() {
         String host = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
         assertTrue(StringUtils.isNotBlank(host));
         
@@ -492,7 +492,7 @@ public class BridgeUtilsTest {
         app.setSupportEmail("supportEmail1");
         app.setTechnicalEmail("technicalEmail1");
         app.setConsentNotificationEmail("consentNotificationEmail1");
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> {
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app, (value) -> {
             return value.replaceAll("1", "2");
         });
         map.put("thisMap", "isMutable");
@@ -500,6 +500,9 @@ public class BridgeUtilsTest {
         assertEquals(map.get("studyName"), "name2");
         assertEquals(map.get("studyShortName"), "shortName");
         assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appName"), "name2");
+        assertEquals(map.get("appShortName"), "shortName");
+        assertEquals(map.get("appId"), TEST_APP_ID);
         assertEquals(map.get("sponsorName"), "sponsorName2");
         assertEquals(map.get("supportEmail"), "supportEmail2");
         assertEquals(map.get("technicalEmail"), "technicalEmail2");
@@ -510,10 +513,10 @@ public class BridgeUtilsTest {
     
     @Test
     public void templateResolverHandlesNullConsentEmail() {
-        App app = TestUtils.getValidStudy(BridgeUtilsTest.class);
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
         app.setConsentNotificationEmail(null);
         
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app);
         assertNull(map.get("consentEmail"));
     }
     

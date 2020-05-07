@@ -48,13 +48,13 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
@@ -110,7 +110,7 @@ public class SurveyServiceMockTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
-        app = TestUtils.getValidStudy(SurveyServiceMockTest.class);
+        app = TestUtils.getValidApp(SurveyServiceMockTest.class);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));

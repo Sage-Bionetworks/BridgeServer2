@@ -83,9 +83,9 @@ public class UploadHandlersEndToEndTest {
 
     private static final String RAW_ZIP_FILENAME = UPLOAD_ID + "-raw.zip";
 
-    private static final DynamoApp STUDY = new DynamoApp();
+    private static final DynamoApp APP = new DynamoApp();
     static {
-        STUDY.setStrictUploadValidationEnabled(true);
+        APP.setStrictUploadValidationEnabled(true);
     }
 
     private static final String SCHEMA_ID = "non-survey-schema";
@@ -282,7 +282,7 @@ public class UploadHandlersEndToEndTest {
         strictValidationHandler.setUploadSchemaService(mockUploadSchemaService);
 
         AppService mockAppService = mock(AppService.class);
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(STUDY);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         strictValidationHandler.setAppService(mockAppService);
 
         AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "test-substudy", "userId");

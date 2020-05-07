@@ -31,10 +31,10 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
@@ -106,7 +106,7 @@ public class SmsService {
      */
     public void sendSmsMessage(String userId, SmsMessageProvider provider) {
         checkNotNull(provider);
-        App app = provider.getStudy();
+        App app = provider.getApp();
         Phone recipientPhone = provider.getPhone();
         String message = provider.getFormattedMessage();
 
@@ -120,7 +120,7 @@ public class SmsService {
         PublishResult result = snsClient.publish(provider.getSmsRequest());
         messageId = result.getMessageId();
 
-        LOG.info("Sent SMS message, study=" + app.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
+        LOG.info("Sent SMS message, app=" + app.getIdentifier() + ", message ID=" + messageId + ", request ID=" +
                 BridgeUtils.getRequestContext().getId());
 
         // Log SMS message.
@@ -131,7 +131,7 @@ public class SmsService {
         smsMessage.setMessageBody(message);
         smsMessage.setMessageId(messageId);
         smsMessage.setSmsType(provider.getSmsTypeEnum());
-        smsMessage.setStudyId(app.getIdentifier());
+        smsMessage.setAppId(app.getIdentifier());
 
         // Fetch participant, if it exists.
         StudyParticipant participant = null;
@@ -179,11 +179,11 @@ public class SmsService {
     }
 
     // Helper method to init the SMS log schema for the app.
-    private void initMessageLogSchema(String studyId) {
+    private void initMessageLogSchema(String appId) {
         // See if schema already exists.
         UploadSchema existingSchema = null;
         try {
-            existingSchema = schemaService.getUploadSchemaByIdAndRev(studyId, MESSAGE_LOG_SCHEMA_ID,
+            existingSchema = schemaService.getUploadSchemaByIdAndRev(appId, MESSAGE_LOG_SCHEMA_ID,
                     MESSAGE_LOG_SCHEMA_REV);
         } catch (EntityNotFoundException ex) {
             // Suppress exception. If get throws, messageLogSchema will be null.
@@ -208,7 +208,7 @@ public class SmsService {
                         .withUnboundedText(true).build());
         schemaToCreate.setFieldDefinitions(fieldDefList);
 
-        schemaService.createSchemaRevisionV4(studyId, schemaToCreate);
+        schemaService.createSchemaRevisionV4(appId, schemaToCreate);
     }
 
     /** Gets the message we most recently sent to the given phone number. */

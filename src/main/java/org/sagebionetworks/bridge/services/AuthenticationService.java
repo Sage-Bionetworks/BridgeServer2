@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
@@ -37,7 +38,6 @@ import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.AccountIdValidator;
 import org.sagebionetworks.bridge.validators.VerificationValidator;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
@@ -298,22 +298,22 @@ public class AuthenticationService {
             accountWorkflowService.resendVerificationToken(type, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Resend " + type.name() + " verification for unregistered email in study '"
+            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
                     + accountId.getAppId() + "'");
         }
     }
     
-    public void requestResetPassword(App app, boolean isStudyAdmin, SignIn signIn) throws BridgeServiceException {
+    public void requestResetPassword(App app, boolean isAppAdmin, SignIn signIn) throws BridgeServiceException {
         checkNotNull(app);
         checkNotNull(signIn);
         
         // validate the data in signIn, then convert it to an account ID which we know will be valid.
         Validate.entityThrowingException(SignInValidator.REQUEST_RESET_PASSWORD, signIn);
         try {
-            accountWorkflowService.requestResetPassword(app, isStudyAdmin, signIn.getAccountId());    
+            accountWorkflowService.requestResetPassword(app, isAppAdmin, signIn.getAccountId());    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Request reset password request for unregistered email in study '"+signIn.getAppId()+"'");
+            LOG.info("Request reset password request for unregistered email in app '"+signIn.getAppId()+"'");
         }
     }
 
@@ -528,8 +528,8 @@ public class AuthenticationService {
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
-    private void clearSession(String studyId, String userId) {
-        AccountId accountId = AccountId.forId(studyId, userId);
+    private void clearSession(String appId, String userId) {
+        AccountId accountId = AccountId.forId(appId, userId);
         accountService.deleteReauthToken(accountId);
         cacheProvider.removeSessionByUserId(userId);
     }

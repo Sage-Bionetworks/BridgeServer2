@@ -43,7 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
@@ -220,7 +220,7 @@ public class FPHSControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void addIdentifiersOKRejectsStudyAdmin() throws Exception {
+    public void addIdentifiersOKRejectsAppAdmin() throws Exception {
         FPHSExternalIdentifier id1 = FPHSExternalIdentifier.create("AAA");
         FPHSExternalIdentifier id2 = FPHSExternalIdentifier.create("BBB");
         mockRequestBody(mockRequest, ImmutableList.of(id1, id2));

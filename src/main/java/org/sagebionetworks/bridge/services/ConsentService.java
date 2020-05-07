@@ -36,8 +36,8 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -168,7 +168,7 @@ public class ConsentService {
      */
     public void consentToResearch(App app, SubpopulationGuid subpopGuid, StudyParticipant participant,
             ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsent) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "study");
+        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
         checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
         checkNotNull(participant, Validate.CANNOT_BE_NULL, "participant");
         checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
@@ -233,7 +233,7 @@ public class ConsentService {
                 TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
-                        .withStudy(app)
+                        .withApp(app)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -328,7 +328,7 @@ public class ConsentService {
      * there are apps with distinct and separate consents, you can also selectively withdraw from the consent for 
      * a specific subpopulation without dropping out of the app.
      */
-    public void withdrawFromStudy(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromApp(App app, StudyParticipant participant, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);
         checkNotNull(withdrawal);
         checkArgument(withdrewOn > 0);
@@ -405,7 +405,7 @@ public class ConsentService {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGNED_CONSENT);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                    .withStudy(app)
+                    .withApp(app)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
@@ -436,7 +436,7 @@ public class ConsentService {
         TemplateRevision revision = templateService.getRevisionForUser(app, SMS_SIGNED_CONSENT);
 
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withPhone(participant.getPhone())
                 .withExpirationPeriod(EXPIRATION_PERIOD_KEY, SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS)
                 .withTransactionType()

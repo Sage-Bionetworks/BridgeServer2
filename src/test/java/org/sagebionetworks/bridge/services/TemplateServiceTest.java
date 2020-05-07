@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_RESET_PASSWORD;
@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -463,7 +463,7 @@ public class TemplateServiceTest extends Mockito {
         Criteria criteria = TestUtils.createCriteria(1, 4, null, null);
         
         Template template = Template.create();
-        template.setAppId("some-other-study-id");
+        template.setAppId("some-other-app-id");
         template.setGuid(GUID1);
         template.setName("Test");
         // Change these... they will be changed back
@@ -679,8 +679,8 @@ public class TemplateServiceTest extends Mockito {
     }
     
     @Test
-    public void deleteTemplatesForStudy() {
-        service.deleteTemplatesForStudy(TEST_APP_ID);
+    public void deleteTemplatesForApp() {
+        service.deleteTemplatesForApp(TEST_APP_ID);
         
         verify(mockTemplateDao).deleteTemplatesForApp(TEST_APP_ID);
     }

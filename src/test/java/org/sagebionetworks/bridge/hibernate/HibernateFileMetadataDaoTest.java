@@ -56,7 +56,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         assertSame(returned.get(), metadata);
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
         assertEquals(map.get("guid"), GUID);
     }
 
@@ -87,7 +87,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
                 eq(FileMetadata.class));
         
         Map<String,Object> map = paramsCaptor.getValue();
-        assertEquals(map.get("studyId"), TEST_APP_ID);
+        assertEquals(map.get("appId"), TEST_APP_ID);
     }
     
     @Test
@@ -150,9 +150,9 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     }
     
     @Test
-    public void deleteFilePermanentlyWrongStudy() {
+    public void deleteFilePermanentlyWrongApp() {
         FileMetadata metadata = new FileMetadata();
-        metadata.setAppId("some-other-study");
+        metadata.setAppId("some-other-app");
         when(mockHibernateHelper.getById(FileMetadata.class, GUID)).thenReturn(metadata);
         
         dao.deleteFilePermanently(TEST_APP_ID, GUID);
@@ -162,10 +162,10 @@ public class HibernateFileMetadataDaoTest extends Mockito {
     }
     
     @Test
-    public void deleteAllStudyFiles() {
-        dao.deleteAllStudyFiles(TEST_APP_ID);
+    public void deleteAllAppFiles() {
+        dao.deleteAllAppFiles(TEST_APP_ID);
         
         verify(mockHibernateHelper).query(eq(DELETE + FROM_FILE), paramsCaptor.capture());
-        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

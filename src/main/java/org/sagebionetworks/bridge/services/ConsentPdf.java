@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
@@ -123,7 +123,7 @@ public final class ConsentPdf {
         }
         
         // This is now a fragment, assemble accordingly
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app);
         map.put("participant.name", username);
         map.put("participant.signing.date", signingDate);
         map.put("participant.contactInfo", contactInfo);

@@ -43,7 +43,7 @@ public class ScheduleContextTest {
     }
     
     @Test(expectedExceptions = NullPointerException.class)
-    public void requiresStudyId() {
+    public void requiresAppId() {
         new ScheduleContext.Builder().build();
     }
     
@@ -138,7 +138,7 @@ public class ScheduleContextTest {
     public void eventTimesAreForcedToUTC() {
         ScheduleContext context = new ScheduleContext.Builder()
                 .withAccountCreatedOn(DateTime.parse("2010-10-10T10:10:10.010+03:00"))
-                .withAppId("study-Id")
+                .withAppId(TEST_APP_ID)
                 .build();
         assertEquals(context.getAccountCreatedOn().toString(), "2010-10-10T07:10:10.010Z");
         

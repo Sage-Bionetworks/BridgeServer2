@@ -197,7 +197,7 @@ public class UploadSchemaControllerTest extends Mockito {
     }
 
     @Test
-    public void getByStudyAndSchemaAndRev() throws Exception {
+    public void getByAppAndSchemaAndRev() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         when(mockSvc.getUploadSchemaByIdAndRev(TEST_APP_ID, TEST_SCHEMA_ID, 1)).thenReturn(
@@ -213,7 +213,7 @@ public class UploadSchemaControllerTest extends Mockito {
     }
 
     @Test
-    public void getSchemasForStudyNoDeleted() throws Exception {
+    public void getSchemasForAppNoDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, false)).thenReturn(ImmutableList.of(
@@ -236,7 +236,7 @@ public class UploadSchemaControllerTest extends Mockito {
     }
 
     @Test
-    public void getSchemasForStudyIncludeDeleted() throws Exception {
+    public void getSchemasForAppIncludeDeleted() throws Exception {
         // mock UploadSchemaService
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
         when(mockSvc.getUploadSchemasForApp(TEST_APP_ID, true))
@@ -388,6 +388,7 @@ public class UploadSchemaControllerTest extends Mockito {
         node.put("revision", revision);
 
         // Server returns schemas with app IDs (which are filtered out selectively in some methods).
+        node.put("appId", TEST_APP_ID);
         node.put("studyId", TEST_APP_ID);
 
         return BridgeObjectMapper.get().convertValue(node, UploadSchema.class);

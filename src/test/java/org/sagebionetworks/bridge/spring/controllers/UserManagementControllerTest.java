@@ -50,7 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -134,9 +134,9 @@ public class UserManagementControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(UserManagementController.class);
         assertPost(UserManagementController.class, "signInForSuperAdmin");
-        assertPost(UserManagementController.class, "changeStudyForAdmin");
+        assertPost(UserManagementController.class, "changeAppForAdmin");
         assertCreate(UserManagementController.class, "createUser");
-        assertCreate(UserManagementController.class, "createUserWithStudyId");
+        assertCreate(UserManagementController.class, "createUserWithAppId");
         assertDelete(UserManagementController.class, "deleteUser");
     }
 
@@ -211,7 +211,7 @@ public class UserManagementControllerTest extends Mockito {
         nextApp.setIdentifier("nextStudy");
         when(mockAppService.getApp("nextStudy")).thenReturn(nextApp);
 
-        controller.changeStudyForAdmin();
+        controller.changeAppForAdmin();
         assertEquals(session.getAppId(), "nextStudy");
         verify(mockCacheProvider).setUserSession(session);
     }
@@ -225,7 +225,7 @@ public class UserManagementControllerTest extends Mockito {
         SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
         
-        controller.changeStudyForAdmin();
+        controller.changeAppForAdmin();
     }
 
     @Test
@@ -239,24 +239,24 @@ public class UserManagementControllerTest extends Mockito {
     }
 
     @Test
-    public void createdResponseReturnsJSONPayloadWithStudyId() throws Exception {
+    public void createdResponseReturnsJSONPayloadWithAppId() throws Exception {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
         
         // same app id as above test
-        StatusMessage result = controller.createUserWithStudyId(TEST_APP_ID);
+        StatusMessage result = controller.createUserWithAppId(TEST_APP_ID);
         assertEquals(result, UserManagementController.CREATED_MSG);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void createUserWithStudyIdRejectsStudyAdmin() throws Exception {
+    public void createUserWithAppIdRejectsStudyAdmin() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        controller.createUserWithStudyId(TEST_APP_ID);
+        controller.createUserWithAppId(TEST_APP_ID);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -270,11 +270,11 @@ public class UserManagementControllerTest extends Mockito {
 
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
-    public void createUserWithStudyIdBadJson() throws Exception {
+    public void createUserWithAppIdBadJson() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         
-        controller.createUserWithStudyId(TEST_APP_ID);
+        controller.createUserWithAppId(TEST_APP_ID);
     }
     
     @Test

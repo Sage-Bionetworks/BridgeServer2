@@ -41,7 +41,7 @@ public class AccountIdValidator implements Validator {
         AccountId identifier = ((AccountId)obj).getUnguardedAccountId();
         
         if (identifier.getAppId() == null) {
-            errors.rejectValue("study", "is required");
+            errors.rejectValue("appId", "is required");
         }
         if (type == ChannelType.EMAIL) {
             if (StringUtils.isBlank(identifier.getEmail())) {

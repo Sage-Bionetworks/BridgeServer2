@@ -20,16 +20,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
 @DynamoDBTable(tableName = "Study")
-@BridgeTypeName("Study")
+@BridgeTypeName("App")
 @JsonFilter("filter")
 public final class DynamoApp implements App {
     
@@ -248,8 +248,8 @@ public final class DynamoApp implements App {
 
     /** {@inheritDoc} */
     @Override
-    public void setAppIdExcludedInExport(boolean studyIdExcludedInExport) {
-        this.appIdExcludedInExport = studyIdExcludedInExport;
+    public void setAppIdExcludedInExport(boolean appIdExcludedInExport) {
+        this.appIdExcludedInExport = appIdExcludedInExport;
     }
     
     // for backwards compatibility, we must continue to expose this property
@@ -685,9 +685,9 @@ public final class DynamoApp implements App {
     @Override
     public String toString() {
         return String.format(
-                "DynamoStudy [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
+                "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
                         + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
-                        + "studyIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
+                        + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, strictUploadValidationEnabled=%s, "

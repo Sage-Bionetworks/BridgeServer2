@@ -14,8 +14,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.services.AppService;
 
 public class PasswordResetValidatorTest {
@@ -66,9 +66,9 @@ public class PasswordResetValidatorTest {
     }
     
     @Test
-    public void studyRequired() {
+    public void appIdRequired() {
         validate(new PasswordReset("asdfasdf", "token", ""), (e) -> {
-            assertError(e, "study", "is required");
+            assertError(e, "appId", "is required");
         });
     }
     

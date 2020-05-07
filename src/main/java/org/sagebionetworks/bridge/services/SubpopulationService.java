@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.dao.SubpopulationDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -161,18 +161,18 @@ public class SubpopulationService {
      * there are no subpopulations, a default subpopulation will be created with a 
      * default consent.
      */
-    public List<Subpopulation> getSubpopulations(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<Subpopulation> getSubpopulations(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
         // If retrieving all subpopulations, which is unusual, do not use the cache. Cache is always
         // of the undeleted subpopulations only.
         if (includeDeleted) {
-            return subpopDao.getSubpopulations(studyId, true, includeDeleted);
+            return subpopDao.getSubpopulations(appId, true, includeDeleted);
         }
-        CacheKey subpopListKey = CacheKey.subpopList(studyId);
+        CacheKey subpopListKey = CacheKey.subpopList(appId);
         List<Subpopulation> subpops = cacheProvider.getObject(subpopListKey, SURVEY_LIST_REF);
         if (subpops == null) {
-            subpops = subpopDao.getSubpopulations(studyId, true, includeDeleted);
+            subpops = subpopDao.getSubpopulations(appId, true, includeDeleted);
             cacheProvider.setObject(subpopListKey, subpops);
         }
         return subpops;
@@ -180,18 +180,18 @@ public class SubpopulationService {
     
     /**
      * Get a specific subpopulation.
-     * @param studyId
+     * @param appId
      * @param subpopGuid
      * @return subpopulation
      */
-    public Subpopulation getSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
-        checkNotNull(studyId);
+    public Subpopulation getSubpopulation(String appId, SubpopulationGuid subpopGuid) {
+        checkNotNull(appId);
         checkNotNull(subpopGuid);
         
-        CacheKey subpopKey = CacheKey.subpop(subpopGuid, studyId);
+        CacheKey subpopKey = CacheKey.subpop(subpopGuid, appId);
         Subpopulation subpop = cacheProvider.getObject(subpopKey, Subpopulation.class);
         if (subpop == null) {
-            subpop = subpopDao.getSubpopulation(studyId, subpopGuid);
+            subpop = subpopDao.getSubpopulation(appId, subpopGuid);
             cacheProvider.setObject(subpopKey, subpop);
         }
         return subpop;
@@ -212,26 +212,26 @@ public class SubpopulationService {
     /**
      * Delete a subpopulation and remove it from cache.
      */
-    public void deleteSubpopulation(String studyId, SubpopulationGuid subpopGuid) {
-        checkNotNull(studyId);
+    public void deleteSubpopulation(String appId, SubpopulationGuid subpopGuid) {
+        checkNotNull(appId);
         checkNotNull(subpopGuid);
         
-        subpopDao.deleteSubpopulation(studyId, subpopGuid);
-        cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
-        cacheProvider.removeObject(CacheKey.subpopList(studyId));
+        subpopDao.deleteSubpopulation(appId, subpopGuid);
+        cacheProvider.removeObject(CacheKey.subpop(subpopGuid, appId));
+        cacheProvider.removeObject(CacheKey.subpopList(appId));
     }
     
     /**
      * Permanently delete a subpopulation and remove it from cache.
      */
-    public void deleteSubpopulationPermanently(String studyId, SubpopulationGuid subpopGuid) {
-        checkNotNull(studyId);
+    public void deleteSubpopulationPermanently(String appId, SubpopulationGuid subpopGuid) {
+        checkNotNull(appId);
         checkNotNull(subpopGuid);
 
-        subpopDao.deleteSubpopulationPermanently(studyId, subpopGuid);
+        subpopDao.deleteSubpopulationPermanently(appId, subpopGuid);
         studyConsentService.deleteAllConsentsPermanently(subpopGuid);
-        cacheProvider.removeObject(CacheKey.subpop(subpopGuid, studyId));
-        cacheProvider.removeObject(CacheKey.subpopList(studyId));
+        cacheProvider.removeObject(CacheKey.subpop(subpopGuid, appId));
+        cacheProvider.removeObject(CacheKey.subpopList(appId));
     }
     
     /**
@@ -239,13 +239,13 @@ public class SubpopulationService {
      * in the API. This deletes everything, including the default subpopulation. This is used when 
      * deleting an app, as part of a test, for example.
      */
-    public void deleteAllSubpopulations(String studyId) {
-        checkNotNull(studyId);
+    public void deleteAllSubpopulations(String appId) {
+        checkNotNull(appId);
         
-        List<Subpopulation> subpops = getSubpopulations(studyId, true);
+        List<Subpopulation> subpops = getSubpopulations(appId, true);
         if (!subpops.isEmpty()) {
             for (Subpopulation subpop : subpops) {
-                deleteSubpopulationPermanently(studyId, subpop.getGuid());
+                deleteSubpopulationPermanently(appId, subpop.getGuid());
             }
         }
     }

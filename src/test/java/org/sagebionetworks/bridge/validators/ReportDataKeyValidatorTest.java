@@ -66,12 +66,12 @@ public class ReportDataKeyValidatorTest {
     }
     
     @Test
-    public void studyIdentifierMissing() {
+    public void appIdMissing() {
         test(() -> {
             new ReportDataKey.Builder()
                     .withIdentifier("foo")
                     .withReportType(ReportType.STUDY).build();
-        }, "studyId", "is required");
+        }, "appId", "is required");
     }
     
     private void test(Runnable runnable, String fieldName, String error) {

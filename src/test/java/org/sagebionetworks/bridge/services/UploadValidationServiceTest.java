@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.upload.UploadValidationTask;
 import org.sagebionetworks.bridge.upload.UploadValidationTaskFactory;
@@ -22,7 +22,7 @@ public class UploadValidationServiceTest {
         // test strategy is to verify that execution flows through to these dependencies.
 
         // inputs
-        App app = TestUtils.getValidStudy(UploadValidationServiceTest.class);
+        App app = TestUtils.getValidApp(UploadValidationServiceTest.class);
         Upload upload = new DynamoUpload2();
 
         // mock task

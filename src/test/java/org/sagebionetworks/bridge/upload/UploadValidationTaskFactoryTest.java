@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.file.FileHelper;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.HealthDataService;
 
@@ -35,7 +35,7 @@ public class UploadValidationTaskFactoryTest {
         taskFactory.setHealthDataService(healthDataService);
 
         // inputs
-        App app = TestUtils.getValidStudy(UploadValidationTaskFactoryTest.class);
+        App app = TestUtils.getValidApp(UploadValidationTaskFactoryTest.class);
         Upload upload = Upload.create();
         upload.setHealthCode(HEALTH_CODE);
 

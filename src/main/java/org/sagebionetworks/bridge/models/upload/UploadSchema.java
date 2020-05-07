@@ -102,7 +102,7 @@ public interface UploadSchema extends BridgeEntity {
     void setSchemaId(String schemaId);
 
     /**
-     * Gets the schema key as represented by the UploadSchemaKey object. This is generated from {@link #getStudyId},
+     * Gets the schema key as represented by the UploadSchemaKey object. This is generated from {@link #getAppId},
      * {@link #getSchemaId}, and {@link #getRevision}.
      */
     UploadSchemaKey getSchemaKey();

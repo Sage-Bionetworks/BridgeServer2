@@ -59,12 +59,12 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -176,37 +176,40 @@ public class ParticipantController extends BaseController {
         return new StatusMessage("User deleted.");
     }
 
-    @GetMapping("/v3/studies/{studyId}/participants/{userId}/activityEvents")
-    public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String studyId,
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activityEvents",
+            "/v3/studies/{appId}/participants/{userId}/activityEvents" })
+    public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String appId,
             @PathVariable String userId) {
         getAuthenticatedSession(Roles.WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
 
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
     
-    @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/activities/{activityType}/{referentGuid}", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
-    public String getActivityHistoryForWorkerV3(@PathVariable String studyId, @PathVariable String userId,
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
+            "/v3/studies/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}" }, produces = {
+                    APPLICATION_JSON_UTF8_VALUE })
+    public String getActivityHistoryForWorkerV3(@PathVariable String appId, @PathVariable String userId,
             @PathVariable String activityType, @PathVariable String referentGuid,
             @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
         getAuthenticatedSession(Roles.WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         
         return getActivityHistoryV3Internal(app, userId, activityType, referentGuid, scheduledOnStart, scheduledOnEnd,
                 offsetKey, pageSize);
     }
 
-    @GetMapping("/v3/studies/{studyId}/participants/{userId}/activities/{activityGuid}")
-    public JsonNode getActivityHistoryForWorkerV2(@PathVariable String studyId, @PathVariable String userId,
+    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/activities/{activityGuid}",
+            "/v3/studies/{appId}/participants/{userId}/activities/{activityGuid}"})
+    public JsonNode getActivityHistoryForWorkerV2(@PathVariable String appId, @PathVariable String userId,
             @PathVariable String activityGuid, @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
         getAuthenticatedSession(Roles.WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         
         return getActivityHistoryInternalV2(app, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
                 offsetKey, pageSize);
@@ -251,23 +254,23 @@ public class ParticipantController extends BaseController {
     }
     
     @Deprecated
-    @GetMapping("/v3/studies/{studyId}/participants")
-    public JsonNode getParticipantsForWorker(@PathVariable String studyId,
+    @GetMapping(path = {"/v1/apps/{appId}/participants", "/v3/studies/{appId}/participants"})
+    public JsonNode getParticipantsForWorker(@PathVariable String appId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String emailFilter, @RequestParam(required = false) String phoneFilter,
             @RequestParam(required = false) String startDate, @RequestParam(required = false) String endDate,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime) {
         getAuthenticatedSession(WORKER);
         
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         return getParticipantsInternal(app, offsetBy, pageSize, emailFilter, phoneFilter, startDate, endDate,
                 startTime, endTime);
     }
 
-    @PostMapping("/v3/studies/{studyId}/participants/search")
-    public PagedResourceList<AccountSummary> searchForAccountSummariesForWorker(@PathVariable String studyId) {
+    @PostMapping(path = {"/v1/apps/{appId}/participants/search", "/v3/studies/{appId}/participants/search"})
+    public PagedResourceList<AccountSummary> searchForAccountSummariesForWorker(@PathVariable String appId) {
         getAuthenticatedSession(WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return participantService.getPagedAccountSummaries(app, search);
@@ -304,11 +307,12 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path="/v3/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getParticipantForWorker(@PathVariable String studyId, @PathVariable String userId,
+    @GetMapping(path= {"/v1/apps/{appId}/participants/{userId}",
+            "/v3/studies/{appId}/participants/{userId}"}, produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getParticipantForWorker(@PathVariable String appId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         getAuthenticatedSession(WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
 
         StudyParticipant participant = participantService.getParticipant(app, userId, consents);
         
@@ -316,9 +320,10 @@ public class ParticipantController extends BaseController {
         return writer.writeValueAsString(participant);
     }
     
-    @GetMapping(path = "/v3/studies/{studyId}/participants/{userId}/requestInfo", produces = {
+    @GetMapping(path = {"/v1/apps/{appId}/participants/{userId}/requestInfo",
+            "/v3/studies/{appId}/participants/{userId}/requestInfo"}, produces = {
             APPLICATION_JSON_UTF8_VALUE })
-    public String getRequestInfoForWorker(@PathVariable String studyId, @PathVariable String userId)
+    public String getRequestInfoForWorker(@PathVariable String appId, @PathVariable String userId)
             throws JsonProcessingException {
         getAuthenticatedSession(WORKER);
 
@@ -326,7 +331,7 @@ public class ParticipantController extends BaseController {
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!studyId.equals(requestInfo.getAppId())) {
+        } else if (!appId.equals(requestInfo.getAppId())) {
             throw new EntityNotFoundException(StudyParticipant.class);
         }
         return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
@@ -450,16 +455,16 @@ public class ParticipantController extends BaseController {
     }
 
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
-    public StatusMessage withdrawFromStudy(@PathVariable String userId) {
+    public StatusMessage withdrawFromApp(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(app, userId, withdrawal, withdrewOn);
+        participantService.withdrawFromApp(app, userId, withdrawal, withdrewOn);
         
-        return new StatusMessage("User has been withdrawn from the study.");
+        return new StatusMessage("User has been withdrawn from one or more studies in the app.");
     }
 
     @PostMapping("/v3/participants/{userId}/consents/{guid}/withdraw")
@@ -524,11 +529,12 @@ public class ParticipantController extends BaseController {
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
     }
 
-    @PostMapping("/v3/studies/{studyId}/participants/{userId}/sendSmsMessage")
+    @PostMapping(path = {"/v1/apps/{appId}/participants/{userId}/sendSmsMessage",
+            "/v3/studies/{appId}/participants/{userId}/sendSmsMessage"})
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage sendSmsMessageForWorker(@PathVariable String studyId, @PathVariable String userId) {
+    public StatusMessage sendSmsMessageForWorker(@PathVariable String appId, @PathVariable String userId) {
         getAuthenticatedSession(WORKER);
-        App app = appService.getApp(studyId);
+        App app = appService.getApp(appId);
         SmsTemplate template = parseJson(SmsTemplate.class);
         
         participantService.sendSmsMessage(app, userId, template);

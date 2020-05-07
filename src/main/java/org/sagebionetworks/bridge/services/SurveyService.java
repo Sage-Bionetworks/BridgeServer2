@@ -22,13 +22,13 @@ import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.CompoundActivity;
 import org.sagebionetworks.bridge.models.schedules.Schedule;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.sharedmodules.SharedModuleMetadata;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
@@ -210,8 +210,7 @@ public class SurveyService {
      * <p>Physically remove the survey from the database. This API is mostly for test and early development 
      * clean up, so it ignores the publication flag, however, we do enforce some constraints:</p>
      * <ol>
-     *  <li>if a schedule references a specific survey version, don't allow it to be deleted. You can't 
-     *      make these through the Bridge Study Manager, but they're allowable in the API;</li>
+     *  <li>if a schedule references a specific survey version, don't allow it to be deleted;</li>
      *      
      *  <li>if a schedule references the most-recently published version of a survey, verify this delete 
      *      is not removing the last published instance of the survey. This is the more common case 

@@ -57,7 +57,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
     static final String SUBSTUDY_ID = "substudyId";
-    static final String STUDY_ID = "studyId";
+    static final String APP_ID = "studyId";
 
     private RateLimiter getExternalIdRateLimiter;
     private DynamoDBMapper mapper;
@@ -79,16 +79,16 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     }
     
     @Override
-    public Optional<ExternalIdentifier> getExternalId(String studyId, String externalId) {
-        checkNotNull(studyId);
+    public Optional<ExternalIdentifier> getExternalId(String appId, String externalId) {
+        checkNotNull(appId);
         checkNotNull(externalId);
         
-        DynamoExternalIdentifier key = new DynamoExternalIdentifier(studyId, externalId);
+        DynamoExternalIdentifier key = new DynamoExternalIdentifier(appId, externalId);
         return Optional.ofNullable(mapper.load(key));
     }
 
     @Override
-    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(String studyId,
+    public ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(String appId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter) {
 
         if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -114,7 +114,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         do {
             getExternalIdRateLimiter.acquire(capacityAcquired);
             
-            DynamoDBQueryExpression<DynamoExternalIdentifier> query = createGetQuery(studyId, nextPageOffsetKey,
+            DynamoDBQueryExpression<DynamoExternalIdentifier> query = createGetQuery(appId, nextPageOffsetKey,
                     PAGE_SCAN_LIMIT, idFilter, assignmentFilter);
             
             QueryResultPage<DynamoExternalIdentifier> queryResultPage = mapper.queryPage(
@@ -183,7 +183,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     public void commitAssignExternalId(ExternalIdentifier externalId) {
         if (externalId != null) {
             DynamoExternalIdentifier key = new DynamoExternalIdentifier(
-                    externalId.getStudyId(), externalId.getIdentifier());
+                    externalId.getAppId(), externalId.getIdentifier());
             if (externalId.getHealthCode() == null || mapper.load(key) == null) {
                 throw new ConcurrentModificationException("External ID was concurrently deleted or assigned");
             }
@@ -218,7 +218,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
         }
     }
     
-    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(String studyId, String offsetKey,
+    private DynamoDBQueryExpression<DynamoExternalIdentifier> createGetQuery(String appId, String offsetKey,
             int pageSize, String idFilter, Boolean assignmentFilter) {
         
         DynamoDBQueryExpression<DynamoExternalIdentifier> query =
@@ -232,11 +232,11 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             query.withQueryFilterEntry(HEALTH_CODE, new Condition()
                 .withComparisonOperator(assignmentFilter.booleanValue() ? NOT_NULL : NULL));
         }
-        query.withHashKeyValues(new DynamoExternalIdentifier(studyId, null)); // no healthCode.
+        query.withHashKeyValues(new DynamoExternalIdentifier(appId, null)); // no healthCode.
 
         if (offsetKey != null) {
             Map<String, AttributeValue> map = new HashMap<>();
-            map.put(STUDY_ID, new AttributeValue().withS(studyId));
+            map.put(APP_ID, new AttributeValue().withS(appId));
             map.put(IDENTIFIER, new AttributeValue().withS(offsetKey));
             query.withExclusiveStartKey(map);
         }

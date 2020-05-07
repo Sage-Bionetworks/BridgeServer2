@@ -22,7 +22,7 @@ public class UploadArchiveUtil {
             return;
         }
         String method = args[0];
-        String studyId = args[1];
+        String appId = args[1];
         String inFilename = args[2];
         String outFilename = args[3];
 
@@ -38,10 +38,10 @@ public class UploadArchiveUtil {
         byte[] outData;
         switch (method) {
             case "encrypt":
-                outData = uploadArchiveService.encrypt(studyId, inData);
+                outData = uploadArchiveService.encrypt(appId, inData);
                 break;
             case "decrypt":
-                outData = uploadArchiveService.decrypt(studyId, inData);
+                outData = uploadArchiveService.decrypt(appId, inData);
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Invalid method %s", method));

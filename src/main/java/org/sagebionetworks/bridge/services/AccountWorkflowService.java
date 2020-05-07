@@ -39,10 +39,10 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.accounts.VerificationData;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -76,15 +76,15 @@ public class AccountWorkflowService {
     // These are older values. These are still included, for now, for existing templates.
     private static final String OLD_URL_KEY = "url";
     private static final String OLD_SHORT_URL_KEY = "shortUrl";
-    private static final String OLD_RESET_PASSWORD_URL = "/mobile/resetPassword.html?study=%s&sptoken=%s";
-    private static final String OLD_VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?study=%s&sptoken=%s";
-    private static final String OLD_EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&study=%s&token=%s";
+    private static final String OLD_RESET_PASSWORD_URL = "/mobile/resetPassword.html?appId=%s&sptoken=%s";
+    private static final String OLD_VERIFY_EMAIL_URL = "/mobile/verifyEmail.html?appId=%s&sptoken=%s";
+    private static final String OLD_EMAIL_SIGNIN_URL = "/mobile/%s/startSession.html?email=%s&appId=%s&token=%s";
     private static final String OLD_EXP_WINDOW_TOKEN = "expirationWindow";
     private static final String OLD_EXPIRATION_PERIOD = "expirationPeriod";
     
     // We now have shorter URLs and template variables that can be combined in one template
-    private static final String RESET_PASSWORD_URL = "/rp?study=%s&sptoken=%s";
-    private static final String VERIFY_EMAIL_URL = "/ve?study=%s&sptoken=%s";
+    private static final String RESET_PASSWORD_URL = "/rp?appId=%s&sptoken=%s";
+    private static final String VERIFY_EMAIL_URL = "/ve?appId=%s&sptoken=%s";
     private static final String EMAIL_SIGNIN_URL = "/s/%s?email=%s&token=%s";
      
     // Keys to reference the URLs
@@ -197,7 +197,7 @@ public class AccountWorkflowService {
 
         TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_VERIFY_EMAIL);
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withRecipientEmail(recipientEmail)
                 .withToken(SPTOKEN_KEY, sptoken)
@@ -234,7 +234,7 @@ public class AccountWorkflowService {
         
         TemplateRevision revision = templateService.getRevisionForUser(app, SMS_VERIFY_PHONE);
         SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withToken("token", formattedSpToken)
                 .withTemplateRevision(revision)
                 .withTransactionType()
@@ -327,7 +327,7 @@ public class AccountWorkflowService {
      * this method fails silently if the email or phone number cannot be found in the system, 
      * to prevent account enumeration attacks. 
      */
-    public void requestResetPassword(App app, boolean isStudyAdmin, AccountId accountId) {
+    public void requestResetPassword(App app, boolean isAppAdmin, AccountId accountId) {
         checkNotNull(accountId);
         checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
@@ -335,8 +335,8 @@ public class AccountWorkflowService {
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
-            boolean emailVerified = isStudyAdmin || Boolean.TRUE.equals(account.getEmailVerified());
-            boolean phoneVerified = isStudyAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
+            boolean emailVerified = isAppAdmin || Boolean.TRUE.equals(account.getEmailVerified());
+            boolean phoneVerified = isAppAdmin || Boolean.TRUE.equals(account.getPhoneVerified());
             if (account.getEmail() != null && emailVerified) {
                 TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_RESET_PASSWORD);
                 sendPasswordResetRelatedEmail(app, account.getEmail(), false, revision);
@@ -358,7 +358,7 @@ public class AccountWorkflowService {
         String shortUrl = getShortResetPasswordURL(app, sptoken);
         
         BasicEmailProvider.Builder builder = new BasicEmailProvider.Builder()
-            .withStudy(app)
+            .withApp(app)
             .withTemplateRevision(revision)
             .withRecipientEmail(email)
             .withToken(SPTOKEN_KEY, sptoken)
@@ -373,9 +373,9 @@ public class AccountWorkflowService {
         if (includeEmailSignIn && app.isEmailSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withEmail(email).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
-                signIn, false, this::getNextToken, (theStudy, account, token) -> {
+                signIn, false, this::getNextToken, (theApp, account, token) -> {
                     // get and add the sign in URLs.
-                    String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theStudy.getIdentifier(), token);
+                    String emailShortUrl = getShortEmailSignInURL(signIn.getEmail(), theApp.getIdentifier(), token);
                     
                     // Put the components in separately, in case we want to alter the URL in a specific template.
                     builder.withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()));
@@ -401,7 +401,7 @@ public class AccountWorkflowService {
         SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder();
         builder.withTemplateRevision(revision);
         builder.withTransactionType();
-        builder.withStudy(app);
+        builder.withApp(app);
         builder.withPhone(phone);
         builder.withToken(SPTOKEN_KEY, sptoken);
         builder.withToken(RESET_PASSWORD_URL_KEY, url);
@@ -410,7 +410,7 @@ public class AccountWorkflowService {
         if (includePhoneSignIn && app.isPhoneSignInEnabled()) {
             SignIn signIn = new SignIn.Builder().withPhone(phone).withAppId(app.getIdentifier()).build();
             requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
-                signIn, false, this::getNextPhoneToken, (theStudy, account2, token) -> {
+                signIn, false, this::getNextPhoneToken, (theApp, account2, token) -> {
                     String formattedToken = token.substring(0,3) + "-" + token.substring(3,6);
                     builder.withToken(TOKEN_KEY, formattedToken);
                     builder.withExpirationPeriod(PHONE_SIGNIN_EXPIRATION_PERIOD, SIGNIN_EXPIRE_IN_SECONDS);
@@ -464,14 +464,14 @@ public class AccountWorkflowService {
      */
     public String requestPhoneSignIn(SignIn signIn) {
         return requestChannelSignIn(PHONE, PHONE_SIGNIN_REQUEST, phoneSignInRequestInMillis,
-                signIn, true, this::getNextPhoneToken, (study, account, token) -> {
+                signIn, true, this::getNextPhoneToken, (app, account, token) -> {
             // Put a dash in the token so it's easier to enter into the UI. All this should
             // eventually come from a template
             String formattedToken = token.substring(0,3) + "-" + token.substring(3,6); 
             
-            TemplateRevision revision = templateService.getRevisionForUser(study, SMS_PHONE_SIGN_IN);
+            TemplateRevision revision = templateService.getRevisionForUser(app, SMS_PHONE_SIGN_IN);
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                    .withStudy(study)
+                    .withApp(app)
                     .withTemplateRevision(revision)
                     .withTransactionType()
                     .withPhone(signIn.getPhone())
@@ -491,20 +491,20 @@ public class AccountWorkflowService {
      */
     public String requestEmailSignIn(SignIn signIn) {
         return requestChannelSignIn(EMAIL, EMAIL_SIGNIN_REQUEST, emailSignInRequestInMillis,
-                signIn, true, this::getNextToken, (study, account, token) -> {
-            String url = getEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
-            String shortUrl = getShortEmailSignInURL(signIn.getEmail(), study.getIdentifier(), token);
+                signIn, true, this::getNextToken, (app, account, token) -> {
+            String url = getEmailSignInURL(signIn.getEmail(), app.getIdentifier(), token);
+            String shortUrl = getShortEmailSignInURL(signIn.getEmail(), app.getIdentifier(), token);
             
             // Email is URL encoded, which is probably a mistake. We're now providing an URL that's will be 
             // opaque to the user, like the other APIs (where the templates just have a ${url} variable), but we 
             // need to provide host/email/appId/token variables for earlier versions of the email sign in template 
             // that had the URL spelled out with substitutions. The email was encoded so it could be substituted 
             // into that template.
-            TemplateRevision revision = templateService.getRevisionForUser(study, EMAIL_SIGN_IN);
+            TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_SIGN_IN);
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                 .withTemplateRevision(revision)
-                .withStudy(study)
+                .withApp(app)
                 .withRecipientEmail(signIn.getEmail())
                 .withToken(EMAIL_KEY, BridgeUtils.encodeURIComponent(signIn.getEmail()))
                 .withToken(TOKEN_KEY, token)
@@ -532,9 +532,9 @@ public class AccountWorkflowService {
 
         // Do we want the same flag for phone? Do we want to eliminate this flag?
         if (channelType == EMAIL && !app.isEmailSignInEnabled()) {
-            throw new UnauthorizedException("Email-based sign in not enabled for study: " + app.getName());
+            throw new UnauthorizedException("Email-based sign in not enabled for app: " + app.getName());
         } else if (channelType == PHONE && !app.isPhoneSignInEnabled()) {
-            throw new UnauthorizedException("Phone-based sign in not enabled for study: " + app.getName());
+            throw new UnauthorizedException("Phone-based sign in not enabled for app: " + app.getName());
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
@@ -625,8 +625,8 @@ public class AccountWorkflowService {
         return SecureTokenGenerator.PHONE_CODE_INSTANCE.nextToken();
     }
     
-    private String getEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, studyId, email, studyId, token);
+    private String getEmailSignInURL(String email, String appId, String token) {
+        return formatWithEncodedArgs(OLD_EMAIL_SIGNIN_URL, appId, email, appId, token);
     }
     
     private String getVerifyEmailURL(App app, String sptoken) {
@@ -637,8 +637,8 @@ public class AccountWorkflowService {
         return formatWithEncodedArgs(OLD_RESET_PASSWORD_URL, app.getIdentifier(), sptoken);
     }
     
-    private String getShortEmailSignInURL(String email, String studyId, String token) {
-        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, studyId, email, token);
+    private String getShortEmailSignInURL(String email, String appId, String token) {
+        return formatWithEncodedArgs(EMAIL_SIGNIN_URL, appId, email, token);
     }
     
     private String getShortVerifyEmailURL(App app, String sptoken) {

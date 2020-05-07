@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 
@@ -33,7 +33,8 @@ public class EmailControllerTest extends Mockito {
     private static final String HEALTH_CODE = "healthCode";
     private static final String UNSUBSCRIBE_TOKEN = "unsubscribeToken";
     private static final String TOKEN = "token";
-    private static final String STUDY2 = "study";
+    private static final String STUDY = "study";
+    private static final String APP_ID = "appId";
     private static final String EMAIL_ADDRESS = "bridge-testing@sagebase.org";
     private static final AccountId ACCOUNT_ID = AccountId.forEmail(TEST_APP_ID, EMAIL_ADDRESS);
 
@@ -87,8 +88,8 @@ public class EmailControllerTest extends Mockito {
     }
 
     @Test
-    public void test() throws Exception {
-        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
+    public void testWithStudy() throws Exception {
+        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
 
         controller.unsubscribeFromEmail();
 
@@ -96,8 +97,17 @@ public class EmailControllerTest extends Mockito {
     }
 
     @Test
+    public void testWithAppId() throws Exception {
+        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, APP_ID, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
+
+        controller.unsubscribeFromEmail();
+
+        verify(mockAccount).setNotifyByEmail(false);
+    }
+    
+    @Test
     public void testWithEmail() throws Exception {
-        mockContext(EMAIL, EMAIL_ADDRESS, STUDY2, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
+        mockContext(EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
 
         controller.unsubscribeFromEmail();
 
@@ -109,12 +119,12 @@ public class EmailControllerTest extends Mockito {
         mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, TOKEN, UNSUBSCRIBE_TOKEN);
 
         String result = controller.unsubscribeFromEmail();
-        assertEquals(result, "Study not found.");
+        assertEquals(result, "App ID not found.");
     }
 
     @Test
     public void noEmailThrowsException() throws Exception {
-        mockContext(STUDY2, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
+        mockContext(STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
 
         String result = controller.unsubscribeFromEmail();
         assertEquals(result, "Email not found.");
@@ -122,7 +132,7 @@ public class EmailControllerTest extends Mockito {
 
     @Test
     public void noAccountThrowsException() throws Exception {
-        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
+        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
         doReturn(null).when(mockAccountService).getHealthCodeForAccount(ACCOUNT_ID);
 
         String result = controller.unsubscribeFromEmail();
@@ -131,7 +141,7 @@ public class EmailControllerTest extends Mockito {
 
     @Test
     public void missingTokenThrowsException() throws Exception {
-        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY2, TEST_APP_ID);
+        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID);
 
         String result = controller.unsubscribeFromEmail();
         assertEquals(result, "No authentication token provided.");

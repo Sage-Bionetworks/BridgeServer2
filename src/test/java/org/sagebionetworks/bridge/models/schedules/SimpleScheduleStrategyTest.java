@@ -16,8 +16,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,7 +37,7 @@ public class SimpleScheduleStrategyTest {
 
     @BeforeMethod
     public void before() {
-        app = TestUtils.getValidStudy(ScheduleStrategyTest.class);
+        app = TestUtils.getValidApp(ScheduleStrategyTest.class);
     }
 
     @Test
@@ -54,14 +54,14 @@ public class SimpleScheduleStrategyTest {
 
         DynamoSchedulePlan plan = new DynamoSchedulePlan();
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(app.getIdentifier());
+        plan.setAppId(app.getIdentifier());
         plan.setStrategy(strategy);
 
         String output = MAPPER.writeValueAsString(plan);
         JsonNode node = MAPPER.readTree(output);
         DynamoSchedulePlan newPlan = DynamoSchedulePlan.fromJson(node);
 
-        newPlan.setStudyKey(plan.getStudyKey()); // not serialized
+        newPlan.setAppId(plan.getAppId()); // not serialized
         assertEquals(newPlan, plan, "Plan with simple strategy was serialized/deserialized");
 
         SimpleScheduleStrategy newStrategy = (SimpleScheduleStrategy) newPlan.getStrategy();

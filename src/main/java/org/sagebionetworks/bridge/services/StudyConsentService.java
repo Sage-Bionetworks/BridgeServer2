@@ -35,8 +35,8 @@ import org.sagebionetworks.bridge.dao.StudyConsentDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -259,7 +259,7 @@ public class StudyConsentService {
      * as inactive.
      *
      * @param app
-     *            study for this consent
+     *            app for this consent
      * @param subpop
      *            the subpopulation associated with this consent
      * @param timestamp
@@ -315,7 +315,7 @@ public class StudyConsentService {
     }
     
     private void publishFormatsToS3(App app, SubpopulationGuid subpopGuid, String bodyTemplate) throws DocumentException, IOException {
-        Map<String,String> map = BridgeUtils.studyTemplateVariables(app, (value) -> XML_ESCAPER.translate(value));
+        Map<String,String> map = BridgeUtils.appTemplateVariables(app, (value) -> XML_ESCAPER.translate(value));
         map.putAll(SIGNATURE_BLOCK_VARS);
         String resolvedHTML = BridgeUtils.resolveTemplate(bodyTemplate, map);
 

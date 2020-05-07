@@ -143,15 +143,15 @@ public class ExternalIdValidatorTest {
     }
     
     @Test(expectedExceptions = BadRequestException.class)
-    public void studyIdCannotBeBlank() { 
+    public void appIdCannotBeBlank() { 
         ExternalIdentifier.create("   ", "one-id");
     }
     
     @Test
-    public void studyIdMustBeCallersStudyId() { 
+    public void appIdMustBeCallersAppId() { 
         // This fails because we have not set a context with this app ID.
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         
-        assertValidatorMessage(validatorV4, id, "studyId", "is not a valid study");
+        assertValidatorMessage(validatorV4, id, "appId", "is not a valid app");
     }
 }

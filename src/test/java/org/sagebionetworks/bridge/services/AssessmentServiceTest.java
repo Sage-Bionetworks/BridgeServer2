@@ -972,7 +972,7 @@ public class AssessmentServiceTest extends Mockito {
         // shared library
         Assessment revision = AssessmentTest.createAssessment();
         revision.setRevision(10);
-        revision.setOwnerId("otherStudy:" + OWNER_ID);
+        revision.setOwnerId("otherApp:" + OWNER_ID);
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(revision), 1);
         when(mockDao.getAssessmentRevisions(SHARED_APP_ID, IDENTIFIER, 0, 1, true)).thenReturn(page);        
         

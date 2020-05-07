@@ -45,9 +45,9 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
-import org.sagebionetworks.bridge.validators.StudyValidator;
+import org.sagebionetworks.bridge.validators.AppValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 public class BridgeExceptionHandlerTest extends Mockito {
@@ -230,7 +230,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
     public void bridgeValidationExceptionCorrectlyReported() throws Throwable {
         App app = new DynamoApp();
         try {
-            Validate.entityThrowingException(new StudyValidator(), app); 
+            Validate.entityThrowingException(new AppValidator(), app); 
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             MethodInvocation invocation = mock(MethodInvocation.class);

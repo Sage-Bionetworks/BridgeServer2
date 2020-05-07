@@ -13,8 +13,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -142,7 +142,7 @@ public class IntentService {
                     // sent immediately after consenting.
                     TemplateRevision revision = templateService.getRevisionForUser(app, SMS_APP_INSTALL_LINK);
                     SmsMessageProvider provider = new SmsMessageProvider.Builder()
-                            .withStudy(app)
+                            .withApp(app)
                             .withTemplateRevision(revision)
                             .withTransactionType()
                             .withPhone(intent.getPhone())
@@ -153,7 +153,7 @@ public class IntentService {
                 } else {
                     TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_APP_INSTALL_LINK);
                     BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                            .withStudy(app)
+                            .withApp(app)
                             .withTemplateRevision(revision)
                             .withRecipientEmail(intent.getEmail())
                             .withType(EmailType.APP_INSTALL)

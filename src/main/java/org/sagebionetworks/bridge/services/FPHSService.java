@@ -40,8 +40,8 @@ public class FPHSService {
         fphsDao.verifyExternalId(externalId);
     }
 
-    public void registerExternalIdentifier(String studyId, String healthCode, ExternalIdentifier externalId) {
-        checkNotNull(studyId);
+    public void registerExternalIdentifier(String appId, String healthCode, ExternalIdentifier externalId) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
         checkNotNull(externalId);
         
@@ -52,8 +52,8 @@ public class FPHSService {
         
         fphsDao.registerExternalId(externalId);
 
-        accountService.editAccount(studyId, healthCode, account -> {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(studyId, "harvard", account.getId());
+        accountService.editAccount(appId, healthCode, account -> {
+            AccountSubstudy acctSubstudy = AccountSubstudy.create(appId, "harvard", account.getId());
             acctSubstudy.setExternalId(externalId.getIdentifier());
             account.getDataGroups().add("football_player");
             account.getAccountSubstudies().add(acctSubstudy);

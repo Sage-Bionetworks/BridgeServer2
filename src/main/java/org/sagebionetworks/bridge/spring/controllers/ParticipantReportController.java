@@ -33,11 +33,11 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.reports.ReportType;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.services.ReportService;
 
 /**
@@ -102,7 +102,7 @@ public class ParticipantReportController extends BaseController {
     }
     
     /**
-     * Get a list of the identifiers used for participant reports in this study.
+     * Get a list of the identifiers used for participant reports in this app.
      */
     @GetMapping("/v3/participants/reports")
     public ReportTypeResourceList<? extends ReportIndex> listParticipantReportIndices() {
@@ -133,25 +133,25 @@ public class ParticipantReportController extends BaseController {
     }
 
     /** Worker API to get reports for the given user in the given app by date. */
-    @GetMapping("/v3/studies/{studyId}/participants/{userId}/reports/{reportId}")
-    public DateRangeResourceList<? extends ReportData> getParticipantReportForWorker(@PathVariable String studyId,
+    @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/reports/{reportId}",
+            "/v3/studies/{appId}/participants/{userId}/reports/{reportId}" })
+    public DateRangeResourceList<? extends ReportData> getParticipantReportForWorker(@PathVariable String appId,
             @PathVariable String userId, @PathVariable String reportId, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternal(studyId, userId, reportId, startDate,
-                endDate);
+        return getParticipantReportInternal(appId, userId, reportId, startDate, endDate);
     }
 
-    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String studyId, String userId, String reportId,
+    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, String userId, String reportId,
             String startDateString, String endDateString) {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
-        Account account = accountService.getAccount(AccountId.forId(studyId, userId));
+        Account account = accountService.getAccount(AccountId.forId(appId, userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        return reportService.getParticipantReport(studyId, reportId, account.getHealthCode(), startDate, endDate);
+        return reportService.getParticipantReport(appId, reportId, account.getHealthCode(), startDate, endDate);
     }
 
     /** API to get reports for the given user by date-time. */
@@ -166,28 +166,28 @@ public class ParticipantReportController extends BaseController {
     }
 
     /** Worker API to get reports for the given user in the given app by date-time. */
-    @GetMapping("/v4/studies/{studyId}/participants/{userId}/reports/{reportId}")
-    public ForwardCursorPagedResourceList<ReportData> getParticipantReportForWorkerV4(@PathVariable String studyId,
+    @GetMapping(path = {"/v2/apps/{appId}/participants/{userId}/reports/{reportId}",
+            "/v4/studies/{appId}/participants/{userId}/reports/{reportId}"})
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReportForWorkerV4(@PathVariable String appId,
             @PathVariable String userId, @PathVariable String reportId,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
-        return getParticipantReportInternalV4(studyId, userId, reportId, startTime, endTime,
-                offsetKey, pageSize);
+        return getParticipantReportInternalV4(appId, userId, reportId, startTime, endTime, offsetKey, pageSize);
     }
 
     // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
-    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String studyId, String userId, String reportId,
+    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String appId, String userId, String reportId,
             String startTimeString, String endTimeString, String offsetKey, String pageSizeString) {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
-        Account account = accountService.getAccount(AccountId.forId(studyId, userId));
+        Account account = accountService.getAccount(AccountId.forId(appId, userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        return reportService.getParticipantReportV4(studyId, reportId, account.getHealthCode(), startTime, endTime,
+        return reportService.getParticipantReportV4(appId, reportId, account.getHealthCode(), startTime, endTime,
                 offsetKey, pageSize);
     }
 

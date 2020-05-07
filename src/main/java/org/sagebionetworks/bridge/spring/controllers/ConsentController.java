@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -141,13 +141,13 @@ public class ConsentController extends BaseController {
     }
     
     @PostMapping("/v3/consents/withdraw")
-    public StatusMessage withdrawFromStudy() {
+    public StatusMessage withdrawFromApp() {
         UserSession session = getAuthenticatedSession();
         Withdrawal withdrawal = parseJson(Withdrawal.class);
         App app = appService.getApp(session.getAppId());
         long withdrewOn = DateTime.now().getMillis();
         
-        consentService.withdrawFromStudy(app, session.getParticipant(), withdrawal, withdrewOn);
+        consentService.withdrawFromApp(app, session.getParticipant(), withdrawal, withdrewOn);
         
         authenticationService.signOut(session);
         

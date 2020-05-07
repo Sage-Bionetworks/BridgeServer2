@@ -57,10 +57,10 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
@@ -251,21 +251,21 @@ public class BridgeUtils {
         return Integer.toString(seconds) + " seconds";
     }
     
-    public static AccountId parseAccountId(String studyId, String identifier) {
-        checkNotNull(studyId);
+    public static AccountId parseAccountId(String appId, String identifier) {
+        checkNotNull(appId);
         checkNotNull(identifier);
         
         String id = identifier.toLowerCase();
         if (id.startsWith("externalid:")) {
-            return AccountId.forExternalId(studyId, identifier.substring(11));
+            return AccountId.forExternalId(appId, identifier.substring(11));
         } else if (id.startsWith("healthcode:")) {
-            return AccountId.forHealthCode(studyId, identifier.substring(11));
+            return AccountId.forHealthCode(appId, identifier.substring(11));
         } else if (id.startsWith("synapseuserid:")) {
-            return AccountId.forSynapseUserId(studyId, identifier.substring(14));
+            return AccountId.forSynapseUserId(appId, identifier.substring(14));
         } else if (id.startsWith("syn:")) {
-            return AccountId.forSynapseUserId(studyId, identifier.substring(4));
+            return AccountId.forSynapseUserId(appId, identifier.substring(4));
         }
-        return AccountId.forId(studyId, identifier);
+        return AccountId.forId(appId, identifier);
     }
     
     /**
@@ -275,17 +275,23 @@ public class BridgeUtils {
      *  <li>studyName = app.getName()</li>
      *  <li>studyShortName = app.getShortName()</li>
      *  <li>studyId = app.getIdentifier()</li>
+     *  <li>appName = app.getName()</li>
+     *  <li>appShortName = app.getShortName()</li>
+     *  <li>appId = app.getIdentifier()</li>
      *  <li>sponsorName = app.getSponsorName()</li>
      *  <li>supportEmail = app.getSupportEmail()</li>
      *  <li>technicalEmail = app.getTechnicalEmail()</li>
      *  <li>consentEmail = app.getConsentNotificationEmail()</li>
      * </ul>
      */
-    public static Map<String,String> studyTemplateVariables(App app, Function<String,String> escaper) {
+    public static Map<String,String> appTemplateVariables(App app, Function<String,String> escaper) {
         Map<String,String> map = Maps.newHashMap();
         map.put("studyName", app.getName());
         map.put("studyShortName", app.getShortName());
         map.put("studyId", app.getIdentifier());
+        map.put("appName", app.getName());
+        map.put("appShortName", app.getShortName());
+        map.put("appId", app.getIdentifier());
         map.put("sponsorName", app.getSponsorName());
         map.put("supportEmail", 
                 Iterables.getFirst(commaListToOrderedSet(app.getSupportEmail()), ""));
@@ -304,8 +310,8 @@ public class BridgeUtils {
         return map;
     }
     
-    public static Map<String,String> studyTemplateVariables(App app) {
-        return studyTemplateVariables(app, null);
+    public static Map<String,String> appTemplateVariables(App app) {
+        return appTemplateVariables(app, null);
     }
     
     /**

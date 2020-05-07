@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
@@ -752,7 +752,7 @@ public class AccountServiceTest extends Mockito {
         // App passed into createAccount() takes precedence over appId in the Account object. To test this, make
         // the account have a different app.
         Account account = mockGetAccountById(ACCOUNT_ID, true);
-        account.setAppId("wrong-study");
+        account.setAppId("wrong-app");
 
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);

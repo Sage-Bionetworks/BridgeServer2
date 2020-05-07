@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 
 public class IdentifierUpdateValidatorTest {
@@ -70,7 +70,7 @@ public class IdentifierUpdateValidatorTest {
                 .withReauthToken("ABDC").build();
         
         IdentifierUpdate update = new IdentifierUpdate(reauth, null, PHONE, UPDATED_EXTERNAL_ID, SYNAPSE_USER_ID);
-        assertValidatorMessage(validator, update, "signIn.study", "is required");
+        assertValidatorMessage(validator, update, "signIn.appId", "is required");
     }
     
     @Test

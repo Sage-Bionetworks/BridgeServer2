@@ -56,7 +56,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.SurveyService;
@@ -65,7 +65,7 @@ public class SurveyControllerTest extends Mockito {
 
     private static final boolean CONSENTED = true;
     private static final boolean UNCONSENTED = false;
-    private static final String SECONDSTUDY_STUDY_ID = "secondstudy";
+    private static final String SECONDSTUDY_APP_ID = "secondapp";
     private static final String SURVEY_GUID = "bbb";
     private static final DateTime CREATED_ON = DateTime.now();
     private static final Long SURVEY_VERSION = 3L;
@@ -246,8 +246,8 @@ public class SurveyControllerTest extends Mockito {
     }
 
     @Test
-    public void getAllSurveysMostRecentlyPublishedVersionForStudy() throws Exception {
-        setupContext(SECONDSTUDY_STUDY_ID, UNCONSENTED, WORKER);
+    public void getAllSurveysMostRecentlyPublishedVersionForApp() throws Exception {
+        setupContext(SECONDSTUDY_APP_ID, UNCONSENTED, WORKER);
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         // make surveys
         List<Survey> surveyList = getSurveys(2, false);
@@ -475,7 +475,7 @@ public class SurveyControllerTest extends Mockito {
         verifyNoMoreInteractions(mockSurveyService);
     }
     
-    // There's no such thing as not being able to create a study from another app. If
+    // There's no such thing as not being able to create an app from another app. If
     // you create a survey, it's in your app.
 
     @Test

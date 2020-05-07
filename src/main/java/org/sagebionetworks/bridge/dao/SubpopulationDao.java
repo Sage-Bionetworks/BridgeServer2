@@ -17,7 +17,7 @@ public interface SubpopulationDao {
      * as part of creating an app, or when an existing app is found to have no subpopulations.
      * Subpopulations in turn create a default consent document. 
      */
-    Subpopulation createDefaultSubpopulation(String study);
+    Subpopulation createDefaultSubpopulation(String appId);
     
     /**
      * Get all subpopulations defined for this app. It is possible to create a first default

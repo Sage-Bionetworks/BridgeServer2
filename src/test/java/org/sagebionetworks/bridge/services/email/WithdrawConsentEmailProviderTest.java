@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 public class WithdrawConsentEmailProviderTest {
 
@@ -39,7 +39,7 @@ public class WithdrawConsentEmailProviderTest {
     public void canGenerateMinimalEmail() throws Exception {
         when(app.getConsentNotificationEmail()).thenReturn("a@a.com");
         when(app.isConsentNotificationEmailVerified()).thenReturn(true);
-        when(app.getName()).thenReturn("Study Name");
+        when(app.getName()).thenReturn("App Name");
         when(app.getSupportEmail()).thenReturn("c@c.com");
 
         provider = new WithdrawConsentEmailProvider(app, account, new Withdrawal(null), UNIX_TIMESTAMP);
@@ -51,9 +51,9 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals(recipients.get(0), "a@a.com");
         
         String sender = email.getSenderAddress();
-        assertEquals(sender, "\"Study Name\" <c@c.com>");
+        assertEquals(sender, "\"App Name\" <c@c.com>");
         
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Study Name");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for App Name");
         
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals(body.getContent(),
@@ -64,7 +64,7 @@ public class WithdrawConsentEmailProviderTest {
     public void canGenerateMaximalEmail() throws Exception {
         when(app.getConsentNotificationEmail()).thenReturn("a@a.com, b@b.com");
         when(app.isConsentNotificationEmailVerified()).thenReturn(true);
-        when(app.getName()).thenReturn("Study Name");
+        when(app.getName()).thenReturn("App Name");
         when(app.getSupportEmail()).thenReturn("c@c.com");
         account.setFirstName("<b>Jack</b>");
         account.setLastName("<i>Aubrey</i>");
@@ -79,9 +79,9 @@ public class WithdrawConsentEmailProviderTest {
         assertEquals(recipients.get(1), "b@b.com");
         
         String sender = email.getSenderAddress();
-        assertEquals(sender, "\"Study Name\" <c@c.com>");
+        assertEquals(sender, "\"App Name\" <c@c.com>");
         
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Study Name");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for App Name");
         
         MimeBodyPart body = email.getMessageParts().get(0);
         assertEquals(body.getContent(),

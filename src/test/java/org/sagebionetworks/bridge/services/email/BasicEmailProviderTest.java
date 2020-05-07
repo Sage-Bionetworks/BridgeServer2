@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.services.email;
 
 import static javax.mail.Part.ATTACHMENT;
-import static org.sagebionetworks.bridge.models.studies.MimeType.HTML;
-import static org.sagebionetworks.bridge.models.studies.MimeType.PDF;
-import static org.sagebionetworks.bridge.models.studies.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
+import static org.sagebionetworks.bridge.models.apps.MimeType.PDF;
+import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.services.email.EmailType.EMAIL_SIGN_IN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -16,7 +16,7 @@ import javax.mail.internet.MimeBodyPart;
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.Sets;
@@ -36,13 +36,14 @@ public class BasicEmailProviderTest {
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
-        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} ${sponsorName} ${supportEmail} "+
+        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} "+
+            "${appName} ${appShortName} ${appId} ${sponsorName} ${supportEmail} "+
             "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}");
         revision.setMimeType(HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-            .withStudy(app)
+            .withApp(app)
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withTemplateRevision(revision)
@@ -66,14 +67,14 @@ public class BasicEmailProviderTest {
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
         assertEquals(bodyString,
-                "Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
+                "Name ShortName id Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
     }
 
     @Test
     public void withOverrideSenderEmail() {
         // Set up dependencies
         App app = App.create();
-        app.setName("Study Name");
+        app.setName("App Name");
         app.setSupportEmail("email@email.com");
 
         TemplateRevision revision = TemplateRevision.create();
@@ -83,7 +84,7 @@ public class BasicEmailProviderTest {
 
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
-                .withOverrideSenderEmail("example@example.com").withStudy(app).build();
+                .withOverrideSenderEmail("example@example.com").withApp(app).build();
 
         // Check provider attributes
         assertEquals(provider.getPlainSenderEmail(), "example@example.com");
@@ -98,7 +99,7 @@ public class BasicEmailProviderTest {
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder().withTemplateRevision(revision)
                 .withRecipientEmail("email@email.com")
-                .withOverrideSenderEmail("example@example.com").withStudy(App.create()).build();
+                .withOverrideSenderEmail("example@example.com").withApp(App.create()).build();
         
         Map<String,String> tokenMap = provider.getTokenMap();
         assertNull(tokenMap.get("supportName"));
@@ -116,7 +117,7 @@ public class BasicEmailProviderTest {
                 .withRecipientEmail("email@email.com")
                 .withOverrideSenderEmail("example@example.com")
                 .withTemplateRevision(revision)
-                .withStudy(App.create()).build();
+                .withApp(App.create()).build();
         
         MimeTypeEmail email = provider.getMimeTypeEmail();
         

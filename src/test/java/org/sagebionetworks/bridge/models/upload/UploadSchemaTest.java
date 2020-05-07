@@ -80,7 +80,7 @@ public class UploadSchemaTest {
     }
 
     @Test
-    public void getKeyFromStudyAndSchema() {
+    public void getKeyFromAppAndSchema() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setAppId(TEST_APP_ID);
         ddbUploadSchema.setSchemaId("test");
@@ -88,14 +88,14 @@ public class UploadSchemaTest {
     }
 
     @Test
-    public void getKeyFromNullStudy() {
+    public void getKeyFromNullApp() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setSchemaId("test");
         assertNull(ddbUploadSchema.getKey());
     }
 
     @Test
-    public void getKeyFromEmptyStudy() {
+    public void getKeyFromEmptyApp() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setAppId("");
         ddbUploadSchema.setSchemaId("test");
@@ -103,7 +103,7 @@ public class UploadSchemaTest {
     }
 
     @Test
-    public void getKeyFromBlankStudy() {
+    public void getKeyFromBlankApp() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setAppId("   ");
         ddbUploadSchema.setSchemaId("test");
@@ -134,7 +134,7 @@ public class UploadSchemaTest {
     }
 
     @Test
-    public void getStudyAndSchemaFromKey() {
+    public void getAppAndSchemaFromKey() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setKey(TEST_APP_ID + ":test");
         assertEquals(ddbUploadSchema.getAppId(), TEST_APP_ID);
@@ -161,7 +161,7 @@ public class UploadSchemaTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void keyWithEmptyStudy() {
+    public void keyWithEmptyApp() {
         DynamoUploadSchema ddbUploadSchema = new DynamoUploadSchema();
         ddbUploadSchema.setKey(":test");
     }
@@ -296,6 +296,7 @@ public class UploadSchemaTest {
         assertEquals(jsonNode.get("schemaId").textValue(), "test-schema");
         assertEquals(jsonNode.get("schemaType").textValue(), "ios_survey");
         assertEquals(jsonNode.get("studyId").textValue(), TEST_APP_ID);
+        assertEquals(jsonNode.get("appId").textValue(), TEST_APP_ID);
         assertEquals(jsonNode.get("surveyGuid").textValue(), "survey-guid");
         assertEquals(jsonNode.get("type").textValue(), "UploadSchema");
         assertTrue(jsonNode.get("deleted").booleanValue());

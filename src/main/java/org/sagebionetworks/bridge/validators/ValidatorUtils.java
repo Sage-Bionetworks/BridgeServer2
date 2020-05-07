@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 
 public class ValidatorUtils {
 

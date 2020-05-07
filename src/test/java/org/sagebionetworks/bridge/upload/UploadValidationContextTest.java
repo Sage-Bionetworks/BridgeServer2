@@ -17,8 +17,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 public class UploadValidationContextTest {
@@ -41,7 +41,7 @@ public class UploadValidationContextTest {
     @Test
     public void shallowCopy() {
         // dummy objects to test against
-        App app = TestUtils.getValidStudy(UploadValidationContextTest.class);
+        App app = TestUtils.getValidApp(UploadValidationContextTest.class);
         Upload upload = new DynamoUpload2();
         File tempDir = mock(File.class);
         File dataFile = mock(File.class);

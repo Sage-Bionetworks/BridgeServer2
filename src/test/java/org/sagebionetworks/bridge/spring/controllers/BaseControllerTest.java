@@ -81,7 +81,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -377,7 +377,7 @@ public class BaseControllerTest extends Mockito {
     }
 
     @Test
-    public void getCriteriaContextWithStudyId() {
+    public void getCriteriaContextWithAppId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en"))
@@ -485,7 +485,7 @@ public class BaseControllerTest extends Mockito {
         ObjectNode node = metrics.getJson();
         assertEquals(node.get("session_id").textValue(), "internalSessionToken");
         assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("appId").textValue(), TEST_APP_ID);
+        assertEquals(node.get("app_id").textValue(), TEST_APP_ID);
     }
     
     @Test

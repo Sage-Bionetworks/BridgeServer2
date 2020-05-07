@@ -95,14 +95,14 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
         ObjectNode dataMap = (ObjectNode) record.getData();
         JsonNode infoJson = context.getInfoJsonNode();
-        String studyId = context.getAppId();
+        String appId = context.getAppId();
         Map<String, File> unzippedDataFileMap = context.getUnzippedDataFileMap();
 
         // Parse createdOn.
         parseCreatedOnToRecord(context, infoJson, record);
 
         // Get schema from info.json
-        UploadSchema schema = getUploadSchema(studyId, infoJson);
+        UploadSchema schema = getUploadSchema(appId, infoJson);
         if (schema != null) {
             record.setSchemaId(schema.getSchemaId());
             record.setSchemaRevision(schema.getRevision());
@@ -115,7 +115,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
     // Helper method to get a schema based on inputs from info.json.
     // Package-scoped to facilitate unit tests.
-    UploadSchema getUploadSchema(String studyId, JsonNode infoJson) {
+    UploadSchema getUploadSchema(String appId, JsonNode infoJson) {
         // Try getting by survey first.
         String surveyGuid = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_GUID);
         String surveyCreatedOn = JsonUtils.asText(infoJson, UploadUtil.FIELD_SURVEY_CREATED_ON);
@@ -126,7 +126,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
             // Get survey. We use the survey identifier as the schema ID and the schema revision. Both of these must be
             // specified.
             GuidCreatedOnVersionHolder surveyKeys = new GuidCreatedOnVersionHolderImpl(surveyGuid, surveyCreatedOnMillis);
-            Survey survey = surveyService.getSurvey(studyId, surveyKeys, false, true);
+            Survey survey = surveyService.getSurvey(appId, surveyKeys, false, true);
             String surveySchemaId = survey.getIdentifier();
             Integer surveySchemaRev = survey.getSchemaRevision();
             if (StringUtils.isBlank(surveySchemaId) || surveySchemaRev == null) {
@@ -136,7 +136,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
 
             // Get the schema with the schema ID and rev.
             // Note that if there's no schema, we treat this like schemaless.
-            return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(studyId, surveySchemaId, surveySchemaRev);
+            return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(appId, surveySchemaId, surveySchemaRev);
         }
 
         // Fall back to getting by schema.
@@ -144,7 +144,7 @@ public class GenericUploadFormatHandler implements UploadValidationHandler {
         Integer schemaRev = JsonUtils.asInt(infoJson, UploadUtil.FIELD_SCHEMA_REV);
         if (StringUtils.isNotBlank(schemaId) && schemaRev != null) {
             // Note that if there's no schema, we treat this like schemaless.
-            return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(studyId, schemaId, schemaRev);
+            return uploadSchemaService.getUploadSchemaByIdAndRevNoThrow(appId, schemaId, schemaRev);
         } else {
             // Schemaless.
             return null;

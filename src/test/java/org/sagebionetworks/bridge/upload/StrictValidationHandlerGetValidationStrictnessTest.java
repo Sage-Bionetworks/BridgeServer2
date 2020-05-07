@@ -8,7 +8,7 @@ import static org.testng.Assert.assertEquals;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.AppService;
 
@@ -32,7 +32,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForApp(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.STRICT);
     }
 
@@ -45,7 +45,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForApp(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.REPORT);
     }
 
@@ -58,7 +58,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForApp(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.WARNING);
     }
 
@@ -71,7 +71,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForApp(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.STRICT);
     }
 
@@ -84,7 +84,7 @@ public class StrictValidationHandlerGetValidationStrictnessTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         // execute and validate
-        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForStudy(TEST_APP_ID);
+        UploadValidationStrictness retVal = handler.getUploadValidationStrictnessForApp(TEST_APP_ID);
         assertEquals(retVal, UploadValidationStrictness.WARNING);
     }
 }

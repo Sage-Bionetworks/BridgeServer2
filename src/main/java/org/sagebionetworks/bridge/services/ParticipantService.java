@@ -66,14 +66,14 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
+import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
@@ -328,10 +328,10 @@ public class ParticipantService {
         return builder;
     }
     
-    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, String studyId) {
+    private StudyParticipant.Builder copyHistoryToParticipant(StudyParticipant.Builder builder, Account account, String appId) {
         Map<String,List<UserConsentHistory>> consentHistories = Maps.newHashMap();
         // The history includes all subpopulations whether they match the user or not.
-        List<Subpopulation> subpopulations = subpopService.getSubpopulations(studyId, false);
+        List<Subpopulation> subpopulations = subpopService.getSubpopulations(appId, false);
         for (Subpopulation subpop : subpopulations) {
             // always returns a list, even if empty
             List<UserConsentHistory> history = getUserConsentHistory(account, subpop.getGuid());
@@ -710,7 +710,7 @@ public class ParticipantService {
         }
     }
 
-    public void withdrawFromStudy(App app, String userId, Withdrawal withdrawal, long withdrewOn) {
+    public void withdrawFromApp(App app, String userId, Withdrawal withdrawal, long withdrewOn) {
         checkNotNull(app);
         checkNotNull(userId);
         checkNotNull(withdrawal);
@@ -718,7 +718,7 @@ public class ParticipantService {
 
         StudyParticipant participant = getParticipant(app, userId, false);
 
-        consentService.withdrawFromStudy(app, participant, withdrawal, withdrewOn);
+        consentService.withdrawFromApp(app, participant, withdrawal, withdrewOn);
     }
 
     public void withdrawConsent(App app, String userId,
@@ -811,7 +811,7 @@ public class ParticipantService {
         if (account.getPhone() == null || !TRUE.equals(account.getPhoneVerified())) {
             throw new BadRequestException("Account does not have a verified phone number");
         }
-        Map<String,String> variables = BridgeUtils.studyTemplateVariables(app);
+        Map<String,String> variables = BridgeUtils.appTemplateVariables(app);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setDocumentContent(template.getMessage());
@@ -821,7 +821,7 @@ public class ParticipantService {
                 .withPhone(account.getPhone())
                 .withTemplateRevision(revision)
                 .withPromotionType()
-                .withStudy(app);
+                .withApp(app);
         for (Map.Entry<String, String> entry : variables.entrySet()) {
             builder.withToken(entry.getKey(), entry.getValue());
         }
@@ -994,8 +994,8 @@ public class ParticipantService {
         account.setRoles(newRoleSet);
     }
     
-    private Account getAccountThrowingException(String studyId, String id) {
-        return getAccountThrowingException(AccountId.forId(studyId, id));
+    private Account getAccountThrowingException(String appId, String id) {
+        return getAccountThrowingException(AccountId.forId(appId, id));
     }
     
     private Account getAccountThrowingException(AccountId accountId) {

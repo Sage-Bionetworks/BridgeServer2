@@ -21,10 +21,10 @@ import org.sagebionetworks.bridge.exceptions.NotImplementedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.validators.NotificationMessageValidator;
 import org.sagebionetworks.bridge.validators.NotificationRegistrationValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -227,7 +227,7 @@ public class NotificationsService {
 
             try {
                 PublishResult result = snsClient.publish(request);
-                LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", study=" +
+                LOG.debug("Sent message to participant registration=" + registration.getGuid() + ", appId=" +
                         appId + ", message ID=" + result.getMessageId());
             } catch(AmazonServiceException e) {
                 LOG.warn("Error publishing SNS message to participant", e);

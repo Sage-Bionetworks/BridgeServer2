@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 
 /**
  * DAO to retrieve personally identifiable account information, including authentication 
@@ -42,7 +42,7 @@ public interface AccountDao {
     void updateAccount(Account account, Consumer<Account> afterPersistConsumer);
     
     /**
-     * Get an account in the context of a study by the user's ID, email address, health code,
+     * Get an account in the context of an app by the user's ID, email address, health code,
      * phone number, or Synapse user ID. 
      */
     Optional<Account> getAccount(AccountId accountId);

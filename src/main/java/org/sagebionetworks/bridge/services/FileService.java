@@ -148,10 +148,10 @@ public class FileService {
         fileMetadataDao.deleteFilePermanently(appId, guid);
     }
     
-    public void deleteAllStudyFiles(String appId) {
+    public void deleteAllAppFiles(String appId) {
         checkNotNull(appId);
         
-        fileMetadataDao.deleteAllStudyFiles(appId);
+        fileMetadataDao.deleteAllAppFiles(appId);
     }
     
     public Optional<FileRevision> getFileRevision(String guid, DateTime createdOn) {

@@ -52,6 +52,7 @@ public class DynamoNotificationTopicTest {
         assertEquals(node.get("createdOn").textValue(), DATE_TIME.toString());
         assertEquals(node.get("modifiedOn").textValue(), DATE_TIME.toString());
         assertNull(node.get("studyId"));
+        assertNull(node.get("appId"));
         assertNull(node.get("topicARN"));
         assertTrue(node.get("deleted").booleanValue());
 

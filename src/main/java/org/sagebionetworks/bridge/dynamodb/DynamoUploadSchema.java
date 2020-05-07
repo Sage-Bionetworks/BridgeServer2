@@ -112,7 +112,7 @@ public class DynamoUploadSchema implements UploadSchema {
 
         String[] parts = key.split(":", 2);
         Preconditions.checkArgument(parts.length == 2, "key has wrong number of parts");
-        Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty study ID");
+        Preconditions.checkArgument(!parts[0].isEmpty(), "key has empty appId");
         Preconditions.checkArgument(!parts[1].isEmpty(), "key has empty schema ID");
 
         this.appId = parts[0];

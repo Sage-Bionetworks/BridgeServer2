@@ -27,12 +27,12 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
-import org.sagebionetworks.bridge.models.studies.OAuthProviderTest;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
+import org.sagebionetworks.bridge.models.apps.OAuthProviderTest;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
 
@@ -115,46 +115,46 @@ public class DynamoAppTest {
     }
 
     @Test
-    public void studyFullySerializesForCaching() throws Exception {
-        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
+    public void appFullySerializesForCaching() throws Exception {
+        final DynamoApp app = TestUtils.getValidApp(DynamoAppTest.class);
         
         OAuthProvider oauthProvider = new OAuthProvider("clientId", "secret", "endpoint",
                 OAuthProviderTest.CALLBACK_URL, null);
-        study.getOAuthProviders().put("myProvider", oauthProvider);
+        app.getOAuthProviders().put("myProvider", oauthProvider);
 
-        study.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
-        study.setVersion(2L);
-        study.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
-        study.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
+        app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "P3D"));
+        app.setVersion(2L);
+        app.setMinSupportedAppVersions(ImmutableMap.<String, Integer>builder().put(OperatingSystem.IOS, 2).build());
+        app.setUploadMetadataFieldDefinitions(ImmutableList.of(new UploadFieldDefinition.Builder()
                 .withName("test-metadata-field").withType(UploadFieldType.INT).build()));
-        study.setAndroidAppLinks(ANDROID_APP_LINKS);
-        study.setAppleAppLinks(APPLE_APP_LINKS);
+        app.setAndroidAppLinks(ANDROID_APP_LINKS);
+        app.setAppleAppLinks(APPLE_APP_LINKS);
 
-        final JsonNode node = BridgeObjectMapper.get().valueToTree(study);
+        final JsonNode node = BridgeObjectMapper.get().valueToTree(app);
 
         assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
-        assertEqualsAndNotNull(study.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertEqualsAndNotNull(app.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
         assertFalse(node.get("participantIpLockingEnabled").booleanValue());
-        assertTrue(node.get("studyIdExcludedInExport").booleanValue());
-        assertEqualsAndNotNull(study.getSupportEmail(), node.get("supportEmail").asText());
-        assertEqualsAndNotNull(study.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
-        assertEqualsAndNotNull(study.getSynapseProjectId(), node.get("synapseProjectId").textValue());
-        assertEqualsAndNotNull(study.getTechnicalEmail(), node.get("technicalEmail").asText());
-        assertEqualsAndNotNull(study.getUploadValidationStrictness().toString().toLowerCase(),
+        assertTrue(node.get("appIdExcludedInExport").booleanValue());
+        assertEqualsAndNotNull(app.getSupportEmail(), node.get("supportEmail").asText());
+        assertEqualsAndNotNull(app.getSynapseDataAccessTeamId(), node.get("synapseDataAccessTeamId").longValue());
+        assertEqualsAndNotNull(app.getSynapseProjectId(), node.get("synapseProjectId").textValue());
+        assertEqualsAndNotNull(app.getTechnicalEmail(), node.get("technicalEmail").asText());
+        assertEqualsAndNotNull(app.getUploadValidationStrictness().toString().toLowerCase(),
                 node.get("uploadValidationStrictness").textValue());
         assertTrue(node.get("usesCustomExportSchedule").asBoolean());
-        assertEqualsAndNotNull(study.getSponsorName(), node.get("sponsorName").asText());
-        assertEqualsAndNotNull(study.getName(), node.get("name").asText());
-        assertEqualsAndNotNull(study.getShortName(), node.get("shortName").textValue());
-        assertEqualsAndNotNull(study.isActive(), node.get("active").asBoolean());
-        assertEqualsAndNotNull(study.getIdentifier(), node.get("identifier").asText());
-        assertEqualsAndNotNull(study.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
-        assertEqualsAndNotNull(study.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
-        assertEqualsAndNotNull(study.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
-        assertEqualsAndNotNull(study.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
-        assertEqualsAndNotNull(study.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
-        assertEqualsAndNotNull(study.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
-        assertEqualsAndNotNull(study.getVersion(), node.get("version").longValue());
+        assertEqualsAndNotNull(app.getSponsorName(), node.get("sponsorName").asText());
+        assertEqualsAndNotNull(app.getName(), node.get("name").asText());
+        assertEqualsAndNotNull(app.getShortName(), node.get("shortName").textValue());
+        assertEqualsAndNotNull(app.isActive(), node.get("active").asBoolean());
+        assertEqualsAndNotNull(app.getIdentifier(), node.get("identifier").asText());
+        assertEqualsAndNotNull(app.getMinAgeOfConsent(), node.get("minAgeOfConsent").asInt());
+        assertEqualsAndNotNull(app.getPasswordPolicy(), JsonUtils.asEntity(node, "passwordPolicy", PasswordPolicy.class));
+        assertEqualsAndNotNull(app.getUserProfileAttributes(), JsonUtils.asStringSet(node, "userProfileAttributes"));
+        assertEqualsAndNotNull(app.getTaskIdentifiers(), JsonUtils.asStringSet(node, "taskIdentifiers"));
+        assertEqualsAndNotNull(app.getActivityEventKeys(), JsonUtils.asStringSet(node, "activityEventKeys"));
+        assertEqualsAndNotNull(app.getDataGroups(), JsonUtils.asStringSet(node, "dataGroups"));
+        assertEqualsAndNotNull(app.getVersion(), node.get("version").longValue());
         assertTrue(node.get("strictUploadValidationEnabled").asBoolean());
         assertTrue(node.get("healthCodeExportEnabled").asBoolean());
         assertTrue(node.get("emailVerificationEnabled").asBoolean());
@@ -165,10 +165,10 @@ public class DynamoAppTest {
         assertTrue(node.get("verifyChannelOnSignInEnabled").booleanValue());
         assertEquals(node.get("accountLimit").asInt(), 0);
         assertFalse(node.get("disableExport").asBoolean());
-        assertEqualsAndNotNull("Study", node.get("type").asText());
-        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.IOS),
+        assertEqualsAndNotNull("App", node.get("type").asText());
+        assertEqualsAndNotNull(app.getPushNotificationARNs().get(OperatingSystem.IOS),
                 node.get("pushNotificationARNs").get(OperatingSystem.IOS).asText());
-        assertEqualsAndNotNull(study.getPushNotificationARNs().get(OperatingSystem.ANDROID),
+        assertEqualsAndNotNull(app.getPushNotificationARNs().get(OperatingSystem.ANDROID),
                 node.get("pushNotificationARNs").get(OperatingSystem.ANDROID).asText());
         
         JsonNode automaticCustomEventsNode = node.get("automaticCustomEvents");
@@ -176,7 +176,7 @@ public class DynamoAppTest {
         assertEquals(automaticCustomEventsNode.get("3-days-after-enrollment").textValue(), "P3D");
 
         JsonNode appleLink = node.get("appleAppLinks").get(0);
-        assertEquals(appleLink.get("appID").textValue(), "studyId");
+        assertEquals(appleLink.get("appID").textValue(), "appId");
         assertEquals(appleLink.get("paths").get(0).textValue(), "/appId/");
         assertEquals(appleLink.get("paths").get(1).textValue(), "/appId/*");
         
@@ -189,7 +189,7 @@ public class DynamoAppTest {
         JsonNode supportedVersionsNode = JsonUtils.asJsonNode(node, "minSupportedAppVersions");
         assertNotNull(supportedVersionsNode);
         assertEqualsAndNotNull(
-                study.getMinSupportedAppVersions().get(OperatingSystem.IOS), 
+                app.getMinSupportedAppVersions().get(OperatingSystem.IOS), 
                 supportedVersionsNode.get(OperatingSystem.IOS).intValue());
 
         // validate metadata field defs
@@ -211,20 +211,20 @@ public class DynamoAppTest {
         
         // Deserialize back to a POJO and verify.
         final App deserApp = BridgeObjectMapper.get().readValue(node.toString(), App.class);
-        assertEquals(deserApp, study);
+        assertEquals(deserApp, app);
     }
     
     @Test
     public void testThatEmptyMinSupportedVersionMapperDoesNotThrowException() throws Exception {
-        final DynamoApp study = TestUtils.getValidStudy(DynamoAppTest.class);
-        study.setVersion(2L);
+        final DynamoApp app = TestUtils.getValidApp(DynamoAppTest.class);
+        app.setVersion(2L);
 
-        final String json = BridgeObjectMapper.get().writeValueAsString(study);
+        final String json = BridgeObjectMapper.get().writeValueAsString(app);
         BridgeObjectMapper.get().readTree(json);
 
         // Deserialize back to a POJO and verify.
         final App deserApp = BridgeObjectMapper.get().readValue(json, App.class);
-        assertEquals(deserApp, study);
+        assertEquals(deserApp, app);
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

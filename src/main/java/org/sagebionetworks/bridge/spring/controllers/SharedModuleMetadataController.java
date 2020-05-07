@@ -168,11 +168,11 @@ public class SharedModuleMetadataController extends BaseController {
     }
 
     // Helper method to verify caller permissions for write operations. You need to be a developer in the "shared"
-    // study (the app for the Shared Module Library).
+    // app (the app for the Shared Module Library).
     private UserSession verifySharedDeveloperAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER);
-        String studyId = session.getAppId();
-        if (!SHARED_APP_ID.equals(studyId)) {
+        String appId = session.getAppId();
+        if (!SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException();
         }
         return session;
@@ -180,8 +180,8 @@ public class SharedModuleMetadataController extends BaseController {
     
     private UserSession verifySharedDeveloperOrAdminAccess() {
         UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
-        String studyId = session.getAppId();
-        if (!SHARED_APP_ID.equals(studyId)) {
+        String appId = session.getAppId();
+        if (!SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException();
         }
         return session;

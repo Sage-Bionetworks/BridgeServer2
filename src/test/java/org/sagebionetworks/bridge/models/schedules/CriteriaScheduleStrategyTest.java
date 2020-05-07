@@ -55,7 +55,7 @@ public class CriteriaScheduleStrategyTest {
     private static final SchedulePlan PLAN = new DynamoSchedulePlan();
     static {
         PLAN.setLabel("Schedule plan label");
-        PLAN.setStudyKey(TEST_APP_ID);
+        PLAN.setAppId(TEST_APP_ID);
     }
     
     private CriteriaScheduleStrategy strategy;
@@ -336,13 +336,13 @@ public class CriteriaScheduleStrategyTest {
     @Test
     public void validateScheduleCriteriaMissing() throws Exception {
         // This doesn't contain the property, it's just deserialized to an empty list
-        String json = TestUtils.createJson("{'label':'Schedule plan label','studyKey':'api','strategy':{'type':'CriteriaScheduleStrategy'},'type':'SchedulePlan'}");
+        String json = TestUtils.createJson("{'label':'Schedule plan label','appId':'api','strategy':{'type':'CriteriaScheduleStrategy'},'type':'SchedulePlan'}");
         
         SchedulePlan plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         assertTrue(((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().isEmpty());
         
         // Null is safe too
-        json = TestUtils.createJson("{'label':'Schedule plan label','studyKey':'api','strategy':{'type':'CriteriaScheduleStrategy','scheduleCriteria':null},'type':'SchedulePlan'}");
+        json = TestUtils.createJson("{'label':'Schedule plan label','appId':'api','strategy':{'type':'CriteriaScheduleStrategy','scheduleCriteria':null},'type':'SchedulePlan'}");
         plan = BridgeObjectMapper.get().readValue(json, SchedulePlan.class);
         assertTrue(((CriteriaScheduleStrategy)plan.getStrategy()).getScheduleCriteria().isEmpty());
     }

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Iterables;
@@ -35,7 +36,7 @@ public final class AccountSummary {
     private final String id;
     private final DateTime createdOn;
     private final AccountStatus status;
-    private final String studyId;
+    private final String appId;
     private final Set<String> substudyIds;
     
     @JsonCreator
@@ -43,7 +44,7 @@ public final class AccountSummary {
             @JsonProperty("email") String email, @JsonProperty("synapseUserId") String synapseUserId,
             @JsonProperty("phone") Phone phone, @JsonProperty("externalIds") Map<String, String> externalIds,
             @JsonProperty("id") String id, @JsonProperty("createdOn") DateTime createdOn,
-            @JsonProperty("status") AccountStatus status, @JsonProperty("studyId") String studyId,
+            @JsonProperty("status") AccountStatus status, @JsonProperty("appId") String appId,
             @JsonProperty("substudyIds") Set<String> substudyIds) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -54,7 +55,7 @@ public final class AccountSummary {
         this.id = id;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
-        this.studyId = studyId;
+        this.appId = appId;
         this.substudyIds = substudyIds;
     }
     
@@ -106,11 +107,11 @@ public final class AccountSummary {
     }
     
     public StudyIdentifier getStudyIdentifier() {
-        return new StudyIdentifier(studyId);
+        return new StudyIdentifier(appId);
     }
     
-    public String getStudyId() { 
-        return studyId;
+    public String getAppId() { 
+        return appId;
     }
     
     public Set<String> getSubstudyIds() {
@@ -120,7 +121,7 @@ public final class AccountSummary {
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                studyId, substudyIds);
+                appId, substudyIds);
     }
 
     @Override
@@ -134,7 +135,7 @@ public final class AccountSummary {
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(externalIds, other.externalIds) && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
-                && Objects.equals(id, other.id) && Objects.equals(studyId, other.studyId)
+                && Objects.equals(id, other.id) && Objects.equals(appId, other.appId)
                 && Objects.equals(substudyIds, other.substudyIds);
     }
     

@@ -47,9 +47,9 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
-import org.sagebionetworks.bridge.models.studies.OAuthProvider;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -203,7 +203,7 @@ class OAuthProviderService {
             throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
         }
         if (authToken.getAppId() == null) {
-            throw new BadRequestException("Study ID required");
+            throw new BadRequestException("App ID required");
         }
         if (authToken.getAuthToken() == null) {
             throw new BadRequestException("Authorization token required");

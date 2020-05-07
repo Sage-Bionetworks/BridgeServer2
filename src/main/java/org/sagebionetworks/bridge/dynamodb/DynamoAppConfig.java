@@ -80,8 +80,8 @@ public class DynamoAppConfig implements AppConfig {
     }
 
     @Override
-    public void setAppId(String studyId) {
-        this.appId = studyId;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
     
     @Override

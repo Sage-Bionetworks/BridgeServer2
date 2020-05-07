@@ -164,7 +164,7 @@ public class SubstudyServiceTest {
         when(substudyDao.updateSubstudy(any())).thenReturn(VERSION_HOLDER);
 
         Substudy substudy = Substudy.create();
-        substudy.setAppId("wrongStudyId");
+        substudy.setAppId("wrongAppId");
         substudy.setId("oneId");
         substudy.setName("newName");
         

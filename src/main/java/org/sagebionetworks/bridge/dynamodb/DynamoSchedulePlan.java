@@ -42,7 +42,7 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     private String guid;
     private String label;
-    private String studyKey;
+    private String appId;
     private boolean deleted;
     private Long version;
     private long modifiedOn;
@@ -61,14 +61,14 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     @Override
     @JsonIgnore
-    @DynamoDBHashKey
-    public String getStudyKey() {
-        return studyKey;
+    @DynamoDBHashKey(attributeName = "studyKey")
+    public String getAppId() {
+        return appId;
     }
 
     @Override
-    public void setStudyKey(String studyKey) {
-        this.studyKey = studyKey;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
     @Override
@@ -165,7 +165,7 @@ public final class DynamoSchedulePlan implements SchedulePlan {
 
     @Override
     public int hashCode() {
-        return Objects.hash(guid, label, modifiedOn, strategy, studyKey, version, deleted);
+        return Objects.hash(guid, label, modifiedOn, strategy, appId, version, deleted);
     }
 
     @Override
@@ -179,14 +179,14 @@ public final class DynamoSchedulePlan implements SchedulePlan {
         DynamoSchedulePlan other = (DynamoSchedulePlan) obj;
         return (Objects.equals(guid, other.guid) && Objects.equals(label, other.label)
                 && Objects.equals(modifiedOn, other.modifiedOn) && Objects.equals(strategy, other.strategy)
-                && Objects.equals(label, other.label) && Objects.equals(studyKey, other.studyKey)
+                && Objects.equals(label, other.label) && Objects.equals(appId, other.appId)
                 && Objects.equals(version, other.version) && Objects.equals(deleted, other.deleted));
     }
 
     @Override
     public String toString() {
-        return String.format("DynamoSchedulePlan [guid=%s, label=%s, studyKey=%s, modifiedOn=%s, strategy=%s, deleted=%s]",
-            guid, label, studyKey, modifiedOn, strategy, deleted);
+        return String.format("DynamoSchedulePlan [guid=%s, label=%s, appId=%s, modifiedOn=%s, strategy=%s, deleted=%s]",
+            guid, label, appId, modifiedOn, strategy, deleted);
     }
 
 }

@@ -23,8 +23,8 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -46,8 +46,8 @@ import org.testng.annotations.Test;
  * are in a separate class.
  */
 public class SendMailViaAmazonServiceConsentTest {
-    private static final String SUPPORT_EMAIL = "study-support-email@study.com";
-    private static final String FROM_STUDY_AS_FORMATTED = "\"Test Study (Sage)\" <"+SUPPORT_EMAIL+">";
+    private static final String SUPPORT_EMAIL = "app-support-email@study.com";
+    private static final String FROM_APP_AS_FORMATTED = "\"Test App (Sage)\" <"+SUPPORT_EMAIL+">";
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withEmail("test-user@sagebase.org").withEmailVerified(true).build();;
     private SendMailViaAmazonService service;
@@ -67,7 +67,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 "conf/app-defaults/consent-page.xhtml").getFile()));
         
         app = new DynamoApp();
-        app.setName("Test Study (Sage)");
+        app.setName("Test App (Sage)");
         app.setIdentifier(TEST_APP_ID);
         app.setSupportEmail(SUPPORT_EMAIL);
 
@@ -92,7 +92,7 @@ public class SendMailViaAmazonServiceConsentTest {
         subpopulation.setGuidString(TEST_APP_ID);
         
         StudyConsentView view = new StudyConsentView(mock(StudyConsent.class), 
-            "<document>Had this been a real study: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
+            "<document>Had this been a real app: @@name@@ @@signing.date@@ @@email@@ @@sharing@@</document>");
         
         studyConsentService = mock(StudyConsentService.class);
         when(studyConsentService.getActiveConsent(subpopulation)).thenReturn(view);
@@ -115,7 +115,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -126,7 +126,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals(req.getSource(), FROM_STUDY_AS_FORMATTED, "Correct sender");
+        assertEquals(req.getSource(), FROM_APP_AS_FORMATTED, "Correct sender");
 
         // validate to
         List<String> toList = req.getDestinations();
@@ -156,7 +156,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 SharingScope.SPONSORS_AND_PARTNERS, htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -168,7 +168,7 @@ public class SendMailViaAmazonServiceConsentTest {
 
         // validate from
         SendRawEmailRequest req = argument.getValue();
-        assertEquals(req.getSource(), FROM_STUDY_AS_FORMATTED, "Correct sender");
+        assertEquals(req.getSource(), FROM_APP_AS_FORMATTED, "Correct sender");
 
         // validate to
         List<String> toList = req.getDestinations();
@@ -203,7 +203,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();
@@ -231,7 +231,7 @@ public class SendMailViaAmazonServiceConsentTest {
                 htmlTemplate, consentBodyTemplate);
         
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
-                .withStudy(app)
+                .withApp(app)
                 .withTemplateRevision(revision)
                 .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                 .withRecipientEmail("test-user@sagebase.org").build();

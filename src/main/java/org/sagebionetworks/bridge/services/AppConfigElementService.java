@@ -27,14 +27,14 @@ public class AppConfigElementService {
         this.appConfigElementDao = appConfigElementDao;
     }
     
-    public List<AppConfigElement> getMostRecentElements(String studyId, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<AppConfigElement> getMostRecentElements(String appId, boolean includeDeleted) {
+        checkNotNull(appId);
         
-        return appConfigElementDao.getMostRecentElements(studyId, includeDeleted);
+        return appConfigElementDao.getMostRecentElements(appId, includeDeleted);
     }
     
-    public VersionHolder createElement(String studyId, AppConfigElement element) {
-        checkNotNull(studyId);
+    public VersionHolder createElement(String appId, AppConfigElement element) {
+        checkNotNull(appId);
         checkNotNull(element);
         
         if (element.getRevision() == null) {
@@ -43,14 +43,14 @@ public class AppConfigElementService {
         // Validate that ID exists before you try and use it to set the key
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        element.setAppId(studyId);
+        element.setAppId(appId);
         element.setId(element.getId());
         element.setVersion(null);
         element.setDeleted(false);
         element.setCreatedOn(DateTime.now().getMillis());
         element.setModifiedOn(element.getCreatedOn());
         
-        AppConfigElement existing = appConfigElementDao.getElementRevision(studyId, element.getId(),
+        AppConfigElement existing = appConfigElementDao.getElementRevision(appId, element.getId(),
                 element.getRevision());
         if (existing != null) {
             throw new EntityAlreadyExistsException(AppConfigElement.class,
@@ -59,46 +59,46 @@ public class AppConfigElementService {
         return appConfigElementDao.saveElementRevision(element);
     }
 
-    public List<AppConfigElement> getElementRevisions(String studyId, String id, boolean includeDeleted) {
-        checkNotNull(studyId);
+    public List<AppConfigElement> getElementRevisions(String appId, String id, boolean includeDeleted) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        return appConfigElementDao.getElementRevisions(studyId, id, includeDeleted);
+        return appConfigElementDao.getElementRevisions(appId, id, includeDeleted);
     }
     
-    public AppConfigElement getMostRecentElement(String studyId, String id) {
-        checkNotNull(studyId);
+    public AppConfigElement getMostRecentElement(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        AppConfigElement element = appConfigElementDao.getMostRecentElement(studyId, id);
+        AppConfigElement element = appConfigElementDao.getMostRecentElement(appId, id);
         if (element == null) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
         return element;
     }
 
-    public AppConfigElement getElementRevision(String studyId, String id, long revision) {
-        checkNotNull(studyId);
+    public AppConfigElement getElementRevision(String appId, String id, long revision) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        AppConfigElement element = appConfigElementDao.getElementRevision(studyId, id, revision);
+        AppConfigElement element = appConfigElementDao.getElementRevision(appId, id, revision);
         if (element == null) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
         return element;
     }
 
-    public VersionHolder updateElementRevision(String studyId, AppConfigElement element) {
-        checkNotNull(studyId);
+    public VersionHolder updateElementRevision(String appId, AppConfigElement element) {
+        checkNotNull(appId);
         checkNotNull(element);
         
         Validate.entityThrowingException(AppConfigElementValidator.INSTANCE, element);
         
-        AppConfigElement existing = getElementRevision(studyId, element.getId(), element.getRevision());
+        AppConfigElement existing = getElementRevision(appId, element.getId(), element.getRevision());
         if (element.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        element.setAppId(studyId);
+        element.setAppId(appId);
         element.setId(element.getId());
         element.setModifiedOn(DateTime.now().getMillis());
         // cannot change the creation timestamp
@@ -106,21 +106,21 @@ public class AppConfigElementService {
         return appConfigElementDao.saveElementRevision(element);
     }
     
-    public void deleteElementRevision(String studyId, String id, long revision) {
-        checkNotNull(studyId);
+    public void deleteElementRevision(String appId, String id, long revision) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        AppConfigElement existing = getElementRevision(studyId, id, revision);
+        AppConfigElement existing = getElementRevision(appId, id, revision);
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now().getMillis());
         appConfigElementDao.saveElementRevision(existing);
     }
     
-    public void deleteElementAllRevisions(String studyId, String id) {
-        checkNotNull(studyId);
+    public void deleteElementAllRevisions(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        List<AppConfigElement> elements = appConfigElementDao.getElementRevisions(studyId, id, false);
+        List<AppConfigElement> elements = appConfigElementDao.getElementRevisions(appId, id, false);
         long modifiedOn = DateTime.now().getMillis();
         for (AppConfigElement oneElement : elements) {
             oneElement.setDeleted(true);
@@ -129,22 +129,22 @@ public class AppConfigElementService {
         }
     }
     
-    public void deleteElementRevisionPermanently(String studyId, String id, long revision) {
-        checkNotNull(studyId);
+    public void deleteElementRevisionPermanently(String appId, String id, long revision) {
+        checkNotNull(appId);
         checkNotNull(id);
         
         // Throws exception if the element does not exist.
-        getElementRevision(studyId, id, revision);
-        appConfigElementDao.deleteElementRevisionPermanently(studyId, id, revision);
+        getElementRevision(appId, id, revision);
+        appConfigElementDao.deleteElementRevisionPermanently(appId, id, revision);
     }
     
-    public void deleteElementAllRevisionsPermanently(String studyId, String id) {
-        checkNotNull(studyId);
+    public void deleteElementAllRevisionsPermanently(String appId, String id) {
+        checkNotNull(appId);
         checkNotNull(id);
         
-        List<AppConfigElement> elements = appConfigElementDao.getElementRevisions(studyId, id, true);
+        List<AppConfigElement> elements = appConfigElementDao.getElementRevisions(appId, id, true);
         for (AppConfigElement oneElement : elements) {
-            appConfigElementDao.deleteElementRevisionPermanently(studyId, oneElement.getId(), oneElement.getRevision());
+            appConfigElementDao.deleteElementRevisionPermanently(appId, oneElement.getId(), oneElement.getRevision());
         }
     }
 }

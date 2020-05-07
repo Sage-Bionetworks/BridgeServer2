@@ -137,8 +137,8 @@ public class DynamoAppConfigElementDao implements AppConfigElementDao {
     }
 
     @Override
-    public void deleteElementRevisionPermanently(String studyId, String id, long revision) {
-        AppConfigElement element = getElementRevision(studyId, id, revision);
+    public void deleteElementRevisionPermanently(String appId, String id, long revision) {
+        AppConfigElement element = getElementRevision(appId, id, revision);
         if (element != null) {
             try {
                 mapper.delete(element);

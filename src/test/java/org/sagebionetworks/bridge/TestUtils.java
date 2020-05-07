@@ -62,6 +62,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -82,7 +83,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.models.schedules.ScheduleType;
@@ -426,19 +426,19 @@ public class TestUtils {
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("DDD");
         plan.setStrategy(getStrategy("P3D", getActivity1()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
         plan.setStrategy(getStrategy("P1D", getActivity2()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         plan = new DynamoSchedulePlan();
         plan.setGuid("CCC");
         plan.setStrategy(getStrategy("P2D", getActivity3()));
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plans.add(plan);
 
         return plans;
@@ -474,7 +474,7 @@ public class TestUtils {
         plan.setLabel("Simple Test Plan");
         plan.setGuid("GGG");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
         plan.setStrategy(strategy);
         return plan;
     }
@@ -492,7 +492,7 @@ public class TestUtils {
         return strategy;
     }
 
-    public static DynamoApp getValidStudy(Class<?> clazz) {
+    public static DynamoApp getValidApp(Class<?> clazz) {
         String id = TestUtils.randomName(clazz);
 
         Map<String,String> pushNotificationARNs = Maps.newHashMap();
@@ -572,7 +572,7 @@ public class TestUtils {
         plan.setGuid("AAA");
         plan.setLabel("Test A/B Schedule");
         plan.setModifiedOn(DateUtils.getCurrentMillisFromEpoch());
-        plan.setStudyKey(appId);
+        plan.setAppId(appId);
 
         ABTestScheduleStrategy strategy = new ABTestScheduleStrategy();
         strategy.addGroup(40, schedule1);

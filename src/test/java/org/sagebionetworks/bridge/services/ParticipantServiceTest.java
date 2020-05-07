@@ -83,13 +83,13 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.studies.PasswordPolicy;
-import org.sagebionetworks.bridge.models.studies.SmsTemplate;
-import org.sagebionetworks.bridge.models.studies.App;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -112,16 +112,16 @@ public class ParticipantServiceTest extends Mockito {
     private static final DateTime ENROLLMENT_DATETIME = DateTime.parse("2019-07-31T21:42:44.019-0700");
     private static final RequestInfo REQUEST_INFO = new RequestInfo.Builder().withClientInfo(CLIENT_INFO)
             .withLanguages(TestConstants.LANGUAGES).withUserDataGroups(TestConstants.USER_DATA_GROUPS).build();
-    private static final Set<String> STUDY_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
-    private static final Set<String> STUDY_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
+    private static final Set<String> APP_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
+    private static final Set<String> APP_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2");
     private static final long CONSENT_PUBLICATION_DATE = DateTime.now().getMillis();
     private static final Phone PHONE = TestConstants.PHONE;
     private static final App APP = App.create();
     static {
         APP.setIdentifier(TEST_APP_ID);
         APP.setHealthCodeExportEnabled(true);
-        APP.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
-        APP.setDataGroups(STUDY_DATA_GROUPS);
+        APP.setUserProfileAttributes(APP_PROFILE_ATTRS);
+        APP.setDataGroups(APP_DATA_GROUPS);
         APP.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         APP.getUserProfileAttributes().add("can_be_recontacted");
     }
@@ -155,7 +155,7 @@ public class ParticipantServiceTest extends Mockito {
             .withSharingScope(ALL_QUALIFIED_RESEARCHERS)
             .withNotifyByEmail(true)
             .withRoles(DEV_CALLER_ROLES)
-            .withDataGroups(STUDY_DATA_GROUPS)
+            .withDataGroups(APP_DATA_GROUPS)
             .withAttributes(ATTRS)
             .withLanguages(USER_LANGUAGES)
             .withStatus(DISABLED)
@@ -232,7 +232,7 @@ public class ParticipantServiceTest extends Mockito {
     ArgumentCaptor<Account> accountCaptor;
 
     @Captor
-    ArgumentCaptor<App> studyCaptor;
+    ArgumentCaptor<App> appCaptor;
     
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
@@ -1805,9 +1805,9 @@ public class ParticipantServiceTest extends Mockito {
         Withdrawal withdrawal = new Withdrawal("Reasons");
         long withdrewOn = DateTime.now().getMillis();
         
-        participantService.withdrawFromStudy(APP, ID, withdrawal, withdrewOn);
+        participantService.withdrawFromApp(APP, ID, withdrawal, withdrewOn);
         
-        verify(consentService).withdrawFromStudy(eq(APP), participantCaptor.capture(),
+        verify(consentService).withdrawFromApp(eq(APP), participantCaptor.capture(),
             eq(withdrawal), eq(withdrewOn));
         assertEquals(participantCaptor.getValue().getId(), ID);
     }
@@ -2585,7 +2585,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
 
@@ -2601,7 +2601,7 @@ public class ParticipantServiceTest extends Mockito {
     public void sendSmsMessageThrowsIfNoPhone() { 
         when(accountService.getAccount(any())).thenReturn(account);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }
@@ -2612,7 +2612,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
-        SmsTemplate template = new SmsTemplate("This is a test ${studyShortName}"); 
+        SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
         participantService.sendSmsMessage(APP, ID, template);
     }
@@ -2694,7 +2694,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(externalId.getIdentifier(), EXTERNAL_ID);
         assertEquals(externalId.getHealthCode(), HEALTH_CODE);
-        assertEquals(externalId.getStudyId(), TEST_APP_ID);
+        assertEquals(externalId.getAppId(), TEST_APP_ID);
         assertEquals(externalId.getSubstudyId(), SUBSTUDY_ID);
     }    
     
@@ -3382,8 +3382,8 @@ public class ParticipantServiceTest extends Mockito {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
         app.setHealthCodeExportEnabled(true);
-        app.setUserProfileAttributes(STUDY_PROFILE_ATTRS);
-        app.setDataGroups(STUDY_DATA_GROUPS);
+        app.setUserProfileAttributes(APP_PROFILE_ATTRS);
+        app.setDataGroups(APP_DATA_GROUPS);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         app.getUserProfileAttributes().add("can_be_recontacted");
         return app;

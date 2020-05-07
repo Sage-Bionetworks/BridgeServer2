@@ -75,9 +75,9 @@ public class HibernateTemplateDaoTest extends Mockito {
         String countQuery = queryCaptor.getAllValues().get(0);
         String getQuery = queryCaptor.getAllValues().get(1);
         assertEquals(countQuery, "SELECT count(guid) FROM HibernateTemplate as template WHERE templateType = " + 
-                ":templateType AND studyId = :appId ORDER BY createdOn DESC");
+                ":templateType AND appId = :appId ORDER BY createdOn DESC");
         assertEquals(getQuery, "SELECT template FROM HibernateTemplate as template WHERE templateType = " + 
-                ":templateType AND studyId = :appId ORDER BY createdOn DESC");
+                ":templateType AND appId = :appId ORDER BY createdOn DESC");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         
         String query = queryCaptor.getValue();
         assertEquals(query, "SELECT count(guid) FROM HibernateTemplate as template WHERE templateType = " + 
-                ":templateType AND studyId = :appId AND deleted = 0 ORDER BY createdOn DESC");
+                ":templateType AND appId = :appId AND deleted = 0 ORDER BY createdOn DESC");
     }
     
     @Test
@@ -158,7 +158,7 @@ public class HibernateTemplateDaoTest extends Mockito {
     public void deleteTemplatesForApp() { 
         dao.deleteTemplatesForApp(TEST_APP_ID);
         
-        verify(mockHelper).query(eq("DELETE FROM HibernateTemplate WHERE studyId = :appId"),
+        verify(mockHelper).query(eq("DELETE FROM HibernateTemplate WHERE appId = :appId"),
                 paramsCaptor.capture());
         
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);

@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * A key object for reports, which come in two types: participant and app. Participant 
- * reports can include reports for every participant in a study, while study reports will
+ * reports can include reports for every participant in an app, while study reports will
  * produce one report for an entire app (each at one or more LocalDates). All values are 
  * required except healthCode, which is only required if the report type is PARTICIPANT.
  */

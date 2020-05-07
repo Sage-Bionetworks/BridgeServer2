@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 @CrossOrigin
@@ -61,7 +61,7 @@ public class UserManagementController extends BaseController {
         }
         
         // Now act as if the user is in the app that was requested
-        sessionUpdateService.updateStudy(session, originSignIn.getAppId());
+        sessionUpdateService.updateApp(session, originSignIn.getAppId());
         setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
@@ -74,8 +74,8 @@ public class UserManagementController extends BaseController {
      * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
      */
     @Deprecated
-    @PostMapping("/v3/auth/admin/study")
-    public JsonNode changeStudyForAdmin() {
+    @PostMapping(path = {"/v3/auth/admin/app", "/v3/auth/admin/study"})
+    public JsonNode changeAppForAdmin() {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         // The only part of this payload we care about is the app property
@@ -84,7 +84,7 @@ public class UserManagementController extends BaseController {
 
         // Verify it's correct
         App app = appService.getApp(appId);
-        sessionUpdateService.updateStudy(session, app.getIdentifier());
+        sessionUpdateService.updateApp(session, app.getIdentifier());
         
         return UserSessionInfo.toJSON(session);
     }
@@ -113,7 +113,7 @@ public class UserManagementController extends BaseController {
      */
     @PostMapping(path = {"/v1/apps/{appId}/users", "/v3/studies/{appId}/users"})
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithStudyId(@PathVariable String appId) {
+    public StatusMessage createUserWithAppId(@PathVariable String appId) {
         getAuthenticatedSession(SUPERADMIN);
         App app = appService.getApp(appId);
         

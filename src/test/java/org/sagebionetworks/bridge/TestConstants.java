@@ -18,12 +18,12 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
+import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
+import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
-import org.sagebionetworks.bridge.models.studies.AndroidAppLink;
-import org.sagebionetworks.bridge.models.studies.AppleAppLink;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -65,7 +65,6 @@ public class TestConstants {
     public static final String SIGN_IN_URL = API_URL + "/auth/signIn";
     public static final String SCHEDULES_API = API_URL + "/schedules";
     public static final String SCHEDULED_ACTIVITIES_API = API_URL + "/activities";
-    public static final String STUDIES_URL = API_URL + "/studies/";
 
     public static final String APPLICATION_JSON = "application/json";
     public static final String EMAIL = "email@email.com";
@@ -138,13 +137,13 @@ public class TestConstants {
             Lists.newArrayList("sha256_cert_fingerprints3"));
     public static final AndroidAppLink ANDROID_APP_LINK_4 = new AndroidAppLink("namespace4", "package_name4",
             Lists.newArrayList("sha256_cert_fingerprints4"));
-    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("studyId",
+    public static final AppleAppLink APPLE_APP_LINK = new AppleAppLink("appId",
             Lists.newArrayList("/appId/", "/appId/*"));
-    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("studyId2",
+    public static final AppleAppLink APPLE_APP_LINK_2 = new AppleAppLink("appId2",
             Lists.newArrayList("/appId2/", "/appId2/*"));
-    public static final AppleAppLink APPLE_APP_LINK_3 = new AppleAppLink("studyId3",
+    public static final AppleAppLink APPLE_APP_LINK_3 = new AppleAppLink("appId3",
             Lists.newArrayList("/appId3/", "/appId3/*"));
-    public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("studyId4",
+    public static final AppleAppLink APPLE_APP_LINK_4 = new AppleAppLink("appId4",
             Lists.newArrayList("/appId4/", "/appId4/*"));
     
     public static final Activity ACTIVITY_1 = new Activity.Builder().withGuid("activity1guid").withLabel("Activity1")

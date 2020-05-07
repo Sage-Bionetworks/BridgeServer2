@@ -16,8 +16,8 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.studies.MimeType;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
 import com.google.common.collect.ImmutableMap;
@@ -110,7 +110,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
         private TemplateRevision revision;
         private EmailType type;
 
-        public Builder withStudy(App app) {
+        public Builder withApp(App app) {
             this.app = app;
             return this;
         }
@@ -169,7 +169,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             checkNotNull(app);
             checkNotNull(revision);
             
-            tokenMap.putAll(BridgeUtils.studyTemplateVariables(app));
+            tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             

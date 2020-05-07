@@ -16,7 +16,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.studies.App;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +34,7 @@ public class ViewCacheTest {
     public void before() {
         mapper = BridgeObjectMapper.get();
         
-        app = TestUtils.getValidStudy(ViewCacheTest.class);
+        app = TestUtils.getValidApp(ViewCacheTest.class);
     }
     
     @Test
@@ -50,14 +50,14 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<App>() {
             @Override public App get() {
-                App app = TestUtils.getValidStudy(ViewCacheTest.class);
-                app.setName("Test Study 2");
+                App app = TestUtils.getValidApp(ViewCacheTest.class);
+                app.setName("Test App 2");
                 return app;
             }
         });
         
         App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
-        assertEquals(foundApp.getName(), "Test Study 2");
+        assertEquals(foundApp.getName(), "Test App 2");
     }
     
     @Test
@@ -76,12 +76,12 @@ public class ViewCacheTest {
         try {
             cache.getView(cacheKey, new Supplier<App>() {
                 @Override public App get() {
-                    throw new BridgeServiceException("There has been a problem retrieving the study");
+                    throw new BridgeServiceException("There has been a problem retrieving the app");
                 }
             });
             fail("This should have thrown an exception");
         } catch(BridgeServiceException e) {
-            assertEquals(e.getMessage(), "There has been a problem retrieving the study");
+            assertEquals(e.getMessage(), "There has been a problem retrieving the app");
         }
     }
     
@@ -124,13 +124,13 @@ public class ViewCacheTest {
         
         String json = cache.getView(cacheKey, new Supplier<App>() {
             @Override public App get() {
-                App app = TestUtils.getValidStudy(ViewCacheTest.class);
-                app.setName("Test Study 2");
+                App app = TestUtils.getValidApp(ViewCacheTest.class);
+                app.setName("Test App 2");
                 return app;
             }
         });
         App foundApp = BridgeObjectMapper.get().readValue(json, DynamoApp.class);
-        assertEquals(foundApp.getName(), "Test Study 2");
+        assertEquals(foundApp.getName(), "Test App 2");
     }
     
     @Test
