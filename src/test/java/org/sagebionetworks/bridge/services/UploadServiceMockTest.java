@@ -34,7 +34,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -47,7 +46,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -56,7 +54,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -640,13 +637,8 @@ public class UploadServiceMockTest {
         verify(mockUploadValidationService, never()).validateUpload(TEST_APP_ID, upload);
     }
     
-    UploadRequest constructUploadRequest() throws Exception {
-        String json = TestUtils.createJson("{"+
-                "'name':'oneUpload',"+
-                "'contentLength':1048,"+ 
-                "'contentMd5': 'md5-value',"+
-                "'contentType':'application/binary'}");
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        return UploadRequest.fromJson(node);
+    UploadRequest constructUploadRequest() {
+        return new UploadRequest.Builder().withName("oneUpload").withContentLength(1048L).withContentMd5("md5-value")
+                .withContentType("application/binary").build();
     }    
 }

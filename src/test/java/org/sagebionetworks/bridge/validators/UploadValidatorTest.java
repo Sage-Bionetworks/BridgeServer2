@@ -12,11 +12,10 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class UploadValidatorTest {
-    
+    private static final String UPLOAD_CONTENT = "testValidateRequest";
+
     // The other tests in this class don't go through the controller; we want to do that
     // because we want to verify that we get the right type back. This could easily
     // be broken since there's no external test and we could switch the object internally.
@@ -24,7 +23,7 @@ public class UploadValidatorTest {
     public void uploadRequestHasCorrectType() {
         BridgeObjectMapper mapper = new BridgeObjectMapper();
         
-        JsonNode node = mapper.valueToTree(new UploadRequest());
+        JsonNode node = mapper.valueToTree(new UploadRequest.Builder().build());
         assertEquals("UploadRequest", node.get("type").asText(), "Type is UploadRequest");
     }
 
@@ -33,78 +32,50 @@ public class UploadValidatorTest {
         Validator validator = new UploadValidator();
         
         // A valid case
-        final String message = "testValidateRequest";
         {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("name", this.getClass().getSimpleName());
-            node.put("contentType", "text/plain");
-            node.put("contentLength", message.getBytes().length);
-            node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().build();
             Validate.entityThrowingException(validator, uploadRequest);
         }
 
         try {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("contentType", "text/plain");
-            node.put("contentLength", message.getBytes().length);
-            node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withName(null).build();
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "Name missing");
         }
 
         try {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("name", this.getClass().getSimpleName());
-            node.put("contentLength", message.getBytes().length);
-            node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentType(null).build();
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "Content type missing");
         }
 
         try {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("name", this.getClass().getSimpleName());
-            node.put("contentType", "text/plain");
-            node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentLength(null).build();
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "Content length missing");
         }
 
         try {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("name", this.getClass().getSimpleName());
-            node.put("contentType", "text/plain");
-            node.put("contentLength", 51000000L);
-            node.put("contentMd5", Base64.encodeBase64String(DigestUtils.md5(message)));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentLength(51000000L).build();
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "Content length > 10 MB");
         }
 
         try {
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("name", this.getClass().getSimpleName());
-            node.put("contentType", "text/plain");
-            node.put("contentLength", message.getBytes().length);
-            node.put("contentMd5", DigestUtils.md5(message));
-            UploadRequest uploadRequest = UploadRequest.fromJson(node);
-            
+            UploadRequest uploadRequest = makeValidUploadRequestBuilder().withContentMd5("not-md5").build();
             Validate.entityThrowingException(validator, uploadRequest);
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 not base64 encoded");
         }
+    }
+
+    private static UploadRequest.Builder makeValidUploadRequestBuilder() {
+        return new UploadRequest.Builder().withName("dummy-upload-name").withContentType("text/plain")
+                .withContentLength((long) UPLOAD_CONTENT.getBytes().length)
+                .withContentMd5(Base64.encodeBase64String(DigestUtils.md5(UPLOAD_CONTENT)));
     }
 }

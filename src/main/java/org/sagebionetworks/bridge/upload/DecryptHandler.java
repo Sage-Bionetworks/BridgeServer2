@@ -40,6 +40,12 @@ public class DecryptHandler implements UploadValidationHandler {
     /** {@inheritDoc} */
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
+        if (!context.getUpload().isEncrypted()) {
+            // Shortcut: Input file is output file.
+            context.setDecryptedDataFile(context.getDataFile());
+            return;
+        }
+
         // Temp file name in the form "[uploadId].zip"
         String outputFilename = context.getUploadId() + ".zip";
         File outputFile = fileHelper.newFile(context.getTempDir(), outputFilename);

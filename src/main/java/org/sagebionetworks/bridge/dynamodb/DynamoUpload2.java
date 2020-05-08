@@ -37,6 +37,7 @@ public class DynamoUpload2 implements Upload {
     private String contentMd5;
     private String contentType;
     private String duplicateUploadId;
+    private Boolean encrypted;
     private String filename;
     private String healthCode;
     private String recordId;
@@ -49,6 +50,7 @@ public class DynamoUpload2 implements Upload {
     private String uploadId;
     private final List<String> validationMessageList = new ArrayList<>();
     private Long version;
+    private Boolean zipped;
 
     /** This empty constructor is needed by the DynamoDB mapper. */
     public DynamoUpload2() {}
@@ -58,10 +60,12 @@ public class DynamoUpload2 implements Upload {
         contentLength = uploadRequest.getContentLength();
         contentType = uploadRequest.getContentType();
         contentMd5 = uploadRequest.getContentMd5();
+        encrypted = uploadRequest.isEncrypted();
         filename = uploadRequest.getName();
         this.healthCode = healthCode;
         status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
+        zipped = uploadRequest.isZipped();
     }
 
     /** {@inheritDoc} */
@@ -74,11 +78,13 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** Upload content length in bytes. */
+    @Override
     public long getContentLength() {
         return contentLength;
     }
 
     /** @see #getContentLength */
+    @Override
     public void setContentLength(long contentLength) {
         this.contentLength = contentLength;
     }
@@ -114,6 +120,17 @@ public class DynamoUpload2 implements Upload {
         this.duplicateUploadId = duplicateUploadId;
     }
 
+    @Override
+    public boolean isEncrypted() {
+        // Defaults to true;
+        return encrypted != null ? encrypted : true;
+    }
+
+    @Override
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
+    }
+
     /** {@inheritDoc} */
     @Override
     public String getFilename() {
@@ -121,6 +138,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** @see #getFilename */
+    @Override
     public void setFilename(String filename) {
         this.filename = filename;
     }
@@ -165,6 +183,7 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** @see #getStatus */
+    @Override
     public void setStatus(UploadStatus status) {
         this.status = status;
     }
@@ -191,11 +210,13 @@ public class DynamoUpload2 implements Upload {
     @DynamoDBIndexRangeKey(attributeName = "requestedOn", globalSecondaryIndexNames ={"healthCode-requestedOn-index", "studyId-requestedOn-index"})
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @JsonInclude(Include.NON_DEFAULT)
+    @Override
     public long getRequestedOn() {
         return requestedOn;
     }
     
     /** @see #getRequestedOn */
+    @Override
     public void setRequestedOn(long requestedOn) {
         this.requestedOn = requestedOn;
     }
@@ -203,22 +224,26 @@ public class DynamoUpload2 implements Upload {
     /** {@inheritDoc} */
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     @JsonInclude(Include.NON_DEFAULT)
+    @Override
     public long getCompletedOn() {
         return completedOn;
     }
     
     /** @see #getCompletedOn */
+    @Override
     public void setCompletedOn(long completedOn) {
         this.completedOn = completedOn;
     }
-    
-    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+
     /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
     public UploadCompletionClient getCompletedBy() {
         return completedBy;
     }
     
     /** @see #getCompletedBy */
+    @Override
     public void setCompletedBy(UploadCompletionClient completedBy) {
         this.completedBy = completedBy;
     }
@@ -299,5 +324,15 @@ public class DynamoUpload2 implements Upload {
     /** @see #getVersion */
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    @Override
+    public boolean isZipped() {
+        // Defaults to true.
+        return zipped != null ? zipped : true;
+    }
+
+    @Override public void setZipped(boolean zipped) {
+        this.zipped = zipped;
     }
 }

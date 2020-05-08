@@ -1,13 +1,14 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.testng.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.testng.Assert.assertSame;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -17,47 +18,65 @@ import com.google.common.base.Charsets;
 
 import com.google.common.io.ByteStreams;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.file.InMemoryFileHelper;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 public class DecryptHandlerTest {
-    @Test
-    public void test() throws Exception {
-        // The handler is a simple pass-through to the UploadArchiveService, so just test that execution flows through
-        // to the service as expected.
+    private static final byte[] DATA_FILE_CONTENT = "encrypted test data".getBytes(Charsets.UTF_8);
+
+    private UploadValidationContext ctx;
+    private File dataFile;
+    private InMemoryFileHelper fileHelper;
+    private Upload upload;
+
+    @Mock
+    private UploadArchiveService mockSvc;
+
+    @InjectMocks
+    @Spy
+    private DecryptHandler handler;
+
+    @BeforeMethod
+    public void before() {
+        MockitoAnnotations.initMocks(this);
 
         // Set up file helper.
-        InMemoryFileHelper fileHelper = new InMemoryFileHelper();
-        File tmpDir = fileHelper.createTempDir();
+        fileHelper = new InMemoryFileHelper();
+        handler.setFileHelper(fileHelper);
 
-        File dataFile = fileHelper.newFile(tmpDir, "data-file");
-        byte[] dataFileContent = "encrypted test data".getBytes(Charsets.UTF_8);
-        fileHelper.writeBytes(dataFile, dataFileContent);
+        File tmpDir = fileHelper.createTempDir();
+        dataFile = fileHelper.newFile(tmpDir, "data-file");
+        fileHelper.writeBytes(dataFile, DATA_FILE_CONTENT);
 
         // inputs
-        DynamoApp app = TestUtils.getValidApp(DecryptHandlerTest.class);
+        upload = Upload.create();
 
-        UploadValidationContext ctx = new UploadValidationContext();
-        ctx.setAppId(app.getIdentifier());
+        ctx = new UploadValidationContext();
+        ctx.setAppId(TEST_APP_ID);
+        ctx.setUpload(upload);
         ctx.setTempDir(tmpDir);
         ctx.setDataFile(dataFile);
 
         // mock UploadArchiveService
-        UploadArchiveService mockSvc = mock(UploadArchiveService.class);
-        when(mockSvc.decrypt(eq(app.getIdentifier()), any(InputStream.class))).thenReturn(new ByteArrayInputStream(
+        when(mockSvc.decrypt(eq(TEST_APP_ID), any(InputStream.class))).thenReturn(new ByteArrayInputStream(
                 "decrypted test data".getBytes(Charsets.UTF_8)));
-
-        // set up test handler
-        DecryptHandler handler = spy(new DecryptHandler());
-        handler.setFileHelper(fileHelper);
-        handler.setUploadArchiveService(mockSvc);
 
         // Don't actually buffer the input stream, as this breaks the test.
         doAnswer(invocation -> invocation.getArgument(0)).when(handler).getBufferedInputStream(any());
+    }
+
+    @Test
+    public void test() throws Exception {
+        // The handler is a simple pass-through to the UploadArchiveService, so just test that execution flows through
+        // to the service as expected.
 
         // execute and validate
         handler.handle(ctx);
@@ -66,8 +85,17 @@ public class DecryptHandlerTest {
 
         // Verify the correct file data was passed into the decryptor.
         ArgumentCaptor<InputStream> encryptedInputStreamCaptor = ArgumentCaptor.forClass(InputStream.class);
-        verify(mockSvc).decrypt(eq(app.getIdentifier()), encryptedInputStreamCaptor.capture());
+        verify(mockSvc).decrypt(eq(TEST_APP_ID), encryptedInputStreamCaptor.capture());
         InputStream encryptedInputStream = encryptedInputStreamCaptor.getValue();
-        assertEquals(ByteStreams.toByteArray(encryptedInputStream), dataFileContent);
+        assertEquals(ByteStreams.toByteArray(encryptedInputStream), DATA_FILE_CONTENT);
+    }
+
+    @Test
+    public void notEncrypted() throws Exception {
+        upload.setEncrypted(false);
+        handler.handle(ctx);
+
+        assertSame(ctx.getDecryptedDataFile(), dataFile);
+        verifyZeroInteractions(mockSvc);
     }
 }

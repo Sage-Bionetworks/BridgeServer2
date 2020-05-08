@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.file.FileHelper;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.services.UploadArchiveService;
 
 /**
@@ -40,6 +41,15 @@ public class UnzipHandler implements UploadValidationHandler {
     @Override
     public void handle(@Nonnull UploadValidationContext context) throws UploadValidationException {
         Map<String, File> unzippedDataFileMap = new HashMap<>();
+        context.setUnzippedDataFileMap(unzippedDataFileMap);
+
+        Upload upload = context.getUpload();
+        if (!upload.isZipped()) {
+            // Shortcut: If this isn't a zip file, then the decrypted data file is the only entry in our map.
+            unzippedDataFileMap.put(upload.getFilename(), context.getDecryptedDataFile());
+            return;
+        }
+
         try (InputStream zippedFileInputStream = fileHelper.getInputStream(context.getDecryptedDataFile())) {
             uploadArchiveService.unzip(zippedFileInputStream,
                     entryName -> {
@@ -63,6 +73,5 @@ public class UnzipHandler implements UploadValidationHandler {
         } catch (IOException ex) {
             throw new UploadValidationException("Error unzipping file: " + ex.getMessage(), ex);
         }
-        context.setUnzippedDataFileMap(unzippedDataFileMap);
     }
 }
