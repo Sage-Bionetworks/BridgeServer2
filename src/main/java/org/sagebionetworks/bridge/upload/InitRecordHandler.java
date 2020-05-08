@@ -54,9 +54,12 @@ public class InitRecordHandler implements UploadValidationHandler {
         record.setUploadId(uploadId);
         record.setUploadedOn(DateUtils.getCurrentMillisFromEpoch());
 
-        // create an empty object node in our record builder, which we'll fill in as we go
+        // Create empty object nodes in our record builder, which we'll fill in as we go.
         ObjectNode dataMap = BridgeObjectMapper.get().createObjectNode();
         record.setData(dataMap);
+
+        ObjectNode metadataMap = BridgeObjectMapper.get().createObjectNode();
+        record.setMetadata(metadataMap);
 
         if (!upload.isZipped()) {
             // Shortcut: If the upload is not zipped, it doesn't have an info.json or a metadata.json. We can skip all

@@ -795,14 +795,16 @@ public class UploadHandlersEndToEndTest {
         assertNull(record.getAppVersion());
         assertNull(record.getCreatedOnTimeZone());
         assertNull(record.getPhoneInfo());
-        assertNull(record.getMetadata());
         assertNull(record.getSchemaId());
         assertNull(record.getSchemaRevision());
         assertNull(record.getUserMetadata());
 
-        // Data map is empty. No schema means no data parsed.
-        JsonNode dataNode = record.getData();
-        assertEquals(dataNode.size(), 0);
+        // Data and metadata both exist and are empty.
+        assertTrue(record.getData().isObject());
+        assertEquals(record.getData().size(), 0);
+
+        assertTrue(record.getMetadata().isObject());
+        assertEquals(record.getMetadata().size(), 0);
 
         // Only 1 attachment, and that's raw data.
         assertEquals(uploadedFileContentMap.size(), 1);

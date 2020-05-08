@@ -156,13 +156,18 @@ public class InitRecordHandlerTest {
         assertEquals(record.getUploadDate(), MOCK_NOW_DATE);
         assertEquals(record.getUploadId(), UPLOAD_ID);
         assertEquals(record.getUploadedOn().longValue(), MOCK_NOW_MILLIS);
-        assertNotNull(record.getData());
 
         // These attributes are not.
         assertNull(record.getAppVersion());
         assertNull(record.getPhoneInfo());
-        assertNull(record.getMetadata());
         assertNull(record.getUserMetadata());
+
+        // Data and metadata both exist and are empty.
+        assertTrue(record.getData().isObject());
+        assertEquals(record.getData().size(), 0);
+
+        assertTrue(record.getMetadata().isObject());
+        assertEquals(record.getMetadata().size(), 0);
 
         // No messages.
         assertTrue(context.getMessageList().isEmpty());
