@@ -2,23 +2,34 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.hl7.fhir.r4.model.Address;
+import org.hl7.fhir.r4.model.Appointment;
 import org.hl7.fhir.r4.model.ContactPoint;
 import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.r4.model.HumanName;
+import org.hl7.fhir.r4.model.Identifier;
+import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Patient;
+import org.hl7.fhir.r4.model.Procedure;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -51,11 +63,15 @@ import ca.uhn.fhir.parser.IParser;
 @RestController
 public class CRCController extends BaseController {
     
+    static final String TIMESTAMP_FIELD = "state_change_timestamp";
+    static final String USER_ID_VALUE_NS = "https://ws.sagebridge.org/#userId";
     static final String APP_ID = "czi-coronavirus";
     static final String OBSERVATION_REPORT = "observation";
-    static final String PROCEDURAL_REQUEST_REPORT = "proceduralrequest";
+    static final String PROCEDURE_REPORT = "procedure";
     static final String APPOINTMENT_REPORT = "appointment";
     static final String USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
+    // This is thread-safe and it's recommended to reuse an instance because it's expensive to create;
+    static final FhirContext FHIR_CONTEXT = FhirContext.forR4();
     
     static enum AccountStates {
         ENROLLED,
@@ -85,6 +101,10 @@ public class CRCController extends BaseController {
         this.reportService = reportService;
     }
     
+    DateTime getTimestamp() {
+        return DateTime.now().withZone(DateTimeZone.UTC);
+    }
+    
     @PostMapping("/v1/cuimc/participants/self")
     public JsonNode updateParticipantSelf() {
         UserSession session = getAuthenticatedSession(RESEARCHER);
@@ -99,7 +119,6 @@ public class CRCController extends BaseController {
         
         Set<String> dataGroups = participant.getDataGroups();
         if (dataGroups.contains(AccountStates.SELECTED.name().toLowerCase())) {
-            // Contact CUIMC
             createLabOrder(builder.build());
             updateState(builder, AccountStates.TESTS_REQUESTED);
         }
@@ -130,25 +149,31 @@ public class CRCController extends BaseController {
     public StatusMessage postAppointment() {
         httpBasicAuthentication();
         
+        IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
-        String userId = data.get("userId").textValue(); // not the actual payload
+        Appointment appointment = parser.parseResource(Appointment.class, data.toString());
         
-        writeReportAndUpdateState(userId, data, APPOINTMENT_REPORT, AccountStates.TESTS_SCHEDULED);
+        String userId = findUserId(appointment.getIdentifier());
+        
+        writeReportAndUpdateState(userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
         
         return new StatusMessage("Appointment created or updated.");
     }
-    
-    @PostMapping("/v1/cuimc/proceduralrequests")
+
+    @PostMapping("/v1/cuimc/procedures")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage postProceduralRequest() {
+    public StatusMessage postProcedure() {
         httpBasicAuthentication();
         
+        IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
-        String userId = data.get("userId").textValue(); // not the actual payload
+        Procedure procedure = parser.parseResource(Procedure.class, data.toString());
         
-        writeReportAndUpdateState(userId, data, PROCEDURAL_REQUEST_REPORT, AccountStates.TESTS_COLLECTED);
+        String userId = findUserId(procedure.getIdentifier());
         
-        return new StatusMessage("ProceduralRequest created or updated.");
+        writeReportAndUpdateState(userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
+        
+        return new StatusMessage("Procedure created or updated.");
     }
 
     @PostMapping("/v1/cuimc/observations")
@@ -156,8 +181,11 @@ public class CRCController extends BaseController {
     public StatusMessage postObservation() {
         httpBasicAuthentication();
         
+        IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
-        String userId = data.get("userId").textValue(); // not the actual payload
+        Observation observation = parser.parseResource(Observation.class, data.toString());
+        
+        String userId = findUserId(observation.getIdentifier());
         
         writeReportAndUpdateState(userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
         
@@ -167,21 +195,34 @@ public class CRCController extends BaseController {
     void createLabOrder(StudyParticipant participant) {
         Patient patient = createPatient(participant);
         
-        FhirContext ctx = FhirContext.forR4();
-        IParser parser = ctx.newJsonParser();
+        IParser parser = FHIR_CONTEXT.newJsonParser();
         
         System.out.println(parser.encodeResourceToString(patient));
     }
-    
+
+    private String findUserId(List<Identifier> identifiers) {
+        if (identifiers != null && !identifiers.isEmpty()) {
+            for (int i=0; i < identifiers.size(); i++) {
+                Identifier id = identifiers.get(i);
+                if (id.getSystem().equals(USER_ID_VALUE_NS)) {
+                    return id.getValue();
+                }
+            }
+        }
+        throw new BadRequestException("Could not find Bridge user ID in identifiers.");
+    }
+
     private void writeReportAndUpdateState(String userId, JsonNode data, String reportName, AccountStates state) {
         AccountId accountId = AccountId.forId(APP_ID, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
         ReportData report = ReportData.create();
         report.setDate("1970-01-01");
         report.setData(data);
+        report.setSubstudyIds(callerSubstudyIds);
         
         reportService.saveParticipantReport(APP_ID, reportName, account.getHealthCode(), report);
         
@@ -190,12 +231,17 @@ public class CRCController extends BaseController {
     }    
     
     private void updateState(StudyParticipant.Builder builder, AccountStates state) {
+        StudyParticipant p = builder.build();
         Set<String> mutableGroups = new HashSet<>(); 
-        mutableGroups.addAll(builder.build().getDataGroups());
+        mutableGroups.addAll(p.getDataGroups());
         mutableGroups.removeAll(ALL_STATES);
         mutableGroups.add(state.name().toLowerCase());
-        
         builder.withDataGroups(mutableGroups);
+        
+        Map<String, String> atts = new HashMap<>();
+        atts.putAll(p.getAttributes());
+        atts.put(TIMESTAMP_FIELD, getTimestamp().toString());
+        builder.withAttributes(atts);
     }
     
     private void updateState(Account account, AccountStates state) {
@@ -203,8 +249,9 @@ public class CRCController extends BaseController {
         mutableGroups.addAll(account.getDataGroups());
         mutableGroups.removeAll(ALL_STATES);
         mutableGroups.add(state.name().toLowerCase());
-        
         account.setDataGroups(mutableGroups);
+
+        account.getAttributes().put(TIMESTAMP_FIELD, getTimestamp().toString());
     }
     
     // This is bound to one specific account that we've given to Columbia. 
@@ -233,7 +280,6 @@ public class CRCController extends BaseController {
                 .withAppId(APP_ID)
                 .withExternalId(credentials[0])
                 .withPassword(credentials[1]).build();
-        
         App app = appService.getApp(APP_ID);
         
         // Verify the password
@@ -241,46 +287,64 @@ public class CRCController extends BaseController {
         if (account == null) {
             throw new NotAuthenticatedException();
         }
+        // This method of verification entirely sidesteps RequestContext 
+        // initialization. Set up anything that is needed in this controller.
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(BridgeUtils.collectSubstudyIds(account))
+                .build());
     }
     
     Patient createPatient(StudyParticipant participant) {
         Patient patient = new Patient();
-        patient.setId(participant.getId());
         patient.setActive(true);
         
+        Identifier identifier = new Identifier();
+        identifier.setValue(participant.getId());
+        identifier.setSystem(USER_ID_VALUE_NS);
+        patient.addIdentifier(identifier);
+        
         HumanName name = new HumanName();
-        if (participant.getFirstName() != null) {
+        if (isNotBlank(participant.getFirstName())) {
             name.addGiven(participant.getFirstName());
         }
-        if (participant.getLastName() != null) {
+        if (isNotBlank(participant.getLastName())) {
             name.setFamily(participant.getLastName());
         }
         patient.addName(name);
         
         Map<String, String> atts = participant.getAttributes();
-        if (atts.get("gender") != null) {
-            AdministrativeGender gender = "female".equals(atts.get("gender")) ? 
-                    AdministrativeGender.FEMALE : AdministrativeGender.MALE;
-            patient.setGender(gender);
+        if (isNotBlank(atts.get("gender"))) {
+            if ("female".equalsIgnoreCase(atts.get("gender"))) {
+                patient.setGender(AdministrativeGender.FEMALE);    
+            } else if ("male".equalsIgnoreCase(atts.get("gender"))) {
+                patient.setGender(AdministrativeGender.MALE);
+            } else {
+                patient.setGender(AdministrativeGender.OTHER);
+            }
+        } else {
+            patient.setGender(AdministrativeGender.UNKNOWN);
         }
-        if (atts.get("dob") != null) {
+        if (isNotBlank(atts.get("dob"))) {
             LocalDate localDate = LocalDate.parse(atts.get("dob"));
             patient.setBirthDate(localDate.toDate());
         }
         
         Address address = new Address();
-        if (atts.get("address") != null) {
-            address.addLine(atts.get("address"));
+        if (isNotBlank(atts.get("address1"))) {
+            address.addLine(atts.get("address1"));
         }
-        if (atts.get("city") != null) {
+        if (isNotBlank(atts.get("address2"))) {
+            address.addLine(atts.get("address2"));
+        }
+        if (isNotBlank(atts.get("city"))) {
             address.setCity(atts.get("city"));
         }
-        if (atts.get("state") != null) {
+        if (isNotBlank(atts.get("state"))) {
             address.setState(atts.get("state"));
         } else {
             address.setState("NY");
         }
-        if (atts.get("zip_code") != null) {
+        if (isNotBlank(atts.get("zip_code"))) {
             address.setPostalCode(atts.get("zip_code"));
         }
         patient.addAddress(address);
