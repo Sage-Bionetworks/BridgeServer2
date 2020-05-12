@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,25 +18,24 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
-import org.hl7.fhir.r4.model.Address;
-import org.hl7.fhir.r4.model.Appointment;
-import org.hl7.fhir.r4.model.ContactPoint;
-import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
-import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
-import org.hl7.fhir.r4.model.HumanName;
-import org.hl7.fhir.r4.model.Identifier;
-import org.hl7.fhir.r4.model.Observation;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.Procedure;
+import org.hl7.fhir.dstu3.model.Address;
+import org.hl7.fhir.dstu3.model.Appointment;
+import org.hl7.fhir.dstu3.model.ContactPoint;
+import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
+import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
+import org.hl7.fhir.dstu3.model.HumanName;
+import org.hl7.fhir.dstu3.model.Identifier;
+import org.hl7.fhir.dstu3.model.Observation;
+import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Procedure;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -44,6 +44,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -67,11 +68,13 @@ public class CRCController extends BaseController {
     static final String USER_ID_VALUE_NS = "https://ws.sagebridge.org/#userId";
     static final String APP_ID = "czi-coronavirus";
     static final String OBSERVATION_REPORT = "observation";
-    static final String PROCEDURE_REPORT = "procedure";
+    static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
     static final String USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     // This is thread-safe and it's recommended to reuse an instance because it's expensive to create;
-    static final FhirContext FHIR_CONTEXT = FhirContext.forR4();
+    static final FhirContext FHIR_CONTEXT = FhirContext.forDstu3();
+    static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
+    static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     
     static enum AccountStates {
         ENROLLED,
@@ -144,9 +147,8 @@ public class CRCController extends BaseController {
         return UserSessionInfo.toJSON(session);
     } 
     
-    @PostMapping("/v1/cuimc/appointments")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage postAppointment() {
+    @PutMapping("/v1/cuimc/appointments")
+    public ResponseEntity<StatusMessage> postAppointment() {
         httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
@@ -155,14 +157,16 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(appointment.getIdentifier());
         
-        writeReportAndUpdateState(userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
-        
-        return new StatusMessage("Appointment created or updated.");
+        int status = writeReportAndUpdateState(userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
+        if (status == 200) {
+            return ResponseEntity.ok(new StatusMessage("Appointment updated."));
+        }
+        return ResponseEntity.created(URI.create("/v1/cuimc/appointments/" + userId))
+                .body(new StatusMessage("Appointment created."));
     }
 
-    @PostMapping("/v1/cuimc/procedures")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage postProcedure() {
+    @PutMapping("/v1/cuimc/procedurerequests")
+    public ResponseEntity<StatusMessage> postProcedure() {
         httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
@@ -171,14 +175,16 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(procedure.getIdentifier());
         
-        writeReportAndUpdateState(userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
-        
-        return new StatusMessage("Procedure created or updated.");
+        int status = writeReportAndUpdateState(userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
+        if (status == 200) {
+            return ResponseEntity.ok(new StatusMessage("ProcedureRequest updated."));
+        }
+        return ResponseEntity.created(URI.create("/v1/cuimc/procedurerequests/" + userId))
+                .body(new StatusMessage("ProcedureRequest created."));
     }
 
-    @PostMapping("/v1/cuimc/observations")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage postObservation() {
+    @PutMapping("/v1/cuimc/observations")
+    public ResponseEntity<StatusMessage> postObservation() {
         httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
@@ -187,9 +193,12 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(observation.getIdentifier());
         
-        writeReportAndUpdateState(userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
-        
-        return new StatusMessage("Observation created or updated.");
+        int status = writeReportAndUpdateState(userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
+        if (status == 200) {
+            return ResponseEntity.ok(new StatusMessage("Observation updated."));
+        }
+        return ResponseEntity.created(URI.create("/v1/cuimc/observations/" + userId))
+                .body(new StatusMessage("Observation created."));        
     }
     
     void createLabOrder(StudyParticipant participant) {
@@ -212,7 +221,7 @@ public class CRCController extends BaseController {
         throw new BadRequestException("Could not find Bridge user ID in identifiers.");
     }
 
-    private void writeReportAndUpdateState(String userId, JsonNode data, String reportName, AccountStates state) {
+    private int writeReportAndUpdateState(String userId, JsonNode data, String reportName, AccountStates state) {
         AccountId accountId = AccountId.forId(APP_ID, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
@@ -220,14 +229,19 @@ public class CRCController extends BaseController {
         }
         Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
         ReportData report = ReportData.create();
-        report.setDate("1970-01-01");
+        report.setDate(JAN1.toString());
         report.setData(data);
         report.setSubstudyIds(callerSubstudyIds);
+        
+        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
+                APP_ID, reportName, account.getHealthCode(), JAN1, JAN2);
+        int status = (results.getItems().isEmpty()) ? 201 : 200;
         
         reportService.saveParticipantReport(APP_ID, reportName, account.getHealthCode(), report);
         
         updateState(account, state);
         accountService.updateAccount(account, null);
+        return status;
     }    
     
     private void updateState(StudyParticipant.Builder builder, AccountStates state) {

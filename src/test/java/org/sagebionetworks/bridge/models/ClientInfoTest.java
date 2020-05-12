@@ -150,6 +150,8 @@ public class ClientInfoTest {
                 "MFS Pilot", 22, "iPhone 8+", "iPhone OS", "13.3.1", "BridgeSDK", 68);
         assertClientInfo("PsorcastValidation/20 (iPhone SE; iOS/13.4) BridgeSDK/69",
                 "PsorcastValidation", 20, "iPhone SE", "iPhone OS", "13.4", "BridgeSDK", 69);
+        assertClientInfo("BiAffect/18 (Unknown iPhone [iPhone12,1]; iOS/13.4.1) BridgeSDK/71",
+                "BiAffect", 18, "Unknown iPhone [iPhone12,1]", "iPhone OS", "13.4.1", "BridgeSDK", 71);
     }
     
     @Test

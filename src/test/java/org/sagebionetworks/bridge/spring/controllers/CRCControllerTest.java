@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static org.junit.Assert.assertTrue;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -19,6 +18,7 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.USERNA
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.Base64;
@@ -30,17 +30,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import org.hl7.fhir.r4.model.Address;
-import org.hl7.fhir.r4.model.Appointment;
-import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
-import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
-import org.hl7.fhir.r4.model.Identifier;
-import org.hl7.fhir.r4.model.Observation;
-import org.hl7.fhir.r4.model.Patient;
-import org.hl7.fhir.r4.model.Procedure;
+import org.hl7.fhir.dstu3.model.Address;
+import org.hl7.fhir.dstu3.model.Appointment;
+import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
+import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
+import org.hl7.fhir.dstu3.model.Identifier;
+import org.hl7.fhir.dstu3.model.Observation;
+import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Procedure;
 import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -49,6 +50,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.http.ResponseEntity;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -59,6 +61,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -76,6 +79,8 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 public class CRCControllerTest extends Mockito {
 
+    static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
+    static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     static final String HEALTH_CODE = "healthCode";
     String CREDENTIALS = USERNAME + ":dummy-password";
     String AUTHORIZATION_HEADER_VALUE = "Basic "
@@ -195,10 +200,14 @@ public class CRCControllerTest extends Mockito {
     }    
     
     @Test
-    public void postAppointment() throws Exception {
+    public void postAppointmentCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         // add a wrong ID to verify we go through them all and look for ours
         Identifier wrongId = new Identifier();
@@ -211,8 +220,9 @@ public class CRCControllerTest extends Mockito {
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
         
-        StatusMessage retValue = controller.postAppointment();
-        assertEquals(retValue.getMessage(), "Appointment created or updated.");
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment created.");
+        assertEquals(retValue.getStatusCodeValue(), 201);
         
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
@@ -234,14 +244,45 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test
-    public void postProcedure() throws Exception {
+    public void postAppointmentUpdated() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        // add a wrong ID to verify we go through them all and look for ours
+        Identifier wrongId = new Identifier();
+        wrongId.setSystem("some-other-namespace");
+        wrongId.setValue(USER_ID);
+        
+        Appointment appointment = new Appointment();
+        appointment.addIdentifier(wrongId);
+        appointment.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+    }
+    
+    @Test
+    public void postProcedureCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeProcedure());
         
-        StatusMessage retValue = controller.postProcedure();
-        assertEquals(retValue.getMessage(), "Procedure created or updated.");
+        DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postProcedure();
+        assertEquals(retValue.getBody().getMessage(), "ProcedureRequest created.");
+        assertEquals(retValue.getStatusCodeValue(), 201);
         
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
@@ -261,16 +302,37 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
     }
+    
+    @Test
+    public void postProcedureUpdated() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        mockRequestBody(mockRequest, makeProcedure());
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postProcedure();
+        assertEquals(retValue.getBody().getMessage(), "ProcedureRequest updated.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+    }
 
     @Test
-    public void postObservation() throws Exception {
+    public void postObservationCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeObservation());
         
-        StatusMessage retValue = controller.postObservation();
-        assertEquals(retValue.getMessage(), "Observation created or updated.");
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postObservation();
+        assertEquals(retValue.getBody().getMessage(), "Observation created.");
+        assertEquals(retValue.getStatusCodeValue(), 201);
         
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
@@ -291,6 +353,22 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
     }
     
+    @Test
+    public void postObservationUpdated() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        mockRequestBody(mockRequest, makeObservation());
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postObservation();
+        assertEquals(retValue.getBody().getMessage(), "Observation updated.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+    }
+
     @Test
     public void authenticationWorks() {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
