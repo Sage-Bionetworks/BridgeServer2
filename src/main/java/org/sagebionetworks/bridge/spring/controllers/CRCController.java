@@ -27,7 +27,7 @@ import org.hl7.fhir.dstu3.model.HumanName;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
-import org.hl7.fhir.dstu3.model.Procedure;
+import org.hl7.fhir.dstu3.model.ProcedureRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -166,12 +166,12 @@ public class CRCController extends BaseController {
     }
 
     @PutMapping("/v1/cuimc/procedurerequests")
-    public ResponseEntity<StatusMessage> postProcedure() {
+    public ResponseEntity<StatusMessage> postProcedureRequest() {
         httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
-        Procedure procedure = parser.parseResource(Procedure.class, data.toString());
+        ProcedureRequest procedure = parser.parseResource(ProcedureRequest.class, data.toString());
         
         String userId = findUserId(procedure.getIdentifier());
         

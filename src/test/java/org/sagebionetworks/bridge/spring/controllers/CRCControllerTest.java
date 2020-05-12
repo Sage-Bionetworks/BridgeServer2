@@ -41,7 +41,7 @@ import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
-import org.hl7.fhir.dstu3.model.Procedure;
+import org.hl7.fhir.dstu3.model.ProcedureRequest;
 import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -274,13 +274,13 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeProcedure());
+        mockRequestBody(mockRequest, makeProcedureRequest());
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
         
-        ResponseEntity<StatusMessage> retValue = controller.postProcedure();
+        ResponseEntity<StatusMessage> retValue = controller.postProcedureRequest();
         assertEquals(retValue.getBody().getMessage(), "ProcedureRequest created.");
         assertEquals(retValue.getStatusCodeValue(), 201);
         
@@ -308,13 +308,13 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeProcedure());
+        mockRequestBody(mockRequest, makeProcedureRequest());
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
         
-        ResponseEntity<StatusMessage> retValue = controller.postProcedure();
+        ResponseEntity<StatusMessage> retValue = controller.postProcedureRequest();
         assertEquals(retValue.getBody().getMessage(), "ProcedureRequest updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
     }
@@ -499,11 +499,11 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        Procedure procedure = new Procedure();
+        ProcedureRequest procedure = new ProcedureRequest();
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
         mockRequestBody(mockRequest, json);
         
-        controller.postProcedure();
+        controller.postProcedureRequest();
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -516,12 +516,12 @@ public class CRCControllerTest extends Mockito {
         Identifier identifier = new Identifier();
         identifier.setSystem("wrong-system");
         identifier.setValue(USER_ID);
-        Procedure procedure = new Procedure();
+        ProcedureRequest procedure = new ProcedureRequest();
         procedure.addIdentifier(identifier);
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
         mockRequestBody(mockRequest, json);
         
-        controller.postProcedure();        
+        controller.postProcedureRequest();        
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
@@ -573,7 +573,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn("Basic " + auth);
         mockRequestBody(mockRequest, makeAppointment(USER_ID_VALUE_NS, USER_ID));
         
-        controller.postProcedure();
+        controller.postProcedureRequest();
     }
 
     @Test
@@ -644,8 +644,8 @@ public class CRCControllerTest extends Mockito {
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(appt);
     }
     
-    private String makeProcedure() { 
-        Procedure procedure = new Procedure();
+    private String makeProcedureRequest() { 
+        ProcedureRequest procedure = new ProcedureRequest();
         procedure.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
     }
