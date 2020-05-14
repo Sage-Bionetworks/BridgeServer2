@@ -95,9 +95,8 @@ public class HibernateAccountDao implements AccountDao {
             }
         } else {
             QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getAppId(), accountId, null, false);
-            
-            List<HibernateAccount> accountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), 
-                    null, null, HibernateAccount.class);
+            List<HibernateAccount> accountList = hibernateHelper.queryGet(
+                    builder.getQuery(), builder.getParameters(), null, null, HibernateAccount.class);
             if (accountList.isEmpty()) {
                 return Optional.empty();
             }
@@ -121,6 +120,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
         builder.append("WITH acct.id = acctSubstudy.accountId");
         builder.append("WHERE acct.appId = :appId", "appId", appId);
+        
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
@@ -224,7 +224,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         return false;
     }
-    
+
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount acct) {
@@ -238,16 +238,14 @@ public class HibernateAccountDao implements AccountDao {
         builder.withCreatedOn(acct.getCreatedOn());
         builder.withStatus(acct.getStatus());
         builder.withSynapseUserId(acct.getSynapseUserId());
+        builder.withAttributes(acct.getAttributes());
         
-        // If these were not initialized earlier, they will be skipped here. They don't show
-        // up in the JSON.
         SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
             assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
-        builder.withAttributes(acct.getAttributes());    
         return builder.build();
     }
 }

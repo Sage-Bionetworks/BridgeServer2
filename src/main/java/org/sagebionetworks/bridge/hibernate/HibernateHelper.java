@@ -56,9 +56,7 @@ public class HibernateHelper {
 
     /** Get by the table's primary key. Returns null if the object doesn't exist. */
     public <T> T getById(Class<T> clazz, Serializable id) {
-        return executeWithExceptionHandling(null, session -> {
-            return session.get(clazz, id);
-        });
+        return executeWithExceptionHandling(null, session -> session.get(clazz, id));
     }
 
     /**
@@ -110,8 +108,7 @@ public class HibernateHelper {
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
      */
-    public <T> List<T> queryGet(String queryString, Map<String, Object> parameters, Integer offset, Integer limit,
-            Class<T> clazz) {
+    public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createQuery(queryString, clazz);
             if (parameters != null) {
