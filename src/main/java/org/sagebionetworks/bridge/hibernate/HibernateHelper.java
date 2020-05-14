@@ -54,18 +54,10 @@ public class HibernateHelper {
         });
     }
 
-    public <T> T getById(Class<T> clazz, Serializable id) {
-        return getById(clazz, id, null);
-    }
-    
     /** Get by the table's primary key. Returns null if the object doesn't exist. */
-    public <T> T getById(Class<T> clazz, Serializable id, Consumer<T> consumer) {
+    public <T> T getById(Class<T> clazz, Serializable id) {
         return executeWithExceptionHandling(null, session -> {
-            T item = session.get(clazz, id);
-            if (item != null && consumer != null) {
-                consumer.accept(item);
-            }
-            return item;
+            return session.get(clazz, id);
         });
     }
 
@@ -114,16 +106,12 @@ public class HibernateHelper {
         }
     }    
     
-    public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
-        return queryGet(queryString, parameters, offset, limit, clazz, null);
-    }
-    
     /**
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
      */
     public <T> List<T> queryGet(String queryString, Map<String, Object> parameters, Integer offset, Integer limit,
-            Class<T> clazz, Consumer<T> consumer) {
+            Class<T> clazz) {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createQuery(queryString, clazz);
             if (parameters != null) {
@@ -137,13 +125,7 @@ public class HibernateHelper {
             if (limit != null) {
                 query.setMaxResults(limit);
             }
-            List<T> list = query.list();
-            if (consumer != null) {
-                for (T item : list) {
-                    consumer.accept(item);
-                }
-            }
-            return list;
+            return query.list();
         });
     }
 

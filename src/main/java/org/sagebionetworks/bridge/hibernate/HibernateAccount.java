@@ -181,7 +181,7 @@ public class HibernateAccount implements Account {
     @CollectionTable(name = "AccountAttributes", joinColumns = @JoinColumn(name = "accountId",
             referencedColumnName = "id"))
     @Column(name = "attributeValue")
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "attributeKey")
     public Map<String, String> getAttributes() {
         if (attributes == null) {
@@ -199,7 +199,7 @@ public class HibernateAccount implements Account {
     /** Map of consents, keyed by a composite of subpopulation ID and signedOn. Never returns null. */
     @CollectionTable(name = "AccountConsents", joinColumns = @JoinColumn(name = "accountId",
             referencedColumnName = "id"))
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyClass(HibernateAccountConsentKey.class)
     public Map<HibernateAccountConsentKey, HibernateAccountConsent> getConsents() {
         if (consents == null) {
@@ -310,7 +310,7 @@ public class HibernateAccount implements Account {
      */
     @CollectionTable(name = "AccountRoles", joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "id"))
     @Column(name = "role")
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     public Set<Roles> getRoles() {
         if (roles == null) {
@@ -399,7 +399,7 @@ public class HibernateAccount implements Account {
     /** Data groups assigned to this account. */
     @CollectionTable(name = "AccountDataGroups", joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "id"))
     @Column(name = "dataGroup")
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     public Set<String> getDataGroups() {
         if (dataGroups == null) {
             dataGroups = new HashSet<>();
@@ -417,7 +417,7 @@ public class HibernateAccount implements Account {
     @CollectionTable(name = "AccountLanguages", joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "id"))
     @Column(name = "language")
     @OrderColumn(name="order_index", insertable=true, updatable=true)
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     public List<String> getLanguages() {
         if (languages == null) {
             languages = new ArrayList<>();
@@ -450,7 +450,7 @@ public class HibernateAccount implements Account {
     }
     
     @OneToMany(mappedBy = "accountId", cascade = CascadeType.ALL, orphanRemoval = true, 
-        fetch = FetchType.LAZY, targetEntity=HibernateAccountSubstudy.class)
+        fetch = FetchType.EAGER, targetEntity=HibernateAccountSubstudy.class)
     @OnDelete(action=OnDeleteAction.CASCADE)
     @Override
     public Set<AccountSubstudy> getAccountSubstudies() {

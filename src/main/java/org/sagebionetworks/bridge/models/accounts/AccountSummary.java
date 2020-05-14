@@ -7,8 +7,10 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Iterables;
 
+@JsonDeserialize(builder = AccountSummary.Builder.class)
 public final class AccountSummary {
     
     // This is the one class that exposes this object through the API. Because this 

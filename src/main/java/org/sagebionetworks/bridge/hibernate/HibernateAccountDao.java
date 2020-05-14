@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.Hibernate;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,15 +37,9 @@ public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
-    /* You cannot initialize collections if you use the constructor method to limit the fields
-     * you retrieve. Our query is too complicated to use named graphs.
-    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
-            "acct.synapseUserId) FROM HibernateAccount AS acct";
-     */
-    static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
+    static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
     
-    static final String GET_QUERY = "SELECT acct FROM HibernateAccount AS acct";
+    static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
     
@@ -95,7 +88,7 @@ public class HibernateAccountDao implements AccountDao {
         // The fastest retrieval can be done with the ID if it has been provided.
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
-            account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId(), this::initAllCollections);
+            account = hibernateHelper.getById(HibernateAccount.class, unguarded.getId());
             // Enforce the app membership of the accountId
             if (account == null || !account.getAppId().equals(accountId.getAppId())) {
                 return Optional.empty();
@@ -104,7 +97,7 @@ public class HibernateAccountDao implements AccountDao {
             QueryBuilder builder = makeQuery(FULL_QUERY, unguarded.getAppId(), accountId, null, false);
             
             List<HibernateAccount> accountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(), 
-                    null, null, HibernateAccount.class, this::initAllCollections);
+                    null, null, HibernateAccount.class);
             if (accountList.isEmpty()) {
                 return Optional.empty();
             }
@@ -185,21 +178,23 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
-        final QueryBuilder builder = makeQuery(GET_QUERY, app.getIdentifier(), null, search, false);
-
-        // Get page of accounts. We need to open the session here so we can force instantiation of collections
-        // that are being requested in the search. This is extensible while stay performant... you only load
-        // collections/make additional queries for the records you want.
+        // Getting the IDs and loading the records individually leads to N+1 queries (one id query and a 
+        // query for each object), whereas querying for a constructor of a subset of columns leads to 
+        // (N*Y)+1 queries as we must load each collection individually... Y=1 in the prior code to load
+        // substudies, and Y=2 once we add attributes. On the downside, this approach loads all 
+        // HibernateAccount fields, like clientData, though it is not returned.
+        QueryBuilder builder = makeQuery(ID_QUERY, app.getIdentifier(), null, search, false);
+        List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
+                search.getOffsetBy(), search.getPageSize(), String.class);
         
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
-                search.getOffsetBy(), search.getPageSize(), HibernateAccount.class, 
-                (acct) -> this.initSummaryCollections(search, acct));
-        List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
-                .map(this::unmarshallAccountSummary).collect(Collectors.toList());
+        List<AccountSummary>accountSummaryList = ids.stream()
+                .map(id -> hibernateHelper.getById(HibernateAccount.class, id))
+                .map(this::unmarshallAccountSummary)
+                .collect(Collectors.toList());
 
         // Get count of accounts.
-        final QueryBuilder builder2 = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
-        int count = hibernateHelper.queryCount(builder2.getQuery(), builder2.getParameters());
+        builder = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
+        int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
@@ -230,24 +225,6 @@ public class HibernateAccountDao implements AccountDao {
         return false;
     }
     
-    void initAllCollections(HibernateAccount acct) {
-        Hibernate.initialize(acct.getAccountSubstudies());
-        Hibernate.initialize(acct.getAttributes());
-        Hibernate.initialize(acct.getConsents());
-        Hibernate.initialize(acct.getLanguages());
-        Hibernate.initialize(acct.getDataGroups());
-        Hibernate.initialize(acct.getRoles());
-    }
-    
-    void initSummaryCollections(AccountSummarySearch search, HibernateAccount acct) {
-        if (search.areSubstudiesIncluded()) {
-            Hibernate.initialize(acct.getAccountSubstudies());
-        }
-        if (search.areAttributesIncluded()) {
-            Hibernate.initialize(acct.getAttributes());    
-        }
-    }
-
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
     AccountSummary unmarshallAccountSummary(HibernateAccount acct) {
@@ -264,18 +241,13 @@ public class HibernateAccountDao implements AccountDao {
         
         // If these were not initialized earlier, they will be skipped here. They don't show
         // up in the JSON.
-        if (Hibernate.isInitialized(acct.getAccountSubstudies())) {
-            SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
-            if (acct.getId() != null) {
-                assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
-            }
-            builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
-            builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
-            
+        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
+        if (acct.getId() != null) {
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
         }
-        if (Hibernate.isInitialized(acct.getAttributes())) {
-            builder.withAttributes(acct.getAttributes());    
-        }
+        builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
+        builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
+        builder.withAttributes(acct.getAttributes());    
         return builder.build();
     }
 }
