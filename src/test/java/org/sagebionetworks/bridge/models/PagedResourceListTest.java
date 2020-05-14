@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
-import static org.sagebionetworks.bridge.TestConstants.PHONE;
-import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
+import static org.sagebionetworks.bridge.TestConstants.SUMMARY2;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -19,8 +17,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class PagedResourceListTest {
@@ -29,12 +25,8 @@ public class PagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy1", "externalId1"), "id", DateTime.now(), DISABLED, TEST_APP_ID,
-                ImmutableSet.of()));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy2", "externalId2"), "id2", DateTime.now(), ENABLED, TEST_APP_ID,
-                ImmutableSet.of()));
+        accounts.add(SUMMARY1);
+        accounts.add(SUMMARY2);
 
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
         DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
@@ -69,7 +61,7 @@ public class PagedResourceListTest {
         JsonNode child1 = items.get(0);
         assertEquals(child1.get("firstName").asText(), "firstName1");
         assertEquals(child1.get("lastName").asText(), "lastName1");
-        assertEquals(child1.get("email").asText(), "email1@email.com");
+        assertEquals(child1.get("email").asText(), EMAIL);
         assertEquals(child1.get("id").asText(), "id");
         assertEquals(child1.get("status").asText(), "disabled");
         

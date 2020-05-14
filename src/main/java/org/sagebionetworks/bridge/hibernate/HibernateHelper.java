@@ -54,9 +54,19 @@ public class HibernateHelper {
         });
     }
 
-    /** Get by the table's primary key. Returns null if the object doesn't exist. */
     public <T> T getById(Class<T> clazz, Serializable id) {
-        return executeWithExceptionHandling(null, session -> session.get(clazz, id));
+        return getById(clazz, id, null);
+    }
+    
+    /** Get by the table's primary key. Returns null if the object doesn't exist. */
+    public <T> T getById(Class<T> clazz, Serializable id, Consumer<T> consumer) {
+        return executeWithExceptionHandling(null, session -> {
+            T item = session.get(clazz, id);
+            if (item != null && consumer != null) {
+                consumer.accept(item);
+            }
+            return item;
+        });
     }
 
     /**
@@ -104,11 +114,16 @@ public class HibernateHelper {
         }
     }    
     
+    public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
+        return queryGet(queryString, parameters, offset, limit, clazz, null);
+    }
+    
     /**
      * Executes the query and returns a list of results. Returns an empty list if there's no result. Optional offset
      * and limit for pagination.
      */
-    public <T> List<T> queryGet(String queryString, Map<String,Object> parameters, Integer offset, Integer limit, Class<T> clazz) {
+    public <T> List<T> queryGet(String queryString, Map<String, Object> parameters, Integer offset, Integer limit,
+            Class<T> clazz, Consumer<T> consumer) {
         return executeWithExceptionHandling(null, session -> {
             Query<T> query = session.createQuery(queryString, clazz);
             if (parameters != null) {
@@ -122,7 +137,13 @@ public class HibernateHelper {
             if (limit != null) {
                 query.setMaxResults(limit);
             }
-            return query.list();
+            List<T> list = query.list();
+            if (consumer != null) {
+                for (T item : list) {
+                    consumer.accept(item);
+                }
+            }
+            return list;
         });
     }
 

@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.NOTIFICATION_MESSAGE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
@@ -76,6 +77,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
@@ -146,10 +148,6 @@ public class ParticipantControllerTest extends Mockito {
     private static final DateTime END_TIME = TIMESTAMP;
 
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
-
-    private static final AccountSummary SUMMARY = new AccountSummary("firstName", "lastName", EMAIL,
-            SYNAPSE_USER_ID, PHONE, ImmutableMap.of("substudyA", "externalId"), USER_ID, TIMESTAMP,
-            ENABLED, TEST_APP_ID, EMPTY_SET);
 
     private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
             .withAppId(TEST_APP_ID).withEmail(EMAIL)
@@ -255,7 +253,7 @@ public class ParticipantControllerTest extends Mockito {
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
-        List<AccountSummary> summaries = ImmutableList.of(SUMMARY, SUMMARY, SUMMARY);
+        List<AccountSummary> summaries = ImmutableList.of(SUMMARY1, SUMMARY1, SUMMARY1);
         PagedResourceList<AccountSummary> page = new PagedResourceList<>(summaries, 30).withRequestParam("offsetBy", 10)
                 .withRequestParam("pageSize", 20).withRequestParam("startTime", START_TIME)
                 .withRequestParam("endTime", END_TIME).withRequestParam("emailFilter", "foo");
@@ -1448,7 +1446,7 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(page.getItems().size(), 3);
         assertEquals(page.getTotal(), (Integer) 30);
-        assertEquals(page.getItems().get(0), SUMMARY);
+        assertEquals(page.getItems().get(0), SUMMARY1);
 
         assertDatesWithTimeZoneEqual(START_TIME, page.getStartTime());
         assertDatesWithTimeZoneEqual(END_TIME, page.getEndTime());

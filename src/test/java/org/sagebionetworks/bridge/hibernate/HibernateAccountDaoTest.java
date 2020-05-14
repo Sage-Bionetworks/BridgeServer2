@@ -28,12 +28,12 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterClass;
+import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -96,15 +96,19 @@ public class HibernateAccountDaoTest extends Mockito {
     private HibernateHelper mockHibernateHelper;
 
     private App app;
+    
+    @InjectMocks
+    @Spy
     private HibernateAccountDao dao;
 
-    @BeforeClass
-    public static void mockNow() {
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
         DateTimeUtils.setCurrentMillisFixed(MOCK_DATETIME.getMillis());
     }
 
-    @AfterClass
-    public static void unmockNow() {
+    @AfterMethod
+    public static void afterMethod() {
         DateTimeUtils.setCurrentMillisSystem();
     }
 
@@ -137,7 +141,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getByEmail() throws Exception {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
@@ -211,7 +215,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID), any())).thenReturn(hibernateAccount);
 
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
@@ -230,8 +234,9 @@ public class HibernateAccountDaoTest extends Mockito {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // Clear these fields to verify that they are created
         hibernateAccount.setHealthCode(null);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
-
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID), any())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.update(any(), isNull())).thenReturn(hibernateAccount);
+        
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
         assertEquals(account.getId(), ACCOUNT_ID);
@@ -258,14 +263,15 @@ public class HibernateAccountDaoTest extends Mockito {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         hibernateAccount.setHealthCode(null);
         hibernateAccount.setAppId(TEST_APP_ID);
-        when(mockHibernateHelper.getById(HibernateAccount.class, ACCOUNT_ID)).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID), any())).thenReturn(hibernateAccount);
 
         // execute and validate
         AccountId wrongApp = AccountId.forId("wrong-app", ACCOUNT_ID);
         Optional<Account> opt = dao.getAccount(wrongApp);
         assertFalse(opt.isPresent());
         
-        verify(mockHibernateHelper).getById(HibernateAccount.class, wrongApp.getUnguardedAccountId().getId());
+        verify(mockHibernateHelper).getById(eq(HibernateAccount.class), eq(wrongApp.getUnguardedAccountId().getId()),
+                any());
     }
     
     @Test
@@ -277,7 +283,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // mock hibernate
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         hibernateAccount.setHealthCode("original-" + HEALTH_CODE);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate - just validate ID, app, and email, and health code mapping
@@ -288,7 +294,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(account.getHealthCode(), "original-" + HEALTH_CODE);
 
         // verify hibernate query
-        verify(mockHibernateHelper).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
+        verify(mockHibernateHelper).queryGet(eq(expQuery), eq(EMAIL_QUERY_PARAMS), isNull(), isNull(),
+                eq(HibernateAccount.class), any());
 
         // We don't create a new health code mapping nor update the account.
         verify(mockHibernateHelper, never()).update(any(), eq(null));
@@ -306,9 +313,11 @@ public class HibernateAccountDaoTest extends Mockito {
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // Clear these fields to verify that they are created
         hibernateAccount.setHealthCode(null);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
+        when(mockHibernateHelper.update(any(), isNull())).thenReturn(hibernateAccount);
+        
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
         assertEquals(account.getId(), ACCOUNT_ID);
@@ -317,8 +326,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(account.getHealthCode(), HEALTH_CODE);
 
         // verify hibernate query
-        verify(mockHibernateHelper).queryGet(expQuery, EMAIL_QUERY_PARAMS, null, null, HibernateAccount.class);
-
+        verify(mockHibernateHelper).queryGet(eq(expQuery), eq(EMAIL_QUERY_PARAMS), isNull(), isNull(), eq(HibernateAccount.class), any());
+        
         // Verify we create the new health code mapping
         verifyCreatedHealthCode();
     }
@@ -341,8 +350,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, PHONE_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.queryGet(eq(expQuery), eq(PHONE_QUERY_PARAMS), isNull(), isNull(),
+                eq(HibernateAccount.class), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate
         Account account = dao.getAccount(ACCOUNT_ID_WITH_PHONE).get();
@@ -363,8 +372,8 @@ public class HibernateAccountDaoTest extends Mockito {
         
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, SYNAPSE_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.queryGet(eq(expQuery), eq(SYNAPSE_QUERY_PARAMS), isNull(), isNull(),
+                eq(HibernateAccount.class), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate
         Account account = dao.getAccount(ACCOUNT_ID_WITH_SYNID).get();
@@ -386,8 +395,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, HEALTHCODE_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.queryGet(eq(expQuery), eq(HEALTHCODE_QUERY_PARAMS), isNull(), isNull(),
+                eq(HibernateAccount.class), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate
         Account account = dao.getAccount(ACCOUNT_ID_WITH_HEALTHCODE).get();
@@ -409,8 +418,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
         HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
         // mock hibernate
-        when(mockHibernateHelper.queryGet(expQuery, EXTID_QUERY_PARAMS, null, null, HibernateAccount.class))
-                .thenReturn(ImmutableList.of(hibernateAccount));
+        when(mockHibernateHelper.queryGet(eq(expQuery), eq(EXTID_QUERY_PARAMS), isNull(), isNull(),
+                eq(HibernateAccount.class), any())).thenReturn(ImmutableList.of(hibernateAccount));
 
         // execute and validate
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EXTID).get();
@@ -436,36 +445,32 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPaged() throws Exception {
-        String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "
-                + "acct.firstName, acct.lastName, acct.email, acct.phone, "
-                + "acct.id, acct.status, acct.synapseUserId) FROM HibernateAccount AS acct LEFT JOIN "
+        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
                 + "WHERE acct.appId = :appId GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct "
                 + "LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH acct.id = "
                 + "acctSubstudy.accountId WHERE acct.appId = :appId";
+        
+        Set<AccountSubstudy> set = ImmutableSet.of(
+                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
+                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
+
         // mock hibernate
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
         hibernateAccount1.setId("account-1");
         hibernateAccount1.setEmail("email1@example.com");
+        hibernateAccount1.setAccountSubstudies(set);
 
         HibernateAccount hibernateAccount2 = makeValidHibernateAccount(false);
         hibernateAccount2.setId("account-2");
         hibernateAccount2.setEmail("email2@example.com");
+        hibernateAccount2.setAccountSubstudies(set);
 
-        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount1, hibernateAccount2));
         when(mockHibernateHelper.queryCount(eq(expCountQuery), any())).thenReturn(12);
-
-        // Finally, mock the retrieval of substudies to verify this is called to populate the substudies
-        List<HibernateAccountSubstudy> list = ImmutableList.of(
-                (HibernateAccountSubstudy) AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A,
-                        ACCOUNT_ID),
-                (HibernateAccountSubstudy) AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B,
-                        ACCOUNT_ID));
-        when(mockHibernateHelper.queryGet(eq("FROM HibernateAccountSubstudy WHERE accountId=:accountId"), any(), any(),
-                any(), eq(HibernateAccountSubstudy.class))).thenReturn(list);
 
         // execute and validate
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5).build();
@@ -494,7 +499,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
 
         // verify hibernate calls
-        verify(mockHibernateHelper).queryGet(expQuery, APP_QUERY_PARAMS, 10, 5, HibernateAccount.class);
+        verify(mockHibernateHelper).queryGet(eq(expQuery), eq(APP_QUERY_PARAMS), eq(10), eq(5),
+                eq(HibernateAccount.class), any());
         verify(mockHibernateHelper).queryCount(expCountQuery, APP_QUERY_PARAMS);
     }
 
@@ -502,20 +508,17 @@ public class HibernateAccountDaoTest extends Mockito {
     public void getPagedRemovesSubstudiesNotInCaller() throws Exception {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
+        
+        Set<AccountSubstudy> set = ImmutableSet.of(
+                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
+                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
 
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
+        hibernateAccount1.setAccountSubstudies(set);
         HibernateAccount hibernateAccount2 = makeValidHibernateAccount(false);
-        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+        hibernateAccount2.setAccountSubstudies(set);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount1, hibernateAccount2));
-
-        // Finally, mock the retrieval of substudies to verify this is called to populate the substudies
-        List<HibernateAccountSubstudy> list = ImmutableList.of(
-                (HibernateAccountSubstudy) AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A,
-                        ACCOUNT_ID),
-                (HibernateAccountSubstudy) AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B,
-                        ACCOUNT_ID));
-        when(mockHibernateHelper.queryGet(eq("FROM HibernateAccountSubstudy WHERE accountId=:accountId"), any(), any(),
-                any(), eq(HibernateAccountSubstudy.class))).thenReturn(list);
 
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
@@ -528,14 +531,12 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedWithOptionalParams() throws Exception {
-        String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.appId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status, acct.synapseUserId) FROM "
-                + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
-                + "acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND acct.email LIKE "
-                + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
-                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
-                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
-                + ":NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
+        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
+                + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND "
+                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime "
+                + "AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN "
+                + "elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
+                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE "
@@ -550,7 +551,7 @@ public class HibernateAccountDaoTest extends Mockito {
         DateTime endDate = DateTime.parse("2017-05-19T18:32:03.434-0700");
 
         // mock hibernate
-        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(makeValidHibernateAccount(false)));
         when(mockHibernateHelper.queryCount(eq(expCountQuery), any())).thenReturn(11);
 
@@ -591,7 +592,7 @@ public class HibernateAccountDaoTest extends Mockito {
         params.put("language", "de");
 
         verify(mockHibernateHelper).queryGet(eq(expQuery), paramCaptor.capture(), eq(10), eq(5),
-                eq(HibernateAccount.class));
+                eq(HibernateAccount.class), any());
         verify(mockHibernateHelper).queryCount(eq(expCountQuery), paramCaptor.capture());
 
         Map<String, Object> capturedParams = paramCaptor.getAllValues().get(0);
@@ -643,12 +644,11 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedWithOptionalEmptySetParams() throws Exception {
-        String expQuery = "SELECT new HibernateAccount(acct.createdOn, acct.appId, acct.firstName, "
-                + "acct.lastName, acct.email, acct.phone, acct.id, acct.status, acct.synapseUserId) FROM "
-                + "HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH "
-                + "acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND acct.email LIKE "
-                + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
-                + "acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) GROUP BY acct.id";
+        String expQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
+                + "AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND "
+                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= "
+                + ":startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
+                + "GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE "
@@ -661,7 +661,7 @@ public class HibernateAccountDaoTest extends Mockito {
         DateTime endDate = DateTime.parse("2017-05-19T18:32:03.434-0700");
 
         // mock hibernate
-        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any()))
+        when(mockHibernateHelper.queryGet(eq(expQuery), any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(makeValidHibernateAccount(false)));
         when(mockHibernateHelper.queryCount(any(), any())).thenReturn(11);
 
@@ -696,7 +696,7 @@ public class HibernateAccountDaoTest extends Mockito {
         params.put("language", "de");
 
         verify(mockHibernateHelper).queryGet(eq(expQuery), paramCaptor.capture(), eq(10), eq(5),
-                eq(HibernateAccount.class));
+                eq(HibernateAccount.class), any());
         verify(mockHibernateHelper).queryCount(eq(expCountQuery), paramCaptor.capture());
 
         Map<String, Object> capturedParams = paramCaptor.getAllValues().get(0);
@@ -718,6 +718,11 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummarySuccess() {
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
+        as1.setExternalId("externalIdA");
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
+        as2.setExternalId("externalIdB");
+        
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
@@ -728,17 +733,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON);
         hibernateAccount.setStatus(ENABLED);
-
-        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
-        as1.setExternalId("externalIdA");
-        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
-        as2.setExternalId("externalIdB");
-
-        when(mockHibernateHelper.queryGet("FROM HibernateAccountSubstudy WHERE accountId=:accountId",
-                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class))
-                        .thenReturn(ImmutableList.of(as1, as2));
+        hibernateAccount.setAccountSubstudies(ImmutableSet.of(as1, as2));
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
@@ -764,25 +759,20 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummaryFiltersSubstudies() throws Exception {
-        BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
 
+        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
+        as1.setExternalId("externalIdA");
+        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
+        as2.setExternalId("externalIdB");
+        
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setStatus(ENABLED);
-
-        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
-        as1.setExternalId("externalIdA");
-        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
-        as2.setExternalId("externalIdB");
-
-        when(mockHibernateHelper.queryGet("FROM HibernateAccountSubstudy WHERE accountId=:accountId",
-                ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class))
-                        .thenReturn(ImmutableList.of(as1, as2));
+        hibernateAccount.setAccountSubstudies(ImmutableSet.of(as1, as2));
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
@@ -810,7 +800,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void noLanguageQueryCorrect() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy "
@@ -824,7 +814,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void languageQueryCorrect() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withLanguage("en").build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS acctSubstudy "
                 + "WITH acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND "
@@ -839,7 +829,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("sdk-int-1"))
                 .withAllOfGroups(Sets.newHashSet("group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
@@ -858,7 +848,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withAllOfGroups(Sets.newHashSet("group1"))
                 .build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
@@ -875,7 +865,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withAllOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
@@ -893,7 +883,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("group1"))
                 .build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
@@ -910,7 +900,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withNoneOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.GET_QUERY, TEST_APP_ID, null,
                 search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies "
