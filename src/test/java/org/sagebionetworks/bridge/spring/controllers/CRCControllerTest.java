@@ -159,6 +159,7 @@ public class CRCControllerTest extends Mockito {
     @Test
     public void updateParticipantCallsExternal() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
+                .withId("thisIdWillBeIgnored")
                 .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED, "group1")).build();
         mockRequestBody(mockRequest, participant);
         
@@ -167,10 +168,7 @@ public class CRCControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
 
-        when(mockParticipantService.getParticipant(app, USER_ID, true))
-                .thenReturn(new StudyParticipant.Builder().build());
-
-        StatusMessage message = controller.updateParticipant(USER_ID);
+        StatusMessage message = controller.updateParticipant("targetUserId");
         assertNotNull(message);
 
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
@@ -178,7 +176,7 @@ public class CRCControllerTest extends Mockito {
 
         StudyParticipant captured = participantCaptor.getValue();
         assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(captured.getId(), USER_ID);
+        assertEquals(captured.getId(), "targetUserId");
     }
     
     @Test

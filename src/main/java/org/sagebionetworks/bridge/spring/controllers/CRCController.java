@@ -123,7 +123,7 @@ public class CRCController extends BaseController {
         // Force userId of the URL
         StudyParticipant.Builder builder = new StudyParticipant.Builder()
                 .copyOf(participant)
-                .withId(session.getId());
+                .withId(userId);
         
         Set<String> dataGroups = participant.getDataGroups();
         if (dataGroups.contains(AccountStates.SELECTED.name().toLowerCase())) {
