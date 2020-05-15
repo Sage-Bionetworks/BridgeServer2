@@ -141,6 +141,7 @@ public class CRCControllerTest extends Mockito {
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
         account.setAccountSubstudies(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
+        account.setDataGroups(ImmutableSet.of("group1"));
         
         app = App.create();
         when(mockAppService.getApp(APP_ID)).thenReturn(app);
@@ -158,7 +159,7 @@ public class CRCControllerTest extends Mockito {
     @Test
     public void updateParticipantCallsExternal() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED)).build();
+                .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED, "group1")).build();
         mockRequestBody(mockRequest, participant);
         
         UserSession session = new UserSession();
@@ -168,22 +169,22 @@ public class CRCControllerTest extends Mockito {
 
         when(mockParticipantService.getParticipant(app, USER_ID, true))
                 .thenReturn(new StudyParticipant.Builder().build());
-        
-        JsonNode retValue = controller.updateParticipantSelf();
-        assertNotNull(retValue);
-        
+
+        StatusMessage message = controller.updateParticipant(USER_ID);
+        assertNotNull(message);
+
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         verify(controller).createLabOrder(any()); // expand on this
-        verify(mockSessionUpdateService).updateParticipant(eq(session), any(), any(StudyParticipant.class));
-        
+
         StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED));
+        assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
+        assertEquals(captured.getId(), USER_ID);
     }
     
     @Test
     public void updateParticipantDoesNotCallExternal() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withDataGroups(makeSetOf(CRCController.AccountStates.DECLINED)).build();
+                .withDataGroups(makeSetOf(CRCController.AccountStates.DECLINED, "group1")).build();
         mockRequestBody(mockRequest, participant);
         
         UserSession session = new UserSession();
@@ -194,9 +195,12 @@ public class CRCControllerTest extends Mockito {
         when(mockParticipantService.getParticipant(app, USER_ID, true))
                 .thenReturn(new StudyParticipant.Builder().build());
         
-        controller.updateParticipantSelf();
+        controller.updateParticipant(USER_ID);
         
         verify(controller, never()).createLabOrder(any());
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
+        assertEquals(participantCaptor.getValue().getDataGroups(),
+                makeSetOf(CRCController.AccountStates.DECLINED, "group1"));
     }    
     
     @Test
@@ -239,7 +243,7 @@ public class CRCControllerTest extends Mockito {
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
-        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_SCHEDULED));
+        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_SCHEDULED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
     }
     
@@ -299,7 +303,7 @@ public class CRCControllerTest extends Mockito {
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
-        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED));
+        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
     }
     
@@ -349,7 +353,7 @@ public class CRCControllerTest extends Mockito {
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
-        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE));
+        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
     }
     
@@ -413,10 +417,12 @@ public class CRCControllerTest extends Mockito {
         controller.httpBasicAuthentication();
     }
 
-    @Test(expectedExceptions = NotAuthenticatedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void authenticationInvalidCredentials() {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAppService.getApp(CRCController.APP_ID)).thenReturn(mockApp);
+        when(mockAccountService.authenticate(eq(mockApp), any()))
+            .thenThrow(new EntityNotFoundException(Account.class));
         
         controller.httpBasicAuthentication();
     }
@@ -632,8 +638,8 @@ public class CRCControllerTest extends Mockito {
         fail("Should have thrown exception");
     }
     
-    private Set<String> makeSetOf(CRCController.AccountStates state) {
-        return ImmutableSet.of(state.name().toLowerCase());
+    private Set<String> makeSetOf(CRCController.AccountStates state, String unaffectedGroup) {
+        return ImmutableSet.of(state.name().toLowerCase(), unaffectedGroup);
     }
     
     private String makeAppointment(String ns, String identifier) {

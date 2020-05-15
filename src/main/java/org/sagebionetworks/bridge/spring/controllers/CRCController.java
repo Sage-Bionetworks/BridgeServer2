@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.codec.binary.Base64;
 import org.hl7.fhir.dstu3.model.Address;
@@ -34,6 +36,7 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,7 +46,6 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -51,7 +53,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.services.ParticipantService;
@@ -71,10 +72,14 @@ public class CRCController extends BaseController {
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
     static final String USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
+    static final String TEST_USERNAME = "pFLaYky-7ToEH7MB6ZhzqpKe";
     // This is thread-safe and it's recommended to reuse an instance because it's expensive to create;
     static final FhirContext FHIR_CONTEXT = FhirContext.forDstu3();
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
     static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
+    static final Map<String, String> ACCOUNTS = ImmutableMap.of(
+            USERNAME, APP_ID, 
+            TEST_USERNAME, API_APP_ID);
     
     static enum AccountStates {
         ENROLLED,
@@ -108,8 +113,8 @@ public class CRCController extends BaseController {
         return DateTime.now().withZone(DateTimeZone.UTC);
     }
     
-    @PostMapping("/v1/cuimc/participants/self")
-    public JsonNode updateParticipantSelf() {
+    @PostMapping("/v1/cuimc/participants/{userId}")
+    public StatusMessage updateParticipant(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         App app = appService.getApp(session.getAppId());
 
@@ -128,23 +133,7 @@ public class CRCController extends BaseController {
         
         participantService.updateParticipant(app, builder.build());
 
-        // Now prepare an updated session
-        StudyParticipant updatedParticipant = participantService.getParticipant(app, session.getId(), true);
-        RequestContext reqContext = BridgeUtils.getRequestContext();
-        
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withLanguages(session.getParticipant().getLanguages())
-                .withClientInfo(reqContext.getCallerClientInfo())
-                .withHealthCode(session.getHealthCode())
-                .withUserId(session.getId())
-                .withUserDataGroups(updatedParticipant.getDataGroups())
-                .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
-                .withAppId(session.getAppId())
-                .build();
-        
-        sessionUpdateService.updateParticipant(session, context, updatedParticipant);
-        
-        return UserSessionInfo.toJSON(session);
+        return new StatusMessage("Participant updated.");
     } 
     
     @PutMapping("/v1/cuimc/appointments")
@@ -206,7 +195,8 @@ public class CRCController extends BaseController {
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
         
-        System.out.println(parser.encodeResourceToString(patient));
+        // Call external partner here and submit the patient record
+        // this will trigger workflow at Columbia.
     }
 
     private String findUserId(List<Identifier> identifiers) {
@@ -222,7 +212,8 @@ public class CRCController extends BaseController {
     }
 
     private int writeReportAndUpdateState(String userId, JsonNode data, String reportName, AccountStates state) {
-        AccountId accountId = AccountId.forId(APP_ID, userId);
+        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        AccountId accountId = AccountId.forId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
@@ -234,10 +225,10 @@ public class CRCController extends BaseController {
         report.setSubstudyIds(callerSubstudyIds);
         
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(
-                APP_ID, reportName, account.getHealthCode(), JAN1, JAN2);
+                appId, reportName, account.getHealthCode(), JAN1, JAN2);
         int status = (results.getItems().isEmpty()) ? 201 : 200;
         
-        reportService.saveParticipantReport(APP_ID, reportName, account.getHealthCode(), report);
+        reportService.saveParticipantReport(appId, reportName, account.getHealthCode(), report);
         
         updateState(account, state);
         accountService.updateAccount(account, null);
@@ -287,23 +278,23 @@ public class CRCController extends BaseController {
         if (credentials.length != 2) {
             throw new NotAuthenticatedException();
         }
-        if (!credentials[0].equals(USERNAME)) {
+        if (!ACCOUNTS.keySet().contains(credentials[0])) {
             throw new NotAuthenticatedException();
         }
+        String appId = ACCOUNTS.get(credentials[0]);
         SignIn signIn = new SignIn.Builder()
-                .withAppId(APP_ID)
+                .withAppId(appId)
                 .withExternalId(credentials[0])
                 .withPassword(credentials[1]).build();
-        App app = appService.getApp(APP_ID);
+        App app = appService.getApp(appId);
         
         // Verify the password
         Account account = accountService.authenticate(app, signIn);
-        if (account == null) {
-            throw new NotAuthenticatedException();
-        }
+
         // This method of verification entirely sidesteps RequestContext 
         // initialization. Set up anything that is needed in this controller.
         BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerAppId(appId)
                 .withCallerSubstudies(BridgeUtils.collectSubstudyIds(account))
                 .build());
     }
