@@ -16,7 +16,6 @@ import java.net.URL;
 import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -78,8 +77,7 @@ public class UploadServiceCreateUploadMockTest {
         DateTimeUtils.setCurrentMillisFixed(TEST_UPLOAD_REQUESTED_ON.getMillis());
 
         // make test request
-        JsonNode uploadRequestJsonNode = BridgeObjectMapper.get().readTree(TEST_UPLOAD_REQUEST_JSON);
-        uploadRequest = UploadRequest.fromJson(uploadRequestJsonNode);
+        uploadRequest = BridgeObjectMapper.get().readValue(TEST_UPLOAD_REQUEST_JSON, UploadRequest.class);
 
         // mock config
         BridgeConfig mockConfig = mock(BridgeConfig.class);

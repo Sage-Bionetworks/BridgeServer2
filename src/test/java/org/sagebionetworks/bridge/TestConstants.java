@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.TagUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -178,4 +181,15 @@ public class TestConstants {
     public static final ImmutableList<String> PUBLISHERS = ImmutableList.of("pub1", "pub2");
     public static final ImmutableList<String> CREATORS = ImmutableList.of("creator1", "creator2");
     public static final ImmutableList<String> CONTRIBUTORS = ImmutableList.of("contrib1", "contrib2");
+    
+    public static final AccountSummary SUMMARY1 = new AccountSummary.Builder().withFirstName("firstName1")
+            .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
+            .withExternalIds(ImmutableMap.of("substudy1", "externalId1")).withId("id")
+            .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
+            .withAppId(TEST_APP_ID).build();
+    public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
+            .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
+            .withExternalIds(ImmutableMap.of("substudy2", "externalId2")).withId("id2")
+            .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
+            .withAppId(TEST_APP_ID).build();
 }

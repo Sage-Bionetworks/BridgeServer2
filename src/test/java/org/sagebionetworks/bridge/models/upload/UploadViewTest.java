@@ -6,11 +6,11 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,12 +53,14 @@ public class UploadViewTest {
         record.setVersion(1L);
         record.setSynapseExporterStatus(ExporterStatus.SUCCEEDED);
         
-        DynamoUpload2 upload = new DynamoUpload2();
+        Upload upload = Upload.create();
         upload.setContentLength(1000L);
         upload.setStatus(UploadStatus.SUCCEEDED);
         upload.setRequestedOn(REQUESTED_ON.getMillis());
         upload.setCompletedOn(COMPLETED_ON.getMillis());
         upload.setCompletedBy(UploadCompletionClient.APP);
+        upload.setEncrypted(false);
+        upload.setZipped(false);
         // These should be hidden by the @JsonIgnore property
         upload.setContentMd5("some-content");
         upload.setHealthCode("health-code");
@@ -70,17 +72,19 @@ public class UploadViewTest {
                 .withHealthRecordExporterStatus(HealthDataRecord.ExporterStatus.SUCCEEDED).build();
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(view);
-        
+
         assertEquals(node.get("contentLength").intValue(), 1000);
         assertEquals(node.get("status").textValue(), "succeeded");
         assertEquals(node.get("requestedOn").textValue(), "2016-07-25T16:25:32.211Z");
         assertEquals(node.get("completedOn").textValue(), "2016-07-25T16:25:32.277Z");
         assertEquals(node.get("completedBy").textValue(), "app");
+        assertFalse(node.get("encrypted").booleanValue());
         assertEquals(node.get("schemaId").textValue(), "schema-name");
         assertEquals(node.get("schemaRevision").intValue(), 10);
         assertEquals(node.get("type").textValue(), "Upload");
         assertEquals(node.get("healthRecordExporterStatus").textValue(), "succeeded");
-        
+        assertFalse(node.get("zipped").booleanValue());
+
         JsonNode recordNode = node.get("healthData");
         assertEquals(recordNode.get("appVersion").textValue(), "appVersion");
         assertEquals(recordNode.get("createdOn").textValue(), COMPLETED_ON.toString());

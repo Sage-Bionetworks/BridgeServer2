@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
@@ -37,11 +36,9 @@ import org.sagebionetworks.bridge.models.apps.App;
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
+
+    static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
     
-    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
-            "acct.synapseUserId) FROM HibernateAccount AS acct";
-            
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
@@ -123,7 +120,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
         builder.append("WITH acct.id = acctSubstudy.accountId");
         builder.append("WHERE acct.appId = :appId", "appId", appId);
-
+        
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
@@ -181,13 +178,19 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
-        QueryBuilder builder = makeQuery(SUMMARY_QUERY, app.getIdentifier(), null, search, false);
-
-        // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
-                search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
-        List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
-                .map(this::unmarshallAccountSummary).collect(Collectors.toList());
+        // Getting the IDs and loading the records individually leads to N+1 queries (one id query and a 
+        // query for each object), whereas querying for a constructor of a subset of columns leads to 
+        // (N*Y)+1 queries as we must load each collection individually... Y=1 in the prior code to load
+        // substudies, and Y=2 once we add attributes. On the downside, this approach loads all 
+        // HibernateAccount fields, like clientData, though it is not returned.
+        QueryBuilder builder = makeQuery(ID_QUERY, app.getIdentifier(), null, search, false);
+        List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
+                search.getOffsetBy(), search.getPageSize(), String.class);
+        
+        List<AccountSummary>accountSummaryList = ids.stream()
+                .map(id -> hibernateHelper.getById(HibernateAccount.class, id))
+                .map(this::unmarshallAccountSummary)
+                .collect(Collectors.toList());
 
         // Get count of accounts.
         builder = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
@@ -224,26 +227,25 @@ public class HibernateAccountDao implements AccountDao {
 
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
-    AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        String appId = hibernateAccount.getAppId();
+    AccountSummary unmarshallAccountSummary(HibernateAccount acct) {
+        AccountSummary.Builder builder = new AccountSummary.Builder();
+        builder.withAppId(acct.getAppId());
+        builder.withId(acct.getId());
+        builder.withFirstName(acct.getFirstName());
+        builder.withLastName(acct.getLastName());
+        builder.withEmail(acct.getEmail());
+        builder.withPhone(acct.getPhone());
+        builder.withCreatedOn(acct.getCreatedOn());
+        builder.withStatus(acct.getStatus());
+        builder.withSynapseUserId(acct.getSynapseUserId());
+        builder.withAttributes(acct.getAttributes());
         
-        // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
-        // to limit the data you retrieve from a table. May need to manually construct the objects to 
-        // avoid this 1+N query.
-        SubstudyAssociations assoc = null;
-        if (hibernateAccount.getId() != null) {
-            List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
-                    "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
-                    ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies);
-        } else {
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
+        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
+        if (acct.getId() != null) {
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
         }
-        
-        return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getSynapseUserId(), hibernateAccount.getPhone(),
-                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
-                hibernateAccount.getStatus(), appId, assoc.getSubstudyIdsVisibleToCaller());
+        builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
+        builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
+        return builder.build();
     }
 }

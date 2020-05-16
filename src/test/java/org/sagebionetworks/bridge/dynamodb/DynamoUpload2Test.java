@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -41,6 +42,7 @@ public class DynamoUpload2Test {
         upload.setContentMd5("abc");
         upload.setContentType("application/json");
         upload.setDuplicateUploadId("original-upload-id");
+        upload.setEncrypted(false);
         upload.setFilename("filename.zip");
         upload.setHealthCode("healthCode");
         upload.setRecordId("ABC");
@@ -50,6 +52,7 @@ public class DynamoUpload2Test {
         upload.setUploadId("DEF");
         upload.setValidationMessageList(Lists.newArrayList("message 1", "message 2"));
         upload.setVersion(2L);
+        upload.setZipped(false);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(upload);
         assertEquals(node.get("completedBy").textValue(), "s3_worker");
@@ -57,6 +60,7 @@ public class DynamoUpload2Test {
         assertEquals(node.get("completedOn").textValue(), completedOn.toString());
         assertEquals(node.get("contentLength").longValue(), 10000L);
         assertEquals(node.get("duplicateUploadId").textValue(), "original-upload-id");
+        assertFalse(node.get("encrypted").booleanValue());
         assertEquals(node.get("status").textValue(), "succeeded");
         assertEquals(node.get("uploadDate").textValue(), "2016-10-10");
         assertEquals(node.get("recordId").textValue(), "ABC");
@@ -68,12 +72,33 @@ public class DynamoUpload2Test {
         assertEquals(node.get("studyId").textValue(), TEST_APP_ID);
         assertEquals(node.get("version").longValue(), 2L);
         assertEquals(node.get("healthCode").textValue(), "healthCode");
+        assertFalse(node.get("zipped").booleanValue());
         
         ArrayNode messages = (ArrayNode)node.get("validationMessageList");
         assertEquals(messages.get(0).textValue(), "message 1");
         assertEquals(messages.get(1).textValue(), "message 2");
     }
-    
+
+    @Test
+    public void testEncryptedAndZipped() {
+        // Defaults to true.
+        DynamoUpload2 upload = new DynamoUpload2();
+        assertTrue(upload.isEncrypted());
+        assertTrue(upload.isZipped());
+
+        // Can set to false.
+        upload.setEncrypted(false);
+        upload.setZipped(false);
+        assertFalse(upload.isEncrypted());
+        assertFalse(upload.isZipped());
+
+        // Can set to true.
+        upload.setEncrypted(true);
+        upload.setZipped(true);
+        assertTrue(upload.isEncrypted());
+        assertTrue(upload.isZipped());
+    }
+
     @Test
     public void testGetSetValidationMessageList() {
         DynamoUpload2 upload2 = new DynamoUpload2();
