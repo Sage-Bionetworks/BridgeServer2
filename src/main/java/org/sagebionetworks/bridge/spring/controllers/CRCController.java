@@ -3,14 +3,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
-import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,8 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.fluent.Request;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint;
@@ -50,7 +47,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -199,13 +195,13 @@ public class CRCController extends BaseController {
     }
     
     void createLabOrder(StudyParticipant participant) {
+        // Call external partner here and submit the patient record
+        // this will trigger workflow at Columbia.
+        /*
         Patient patient = createPatient(participant);
         IParser parser = FHIR_CONTEXT.newJsonParser();
         String json = parser.encodeResourceToString(patient);
         
-        // Call external partner here and submit the patient record
-        // this will trigger workflow at Columbia.
-        /*
         try {
             HttpResponse response = Request.Post("<url unknown>")
                     .bodyString(json, APPLICATION_JSON)
@@ -298,7 +294,7 @@ public class CRCController extends BaseController {
         value = value.substring(5).trim();
 
         // Decode the credentials from base 64
-        value = new String(Base64.decodeBase64(value));
+        value = new String(Base64.decodeBase64(value), Charset.defaultCharset());
         // Split to username and password
         String[] credentials = value.split(":");
         if (credentials.length != 2) {
