@@ -193,12 +193,13 @@ public class CRCControllerTest extends Mockito {
         when(mockParticipantService.getParticipant(app, USER_ID, true))
                 .thenReturn(new StudyParticipant.Builder().build());
         
-        controller.updateParticipant(USER_ID);
+        controller.updateParticipant("anotherUserId");
         
         verify(controller, never()).createLabOrder(any());
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         assertEquals(participantCaptor.getValue().getDataGroups(),
                 makeSetOf(CRCController.AccountStates.DECLINED, "group1"));
+        assertEquals(participantCaptor.getValue().getId(), "anotherUserId");
     }    
     
     @Test

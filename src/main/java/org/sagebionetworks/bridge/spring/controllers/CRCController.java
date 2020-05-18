@@ -3,11 +3,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,6 +22,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.fluent.Request;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint;
@@ -33,6 +37,8 @@ import org.hl7.fhir.dstu3.model.ProcedureRequest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -44,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -64,6 +71,7 @@ import ca.uhn.fhir.parser.IParser;
 @CrossOrigin
 @RestController
 public class CRCController extends BaseController {
+    private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
     
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
     static final String USER_ID_VALUE_NS = "https://ws.sagebridge.org/#userId";
@@ -192,11 +200,29 @@ public class CRCController extends BaseController {
     
     void createLabOrder(StudyParticipant participant) {
         Patient patient = createPatient(participant);
-        
         IParser parser = FHIR_CONTEXT.newJsonParser();
+        String json = parser.encodeResourceToString(patient);
         
         // Call external partner here and submit the patient record
         // this will trigger workflow at Columbia.
+        /*
+        try {
+            HttpResponse response = Request.Post("<url unknown>")
+                    .bodyString(json, APPLICATION_JSON)
+                    .execute()
+                    .returnResponse();
+            if (response.getStatusLine().getStatusCode() != 200 && 
+                response.getStatusLine().getStatusCode() != 201) {
+                LOG.error("Error submitting patient record to CUIMC for user " + participant.getId());
+                throw new BridgeServiceException("The server encountered an error");
+            }
+            // Anything to persist here?
+            LOG.info("Patient record submitted to CUIMC for user " + participant.getId());
+        } catch (IOException e) {
+            LOG.error("Error submitting patient record to CUIMC for user " + participant.getId());
+            throw new BridgeServiceException("The server encountered an error");
+        }
+        */
     }
 
     private String findUserId(List<Identifier> identifiers) {
