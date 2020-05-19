@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.codec.binary.Base64;
@@ -44,6 +45,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -77,6 +79,11 @@ public class CRCController extends BaseController {
     static final String APPOINTMENT_REPORT = "appointment";
     static final String USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     static final String TEST_USERNAME = "pFLaYky-7ToEH7MB6ZhzqpKe";
+    static final String SELECTED_TAG = AccountStates.SELECTED.name().toLowerCase();
+    static final String TEST_TAG = BridgeConstants.TEST_USER_GROUP;
+    static final String UPDATE_MSG = "Participant updated.";
+    static final String UPDATE_FOR_TEST_ACCOUNT_MSG = "Participant updated (although eligible, a lab order was not placed for this test account).";
+    
     // This is thread-safe and it's recommended to reuse an instance because it's expensive to create;
     static final FhirContext FHIR_CONTEXT = FhirContext.forDstu3();
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
@@ -130,14 +137,16 @@ public class CRCController extends BaseController {
                 .withId(userId);
         
         Set<String> dataGroups = participant.getDataGroups();
-        if (dataGroups.contains(AccountStates.SELECTED.name().toLowerCase())) {
+        if (dataGroups.contains(SELECTED_TAG) && !dataGroups.contains(TEST_TAG)) {
             createLabOrder(builder.build());
             updateState(builder, AccountStates.TESTS_REQUESTED);
         }
         
         participantService.updateParticipant(app, builder.build());
-
-        return new StatusMessage("Participant updated.");
+        
+        boolean selectedTestAccount = dataGroups.containsAll(ImmutableList.of(SELECTED_TAG, TEST_TAG)); 
+        String msg = selectedTestAccount ? UPDATE_FOR_TEST_ACCOUNT_MSG : UPDATE_MSG;
+        return new StatusMessage(msg);
     } 
     
     @PutMapping("/v1/cuimc/appointments")
