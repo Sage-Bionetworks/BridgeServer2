@@ -3,25 +3,31 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.fluent.Request;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint;
@@ -49,19 +55,23 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
+import org.sagebionetworks.bridge.upload.UploadValidationException;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
@@ -69,6 +79,10 @@ import ca.uhn.fhir.parser.IParser;
 @CrossOrigin
 @RestController
 public class CRCController extends BaseController {
+    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
+
+    private static final String EXT_ERROR = "Error submitting patient record to CUIMC for user ";
+
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
     
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
@@ -77,7 +91,8 @@ public class CRCController extends BaseController {
     static final String OBSERVATION_REPORT = "observation";
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
-    static final String USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
+    static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
+    static final String SYN_USERNAME = "uoR1RabP0FnYAM2oTth7Qpmu";
     static final String TEST_USERNAME = "pFLaYky-7ToEH7MB6ZhzqpKe";
     static final String SELECTED_TAG = AccountStates.SELECTED.name().toLowerCase();
     static final String TEST_TAG = BridgeConstants.TEST_USER_GROUP;
@@ -89,7 +104,8 @@ public class CRCController extends BaseController {
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
     static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     static final Map<String, String> ACCOUNTS = ImmutableMap.of(
-            USERNAME, APP_ID, 
+            CUIMC_USERNAME, APP_ID, 
+            SYN_USERNAME, APP_ID,
             TEST_USERNAME, API_APP_ID);
     
     static enum AccountStates {
@@ -110,6 +126,8 @@ public class CRCController extends BaseController {
     
     private ReportService reportService;
     
+    private HealthDataService healthDataService;
+
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -120,40 +138,41 @@ public class CRCController extends BaseController {
         this.reportService = reportService;
     }
     
+    @Autowired
+    final void setHealthDataService(HealthDataService healthDataService) {
+        this.healthDataService = healthDataService;
+    }
+
     DateTime getTimestamp() {
         return DateTime.now().withZone(DateTimeZone.UTC);
     }
     
-    @PostMapping("/v1/cuimc/participants/{userId}")
-    public StatusMessage updateParticipant(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        App app = appService.getApp(session.getAppId());
+    String getUserAgent() {
+        String userAgent = request().getHeader(HttpHeaders.USER_AGENT);
+        return (userAgent == null) ? "<Unknown>" : userAgent;
+    }
 
-        StudyParticipant participant = parseJson(StudyParticipant.class);
- 
-        // Force userId of the URL
-        StudyParticipant.Builder builder = new StudyParticipant.Builder()
-                .copyOf(participant)
-                .withId(userId);
+    @PostMapping("/v1/cuimc/participants/{userId}/laborders")
+    public StatusMessage updateParticipant(@PathVariable String userId) {
+        App app = httpBasicAuthentication();
         
-        Set<String> dataGroups = participant.getDataGroups();
-        if (dataGroups.contains(SELECTED_TAG)) {
-            if (!dataGroups.contains(TEST_TAG)) {
-                createLabOrder(builder.build());    
-            }
-            updateState(builder, AccountStates.TESTS_REQUESTED);
+        AccountId accountId = parseAccountId(app.getIdentifier(), userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
         }
-        
-        participantService.updateParticipant(app, builder.build());
-        
-        boolean selectedTestAccount = dataGroups.containsAll(ImmutableList.of(SELECTED_TAG, TEST_TAG)); 
-        String msg = selectedTestAccount ? UPDATE_FOR_TEST_ACCOUNT_MSG : UPDATE_MSG;
-        return new StatusMessage(msg);
-    } 
+        Set<String> dataGroups = account.getDataGroups();
+        if (!dataGroups.contains(TEST_USER_GROUP)) {
+            createLabOrder(account);
+        }
+        updateState(account, AccountStates.TESTS_REQUESTED);
+        accountService.updateAccount(account, null);
+        return new StatusMessage("Participant updated.");
+    }
     
     @PutMapping("/v1/cuimc/appointments")
     public ResponseEntity<StatusMessage> postAppointment() {
-        httpBasicAuthentication();
+        App app = httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
@@ -161,7 +180,7 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(appointment.getIdentifier());
         
-        int status = writeReportAndUpdateState(userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
+        int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("Appointment updated."));
         }
@@ -171,7 +190,7 @@ public class CRCController extends BaseController {
 
     @PutMapping("/v1/cuimc/procedurerequests")
     public ResponseEntity<StatusMessage> postProcedureRequest() {
-        httpBasicAuthentication();
+        App app = httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
@@ -179,7 +198,7 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(procedure.getIdentifier());
         
-        int status = writeReportAndUpdateState(userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
+        int status = writeReportAndUpdateState(app, userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("ProcedureRequest updated."));
         }
@@ -189,7 +208,7 @@ public class CRCController extends BaseController {
 
     @PutMapping("/v1/cuimc/observations")
     public ResponseEntity<StatusMessage> postObservation() {
-        httpBasicAuthentication();
+        App app = httpBasicAuthentication();
         
         IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
@@ -197,7 +216,7 @@ public class CRCController extends BaseController {
         
         String userId = findUserId(observation.getIdentifier());
         
-        int status = writeReportAndUpdateState(userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
+        int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("Observation updated."));
         }
@@ -205,31 +224,32 @@ public class CRCController extends BaseController {
                 .body(new StatusMessage("Observation created."));        
     }
     
-    void createLabOrder(StudyParticipant participant) {
+    void createLabOrder(Account account) {
         // Call external partner here and submit the patient record
         // this will trigger workflow at Columbia.
-        /*
-        Patient patient = createPatient(participant);
+        Patient patient = createPatient(account);
         IParser parser = FHIR_CONTEXT.newJsonParser();
         String json = parser.encodeResourceToString(patient);
         
         try {
-            HttpResponse response = Request.Post("<url unknown>")
-                    .bodyString(json, APPLICATION_JSON)
-                    .execute()
-                    .returnResponse();
+            HttpResponse response = post(json);
             if (response.getStatusLine().getStatusCode() != 200 && 
                 response.getStatusLine().getStatusCode() != 201) {
-                LOG.error("Error submitting patient record to CUIMC for user " + participant.getId());
-                throw new BridgeServiceException("The server encountered an error");
+                LOG.error(EXT_ERROR + account.getId());
+                throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
             }
-            // Anything to persist here?
-            LOG.info("Patient record submitted to CUIMC for user " + participant.getId());
+            LOG.info("Patient record submitted to CUIMC for user " + account.getId());
         } catch (IOException e) {
-            LOG.error("Error submitting patient record to CUIMC for user " + participant.getId());
-            throw new BridgeServiceException("The server encountered an error");
+            LOG.error(EXT_ERROR + account.getId());
+            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
         }
-        */
+    }
+    
+    HttpResponse post(String bodyJson) throws IOException {
+        return Request.Post("<url unknown>")
+                .bodyString(bodyJson, APPLICATION_JSON)
+                .execute()
+                .returnResponse();
     }
 
     private String findUserId(List<Identifier> identifiers) {
@@ -244,13 +264,31 @@ public class CRCController extends BaseController {
         throw new BadRequestException("Could not find Bridge user ID in identifiers.");
     }
 
-    private int writeReportAndUpdateState(String userId, JsonNode data, String reportName, AccountStates state) {
+    private int writeReportAndUpdateState(App app, String userId, JsonNode data, String reportName, AccountStates state) {
         String appId = BridgeUtils.getRequestContext().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        
+        try {
+            ObjectNode metadata = JsonNodeFactory.instance.objectNode();
+            metadata.put("fhir-type", reportName);
+            
+            StudyParticipant participant = participantService.getParticipant(app, account, false);
+            HealthDataSubmission healthData = new HealthDataSubmission.Builder()
+                    .withAppVersion("v1")
+                    .withCreatedOn(getTimestamp())
+                    .withMetadata(metadata)
+                    .withData(data)
+                    .withPhoneInfo(getUserAgent())
+                    .build();
+            healthDataService.submitHealthData(appId, participant, healthData);
+        } catch (IOException | UploadValidationException e) {
+            throw new BridgeServiceException(e);
+        }
+        
         Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
@@ -268,20 +306,6 @@ public class CRCController extends BaseController {
         return status;
     }    
     
-    private void updateState(StudyParticipant.Builder builder, AccountStates state) {
-        StudyParticipant p = builder.build();
-        Set<String> mutableGroups = new HashSet<>(); 
-        mutableGroups.addAll(p.getDataGroups());
-        mutableGroups.removeAll(ALL_STATES);
-        mutableGroups.add(state.name().toLowerCase());
-        builder.withDataGroups(mutableGroups);
-        
-        Map<String, String> atts = new HashMap<>();
-        atts.putAll(p.getAttributes());
-        atts.put(TIMESTAMP_FIELD, getTimestamp().toString());
-        builder.withAttributes(atts);
-    }
-    
     private void updateState(Account account, AccountStates state) {
         Set<String> mutableGroups = new HashSet<>(); 
         mutableGroups.addAll(account.getDataGroups());
@@ -296,7 +320,7 @@ public class CRCController extends BaseController {
     // No one else can authenticate for these calls, and the account itself
     // has no administrative roles so it can't do anything else besides 
     // calling these methods.
-    void httpBasicAuthentication() {
+    App httpBasicAuthentication() {
         String value = request().getHeader(AUTHORIZATION);
         if (value == null || value.length() < 5) {
             throw new NotAuthenticatedException();
@@ -324,33 +348,38 @@ public class CRCController extends BaseController {
         // Verify the password
         Account account = accountService.authenticate(app, signIn);
 
-        // This method of verification entirely sidesteps RequestContext 
-        // initialization. Set up anything that is needed in this controller.
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerAppId(appId)
-                .withCallerSubstudies(BridgeUtils.collectSubstudyIds(account))
-                .build());
+        // This method of verification sidesteps RequestContext initialization. 
+        // Set up anything that is needed in this controller. The Sage machine 
+        // account can see all participants; any other such accounts will be 
+        // scoped to their organization (as in the case of Columbia).
+        Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
+        RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId);
+        if (!substudies.contains("sage")) {
+            builder.withCallerSubstudies(substudies);
+        }
+        BridgeUtils.setRequestContext(builder.build());
+        return app;
     }
     
-    Patient createPatient(StudyParticipant participant) {
+    Patient createPatient(Account account) {
         Patient patient = new Patient();
         patient.setActive(true);
         
         Identifier identifier = new Identifier();
-        identifier.setValue(participant.getId());
+        identifier.setValue(account.getId());
         identifier.setSystem(USER_ID_VALUE_NS);
         patient.addIdentifier(identifier);
         
         HumanName name = new HumanName();
-        if (isNotBlank(participant.getFirstName())) {
-            name.addGiven(participant.getFirstName());
+        if (isNotBlank(account.getFirstName())) {
+            name.addGiven(account.getFirstName());
         }
-        if (isNotBlank(participant.getLastName())) {
-            name.setFamily(participant.getLastName());
+        if (isNotBlank(account.getLastName())) {
+            name.setFamily(account.getLastName());
         }
         patient.addName(name);
         
-        Map<String, String> atts = participant.getAttributes();
+        Map<String, String> atts = account.getAttributes();
         if (isNotBlank(atts.get("gender"))) {
             if ("female".equalsIgnoreCase(atts.get("gender"))) {
                 patient.setGender(AdministrativeGender.FEMALE);    
@@ -387,16 +416,16 @@ public class CRCController extends BaseController {
         }
         patient.addAddress(address);
         
-        if (participant.getPhone() != null && TRUE.equals(participant.getPhoneVerified())) {
+        if (account.getPhone() != null && TRUE.equals(account.getPhoneVerified())) {
             ContactPoint contact = new ContactPoint();
             contact.setSystem(ContactPointSystem.SMS);
-            contact.setValue(participant.getPhone().getNumber());
+            contact.setValue(account.getPhone().getNumber());
             patient.addTelecom(contact);
         }
-        if (participant.getEmail() != null && TRUE.equals(participant.getEmailVerified())) {
+        if (account.getEmail() != null && TRUE.equals(account.getEmailVerified())) {
             ContactPoint contact = new ContactPoint();
             contact.setSystem(ContactPointSystem.EMAIL);
-            contact.setValue(participant.getEmail());
+            contact.setValue(account.getEmail());
             patient.addTelecom(contact);
         }
         return patient;
