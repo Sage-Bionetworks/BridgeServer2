@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -17,7 +18,6 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.TIMEST
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -169,7 +169,7 @@ public class CRCControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
 
         StatusMessage message = controller.updateParticipant("targetUserId");
-        assertNotNull(message);
+        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         verify(controller).createLabOrder(any()); // expand on this
@@ -200,7 +200,30 @@ public class CRCControllerTest extends Mockito {
         assertEquals(participantCaptor.getValue().getDataGroups(),
                 makeSetOf(CRCController.AccountStates.DECLINED, "group1"));
         assertEquals(participantCaptor.getValue().getId(), "anotherUserId");
-    }    
+    }
+    
+    @Test
+    public void updateParticipantDoesNotCallExternalForTestAccount() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withId("thisIdWillBeIgnored")
+                .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED, TEST_USER_GROUP)).build();
+        mockRequestBody(mockRequest, participant);
+        
+        UserSession session = new UserSession();
+        session.setAppId(APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+
+        StatusMessage message = controller.updateParticipant("targetUserId");
+        assertEquals(message.getMessage(), CRCController.UPDATE_FOR_TEST_ACCOUNT_MSG);
+
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
+        verify(controller, never()).createLabOrder(any()); // this is skipped with an explanation
+
+        StudyParticipant captured = participantCaptor.getValue();
+        assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, TEST_USER_GROUP));
+        assertEquals(captured.getId(), "targetUserId");        
+    }
     
     @Test
     public void postAppointmentCreated() throws Exception {
