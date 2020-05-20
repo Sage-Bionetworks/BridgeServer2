@@ -137,8 +137,10 @@ public class CRCController extends BaseController {
                 .withId(userId);
         
         Set<String> dataGroups = participant.getDataGroups();
-        if (dataGroups.contains(SELECTED_TAG) && !dataGroups.contains(TEST_TAG)) {
-            createLabOrder(builder.build());
+        if (dataGroups.contains(SELECTED_TAG)) {
+            if (!dataGroups.contains(TEST_TAG)) {
+                createLabOrder(builder.build());    
+            }
             updateState(builder, AccountStates.TESTS_REQUESTED);
         }
         
