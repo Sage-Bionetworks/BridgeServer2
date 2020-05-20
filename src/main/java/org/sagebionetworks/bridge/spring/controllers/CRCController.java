@@ -316,10 +316,12 @@ public class CRCController extends BaseController {
         account.getAttributes().put(TIMESTAMP_FIELD, getTimestamp().toString());
     }
     
-    // This is bound to one specific account that we've given to Columbia. 
-    // No one else can authenticate for these calls, and the account itself
-    // has no administrative roles so it can't do anything else besides 
-    // calling these methods.
+    /**
+     * This is bound to specific “machine” accounts that are enumerated in the 
+     * controller. Authentication is session-less. The account itself has no 
+     * administrative roles, so it can only execute these endpoints that specifically 
+     * allow them, in the app to which they are bound.  
+     */
     App httpBasicAuthentication() {
         String value = request().getHeader(AUTHORIZATION);
         if (value == null || value.length() < 5) {
@@ -335,10 +337,10 @@ public class CRCController extends BaseController {
         if (credentials.length != 2) {
             throw new NotAuthenticatedException();
         }
-        if (!ACCOUNTS.keySet().contains(credentials[0])) {
+        String appId = ACCOUNTS.get(credentials[0]);
+        if (appId == null) {
             throw new NotAuthenticatedException();
         }
-        String appId = ACCOUNTS.get(credentials[0]);
         SignIn signIn = new SignIn.Builder()
                 .withAppId(appId)
                 .withExternalId(credentials[0])
@@ -348,12 +350,13 @@ public class CRCController extends BaseController {
         // Verify the password
         Account account = accountService.authenticate(app, signIn);
 
-        // This method of verification sidesteps RequestContext initialization. 
-        // Set up anything that is needed in this controller. The Sage machine 
-        // account can see all participants; any other such accounts will be 
-        // scoped to their organization (as in the case of Columbia).
+        // This method of verification sidesteps RequestContext initialization
+        // through a session. Set up what is needed in the controller.
         Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
+        
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId);
+        // Sage account can see all participants, others will only have access to their 
+        // substudy participants.
         if (!substudies.contains("sage")) {
             builder.withCallerSubstudies(substudies);
         }
