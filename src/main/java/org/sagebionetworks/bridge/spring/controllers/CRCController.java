@@ -320,7 +320,7 @@ public class CRCController extends BaseController {
      * This is bound to specific “machine” accounts that are enumerated in the 
      * controller. Authentication is session-less. The account itself has no 
      * administrative roles, so it can only execute these endpoints that specifically 
-     * allow them, in the app to which they are bound.  
+     * allows it, in the app to which it is bound.  
      */
     App httpBasicAuthentication() {
         String value = request().getHeader(AUTHORIZATION);
