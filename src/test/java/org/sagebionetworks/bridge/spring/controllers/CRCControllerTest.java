@@ -66,6 +66,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -160,6 +161,7 @@ public class CRCControllerTest extends Mockito {
 
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
+        account.setId(USER_ID);
         account.setAccountSubstudies(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
         account.setDataGroups(ImmutableSet.of("group1"));
         
@@ -193,7 +195,6 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         
-        Account account = Account.create();
         account.setDataGroups(ImmutableSet.of("group1"));
         when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
         
@@ -212,10 +213,9 @@ public class CRCControllerTest extends Mockito {
         verify(controller).post(stringCaptor.capture());
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(stringCaptor.getValue(), "{\"resourceType\":\"Patient\","
-                +"\"identifier\":[{\"system\":\"https://ws.sagebridge.org/#userId\"}],"
-                +"\"active\":true,\"gender\":\"unknown\",\"address\":[{\"state\":\"NY\"}]}");
-        
+        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','identifier':"
+                +"[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':"
+                +"'unknown','address':[{'state':'NY'}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
@@ -290,39 +290,39 @@ public class CRCControllerTest extends Mockito {
     public void createLabOrderOK() throws Exception { 
         mockExternalService(200, "OK");
         // no errors
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     @Test
     public void createLabOrderCreated() throws Exception { 
         mockExternalService(201, "Created");
         // no errors
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     @Test(expectedExceptions = BridgeServiceException.class, 
             expectedExceptionsMessageRegExp = "Internal Service Error")
     public void createLabOrderBadRequest() throws Exception { 
         mockExternalService(400, "Bad Request");
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     @Test(expectedExceptions = BridgeServiceException.class)
     public void createLabOrderInternalServerError() throws Exception { 
         mockExternalService(500, "Internal Server Error");
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     @Test(expectedExceptions = BridgeServiceException.class)
     public void createLabOrderServiceUnavailable() throws Exception { 
         mockExternalService(503, "Service Unavailable");
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     @Test(expectedExceptions = BridgeServiceException.class)
     public void createLabOrderIOException() throws Exception {
         doThrow(new IOException()).when(controller).post(any());
-        controller.createLabOrder(Account.create());
+        controller.createLabOrder(account);
     }
     
     private void mockExternalService(int statusCode, String statusReason) throws Exception {
@@ -603,7 +603,6 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void createPatient() {
-        Account account = Account.create();
         account.setId("userId");
         account.setFirstName("Test");
         account.setLastName("User");
@@ -642,7 +641,7 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void createEmptyPatient() {
-        Patient patient = controller.createPatient(Account.create());
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getGender().name(), "UNKNOWN");
         // I'm defaulting this because I don't see the client submitting it in the UI, so
         // I'm anticipating it won't be there, but eventually we'll have to collect state.
