@@ -233,6 +233,10 @@ public class CRCController extends BaseController {
         
         try {
             HttpResponse response = post(json);
+            if (response == null) {
+                LOG.warn("Patient record submission not implemented");
+                return;
+            }
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200 && statusCode != 201) {
                 // This is a transient server error from the external service and we
@@ -252,7 +256,7 @@ public class CRCController extends BaseController {
     }
     
     HttpResponse post(String bodyJson) throws IOException {
-        throw new UnsupportedOperationException();
+        return null;
         /*
         return Request.Post("<url unknown>")
                 .bodyString(bodyJson, APPLICATION_JSON)
