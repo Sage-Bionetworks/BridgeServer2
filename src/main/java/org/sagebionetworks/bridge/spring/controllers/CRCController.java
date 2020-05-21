@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
@@ -27,7 +26,6 @@ import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.fluent.Request;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint;
@@ -81,7 +79,9 @@ import ca.uhn.fhir.parser.IParser;
 public class CRCController extends BaseController {
     private static final String UNAVAILABLE_ERROR = "The server encountered an error";
 
-    private static final String EXT_ERROR = "Error submitting patient record to CUIMC for user ";
+    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
+    
+    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
 
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
     
@@ -233,23 +233,32 @@ public class CRCController extends BaseController {
         
         try {
             HttpResponse response = post(json);
-            if (response.getStatusLine().getStatusCode() != 200 && 
-                response.getStatusLine().getStatusCode() != 201) {
-                LOG.error(EXT_ERROR + account.getId());
-                throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200 && statusCode != 201) {
+                // This is a transient server error from the external service and we
+                // can communicate this back to the caller. Not sure we should log 
+                // this.
+                if (statusCode == 503) {
+                    throw new ServiceUnavailableException("Service Unavailable");
+                }
+                LOG.error(EXT_ERROR + account.getId());    
+                throw new BridgeServiceException("Internal Service Error");
             }
-            LOG.info("Patient record submitted to CUIMC for user " + account.getId());
         } catch (IOException e) {
-            LOG.error(EXT_ERROR + account.getId());
+            LOG.error(INT_ERROR + account.getId());
             throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
         }
+        LOG.info("Patient record submitted to CUIMC for user " + account.getId());
     }
     
     HttpResponse post(String bodyJson) throws IOException {
+        throw new UnsupportedOperationException();
+        /*
         return Request.Post("<url unknown>")
                 .bodyString(bodyJson, APPLICATION_JSON)
                 .execute()
                 .returnResponse();
+        */
     }
 
     private String findUserId(List<Identifier> identifiers) {

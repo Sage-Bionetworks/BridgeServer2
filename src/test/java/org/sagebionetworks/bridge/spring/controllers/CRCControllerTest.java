@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -21,6 +22,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Set;
 
@@ -35,7 +37,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
@@ -61,6 +66,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -169,6 +175,17 @@ public class CRCControllerTest extends Mockito {
     public void afterMethod() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
+
+    @Test
+    public void getUserAgent() {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn("Client Agent");
+        assertEquals(controller.getUserAgent(), "Client Agent");
+    }
+
+    @Test
+    public void getUserAgentDefault() {
+        assertEquals(controller.getUserAgent(), "<Unknown>");
+    }
     
     @Test
     public void updateParticipantCallsExternal() throws Exception {
@@ -251,6 +268,60 @@ public class CRCControllerTest extends Mockito {
         verify(controller, never()).createLabOrder(any());
         
         assertTrue(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void updateParticipantAccountNotFound() {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+                
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+    }
+    
+    @Test
+    public void createLabOrderOK() throws Exception { 
+        mockExternalService(200, "OK");
+        // no errors
+        controller.createLabOrder(Account.create());
+    }
+    
+    @Test
+    public void createLabOrderCreated() throws Exception { 
+        mockExternalService(201, "Created");
+        // no errors
+        controller.createLabOrder(Account.create());
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class, 
+            expectedExceptionsMessageRegExp = "Internal Service Error")
+    public void createLabOrderBadRequest() throws Exception { 
+        mockExternalService(400, "Bad Request");
+        controller.createLabOrder(Account.create());
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderInternalServerError() throws Exception { 
+        mockExternalService(500, "Internal Server Error");
+        controller.createLabOrder(Account.create());
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderServiceUnavailable() throws Exception { 
+        mockExternalService(503, "Service Unavailable");
+        controller.createLabOrder(Account.create());
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderIOException() throws Exception {
+        doThrow(new IOException()).when(controller).post(any());
+        controller.createLabOrder(Account.create());
+    }
+    
+    private void mockExternalService(int statusCode, String statusReason) throws Exception {
+        StatusLine statusLine = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 2), statusCode, statusReason);
+        HttpResponse response = new BasicHttpResponse(statusLine);
+        doReturn(response).when(controller).post(any());
     }
     
     @Test
