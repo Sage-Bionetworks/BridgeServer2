@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.FHIR_CONTEXT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.OBSERVATION_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.PROCEDURE_REPORT;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.SYN_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.TIMESTAMP_FIELD;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
@@ -243,33 +244,6 @@ public class CRCControllerTest extends Mockito {
         assertEquals(substudy, "substudyA");
     }
     
-    @Test
-    public void updateParticipantWithSageAccountHasNoSubstudies() throws Exception {
-        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(APP_ID, "sage", USER_ID);
-        
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
-        
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(200);
-                
-        doReturn(mockResponse).when(controller).post(any());
-        
-        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
-        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
-
-        verify(mockAccountService).updateAccount(account, null);
-        verify(controller, never()).createLabOrder(any());
-        
-        assertTrue(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
-    }
-    
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void updateParticipantAccountNotFound() {
@@ -277,6 +251,39 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
                 
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
+    }
+
+    @Test
+    public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
+        when(mockApp.getIdentifier()).thenReturn(APP_ID);
+        when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
+        mockExternalService(200, "OK");
+        
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        
+        verify(mockAccountService).authenticate(eq(mockApp), signInCaptor.capture());
+        assertEquals(signInCaptor.getValue().getExternalId(), CUIMC_USERNAME);
+    }
+
+    @Test
+    public void emailAccountSubmitsCorrectCredentials() throws Exception {
+        String credentials = SYN_USERNAME + ":dummy-password";
+        String authHeader = "Basic "
+                + new String(Base64.getEncoder().encode(credentials.getBytes()));
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(authHeader);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
+        when(mockApp.getIdentifier()).thenReturn(APP_ID);
+        when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
+        mockExternalService(200, "OK");
+        
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        
+        verify(mockAccountService).authenticate(eq(mockApp), signInCaptor.capture());
+        assertEquals(signInCaptor.getValue().getEmail(), SYN_USERNAME);
     }
     
     @Test

@@ -92,8 +92,8 @@ public class CRCController extends BaseController {
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
     static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
-    static final String SYN_USERNAME = "uoR1RabP0FnYAM2oTth7Qpmu";
-    static final String TEST_USERNAME = "pFLaYky-7ToEH7MB6ZhzqpKe";
+    static final String SYN_USERNAME = "bridgeit+crc@sagebase.org";
+    static final String TEST_USERNAME = "bridge-testing+crc@sagebase.org";
     static final String SELECTED_TAG = AccountStates.SELECTED.name().toLowerCase();
     static final String TEST_TAG = BridgeConstants.TEST_USER_GROUP;
     static final String UPDATE_MSG = "Participant updated.";
@@ -350,25 +350,26 @@ public class CRCController extends BaseController {
         if (appId == null) {
             throw new NotAuthenticatedException();
         }
-        SignIn signIn = new SignIn.Builder()
-                .withAppId(appId)
-                .withExternalId(credentials[0])
-                .withPassword(credentials[1]).build();
+        SignIn.Builder signInBuilder = new SignIn.Builder()
+                .withAppId(appId).withPassword(credentials[1]);
+        if (credentials[0].contains("@sagebase.org")) {
+            signInBuilder.withEmail(credentials[0]);
+        } else {
+            signInBuilder.withExternalId(credentials[0]);
+        }
         App app = appService.getApp(appId);
         
         // Verify the password
+        SignIn signIn = signInBuilder.build();
         Account account = accountService.authenticate(app, signIn);
 
         // This method of verification sidesteps RequestContext initialization
         // through a session. Set up what is needed in the controller.
         Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
         
-        RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId);
-        // Sage account can see all participants, others will only have access to their 
-        // substudy participants.
-        if (!substudies.contains("sage")) {
-            builder.withCallerSubstudies(substudies);
-        }
+        RequestContext.Builder builder = new RequestContext.Builder()
+                .withCallerAppId(appId)
+                .withCallerSubstudies(substudies);
         BridgeUtils.setRequestContext(builder.build());
         return app;
     }
