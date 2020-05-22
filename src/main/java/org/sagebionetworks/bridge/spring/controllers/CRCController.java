@@ -287,7 +287,7 @@ public class CRCController extends BaseController {
         
         try {
             ObjectNode metadata = JsonNodeFactory.instance.objectNode();
-            metadata.put("fhir-type", reportName);
+            metadata.put("type", reportName);
             
             StudyParticipant participant = participantService.getParticipant(app, account, false);
             HealthDataSubmission healthData = new HealthDataSubmission.Builder()

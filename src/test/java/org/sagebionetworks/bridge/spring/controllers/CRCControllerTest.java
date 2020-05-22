@@ -378,7 +378,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
     
@@ -411,7 +411,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
     
@@ -453,7 +453,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+PROCEDURE_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
     
@@ -477,7 +477,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+PROCEDURE_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
 
@@ -519,7 +519,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
     
@@ -543,7 +543,7 @@ public class CRCControllerTest extends Mockito {
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
-        assertEquals(healthData.getMetadata().toString(), "{\"fhir-type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
     }
 
