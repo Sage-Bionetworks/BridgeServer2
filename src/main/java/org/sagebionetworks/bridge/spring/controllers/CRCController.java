@@ -245,11 +245,11 @@ public class CRCController extends BaseController {
                 if (statusCode == 503) {
                     throw new ServiceUnavailableException("Service Unavailable");
                 }
-                LOG.error(EXT_ERROR + account.getId());    
+                LOG.error(EXT_ERROR + account.getId() + ", status code: " + statusCode);    
                 throw new BridgeServiceException("Internal Service Error");
             }
         } catch (IOException e) {
-            LOG.error(INT_ERROR + account.getId());
+            LOG.error(INT_ERROR + account.getId(), e);
             throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
         }
         LOG.info("Patient record submitted to CUIMC for user " + account.getId());
