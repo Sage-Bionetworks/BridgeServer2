@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
@@ -14,15 +14,17 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.FHIR_CONTEXT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.OBSERVATION_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.PROCEDURE_REPORT;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.SYN_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.TIMESTAMP_FIELD;
-import static org.sagebionetworks.bridge.spring.controllers.CRCController.USERNAME;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.util.Base64;
-import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -33,7 +35,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
@@ -58,7 +66,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -67,12 +77,13 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
@@ -82,13 +93,14 @@ public class CRCControllerTest extends Mockito {
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
     static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     static final String HEALTH_CODE = "healthCode";
-    String CREDENTIALS = USERNAME + ":dummy-password";
+    String CREDENTIALS = CUIMC_USERNAME + ":dummy-password";
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
     static final AccountSubstudy ACCT_SUB1 = AccountSubstudy.create(APP_ID, "substudyA", USER_ID);
     static final AccountSubstudy ACCT_SUB2 = AccountSubstudy.create(APP_ID, "substudyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
+    static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     
     @Mock
     ParticipantService mockParticipantService;
@@ -114,6 +126,9 @@ public class CRCControllerTest extends Mockito {
     @Mock
     HttpServletResponse mockResponse;
     
+    @Mock
+    HealthDataService mockHealthDataService;
+    
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
     
@@ -125,6 +140,12 @@ public class CRCControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<Account> accountCaptor;
+    
+    @Captor
+    ArgumentCaptor<String> stringCaptor;
+    
+    @Captor
+    ArgumentCaptor<HealthDataSubmission> dataCaptor;
     
     App app;
     
@@ -140,10 +161,12 @@ public class CRCControllerTest extends Mockito {
 
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
+        account.setId(USER_ID);
         account.setAccountSubstudies(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
         account.setDataGroups(ImmutableSet.of("group1"));
         
         app = App.create();
+        app.setIdentifier(APP_ID);
         when(mockAppService.getApp(APP_ID)).thenReturn(app);
         
         doReturn(mockRequest).when(controller).request();
@@ -155,74 +178,157 @@ public class CRCControllerTest extends Mockito {
     public void afterMethod() {
         BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
     }
-    
+
     @Test
-    public void updateParticipantCallsExternal() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withId("thisIdWillBeIgnored")
-                .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED, "group1")).build();
-        mockRequestBody(mockRequest, participant);
-        
-        UserSession session = new UserSession();
-        session.setAppId(APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+    public void getUserAgent() {
+        when(mockRequest.getHeader(USER_AGENT)).thenReturn("Client Agent");
+        assertEquals(controller.getUserAgent(), "Client Agent");
+    }
 
-        StatusMessage message = controller.updateParticipant("targetUserId");
-        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
-
-        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
-        verify(controller).createLabOrder(any()); // expand on this
-
-        StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(captured.getId(), "targetUserId");
+    @Test
+    public void getUserAgentDefault() {
+        assertEquals(controller.getUserAgent(), "<Unknown>");
     }
     
     @Test
-    public void updateParticipantDoesNotCallExternal() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withDataGroups(makeSetOf(CRCController.AccountStates.DECLINED, "group1")).build();
-        mockRequestBody(mockRequest, participant);
+    public void updateParticipantCallsExternal() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         
-        UserSession session = new UserSession();
-        session.setAppId(APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        account.setDataGroups(ImmutableSet.of("group1"));
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+                
+        doReturn(mockResponse).when(controller).post(any());
+        
+        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
-        when(mockParticipantService.getParticipant(app, USER_ID, true))
-                .thenReturn(new StudyParticipant.Builder().build());
-        
-        controller.updateParticipant("anotherUserId");
-        
-        verify(controller, never()).createLabOrder(any());
-        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
-        assertEquals(participantCaptor.getValue().getDataGroups(),
-                makeSetOf(CRCController.AccountStates.DECLINED, "group1"));
-        assertEquals(participantCaptor.getValue().getId(), "anotherUserId");
+        verify(mockAccountService).updateAccount(account, null);
+        verify(controller).createLabOrder(account);
+        verify(controller).post(stringCaptor.capture());
+
+        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
+        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','identifier':"
+                +"[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':"
+                +"'unknown','address':[{'state':'NY'}]}"));
+        assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
     @Test
     public void updateParticipantDoesNotCallExternalForTestAccount() throws Exception {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withId("thisIdWillBeIgnored")
-                .withDataGroups(makeSetOf(CRCController.AccountStates.SELECTED, TEST_USER_GROUP)).build();
-        mockRequestBody(mockRequest, participant);
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         
-        UserSession session = new UserSession();
-        session.setAppId(APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+                
+        doReturn(mockResponse).when(controller).post(any());
+        
+        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
-        StatusMessage message = controller.updateParticipant("targetUserId");
-        assertEquals(message.getMessage(), CRCController.UPDATE_FOR_TEST_ACCOUNT_MSG);
+        verify(mockAccountService).updateAccount(account, null);
+        verify(controller, never()).createLabOrder(any());
+        
+        String substudy = Iterables.getFirst(BridgeUtils.getRequestContext().getCallerSubstudies(), null);
+        assertEquals(substudy, "substudyA");
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void updateParticipantAccountNotFound() {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+                
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+    }
 
-        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
-        verify(controller, never()).createLabOrder(any()); // this is skipped with an explanation
+    @Test
+    public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
+        when(mockApp.getIdentifier()).thenReturn(APP_ID);
+        when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
+        mockExternalService(200, "OK");
+        
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        
+        verify(mockAccountService).authenticate(eq(mockApp), signInCaptor.capture());
+        assertEquals(signInCaptor.getValue().getExternalId(), CUIMC_USERNAME);
+    }
 
-        StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, TEST_USER_GROUP));
-        assertEquals(captured.getId(), "targetUserId");        
+    @Test
+    public void emailAccountSubmitsCorrectCredentials() throws Exception {
+        String credentials = SYN_USERNAME + ":dummy-password";
+        String authHeader = "Basic "
+                + new String(Base64.getEncoder().encode(credentials.getBytes()));
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(authHeader);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
+        when(mockApp.getIdentifier()).thenReturn(APP_ID);
+        when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
+        mockExternalService(200, "OK");
+        
+        controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        
+        verify(mockAccountService).authenticate(eq(mockApp), signInCaptor.capture());
+        assertEquals(signInCaptor.getValue().getEmail(), SYN_USERNAME);
+    }
+    
+    @Test
+    public void createLabOrderOK() throws Exception { 
+        mockExternalService(200, "OK");
+        // no errors
+        controller.createLabOrder(account);
+    }
+    
+    @Test
+    public void createLabOrderCreated() throws Exception { 
+        mockExternalService(201, "Created");
+        // no errors
+        controller.createLabOrder(account);
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class, 
+            expectedExceptionsMessageRegExp = "Internal Service Error")
+    public void createLabOrderBadRequest() throws Exception { 
+        mockExternalService(400, "Bad Request");
+        controller.createLabOrder(account);
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderInternalServerError() throws Exception { 
+        mockExternalService(500, "Internal Server Error");
+        controller.createLabOrder(account);
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderServiceUnavailable() throws Exception { 
+        mockExternalService(503, "Service Unavailable");
+        controller.createLabOrder(account);
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void createLabOrderIOException() throws Exception {
+        doThrow(new IOException()).when(controller).post(any());
+        controller.createLabOrder(account);
+    }
+    
+    private void mockExternalService(int statusCode, String statusReason) throws Exception {
+        StatusLine statusLine = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 2), statusCode, statusReason);
+        HttpResponse response = new BasicHttpResponse(statusLine);
+        doReturn(response).when(controller).post(any());
     }
     
     @Test
@@ -253,7 +359,7 @@ public class CRCControllerTest extends Mockito {
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
         assertEquals(capturedSignIn.getAppId(), APP_ID);
-        assertEquals(capturedSignIn.getExternalId(), USERNAME);
+        assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
         verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(APPOINTMENT_REPORT), eq(HEALTH_CODE),
@@ -267,6 +373,13 @@ public class CRCControllerTest extends Mockito {
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_SCHEDULED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
     
     @Test
@@ -293,6 +406,13 @@ public class CRCControllerTest extends Mockito {
         ResponseEntity<StatusMessage> retValue = controller.postAppointment();
         assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
     
     @Test
@@ -300,7 +420,8 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeProcedureRequest());
+        String json = makeProcedureRequest();
+        mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -313,7 +434,7 @@ public class CRCControllerTest extends Mockito {
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
         assertEquals(capturedSignIn.getAppId(), APP_ID);
-        assertEquals(capturedSignIn.getExternalId(), USERNAME);
+        assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
         verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(PROCEDURE_REPORT), eq(HEALTH_CODE),
@@ -327,6 +448,13 @@ public class CRCControllerTest extends Mockito {
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
     
     @Test
@@ -334,7 +462,8 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeProcedureRequest());
+        String json = makeProcedureRequest();
+        mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -343,6 +472,13 @@ public class CRCControllerTest extends Mockito {
         ResponseEntity<StatusMessage> retValue = controller.postProcedureRequest();
         assertEquals(retValue.getBody().getMessage(), "ProcedureRequest updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
 
     @Test
@@ -350,7 +486,8 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeObservation());
+        String json = makeObservation();
+        mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -363,7 +500,7 @@ public class CRCControllerTest extends Mockito {
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
         SignIn capturedSignIn = signInCaptor.getValue();
         assertEquals(capturedSignIn.getAppId(), APP_ID);
-        assertEquals(capturedSignIn.getExternalId(), USERNAME);
+        assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
         verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
@@ -377,6 +514,13 @@ public class CRCControllerTest extends Mockito {
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
     
     @Test
@@ -384,7 +528,8 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeObservation());
+        String json = makeObservation();
+        mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -393,6 +538,13 @@ public class CRCControllerTest extends Mockito {
         ResponseEntity<StatusMessage> retValue = controller.postObservation();
         assertEquals(retValue.getBody().getMessage(), "Observation updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
     }
 
     @Test
@@ -405,7 +557,7 @@ public class CRCControllerTest extends Mockito {
         
         SignIn captured = signInCaptor.getValue();
         assertEquals(captured.getAppId(), CRCController.APP_ID);
-        assertEquals(captured.getExternalId(), CRCController.USERNAME);
+        assertEquals(captured.getExternalId(), CRCController.CUIMC_USERNAME);
         assertEquals(captured.getPassword(), "dummy-password");
     }
     
@@ -423,7 +575,7 @@ public class CRCControllerTest extends Mockito {
     
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void authenticationSplitsWrong() {
-        String credentials = CRCController.USERNAME + ":dummy-password:some-nonsense";
+        String credentials = CRCController.CUIMC_USERNAME + ":dummy-password:some-nonsense";
         String authValue = "Digest " + new String(Base64.getEncoder().encode(credentials.getBytes()));        
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(authValue);
 
@@ -451,15 +603,14 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void createPatient() {
-        StudyParticipant.Builder builder = new StudyParticipant.Builder()
-        .withId("userId")
-        .withFirstName("Test")
-        .withLastName("User")
-        .withEmail(EMAIL)
-        .withEmailVerified(true)
-        .withPhone(PHONE)
-        .withPhoneVerified(true)
-        .withAttributes(new ImmutableMap.Builder<String, String>()
+        account.setId("userId");
+        account.setFirstName("Test");
+        account.setLastName("User");
+        account.setEmail(EMAIL);
+        account.setEmailVerified(true);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(true);
+        account.setAttributes(new ImmutableMap.Builder<String, String>()
             .put("address1", "123 Sesame Street")
             .put("address2", "Apt. 6")
             .put("city", "Seattle")
@@ -467,7 +618,7 @@ public class CRCControllerTest extends Mockito {
             .put("gender", "female")
             .put("state", "WA")
             .put("zip_code", "10001").build());
-        Patient patient = controller.createPatient(builder.build());
+        Patient patient = controller.createPatient(account);
         
         assertTrue(patient.getActive());
         assertEquals(patient.getIdentifier().get(0).getValue(), USER_ID);
@@ -490,7 +641,7 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void createEmptyPatient() {
-        Patient patient = controller.createPatient(new StudyParticipant.Builder().build());
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getGender().name(), "UNKNOWN");
         // I'm defaulting this because I don't see the client submitting it in the UI, so
         // I'm anticipating it won't be there, but eventually we'll have to collect state.
@@ -606,44 +757,44 @@ public class CRCControllerTest extends Mockito {
 
     @Test
     public void createPatientWithMaleGender() {
-        Map<String,String> map = ImmutableMap.of("gender", "MALE");
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withAttributes(map).build();
+        Account account = Account.create();
+        account.setAttributes(ImmutableMap.of("gender", "MALE"));
         
-        Patient patient = controller.createPatient(participant);
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getGender(), AdministrativeGender.MALE);
     }
 
     @Test
     public void createPatientWithOtherGender() {
-        Map<String,String> map = ImmutableMap.of("gender", "Other");
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withAttributes(map).build();
+        Account account = Account.create();
+        account.setAttributes(ImmutableMap.of("gender", "Other"));
         
-        Patient patient = controller.createPatient(participant);
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getGender(), AdministrativeGender.OTHER);
     }
 
     @Test
     public void createPatientWithPhoneUnverified() {
-        StudyParticipant participant = new StudyParticipant.Builder()
-            .withEmail(EMAIL)
-            .withEmailVerified(true)
-            .withPhone(PHONE)
-            .withPhoneVerified(false).build();
-        Patient patient = controller.createPatient(participant);
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setEmailVerified(true);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(false);
+
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getTelecom().size(), 1);
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.EMAIL);
     }
 
     @Test
     public void createPatientWithEmailUnverified() {
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withEmail(EMAIL)
-                .withEmailVerified(false)
-                .withPhone(PHONE)
-                .withPhoneVerified(true).build();
-        Patient patient = controller.createPatient(participant);
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setEmailVerified(false);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(true);
+
+        Patient patient = controller.createPatient(account);
         assertEquals(patient.getTelecom().size(), 1);
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
