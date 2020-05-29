@@ -44,12 +44,14 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
+import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
+import org.hl7.fhir.dstu3.model.Reference;
 import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -90,6 +92,7 @@ import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 public class CRCControllerTest extends Mockito {
 
+    private static final String PATIENT_NS = "Patient/";
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
     static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     static final String HEALTH_CODE = "healthCode";
@@ -331,6 +334,12 @@ public class CRCControllerTest extends Mockito {
         doReturn(response).when(controller).post(any());
     }
     
+    private void addAppointmentParticipantComponent(Appointment appointment, String value) {
+        AppointmentParticipantComponent comp = new AppointmentParticipantComponent();
+        comp.setActor(new Reference(value));
+        appointment.addParticipant(comp);
+    }
+    
     @Test
     public void postAppointmentCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
@@ -341,14 +350,12 @@ public class CRCControllerTest extends Mockito {
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
-        // add a wrong ID to verify we go through them all and look for ours
-        Identifier wrongId = new Identifier();
-        wrongId.setSystem("some-other-namespace");
-        wrongId.setValue(USER_ID);
-        
         Appointment appointment = new Appointment();
-        appointment.addIdentifier(wrongId);
-        appointment.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
+
+        // add a wrong participant to verify we go through them all and look for ours
+        addAppointmentParticipantComponent(appointment, "Location/some-other-id");
+        addAppointmentParticipantComponent(appointment, PATIENT_NS + USER_ID);
+        
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
         
@@ -366,7 +373,7 @@ public class CRCControllerTest extends Mockito {
                 reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
-        verifyIdentifier(capturedReport.getData());
+        verifyParticipant(capturedReport.getData());
         assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
@@ -392,14 +399,11 @@ public class CRCControllerTest extends Mockito {
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
-        // add a wrong ID to verify we go through them all and look for ours
-        Identifier wrongId = new Identifier();
-        wrongId.setSystem("some-other-namespace");
-        wrongId.setValue(USER_ID);
-        
         Appointment appointment = new Appointment();
-        appointment.addIdentifier(wrongId);
-        appointment.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
+        // add a wrong participant to verify we go through them all and look for ours
+        addAppointmentParticipantComponent(appointment, "Location/foo");
+        addAppointmentParticipantComponent(appointment, PATIENT_NS + USER_ID);
+        
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
         
@@ -441,7 +445,7 @@ public class CRCControllerTest extends Mockito {
                 reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
-        verifyIdentifier(capturedReport.getData());
+        verifySubject(capturedReport.getData());
         assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
@@ -507,7 +511,7 @@ public class CRCControllerTest extends Mockito {
                 reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
-        verifyIdentifier(capturedReport.getData());
+        verifySubject(capturedReport.getData());
         assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
@@ -521,6 +525,11 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
+    }
+    
+    private void verifySubject(JsonNode node) {
+        String value = node.get("subject").get("reference").textValue();
+        assertEquals(value, PATIENT_NS + USER_ID);
     }
     
     @Test
@@ -650,29 +659,29 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+            expectedExceptionsMessageRegExp = "Could not find Bridge user ID.")
     public void appointmentMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment(null, null));
+        mockRequestBody(mockRequest, makeAppointment(null));
         
         controller.postAppointment();
     }
     
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
     public void appointmentWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment("wrong-ns", "wrong-identifier"));
+        mockRequestBody(mockRequest, makeAppointment("not-the-right-id"));
         
         controller.postAppointment();
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+            expectedExceptionsMessageRegExp = "Could not find Bridge user ID.")
     public void procedureMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
@@ -686,7 +695,7 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+            expectedExceptionsMessageRegExp = "Could not find Bridge user ID.")
     public void procedureWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
@@ -704,7 +713,7 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+            expectedExceptionsMessageRegExp = "Could not find Bridge user ID.")
     public void operationMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
@@ -718,7 +727,7 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Could not find Bridge user ID in identifiers.")
+            expectedExceptionsMessageRegExp = "Could not find Bridge user ID.")
     public void operationWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
@@ -741,8 +750,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID_VALUE_NS, USER_ID));
-
+        mockRequestBody(mockRequest, makeAppointment(USER_ID));
         controller.postAppointment();
     }
 
@@ -750,7 +758,7 @@ public class CRCControllerTest extends Mockito {
     public void callerUserNameIncorrect() throws Exception {
         String auth = new String(Base64.getEncoder().encode(("foo:dummy-password").getBytes()));
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn("Basic " + auth);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID_VALUE_NS, USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID));
         
         controller.postProcedureRequest();
     }
@@ -799,12 +807,12 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
     
-    private void verifyIdentifier(JsonNode payload) {
-        ArrayNode identifiers = (ArrayNode)payload.get("identifier");
+    private void verifyParticipant(JsonNode payload) {
+        ArrayNode identifiers = (ArrayNode)payload.get("participant");
         for (int i=0; i < identifiers.size(); i++) {
             JsonNode node = identifiers.get(i);
-            if (node.get("system").textValue().equals(USER_ID_VALUE_NS) &&
-                node.get("value").textValue().equals(USER_ID)) {
+            String value = node.get("actor").get("reference").textValue();
+            if (value.equals(PATIENT_NS + USER_ID)) {
                 return;
             }
         }
@@ -815,30 +823,25 @@ public class CRCControllerTest extends Mockito {
         return ImmutableSet.of(state.name().toLowerCase(), unaffectedGroup);
     }
     
-    private String makeAppointment(String ns, String identifier) {
+    private String makeAppointment(String identifier) {
         Appointment appt = new Appointment();
         if (identifier != null) {
-            appt.addIdentifier(makeIdentifier(ns, identifier));    
+            addAppointmentParticipantComponent(appt, PATIENT_NS + identifier);    
         }
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(appt);
     }
     
     private String makeProcedureRequest() { 
         ProcedureRequest procedure = new ProcedureRequest();
-        procedure.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
+        Reference ref = new Reference(PATIENT_NS + USER_ID);
+        procedure.setSubject(ref);
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
     }
     
     private String makeObservation() {
         Observation obs = new Observation();
-        obs.addIdentifier(makeIdentifier(USER_ID_VALUE_NS, USER_ID));
+        Reference ref = new Reference(PATIENT_NS + USER_ID);
+        obs.setSubject(ref);
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(obs);
-    }
-    
-    private Identifier makeIdentifier(String ns, String identifier) {
-        Identifier id = new Identifier();
-        id.setSystem(ns);
-        id.setValue(identifier);
-        return id;
     }
 }
