@@ -14,7 +14,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +27,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
+import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
 import org.hl7.fhir.dstu3.model.ContactPoint;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
@@ -36,6 +36,7 @@ import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
+import org.hl7.fhir.dstu3.model.Reference;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -77,14 +78,11 @@ import ca.uhn.fhir.parser.IParser;
 @CrossOrigin
 @RestController
 public class CRCController extends BaseController {
-    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
-
-    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
-    
-    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
-
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
     
+    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
+    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
+    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
     static final String USER_ID_VALUE_NS = "https://ws.sagebridge.org/#userId";
     static final String APP_ID = "czi-coronavirus";
@@ -178,7 +176,7 @@ public class CRCController extends BaseController {
         JsonNode data = parseJson(JsonNode.class);
         Appointment appointment = parser.parseResource(Appointment.class, data.toString());
         
-        String userId = findUserId(appointment.getIdentifier());
+        String userId = findUserId(appointment);
         
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
         if (status == 200) {
@@ -196,7 +194,7 @@ public class CRCController extends BaseController {
         JsonNode data = parseJson(JsonNode.class);
         ProcedureRequest procedure = parser.parseResource(ProcedureRequest.class, data.toString());
         
-        String userId = findUserId(procedure.getIdentifier());
+        String userId = findUserId(procedure.getSubject());
         
         int status = writeReportAndUpdateState(app, userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
         if (status == 200) {
@@ -214,7 +212,7 @@ public class CRCController extends BaseController {
         JsonNode data = parseJson(JsonNode.class);
         Observation observation = parser.parseResource(Observation.class, data.toString());
         
-        String userId = findUserId(observation.getIdentifier());
+        String userId = findUserId(observation.getSubject());
         
         int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
         if (status == 200) {
@@ -265,18 +263,31 @@ public class CRCController extends BaseController {
         */
     }
 
-    private String findUserId(List<Identifier> identifiers) {
-        if (identifiers != null && !identifiers.isEmpty()) {
-            for (int i=0; i < identifiers.size(); i++) {
-                Identifier id = identifiers.get(i);
-                if (id.getSystem().equals(USER_ID_VALUE_NS)) {
-                    return id.getValue();
+    private String findUserId(Appointment appt) {
+        if (appt != null && appt.getParticipant() != null) {
+            for (AppointmentParticipantComponent component : appt.getParticipant()) {
+                Reference actor = component.getActor();
+                if (actor != null) {
+                    String ref = actor.getReference();    
+                    if (ref != null && ref.toLowerCase().startsWith("patient/")) {
+                        return ref.substring(8);
+                    }
                 }
             }
         }
-        throw new BadRequestException("Could not find Bridge user ID in identifiers.");
+        throw new BadRequestException("Could not find Bridge user ID.");
     }
-
+    
+    private String findUserId(Reference ref) {
+        if (ref != null && ref.getReference() != null) {
+            String value = ref.getReference();
+            if (value.toLowerCase().startsWith("patient/")) {
+                return value.substring(8);    
+            }
+        }
+        throw new BadRequestException("Could not find Bridge user ID.");
+    }
+    
     private int writeReportAndUpdateState(App app, String userId, JsonNode data, String reportName, AccountStates state) {
         String appId = BridgeUtils.getRequestContext().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
