@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * A wrapper around our use of Redis.
@@ -127,9 +126,7 @@ public class CacheProvider {
                 CacheKey userIdToSessionKey = CacheKey.userIdToSession(userId);
                 String ser = jedisOps.get(userIdToSessionKey.toString());
                 if (ser != null) {
-                    JsonNode node = adjustJsonWithStudyIdentifier(ser);
-                    UserSession session = BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
-                    
+                    UserSession session = BridgeObjectMapper.get().readValue(ser,  UserSession.class);
                     // The token --> userId look up is not replaced on session invalidation. 
                     // Check here and only return if the sessionToken is valid. It is possible 
                     // to successfully sign in and then have this fail due to concurrent requests.
@@ -158,52 +155,11 @@ public class CacheProvider {
             if (ser == null) {
                 return null;
             }
-            JsonNode node = adjustJsonWithStudyIdentifier(ser);
-            return BridgeObjectMapper.get().treeToValue(node,  UserSession.class);
+            return BridgeObjectMapper.get().readValue(ser,  UserSession.class);
         } catch(Throwable e) {
             promptToStartRedisIfLocal(e);
             throw new BridgeServiceException(e);
         }
-    }
-
-    /**
-     * During a transition period away from appId, we will need special handling to
-     * ensure persisted sessions, subpopulations, and subpopulation lists are deserialized 
-     * correctly. 
-     */
-    private JsonNode adjustJsonWithStudyIdentifier(String ser) throws Exception {
-        JsonNode node = BridgeObjectMapper.get().readTree(ser);
-        if (node.isArray()) {
-            for (int i=0; i < node.size(); i++) {
-                adjustNode(node.get(i));
-            }
-        } else {
-            adjustNode(node);
-        }
-        return node;
-    }
-
-    private void adjustNode(JsonNode node) {
-        JsonNode child = seek(node, "studyIdentifier", "studyId");
-        if (child != null) {
-            if (child.isTextual()) {
-                ((ObjectNode)node).put("appId", child.textValue());
-            } else {
-                child = seek(child, "identifier");
-                if (child != null && child.isTextual()) {
-                    ((ObjectNode)node).put("appId", child.textValue());
-                }
-            }
-        }
-    }
-    
-    private JsonNode seek(JsonNode node, String... propNames) {
-        for (int i=0; i < propNames.length; i++) {
-            if (node.has(propNames[i])) {
-                return node.get(propNames[i]);
-            }
-        }
-        return null;
     }
 
     public void removeSession(UserSession session) {
@@ -260,7 +216,7 @@ public class CacheProvider {
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
-                JsonNode node = adjustJsonWithStudyIdentifier(ser);                
+                JsonNode node = BridgeObjectMapper.get().readTree(ser);                
                 return BridgeObjectMapper.get().treeToValue(node, clazz);
             }
         } catch (Throwable e) {
@@ -276,8 +232,7 @@ public class CacheProvider {
         try {
             String ser = jedisOps.get(cacheKey.toString());
             if (ser != null) {
-                JsonNode node = adjustJsonWithStudyIdentifier(ser);
-                return BridgeObjectMapper.get().readValue(node.toString(), typeRef);
+                return BridgeObjectMapper.get().readValue(ser, typeRef);
             }
         } catch (Throwable e) {
             promptToStartRedisIfLocal(e);
