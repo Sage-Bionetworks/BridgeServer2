@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.apps.AppleAppLink;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AppleAppLinkTest {
