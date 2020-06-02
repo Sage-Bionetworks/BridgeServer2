@@ -41,8 +41,6 @@ public class AccountSummaryTest {
         assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
         assertEquals(node.get("status").textValue(), "disabled");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
-        assertEquals(node.get("studyIdentifier").get("identifier").textValue(), TEST_APP_ID);
-        assertEquals(node.get("studyIdentifier").get("type").textValue(), "StudyIdentifier");
         assertEquals(node.get("substudyIds").get(0).textValue(), "substudy1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "substudy2");
         assertEquals(node.get("externalId").textValue(), "externalId1");
