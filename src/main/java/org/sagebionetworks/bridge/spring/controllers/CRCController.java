@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -264,7 +265,8 @@ public class CRCController extends BaseController {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
         if (isNotBlank(username) && isNotBlank(password)) {
             String credentials = username + ":" + password;
-            String hash = new String(Base64.getEncoder().encode(credentials.getBytes()));
+            String hash = new String(Base64.getEncoder().encode(credentials.getBytes(Charset.defaultCharset())),
+                    Charset.defaultCharset());
             Header authHeader = new BasicHeader(AUTHORIZATION, "Basic " + hash);
             request = request.addHeader(authHeader);
         }
@@ -363,7 +365,7 @@ public class CRCController extends BaseController {
         value = value.substring(5).trim();
 
         // Decode the credentials from base 64
-        value = new String(Base64.getDecoder().decode(value));
+        value = new String(Base64.getDecoder().decode(value), Charset.defaultCharset());
         // Split to username and password
         String[] credentials = value.split(":");
         if (credentials.length != 2) {
