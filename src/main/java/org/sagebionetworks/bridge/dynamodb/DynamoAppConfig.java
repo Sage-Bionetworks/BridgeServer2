@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
@@ -54,7 +55,18 @@ public class DynamoAppConfig implements AppConfig {
         public TypeReference<List<FileReference>> getTypeReference() {
             return FILE_REF_LIST_TYPE;
         }
-    }    
+    }
+    
+    public static class AssessmentReferenceListMarshaller extends ListMarshaller<AssessmentReference> {
+        private static final TypeReference<List<AssessmentReference>> ASSESSMENT_REF_LIST_TYPE =
+                new TypeReference<List<AssessmentReference>>() {};
+
+        /** {@inheritDoc} */
+        @Override
+        public TypeReference<List<AssessmentReference>> getTypeReference() {
+            return ASSESSMENT_REF_LIST_TYPE;
+        }
+    }
 
     private String appId;
     private String label;
@@ -67,6 +79,7 @@ public class DynamoAppConfig implements AppConfig {
     private List<SchemaReference> schemaReferences;
     private List<ConfigReference> configReferences;
     private List<FileReference> fileReferences;
+    private List<AssessmentReference> assessmentReferences;
     boolean configIncluded;
     private Map<String,JsonNode> configElements;
     private Long version;
@@ -198,6 +211,21 @@ public class DynamoAppConfig implements AppConfig {
         return fileReferences;
     }
     
+    @DynamoDBTypeConverted(converter=AssessmentReferenceListMarshaller.class)
+    @Override
+    public void setAssessmentReferences(List<AssessmentReference> references) {
+        this.assessmentReferences = references;
+    }
+    
+    @DynamoDBTypeConverted(converter=FileReferenceListMarshaller.class)
+    @Override
+    public List<AssessmentReference> getAssessmentReferences() {
+        if (assessmentReferences == null) {
+            assessmentReferences = new ArrayList<>();
+        }
+        return assessmentReferences;
+    }
+    
     @DynamoDBTypeConverted(converter=ConfigReferenceListMarshaller.class)
     @Override
     public List<ConfigReference> getConfigReferences() {
@@ -249,7 +277,7 @@ public class DynamoAppConfig implements AppConfig {
     @Override
     public int hashCode() {
         return Objects.hash(clientData, createdOn, criteria, guid, label, modifiedOn, schemaReferences, appId,
-                surveyReferences, configReferences, fileReferences, version, deleted);
+                surveyReferences, configReferences, fileReferences, assessmentReferences, version, deleted);
     }
 
     @Override
@@ -266,6 +294,7 @@ public class DynamoAppConfig implements AppConfig {
                 && Objects.equals(getSurveyReferences(), other.getSurveyReferences()) 
                 && Objects.equals(getConfigReferences(), other.getConfigReferences())
                 && Objects.equals(getFileReferences(), other.getFileReferences())
+                && Objects.equals(getAssessmentReferences(), other.getAssessmentReferences())
                 && Objects.equals(appId, other.appId) && Objects.equals(version, other.version)
                 && Objects.equals(deleted, other.deleted);
     }
@@ -276,6 +305,7 @@ public class DynamoAppConfig implements AppConfig {
                 + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
                 + ", surveyReferences=" + getSurveyReferences() + ", schemaReferences=" + getSchemaReferences()
                 + ", configReferences=" + getConfigReferences() + ", fileReferences=" + getFileReferences()
-                + ", version=" + version + ", deleted=" + deleted + "]";
+                + ", assessmentReferences=" + getAssessmentReferences() + ", version=" + version + ", deleted=" 
+                + deleted + "]";
     }
 }

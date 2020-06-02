@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 
 import java.util.List;
@@ -27,6 +29,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -42,6 +45,8 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
@@ -66,6 +71,7 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
+    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(null, null, GUID));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -88,6 +94,9 @@ public class AppConfigServiceTest {
     
     @Mock
     private FileService mockFileService;
+    
+    @Mock
+    private AssessmentService mockAssessmentService;
     
     @Mock
     private UploadSchema mockUploadSchema;
@@ -150,6 +159,7 @@ public class AppConfigServiceTest {
         criteria1.setMaxAppVersion(OperatingSystem.ANDROID, 6);
         
         AppConfig appConfig1 = AppConfig.create();
+        appConfig1.setAppId(TEST_APP_ID);
         appConfig1.setLabel("AppConfig1");
         appConfig1.setCriteria(criteria1);
         appConfig1.setCreatedOn(LATER_TIMESTAMP);
@@ -160,12 +170,15 @@ public class AppConfigServiceTest {
         criteria2.setMaxAppVersion(OperatingSystem.ANDROID, 20);
         
         AppConfig appConfig2 = AppConfig.create();
+        appConfig2.setAppId(TEST_APP_ID);
         appConfig2.setLabel("AppConfig2");
         appConfig2.setCriteria(criteria2);
         appConfig2.setCreatedOn(EARLIER_TIMESTAMP);
         // Add some references to verify we call the resolver
         appConfig2.setSurveyReferences(SURVEY_REF_LIST);
         appConfig2.setSchemaReferences(SCHEMA_REF_LIST);
+        appConfig2.setFileReferences(FILE_REF_LIST);
+        appConfig2.setAssessmentReferences(ASSESSMENT_REF_LIST);
         RESULTS.add(appConfig2);
         
         when(mockDao.getAppConfigs(TEST_APP_ID, false)).thenReturn(RESULTS);
@@ -205,17 +218,92 @@ public class AppConfigServiceTest {
         survey.setCreatedOn(SURVEY_REF_LIST.get(0).getCreatedOn().getMillis());
         when(mockSurveyService.getSurvey(TEST_APP_ID, SURVEY_KEY, false, false)).thenReturn(survey);
         
+        Assessment assessment = new Assessment();
+        assessment.setIdentifier("assessmentId");
+        assessment.setOriginGuid("originGuid");
+        
+        Assessment sharedAssessment = new Assessment();
+        sharedAssessment.setIdentifier("sharedAssessmentId");
+        
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid")).thenReturn(sharedAssessment);
+        
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
                 .withAppId(TEST_APP_ID).build();
         
         AppConfig appConfig2 = setupConfigsForUser();
-        
+
         AppConfig match = service.getAppConfigForUser(context, true);
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
+        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
+    }
+
+    @Test
+    public void getAppConfigForUserMissingAssessment() {
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
+            .thenThrow(new EntityNotFoundException(Assessment.class));
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withAppId(TEST_APP_ID).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+
+        AppConfig match = service.getAppConfigForUser(context, true);
+        assertEquals(match, appConfig2);
+        
+        // It's removed because we couldn't create it in a valid state
+        assertTrue(match.getAssessmentReferences().isEmpty());
+    }
+    
+    @Test
+    public void getAppConfigForUserWithNonSharedAssessment() {
+        Assessment assessment = new Assessment();
+        assessment.setIdentifier("assessmentId");
+        
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withAppId(TEST_APP_ID).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+
+        AppConfig match = service.getAppConfigForUser(context, true);
+        assertEquals(match, appConfig2);
+        
+        // Verify that we called the resolver on this as well
+        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertNull(match.getAssessmentReferences().get(0).getSharedId());
+    }
+    
+    @Test
+    public void getAppConfigForUserWithMissingSharedAssessment() {
+        Assessment assessment = new Assessment();
+        assessment.setIdentifier("assessmentId");
+        assessment.setOriginGuid("originGuid");
+        
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid"))
+            .thenThrow(new EntityNotFoundException(Assessment.class));
+        
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withAppId(TEST_APP_ID).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+
+        AppConfig match = service.getAppConfigForUser(context, true);
+        assertEquals(match, appConfig2);
+        
+        // Verify that we called the resolver on this as well
+        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertNull(match.getAssessmentReferences().get(0).getSharedId());
     }
     
     @Test

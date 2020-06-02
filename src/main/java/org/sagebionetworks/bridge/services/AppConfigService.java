@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparingLong;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import java.util.List;
 import java.util.Set;
@@ -22,6 +23,8 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
@@ -34,6 +37,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -53,6 +57,8 @@ public class AppConfigService {
     private UploadSchemaService schemaService;
     
     private FileService fileService;
+    
+    private AssessmentService assessmentService;
     
     @Autowired
     final void setAppConfigDao(AppConfigDao appConfigDao) {
@@ -87,6 +93,11 @@ public class AppConfigService {
     @Autowired
     final void setFileService(FileService fileService) {
         this.fileService = fileService;
+    }
+    
+    @Autowired
+    final void setAssessmentService(AssessmentService assessmentService) {
+        this.assessmentService = assessmentService;
     }
     
     // In order to mock this value;
@@ -145,10 +156,47 @@ public class AppConfigService {
             }
         }
         matched.setConfigElements(builder.build());
-
+        
+        ImmutableList.Builder<AssessmentReference> builder2 = new ImmutableList.Builder<>();
+        for (AssessmentReference ref : matched.getAssessmentReferences()) {
+            System.out.println(matched.getAppId() + " " + ref.getGuid());
+            Assessment assessment = getAssessment(matched.getAppId(), ref.getGuid());
+            // We validated the GUID was valid when the config was saved, but this can change.
+            if (assessment != null) {
+                String sharedId = getSharedAssessmentId(assessment);
+                builder2.add(new AssessmentReference(assessment.getIdentifier(), sharedId, ref.getGuid()));
+            }
+        }
+        matched.setAssessmentReferences(builder2.build());
+        
         return matched;
     }
 
+    protected Assessment getAssessment(String appId, String guid) {
+        if (guid != null) {
+            try {
+                return assessmentService.getAssessmentByGuid(appId, guid);
+            } catch(EntityNotFoundException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    protected String getSharedAssessmentId(Assessment assessment) {
+        if (assessment != null && assessment.getOriginGuid() != null) {
+            try {
+                Assessment shared = assessmentService.getAssessmentByGuid(
+                        SHARED_APP_ID, assessment.getOriginGuid());
+                return shared.getIdentifier();
+            } catch(EntityNotFoundException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    
     protected AppConfigElement retrieveConfigElement(String appId, ConfigReference configRef, String appConfigGuid) {
         try {
             return appConfigElementService.getElementRevision(appId, configRef.getId(), configRef.getRevision());
@@ -192,7 +240,7 @@ public class AppConfigService {
         Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, app.getDataGroups(), substudyIds, true);
+                fileService, assessmentService, app.getDataGroups(), substudyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -226,7 +274,7 @@ public class AppConfigService {
         Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, app.getDataGroups(), substudyIds, false);
+                fileService, assessmentService, app.getDataGroups(), substudyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.

@@ -6,12 +6,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
@@ -20,6 +22,7 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
+import org.sagebionetworks.bridge.services.AssessmentService;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -32,17 +35,19 @@ public class AppConfigValidator implements Validator {
     private UploadSchemaService schemaService;
     private AppConfigElementService appConfigElementService;
     private FileService fileService;
+    private AssessmentService assessmentService;
     private boolean isNew;
     private Set<String> dataGroups;
     private Set<String> substudyIds;
     
     public AppConfigValidator(SurveyService surveyService, UploadSchemaService schemaService,
-            AppConfigElementService appConfigElementService, FileService fileService, Set<String> dataGroups,
-            Set<String> substudyIds, boolean isNew) {
+            AppConfigElementService appConfigElementService, FileService fileService,
+            AssessmentService assessmentService, Set<String> dataGroups, Set<String> substudyIds, boolean isNew) {
         this.surveyService = surveyService;
         this.schemaService = schemaService;
         this.fileService = fileService;
         this.appConfigElementService = appConfigElementService;
+        this.assessmentService = assessmentService;
         this.dataGroups = dataGroups;
         this.substudyIds = substudyIds;
         this.isNew = isNew;
@@ -169,6 +174,22 @@ public class AppConfigValidator implements Validator {
                 errors.popNestedPath();
             }
         }
+        // The only field that needs to be filled out is the assessment guid. We will find the relevant identifiers.
+        if (appConfig.getAssessmentReferences() != null) {
+            for (int i=0; i < appConfig.getAssessmentReferences().size(); i++) {
+                AssessmentReference ref = appConfig.getAssessmentReferences().get(i);
+                errors.pushNestedPath("assessmentReferences["+i+"]");
+                if (ref.getGuid() == null) {
+                    errors.rejectValue("guid", "is required");
+                } else {
+                    try {
+                        assessmentService.getAssessmentByGuid(appConfig.getAppId(), ref.getGuid());
+                    } catch(EntityNotFoundException e) {
+                        errors.rejectValue("guid", "does not refer to an assessment");
+                    }
+                }
+                errors.popNestedPath();
+            }
+        }
     }
-
 }
