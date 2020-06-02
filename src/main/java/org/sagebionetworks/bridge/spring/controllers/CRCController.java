@@ -262,7 +262,7 @@ public class CRCController extends BaseController {
     }
 
     HttpResponse post(String url, String username, String password, String bodyJson) throws IOException {
-        Request request = Request.Post(url).bodyString(bodyJson, APPLICATION_JSON);
+        Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
         if (isNotBlank(username) && isNotBlank(password)) {
             String credentials = username + ":" + password;
             String hash = new String(Base64.getEncoder().encode(credentials.getBytes()));
@@ -399,6 +399,7 @@ public class CRCController extends BaseController {
     Patient createPatient(Account account) {
         Patient patient = new Patient();
         patient.setActive(true);
+        patient.setId(account.getId());
 
         Identifier identifier = new Identifier();
         identifier.setValue(account.getId());
