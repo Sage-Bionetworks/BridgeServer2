@@ -29,7 +29,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
@@ -71,7 +70,7 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
-    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(null, null, GUID));
+    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, null, null));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock

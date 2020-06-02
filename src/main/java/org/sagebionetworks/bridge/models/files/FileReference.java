@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.files;
 
-import static org.sagebionetworks.bridge.config.Environment.PROD;
+import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 
 import java.util.Objects;
 
@@ -39,7 +39,7 @@ public final class FileReference {
         }
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
         String baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
-        String protocol = (env == PROD) ? "https" : "http";
+        String protocol = (env == LOCAL) ? "http" : "https";
         return protocol + "://" + baseUrl + "/" + guid + "." + createdOn.getMillis();
     }
 

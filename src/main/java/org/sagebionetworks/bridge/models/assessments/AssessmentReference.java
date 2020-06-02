@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.config.Environment.PROD;
+import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 
 import java.util.Objects;
 
@@ -10,39 +10,37 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 
-public class AssessmentReference {
+public final class AssessmentReference {
     
-    private final String id;
     private final String guid;
+    private final String id;
     private final String sharedId;
     
     @JsonCreator
-    public AssessmentReference(@JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId,
-            @JsonProperty("guid") String guid) {
-        this.id = id;
+    public AssessmentReference(@JsonProperty("guid") String guid, @JsonProperty("id") String id,
+            @JsonProperty("sharedId") String sharedId) {
         this.guid = guid;
+        this.id = id;
         this.sharedId = sharedId;
     }
 
-    public String getId() {
-        return id;
-    }
     public String getGuid() {
         return guid;
     }
+    public String getId() {
+        return id;
+    }
     public String getConfigHref() {
-        if (guid == null) {
-            return null;
-        }
         Environment env = BridgeConfigFactory.getConfig().getEnvironment();
         String baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
-        String protocol = (env == PROD) ? "https" : "http";
+        String protocol = (env == LOCAL) ? "http" : "https";
         return protocol + "://" + baseUrl + "/v1/assessments/" + guid + "/config";
     }
     /**
      * If this assessment was derived from a shared assessment, the shared assessment's
-     * identifier may help to identifier it. We do not provide a GUID or revision because
-     * we don't anticipate trying to retrieve an actual shared assessment.
+     * identifier may help to find it in config. We do not provide a GUID or revision 
+     * because we don't anticipate clients will want to retrieve the original shared
+     * assessment.
      */
     public String getSharedId() {
         return sharedId;

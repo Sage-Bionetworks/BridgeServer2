@@ -55,7 +55,7 @@ public class AppConfigValidatorTest extends Mockito {
     private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
     private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
     private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null, null);
-    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(null, null, GUID);
+    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null, null);
     
     @Mock
     private SurveyService mockSurveyService;

@@ -37,7 +37,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -145,33 +144,37 @@ public class AppConfigService {
         AppConfig matched = matches.get(0);
         // Resolve survey references to pick up survey identifiers
         matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(surveyReference -> resolveSurvey(context.getAppId(), surveyReference))
+            .map(ref -> resolveSurvey(context.getAppId(), ref))
             .collect(Collectors.toList()));
         
-        ImmutableMap.Builder<String, JsonNode> builder = new ImmutableMap.Builder<>();
+        // Resolve the identifiers for the assessment and its shared assessment, if there
+        // is one. These are useful to locate the right reference.
+        matched.setAssessmentReferences(matched.getAssessmentReferences().stream()
+                .map(ref -> resolveAssessment(context.getAppId(), ref))
+                .collect(Collectors.toList()));
+        
+        ImmutableMap.Builder<String, JsonNode> ceBuilder = new ImmutableMap.Builder<>();
         for (ConfigReference configRef : matched.getConfigReferences()) {
             AppConfigElement element = retrieveConfigElement(context.getAppId(), configRef, matched.getGuid());
             if (element != null) {
-                builder.put(configRef.getId(), element.getData());    
+                ceBuilder.put(configRef.getId(), element.getData());    
             }
         }
-        matched.setConfigElements(builder.build());
-        
-        ImmutableList.Builder<AssessmentReference> builder2 = new ImmutableList.Builder<>();
-        for (AssessmentReference ref : matched.getAssessmentReferences()) {
-            System.out.println(matched.getAppId() + " " + ref.getGuid());
-            Assessment assessment = getAssessment(matched.getAppId(), ref.getGuid());
-            // We validated the GUID was valid when the config was saved, but this can change.
-            if (assessment != null) {
-                String sharedId = getSharedAssessmentId(assessment);
-                builder2.add(new AssessmentReference(assessment.getIdentifier(), sharedId, ref.getGuid()));
-            }
-        }
-        matched.setAssessmentReferences(builder2.build());
+        matched.setConfigElements(ceBuilder.build());
         
         return matched;
     }
-
+    
+    protected AssessmentReference resolveAssessment(String appId, AssessmentReference ref) {
+        Assessment assessment = getAssessment(appId, ref.getGuid());
+        // We validated the GUID was valid when the config was saved, but this can change.
+        if (assessment != null) {
+            String sharedId = getSharedAssessmentId(assessment);
+            return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), sharedId);
+        }
+        return ref;
+    }
+    
     protected Assessment getAssessment(String appId, String guid) {
         if (guid != null) {
             try {
@@ -195,7 +198,6 @@ public class AppConfigService {
         }
         return null;
     }
-
     
     protected AppConfigElement retrieveConfigElement(String appId, ConfigReference configRef, String appConfigGuid) {
         try {

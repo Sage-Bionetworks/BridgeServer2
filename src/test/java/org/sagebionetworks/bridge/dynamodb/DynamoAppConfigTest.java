@@ -53,8 +53,8 @@ public class DynamoAppConfigTest {
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
     private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
-            new AssessmentReference("id1", "sharedId1", "guid1"),
-            new AssessmentReference("id2", "sharedId2", "guid2"));
+            new AssessmentReference("guid1", "id1", "sharedId1"),
+            new AssessmentReference("guid2", "id2", "sharedId2"));
     
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
