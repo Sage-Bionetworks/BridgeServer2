@@ -226,9 +226,9 @@ public class CRCControllerTest extends Mockito {
         verify(controller).post(any(), any(), any(), stringCaptor.capture());
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, TEST_USER_GROUP));
-        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','identifier':"
-                +"[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':"
-                +"'unknown','address':[{'state':'NY'}]}"));
+        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
+                +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,"
+                +"'gender':'unknown','address':[{'state':'NY'}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
@@ -255,9 +255,9 @@ public class CRCControllerTest extends Mockito {
         verify(controller).post(any(), any(), any(), stringCaptor.capture());
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','identifier':"
-                +"[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':"
-                +"'unknown','address':[{'state':'NY'}]}"));
+        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
+                +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,"
+                +"'gender':'unknown','address':[{'state':'NY'}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
