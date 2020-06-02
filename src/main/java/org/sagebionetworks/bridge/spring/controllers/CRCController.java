@@ -106,8 +106,7 @@ public class CRCController extends BaseController {
     static final Map<String, String> ACCOUNTS = ImmutableMap.of(
             CUIMC_USERNAME, APP_ID, 
             SYN_USERNAME, APP_ID,
-            TEST_USERNAME, API_APP_ID,
-            "alx.dark@sagebase.org", "czi-coronavirus");
+            TEST_USERNAME, API_APP_ID);
 
     static enum AccountStates {
         ENROLLED, 
