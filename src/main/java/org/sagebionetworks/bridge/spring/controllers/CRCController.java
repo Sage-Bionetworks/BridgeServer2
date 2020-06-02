@@ -99,7 +99,6 @@ public class CRCController extends BaseController {
     static final String TEST_TAG = BridgeConstants.TEST_USER_GROUP;
     static final String UPDATE_MSG = "Participant updated.";
     static final String UPDATE_FOR_TEST_ACCOUNT_MSG = "Participant updated (although eligible, a lab order was not placed for this test account).";
-
     // This is thread-safe and it's recommended to reuse an instance because it's expensive to create;
     static final FhirContext FHIR_CONTEXT = FhirContext.forDstu3();
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
@@ -111,7 +110,13 @@ public class CRCController extends BaseController {
             "alx.dark@sagebase.org", "czi-coronavirus");
 
     static enum AccountStates {
-        ENROLLED, SELECTED, DECLINED, TESTS_REQUESTED, TESTS_SCHEDULED, TESTS_COLLECTED, TESTS_AVAILABLE
+        ENROLLED, 
+        SELECTED, 
+        DECLINED, 
+        TESTS_REQUESTED, 
+        TESTS_SCHEDULED, 
+        TESTS_COLLECTED, 
+        TESTS_AVAILABLE
     }
 
     private static final Set<String> ALL_STATES = Arrays.stream(AccountStates.values()).map(e -> e.name().toLowerCase())
@@ -306,8 +311,12 @@ public class CRCController extends BaseController {
             metadata.put("type", reportName);
 
             StudyParticipant participant = participantService.getParticipant(app, account, false);
-            HealthDataSubmission healthData = new HealthDataSubmission.Builder().withAppVersion("v1")
-                    .withCreatedOn(getTimestamp()).withMetadata(metadata).withData(data).withPhoneInfo(getUserAgent())
+            HealthDataSubmission healthData = new HealthDataSubmission.Builder()
+                    .withAppVersion("v1")
+                    .withCreatedOn(getTimestamp())
+                    .withMetadata(metadata)
+                    .withData(data)
+                    .withPhoneInfo(getUserAgent())
                     .build();
             healthDataService.submitHealthData(appId, participant, healthData);
         } catch (IOException | UploadValidationException e) {
