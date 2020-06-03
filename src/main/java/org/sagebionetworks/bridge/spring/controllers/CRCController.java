@@ -22,6 +22,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 
@@ -32,11 +33,13 @@ import org.apache.http.message.BasicHeader;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
+import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.ContactPoint;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.HumanName;
 import org.hl7.fhir.dstu3.model.Identifier;
+import org.hl7.fhir.dstu3.model.Meta;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
@@ -406,6 +409,14 @@ public class CRCController extends BaseController {
         identifier.setValue(account.getId());
         identifier.setSystem(USER_ID_VALUE_NS);
         patient.addIdentifier(identifier);
+        
+        Coding coding = new Coding();
+        coding.setSystem("source");
+        coding.setCode("sage");
+        
+        Meta meta = new Meta();
+        meta.setTag(ImmutableList.of(coding));
+        patient.setMeta(meta);
 
         HumanName name = new HumanName();
         if (isNotBlank(account.getFirstName())) {
