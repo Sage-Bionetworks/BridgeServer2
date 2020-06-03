@@ -107,8 +107,13 @@ public class AppValidator implements Validator {
         if (app.isReauthenticationEnabled() == null) {
             errors.rejectValue("reauthenticationEnabled", "is required");
         }
-        if (app.getShortName() != null && app.getShortName().length() > 10) {
-            errors.rejectValue("shortName", "must be 10 characters or less");
+        if (app.getShortName() != null) {
+            if (app.getShortName().length() > 10) {
+                errors.rejectValue("shortName", "must be 10 characters or less");
+            }
+            if (app.getShortName().contains(" ")) {
+                errors.rejectValue("shortName", "cannot contain spaces");
+            }
         }
         if (isBlank(app.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
