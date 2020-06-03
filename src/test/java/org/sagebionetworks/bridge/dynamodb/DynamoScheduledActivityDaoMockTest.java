@@ -33,6 +33,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ClientInfo;
@@ -62,7 +63,9 @@ public class DynamoScheduledActivityDaoMockTest {
     private static final String HEALTH_CODE = "AAA";
     private static final DateTimeZone PACIFIC_TIME_ZONE = DateTimeZone.forOffsetHours(-7);
     
-    private static final String BASE_URL = BridgeConfigFactory.getConfig().getWebservicesURL();
+    private static final String BASE_URL = 
+            ((BridgeConfigFactory.getConfig().getEnvironment() == Environment.LOCAL) ? "http://" : "https://") +
+            BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
     private static final String ACTIVITY_1_REF = BASE_URL + "/v3/surveys/AAA/revisions/published";
     private static final String ACTIVITY_2_REF = BASE_URL + "/v3/surveys/BBB/revisions/published";
     private static final String ACTIVITY_3_REF = TestUtils.getActivity3().getTask().getIdentifier();

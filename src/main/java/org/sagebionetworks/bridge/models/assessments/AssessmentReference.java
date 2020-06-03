@@ -1,40 +1,45 @@
 package org.sagebionetworks.bridge.models.assessments;
 
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 
 public final class AssessmentReference {
     
+    private final ConfigResolver resolver;
     private final String guid;
-    private final String id;
+    private final String identifier;
     private final String sharedId;
     
     @JsonCreator
-    public AssessmentReference(@JsonProperty("guid") String guid, @JsonProperty("id") String id,
-            @JsonProperty("sharedId") String sharedId) {
-        this.guid = guid;
-        this.id = id;
-        this.sharedId = sharedId;
+    public AssessmentReference(@JsonProperty("guid") String guid,
+            @JsonProperty("identifier") String identifier, @JsonProperty("sharedId") String sharedId) {
+        this(INSTANCE, guid, identifier, sharedId);
     }
 
+    public AssessmentReference(ConfigResolver resolver, String guid, String identifier, String sharedId) {
+        this.resolver = resolver;
+        this.guid = guid;
+        this.identifier = identifier;
+        this.sharedId = sharedId;
+    }
+    
     public String getGuid() {
         return guid;
     }
-    public String getId() {
-        return id;
+    public String getIdentifier() {
+        return identifier;
     }
     public String getConfigHref() {
-        Environment env = BridgeConfigFactory.getConfig().getEnvironment();
-        String baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("ws");
-        String protocol = (env == LOCAL) ? "http" : "https";
-        return protocol + "://" + baseUrl + "/v1/assessments/" + guid + "/config";
+        if (guid == null) {
+            return null;
+        }
+        return resolver.url("ws", "/v1/assessments/" + guid + "/config");
     }
     /**
      * If this assessment was derived from a shared assessment, the shared assessment's
@@ -48,7 +53,7 @@ public final class AssessmentReference {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, guid, sharedId);
+        return Objects.hash(guid);
     }
 
     @Override
@@ -58,14 +63,12 @@ public final class AssessmentReference {
         if (obj == null || getClass() != obj.getClass())
             return false;
         AssessmentReference other = (AssessmentReference) obj;
-        return (Objects.equals(id, other.id) &&
-                Objects.equals(guid, other.guid) && 
-                Objects.equals(guid, other.guid) &&
-                Objects.equals(sharedId, other.sharedId));
+        return Objects.equals(guid, other.guid);
     }
 
     @Override
     public String toString() {
-        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + "]";
+        return "AssessmentReference [identifier=" + identifier + ", sharedId=" + sharedId + ", guid=" + guid
+                + ", configHref=" + getConfigHref() + "]";
     }
 }

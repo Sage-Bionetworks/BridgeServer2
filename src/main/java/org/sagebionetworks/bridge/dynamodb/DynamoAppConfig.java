@@ -217,7 +217,7 @@ public class DynamoAppConfig implements AppConfig {
         this.assessmentReferences = references;
     }
     
-    @DynamoDBTypeConverted(converter=FileReferenceListMarshaller.class)
+    @DynamoDBTypeConverted(converter=AssessmentReferenceListMarshaller.class)
     @Override
     public List<AssessmentReference> getAssessmentReferences() {
         if (assessmentReferences == null) {

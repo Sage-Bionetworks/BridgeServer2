@@ -53,7 +53,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dynamodb.DynamoCriteria;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -62,6 +64,7 @@ import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -685,4 +688,14 @@ public class TestUtils {
         String rndPart = TestUtils.randomName(cls);
         return String.format("bridge-testing+%s-%s@sagebase.org", devPart, rndPart);
     }
+    
+    public static ConfigResolver mockConfigResolver(Environment env, String subdomain) {
+        BridgeConfig mockConfig = Mockito.mock(BridgeConfig.class);
+        when(mockConfig.getEnvironment()).thenReturn(env);
+        when(mockConfig.getHostnameWithPostfix(subdomain))
+            .thenReturn(subdomain + "-" + env.name().toLowerCase() + ".bridge.org");
+        return new ConfigResolver(mockConfig);
+    }
+    
+
 }

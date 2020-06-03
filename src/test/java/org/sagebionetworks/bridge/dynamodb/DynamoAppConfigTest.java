@@ -168,13 +168,13 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
         assertEquals(node.get("assessmentReferences").size(), 2);
-        assertEquals(node.get("assessmentReferences").get(0).get("id").textValue(), "id1");
+        assertEquals(node.get("assessmentReferences").get(0).get("identifier").textValue(), "id1");
         assertEquals(node.get("assessmentReferences").get(0).get("sharedId").textValue(), "sharedId1");
         assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
         assertTrue(node.get("assessmentReferences").get(0).get("configHref").textValue()
                 .contains("/v1/assessments/guid1/config"));
 
-        assertEquals(node.get("assessmentReferences").get(1).get("id").textValue(), "id2");
+        assertEquals(node.get("assessmentReferences").get(1).get("identifier").textValue(), "id2");
         assertEquals(node.get("assessmentReferences").get(1).get("sharedId").textValue(), "sharedId2");
         assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
         assertTrue(node.get("assessmentReferences").get(1).get("configHref").textValue()

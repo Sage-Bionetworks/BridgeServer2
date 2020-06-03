@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -238,28 +237,10 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
-        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
         assertEquals(match.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
     }
 
-    @Test
-    public void getAppConfigForUserMissingAssessment() {
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
-            .thenThrow(new EntityNotFoundException(Assessment.class));
-        
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withAppId(TEST_APP_ID).build();
-        
-        AppConfig appConfig2 = setupConfigsForUser();
-
-        AppConfig match = service.getAppConfigForUser(context, true);
-        assertEquals(match, appConfig2);
-        
-        // It's removed because we couldn't create it in a valid state
-        assertTrue(match.getAssessmentReferences().isEmpty());
-    }
-    
     @Test
     public void getAppConfigForUserWithNonSharedAssessment() {
         Assessment assessment = new Assessment();
@@ -277,7 +258,7 @@ public class AppConfigServiceTest {
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
-        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
         assertNull(match.getAssessmentReferences().get(0).getSharedId());
     }
     
@@ -301,7 +282,7 @@ public class AppConfigServiceTest {
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
-        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
         assertNull(match.getAssessmentReferences().get(0).getSharedId());
     }
     

@@ -53,9 +53,6 @@ public final class SchemaReference {
     /** {@inheritDoc} */
     @Override
     public String toString() {
-        return "SchemaReference{" +
-                "id='" + id + '\'' +
-                ", revision=" + revision +
-                '}';
+        return "SchemaReference{" + "id='" + id + '\'' + ", revision=" + revision + '}';
     }
 }

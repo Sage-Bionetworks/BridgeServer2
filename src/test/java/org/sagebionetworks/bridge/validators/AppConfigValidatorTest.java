@@ -110,12 +110,19 @@ public class AppConfigValidatorTest extends Mockito {
     
     @Test
     public void assessmentReferenceInvalidGuidValidated() {
-        appConfig.setAssessmentReferences(Lists.newArrayList(VALID_ASSESSMENT_REF));
+        appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
         
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment");
+    }
+    
+    @Test
+    public void assessmentReferenceIncludedTwice() {
+        appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF, VALID_ASSESSMENT_REF));
+        
+        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[1].guid", "refers to the same assessment as another reference");
     }
     
     @Test
@@ -158,6 +165,20 @@ public class AppConfigValidatorTest extends Mockito {
     }
     
     @Test
+    public void configReferenceIncludedTwice() {
+        ConfigReference ref1 = new ConfigReference("id:1", 1L);
+        
+        when(mockAppConfigElementService.getElementRevision(any(), any(), anyLong())).thenReturn(AppConfigElement.create());
+        
+        List<ConfigReference> references = ImmutableList.of(ref1, ref1);
+        appConfig.setConfigReferences(references);
+        appConfig.setLabel("label");
+        appConfig.setCriteria(Criteria.create());
+        
+        assertValidatorMessage(newValidator, appConfig, "configReferences[1]", "refers to the same config as another reference");
+    }
+    
+    @Test
     public void guidRequired() {
         assertValidatorMessage(updateValidator, appConfig, "label", "is required");
         
@@ -193,6 +214,14 @@ public class AppConfigValidatorTest extends Mockito {
         
         assertValidatorMessage(newValidator, appConfig, "surveyReferences[0].createdOn", "is required");
     }
+    
+    @Test
+    public void surveyReferencesIncludedTwice() {
+        appConfig.setSurveyReferences(ImmutableList.of(VALID_UNRESOLVED_SURVEY_REF, VALID_UNRESOLVED_SURVEY_REF));
+        
+        assertValidatorMessage(newValidator, appConfig, "surveyReferences[1]",
+                "refers to the same survey as another reference");
+    }
 
     @Test
     public void schemaReferencesHaveId() {
@@ -227,6 +256,16 @@ public class AppConfigValidatorTest extends Mockito {
         appConfig.getSchemaReferences().add(VALID_SCHEMA_REF);
         
         assertValidatorMessage(updateValidator, appConfig, "schemaReferences[0]", "does not refer to an upload schema");
+    }
+    
+    @Test
+    public void schemaReferenceIncludedTwice() {
+        when(mockSchemaService.getUploadSchemaByIdAndRev(TEST_APP_ID, "guid", 3)).thenReturn(UploadSchema.create());
+        
+        appConfig.setSchemaReferences(ImmutableList.of(VALID_SCHEMA_REF, VALID_SCHEMA_REF));
+        
+        assertValidatorMessage(updateValidator, appConfig, "schemaReferences[1]", "refers to the same schema as another reference");
+        
     }
     
     @Test
@@ -341,5 +380,16 @@ public class AppConfigValidatorTest extends Mockito {
         when(mockFileService.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.empty());
         
         assertValidatorMessage(newValidator, appConfig, "fileReferences[0]", "does not refer to a file revision");
+    }
+    
+    @Test
+    public void fileReferenceIncludedTwice() {
+        FileReference fileRef = new FileReference(GUID, TIMESTAMP);
+        appConfig.setFileReferences(ImmutableList.of(fileRef, fileRef));
+        
+        FileRevision rev = new FileRevision();
+        when(mockFileService.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.of(rev));
+        
+        assertValidatorMessage(newValidator, appConfig, "fileReferences[1]", "refers to the same file as another reference");
     }
 }

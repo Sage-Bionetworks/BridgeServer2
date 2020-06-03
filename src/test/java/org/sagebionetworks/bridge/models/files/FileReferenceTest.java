@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.models.files;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestUtils.mockConfigResolver;
+import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.testng.Assert.assertEquals;
@@ -9,26 +11,31 @@ import static org.testng.Assert.assertNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.testng.PowerMockTestCase;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-@PrepareForTest({BridgeConfigFactory.class})
-public class FileReferenceTest extends PowerMockTestCase {
+public class FileReferenceTest extends Mockito {
     
-    private BridgeConfig config;
+    @Mock
+    BridgeConfig mockConfig;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
+    }
     
     @Test
     public void equalsVerifier() {
-        EqualsVerifier.forClass(FileReference.class).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(FileReference.class).allFieldsShouldBeUsedExcept("resolver").verify();
     }
     
     @Test
@@ -48,11 +55,11 @@ public class FileReferenceTest extends PowerMockTestCase {
     }
     
     @Test
-    public void canSerialization() throws Exception {
-        String href = "http://" + BridgeConfigFactory.getConfig()
-                .getHostnameWithPostfix("docs") + "/" + GUID + "." + TIMESTAMP.getMillis();
+    public void canSerialize() throws Exception {
+        ConfigResolver resolver = mockConfigResolver(LOCAL, "docs");
+        FileReference ref = new FileReference(resolver, GUID, TIMESTAMP);
         
-        FileReference ref = new FileReference(GUID, TIMESTAMP);
+        String href = "http://docs-local.bridge.org/" + GUID + "." + TIMESTAMP.getMillis();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), GUID);
@@ -63,32 +70,23 @@ public class FileReferenceTest extends PowerMockTestCase {
         FileReference deser = BridgeObjectMapper.get().readValue(node.toString(), FileReference.class);
         assertEquals(deser.getGuid(), GUID);
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
-        assertEquals(deser.getHref(), href);
+        // The href will pick up the default resolver so the URL would be different,
+        // but as deployed, this is correct.
     }
  
     @Test
     public void testWithProdEnv() {
-        PowerMockito.mockStatic(BridgeConfigFactory.class);
-        config = Mockito.mock(BridgeConfig.class);
-        Mockito.when(BridgeConfigFactory.getConfig()).thenReturn(config);
+        ConfigResolver resolver = mockConfigResolver(PROD, "docs");
+        FileReference ref = new FileReference(resolver, GUID, TIMESTAMP);
         
-        Mockito.when(config.getEnvironment()).thenReturn(PROD);
-        Mockito.when(config.getHostnameWithPostfix("docs")).thenReturn("docs.test.com");
-        
-        FileReference ref = new FileReference(GUID, TIMESTAMP);
-        assertEquals(ref.getHref(), "https://docs.test.com/oneGuid." + TIMESTAMP.getMillis());
+        assertEquals(ref.getHref(), "https://docs-prod.bridge.org/oneGuid." + TIMESTAMP.getMillis());
     }
 
     @Test
     public void testWithStagingEnv() {
-        PowerMockito.mockStatic(BridgeConfigFactory.class);
-        config = Mockito.mock(BridgeConfig.class);
-        Mockito.when(BridgeConfigFactory.getConfig()).thenReturn(config);
+        ConfigResolver resolver = mockConfigResolver(UAT, "docs");
+        FileReference ref = new FileReference(resolver, GUID, TIMESTAMP);
         
-        Mockito.when(config.getEnvironment()).thenReturn(UAT);
-        Mockito.when(config.getHostnameWithPostfix("docs")).thenReturn("docs-staging.test.com");
-        
-        FileReference ref = new FileReference(GUID, TIMESTAMP);
-        assertEquals(ref.getHref(), "http://docs-staging.test.com/oneGuid." + TIMESTAMP.getMillis());
+        assertEquals(ref.getHref(), "https://docs-uat.bridge.org/oneGuid." + TIMESTAMP.getMillis());
     }
 }

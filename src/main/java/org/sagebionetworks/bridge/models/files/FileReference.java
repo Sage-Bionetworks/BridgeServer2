@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.files;
 
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.Objects;
 
@@ -11,19 +11,24 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 
 public final class FileReference {
     
+    private final ConfigResolver resolver;
     private final String guid;
     private final DateTime createdOn;
-    
-    @JsonCreator
-    public FileReference(@JsonProperty("guid") String guid, @JsonProperty("createdOn") DateTime createdOn) {
+
+    public FileReference(ConfigResolver resolver, String guid, DateTime createdOn) {
+        this.resolver = resolver;
         this.guid = guid;
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
+    }
+
+    @JsonCreator
+    public FileReference(@JsonProperty("guid") String guid, @JsonProperty("createdOn") DateTime createdOn) {
+        this(INSTANCE, guid, createdOn);
     }
 
     public String getGuid() {
@@ -37,10 +42,7 @@ public final class FileReference {
         if (guid == null || createdOn == null) {
             return null;
         }
-        Environment env = BridgeConfigFactory.getConfig().getEnvironment();
-        String baseUrl = BridgeConfigFactory.getConfig().getHostnameWithPostfix("docs");
-        String protocol = (env == LOCAL) ? "http" : "https";
-        return protocol + "://" + baseUrl + "/" + guid + "." + createdOn.getMillis();
+        return resolver.url("docs", "/" + guid + "." + createdOn.getMillis());
     }
 
     @Override
@@ -61,6 +63,6 @@ public final class FileReference {
 
     @Override
     public String toString() {
-        return "FileReference [guid=" + guid + ", createdOn=" + createdOn + "]";
+        return "FileReference [guid=" + guid + ", createdOn=" + createdOn + ", href=" + getHref() + "]";
     }
 }

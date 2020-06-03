@@ -168,11 +168,11 @@ public class AppConfigService {
     protected AssessmentReference resolveAssessment(String appId, AssessmentReference ref) {
         Assessment assessment = getAssessment(appId, ref.getGuid());
         // We validated the GUID was valid when the config was saved, but this can change.
-        if (assessment != null) {
-            String sharedId = getSharedAssessmentId(assessment);
-            return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), sharedId);
+        if (assessment == null) {
+            return ref;
         }
-        return ref;
+        String sharedId = getSharedAssessmentId(assessment);
+        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), sharedId);
     }
     
     protected Assessment getAssessment(String appId, String guid) {
@@ -256,6 +256,7 @@ public class AppConfigService {
         newAppConfig.setSchemaReferences(appConfig.getSchemaReferences());
         newAppConfig.setConfigReferences(appConfig.getConfigReferences());
         newAppConfig.setFileReferences(appConfig.getFileReferences());
+        newAppConfig.setAssessmentReferences(appConfig.getAssessmentReferences());
         newAppConfig.setCreatedOn(timestamp);
         newAppConfig.setModifiedOn(timestamp);
         newAppConfig.setGuid(getGUID());

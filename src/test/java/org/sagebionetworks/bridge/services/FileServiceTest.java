@@ -374,7 +374,7 @@ public class FileServiceTest extends Mockito {
         revision.setMimeType("application/pdf");
         
         FileRevision returned = service.createFileRevision(TEST_APP_ID, revision);
-        assertEquals(returned.getDownloadURL(), "http://docs-staging.sagebridge.org/oneGuid.1422319112486");
+        assertEquals(returned.getDownloadURL(), "https://docs-staging.sagebridge.org/oneGuid.1422319112486");
     }
         
     @Test
