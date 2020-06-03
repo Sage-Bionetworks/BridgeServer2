@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.validation.Errors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -46,7 +47,9 @@ import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
+import org.sagebionetworks.bridge.validators.AbstractValidator;
 
 public class AssessmentConfigServiceTest extends Mockito {
 
@@ -171,7 +174,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*identifier is missing.*")
+            expectedExceptionsMessageRegExp = ".*config is required.*")
     public void updateAssessmentConfigInvalid() {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
@@ -183,7 +186,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
 
         AssessmentConfig config = new AssessmentConfig();
-        config.setConfig(TestUtils.getClientData());
+        config.setConfig(null);
         config.setVersion(3L);
         
         service.updateAssessmentConfig(TEST_APP_ID, GUID, config);
@@ -228,6 +231,17 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*identifier is missing.*")
     public void customizeAssessmentConfigInvalid() {
+        AssessmentConfigValidator val = new AssessmentConfigValidator.Builder()
+                .addValidator("*", new AbstractValidator() {
+                    public void validate(Object target, Errors errors) {
+                        JsonNode node = (JsonNode)target;
+                        if (!node.has("identifier")) {
+                            errors.reject("identifier is missing");
+                        }
+                    }
+                }).build();
+        doReturn(val).when(service).getValidator();
+        
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build(),

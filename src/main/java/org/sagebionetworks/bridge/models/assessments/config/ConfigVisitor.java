@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.assessments.config;
 
-import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 
 import java.util.Map;
@@ -12,6 +11,11 @@ import com.google.common.collect.ImmutableMap;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+/**
+ * Validators should be registered with this visitor using the type name of the object
+ * to be validated, or "*" to validate all nodes in the tree. Currently we don't 
+ * validate anything about assessment configurations. 
+ */
 public class ConfigVisitor implements BiConsumer<String, JsonNode> {
     private Errors errors;
     private Map<String, Validator> validators;
@@ -23,20 +27,16 @@ public class ConfigVisitor implements BiConsumer<String, JsonNode> {
     @Override
     public void accept(String fieldPath, JsonNode node) {
         errors.pushNestedPath(fieldPath);
-        // Very probably, not all nodes of the final configurations will have 
-        // an identifier and type. We will move this to a sub-validator when
-        // there is clarity on semantics.
-        if (!node.has(ID_FIELD_NAME)) {
-            errors.rejectValue(ID_FIELD_NAME, "is missing");
-        }
-        if (!node.has(TYPE_FIELD_NAME)) {
-            errors.rejectValue(TYPE_FIELD_NAME, "is missing");
-        } else {
+        if (node.has(TYPE_FIELD_NAME)) {
             String typeName = node.get(TYPE_FIELD_NAME).textValue();
             Validator validator = validators.get(typeName);
             if (validator != null) {
-                validator.validate(node, errors);    
+                validator.validate(node, errors);
             }
+        }
+        Validator validator = validators.get("*");
+        if (validator != null) {
+            validator.validate(node, errors);
         }
         errors.popNestedPath();
     }

@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.models.assessments.config;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator.INSTANCE;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
@@ -50,7 +51,25 @@ public class AssessmentConfigValidatorTest {
             "        }" + 
             "    ]" + 
             "}";
+    
+    private AssessmentConfigValidator validator;
 
+    @BeforeMethod
+    public void beforeMethod() {
+        validator = new AssessmentConfigValidator.Builder()
+                .addValidator("*", new AbstractValidator() {
+                    public void validate(Object target, Errors errors) {
+                        JsonNode node = (JsonNode)target;
+                        if (!node.has("identifier")) {
+                            errors.rejectValue("identifier", "is missing");
+                        }
+                        if (!node.has("type")) {
+                            errors.rejectValue("type", "is missing");
+                        }
+                    }
+                }).build();
+    }
+    
     @Test
     public void valid() throws Exception {
         ObjectNode obj = (ObjectNode)TestUtils.getClientData();
@@ -59,7 +78,7 @@ public class AssessmentConfigValidatorTest {
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(obj);
-        Validate.entityThrowingException(INSTANCE, config);
+        Validate.entityThrowingException(validator, config);
     }
     
     @Test
@@ -67,15 +86,15 @@ public class AssessmentConfigValidatorTest {
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(BridgeObjectMapper.get().readTree(TEST_JSON));
         
-        assertValidatorMessage(INSTANCE, config, 
+        assertValidatorMessage(validator, config, 
                 "config.elements[0].beforeRules[0].identifier", "is missing");
-        assertValidatorMessage(INSTANCE, config, "config.type", "is missing");
+        assertValidatorMessage(validator, config, "config.type", "is missing");
     }
     
     @Test
     public void testNullConfig() throws Exception {
         AssessmentConfig config = new AssessmentConfig();
-        assertValidatorMessage(INSTANCE, config, "config", "is required");
+        assertValidatorMessage(validator, config, "config", "is required");
     }
     
     @Test
