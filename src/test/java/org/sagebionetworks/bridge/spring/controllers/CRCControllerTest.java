@@ -227,8 +227,9 @@ public class CRCControllerTest extends Mockito {
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, TEST_USER_GROUP));
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
-                +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,"
-                +"'gender':'unknown','address':[{'state':'NY'}]}"));
+                +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
+                +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
+                +"'address':[{'state':'NY'}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
@@ -256,8 +257,9 @@ public class CRCControllerTest extends Mockito {
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
-                +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,"
-                +"'gender':'unknown','address':[{'state':'NY'}]}"));
+                +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
+                +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
+                +"'address':[{'state':'NY'}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
@@ -663,6 +665,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getIdentifier().get(0).getSystem(), USER_ID_VALUE_NS);
         assertEquals(patient.getName().get(0).getGivenAsSingleString(), "Test");
         assertEquals(patient.getName().get(0).getFamily(), "User");
+        assertEquals(patient.getMeta().getTag().get(0).getSystem(), "source");
+        assertEquals(patient.getMeta().getTag().get(0).getCode(), "sage");
         assertEquals(patient.getGender().name(), "FEMALE");
         assertEquals(LocalDate.fromDateFields(patient.getBirthDate()).toString(), "1980-08-10");
         assertEquals(patient.getTelecom().get(0).getValue(), PHONE.getNumber());
