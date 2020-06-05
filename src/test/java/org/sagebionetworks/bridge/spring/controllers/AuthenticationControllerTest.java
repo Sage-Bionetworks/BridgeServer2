@@ -233,7 +233,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // Execute.
         StatusMessage result = controller.requestEmailSignIn();
-        assertEquals(result.getMessage(), "Email sent.");
+        assertEquals(result.getMessage(), AuthenticationController.EMAIL_SIGNIN_REQUEST_MSG);
 
         // Verify.
         verify(mockWorkflowService).requestEmailSignIn(signInCaptor.capture());
@@ -252,7 +252,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // Execute.
         StatusMessage result = controller.requestEmailSignIn();
-        assertEquals(result.getMessage(), "Email sent.");
+        assertEquals(result.getMessage(), AuthenticationController.EMAIL_SIGNIN_REQUEST_MSG);
 
         // Verify.
         verify(mockWorkflowService).requestEmailSignIn(signInCaptor.capture());
@@ -900,7 +900,8 @@ public class AuthenticationControllerTest extends Mockito {
         mockResetPasswordRequest();
         app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
-        controller.resetPassword();
+        StatusMessage message = controller.resetPassword();
+        assertEquals(message.getMessage(), "Password has been changed.");
         
         verify(mockAuthService).resetPassword(passwordResetCaptor.capture());
         
@@ -929,20 +930,22 @@ public class AuthenticationControllerTest extends Mockito {
         mockSignInWithEmailPayload();
         app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
-        controller.requestResetPassword();
+        StatusMessage message = controller.requestResetPassword();
+        assertEquals(message.getMessage(), AuthenticationController.EMAIL_RESET_PWD_MSG);
         
         verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
         assertEquals(TEST_APP_ID, deser.getAppId());
         assertEquals(TEST_EMAIL, deser.getEmail());
     }
-    
+
     @Test
     public void requestResetPasswordWithPhone() throws Exception {
         mockSignInWithPhonePayload();
         app.getMinSupportedAppVersions().put(OperatingSystem.IOS, 0);
         
-        controller.requestResetPassword();
+        StatusMessage message = controller.requestResetPassword();
+        assertEquals(message.getMessage(), AuthenticationController.PHONE_RESET_PWD_MSG);
         
         verify(mockAuthService).requestResetPassword(eq(app), eq(false), signInCaptor.capture());
         SignIn deser = signInCaptor.getValue();
@@ -965,6 +968,10 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, new SignIn.Builder().withEmail(TEST_EMAIL).build());
         
         controller.requestResetPassword();
+    }
+    
+    @Test
+    public void requestResetPasswordNoAccount() throws Exception {
     }
     
     @Test
@@ -1031,7 +1038,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // Execute.
         StatusMessage result = controller.requestPhoneSignIn();
-        assertEquals(result.getMessage(), "Message sent.");
+        assertEquals(result.getMessage(), AuthenticationController.PHONE_SIGNIN_REQUEST_MSG);
 
         // Verify.
         verify(mockWorkflowService).requestPhoneSignIn(signInCaptor.capture());
@@ -1052,7 +1059,7 @@ public class AuthenticationControllerTest extends Mockito {
 
         // Execute.
         StatusMessage result = controller.requestPhoneSignIn();
-        assertEquals(result.getMessage(), "Message sent.");
+        assertEquals(result.getMessage(), AuthenticationController.PHONE_SIGNIN_REQUEST_MSG);
 
         // Verify.
         verify(mockWorkflowService).requestPhoneSignIn(signInCaptor.capture());
