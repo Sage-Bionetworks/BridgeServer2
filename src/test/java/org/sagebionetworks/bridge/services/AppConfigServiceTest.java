@@ -473,6 +473,7 @@ public class AppConfigServiceTest {
         newConfig.setSchemaReferences(SCHEMA_REF_LIST);
         newConfig.setConfigReferences(CONFIG_REF_LIST);
         newConfig.setFileReferences(FILE_REF_LIST);
+        newConfig.setAssessmentReferences(ASSESSMENT_REF_LIST);
         
         AppConfig returnValue = service.createAppConfig(TEST_APP_ID, newConfig);
         
@@ -486,6 +487,7 @@ public class AppConfigServiceTest {
         assertEquals(returnValue.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(returnValue.getConfigReferences(), CONFIG_REF_LIST);
         assertEquals(returnValue.getFileReferences(), FILE_REF_LIST);
+        assertEquals(returnValue.getAssessmentReferences(), ASSESSMENT_REF_LIST);
         
         verify(mockDao).createAppConfig(appConfigCaptor.capture());
         
