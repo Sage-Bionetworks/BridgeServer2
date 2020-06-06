@@ -2,16 +2,19 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
@@ -20,6 +23,7 @@ import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.AppConfigElementService;
+import org.sagebionetworks.bridge.services.AssessmentService;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.SurveyService;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
@@ -32,17 +36,19 @@ public class AppConfigValidator implements Validator {
     private UploadSchemaService schemaService;
     private AppConfigElementService appConfigElementService;
     private FileService fileService;
+    private AssessmentService assessmentService;
     private boolean isNew;
     private Set<String> dataGroups;
     private Set<String> substudyIds;
     
     public AppConfigValidator(SurveyService surveyService, UploadSchemaService schemaService,
-            AppConfigElementService appConfigElementService, FileService fileService, Set<String> dataGroups,
-            Set<String> substudyIds, boolean isNew) {
+            AppConfigElementService appConfigElementService, FileService fileService,
+            AssessmentService assessmentService, Set<String> dataGroups, Set<String> substudyIds, boolean isNew) {
         this.surveyService = surveyService;
         this.schemaService = schemaService;
         this.fileService = fileService;
         this.appConfigElementService = appConfigElementService;
+        this.assessmentService = assessmentService;
         this.dataGroups = dataGroups;
         this.substudyIds = substudyIds;
         this.isNew = isNew;
@@ -73,6 +79,7 @@ public class AppConfigValidator implements Validator {
         } else {
             // We can't validate schema references if there is no appId
             if (appConfig.getSchemaReferences() != null) {
+                Set<SchemaReference> uniqueRefs = new HashSet<>();
                 for (int i=0; i < appConfig.getSchemaReferences().size(); i++) {
                     SchemaReference ref = appConfig.getSchemaReferences().get(i);
                     errors.pushNestedPath("schemaReferences["+i+"]");
@@ -83,24 +90,30 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("revision", "is required");
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
-                        try {
-                            UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(appConfig.getAppId(),
-                                    ref.getId(), ref.getRevision());
-                            // We do throw a validation error if the object is logically deleted because while the
-                            // object will still be accessible through the API, it was deleted, suggesting the intention
-                            // to stop using it, which is not reflected in this appConfig
-                            if (schema.isDeleted()) {
-                                errors.rejectValue("", "does not refer to an upload schema"); 
+                        if (uniqueRefs.contains(ref)) {
+                            errors.rejectValue("", "refers to the same schema as another reference");
+                        } else {
+                            try {
+                                UploadSchema schema = schemaService.getUploadSchemaByIdAndRev(appConfig.getAppId(),
+                                        ref.getId(), ref.getRevision());
+                                // We do throw a validation error if the object is logically deleted because while the
+                                // object will still be accessible through the API, it was deleted, suggesting the intention
+                                // to stop using it, which is not reflected in this appConfig
+                                if (schema.isDeleted()) {
+                                    errors.rejectValue("", "does not refer to an upload schema"); 
+                                }
+                                
+                            } catch(EntityNotFoundException e) {
+                                errors.rejectValue("", "does not refer to an upload schema");
                             }
-                            
-                        } catch(EntityNotFoundException e) {
-                            errors.rejectValue("", "does not refer to an upload schema");
+                            uniqueRefs.add(ref);
                         }
                     }
                     errors.popNestedPath();
                 }
             }
             if (appConfig.getConfigReferences() != null) {
+                Set<ConfigReference> uniqueRefs = new HashSet<>();
                 for (int i=0; i < appConfig.getConfigReferences().size(); i++) {
                     ConfigReference ref = appConfig.getConfigReferences().get(i);
                     errors.pushNestedPath("configReferences["+i+"]");
@@ -111,45 +124,57 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("revision", "is required");
                     }
                     if (StringUtils.isNotBlank(ref.getId()) && ref.getRevision() != null) {
-                        try {
-                            AppConfigElement element = appConfigElementService
-                                    .getElementRevision(appConfig.getAppId(), ref.getId(), ref.getRevision());
-                            // We do throw a validation error if the object is logically deleted because while the
-                            // object will still be accessible through the API, it was deleted, suggesting the intention
-                            // to stop using it, which is not reflected in this appConfig
-                            if (element.isDeleted()) {
-                                errors.rejectValue("", "does not refer to a configuration element"); 
+                        if (uniqueRefs.contains(ref)) {
+                            errors.rejectValue("", "refers to the same config as another reference");
+                        } else {
+                            try {
+                                AppConfigElement element = appConfigElementService
+                                        .getElementRevision(appConfig.getAppId(), ref.getId(), ref.getRevision());
+                                // We do throw a validation error if the object is logically deleted because while the
+                                // object will still be accessible through the API, it was deleted, suggesting the intention
+                                // to stop using it, which is not reflected in this appConfig
+                                if (element.isDeleted()) {
+                                    errors.rejectValue("", "does not refer to a configuration element"); 
+                                }
+                            } catch(EntityNotFoundException e) {
+                                errors.rejectValue("", "does not refer to a configuration element");
                             }
-                        } catch(EntityNotFoundException e) {
-                            errors.rejectValue("", "does not refer to a configuration element");
                         }
+                        uniqueRefs.add(ref);
                     }
                     errors.popNestedPath();
                 }
             }
         }
         if (appConfig.getSurveyReferences() != null) {
+            Set<SurveyReference> uniqueRefs = new HashSet<>();
             for (int i=0; i < appConfig.getSurveyReferences().size(); i++) {
                 SurveyReference ref = appConfig.getSurveyReferences().get(i);
                 errors.pushNestedPath("surveyReferences["+i+"]");
                 if (ref.getCreatedOn() == null) {
                     errors.rejectValue("createdOn", "is required");
                 } else {
-                    GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
-                    Survey survey = surveyService.getSurvey(appConfig.getAppId(), keys, false, false);
-                    // We do throw a validation error if the object is logically deleted because while the
-                    // object will still be accessible through the API, it was deleted, suggesting the intention
-                    // to stop using it, which is not reflected in this appConfig
-                    if (survey == null || survey.isDeleted()) {
-                        errors.rejectValue("", "does not refer to a survey");    
-                    } else if (!survey.isPublished()) {
-                        errors.rejectValue("", "has not been published");
+                    if (uniqueRefs.contains(ref)) {
+                        errors.rejectValue("", "refers to the same survey as another reference");
+                    } else {
+                        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl(ref);
+                        Survey survey = surveyService.getSurvey(appConfig.getAppId(), keys, false, false);
+                        // We do throw a validation error if the object is logically deleted because while the
+                        // object will still be accessible through the API, it was deleted, suggesting the intention
+                        // to stop using it, which is not reflected in this appConfig
+                        if (survey == null || survey.isDeleted()) {
+                            errors.rejectValue("", "does not refer to a survey");    
+                        } else if (!survey.isPublished()) {
+                            errors.rejectValue("", "has not been published");
+                        }
                     }
+                    uniqueRefs.add(ref);
                 }
                 errors.popNestedPath();
             }
         }
         if (appConfig.getFileReferences() != null) {
+            Set<FileReference> uniqueRefs = new HashSet<>();
             for (int i=0; i < appConfig.getFileReferences().size(); i++) {
                 FileReference ref = appConfig.getFileReferences().get(i);
                 errors.pushNestedPath("fileReferences["+i+"]");
@@ -161,14 +186,41 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("createdOn", "is required");
                     }
                 } else {
-                    Optional<FileRevision> revision = fileService.getFileRevision(ref.getGuid(), ref.getCreatedOn());
-                    if (!revision.isPresent()) {
-                        errors.rejectValue("", "does not refer to a file revision");
+                    if (uniqueRefs.contains(ref)) {
+                        errors.rejectValue("", "refers to the same file as another reference");
+                    } else {
+                        Optional<FileRevision> revision = fileService.getFileRevision(ref.getGuid(), ref.getCreatedOn());
+                        if (!revision.isPresent()) {
+                            errors.rejectValue("", "does not refer to a file revision");
+                        }
                     }
+                    uniqueRefs.add(ref);
+                }
+                errors.popNestedPath();
+            }
+        }
+        // The only field that needs to be filled out is the assessment guid. We will find the relevant identifiers.
+        if (appConfig.getAssessmentReferences() != null) {
+            Set<AssessmentReference> uniqueRefs = new HashSet<>();
+            for (int i=0; i < appConfig.getAssessmentReferences().size(); i++) {
+                AssessmentReference ref = appConfig.getAssessmentReferences().get(i);
+                errors.pushNestedPath("assessmentReferences["+i+"]");
+                if (ref.getGuid() == null) {
+                    errors.rejectValue("guid", "is required");
+                } else {
+                    if (uniqueRefs.contains(ref)) {
+                        errors.rejectValue("guid", "refers to the same assessment as another reference");
+                    } else {
+                        try {
+                            assessmentService.getAssessmentByGuid(appConfig.getAppId(), ref.getGuid());
+                        } catch(EntityNotFoundException e) {
+                            errors.rejectValue("guid", "does not refer to an assessment");
+                        }
+                    }
+                    uniqueRefs.add(ref);
                 }
                 errors.popNestedPath();
             }
         }
     }
-
 }
