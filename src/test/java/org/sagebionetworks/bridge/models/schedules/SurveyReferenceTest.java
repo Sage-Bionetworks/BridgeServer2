@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules;
 
+import static org.sagebionetworks.bridge.TestUtils.mockConfigResolver;
+import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -9,6 +11,9 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class SurveyReferenceTest {
 
@@ -17,13 +22,22 @@ public class SurveyReferenceTest {
     private static final DateTime CREATED_ON = DateTime.parse("2017-02-09T20:15:59.558Z");
     
     @Test
+    public void equalsVerifier() {
+        // The reference may or may not have been resolved to include identifiers, the GUID
+        // should be globally unique for assessement references and is sufficient for 
+        // equality. This makes detecting duplicates easier during validation.
+        EqualsVerifier.forClass(SurveyReference.class).allFieldsShouldBeUsedExcept("resolver", "identifier").verify();
+    }
+    
+    @Test
     public void test() {
-        SurveyReference ref = new SurveyReference(IDENTIFIER, GUID, CREATED_ON);
+        ConfigResolver resolver = mockConfigResolver(UAT, "ws");
+        SurveyReference ref = new SurveyReference(resolver, IDENTIFIER, GUID, CREATED_ON);
         
         assertEquals(ref.getIdentifier(), IDENTIFIER);
         assertEquals(ref.getGuid(), GUID);
         assertEquals(ref.getCreatedOn(), CREATED_ON);
-        assertTrue(ref.getHref().contains("/v3/surveys/abc/revisions/2017-02-09T20:15:59.558Z"));
+        assertEquals(ref.getHref(), "https://ws-uat.bridge.org/v3/surveys/abc/revisions/2017-02-09T20:15:59.558Z");
         
         GuidCreatedOnVersionHolder keys1 = new GuidCreatedOnVersionHolderImpl(GUID, CREATED_ON.getMillis());
         assertTrue(ref.equalsSurvey(keys1));

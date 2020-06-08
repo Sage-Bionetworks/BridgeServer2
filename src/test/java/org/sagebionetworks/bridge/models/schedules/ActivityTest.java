@@ -23,7 +23,8 @@ public class ActivityTest {
 
     @Test
     public void equalsForActivity() {
-        EqualsVerifier.forClass(SurveyReference.class).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(SurveyReference.class)
+            .allFieldsShouldBeUsedExcept("identifier", "resolver").verify();
     }
 
     @Test

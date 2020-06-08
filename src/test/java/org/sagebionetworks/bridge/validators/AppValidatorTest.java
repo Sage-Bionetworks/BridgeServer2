@@ -81,6 +81,12 @@ public class AppValidatorTest {
     }
     
     @Test
+    public void shortNameHasSpace() {
+        app.setShortName("CRC Corps");
+        assertValidatorMessage(INSTANCE, app, "shortName", "cannot contain spaces");
+    }
+    
+    @Test
     public void sponsorNameRequired() {
         app.setSponsorName("");
         assertValidatorMessage(INSTANCE, app, "sponsorName", "is required");

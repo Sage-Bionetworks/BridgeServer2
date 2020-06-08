@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
+import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.schedules.ConfigReference;
 import org.sagebionetworks.bridge.models.schedules.SchemaReference;
@@ -51,6 +52,10 @@ public class DynamoAppConfigTest {
     private static final List<FileReference> FILE_REFS = ImmutableList.of(
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
+    private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
+            new AssessmentReference("guid1", "id1", "sharedId1"),
+            new AssessmentReference("guid2", "id2", "sharedId2"));
+    
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
     @Test
@@ -101,6 +106,7 @@ public class DynamoAppConfigTest {
         appConfig.setSchemaReferences(SCHEMA_REFS);
         appConfig.setConfigReferences(CONFIG_REFS);
         appConfig.setFileReferences(FILE_REFS);
+        appConfig.setAssessmentReferences(ASSESSMENT_REFS);
         appConfig.setConfigElements(ImmutableMap.of("config1", TestUtils.getClientData()));
         appConfig.setClientData(clientData);
         appConfig.setVersion(3L);
@@ -108,7 +114,7 @@ public class DynamoAppConfigTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(appConfig);
         
-        assertEquals(node.size(), 13);
+        assertEquals(node.size(), 14);
         JsonNode critNode = node.get("criteria");
         assertEquals(critNode.get("language").textValue(), "fr");
         assertEquals(critNode.get("allOfGroups").size(), 2);
@@ -161,6 +167,19 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("fileReferences").get(1).get("guid").textValue(), "twoGuid");
         assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
+        assertEquals(node.get("assessmentReferences").size(), 2);
+        assertEquals(node.get("assessmentReferences").get(0).get("identifier").textValue(), "id1");
+        assertEquals(node.get("assessmentReferences").get(0).get("sharedId").textValue(), "sharedId1");
+        assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
+        assertTrue(node.get("assessmentReferences").get(0).get("configHref").textValue()
+                .contains("/v1/assessments/guid1/config"));
+
+        assertEquals(node.get("assessmentReferences").get(1).get("identifier").textValue(), "id2");
+        assertEquals(node.get("assessmentReferences").get(1).get("sharedId").textValue(), "sharedId2");
+        assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
+        assertTrue(node.get("assessmentReferences").get(1).get("configHref").textValue()
+                .contains("/v1/assessments/guid2/config"));
+
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getAppId());
         
