@@ -971,10 +971,6 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test
-    public void requestResetPasswordNoAccount() throws Exception {
-    }
-    
-    @Test
     public void signUpWithNoCheckForConsentDeclared() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail(TEST_EMAIL).withPassword(TEST_PASSWORD).build();

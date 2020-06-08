@@ -295,7 +295,7 @@ public class AuthenticationController extends BaseController {
         
         authenticationService.requestResetPassword(app, false, signIn);
         
-        // Email is privileged, so if they send it, respond as if we used it.
+        // Email is chosen over phone number, so if email was provided, respond as if we used it.
         if (signIn.getEmail() != null) {
             return new StatusMessage(EMAIL_RESET_PWD_MSG);    
         }
