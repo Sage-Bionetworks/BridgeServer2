@@ -42,10 +42,12 @@ public class AssessmentConfigService {
         this.dao = dao;
     }
     
+    // Allow timestamp to be mocked
     DateTime getModifiedOn() {
         return DateTime.now();
     }
     
+    // Allow validator to be mocked
     AssessmentConfigValidator getValidator() {
         return AssessmentConfigValidator.INSTANCE;
     }

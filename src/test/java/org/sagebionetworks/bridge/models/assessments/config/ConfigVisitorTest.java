@@ -45,6 +45,16 @@ public class ConfigVisitorTest extends Mockito {
     }
     
     @Test
+    public void testRoot() throws Exception {
+        visitor.accept("", toNode("{}"));
+
+        // this is allowable and the results are correct, so no need to special case it.
+        verify(mockErrors).pushNestedPath("");
+        verify(mockErrors).rejectValue("identifier", "is missing");
+        verify(mockErrors).popNestedPath();
+    }
+    
+    @Test
     public void testPath() throws Exception {
         visitor.accept("foo.bar[1]", toNode("{}"));
             
