@@ -44,6 +44,13 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @RestController
 public class AuthenticationController extends BaseController {
 
+    static String EMAIL_VERIFY_REQUEST_MSG = "If registered with the app, we'll send an email to that address so you can verify it.";
+    static String EMAIL_SIGNIN_REQUEST_MSG = "If registered with the app, we'll send an email to that address so you can sign in.";
+    static String EMAIL_RESET_PWD_MSG = "If registered with the app, we'll send an email to that address so you can change your password.";
+    static String PHONE_VERIFY_REQUEST_MSG = "If registered with the app, we'll send a message to that number so you can verify it.";
+    static String PHONE_SIGNIN_REQUEST_MSG = "If registered with the app, we'll send a message to that number so you can sign in.";
+    static String PHONE_RESET_PWD_MSG = "If registered with the app, we'll send a message to that number so you can change your password.";
+    
     private AccountWorkflowService accountWorkflowService;
     
     @Autowired
@@ -62,7 +69,7 @@ public class AuthenticationController extends BaseController {
             getMetrics().setUserId(userId);
         }
 
-        return new StatusMessage("Email sent.");
+        return new StatusMessage(EMAIL_SIGNIN_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/email/signIn")
@@ -101,7 +108,7 @@ public class AuthenticationController extends BaseController {
             getMetrics().setUserId(userId);
         }
 
-        return new StatusMessage("Message sent.");
+        return new StatusMessage(PHONE_SIGNIN_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/phone/signIn")
@@ -248,12 +255,13 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping({"/v3/auth/resendEmailVerification", "/api/v1/auth/resendEmailVerification"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.EMAIL, accountId);
-        return new StatusMessage("If registered with the app, we'll email you instructions on how to verify your account.");
+        return new StatusMessage(EMAIL_VERIFY_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/verifyPhone")
@@ -266,6 +274,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/v3/auth/resendPhoneVerification")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendPhoneVerification() {
         AccountId accountId = parseJson(AccountId.class);
         
@@ -273,10 +282,11 @@ public class AuthenticationController extends BaseController {
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.PHONE, accountId);
-        return new StatusMessage("If registered with the app, we'll send an SMS message to your phone.");
+        return new StatusMessage(PHONE_VERIFY_REQUEST_MSG);
     }
 
     @PostMapping({"/v3/auth/requestResetPassword", "/api/v1/auth/requestResetPassword"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
@@ -284,8 +294,12 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         authenticationService.requestResetPassword(app, false, signIn);
-
-        return new StatusMessage("If registered with the app, we'll send you instructions on how to change your password.");
+        
+        // Email is chosen over phone number, so if email was provided, respond as if we used it.
+        if (signIn.getEmail() != null) {
+            return new StatusMessage(EMAIL_RESET_PWD_MSG);    
+        }
+        return new StatusMessage(PHONE_RESET_PWD_MSG);    
     }
     
     @PostMapping({"/v3/auth/resetPassword", "/api/v1/auth/resetPassword"})
