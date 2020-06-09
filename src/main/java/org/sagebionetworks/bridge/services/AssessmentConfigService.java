@@ -42,8 +42,14 @@ public class AssessmentConfigService {
         this.dao = dao;
     }
     
+    // Allow timestamp to be mocked
     DateTime getModifiedOn() {
         return DateTime.now();
+    }
+    
+    // Allow validator to be mocked
+    AssessmentConfigValidator getValidator() {
+        return AssessmentConfigValidator.INSTANCE;
     }
     
     public AssessmentConfig getAssessmentConfig(String appId, String guid) {
@@ -73,7 +79,7 @@ public class AssessmentConfigService {
         config.setCreatedOn(existing.getCreatedOn());
         config.setModifiedOn(getModifiedOn());
         
-        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, config);
+        Validate.entityThrowingException(getValidator(), config);
         
         // This is no longer a copy of a shared assessment because the config has been edited.
         // It also needs to be updated to reflect this.
@@ -103,7 +109,7 @@ public class AssessmentConfigService {
             return existing;
         }
         
-        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, existing);
+        Validate.entityThrowingException(getValidator(), existing);
         
         existing.setModifiedOn(getModifiedOn());
         
