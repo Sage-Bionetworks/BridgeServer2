@@ -16,6 +16,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
@@ -55,6 +57,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class AppConfigServiceTest {
@@ -177,6 +180,7 @@ public class AppConfigServiceTest {
         appConfig2.setSchemaReferences(SCHEMA_REF_LIST);
         appConfig2.setFileReferences(FILE_REF_LIST);
         appConfig2.setAssessmentReferences(ASSESSMENT_REF_LIST);
+        appConfig2.setConfigReferences(ImmutableList.of(new ConfigReference("clientData", 1L)));
         RESULTS.add(appConfig2);
         
         when(mockDao.getAppConfigs(TEST_APP_ID, false)).thenReturn(RESULTS);
@@ -202,14 +206,28 @@ public class AppConfigServiceTest {
     
     @Test
     public void getAppConfig() {
-        AppConfig returnValue = service.getAppConfig(TEST_APP_ID, GUID);
-        assertNotNull(returnValue);
+        AppConfig appConfig2 = setupConfigsForUser();
+        when(mockDao.getAppConfig(TEST_APP_ID, GUID)).thenReturn(appConfig2);
+        
+        AppConfig returnValue = setupAndTestConfigResolution(() -> service.getAppConfig(TEST_APP_ID, GUID));
+        assertEquals(returnValue, appConfig2);
         
         verify(mockDao).getAppConfig(TEST_APP_ID, GUID);
     }
     
     @Test
     public void getAppConfigForUser() {
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
+                .withAppId(TEST_APP_ID).build();
+        
+        AppConfig appConfig2 = setupConfigsForUser();
+
+        AppConfig retValue = setupAndTestConfigResolution(() -> service.getAppConfigForUser(context, true));
+        assertEquals(retValue, appConfig2);
+    }
+    
+    private AppConfig setupAndTestConfigResolution(Supplier<AppConfig> supplier) {
         Survey survey = Survey.create();
         survey.setIdentifier("theIdentifier");
         survey.setGuid(SURVEY_REF_LIST.get(0).getGuid());
@@ -226,19 +244,22 @@ public class AppConfigServiceTest {
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
         when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid")).thenReturn(sharedAssessment);
         
-        CriteriaContext context = new CriteriaContext.Builder()
-                .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
-                .withAppId(TEST_APP_ID).build();
+        AppConfigElement element = AppConfigElement.create();
+        element.setAppId(TEST_APP_ID);
+        element.setId("clientData");
+        element.setRevision(1L);
+        element.setData(TestUtils.getClientData());
+        when(mockAppConfigElementService.getElementRevision(TEST_APP_ID, "clientData", 1)).thenReturn(element);        
         
-        AppConfig appConfig2 = setupConfigsForUser();
-
-        AppConfig match = service.getAppConfigForUser(context, true);
-        assertEquals(match, appConfig2);
+        AppConfig retValue = supplier.get();
         
         // Verify that we called the resolver on this as well
-        assertEquals(match.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
-        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
-        assertEquals(match.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
+        assertEquals(retValue.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
+        assertEquals(retValue.getAssessmentReferences().get(0).getId(), "assessmentId");
+        assertEquals(retValue.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
+        assertEquals(retValue.getConfigElements().get("clientData"), TestUtils.getClientData());  
+        
+        return retValue;
     }
 
     @Test
@@ -258,7 +279,7 @@ public class AppConfigServiceTest {
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
-        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
         assertNull(match.getAssessmentReferences().get(0).getSharedId());
     }
     
@@ -282,7 +303,7 @@ public class AppConfigServiceTest {
         assertEquals(match, appConfig2);
         
         // Verify that we called the resolver on this as well
-        assertEquals(match.getAssessmentReferences().get(0).getIdentifier(), "assessmentId");
+        assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
         assertNull(match.getAssessmentReferences().get(0).getSharedId());
     }
     
