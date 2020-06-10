@@ -13,27 +13,27 @@ public final class AssessmentReference {
     
     private final ConfigResolver resolver;
     private final String guid;
-    private final String identifier;
+    private final String id;
     private final String sharedId;
     
     @JsonCreator
     public AssessmentReference(@JsonProperty("guid") String guid,
-            @JsonProperty("identifier") String identifier, @JsonProperty("sharedId") String sharedId) {
-        this(INSTANCE, guid, identifier, sharedId);
+            @JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId) {
+        this(INSTANCE, guid, id, sharedId);
     }
 
-    public AssessmentReference(ConfigResolver resolver, String guid, String identifier, String sharedId) {
+    public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId) {
         this.resolver = resolver;
         this.guid = guid;
-        this.identifier = identifier;
+        this.id = id;
         this.sharedId = sharedId;
     }
     
     public String getGuid() {
         return guid;
     }
-    public String getIdentifier() {
-        return identifier;
+    public String getId() {
+        return id;
     }
     public String getConfigHref() {
         if (guid == null) {
@@ -68,7 +68,7 @@ public final class AssessmentReference {
 
     @Override
     public String toString() {
-        return "AssessmentReference [identifier=" + identifier + ", sharedId=" + sharedId + ", guid=" + guid
-                + ", configHref=" + getConfigHref() + "]";
+        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", configHref="
+                + getConfigHref() + "]";
     }
 }

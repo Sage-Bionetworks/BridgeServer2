@@ -36,7 +36,7 @@ public class AssessmentReferenceTest extends Mockito {
         // should be globally unique for assessement references and is sufficient for 
         // equality. This makes detecting duplicates easier during validation.
         EqualsVerifier.forClass(AssessmentReference.class)
-            .allFieldsShouldBeUsedExcept("resolver", "identifier", "sharedId").verify();
+            .allFieldsShouldBeUsedExcept("resolver", "id", "sharedId").verify();
     }
 
     @Test
@@ -45,7 +45,7 @@ public class AssessmentReferenceTest extends Mockito {
         AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId");
         
         assertEquals(ref.getGuid(), "oneGuid");
-        assertEquals(ref.getIdentifier(), "id");
+        assertEquals(ref.getId(), "id");
         assertEquals(ref.getSharedId(), "sharedId");
         assertEquals(ref.getConfigHref(), 
                 "https://ws-uat.bridge.org/v1/assessments/oneGuid/config");
@@ -57,7 +57,7 @@ public class AssessmentReferenceTest extends Mockito {
         AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", null, null);
         
         assertEquals(ref.getGuid(), "oneGuid");
-        assertNull(ref.getIdentifier());
+        assertNull(ref.getId());
         assertNull(ref.getSharedId());
         assertEquals(ref.getConfigHref(), 
                 "http://ws-local.bridge.org/v1/assessments/oneGuid/config");
@@ -76,7 +76,7 @@ public class AssessmentReferenceTest extends Mockito {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), "oneGuid");
-        assertEquals(node.get("identifier").textValue(), "id");
+        assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("sharedId").textValue(), "sharedId");
         assertEquals(node.get("configHref").textValue(), 
             "http://ws-local.bridge.org/v1/assessments/oneGuid/config");

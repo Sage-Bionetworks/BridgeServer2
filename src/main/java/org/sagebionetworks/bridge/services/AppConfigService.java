@@ -119,7 +119,9 @@ public class AppConfigService {
         checkNotNull(appId);
         checkArgument(isNotBlank(guid));
         
-        return appConfigDao.getAppConfig(appId, guid);
+        AppConfig appConfig = appConfigDao.getAppConfig(appId, guid);
+        resolveReferences(appId, appConfig);
+        return appConfig;
     }
     
     public AppConfig getAppConfigForUser(CriteriaContext context, boolean throwException) {
@@ -142,27 +144,29 @@ public class AppConfigService {
             LOG.info("CriteriaContext matches more than one app config: criteriaContext=" + context + ", appConfigs="+matches);
         }
         AppConfig matched = matches.get(0);
-        // Resolve survey references to pick up survey identifiers
-        matched.setSurveyReferences(matched.getSurveyReferences().stream()
-            .map(ref -> resolveSurvey(context.getAppId(), ref))
-            .collect(Collectors.toList()));
-        
+        resolveReferences(context.getAppId(), matched);
+        return matched;
+    }
+    
+    protected void resolveReferences(String appId, AppConfig config) {
+        config.setSurveyReferences(config.getSurveyReferences().stream()
+                .map(ref -> resolveSurvey(appId, ref))
+                .collect(Collectors.toList()));
+            
         // Resolve the identifiers for the assessment and its shared assessment, if there
         // is one. These are useful to locate the right reference.
-        matched.setAssessmentReferences(matched.getAssessmentReferences().stream()
-                .map(ref -> resolveAssessment(context.getAppId(), ref))
+        config.setAssessmentReferences(config.getAssessmentReferences().stream()
+                .map(ref -> resolveAssessment(appId, ref))
                 .collect(Collectors.toList()));
         
         ImmutableMap.Builder<String, JsonNode> ceBuilder = new ImmutableMap.Builder<>();
-        for (ConfigReference configRef : matched.getConfigReferences()) {
-            AppConfigElement element = retrieveConfigElement(context.getAppId(), configRef, matched.getGuid());
+        for (ConfigReference configRef : config.getConfigReferences()) {
+            AppConfigElement element = retrieveConfigElement(config.getAppId(), configRef, config.getGuid());
             if (element != null) {
                 ceBuilder.put(configRef.getId(), element.getData());    
             }
         }
-        matched.setConfigElements(ceBuilder.build());
-        
-        return matched;
+        config.setConfigElements(ceBuilder.build());
     }
     
     protected AssessmentReference resolveAssessment(String appId, AssessmentReference ref) {
@@ -219,7 +223,7 @@ public class AppConfigService {
      * specific version or createdOn timestamp of a version, and we validate this when creating/
      * updating the app config. We're only concerned with adding the survey identifier here.
      */
-    SurveyReference resolveSurvey(String appId, SurveyReference surveyRef) {
+    protected SurveyReference resolveSurvey(String appId, SurveyReference surveyRef) {
         if (surveyRef.getIdentifier() != null) {
             return surveyRef;
         }

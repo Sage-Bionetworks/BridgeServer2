@@ -26,7 +26,7 @@ public class ConfigResolver {
         this.config = BridgeConfigFactory.getConfig();
     }
     
-    /** Constructor to in mock bridge config. */
+    /** Constructor to mock bridge config. */
     public ConfigResolver(BridgeConfig config) {
         this.config = config;
     }
