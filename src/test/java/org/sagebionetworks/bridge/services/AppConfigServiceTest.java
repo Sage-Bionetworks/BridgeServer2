@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
@@ -17,7 +16,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
@@ -57,7 +55,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 public class AppConfigServiceTest {

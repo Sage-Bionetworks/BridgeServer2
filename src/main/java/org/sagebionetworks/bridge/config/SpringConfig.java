@@ -118,6 +118,7 @@ import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
+import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -665,6 +666,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAssessment.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentResource.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentConfig.class);
+        metadataSources.addAnnotatedClass(HibernateOrganization.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
