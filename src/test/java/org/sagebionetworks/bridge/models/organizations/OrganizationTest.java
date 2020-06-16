@@ -55,8 +55,9 @@ public class OrganizationTest {
 
     @Test
     public void testConstructor() { 
-        HibernateOrganization org = new HibernateOrganization("name", "identifier");
+        HibernateOrganization org = new HibernateOrganization("name", "identifier", "description");
         assertEquals(org.getName(), "name");
         assertEquals(org.getIdentifier(), "identifier");
+        assertEquals(org.getDescription(), "description");
     }
 }

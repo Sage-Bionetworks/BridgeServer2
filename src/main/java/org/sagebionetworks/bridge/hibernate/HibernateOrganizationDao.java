@@ -26,7 +26,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     
     static final String GET_QUERY = "FROM HibernateOrganization WHERE appId = :appId";
     static final String GET_SUMMARY_QUERY = "SELECT new org.sagebionetworks.bridge.models.organizations." 
-            + "HibernateOrganization(o.name, o.identifier) FROM org.sagebionetworks.bridge.models.organizations." 
+            + "HibernateOrganization(o.name, o.identifier, o.description) FROM org.sagebionetworks.bridge.models.organizations." 
             + "HibernateOrganization o WHERE appId = :appId";
     
     private HibernateHelper hibernateHelper;

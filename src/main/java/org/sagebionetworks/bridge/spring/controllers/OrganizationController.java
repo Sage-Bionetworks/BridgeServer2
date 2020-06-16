@@ -60,6 +60,8 @@ public class OrganizationController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}")
     public Organization updateOrganization(@PathVariable String orgId) {
+        // A study admin caller will also be able to edit some fields of their own organization.
+        // The association of accounts to organizations has to be completed first.
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
         Organization organization = parseJson(Organization.class);
@@ -69,12 +71,10 @@ public class OrganizationController extends BaseController {
         return service.updateOrganization(organization);
     }
     
-    // note that there will be a /v1/organizations/self call once accounts are 
-    // correctly associated to organizations. Study admins can edit some 
-    // fields of their own organization.
-    
     @GetMapping("/v1/organizations/{orgId}")
     public Organization getOrganization(@PathVariable String orgId) {
+        // A study admin caller will be able to retrieve their own organization.
+        // The association of accounts to organizations has to be completed first.
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
         return service.getOrganization(session.getAppId(), orgId);

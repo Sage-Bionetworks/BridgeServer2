@@ -43,9 +43,10 @@ public class HibernateOrganization implements Organization {
     /** A constructor for a summary version of the organization object, that 
      * all users can access through the "list" DAO call.
      */
-    public HibernateOrganization(String name, String identifier) {
+    public HibernateOrganization(String name, String identifier, String description) {
         this.name = name;
         this.identifier = identifier;
+        this.description = description;
     }
     
     @Override
