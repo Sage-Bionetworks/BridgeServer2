@@ -25,12 +25,6 @@ public interface Organization extends BridgeEntity {
     String getDescription();
     void setDescription(String description);
     
-    String getSynapseProjectId();
-    void setSynapseProjectId(String synapseProjectId);
-
-    String getSynapseDataAccessTeamId();
-    void setSynapseDataAccessTeamId(String synapseDataAccessTeamId);
-    
     DateTime getCreatedOn();
     void setCreatedOn(DateTime createdOn);
     

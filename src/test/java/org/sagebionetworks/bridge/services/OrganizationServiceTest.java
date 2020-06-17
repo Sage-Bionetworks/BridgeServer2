@@ -2,11 +2,11 @@ package org.sagebionetworks.bridge.services;
 
 import org.mockito.Mock;
 
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.services.OrganizationService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -64,7 +64,7 @@ public class OrganizationServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = OFFSET_BY_CANNOT_BE_NEGATIVE)
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getOrganizationsNegativeOffset() {
         service.getOrganizations(TEST_APP_ID, -5, 0);
     }
@@ -128,8 +128,6 @@ public class OrganizationServiceTest extends Mockito {
         Organization existing = Organization.create();
         existing.setAppId(TEST_APP_ID);
         existing.setIdentifier(IDENTIFIER);
-        existing.setSynapseDataAccessTeamId("SynapseDataAccessTeamId");
-        existing.setSynapseProjectId("SynapseProjectId");
         existing.setCreatedOn(CREATED_ON);
         when(mockDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(existing));
         

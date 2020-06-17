@@ -23,8 +23,6 @@ public class OrganizationTest {
         org.setDescription("aDescription");
         org.setCreatedOn(CREATED_ON);
         org.setModifiedOn(MODIFIED_ON);
-        org.setSynapseProjectId("aProjectId");
-        org.setSynapseDataAccessTeamId("anAccessTeamId");
         org.setVersion(3L);
         
         // not serialized, but it is there
@@ -34,8 +32,6 @@ public class OrganizationTest {
         assertEquals(node.get("identifier").textValue(), "anIdentifier");
         assertEquals(node.get("name").textValue(), "aName");
         assertEquals(node.get("description").textValue(), "aDescription");
-        assertEquals(node.get("synapseDataAccessTeamId").textValue(), "anAccessTeamId");
-        assertEquals(node.get("synapseProjectId").textValue(), "aProjectId");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("version").longValue(), 3L);
@@ -46,8 +42,6 @@ public class OrganizationTest {
         assertEquals(deser.getIdentifier(), "anIdentifier");
         assertEquals(deser.getName(), "aName");
         assertEquals(deser.getDescription(), "aDescription");
-        assertEquals(deser.getSynapseDataAccessTeamId(), "anAccessTeamId");
-        assertEquals(deser.getSynapseProjectId(), "aProjectId");
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getVersion(), Long.valueOf(3L));

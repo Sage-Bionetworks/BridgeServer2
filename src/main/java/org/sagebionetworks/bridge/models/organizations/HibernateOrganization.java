@@ -27,9 +27,6 @@ public class HibernateOrganization implements Organization {
     private String identifier;
     private String name;
     private String description;
-    // Data is exported to organizations based on their association to a study?
-    String synapseDataAccessTeamId;
-    String synapseProjectId;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -87,26 +84,6 @@ public class HibernateOrganization implements Organization {
     @Override
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    @Override
-    public String getSynapseProjectId() {
-        return synapseProjectId;
-    }
-
-    @Override
-    public void setSynapseProjectId(String synapseProjectId) {
-        this.synapseProjectId = synapseProjectId;
-    }
-
-    @Override
-    public String getSynapseDataAccessTeamId() {
-        return synapseDataAccessTeamId;
-    }
-
-    @Override
-    public void setSynapseDataAccessTeamId(String synapseDataAccessTeamId) {
-        this.synapseDataAccessTeamId = synapseDataAccessTeamId;
     }
 
     @Override

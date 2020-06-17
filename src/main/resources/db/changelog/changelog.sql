@@ -361,8 +361,6 @@ CREATE TABLE `Organizations` (
   `identifier` varchar(255) NOT NULL,
   `name` varchar(255),
   `description` text,
-  `synapseDataAccessTeamId` varchar(20),
-  `synapseProjectId` varchar(20),
   `createdOn` bigint(20) unsigned NOT NULL,
   `modifiedOn` bigint(20) unsigned NOT NULL,
   `version` int(10) unsigned NOT NULL DEFAULT '0',

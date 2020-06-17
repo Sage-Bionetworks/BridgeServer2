@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -28,7 +29,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class OrganizationService {
-    static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
     private OrganizationDao dao;
     
@@ -45,11 +45,15 @@ public class OrganizationService {
         return DateTime.now();
     }
     
+    /**
+     * Get a paged list of partially initialized organizations (containing name, description, 
+     * and identifier).
+     */
     public PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize) {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
-            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -59,6 +63,11 @@ public class OrganizationService {
                 .withRequestParam(PAGE_SIZE, pageSize);
     }
     
+    /**
+     * Create an organization. The identifier of this organization must be unique within the context
+     * of the app. 
+     * @throws EntityAlreadyExistsException
+     */
     public Organization createOrganization(Organization organization) {
         checkNotNull(organization);
         
@@ -76,13 +85,13 @@ public class OrganizationService {
         organization.setCreatedOn(timestamp);
         organization.setModifiedOn(timestamp);
         organization.setVersion(null);
-        
-        // TODO: Create the associated Synapse artifacts. Maybe in the DAO so they
-        // can be part of the transaction
-        
         return dao.createOrganization(organization);
     }
     
+    /**
+     * Update an existing organization.
+     * @throws EntityNotFoundException
+     */
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
         
@@ -97,6 +106,10 @@ public class OrganizationService {
         return dao.updateOrganization(organization);
     }
     
+    /**
+     * Get a fully initialized organization object.
+     * @throws EntityNotFoundException
+     */
     public Organization getOrganization(String appId, String identifier) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
@@ -105,6 +118,10 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
     }
     
+    /**
+     * Delete the organization with the given identifier.
+     * @throws EntityNotFoundException
+     */
     public void deleteOrganization(String appId, String identifier) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));

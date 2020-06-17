@@ -8,6 +8,8 @@ import static org.jsoup.safety.Whitelist.none;
 import static org.jsoup.safety.Whitelist.simpleText;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
@@ -52,9 +54,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
-    public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
     static final String IDENTIFIER_REQUIRED = "identifier required";
-    static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
     private AssessmentDao dao;
     
@@ -102,7 +102,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
-            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -214,7 +214,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(identifier));
         
         if (revision < 1) {
-            throw new BadRequestException(OFFSET_NOT_POSITIVE);
+            throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
         return dao.getAssessment(appId, identifier, revision)
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
@@ -236,7 +236,7 @@ public class AssessmentService {
             throw new BadRequestException(IDENTIFIER_REQUIRED);
         }
         if (offsetBy < 0) {
-            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);

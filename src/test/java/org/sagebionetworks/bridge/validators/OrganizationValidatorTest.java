@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_IDENTIFIER_ERROR
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.testng.annotations.Test;
 
@@ -15,28 +16,28 @@ public class OrganizationValidatorTest {
     public void appIdNull() {
         Organization org = getOrganization();
         org.setAppId(null);
-        assertValidatorMessage(INSTANCE, org, "appId", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "appId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void appIdBlank() {
         Organization org = getOrganization();
         org.setAppId(" ");
-        assertValidatorMessage(INSTANCE, org, "appId", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "appId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void identifierNull() {
         Organization org = getOrganization();
         org.setIdentifier(null);
-        assertValidatorMessage(INSTANCE, org, "identifier", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "identifier", CANNOT_BE_BLANK);
     }
     
     @Test
     public void identifierBlank() {
         Organization org = getOrganization();
         org.setIdentifier(" ");
-        assertValidatorMessage(INSTANCE, org, "identifier", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "identifier", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -50,14 +51,14 @@ public class OrganizationValidatorTest {
     public void nameNull() {
         Organization org = getOrganization();
         org.setName(null);
-        assertValidatorMessage(INSTANCE, org, "name", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "name", CANNOT_BE_BLANK);
     }
     
     @Test
     public void nameBlank() {
         Organization org = getOrganization();
         org.setName(" ");
-        assertValidatorMessage(INSTANCE, org, "name", "cannot be missing, null or blank");
+        assertValidatorMessage(INSTANCE, org, "name", CANNOT_BE_BLANK);
     }
     
     private Organization getOrganization() {
