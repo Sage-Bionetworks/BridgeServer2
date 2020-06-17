@@ -19,11 +19,18 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -32,9 +39,16 @@ public class OrganizationService {
 
     private OrganizationDao dao;
     
+    private AccountService accountService;
+    
     @Autowired
     final void setOrganizationDao(OrganizationDao dao) {
         this.dao = dao;
+    }
+    
+    @Autowired
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     
     DateTime getCreatedOn() {
@@ -130,5 +144,47 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
 
         dao.deleteOrganization(existing);
+    }
+    
+    public PagedResourceList<AccountSummary> getMembers(String appId, String orgId, AccountSummarySearch search) {
+        
+        
+        
+        return null;
+    }
+    
+    public void addMember(String appId, String identifier, AccountId accountId) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        checkNotNull(accountId);
+        
+        String callerOrgMembership = BridgeUtils.getRequestContext().getCallerOrgMembership();   
+        if (!identifier.equals(callerOrgMembership)) {
+            throw new UnauthorizedException("Caller is not a member of organization " + identifier);
+        }
+        Account account = accountService.getAccount(accountId);
+        accountService.editAccount(appId, account.getHealthCode(), (acct) -> acct.setOrgMembership(identifier));
+    }
+    
+    public void removeMember(String appId, String identifier, AccountId accountId) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        checkNotNull(accountId);
+        
+        String callerOrgMembership = BridgeUtils.getRequestContext().getCallerOrgMembership();        
+        if (!identifier.equals(callerOrgMembership)) {
+            throw new UnauthorizedException("Caller is not a member of organization " + identifier);
+        }
+        
+        String healthCode = getHealthCode(accountId);
+        accountService.editAccount(appId, healthCode, (acct) -> acct.setOrgMembership(null));
+    }
+    
+    private String getHealthCode(AccountId accountId) {
+        String healthCode = accountService.getHealthCodeForAccount(accountId);
+        if (healthCode == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        return healthCode;
     }
 }

@@ -50,6 +50,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class HibernateAccount implements Account {
     private String id;
     private String appId;
+    private String orgMembership; 
     private String email;
     private String synapseUserId;
     private Phone phone;
@@ -88,10 +89,11 @@ public class HibernateAccount implements Account {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(DateTime createdOn, String appId, String firstName, String lastName,
+    public HibernateAccount(DateTime createdOn, String appId, String orgId, String firstName, String lastName,
             String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
         this.appId = appId;
+        this.orgMembership = orgId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -126,6 +128,16 @@ public class HibernateAccount implements Account {
         this.appId = appId;
     }
 
+    /** Account is an administrative account that is a member of this organization. */
+    public String getOrgMembership() {
+        return orgMembership;
+    }
+
+    /** @see #getOrgMembershiop */
+    public void setOrgMembership(String orgId) {
+        this.orgMembership = orgId;
+    }
+    
     /** Account email address. */
     public String getEmail() {
         return email;
