@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -476,7 +477,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // execute and validate
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5).build();
 
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
         assertEquals(accountSummaryResourceList.getRequestParams().get("offsetBy"), 10);
         assertEquals(accountSummaryResourceList.getRequestParams().get("pageSize"), 5);
         assertEquals(accountSummaryResourceList.getTotal(), (Integer) 12);
@@ -527,7 +528,7 @@ public class HibernateAccountDaoTest extends Mockito {
         when(mockHibernateHelper.getById(HibernateAccount.class, "account-2")).thenReturn(hibernateAccount2);
 
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
 
         // substudy B is not there
@@ -569,7 +570,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 .withAllOfGroups(Sets.newHashSet("a", "b")).withNoneOfGroups(Sets.newHashSet("c", "d"))
                 .withLanguage("de").withStartTime(startDate).withEndTime(endDate).build();
 
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(paramsMap.size(), 10);
@@ -639,7 +640,7 @@ public class HibernateAccountDaoTest extends Mockito {
             BridgeUtils.setRequestContext(context);
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
-            dao.getPagedAccountSummaries(app, search);
+            dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
             verify(mockHibernateHelper).queryCount(eq(expCountQuery), paramCaptor.capture());
             Map<String, Object> params = paramCaptor.getValue();
@@ -679,7 +680,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5)
                 .withEmailFilter(EMAIL).withPhoneFilter(PHONE.getNationalFormat()).withLanguage("de")
                 .withStartTime(startDate).withEndTime(endDate).build();
-        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(app, search);
+        PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
         assertEquals(paramsMap.size(), 10);
@@ -922,6 +923,22 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(builder.getParameters().get("NOTIN1"), "sdk-int-1");
         assertEquals(builder.getParameters().get("NOTIN2"), "group1");
         assertEquals(builder.getParameters().get("appId"), TEST_APP_ID);
+    }
+    
+    @Test
+    public void orgMembershipQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOrgMembership(TEST_ORG_ID).build();
+
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+                search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
+                +"acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
+                +"WHERE acct.appId = :appId AND acct.orgMembership = :orgId GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("orgId"), TEST_ORG_ID);
     }
 
     @Test

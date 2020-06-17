@@ -807,7 +807,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.getPagedAccountSummaries(APP, search);
         
-        verify(accountService).getPagedAccountSummaries(APP, search); 
+        verify(accountService).getPagedAccountSummaries(TEST_APP_ID, search); 
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -843,7 +843,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.getPagedAccountSummaries(APP, search);
         
-        verify(accountService).getPagedAccountSummaries(APP, search); 
+        verify(accountService).getPagedAccountSummaries(TEST_APP_ID, search); 
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -1893,7 +1893,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval();
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(9);
-        when(accountService.getPagedAccountSummaries(APP, AccountSummarySearch.EMPTY_SEARCH))
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(APP, PARTICIPANT, false);
@@ -1903,7 +1903,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededExactlyException() {
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(10);
-        when(accountService.getPagedAccountSummaries(APP, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         try {
             participantService.createParticipant(APP, PARTICIPANT, false);
@@ -1917,7 +1917,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededException() {
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(13);
-        when(accountService.getPagedAccountSummaries(APP, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         participantService.createParticipant(APP, PARTICIPANT, false);
     }

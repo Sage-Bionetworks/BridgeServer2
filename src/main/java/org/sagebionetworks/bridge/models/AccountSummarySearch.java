@@ -176,7 +176,19 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.orgMembership = orgId;
             return this;
         }
-        
+        public Builder copyOf(AccountSummarySearch search) {
+            this.offsetBy = search.offsetBy;
+            this.pageSize = search.pageSize;
+            this.emailFilter = search.emailFilter;
+            this.phoneFilter = search.phoneFilter;
+            this.allOfGroups = search.allOfGroups;
+            this.noneOfGroups = search.noneOfGroups;
+            this.language = search.language;
+            this.startTime = search.startTime;
+            this.endTime = search.endTime;
+            this.orgMembership = search.orgMembership;
+            return this;
+        }
         public AccountSummarySearch build() {
             int defaultedOffsetBy = (offsetBy == null) ? 0 : offsetBy;
             int defaultedPageSize = (pageSize == null) ? API_DEFAULT_PAGE_SIZE : pageSize;

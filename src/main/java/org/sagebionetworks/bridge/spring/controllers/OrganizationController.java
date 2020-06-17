@@ -18,8 +18,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.services.OrganizationService;
@@ -85,5 +90,50 @@ public class OrganizationController extends BaseController {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         service.deleteOrganization(session.getAppId(), orgId);
         return new StatusMessage("Organization deleted.");
+    }
+    
+    @PostMapping("/v1/organizations/{orgId}/members")
+    public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
+        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        
+        checkOrgMembership(orgId);
+        
+        AccountSummarySearch search = parseJson(AccountSummarySearch.class);
+        return service.getMembers(session.getAppId(), orgId, search);
+    }
+    
+    @PostMapping("/v1/organizations/{orgId}/members/{userId}")
+    public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        checkOrgMembership(orgId);
+        
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        service.addMember(session.getAppId(), orgId, accountId);
+        
+        return new StatusMessage("User added as a member.");
+    }
+
+    @DeleteMapping("/v1/organizations/{orgId}/members/{userId}")
+    public StatusMessage removeMember(@PathVariable String orgId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        
+        checkOrgMembership(orgId);
+        
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        service.removeMember(session.getAppId(), orgId, accountId);
+        
+        return new StatusMessage("User removed as a member.");
+    }
+    
+    /**
+     * Unless you are a SUPERADMIN, you can only list the members of your own organization.
+     */
+    private void checkOrgMembership(String proposedOrgId) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        String orgMembership = context.getCallerOrgMembership();
+        if (!context.isInRole(SUPERADMIN) && !proposedOrgId.equals(orgMembership)) {
+            throw new UnauthorizedException("Caller is not a member of " + proposedOrgId);
+        }
     }
 }

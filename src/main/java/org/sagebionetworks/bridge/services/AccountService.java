@@ -232,6 +232,8 @@ public class AccountService {
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        // This has to be changed via the membership APIs.
+        account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
@@ -240,7 +242,8 @@ public class AccountService {
     }
     
     /**
-     * Load, and if it exists, edit and save an account. 
+     * Load, and if it exists, edit and save an account. Note that constraints are not
+     * enforced here (which is intentional).
      */
     public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
         checkNotNull(appId);
@@ -286,17 +289,17 @@ public class AccountService {
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
      * participants which are required for the rest of the participant APIs). 
-     * @param app
+     * @param appId
      *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
      */
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
-        checkNotNull(app);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search) {
+        checkNotNull(appId);
         checkNotNull(search);
         
-        return accountDao.getPagedAccountSummaries(app, search);
+        return accountDao.getPagedAccountSummaries(appId, search);
     }
     
     /**

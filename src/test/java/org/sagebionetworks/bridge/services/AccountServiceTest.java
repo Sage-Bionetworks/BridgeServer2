@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
@@ -306,12 +307,11 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void getPagedAccountSummaries() {
-        App app = App.create();
-        when(mockAccountDao.getPagedAccountSummaries(app, EMPTY_SEARCH)).thenReturn(mockAccountSummaries);
+        when(mockAccountDao.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH)).thenReturn(mockAccountSummaries);
 
-        PagedResourceList<AccountSummary> returnVal = service.getPagedAccountSummaries(app, EMPTY_SEARCH);
+        PagedResourceList<AccountSummary> returnVal = service.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH);
         assertEquals(returnVal, mockAccountSummaries);
-        verify(mockAccountDao).getPagedAccountSummaries(app, EMPTY_SEARCH);
+        verify(mockAccountDao).getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH);
     }
 
     @Test
@@ -846,6 +846,25 @@ public class AccountServiceTest extends Mockito {
         assertEquals(captured.getPasswordAlgorithm(), persistedAccount.getPasswordAlgorithm());
         assertEquals(captured.getPasswordHash(), persistedAccount.getPasswordHash());
         assertEquals(captured.getPasswordModifiedOn(), persistedAccount.getPasswordModifiedOn());
+    }
+    
+    @Test
+    public void updateDoesNotChangeOrgMembership() throws Exception {
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setOrgMembership(TEST_ORG_ID);
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(USER_ID);
+        account.setOrgMembership("some other nonsense");
+
+        service.updateAccount(account, null);
+
+        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+
+        // These values were loaded, have not been changed, and were persisted as is.
+        Account captured = accountCaptor.getValue();
+        assertEquals(captured.getOrgMembership(), TEST_ORG_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)

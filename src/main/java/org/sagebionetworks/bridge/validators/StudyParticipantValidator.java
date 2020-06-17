@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.Optional;
 import java.util.Set;
@@ -11,11 +12,14 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.SubstudyService;
@@ -25,13 +29,15 @@ public class StudyParticipantValidator implements Validator {
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
     private final SubstudyService substudyService;
+    private final OrganizationDao organizationDao;
     private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, App app,
-            boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService,
+            OrganizationDao organizationDao, App app, boolean isNew) {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;
+        this.organizationDao = organizationDao;
         this.app = app;
         this.isNew = isNew;
     }
@@ -77,6 +83,21 @@ public class StudyParticipantValidator implements Validator {
         } else {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");
+            }
+        }
+        
+        if (isNotBlank(participant.getOrgMembership())) {
+            String orgId = participant.getOrgMembership();
+            Optional<Organization> opt = organizationDao.getOrganization(app.getIdentifier(), orgId);
+            if (!opt.isPresent()) {
+                errors.rejectValue("orgMembership", "is not a valid organization");
+            } else {
+                // Assuming it's there and valid, it has to match the caller's organization unless
+                // the caller is an administrator
+                RequestContext context = BridgeUtils.getRequestContext();
+                if (!context.isInRole(ADMIN) && !orgId.equals(context.getCallerOrgMembership())) {
+                    errors.rejectValue("orgMembership", "cannot be set by caller");
+                }
             }
         }
 

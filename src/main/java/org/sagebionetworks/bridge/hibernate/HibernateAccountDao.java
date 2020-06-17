@@ -180,13 +180,13 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search) {
         // Getting the IDs and loading the records individually leads to N+1 queries (one id query and a 
         // query for each object), whereas querying for a constructor of a subset of columns leads to 
         // (N*Y)+1 queries as we must load each collection individually... Y=1 in the prior code to load
         // substudies, and Y=2 once we add attributes. On the downside, this approach loads all 
         // HibernateAccount fields, like clientData, though it is not returned.
-        QueryBuilder builder = makeQuery(ID_QUERY, app.getIdentifier(), null, search, false);
+        QueryBuilder builder = makeQuery(ID_QUERY, appId, null, search, false);
         List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
                 search.getOffsetBy(), search.getPageSize(), String.class);
         
@@ -196,7 +196,7 @@ public class HibernateAccountDao implements AccountDao {
                 .collect(Collectors.toList());
 
         // Get count of accounts.
-        builder = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
+        builder = makeQuery(COUNT_QUERY, appId, null, search, true);
         int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         
         // Package results and return.

@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
-import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -147,10 +146,15 @@ public class OrganizationService {
     }
     
     public PagedResourceList<AccountSummary> getMembers(String appId, String orgId, AccountSummarySearch search) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(orgId));
+        checkNotNull(search);
         
+        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
+                .copyOf(search)
+                .withOrgMembership(orgId).build();
         
-        
-        return null;
+        return accountService.getPagedAccountSummaries(appId, scopedSearch);
     }
     
     public void addMember(String appId, String identifier, AccountId accountId) {
