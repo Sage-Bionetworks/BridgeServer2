@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -15,7 +17,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.UNIVERSAL;
 import static org.sagebionetworks.bridge.services.AssessmentService.IDENTIFIER_REQUIRED;
-import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_BY_CANNOT_BE_NEGATIVE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -123,7 +124,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "offsetBy cannot be negative")
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getAssessmentsNegativeOffsetBy() {
         service.getAssessments(TEST_APP_ID, -100, 25, null, false);
     }
@@ -702,7 +703,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "offsetBy must be positive integer")
+            expectedExceptionsMessageRegExp = NONPOSITIVE_REVISION_ERROR)
     public void getAssessmentByIdentifierBadRevision() {
         service.getAssessmentById(TEST_APP_ID, IDENTIFIER, -2);
     }
@@ -760,7 +761,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = OFFSET_BY_CANNOT_BE_NEGATIVE)
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getAssessmentRevisionsNegativeOffsetBy() {
         service.getAssessmentRevisionsById(TEST_APP_ID, IDENTIFIER, -10, 25, true);
     }
@@ -822,7 +823,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = OFFSET_BY_CANNOT_BE_NEGATIVE)
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getAssessmentRevisionsByGuidNegativeOffsetBy() {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(TEST_APP_ID, GUID)).thenReturn(Optional.of(assessment));
