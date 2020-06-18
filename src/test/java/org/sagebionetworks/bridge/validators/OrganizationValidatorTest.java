@@ -8,10 +8,21 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 
 public class OrganizationValidatorTest {
 
+    @Test
+    public void validOrganization() {
+        Organization org = getOrganization();
+        org.setAppId(TestConstants.TEST_APP_ID);
+        org.setName("Name");
+        org.setIdentifier("an-org-id");
+        
+        Validate.entityThrowingException(INSTANCE, org);
+    }
+    
     @Test
     public void appIdNull() {
         Organization org = getOrganization();
