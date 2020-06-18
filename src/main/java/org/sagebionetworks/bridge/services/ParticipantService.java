@@ -333,6 +333,7 @@ public class ParticipantService {
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSynapseUserId(account.getSynapseUserId());
+        builder.withOrgMembership(account.getOrgMembership());
         return builder;
     }
     

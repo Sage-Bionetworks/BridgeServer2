@@ -430,7 +430,7 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "orgMembership", "is not a valid organization");
     }
     @Test
-    public void organizationNotTheCallers() {
+    public void validateOrgIsSameAsCallers() {
         when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))
             .thenReturn(Optional.of(Organization.create()));
         
@@ -439,10 +439,10 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "orgMembership", "cannot be set by caller");
     }
     @Test
-    public void organizationCanBeSetDifferentFromAdmin() {
+    public void validateOrgCanBeDifferentFromSuperadmin() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerOrgMembership("someOtherOrgId")
-                .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
+                .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN))
                 .build());
         
         when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))

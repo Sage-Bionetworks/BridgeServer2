@@ -19,6 +19,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -145,14 +146,16 @@ public class OrganizationService {
         dao.deleteOrganization(existing);
     }
     
-    public PagedResourceList<AccountSummary> getMembers(String appId, String orgId, AccountSummarySearch search) {
+    public PagedResourceList<AccountSummary> getMembers(String appId, String identifier, AccountSummarySearch search) {
         checkArgument(isNotBlank(appId));
-        checkArgument(isNotBlank(orgId));
+        checkArgument(isNotBlank(identifier));
         checkNotNull(search);
+        
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
-                .withOrgMembership(orgId).build();
+                .withOrgMembership(identifier).build();
         
         return accountService.getPagedAccountSummaries(appId, scopedSearch);
     }
@@ -162,10 +165,8 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        String callerOrgMembership = BridgeUtils.getRequestContext().getCallerOrgMembership();   
-        if (!identifier.equals(callerOrgMembership)) {
-            throw new UnauthorizedException("Caller is not a member of organization " + identifier);
-        }
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
+
         Account account = accountService.getAccount(accountId);
         accountService.editAccount(appId, account.getHealthCode(), (acct) -> acct.setOrgMembership(identifier));
     }
@@ -175,10 +176,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        String callerOrgMembership = BridgeUtils.getRequestContext().getCallerOrgMembership();        
-        if (!identifier.equals(callerOrgMembership)) {
-            throw new UnauthorizedException("Caller is not a member of organization " + identifier);
-        }
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
         
         String healthCode = getHealthCode(accountId);
         accountService.editAccount(appId, healthCode, (acct) -> acct.setOrgMembership(null));

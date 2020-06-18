@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.Optional;
 import java.util.Set;
@@ -11,8 +10,8 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -80,24 +79,22 @@ public class StudyParticipantValidator implements Validator {
                 PasswordPolicy passwordPolicy = app.getPasswordPolicy();
                 ValidatorUtils.validatePassword(errors, passwordPolicy, password);
             }
+            
+            // After account creation, organizational membership cannot be changed by updating an account
+            // Instead, use the OrganizationService
+            if (isNotBlank(participant.getOrgMembership())) {
+                String orgId = participant.getOrgMembership();
+                Optional<Organization> opt = organizationDao.getOrganization(app.getIdentifier(), orgId);
+                if (!opt.isPresent()) {
+                    errors.rejectValue("orgMembership", "is not a valid organization");
+                } else if (!AuthUtils.checkOrgMembership(orgId)) {
+                    errors.rejectValue("orgMembership", "cannot be set by caller");
+                }
+            }
+            
         } else {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");
-            }
-        }
-        
-        if (isNotBlank(participant.getOrgMembership())) {
-            String orgId = participant.getOrgMembership();
-            Optional<Organization> opt = organizationDao.getOrganization(app.getIdentifier(), orgId);
-            if (!opt.isPresent()) {
-                errors.rejectValue("orgMembership", "is not a valid organization");
-            } else {
-                // Assuming it's there and valid, it has to match the caller's organization unless
-                // the caller is an administrator
-                RequestContext context = BridgeUtils.getRequestContext();
-                if (!context.isInRole(ADMIN) && !orgId.equals(context.getCallerOrgMembership())) {
-                    errors.rejectValue("orgMembership", "cannot be set by caller");
-                }
             }
         }
 

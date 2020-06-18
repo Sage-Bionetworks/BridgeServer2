@@ -370,6 +370,7 @@ CREATE TABLE `Organizations` (
 -- changeset bridge:17
 
 ALTER TABLE `Accounts`
-ADD COLUMN `orgMembership` varchar(255)
-CONSTRAINT `fk_org_membership` FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
+ADD COLUMN `orgMembership` varchar(255),
+ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
+
 CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`);
