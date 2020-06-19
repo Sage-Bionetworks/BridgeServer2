@@ -47,7 +47,6 @@ public class MetricsFilter implements Filter {
         metrics.setUserAgent(header(request, USER_AGENT, null));
 
         // Process the query parameters, and append them to the metrics.
-        // TODO: Set an allow-list for the parameters to avoid PII leaking.
         List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
         metrics.setQueryParams(params);
 

@@ -7,12 +7,18 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MetricsTest {
     private static final DateTime START_TIME = DateTime.parse("2018-02-16T17:23:05.590Z");
@@ -114,6 +120,34 @@ public class MetricsTest {
         metrics.setSessionId("d839fe");
         json = metrics.toJsonString();
         assertTrue(json.contains("\"session_id\":\"d839fe\""));
+    }
+
+    @Test
+    public void testSetQueryParams() {
+        // Test empty params metrics.
+        String requestId = "12345";
+        Metrics metrics = new Metrics(requestId);
+        metrics.setQueryParams(null);
+        String json = metrics.toJsonString();
+        assertFalse(json.contains("\"query_params\":"));
+
+        // Test parsed, but no query params metrics.
+        List<NameValuePair> testList = new ArrayList<>(URLEncodedUtils.parse("", StandardCharsets.UTF_8));
+        metrics.setQueryParams(testList);
+        json = metrics.toJsonString();
+        assertTrue(json.contains("\"query_params\":{}"));
+
+        // Test parsed, but not in allowlist params metrics.
+        testList.addAll(URLEncodedUtils.parse("email=not_a_real_email@fake.com&name=piiLeaking", StandardCharsets.UTF_8));
+        metrics.setQueryParams(testList);
+        json = metrics.toJsonString();
+        assertTrue(json.contains("\"query_params\":{}"));
+
+        // Test parsed, in-allowlist params metrics.
+        testList.addAll(URLEncodedUtils.parse("consents=true&pageSize=42", StandardCharsets.UTF_8));
+        metrics.setQueryParams(testList);
+        json = metrics.toJsonString();
+        assertTrue(json.contains("\"query_params\":{\"consents\":\"true\",\"pageSize\":\"42\"}"));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

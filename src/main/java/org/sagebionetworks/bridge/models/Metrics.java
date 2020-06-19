@@ -133,13 +133,15 @@ public class Metrics {
      * @param params The query parameters.
      */
     public void setQueryParams(List<NameValuePair> params) {
-        ObjectNode paramNode = MAPPER.createObjectNode();
-        for (NameValuePair pair : params) {
-            if (ALLOW_LIST.contains(pair.getName())) {
-                paramNode.put(pair.getName(), pair.getValue());
+        if (params != null) {
+            ObjectNode paramNode = MAPPER.createObjectNode();
+            for (NameValuePair pair : params) {
+                if (ALLOW_LIST.contains(pair.getName())) {
+                    paramNode.put(pair.getName(), pair.getValue());
+                }
             }
+            json.set("query_params", paramNode);
         }
-        json.set("query_params", paramNode);
     }
 
     private void put(final String field, final String value) {
