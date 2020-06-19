@@ -3,12 +3,15 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import org.apache.http.NameValuePair;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.sagebionetworks.bridge.json.JsonUtils;
+
+import java.util.List;
 
 /**
  * Request-scoped metrics.
@@ -118,6 +121,19 @@ public class Metrics {
 
     public void setUploadSize(long uploadSize) {
         json.put("upload_size", uploadSize);
+    }
+
+    /**
+     * Set the query params from the url request to json.
+     *
+     * @param params The query parameters.
+     */
+    public void setQueryParams(List<NameValuePair> params) {
+        ObjectNode paramNode = MAPPER.createObjectNode();
+        for (NameValuePair pair : params) {
+            paramNode.put(pair.getName(), pair.getValue());
+        }
+        json.set("query_params", paramNode);
     }
 
     private void put(final String field, final String value) {
