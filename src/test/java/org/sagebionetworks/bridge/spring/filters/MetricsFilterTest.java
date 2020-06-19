@@ -4,7 +4,9 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -85,7 +87,7 @@ public class MetricsFilterTest extends Mockito {
 
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
     }
-    
+
     @Test
     public void metricsUsesXForwardedForHeader() throws Exception {
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn("request-id");
