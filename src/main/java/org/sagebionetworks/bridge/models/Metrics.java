@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import org.apache.http.NameValuePair;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,9 @@ public class Metrics {
     private static final int VERSION = 1;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static final List<String> ALLOW_LIST =
+            BridgeConfigFactory.getConfig().getList("query.param.allowlist");
 
     private final ObjectNode json;
 
@@ -131,7 +135,9 @@ public class Metrics {
     public void setQueryParams(List<NameValuePair> params) {
         ObjectNode paramNode = MAPPER.createObjectNode();
         for (NameValuePair pair : params) {
-            paramNode.put(pair.getName(), pair.getValue());
+            if (ALLOW_LIST.contains(pair.getName())) {
+                paramNode.put(pair.getName(), pair.getValue());
+            }
         }
         json.set("query_params", paramNode);
     }
