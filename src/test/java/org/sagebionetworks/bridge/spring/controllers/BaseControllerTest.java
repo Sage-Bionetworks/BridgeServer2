@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.REQUEST_ID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TIMEZONE_MSK;
 import static org.sagebionetworks.bridge.TestConstants.UA;
@@ -62,6 +63,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -820,7 +822,7 @@ public class BaseControllerTest extends Mockito {
         Set<Roles> roles = ImmutableSet.of(DEVELOPER);
         
         StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
-                .withRoles(roles).withId(USER_ID).build();
+                .withRoles(roles).withId(USER_ID).withOrgMembership(TEST_ORG_ID).build();
         session.setParticipant(participant);
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
@@ -837,6 +839,7 @@ public class BaseControllerTest extends Mockito {
         assertTrue(context.isAdministrator());
         assertTrue(context.isInRole(DEVELOPER));
         assertEquals(context.getCallerUserId(), USER_ID);
+        assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
     }
 
     @Test

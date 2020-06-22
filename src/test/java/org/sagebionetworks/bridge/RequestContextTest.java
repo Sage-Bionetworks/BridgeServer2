@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
@@ -38,8 +39,8 @@ public class RequestContextTest {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerAppId(null)
-                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null)
-                .withCallerLanguages(null).withCallerClientInfo(null).build();
+                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null).withCallerLanguages(null)
+                .withCallerClientInfo(null).withCallerOrgMembership(null).build();
         
         assertNotNull(nullContext.getId());
         assertTrue(nullContext.getCallerSubstudies().isEmpty());
@@ -49,6 +50,7 @@ public class RequestContextTest {
         assertNotNull(nullContext.getMetrics());
         assertTrue(nullContext.getCallerLanguages().isEmpty());
         assertEquals(nullContext.getCallerClientInfo(), UNKNOWN_CLIENT);
+        assertNull(nullContext.getCallerOrgMembership());
         
         ObjectNode node = nullContext.getMetrics().getJson();
         assertTrue(node.has("request_id"));
@@ -68,6 +70,7 @@ public class RequestContextTest {
         assertNull(NULL_INSTANCE.getCallerUserId());
         assertNull(NULL_INSTANCE.getMetrics());
         assertTrue(NULL_INSTANCE.getCallerLanguages().isEmpty());
+        assertNull(NULL_INSTANCE.getCallerOrgMembership());
         assertEquals(NULL_INSTANCE.getCallerClientInfo(), UNKNOWN_CLIENT);
     }
 
@@ -80,7 +83,8 @@ public class RequestContextTest {
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerSubstudies(SUBSTUDIES)
                 .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
-                .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).build();
+                .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo)
+                .withCallerOrgMembership(TEST_ORG_ID).build();
 
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
@@ -90,6 +94,7 @@ public class RequestContextTest {
         assertEquals(context.getCallerLanguages(), LANGUAGES);
         assertEquals(context.getCallerClientInfo(), clientInfo);
         assertEquals(context.getMetrics(), metrics);
+        assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
     }
     
     @Test
@@ -102,7 +107,7 @@ public class RequestContextTest {
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
                 .withCallerAppId(TEST_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
                 .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
-                .withCallerClientInfo(clientInfo).build();
+                .withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID).build();
         
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
@@ -114,6 +119,7 @@ public class RequestContextTest {
         assertEquals(copy.getCallerLanguages(), LANGUAGES);
         assertEquals(copy.getCallerClientInfo(), clientInfo);
         assertEquals(copy.getMetrics(), metrics);
+        assertEquals(copy.getCallerOrgMembership(), TEST_ORG_ID);
     }
     
     @Test

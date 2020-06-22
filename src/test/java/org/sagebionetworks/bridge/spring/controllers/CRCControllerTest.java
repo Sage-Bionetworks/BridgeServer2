@@ -5,6 +5,8 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
@@ -599,6 +601,22 @@ public class CRCControllerTest extends Mockito {
         assertEquals(captured.getAppId(), CRCController.APP_ID);
         assertEquals(captured.getExternalId(), CRCController.CUIMC_USERNAME);
         assertEquals(captured.getPassword(), "dummy-password");
+    }
+    
+    @Test
+    public void authenticationPopulatesRequestContext() {
+        account.setOrgMembership(TEST_ORG_ID);
+
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAppService.getApp(CRCController.APP_ID)).thenReturn(mockApp);
+        when(mockAccountService.authenticate(eq(mockApp), signInCaptor.capture())).thenReturn(account);
+        
+        controller.httpBasicAuthentication();
+        
+        RequestContext context = BridgeUtils.getRequestContext();
+        assertEquals(context.getCallerAppId(), APP_ID);
+        assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
     }
     
     @Test(expectedExceptions = NotAuthenticatedException.class)

@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
@@ -992,7 +993,7 @@ public class ParticipantServiceTest extends Mockito {
         AccountSubstudy acctSubstudy3 = AccountSubstudy.create(TEST_APP_ID, "substudyC", ID);
         // no third external ID, this one is just not in the external IDs map
         account.setAccountSubstudies(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
-        
+        account.setOrgMembership(TEST_ORG_ID);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -1045,6 +1046,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getExternalIds().size(), 2);
         assertEquals(participant.getExternalIds().get("substudyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("substudyB"), "externalIdB");
+        assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");

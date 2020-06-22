@@ -541,17 +541,18 @@ public class HibernateAccountDaoTest extends Mockito {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
                 + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND "
                 + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime "
-                + "AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN "
-                + "elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
-                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "AND acct.createdOn <= :endTime AND acct.orgMembership = :orgId AND :language IN "
+                + "ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN " 
+                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT IN "
+                + "elements(acct.dataGroups)) GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE "
                 + "acct.appId = :appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND "
-                + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND :language IN "
-                + "ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT "
-                + "IN elements(acct.dataGroups))";
+                + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND acct.orgMembership = "
+                + ":orgId AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
+                + ":NOTIN2 NOT IN elements(acct.dataGroups))";
 
         // Setup start and end dates.
         DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");
@@ -568,7 +569,8 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(5)
                 .withEmailFilter(EMAIL).withPhoneFilter(PHONE.getNationalFormat())
                 .withAllOfGroups(Sets.newHashSet("a", "b")).withNoneOfGroups(Sets.newHashSet("c", "d"))
-                .withLanguage("de").withStartTime(startDate).withEndTime(endDate).build();
+                .withLanguage("de").withStartTime(startDate).withEndTime(endDate)
+                .withOrgMembership(TEST_ORG_ID).build();
 
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
@@ -599,6 +601,7 @@ public class HibernateAccountDaoTest extends Mockito {
         params.put("notin1", "c");
         params.put("notin2", "d");
         params.put("language", "de");
+        params.put("orgId", TEST_ORG_ID);
 
         verify(mockHibernateHelper).queryGet(eq(expQuery), paramCaptor.capture(), eq(10), eq(5), eq(String.class));
         verify(mockHibernateHelper).getById(HibernateAccount.class, ACCOUNT_ID);
@@ -615,6 +618,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(capturedParams.get("NOTIN1"), "d");
         assertEquals(capturedParams.get("NOTIN2"), "c");
         assertEquals(capturedParams.get("language"), "de");
+        assertEquals(capturedParams.get("orgId"), TEST_ORG_ID);
 
         capturedParams = paramCaptor.getAllValues().get(1);
         assertEquals(capturedParams.get("appId"), TEST_APP_ID);
@@ -627,6 +631,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(capturedParams.get("NOTIN1"), "d");
         assertEquals(capturedParams.get("NOTIN2"), "c");
         assertEquals(capturedParams.get("language"), "de");
+        assertEquals(capturedParams.get("orgId"), TEST_ORG_ID);
     }
 
     @Test
