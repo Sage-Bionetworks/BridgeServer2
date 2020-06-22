@@ -13,9 +13,6 @@ public class AuthUtils {
         RequestContext context = BridgeUtils.getRequestContext();
         String callerOrgMembership = context.getCallerOrgMembership();
         
-        System.out.println("context.isInRole(SUPERADMIN): " + context.isInRole(SUPERADMIN));
-        System.out.println("proposedOrgId.equals(callerOrgMembership): " + proposedOrgId.equals(callerOrgMembership));
-        
         return context.isInRole(SUPERADMIN) || proposedOrgId.equals(callerOrgMembership);
     }
     
