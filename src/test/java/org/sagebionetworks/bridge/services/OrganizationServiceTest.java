@@ -138,6 +138,7 @@ public class OrganizationServiceTest extends Mockito {
         assertEquals(retValue.getIdentifier(), IDENTIFIER);
         assertEquals(retValue.getName(), NAME);
         assertEquals(retValue.getCreatedOn(), CREATED_ON);
+        assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
