@@ -395,7 +395,7 @@ public class CacheProviderMockTest {
                 "'environment':'local',"+
                 "'sessionToken':'"+DECRYPTED_SESSION_TOKEN+"',"+
                 "'internalSessionToken':'4f0937a5-6ebf-451b-84bc-fbf649b9e93c',"+
-                "'appId':'" + TEST_APP_ID + "',"+
+                "'studyIdentifier':{'identifier':'"+TEST_APP_ID+"', 'type':'StudyIdentifier'},"+
                 "'consentStatuses':{"+
                     "'"+TEST_APP_ID+"':{'name':'Default Consent Group',"+
                         "'subpopulationGuid':'"+TEST_APP_ID+"',"+
