@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.filters;
 
+import static org.apache.http.HttpHeaders.ALLOW;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 
@@ -19,6 +20,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -55,17 +58,11 @@ public class MetricsFilter implements Filter {
 
         // Process the query parameters, and append them to the metrics.
         List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
-        final Map<String, List<String>> paramsMap = new LinkedHashMap<>();
-        for (NameValuePair pair : params) {
-            String key = pair.getName();
-            String value = pair.getValue();
-            if (ALLOW_LIST.contains(key)) {
-                if (!paramsMap.containsKey(key)) {
-                    paramsMap.put(key, new LinkedList<>());
-                }
-                paramsMap.get(key).add(value);
-            }
-        }
+
+        Multimap<String, String> paramsMap = MultimapBuilder.linkedHashKeys().linkedListValues().build();
+        params.stream().filter(i -> ALLOW_LIST.contains(i.getName()))
+                .forEach(i -> paramsMap.put(i.getName(), i.getValue()));
+
         metrics.setQueryParams(paramsMap);
 
         try {

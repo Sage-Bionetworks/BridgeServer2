@@ -7,6 +7,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterClass;
@@ -132,13 +134,13 @@ public class MetricsTest {
         JsonNode metricsNode = BridgeObjectMapper.get().readTree(json);
         assertFalse(metricsNode.has("query_params"));
 
-        Map<String, List<String>> paramsMap = new LinkedHashMap<>();
+        Multimap<String, String> paramsMap = MultimapBuilder.linkedHashKeys().linkedListValues().build();
         metrics = new Metrics(requestId);
         metrics.setQueryParams(paramsMap);
         metricsNode = metrics.getJson();
         assertFalse(metricsNode.has("query_params"));
 
-        paramsMap.put("not_real_key", new LinkedList<>());
+        paramsMap.put("not_real_key", "only_one");
         metrics = new Metrics(requestId);
         metrics.setQueryParams(paramsMap);
         metricsNode = metrics.getJson();
@@ -146,21 +148,11 @@ public class MetricsTest {
         JsonNode paramsNode = metricsNode.get("query_params");
         assertEquals(1, paramsNode.size());
         assertTrue(paramsNode.has("not_real_key"));
-        assertEquals(0, paramsNode.get("not_real_key").size());
-
-        paramsMap.get("not_real_key").add("only_one");
-        metrics = new Metrics(requestId);
-        metrics.setQueryParams(paramsMap);
-        metricsNode = metrics.getJson();
-        assertTrue(metricsNode.has("query_params"));
-        paramsNode = metricsNode.get("query_params");
-        assertEquals(1, paramsNode.size());
-        assertTrue(paramsNode.has("not_real_key"));
         assertTrue(paramsNode.get("not_real_key").isArray());
         assertEquals(1, paramsNode.get("not_real_key").size());
         assertEquals("only_one", paramsNode.get("not_real_key").get(0).textValue());
 
-        paramsMap.get("not_real_key").add("the_second");
+        paramsMap.put("not_real_key", "the_second");
         metrics = new Metrics(requestId);
         metrics.setQueryParams(paramsMap);
         metricsNode = metrics.getJson();
@@ -168,7 +160,7 @@ public class MetricsTest {
         assertEquals(2, paramsNode.get("not_real_key").size());
         assertEquals("the_second", paramsNode.get("not_real_key").get(1).textValue());
 
-        paramsMap.put("now_new_key", new LinkedList<>(Collections.singletonList("third")));
+        paramsMap.put("now_new_key", "third");
         metrics = new Metrics(requestId);
         metrics.setQueryParams(paramsMap);
         metricsNode = metrics.getJson();

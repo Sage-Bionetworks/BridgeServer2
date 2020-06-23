@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -128,9 +129,9 @@ public class Metrics {
      *
      * @param paramsMap The query parameters.
      */
-    public void setQueryParams(Map<String, List<String>> paramsMap) {
+    public void setQueryParams(Multimap<String, String> paramsMap) {
         if (paramsMap != null && !paramsMap.isEmpty()) {
-            ObjectNode paramsJson = MAPPER.valueToTree(paramsMap);
+            ObjectNode paramsJson = MAPPER.valueToTree(paramsMap.asMap());
             json.set("query_params", paramsJson);
         }
     }
