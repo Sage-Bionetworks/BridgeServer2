@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import javax.servlet.FilterChain;
@@ -63,7 +63,8 @@ public class MetricsFilterTest extends Mockito {
         when(mockRequest.getRemoteAddr()).thenReturn(TestConstants.IP_ADDRESS);
         when(mockRequest.getHeader(USER_AGENT)).thenReturn("userAgent/1");
         when(mockResponse.getStatus()).thenReturn(201);
-        when(mockRequest.getQueryString()).thenReturn("consents=true&email=should_not_leak@fake.com");
+        when(mockRequest.getQueryString()).thenReturn("consents=true&email=should_not_leak@fake.com" +
+                "&email&consents=not+false&category=only%20testing");
 
         filter.doFilter(mockRequest, mockResponse, mockFilterChain);
         
@@ -82,8 +83,10 @@ public class MetricsFilterTest extends Mockito {
         assertTrue(node.get("elapsedMillis").intValue() > -1);
         assertEquals(201, node.get("status").intValue());
         JsonNode paramNode = node.get("query_params");
-        assertEquals("true", paramNode.get("consents").textValue());
-        assertNull(paramNode.get("email"));
+        assertEquals("true", paramNode.get("consents").get(0).textValue());
+        assertEquals("not false", paramNode.get("consents").get(1).textValue());
+        assertEquals("only testing", paramNode.get("category").get(0).textValue());
+        assertFalse(paramNode.has("email"));
 
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
     }

@@ -59,10 +59,12 @@ public class MetricsFilter implements Filter {
         for (NameValuePair pair : params) {
             String key = pair.getName();
             String value = pair.getValue();
-            if (!paramsMap.containsKey(key) && ALLOW_LIST.contains(key)) {
-                paramsMap.put(key, new LinkedList<>());
+            if (ALLOW_LIST.contains(key)) {
+                if (!paramsMap.containsKey(key)) {
+                    paramsMap.put(key, new LinkedList<>());
+                }
+                paramsMap.get(key).add(value);
             }
-            paramsMap.get(key).add(value);
         }
         metrics.setQueryParams(paramsMap);
 
