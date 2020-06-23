@@ -13,6 +13,20 @@ import com.google.common.collect.Iterables;
 @JsonDeserialize(builder = AccountSummary.Builder.class)
 public final class AccountSummary {
     
+    // This is the one class that exposes this object through the API. Because this 
+    // may involve updating some downstream projects like BridgeWorkerPlatform, leave
+    // it until the full refactor to getAppId() is done, then swap out. getStudyId has
+    // been added and will be refactored to getAppId in the next step of migration.
+    public final static class StudyIdentifier {
+        private final String identifier;
+        StudyIdentifier(String identifier) {
+            this.identifier = identifier;
+        }
+        public String getIdentifier() {
+            return identifier;
+        }
+    }
+    
     private final String firstName;
     private final String lastName;
     private final String email;
@@ -90,6 +104,10 @@ public final class AccountSummary {
 
     public AccountStatus getStatus() {
         return status;
+    }
+    
+    public StudyIdentifier getStudyIdentifier() {
+        return new StudyIdentifier(appId);
     }
     
     public String getAppId() { 
