@@ -1,15 +1,11 @@
 package org.sagebionetworks.bridge.spring.filters;
 
-import static org.apache.http.HttpHeaders.ALLOW;
 import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;

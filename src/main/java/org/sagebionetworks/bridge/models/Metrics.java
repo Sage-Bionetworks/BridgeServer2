@@ -11,9 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * Request-scoped metrics.
  */

@@ -16,12 +16,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 public class MetricsTest {
     private static final DateTime START_TIME = DateTime.parse("2018-02-16T17:23:05.590Z");
     private static final DateTime END_TIME = DateTime.parse("2018-02-16T17:23:06.791Z");
