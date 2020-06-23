@@ -18,7 +18,12 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class MetricsTest {
     private static final DateTime START_TIME = DateTime.parse("2018-02-16T17:23:05.590Z");
@@ -123,31 +128,60 @@ public class MetricsTest {
     }
 
     @Test
-    public void testSetQueryParams() {
+    public void testSetQueryParams() throws Exception {
         // Test empty params metrics.
         String requestId = "12345";
         Metrics metrics = new Metrics(requestId);
         metrics.setQueryParams(null);
         String json = metrics.toJsonString();
-        assertFalse(json.contains("\"query_params\":"));
+        JsonNode metricsNode = BridgeObjectMapper.get().readTree(json);
+        assertFalse(metricsNode.has("query_params"));
 
-        // Test parsed, but no query params metrics.
-        List<NameValuePair> testList = new ArrayList<>(URLEncodedUtils.parse("", StandardCharsets.UTF_8));
-        metrics.setQueryParams(testList);
-        json = metrics.toJsonString();
-        assertTrue(json.contains("\"query_params\":{}"));
+        Map<String, List<String>> paramsMap = new LinkedHashMap<>();
+        metrics = new Metrics(requestId);
+        metrics.setQueryParams(paramsMap);
+        metricsNode = metrics.getJson();
+        assertFalse(metricsNode.has("query_params"));
 
-        // Test parsed, but not in allowlist params metrics.
-        testList.addAll(URLEncodedUtils.parse("email=not_a_real_email@fake.com&name=piiLeaking", StandardCharsets.UTF_8));
-        metrics.setQueryParams(testList);
-        json = metrics.toJsonString();
-        assertTrue(json.contains("\"query_params\":{}"));
+        paramsMap.put("not_real_key", new LinkedList<>());
+        metrics = new Metrics(requestId);
+        metrics.setQueryParams(paramsMap);
+        metricsNode = metrics.getJson();
+        assertTrue(metricsNode.has("query_params"));
+        JsonNode paramsNode = metricsNode.get("query_params");
+        assertEquals(1, paramsNode.size());
+        assertTrue(paramsNode.has("not_real_key"));
+        assertEquals(0, paramsNode.get("not_real_key").size());
 
-        // Test parsed, in-allowlist params metrics.
-        testList.addAll(URLEncodedUtils.parse("consents=true&pageSize=42", StandardCharsets.UTF_8));
-        metrics.setQueryParams(testList);
-        json = metrics.toJsonString();
-        assertTrue(json.contains("\"query_params\":{\"consents\":\"true\",\"pageSize\":\"42\"}"));
+        paramsMap.get("not_real_key").add("only_one");
+        metrics = new Metrics(requestId);
+        metrics.setQueryParams(paramsMap);
+        metricsNode = metrics.getJson();
+        assertTrue(metricsNode.has("query_params"));
+        paramsNode = metricsNode.get("query_params");
+        assertEquals(1, paramsNode.size());
+        assertTrue(paramsNode.has("not_real_key"));
+        assertTrue(paramsNode.get("not_real_key").isArray());
+        assertEquals(1, paramsNode.get("not_real_key").size());
+        assertEquals("only_one", paramsNode.get("not_real_key").get(0).textValue());
+
+        paramsMap.get("not_real_key").add("the_second");
+        metrics = new Metrics(requestId);
+        metrics.setQueryParams(paramsMap);
+        metricsNode = metrics.getJson();
+        paramsNode = metricsNode.get("query_params");
+        assertEquals(2, paramsNode.get("not_real_key").size());
+        assertEquals("the_second", paramsNode.get("not_real_key").get(1).textValue());
+
+        paramsMap.put("now_new_key", new LinkedList<>(Collections.singletonList("third")));
+        metrics = new Metrics(requestId);
+        metrics.setQueryParams(paramsMap);
+        metricsNode = metrics.getJson();
+        paramsNode = metricsNode.get("query_params");
+        assertEquals(2, paramsNode.size());
+        assertTrue(paramsNode.has("now_new_key"));
+        assertEquals(1, paramsNode.get("now_new_key").size());
+        assertEquals("third", paramsNode.get("now_new_key").get(0).textValue());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

@@ -4,9 +4,11 @@ import static org.apache.http.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -19,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -32,6 +35,10 @@ public class MetricsFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsFilter.class);
     
     public static final String X_PASSTHROUGH = "X-Passthrough";
+
+    // Allow-list for query parameters metrics logging.
+    private static final List<String> ALLOW_LIST =
+            BridgeConfigFactory.getConfig().getList("query.param.allowlist");
     
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -48,7 +55,16 @@ public class MetricsFilter implements Filter {
 
         // Process the query parameters, and append them to the metrics.
         List<NameValuePair> params = URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
-        metrics.setQueryParams(params);
+        final Map<String, List<String>> paramsMap = new LinkedHashMap<>();
+        for (NameValuePair pair : params) {
+            String key = pair.getName();
+            String value = pair.getValue();
+            if (!paramsMap.containsKey(key) && ALLOW_LIST.contains(key)) {
+                paramsMap.put(key, new LinkedList<>());
+            }
+            paramsMap.get(key).add(value);
+        }
+        metrics.setQueryParams(paramsMap);
 
         try {
             chain.doFilter(req, res);

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.sagebionetworks.bridge.json.JsonUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Request-scoped metrics.
@@ -23,9 +24,6 @@ public class Metrics {
     private static final int VERSION = 1;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    private static final List<String> ALLOW_LIST =
-            BridgeConfigFactory.getConfig().getList("query.param.allowlist");
 
     private final ObjectNode json;
 
@@ -130,17 +128,12 @@ public class Metrics {
     /**
      * Set the query params from the url request to json.
      *
-     * @param params The query parameters.
+     * @param paramsMap The query parameters.
      */
-    public void setQueryParams(List<NameValuePair> params) {
-        if (params != null) {
-            ObjectNode paramNode = MAPPER.createObjectNode();
-            for (NameValuePair pair : params) {
-                if (ALLOW_LIST.contains(pair.getName())) {
-                    paramNode.put(pair.getName(), pair.getValue());
-                }
-            }
-            json.set("query_params", paramNode);
+    public void setQueryParams(Map<String, List<String>> paramsMap) {
+        if (paramsMap != null && !paramsMap.isEmpty()) {
+            ObjectNode paramsJson = MAPPER.valueToTree(paramsMap);
+            json.set("query_params", paramsJson);
         }
     }
 
