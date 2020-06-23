@@ -750,6 +750,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setCreatedOn(CREATED_ON);
         hibernateAccount.setStatus(ENABLED);
         hibernateAccount.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        hibernateAccount.setOrgMembership(TEST_ORG_ID);
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
@@ -761,6 +762,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummary.getFirstName(), FIRST_NAME);
         assertEquals(accountSummary.getLastName(), LAST_NAME);
         assertEquals(accountSummary.getStatus(), ENABLED);
+        assertEquals(accountSummary.getOrgMembership(), TEST_ORG_ID);
 
         // createdOn is stored as a long, so just compare epoch milliseconds.
         assertEquals(accountSummary.getCreatedOn().getMillis(), CREATED_ON.getMillis());

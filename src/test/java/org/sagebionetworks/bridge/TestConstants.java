@@ -187,10 +187,10 @@ public class TestConstants {
             .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("substudy1", "externalId1")).withId("id")
             .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
-            .withAppId(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
     public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
             .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("substudy2", "externalId2")).withId("id2")
             .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
-            .withAppId(TEST_APP_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
 }

@@ -25,10 +25,11 @@ public final class AccountSummary {
     private final String appId;
     private final Set<String> substudyIds;
     private final Map<String, String> attributes;
+    private final String orgMembership;
     
     private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
             Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
-            Set<String> substudyIds, Map<String, String> attributes) {
+            Set<String> substudyIds, Map<String, String> attributes, String orgMembership) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -41,6 +42,7 @@ public final class AccountSummary {
         this.appId = appId;
         this.substudyIds = substudyIds;
         this.attributes = attributes;
+        this.orgMembership = orgMembership;
     }
     
     public String getFirstName() {
@@ -101,11 +103,15 @@ public final class AccountSummary {
     public Map<String, String> getAttributes() {
         return attributes;
     }
+    
+    public String getOrgMembership() {
+        return orgMembership;
+    }
 
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                appId, substudyIds, attributes);
+                appId, substudyIds, attributes, orgMembership);
     }
 
     @Override
@@ -121,7 +127,8 @@ public final class AccountSummary {
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
                 && Objects.equals(id, other.id) && Objects.equals(appId, other.appId)
                 && Objects.equals(substudyIds, other.substudyIds)
-                && Objects.equals(attributes, other.attributes);
+                && Objects.equals(attributes, other.attributes)
+                && Objects.equals(orgMembership, other.orgMembership);
     }
     
     // no toString() method as the information is sensitive.
@@ -138,6 +145,7 @@ public final class AccountSummary {
         private Map<String,String> externalIds;
         private Set<String> substudyIds;
         private Map<String, String> attributes;
+        private String orgMembership;
         
         public Builder withAppId(String appId) {
             this.appId = appId;
@@ -187,9 +195,13 @@ public final class AccountSummary {
             this.attributes = attributes;
             return this;
         }
+        public Builder withOrgMembership(String orgMembership) {
+            this.orgMembership = orgMembership;
+            return this;
+        }
         public AccountSummary build() {
             return new AccountSummary(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn,
-                    status, appId, substudyIds, attributes);
+                    status, appId, substudyIds, attributes, orgMembership);
         }
     }
 }
