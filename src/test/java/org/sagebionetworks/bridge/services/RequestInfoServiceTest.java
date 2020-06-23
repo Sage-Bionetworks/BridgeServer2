@@ -11,7 +11,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.RequestInfoDao;
 import org.sagebionetworks.bridge.models.RequestInfo;
 
@@ -20,9 +19,6 @@ public class RequestInfoServiceTest extends Mockito {
     @InjectMocks
     RequestInfoService service;
 
-    @Mock
-    CacheProvider mockCacheProvider;
-    
     @Mock
     RequestInfoDao mockRequestInfoDao;
     
@@ -40,7 +36,7 @@ public class RequestInfoServiceTest extends Mockito {
     }
     
     @Test
-    public void getRequestInfoFromDatabase() {
+    public void getRequestInfo() {
         RequestInfo info = new RequestInfo.Builder().build();
         when(mockRequestInfoDao.getRequestInfo(USER_ID)).thenReturn(info);
         
@@ -48,20 +44,7 @@ public class RequestInfoServiceTest extends Mockito {
         assertSame(retrieved, info);
         
         // No need to execute this path
-        verify(mockCacheProvider, never()).getRequestInfo(any());
         verify(mockRequestInfoDao, never()).updateRequestInfo(any());
-    }
-    
-    @Test
-    public void getRequestInfoFromCache() {
-        RequestInfo info = new RequestInfo.Builder().build();
-        when(mockCacheProvider.getRequestInfo(USER_ID)).thenReturn(info);
-        
-        RequestInfo retrieved = service.getRequestInfo(USER_ID);
-        assertSame(retrieved, info);
-        
-        // And it was saved
-        verify(mockRequestInfoDao).updateRequestInfo(info);
     }
     
     @Test
@@ -75,6 +58,5 @@ public class RequestInfoServiceTest extends Mockito {
     public void removeRequestInfo() {
         service.removeRequestInfo(USER_ID);
         verify(mockRequestInfoDao).removeRequestInfo(USER_ID);
-        verify(mockCacheProvider).removeRequestInfo(USER_ID);
     }
 }
