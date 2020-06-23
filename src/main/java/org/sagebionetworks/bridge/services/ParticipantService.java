@@ -40,6 +40,7 @@ import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -118,6 +119,8 @@ public class ParticipantService {
     private AccountWorkflowService accountWorkflowService;
     
     private SubstudyService substudyService;
+    
+    private OrganizationDao organizationDao;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -188,6 +191,11 @@ public class ParticipantService {
     @Autowired
     final void setRequestInfoService(RequestInfoService requestInfoService) {
         this.requestInfoService = requestInfoService;
+    }
+    
+    @Autowired
+    final void setOrganizationDao(OrganizationDao organizationDao) {
+        this.organizationDao = organizationDao;
     }
     
     /**
@@ -325,6 +333,7 @@ public class ParticipantService {
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSynapseUserId(account.getSynapseUserId());
+        builder.withOrgMembership(account.getOrgMembership());
         return builder;
     }
     
@@ -353,7 +362,7 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new AccountSummarySearchValidator(app.getDataGroups()), search);
         
-        return accountService.getPagedAccountSummaries(app, search);
+        return accountService.getPagedAccountSummaries(app.getIdentifier(), search);
     }
 
     /**
@@ -404,8 +413,8 @@ public class ParticipantService {
             throwExceptionIfLimitMetOrExceeded(app);
         }
         
-        StudyParticipantValidator validator = new StudyParticipantValidator(externalIdService, substudyService, app,
-                true);
+        StudyParticipantValidator validator = new StudyParticipantValidator(
+                externalIdService, substudyService, organizationDao, app, true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
@@ -516,7 +525,7 @@ public class ParticipantService {
         checkNotNull(participant);
 
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, substudyService, app, false);
+                externalIdService, substudyService, organizationDao, app, false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());

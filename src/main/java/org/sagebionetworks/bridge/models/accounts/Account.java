@@ -154,6 +154,9 @@ public interface Account extends BridgeEntity {
 
     String getAppId();
     void setAppId(String appId);
+    
+    String getOrgMembership();
+    void setOrgMembership(String orgId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();

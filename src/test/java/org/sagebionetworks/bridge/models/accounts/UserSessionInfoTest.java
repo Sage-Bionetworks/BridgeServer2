@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.accounts;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -41,7 +42,8 @@ public class UserSessionInfoTest {
                 .withSubstudyIds(ImmutableSet.of("substudyA"))
                 .withExternalIds(ImmutableMap.of("substudyA", "externalIdA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
-                .withDataGroups(Sets.newHashSet("foo")).build();
+                .withDataGroups(Sets.newHashSet("foo"))
+                .withOrgMembership(TEST_ORG_ID).build();
         
         Map<SubpopulationGuid, ConsentStatus> map = TestUtils
                 .toMap(new ConsentStatus("Consent", "AAA", true, true, false, timestamp.getMillis()));
@@ -77,6 +79,7 @@ public class UserSessionInfoTest {
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
         assertEquals(node.get("externalIds").get("substudyA").textValue(), "externalIdA");
+        assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").asText(), "UserSessionInfo");
         
         JsonNode consentMap = node.get("consentStatuses");
@@ -92,7 +95,7 @@ public class UserSessionInfoTest {
         assertEquals(consentStatus.size(), 7);
         
         // ... and no things that shouldn't be there
-        assertEquals(node.size(), 23);
+        assertEquals(node.size(), 24);
     }
     
     @Test

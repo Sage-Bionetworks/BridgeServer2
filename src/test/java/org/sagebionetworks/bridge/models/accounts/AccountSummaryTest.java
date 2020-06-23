@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -44,6 +45,7 @@ public class AccountSummaryTest {
         assertEquals(node.get("substudyIds").get(0).textValue(), "substudy1");
         assertEquals(node.get("substudyIds").get(1).textValue(), "substudy2");
         assertEquals(node.get("externalId").textValue(), "externalId1");
+        assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "AccountSummary");
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);

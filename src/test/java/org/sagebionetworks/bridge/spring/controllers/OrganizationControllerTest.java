@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -29,8 +30,11 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.services.OrganizationService;
@@ -50,7 +54,13 @@ public class OrganizationControllerTest extends Mockito {
     OrganizationController controller;
     
     @Captor
-    ArgumentCaptor<Organization> orgCaptor; 
+    ArgumentCaptor<Organization> orgCaptor;
+    
+    @Captor
+    ArgumentCaptor<AccountSummarySearch> searchCaptor;
+    
+    @Captor
+    ArgumentCaptor<AccountId> accountIdCaptor;
 
     UserSession session;
     
@@ -72,6 +82,9 @@ public class OrganizationControllerTest extends Mockito {
         assertPost(OrganizationController.class, "updateOrganization");
         assertGet(OrganizationController.class, "getOrganization");
         assertDelete(OrganizationController.class, "deleteOrganization");
+        assertPost(OrganizationController.class, "getMembers");
+        assertPost(OrganizationController.class, "addMember");
+        assertDelete(OrganizationController.class, "removeMember");
     }
     
     @Test
@@ -157,5 +170,46 @@ public class OrganizationControllerTest extends Mockito {
         assertEquals(message.getMessage(), "Organization deleted.");
         
         verify(mockService).deleteOrganization(TEST_APP_ID, IDENTIFIER);
+    }
+    
+    @Test
+    public void getMembers() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        
+        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(ImmutableList.of(), 0);
+        when(mockService.getMembers(eq(TEST_APP_ID), eq(IDENTIFIER), any())).thenReturn(page);
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withEmailFilter("email").build();
+        mockRequestBody(mockRequest, search);
+        
+        PagedResourceList<AccountSummary> retValue = controller.getMembers(IDENTIFIER);
+        assertSame(retValue, page);
+        
+        verify(mockService).getMembers(eq(TEST_APP_ID), eq(IDENTIFIER), searchCaptor.capture());
+        assertEquals(searchCaptor.getValue().getEmailFilter(), "email");
+    }
+    
+    @Test
+    public void addMember() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.addMember(IDENTIFIER, USER_ID);
+        
+        verify(mockService).addMember(eq(TEST_APP_ID), eq(IDENTIFIER), accountIdCaptor.capture());
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(TEST_APP_ID, accountId.getAppId());
+        assertEquals(USER_ID, accountId.getId());
+    }
+
+    @Test
+    public void removeMember() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        
+        controller.removeMember(IDENTIFIER, USER_ID);
+        
+        verify(mockService).removeMember(eq(TEST_APP_ID), eq(IDENTIFIER), accountIdCaptor.capture());
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(TEST_APP_ID, accountId.getAppId());
+        assertEquals(USER_ID, accountId.getId());
     }
 }

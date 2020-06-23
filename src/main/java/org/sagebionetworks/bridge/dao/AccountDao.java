@@ -54,11 +54,11 @@ public interface AccountDao {
     
     /**
      * Get a page of lightweight account summaries. 
-     * @param app
+     * @param appId
      *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
      */
-    PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search);
+    PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search);
 }    

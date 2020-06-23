@@ -10,12 +10,15 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.SubstudyService;
@@ -25,13 +28,15 @@ public class StudyParticipantValidator implements Validator {
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
     private final SubstudyService substudyService;
+    private final OrganizationDao organizationDao;
     private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService, App app,
-            boolean isNew) {
+    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService,
+            OrganizationDao organizationDao, App app, boolean isNew) {
         this.externalIdService = externalIdService;
         this.substudyService = substudyService;
+        this.organizationDao = organizationDao;
         this.app = app;
         this.isNew = isNew;
     }
@@ -74,6 +79,19 @@ public class StudyParticipantValidator implements Validator {
                 PasswordPolicy passwordPolicy = app.getPasswordPolicy();
                 ValidatorUtils.validatePassword(errors, passwordPolicy, password);
             }
+            
+            // After account creation, organizational membership cannot be changed by updating an account
+            // Instead, use the OrganizationService
+            if (isNotBlank(participant.getOrgMembership())) {
+                String orgId = participant.getOrgMembership();
+                Optional<Organization> opt = organizationDao.getOrganization(app.getIdentifier(), orgId);
+                if (!opt.isPresent()) {
+                    errors.rejectValue("orgMembership", "is not a valid organization");
+                } else if (!AuthUtils.checkOrgMembership(orgId)) {
+                    errors.rejectValue("orgMembership", "cannot be set by caller");
+                }
+            }
+            
         } else {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");

@@ -180,6 +180,7 @@ public abstract class BaseController {
         // If the user has already persisted languages, we'll use that instead of the Accept-Language header
         builder.withCallerLanguages(getLanguages(session));
         builder.withCallerAppId(session.getAppId());
+        builder.withCallerOrgMembership(session.getParticipant().getOrgMembership());
         builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
         builder.withCallerUserId(session.getParticipant().getId());

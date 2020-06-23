@@ -19,22 +19,35 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class OrganizationService {
 
-    private OrganizationDao dao;
+    private OrganizationDao orgDao;
+    
+    private AccountDao accountDao;
     
     @Autowired
-    final void setOrganizationDao(OrganizationDao dao) {
-        this.dao = dao;
+    final void setOrganizationDao(OrganizationDao orgDao) {
+        this.orgDao = orgDao;
+    }
+    
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     DateTime getCreatedOn() {
@@ -58,7 +71,7 @@ public class OrganizationService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return dao.getOrganizations(appId, offsetBy, pageSize)
+        return orgDao.getOrganizations(appId, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
     }
@@ -73,7 +86,7 @@ public class OrganizationService {
         
         Validate.entityThrowingException(INSTANCE, organization);
         
-        Optional<Organization> optional = dao.getOrganization(
+        Optional<Organization> optional = orgDao.getOrganization(
                 organization.getAppId(), organization.getIdentifier());
         
         if (optional.isPresent()) {
@@ -85,7 +98,7 @@ public class OrganizationService {
         organization.setCreatedOn(timestamp);
         organization.setModifiedOn(timestamp);
         organization.setVersion(null);
-        return dao.createOrganization(organization);
+        return orgDao.createOrganization(organization);
     }
     
     /**
@@ -97,13 +110,13 @@ public class OrganizationService {
         
         Validate.entityThrowingException(INSTANCE, organization);
         
-        Organization existing = dao.getOrganization(organization.getAppId(), organization.getIdentifier())
+        Organization existing = orgDao.getOrganization(organization.getAppId(), organization.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
         
         organization.setModifiedOn(getModifiedOn());
         organization.setCreatedOn(existing.getCreatedOn());
         
-        return dao.updateOrganization(organization);
+        return orgDao.updateOrganization(organization);
     }
     
     /**
@@ -114,7 +127,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        return dao.getOrganization(appId, identifier)
+        return orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
     }
     
@@ -126,9 +139,64 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        Organization existing = dao.getOrganization(appId, identifier)
+        Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
 
-        dao.deleteOrganization(existing);
+        orgDao.deleteOrganization(existing);
+    }
+    
+    public PagedResourceList<AccountSummary> getMembers(String appId, String identifier, AccountSummarySearch search) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        checkNotNull(search);
+        
+        // Throws if organization does not exist.
+        getOrganization(appId, identifier);
+        
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
+        
+        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
+                .copyOf(search)
+                .withOrgMembership(identifier).build();
+        
+        return accountDao.getPagedAccountSummaries(appId, scopedSearch);
+    }
+    
+    public void addMember(String appId, String identifier, AccountId accountId) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        checkNotNull(accountId);
+        
+        // Throws if organization does not exist.
+        getOrganization(appId, identifier);
+        
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
+
+        account.setOrgMembership(identifier);
+        accountDao.updateAccount(account, null);
+    }
+    
+    public void removeMember(String appId, String identifier, AccountId accountId) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        checkNotNull(accountId);
+        
+        // Throws if organization does not exist.
+        getOrganization(appId, identifier);
+        
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        AuthUtils.checkOrgMembershipAndThrow(identifier);
+
+        // Indicate if caller is trying to remove someone from an org they don't belong to
+        if (account.getOrgMembership() == null || !account.getOrgMembership().equals(identifier)) {
+            throw new BadRequestException("Account is not a member of organization " + identifier);
+        }
+        account.setOrgMembership(null);
+        accountDao.updateAccount(account, null);
     }
 }

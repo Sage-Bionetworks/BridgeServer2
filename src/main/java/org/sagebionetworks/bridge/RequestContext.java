@@ -13,11 +13,12 @@ import org.sagebionetworks.bridge.models.Metrics;
 
 public class RequestContext {
     
-    public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, ImmutableSet.of(),
+    public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, null, ImmutableSet.of(),
             ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
 
     private final String requestId;
     private final String callerAppId;
+    private final String callerOrgMembership;
     private final Set<String> callerSubstudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
@@ -26,11 +27,12 @@ public class RequestContext {
     private final Metrics metrics;
     private final String callerIpAddress;
     
-    private RequestContext(Metrics metrics, String requestId, String callerAppId, Set<String> callerSubstudies,
-            Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages,
-            String callerIpAddress) {
+    private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
+            Set<String> callerSubstudies, Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo,
+            List<String> callerLanguages, String callerIpAddress) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
+        this.callerOrgMembership = callerOrgMembership;
         this.callerSubstudies = callerSubstudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
@@ -48,6 +50,9 @@ public class RequestContext {
     }
     public String getCallerAppId() {
         return callerAppId;
+    }
+    public String getCallerOrgMembership() {
+        return callerOrgMembership;
     }
     public Set<String> getCallerSubstudies() {
         return callerSubstudies;
@@ -83,6 +88,7 @@ public class RequestContext {
             .withRequestId(requestId)
             .withCallerClientInfo(callerClientInfo)
             .withCallerAppId(callerAppId)
+            .withCallerOrgMembership(callerOrgMembership)
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
             .withCallerSubstudies(callerSubstudies)
@@ -94,6 +100,7 @@ public class RequestContext {
     public static class Builder {
         private Metrics metrics;
         private String callerAppId;
+        private String callerOrgMembership;
         private Set<String> callerSubstudies;
         private Set<Roles> callerRoles;
         private String requestId;
@@ -108,6 +115,10 @@ public class RequestContext {
         }
         public Builder withCallerAppId(String appId) {
             this.callerAppId = appId;
+            return this;
+        }
+        public Builder withCallerOrgMembership(String orgId) {
+            this.callerOrgMembership = orgId;
             return this;
         }
         public Builder withCallerSubstudies(Set<String> callerSubstudies) {
@@ -158,16 +169,16 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
-            return new RequestContext(metrics, requestId, callerAppId, callerSubstudies, callerRoles, callerUserId,
-                    callerClientInfo, callerLanguages, callerIpAddress);
+            return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerSubstudies,
+                    callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
 
     @Override
     public String toString() {
-        return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerSubstudies="
-                + callerSubstudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
-                + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
-                + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
+        return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
+                + callerOrgMembership + ", callerSubstudies=" + callerSubstudies + ", callerRoles=" + callerRoles
+                + ", callerUserId=" + callerUserId + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress="
+                + callerIpAddress + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
     }
 }

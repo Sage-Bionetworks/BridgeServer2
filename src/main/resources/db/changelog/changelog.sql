@@ -366,3 +366,11 @@ CREATE TABLE `Organizations` (
   `version` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`appId`, `identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:17
+
+ALTER TABLE `Accounts`
+ADD COLUMN `orgMembership` varchar(255),
+ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
+
+CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`);

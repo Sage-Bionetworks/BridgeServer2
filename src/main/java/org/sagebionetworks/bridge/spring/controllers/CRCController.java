@@ -395,7 +395,7 @@ public class CRCController extends BaseController {
         Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
 
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId)
-                .withCallerSubstudies(substudies);
+                .withCallerSubstudies(substudies).withCallerOrgMembership(account.getOrgMembership());
         BridgeUtils.setRequestContext(builder.build());
         return app;
     }
