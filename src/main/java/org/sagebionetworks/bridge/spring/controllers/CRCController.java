@@ -257,7 +257,7 @@ public class CRCController extends BaseController {
         url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
 
         try {
-            HttpResponse response = put(url, json);
+            HttpResponse response = put(url, json, account);
             throwExceptions(response, account.getId());
         } catch (IOException e) {
             LOG.error(INT_ERROR + account.getId(), e);
@@ -274,7 +274,7 @@ public class CRCController extends BaseController {
         url = resolveTemplate(url, ImmutableMap.of("location", location));
 
         try {
-            HttpResponse response = get(url);
+            HttpResponse response = get(url, account);
             throwExceptions(response, account.getId());
             
             String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
@@ -319,21 +319,20 @@ public class CRCController extends BaseController {
         }
     }
 
-    HttpResponse put(String url, String bodyJson) throws IOException {
+    HttpResponse put(String url, String bodyJson, Account account) throws IOException {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
-        request = addAuthorizationHeader(request);
+        request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
     }
     
-    HttpResponse get(String url) throws IOException {
+    HttpResponse get(String url, Account account) throws IOException {
         Request request = Request.Get(url);
-        request = addAuthorizationHeader(request);
+        request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
     }
 
-    private Request addAuthorizationHeader(Request request) {
-        // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
-        String cuimcEnv = "test";
+    private Request addAuthorizationHeader(Request request, Account account) {
+        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUsername = "cuimc." + cuimcEnv + ".username";
         String cuimcPassword = "cuimc." + cuimcEnv + ".password";
         String username = bridgeConfig.get(cuimcUsername);

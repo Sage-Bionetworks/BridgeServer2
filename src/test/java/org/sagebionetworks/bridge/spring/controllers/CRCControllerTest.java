@@ -67,7 +67,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
@@ -229,14 +228,14 @@ public class CRCControllerTest extends Mockito {
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
         when(mockStatusLine.getStatusCode()).thenReturn(200);
                 
-        doReturn(mockResponse).when(controller).put(any(), any());
+        doReturn(mockResponse).when(controller).put(any(), any(), any());
         
         StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
         assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
         verify(mockAccountService).updateAccount(account, null);
         verify(controller).createLabOrder(account);
-        verify(controller).put(any(), stringCaptor.capture());
+        verify(controller).put(any(), stringCaptor.capture(), any());
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, TEST_USER_GROUP));
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
@@ -260,14 +259,14 @@ public class CRCControllerTest extends Mockito {
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
         when(mockStatusLine.getStatusCode()).thenReturn(200);
                 
-        doReturn(mockResponse).when(controller).put(any(), any());
+        doReturn(mockResponse).when(controller).put(any(), any(), any());
         
         StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
         assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
         verify(mockAccountService).updateAccount(account, null);
         verify(controller).createLabOrder(account);
-        verify(controller).put(any(), stringCaptor.capture());
+        verify(controller).put(any(), stringCaptor.capture(), any());
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
@@ -327,7 +326,7 @@ public class CRCControllerTest extends Mockito {
         controller.createLabOrder(account);
         
         // Currently in production we are also using the test values
-        verify(controller).put(eq("http://testServer/userId"), any());
+        verify(controller).put(eq("http://testServer/userId"), any(), any());
     }
     
     @Test
@@ -337,7 +336,7 @@ public class CRCControllerTest extends Mockito {
         // no errors
         controller.createLabOrder(account);
         
-        verify(controller).put(eq("http://testServer/userId"), any());
+        verify(controller).put(eq("http://testServer/userId"), any(), any());
     }
 
     @Test
@@ -368,14 +367,14 @@ public class CRCControllerTest extends Mockito {
     
     @Test(expectedExceptions = BridgeServiceException.class)
     public void createLabOrderIOException() throws Exception {
-        doThrow(new IOException()).when(controller).put(any(), any());
+        doThrow(new IOException()).when(controller).put(any(), any(), any());
         controller.createLabOrder(account);
     }
     
     private void mockExternalService(int statusCode, String statusReason) throws Exception {
         StatusLine statusLine = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 2), statusCode, statusReason);
         HttpResponse response = new BasicHttpResponse(statusLine);
-        doReturn(response).when(controller).put(any(), any());
+        doReturn(response).when(controller).put(any(), any(), any());
     }
     
     private void addAppointmentParticipantComponent(Appointment appointment, String value) {
@@ -483,7 +482,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any());
+        doReturn(mockResponse).when(controller).get(any(), any());
         
         StatusLine mockStatusLine = mock(StatusLine.class);
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
@@ -677,7 +676,7 @@ public class CRCControllerTest extends Mockito {
     
     void mockGetLocation() throws Exception {
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any());
+        doReturn(mockResponse).when(controller).get(any(), any());
         
         StatusLine mockStatusLine = mock(StatusLine.class);
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
