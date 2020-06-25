@@ -230,7 +230,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
                 +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
-                +"'address':[{'state':'NY'}]}"));
+                +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
+                +"'COVID Recovery Corps'}}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     
@@ -260,7 +261,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
                 +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
-                +"'address':[{'state':'NY'}]}"));
+                +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
+                +"'COVID Recovery Corps'}}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
     }
     

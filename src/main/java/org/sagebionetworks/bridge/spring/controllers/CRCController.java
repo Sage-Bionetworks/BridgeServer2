@@ -42,6 +42,7 @@ import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Meta;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Patient.ContactComponent;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
 import org.hl7.fhir.dstu3.model.Reference;
 import org.joda.time.DateTime;
@@ -476,6 +477,13 @@ public class CRCController extends BaseController {
             contact.setValue(account.getEmail());
             patient.addTelecom(contact);
         }
+        
+        Reference ref = new Reference("CUZUCK");
+        ref.setDisplay("COVID Recovery Corps");
+        ContactComponent contact = new ContactComponent();
+        contact.setOrganization(ref);
+        patient.addContact(contact);
+        
         return patient;
     }
 }
