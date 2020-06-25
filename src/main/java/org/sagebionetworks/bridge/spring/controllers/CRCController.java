@@ -246,16 +246,11 @@ public class CRCController extends BaseController {
         // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcEnv = "test";
         String cuimcUrl = "cuimc." + cuimcEnv + ".url";
-        String cuimcUsername = "cuimc." + cuimcEnv + ".username";
-        String cuimcPassword = "cuimc." + cuimcEnv + ".password";
-
         String url = bridgeConfig.get(cuimcUrl);
-        String username = bridgeConfig.get(cuimcUsername);
-        String password = bridgeConfig.get(cuimcPassword);
         url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
 
         try {
-            HttpResponse response = put(url, username, password, json);
+            HttpResponse response = put(url, json);
             throwExceptions(response, account.getId());
         } catch (IOException e) {
             LOG.error(INT_ERROR + account.getId(), e);
@@ -270,16 +265,11 @@ public class CRCController extends BaseController {
         // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcEnv = "test";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
-        String cuimcUsername = "cuimc." + cuimcEnv + ".username";
-        String cuimcPassword = "cuimc." + cuimcEnv + ".password";
-
         String url = bridgeConfig.get(cuimcUrl);
-        String username = bridgeConfig.get(cuimcUsername);
-        String password = bridgeConfig.get(cuimcPassword);
         url = resolveTemplate(url, ImmutableMap.of("location", location));
 
         try {
-            HttpResponse response = get(url, username, password);
+            HttpResponse response = get(url);
             throwExceptions(response, userId);
             
             String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
@@ -324,19 +314,26 @@ public class CRCController extends BaseController {
         }
     }
 
-    HttpResponse put(String url, String username, String password, String bodyJson) throws IOException {
+    HttpResponse put(String url, String bodyJson) throws IOException {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
-        request = addAuthorizationHeader(request, username, password);
+        request = addAuthorizationHeader(request);
         return request.execute().returnResponse();
     }
     
-    HttpResponse get(String url, String username, String password) throws IOException {
+    HttpResponse get(String url) throws IOException {
         Request request = Request.Get(url);
-        request = addAuthorizationHeader(request, username, password);
+        request = addAuthorizationHeader(request);
         return request.execute().returnResponse();
     }
 
-    private Request addAuthorizationHeader(Request request, String username, String password) {
+    private Request addAuthorizationHeader(Request request) {
+        // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
+        String cuimcEnv = "test";
+        String cuimcUsername = "cuimc." + cuimcEnv + ".username";
+        String cuimcPassword = "cuimc." + cuimcEnv + ".password";
+        String username = bridgeConfig.get(cuimcUsername);
+        String password = bridgeConfig.get(cuimcPassword);
+        
         if (isNotBlank(username) && isNotBlank(password)) {
             String credentials = username + ":" + password;
             String hash = new String(Base64.getEncoder().encode(credentials.getBytes(Charset.defaultCharset())),
