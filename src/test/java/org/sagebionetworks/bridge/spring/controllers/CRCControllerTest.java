@@ -67,6 +67,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
@@ -462,7 +463,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
         
-        verify(controller).addLocation(any(), eq(USER_ID), eq("foo"));
+        verify(controller).addLocation(any(), any(), eq("foo"));
         verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
@@ -687,7 +688,6 @@ public class CRCControllerTest extends Mockito {
         when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
     }
     
-    
     @Test
     public void authenticationPopulatesRequestContext() {
         account.setOrgMembership(TEST_ORG_ID);
@@ -816,6 +816,7 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, makeAppointment("not-the-right-id"));
         
         mockGetLocation();
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         controller.postAppointment();
     }

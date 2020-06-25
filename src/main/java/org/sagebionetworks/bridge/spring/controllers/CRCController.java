@@ -5,6 +5,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
@@ -185,10 +186,16 @@ public class CRCController extends BaseController {
         Appointment appointment = parser.parseResource(Appointment.class, data.toString());
 
         String userId = findIdentifier(appointment, "Patient/");
+        
         // Columbia wants us to call back to them to get information about the location.
         String locationString = findIdentifier(appointment, "Location/");
         if (locationString != null) {
-            addLocation(data, userId, locationString);
+            AccountId accountId = parseAccountId(app.getIdentifier(), userId);
+            Account account = accountService.getAccount(accountId);
+            if (account == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            addLocation(data, account, locationString);
         }
 
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
@@ -260,17 +267,15 @@ public class CRCController extends BaseController {
     }
 
     
-    void addLocation(JsonNode node, String userId, String location) {
-        // No production environment currently exists on the CUIMC side.
-        // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
-        String cuimcEnv = "test";
+    void addLocation(JsonNode node, Account account, String location) {
+        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
         String url = bridgeConfig.get(cuimcUrl);
         url = resolveTemplate(url, ImmutableMap.of("location", location));
 
         try {
             HttpResponse response = get(url);
-            throwExceptions(response, userId);
+            throwExceptions(response, account.getId());
             
             String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
             JsonNode locationJson = BridgeObjectMapper.get().readTree(body);
@@ -294,10 +299,10 @@ public class CRCController extends BaseController {
                 }
             }
         } catch (IOException e) {
-            LOG.error(INT_ERROR + userId, e);
+            LOG.error(INT_ERROR + account.getId(), e);
             throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
         }
-        LOG.info("Location added to appointment record for user " + userId);
+        LOG.info("Location added to appointment record for user " + account.getId());
     }
 
     private void throwExceptions(HttpResponse response, String userId) {
