@@ -462,8 +462,10 @@ public class CRCControllerTest extends Mockito {
         assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
         assertEquals(retValue.getStatusCodeValue(), 200);
         
-        verify(controller).addLocation(any(), any(), eq("foo"));
+        verify(controller).addLocation(any(), eq(account), eq("foo"));
+        verify(controller).get("http://testServer/location/foo", account);
         verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
@@ -520,6 +522,7 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         controller.postAppointment();
+        verify(controller, never()).get(any(), any());
         verify(mockHealthDataService).submitHealthData(any(), any(), any());        
     }
     

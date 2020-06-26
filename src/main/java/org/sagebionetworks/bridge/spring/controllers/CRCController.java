@@ -295,6 +295,7 @@ public class CRCController extends BaseController {
                         if (address != null) {
                             actor.set("address", address);
                         }
+                        break;
                     }
                 }
             }
