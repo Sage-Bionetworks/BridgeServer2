@@ -5,6 +5,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
@@ -13,6 +14,7 @@ import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -20,12 +22,14 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -42,6 +46,7 @@ import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Meta;
 import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.Patient.ContactComponent;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
 import org.hl7.fhir.dstu3.model.Reference;
 import org.joda.time.DateTime;
@@ -65,6 +70,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -179,7 +185,18 @@ public class CRCController extends BaseController {
         JsonNode data = parseJson(JsonNode.class);
         Appointment appointment = parser.parseResource(Appointment.class, data.toString());
 
-        String userId = findUserId(appointment);
+        String userId = findIdentifier(appointment, "Patient/");
+        
+        // Columbia wants us to call back to them to get information about the location.
+        String locationString = findIdentifier(appointment, "Location/");
+        if (locationString != null) {
+            AccountId accountId = parseAccountId(app.getIdentifier(), userId);
+            Account account = accountService.getAccount(accountId);
+            if (account == null) {
+                throw new EntityNotFoundException(Account.class);
+            }
+            addLocation(data, account, locationString);
+        }
 
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
         if (status == 200) {
@@ -188,7 +205,7 @@ public class CRCController extends BaseController {
         return ResponseEntity.created(URI.create("/v1/cuimc/appointments/" + userId))
                 .body(new StatusMessage("Appointment created."));
     }
-
+    
     @PutMapping("/v1/cuimc/procedurerequests")
     public ResponseEntity<StatusMessage> postProcedureRequest() {
         App app = httpBasicAuthentication();
@@ -236,27 +253,12 @@ public class CRCController extends BaseController {
         // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcEnv = "test";
         String cuimcUrl = "cuimc." + cuimcEnv + ".url";
-        String cuimcUsername = "cuimc." + cuimcEnv + ".username";
-        String cuimcPassword = "cuimc." + cuimcEnv + ".password";
-
         String url = bridgeConfig.get(cuimcUrl);
-        String username = bridgeConfig.get(cuimcUsername);
-        String password = bridgeConfig.get(cuimcPassword);
         url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
 
         try {
-            HttpResponse response = post(url, username, password, json);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200 && statusCode != 201) {
-                // This is a transient server error from the external service and we
-                // can communicate this back to the caller. Not sure we should log
-                // this.
-                if (statusCode == 503) {
-                    throw new ServiceUnavailableException("Service Unavailable");
-                }
-                LOG.error(EXT_ERROR + account.getId() + ", status code: " + statusCode);
-                throw new BridgeServiceException("Internal Service Error");
-            }
+            HttpResponse response = put(url, json, account);
+            throwExceptions(response, account.getId());
         } catch (IOException e) {
             LOG.error(INT_ERROR + account.getId(), e);
             throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
@@ -264,8 +266,79 @@ public class CRCController extends BaseController {
         LOG.info("Patient record submitted to CUIMC for user " + account.getId());
     }
 
-    HttpResponse post(String url, String username, String password, String bodyJson) throws IOException {
+    
+    void addLocation(JsonNode node, Account account, String location) {
+        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
+        String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
+        String url = bridgeConfig.get(cuimcUrl);
+        url = resolveTemplate(url, ImmutableMap.of("location", location));
+
+        try {
+            HttpResponse response = get(url, account);
+            throwExceptions(response, account.getId());
+            
+            String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
+            JsonNode locationJson = BridgeObjectMapper.get().readTree(body);
+            JsonNode telecom = locationJson.get("telecom");
+            JsonNode address = locationJson.get("address");
+            
+            ArrayNode participants = (ArrayNode)node.get("participant");
+            for (int i=0 ; i < participants.size(); i++) {
+                JsonNode child = participants.get(i);
+                ObjectNode actor = (ObjectNode)child.get("actor");
+                if (actor != null && actor.has("reference")) {
+                    String ref = actor.get("reference").textValue();
+                    if (ref.startsWith("Location")) {
+                        if (telecom != null) {
+                            actor.set("telecom", telecom);    
+                        }
+                        if (address != null) {
+                            actor.set("address", address);
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOG.error(INT_ERROR + account.getId(), e);
+            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
+        }
+        LOG.info("Location added to appointment record for user " + account.getId());
+    }
+
+    private void throwExceptions(HttpResponse response, String userId) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode != 200 && statusCode != 201) {
+            // This is a transient server error from the external service and we
+            // can communicate this back to the caller. Not sure we should log
+            // this.
+            if (statusCode == 503) {
+                throw new ServiceUnavailableException("Service Unavailable");
+            }
+            LOG.error(EXT_ERROR + userId + ", status code: " + statusCode);
+            throw new BridgeServiceException("Internal Service Error");
+        }
+    }
+
+    HttpResponse put(String url, String bodyJson, Account account) throws IOException {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
+        request = addAuthorizationHeader(request, account);
+        return request.execute().returnResponse();
+    }
+    
+    HttpResponse get(String url, Account account) throws IOException {
+        Request request = Request.Get(url);
+        request = addAuthorizationHeader(request, account);
+        return request.execute().returnResponse();
+    }
+
+    private Request addAuthorizationHeader(Request request, Account account) {
+        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
+        String cuimcUsername = "cuimc." + cuimcEnv + ".username";
+        String cuimcPassword = "cuimc." + cuimcEnv + ".password";
+        String username = bridgeConfig.get(cuimcUsername);
+        String password = bridgeConfig.get(cuimcPassword);
+        
         if (isNotBlank(username) && isNotBlank(password)) {
             String credentials = username + ":" + password;
             String hash = new String(Base64.getEncoder().encode(credentials.getBytes(Charset.defaultCharset())),
@@ -273,22 +346,25 @@ public class CRCController extends BaseController {
             Header authHeader = new BasicHeader(AUTHORIZATION, "Basic " + hash);
             request = request.addHeader(authHeader);
         }
-        return request.execute().returnResponse();
+        return request;
     }
     
-    private String findUserId(Appointment appt) {
+    private String findIdentifier(Appointment appt, String prefix) {
         if (appt != null && appt.getParticipant() != null) {
             for (AppointmentParticipantComponent component : appt.getParticipant()) {
                 Reference actor = component.getActor();
                 if (actor != null) {
                     String ref = actor.getReference();
-                    if (ref != null && ref.toLowerCase().startsWith("patient/")) {
-                        return ref.substring(8);
+                    if (ref != null && ref.toLowerCase().startsWith(prefix.toLowerCase())) {
+                        return ref.split(prefix)[1];
                     }
                 }
             }
         }
-        throw new BadRequestException("Could not find Bridge user ID.");
+        if (prefix.equals("Patient/")) {
+            throw new BadRequestException("Could not find Bridge user ID.");
+        }
+        return null;
     }
 
     private String findUserId(Reference ref) {
@@ -476,6 +552,13 @@ public class CRCController extends BaseController {
             contact.setValue(account.getEmail());
             patient.addTelecom(contact);
         }
+        
+        Reference ref = new Reference("CUZUCK");
+        ref.setDisplay("COVID Recovery Corps");
+        ContactComponent contact = new ContactComponent();
+        contact.setOrganization(ref);
+        patient.addContact(contact);
+        
         return patient;
     }
 }
