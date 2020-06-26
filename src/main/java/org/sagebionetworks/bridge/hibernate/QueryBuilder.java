@@ -42,6 +42,25 @@ class QueryBuilder {
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
+    public void adminOnly(Boolean isAdmin) {
+        if (isAdmin != null) {
+            if (isAdmin.booleanValue()) {
+                phrases.add("AND size(acct.roles) > 0");
+            } else {
+                phrases.add("AND size(acct.roles) = 0");
+            }
+        }
+    }
+    public void orgMembership(String orgMembership) {
+        if (orgMembership != null) {
+            if ("<none>".equals(orgMembership.toLowerCase())) {
+                phrases.add("AND acct.orgMembership IS NULL");
+            } else {
+                append("AND acct.orgMembership = :orgId", "orgId", orgMembership);
+            }
+        }
+    }
+    
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
     }

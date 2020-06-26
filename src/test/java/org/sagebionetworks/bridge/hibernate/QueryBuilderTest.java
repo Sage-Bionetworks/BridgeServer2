@@ -35,4 +35,35 @@ public class QueryBuilderTest {
         assertEquals(builder.getParameters().get("NOTIN1"), "C");
         assertEquals(builder.getParameters().get("NOTIN2"), "D");
     }
+    
+    @Test
+    public void testAdmin() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.adminOnly(null);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.adminOnly(true);
+        assertEquals(builder.getQuery(), "AND size(acct.roles) > 0");
+
+        builder = new QueryBuilder();
+        builder.adminOnly(false);
+        assertEquals(builder.getQuery(), "AND size(acct.roles) = 0");
+    }
+    
+    @Test
+    public void testOrgMembership() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.orgMembership(null);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.orgMembership("<NONE>");
+        assertEquals(builder.getQuery(), "AND acct.orgMembership IS NULL");
+
+        builder = new QueryBuilder();
+        builder.orgMembership("foo");
+        assertEquals(builder.getQuery(), "AND acct.orgMembership = :orgId");
+        assertEquals(builder.getParameters().get("orgId"), "foo");
+    }
 }

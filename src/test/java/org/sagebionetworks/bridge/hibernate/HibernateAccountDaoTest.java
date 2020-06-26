@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAU
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -541,16 +542,16 @@ public class HibernateAccountDaoTest extends Mockito {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.accountSubstudies AS "
                 + "acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE acct.appId = :appId AND "
                 + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime "
-                + "AND acct.createdOn <= :endTime AND acct.orgMembership = :orgId AND :language IN "
-                + "ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN " 
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT IN "
-                + "elements(acct.dataGroups)) GROUP BY acct.id";
+                + "AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND acct.orgMembership "
+                + "= :orgId AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND "
+                + "(:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups)) " 
+                + "GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId WHERE "
                 + "acct.appId = :appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND "
-                + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND acct.orgMembership = "
-                + ":orgId AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND :language IN " 
+                + "ELEMENTS(acct.languages) AND acct.orgMembership = :orgId AND (:IN1 IN elements(acct.dataGroups) "
                 + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
                 + ":NOTIN2 NOT IN elements(acct.dataGroups))";
 
@@ -946,6 +947,39 @@ public class HibernateAccountDaoTest extends Mockito {
 
         assertEquals(builder.getQuery(), finalQuery);
         assertEquals(builder.getParameters().get("orgId"), TEST_ORG_ID);
+    }
+    
+    @Test
+    public void orgMembershipNoneQueryCorrect() { 
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOrgMembership("<none>").build();
+
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+                search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
+                +"acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
+                +"WHERE acct.appId = :appId AND acct.orgMembership IS NULL GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertNull(builder.getParameters().get("orgId"));
+    }
+    
+    @Test
+    public void adminQueryCorrect() { 
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withAdminOnly(true).build();
+
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+                search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
+                +"acct.accountSubstudies AS acctSubstudy WITH acct.id = acctSubstudy.accountId "
+                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertNull(builder.getParameters().get("orgId"));
+        
     }
 
     @Test
