@@ -87,6 +87,9 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(service.getCreatedOn()).thenReturn(CREATED_ON);
         when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
         when(service.generateGuid()).thenReturn(GUID);
+        
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
     }
     
     @AfterMethod
@@ -584,9 +587,10 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void importAssessmentResourcesCallerCorrectOrg() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+                .withCallerOrgMembership(OWNER_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -629,9 +633,9 @@ public class AssessmentResourceServiceTest extends Mockito {
     }
     
     @Test
-    public void publishAssessmentResourcesScopedOwner() {
+    public void publishAssessmentResourcesOwnerInOrg() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+                .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);

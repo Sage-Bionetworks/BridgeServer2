@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -145,7 +146,11 @@ public class AssessmentConfigServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentConfig() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         assessment.setOriginGuid(GUID);
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
@@ -176,6 +181,8 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*config is required.*")
     public void updateAssessmentConfigInvalid() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
@@ -194,7 +201,11 @@ public class AssessmentConfigServiceTest extends Mockito {
     
     @Test
     public void customizeAssessmentConfig() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
@@ -231,6 +242,9 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*identifier is missing.*")
     public void customizeAssessmentConfigInvalid() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        
         AssessmentConfigValidator val = new AssessmentConfigValidator.Builder()
                 .addValidator("*", new AbstractValidator() {
                     public void validate(Object target, Errors errors) {
@@ -243,6 +257,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         doReturn(val).when(service).getValidator();
         
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
@@ -268,7 +283,11 @@ public class AssessmentConfigServiceTest extends Mockito {
     
     @Test
     public void customizeAssessmentConfigUnchanged() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build()
         )));
@@ -309,11 +328,11 @@ public class AssessmentConfigServiceTest extends Mockito {
         return configNode;
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
-    public void getAssessmentConfigCheckOwnership() {
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "AssessmentConfig not found.")
+    public void getAssessmentConfigEntityNotFound() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                .withCallerOrgMembership("substudyA").build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("substudyB");

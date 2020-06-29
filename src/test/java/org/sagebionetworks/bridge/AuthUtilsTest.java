@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -13,6 +18,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
 public class AuthUtilsTest {
+    private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + OWNER_ID;
     
     @AfterMethod
     public void afterMethod() {
@@ -63,5 +69,87 @@ public class AuthUtilsTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         
         AuthUtils.checkOrgMembershipAndThrow(TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkOwnershipOwnerIdIsBlank() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, null);
+    }
+    
+    @Test
+    public void checkOwnershipAdminUser() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
+        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+    }
+    
+    @Test
+    public void checkOwnershipUserInOrg() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkOwnershipScopedUserOrgIdIsMissing() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipOwnerIdIsBlank() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, null);
+    }
+    
+    @Test
+    public void checkSharedOwnershipAdminUser() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipAgainstNonGlobalOwnerId() {
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, OWNER_ID);
+    }
+    
+    @Test
+    public void sharedOwnershipUserInOrder() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipScopedUserOrgIdIsMissing() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipWrongAppId() { 
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerSubstudies(ImmutableSet.of(TEST_APP_ID)).build());
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, "other:"+OWNER_ID);        
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    public void checkSharedOwnershipGlobalUserWrongAppId() { 
+        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        // still doesn't pass because the appId must always match (global users must call 
+        // this API after associating to the right app context):
+        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, "other:"+OWNER_ID);        
     }
 }

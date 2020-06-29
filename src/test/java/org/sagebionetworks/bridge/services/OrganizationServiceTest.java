@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -53,6 +54,9 @@ public class OrganizationServiceTest extends Mockito {
     
     @Mock
     AccountDao mockAccountDao;
+    
+    @Mock
+    SessionUpdateService mockSessionUpdateService;
     
     @InjectMocks
     @Spy
@@ -290,13 +294,17 @@ public class OrganizationServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerOrgMembership(IDENTIFIER).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
-        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
+        
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
         verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
-        
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
+        
+        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, IDENTIFIER);
     }
     
     @Test
@@ -349,12 +357,15 @@ public class OrganizationServiceTest extends Mockito {
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         Account account = Account.create();
         account.setOrgMembership(IDENTIFIER);
+        account.setId(USER_ID);
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
         verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
         assertNull(accountCaptor.getValue().getOrgMembership());
+        
+        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, null);
     }
     
     @Test
