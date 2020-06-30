@@ -1279,16 +1279,6 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateSharedAssessmentChecksOwnershipWhenMissing() {
-        Assessment sharedAssessment = AssessmentTest.createAssessment();
-        sharedAssessment.setDeleted(false);
-        sharedAssessment.setOwnerId(null);
-        when(mockDao.getAssessment(SHARED_APP_ID, GUID)).thenReturn(Optional.of(sharedAssessment));
-        
-        service.updateSharedAssessment(TEST_APP_ID, sharedAssessment);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedAssessmentChecksOwnershipWhenFormattedIncorrectly() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
         sharedAssessment.setDeleted(false);

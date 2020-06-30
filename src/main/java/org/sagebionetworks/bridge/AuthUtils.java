@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -37,11 +37,11 @@ public class AuthUtils {
      * it was validated when it was set as an organizational relationship on the account. 
      */
     public static void checkAssessmentOwnership(String appId, String ownerId) {
+        checkNotNull(appId);
+        checkNotNull(ownerId);
+        
         RequestContext rc = BridgeUtils.getRequestContext();
         String callerOrgMembership = rc.getCallerOrgMembership();
-        if (isBlank(ownerId)) {
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-        }
         if (rc.isInRole(ImmutableSet.of(SUPERADMIN, ADMIN)) || ownerId.equals(callerOrgMembership)) {
             return;
         }
@@ -55,11 +55,13 @@ public class AuthUtils {
      * assessment. 
      */
     public static void checkSharedAssessmentOwnership(String callerAppId, String guid, String ownerId) {
+        checkNotNull(callerAppId);
+        checkNotNull(guid);
+        checkNotNull(ownerId);
+
         RequestContext rc = BridgeUtils.getRequestContext();
-        String callerOrgMembership = rc.getCallerOrgMembership();
-        if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid);
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+        if (rc.isInRole(ImmutableSet.of(SUPERADMIN))) {
+            return;
         }
         String[] parts = ownerId.split(":", 2);
         // This happens in tests, we expect it to never happens in production. So log if it does.
@@ -69,10 +71,7 @@ public class AuthUtils {
         }
         String originAppId = parts[0];
         String originOrgId = parts[1];
-        
-        if (rc.isInRole(ImmutableSet.of(SUPERADMIN))) {
-            return;
-        }
+        String callerOrgMembership = rc.getCallerOrgMembership();
         if (originAppId.equals(callerAppId) && originOrgId.equals(callerOrgMembership)) {
             return;
         }

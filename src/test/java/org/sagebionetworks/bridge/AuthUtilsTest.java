@@ -71,13 +71,6 @@ public class AuthUtilsTest {
         AuthUtils.checkOrgMembershipAndThrow(TEST_ORG_ID);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
-    public void checkOwnershipOwnerIdIsBlank() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, null);
-    }
-    
     @Test
     public void checkOwnershipAdminUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -96,15 +89,8 @@ public class AuthUtilsTest {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkOwnershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+                .withCallerOrgMembership("notValidOwner").build());
         AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
-    public void checkSharedOwnershipOwnerIdIsBlank() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
-        AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, null);
     }
     
     @Test
@@ -132,7 +118,7 @@ public class AuthUtilsTest {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkSharedOwnershipScopedUserOrgIdIsMissing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("notValidOwner")).build());
+                .withCallerOrgMembership("notValidOwner").build());
         AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
@@ -140,7 +126,7 @@ public class AuthUtilsTest {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void checkSharedOwnershipWrongAppId() { 
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(TEST_APP_ID)).build());
+                .withCallerOrgMembership(TEST_APP_ID).build());
         AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, "other:"+OWNER_ID);        
     }
     
