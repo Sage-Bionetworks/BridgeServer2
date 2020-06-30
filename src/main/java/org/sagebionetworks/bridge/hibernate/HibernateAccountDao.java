@@ -1,3 +1,4 @@
+
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -153,12 +154,11 @@ public class HibernateAccountDao implements AccountDao {
             if (search.getEndTime() != null) {
                 builder.append("AND acct.createdOn <= :endTime", "endTime", search.getEndTime());
             }
-            if (search.getOrgMembership() != null) {
-                builder.append("AND acct.orgMembership = :orgId", "orgId", search.getOrgMembership());
-            }
             if (search.getLanguage() != null) {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
+            builder.adminOnly(search.isAdminOnly());
+            builder.orgMembership(search.getOrgMembership());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
