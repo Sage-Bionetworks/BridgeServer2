@@ -246,7 +246,7 @@ public class HibernateAccountDao implements AccountDao {
         
         SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getEnrollments());
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());

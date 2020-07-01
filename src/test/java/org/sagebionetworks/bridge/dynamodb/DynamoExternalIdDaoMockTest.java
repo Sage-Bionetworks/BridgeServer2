@@ -60,7 +60,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 public class DynamoExternalIdDaoMockTest {
 
@@ -387,18 +387,18 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
+        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.getAccountSubstudies().add(acctSubstudy);
+        account.getEnrollments().add(acctSubstudy);
 
         dao.unassignExternalId(account, ID);
 
-        assertTrue(account.getAccountSubstudies().isEmpty());
+        assertTrue(account.getEnrollments().isEmpty());
     }
 
     // Or, the wrong ID does not remove the existing ID
@@ -406,17 +406,17 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
+        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
-        account.getAccountSubstudies().add(as);
+        account.getEnrollments().add(as);
 
         dao.unassignExternalId(account, ID);
 
         verify(mapper, never()).save(any());
-        assertFalse(account.getAccountSubstudies().isEmpty());
+        assertFalse(account.getEnrollments().isEmpty());
     }
 
     // This could result from a data integrity issue. We will allow unassignment to clear account
@@ -425,19 +425,19 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy as = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
+        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         as.setExternalId(ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.getAccountSubstudies().add(as);
+        account.getEnrollments().add(as);
 
         dao.unassignExternalId(account, ID);
 
         verify(mapper, never()).save(any());
-        assertTrue(account.getAccountSubstudies().isEmpty());
+        assertTrue(account.getEnrollments().isEmpty());
     }
     
     @Test
@@ -445,14 +445,14 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
+        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
         acctSubstudy.setExternalId(ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.setAccountSubstudies(null); // this would throw an error if executed
+        account.setEnrollments(null); // this would throw an error if executed
 
         dao.unassignExternalId(account, ID);
     }

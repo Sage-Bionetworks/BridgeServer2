@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -316,15 +316,15 @@ public class UserAdminServiceMockTest {
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", "userId");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId");
         as1.setExternalId("subAextId");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", "userId");
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId");
         as2.setExternalId("subBextId");
-        Set<AccountSubstudy> substudies = ImmutableSet.of(as1, as2);
+        Set<Enrollment> substudies = ImmutableSet.of(as1, as2);
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn(substudies).when(account).getAccountSubstudies();
+        doReturn(substudies).when(account).getEnrollments();
         doReturn(account).when(accountService).getAccount(accountId);
         
         service.deleteUser(app, "userId");

@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -285,14 +285,14 @@ public class UploadHandlersEndToEndTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         strictValidationHandler.setAppService(mockAppService);
 
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "test-substudy", "userId");
+        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, "test-substudy", "userId");
         acctSubstudy.setExternalId(EXTERNAL_ID);
 
         // set up TranscribeConsentHandler
         Account account = Account.create();
         account.setDataGroups(ImmutableSet.of("parkinson","test_user"));
         account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
-        account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
+        account.setEnrollments(ImmutableSet.of(acctSubstudy));
 
         AccountService mockAccountService = mock(AccountService.class);
         when(mockAccountService.getAccount(any())).thenReturn(account);

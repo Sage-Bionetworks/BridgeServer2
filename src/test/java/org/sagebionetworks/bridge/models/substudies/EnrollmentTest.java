@@ -5,11 +5,11 @@ import static org.testng.Assert.assertEquals;
 
 import org.testng.annotations.Test;
 
-public class AccountSubstudyTest {
+public class EnrollmentTest {
 
     @Test
     public void create() {
-        AccountSubstudy substudy = AccountSubstudy.create(TEST_APP_ID, "substudyId", "accountId");
+        Enrollment substudy = Enrollment.create(TEST_APP_ID, "substudyId", "accountId");
         assertEquals(substudy.getAppId(), TEST_APP_ID);
         assertEquals(substudy.getSubstudyId(), "substudyId");
         assertEquals(substudy.getAccountId(), "accountId");

@@ -77,7 +77,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -260,7 +260,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId); // already filters for substudy
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(account.getEnrollments());
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
@@ -288,7 +288,7 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        SubstudyAssociations assoc = substudyAssociationsVisibleToCaller(account.getAccountSubstudies());
+        SubstudyAssociations assoc = substudyAssociationsVisibleToCaller(account.getEnrollments());
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
@@ -587,13 +587,13 @@ public class ParticipantService {
         // for that account if it is signed in, so we MUST destroy the session. 
         if (isNew || getRequestContext().isInRole(ADMIN)) {
             // Copy to prevent concurrent modification exceptions
-            Set<AccountSubstudy> accountSubstudies = ImmutableSet.copyOf(account.getAccountSubstudies());
+            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getEnrollments());
             
             // Remove substudy relationship if it's not desired and unassign external ID
-            for (AccountSubstudy acctSubstudy : accountSubstudies) {
+            for (Enrollment acctSubstudy : enrollments) {
                 if (!participant.getSubstudyIds().contains(acctSubstudy.getSubstudyId())) {
                     externalIdService.unassignExternalId(account, acctSubstudy.getExternalId());
-                    account.getAccountSubstudies().remove(acctSubstudy);
+                    account.getEnrollments().remove(acctSubstudy);
                     clearCache = true;
                 }
             }
@@ -601,24 +601,24 @@ public class ParticipantService {
             Set<String> existingSubstudyIds = BridgeUtils.collectSubstudyIds(account);
             for (String substudyId : participant.getSubstudyIds()) {
                 if (!existingSubstudyIds.contains(substudyId)) {
-                    AccountSubstudy newSubstudy = AccountSubstudy.create(
+                    Enrollment newSubstudy = Enrollment.create(
                             account.getAppId(), substudyId, account.getId());
-                    account.getAccountSubstudies().add(newSubstudy);
+                    account.getEnrollments().add(newSubstudy);
                     clearCache = true;
                 }
             }
         }
         if (externalId != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
+            Enrollment acctSubstudy = Enrollment.create(account.getAppId(),
                     externalId.getSubstudyId(), account.getId());
             
             // If a substudy relationship exists without the external ID, remove it because
             // we're about to create it with an external ID
-            if (account.getAccountSubstudies().contains(acctSubstudy)) {
-                account.getAccountSubstudies().remove(acctSubstudy);
+            if (account.getEnrollments().contains(acctSubstudy)) {
+                account.getEnrollments().remove(acctSubstudy);
             }
             acctSubstudy.setExternalId(externalId.getIdentifier());
-            account.getAccountSubstudies().add(acctSubstudy);
+            account.getEnrollments().add(acctSubstudy);
             clearCache = true;
         }
         // We have to clear the cache if we make changes that can alter the security profile of 
@@ -644,12 +644,12 @@ public class ParticipantService {
         // to one or more of those substudies, and only those substudies.
         Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
         if (!callerSubstudies.isEmpty()) {
-            Set<String> accountSubstudies = BridgeUtils.collectSubstudyIds(account);
-            if (accountSubstudies.isEmpty()) {
+            Set<String> enrollments = BridgeUtils.collectSubstudyIds(account);
+            if (enrollments.isEmpty()) {
                 throw new BadRequestException("Participant must be assigned to one or more of these substudies: "
                         + BridgeUtils.COMMA_JOINER.join(callerSubstudies));
             } else {
-                for (String substudyId : accountSubstudies) {
+                for (String substudyId : enrollments) {
                     if (!callerSubstudies.contains(substudyId)) {
                         throw new BadRequestException(substudyId + " is not a substudy of the caller");
                     }
@@ -887,14 +887,14 @@ public class ParticipantService {
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
         if (externalId != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
+            Enrollment acctSubstudy = Enrollment.create(account.getAppId(),
                     externalId.getSubstudyId(), account.getId());
             // Highly unlikely this was an admin account, but just in case
-            if (account.getAccountSubstudies().contains(acctSubstudy)) {
-                account.getAccountSubstudies().remove(acctSubstudy);
+            if (account.getEnrollments().contains(acctSubstudy)) {
+                account.getEnrollments().remove(acctSubstudy);
             }
             acctSubstudy.setExternalId(externalId.getIdentifier());
-            account.getAccountSubstudies().add(acctSubstudy);
+            account.getEnrollments().add(acctSubstudy);
             try {
                 accountService.updateAccount(account,
                         (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));

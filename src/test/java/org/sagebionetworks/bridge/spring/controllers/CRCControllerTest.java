@@ -85,7 +85,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -104,8 +104,8 @@ public class CRCControllerTest extends Mockito {
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
-    static final AccountSubstudy ACCT_SUB1 = AccountSubstudy.create(APP_ID, "substudyA", USER_ID);
-    static final AccountSubstudy ACCT_SUB2 = AccountSubstudy.create(APP_ID, "substudyB", USER_ID);
+    static final Enrollment ACCT_SUB1 = Enrollment.create(APP_ID, "substudyA", USER_ID);
+    static final Enrollment ACCT_SUB2 = Enrollment.create(APP_ID, "substudyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
@@ -178,7 +178,7 @@ public class CRCControllerTest extends Mockito {
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.setAccountSubstudies(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
+        account.setEnrollments(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
         account.setDataGroups(ImmutableSet.of("group1"));
         
         app = App.create();

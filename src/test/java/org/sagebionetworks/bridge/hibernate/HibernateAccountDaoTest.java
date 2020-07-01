@@ -49,7 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 public class HibernateAccountDaoTest extends Mockito {
     private static final String ACCOUNT_ID = "account-id";
@@ -454,20 +454,20 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "LEFT JOIN acct.accountSubstudies AS acctSubstudy WITH acct.id = "
                 + "acctSubstudy.accountId WHERE acct.appId = :appId";
         
-        Set<AccountSubstudy> set = ImmutableSet.of(
-                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
-                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
+        Set<Enrollment> set = ImmutableSet.of(
+                Enrollment.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
+                Enrollment.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
 
         // mock hibernate
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
         hibernateAccount1.setId("account-1");
         hibernateAccount1.setEmail("email1@example.com");
-        hibernateAccount1.setAccountSubstudies(set);
+        hibernateAccount1.setEnrollments(set);
 
         HibernateAccount hibernateAccount2 = makeValidHibernateAccount(false);
         hibernateAccount2.setId("account-2");
         hibernateAccount2.setEmail("email2@example.com");
-        hibernateAccount2.setAccountSubstudies(set);
+        hibernateAccount2.setEnrollments(set);
 
         when(mockHibernateHelper.queryGet(expQuery, APP_QUERY_PARAMS, 10, 5, String.class))
                 .thenReturn(ImmutableList.of("account-1", "account-2"));
@@ -513,16 +513,16 @@ public class HibernateAccountDaoTest extends Mockito {
         BridgeUtils.setRequestContext(
                 new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
         
-        Set<AccountSubstudy> set = ImmutableSet.of(
-                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
-                AccountSubstudy.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
+        Set<Enrollment> set = ImmutableSet.of(
+                Enrollment.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
+                Enrollment.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
 
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
         hibernateAccount1.setId("account-1");
-        hibernateAccount1.setAccountSubstudies(set);
+        hibernateAccount1.setEnrollments(set);
         HibernateAccount hibernateAccount2 = makeValidHibernateAccount(false);
         hibernateAccount2.setId("account-2");
-        hibernateAccount2.setAccountSubstudies(set);
+        hibernateAccount2.setEnrollments(set);
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of("account-1", "account-2"));
         when(mockHibernateHelper.getById(HibernateAccount.class, "account-1")).thenReturn(hibernateAccount1);
@@ -735,9 +735,9 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummarySuccess() {
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
         as1.setExternalId("externalIdA");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
         as2.setExternalId("externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
@@ -750,7 +750,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setLastName(LAST_NAME);
         hibernateAccount.setCreatedOn(CREATED_ON);
         hibernateAccount.setStatus(ENABLED);
-        hibernateAccount.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        hibernateAccount.setEnrollments(ImmutableSet.of(as1, as2));
         hibernateAccount.setOrgMembership(TEST_ORG_ID);
 
         // Unmarshall
@@ -781,9 +781,9 @@ public class HibernateAccountDaoTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
 
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
         as1.setExternalId("externalIdA");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
         as2.setExternalId("externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
@@ -791,7 +791,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setStatus(ENABLED);
-        hibernateAccount.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        hibernateAccount.setEnrollments(ImmutableSet.of(as1, as2));
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
