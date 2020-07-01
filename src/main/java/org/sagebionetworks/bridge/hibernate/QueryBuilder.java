@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +46,7 @@ class QueryBuilder {
     }
     public void adminOnly(Boolean isAdmin) {
         if (isAdmin != null) {
-            if (isAdmin.booleanValue()) {
+            if (TRUE.equals(isAdmin)) {
                 phrases.add("AND size(acct.roles) > 0");
             } else {
                 phrases.add("AND size(acct.roles) = 0");
