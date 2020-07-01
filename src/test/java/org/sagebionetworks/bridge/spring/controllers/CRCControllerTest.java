@@ -298,8 +298,6 @@ public class CRCControllerTest extends Mockito {
 
     @Test
     public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
         when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
@@ -315,8 +313,6 @@ public class CRCControllerTest extends Mockito {
 
     @Test
     public void emailAccountSubmitsCorrectCredentials() throws Exception {
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        
         String credentials = SYN_USERNAME + ":dummy-password";
         String authHeader = "Basic "
                 + new String(Base64.getEncoder().encode(credentials.getBytes()));
