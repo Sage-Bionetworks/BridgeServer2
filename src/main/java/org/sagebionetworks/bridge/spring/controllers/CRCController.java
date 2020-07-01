@@ -254,7 +254,6 @@ public class CRCController extends BaseController {
         Patient patient = createPatient(account);
         IParser parser = FHIR_CONTEXT.newJsonParser();
         String json = parser.encodeResourceToString(patient);
-        System.out.println(json);
 
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".url";
