@@ -170,6 +170,12 @@ public class CRCController extends BaseController {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        // This is temporary so we can start using the CRC system in production, 
+        // while continuing to test. The calling code should not update the state of
+        // the user if it receives a 400.
+        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new BadRequestException("Production accounts are not yet enabled.");
+        }
         createLabOrder(account);
 
         updateState(account, AccountStates.TESTS_REQUESTED);
@@ -185,10 +191,10 @@ public class CRCController extends BaseController {
         JsonNode data = parseJson(JsonNode.class);
         Appointment appointment = parser.parseResource(Appointment.class, data.toString());
 
-        String userId = findIdentifier(appointment, "Patient/");
+        String userId = findUserId(appointment);
         
         // Columbia wants us to call back to them to get information about the location.
-        String locationString = findIdentifier(appointment, "Location/");
+        String locationString = findLocation(appointment);
         if (locationString != null) {
             AccountId accountId = parseAccountId(app.getIdentifier(), userId);
             Account account = accountService.getAccount(accountId);
@@ -248,10 +254,9 @@ public class CRCController extends BaseController {
         Patient patient = createPatient(account);
         IParser parser = FHIR_CONTEXT.newJsonParser();
         String json = parser.encodeResourceToString(patient);
+        System.out.println(json);
 
-        // No production environment currently exists on the CUIMC side.
-        // String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
-        String cuimcEnv = "test";
+        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".url";
         String url = bridgeConfig.get(cuimcUrl);
         url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
@@ -349,29 +354,41 @@ public class CRCController extends BaseController {
         return request;
     }
     
-    private String findIdentifier(Appointment appt, String prefix) {
+    private String findLocation(Appointment appt) {
         if (appt != null && appt.getParticipant() != null) {
             for (AppointmentParticipantComponent component : appt.getParticipant()) {
                 Reference actor = component.getActor();
                 if (actor != null) {
                     String ref = actor.getReference();
-                    if (ref != null && ref.toLowerCase().startsWith(prefix.toLowerCase())) {
-                        return ref.split(prefix)[1];
+                    if (ref != null && ref.toLowerCase().startsWith("location/")) {
+                        return ref.substring(9);
                     }
                 }
             }
         }
-        if (prefix.equals("Patient/")) {
-            throw new BadRequestException("Could not find Bridge user ID.");
-        }
         return null;
     }
+    
+    private String findUserId(Appointment appt) {
+        if (appt != null && appt.getParticipant() != null) {
+            for (AppointmentParticipantComponent component : appt.getParticipant()) {
+                Reference actor = component.getActor();
+                if (actor != null) {
+                    Identifier id = actor.getIdentifier();
+                    if (id != null && USER_ID_VALUE_NS.equals(id.getSystem())) {
+                        return id.getValue();
+                    }
+                }
+            }
+        }
+        throw new BadRequestException("Could not find Bridge user ID.");
+    }
 
-    private String findUserId(Reference ref) {
-        if (ref != null && ref.getReference() != null) {
-            String value = ref.getReference();
-            if (value.toLowerCase().startsWith("patient/")) {
-                return value.substring(8);
+    private String findUserId(Reference subject) {
+        if (subject != null) {
+            Identifier id = subject.getIdentifier();
+            if (id != null && USER_ID_VALUE_NS.equals(id.getSystem())) {
+                return id.getValue();
             }
         }
         throw new BadRequestException("Could not find Bridge user ID.");
