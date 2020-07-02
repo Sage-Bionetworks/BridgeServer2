@@ -735,10 +735,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummarySuccess() {
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
-        as1.setExternalId("externalIdA");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
-        as2.setExternalId("externalIdB");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID, "externalIdA");
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID, "externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
@@ -781,10 +779,8 @@ public class HibernateAccountDaoTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
 
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID);
-        as1.setExternalId("externalIdA");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID);
-        as2.setExternalId("externalIdB");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID, "externalIdA");
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID, "externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();

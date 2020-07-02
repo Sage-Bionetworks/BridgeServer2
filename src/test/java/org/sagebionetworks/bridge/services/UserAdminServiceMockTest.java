@@ -316,10 +316,8 @@ public class UserAdminServiceMockTest {
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId");
-        as1.setExternalId("subAextId");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId");
-        as2.setExternalId("subBextId");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId", "subAextId");
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId", "subBextId");
         Set<Enrollment> substudies = ImmutableSet.of(as1, as2);
         
         doReturn("userId").when(account).getId();

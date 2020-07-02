@@ -17,7 +17,7 @@ public interface Enrollment {
         checkNotNull(appId);
         checkNotNull(substudyId);
         checkNotNull(accountId);
-        checkNotNull(externalId);
+        // it's ok for external ID to be null
         return new HibernateEnrollment(appId, substudyId, accountId, externalId);
     }
     

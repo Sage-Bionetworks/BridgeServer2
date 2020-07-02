@@ -291,8 +291,7 @@ public class ParticipantServiceTest extends Mockito {
     
     private void mockAccountRetrievalWithSubstudyD() {
         mockHealthCodeAndAccountRetrieval();
-        Enrollment as = Enrollment.create(APP.getIdentifier(), "substudyD", ID);
-        as.setExternalId(EXTERNAL_ID);
+        Enrollment as = Enrollment.create(APP.getIdentifier(), "substudyD", ID, EXTERNAL_ID);
         account.setEnrollments(Sets.newHashSet(as));
     }
     
@@ -305,13 +304,12 @@ public class ParticipantServiceTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         account.setEmail(email);
         account.setPhone(phone);
-        Set<Enrollment> acctSubstudies = new HashSet<>();
+        Set<Enrollment> enrollments = new HashSet<>();
         if (externalId != null) {
-            Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID);
-            acctSubstudies.add(acctSubstudy);
-            acctSubstudy.setExternalId(externalId);
+            Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID, externalId);
+            enrollments.add(enrollment);
         }
-        account.setEnrollments(acctSubstudies);
+        account.setEnrollments(enrollments);
         account.setAppId(TEST_APP_ID);
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
@@ -932,12 +930,12 @@ public class ParticipantServiceTest extends Mockito {
         // Some data to verify
         account.setId(ID);
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        Set<Enrollment> accountSubstudies = new HashSet<>();
+        Set<Enrollment> enrollments = new HashSet<>();
         for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
-            Enrollment acctSubstudy = Enrollment.create(APP.getIdentifier(), substudyId, ID);
-            accountSubstudies.add(acctSubstudy);
+            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), substudyId, ID);
+            enrollments.add(enrollment);
         }
-        account.setEnrollments(accountSubstudies);
+        account.setEnrollments(enrollments);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
@@ -986,10 +984,8 @@ public class ParticipantServiceTest extends Mockito {
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID);
-        acctSubstudy1.setExternalId("externalIdA");
-        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID);
-        acctSubstudy2.setExternalId("externalIdB");
+        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID, "externalIdA");
+        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID, "externalIdB");
         Enrollment acctSubstudy3 = Enrollment.create(TEST_APP_ID, "substudyC", ID);
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
@@ -1076,10 +1072,8 @@ public class ParticipantServiceTest extends Mockito {
         // There is a partial overlap of substudy memberships between caller and user, the substudies that are 
         // not in the intersection, and the external IDs, should be removed from the participant
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, null);
-        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID);
-        acctSubstudy1.setExternalId("externalIdA");
-        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID);
-        acctSubstudy2.setExternalId("externalIdB");
+        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID, "externalIdA");
+        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID, "externalIdB");
         Enrollment acctSubstudy3 = Enrollment.create(TEST_APP_ID, "substudyC", ID);
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
@@ -1246,13 +1240,13 @@ public class ParticipantServiceTest extends Mockito {
         
         verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
         
-        Set<Enrollment> accountSubstudies = accountCaptor.getValue().getEnrollments();
-        assertEquals(accountSubstudies.size(), 2);
+        Set<Enrollment> enrollments = accountCaptor.getValue().getEnrollments();
+        assertEquals(enrollments.size(), 2);
         
         // get() throws exception if accountSubstudy not found
-        accountSubstudies.stream()
+        enrollments.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
-        accountSubstudies.stream()
+        enrollments.stream()
                 .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
     }    
     
@@ -1290,8 +1284,7 @@ public class ParticipantServiceTest extends Mockito {
         Enrollment asA = Enrollment.create(APP.getIdentifier(), "substudyA", ID);
         account.getEnrollments().add(asA);
         
-        Enrollment asB = Enrollment.create(APP.getIdentifier(), "substudyB", ID);
-        asB.setExternalId("extB");
+        Enrollment asB = Enrollment.create(APP.getIdentifier(), "substudyB", ID, "extB");
         account.getEnrollments().add(asB);
         
         participantService.updateParticipant(APP, participant);
@@ -1959,8 +1952,7 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         mockHealthCodeAndAccountRetrieval();
-        Enrollment as = Enrollment.create(TEST_APP_ID, "substudyB", ID);
-        as.setExternalId(EXTERNAL_ID);
+        Enrollment as = Enrollment.create(TEST_APP_ID, "substudyB", ID, EXTERNAL_ID);
         account.setEnrollments(Sets.newHashSet(as));
         account.setId(ID);
         

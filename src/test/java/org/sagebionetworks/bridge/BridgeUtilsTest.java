@@ -206,11 +206,8 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCallerNoFilterWhenSubstudiesEmpty() {
         Enrollment asA = Enrollment.create(TEST_APP_ID, "substudyA", "id", "extA");
-        asA.setExternalId();
-        Enrollment asB = Enrollment.create(TEST_APP_ID, "substudyB", "id");
-        asB.setExternalId("extB");
-        Enrollment asC = Enrollment.create(TEST_APP_ID, "substudyC", "id");
-        asC.setExternalId("extC");
+        Enrollment asB = Enrollment.create(TEST_APP_ID, "substudyB", "id", "extB");
+        Enrollment asC = Enrollment.create(TEST_APP_ID, "substudyC", "id", "extC");
         Set<Enrollment> enrollments = ImmutableSet.of(asA, asB, asC);
         
         Map<String, String> visibles = BridgeUtils.substudyAssociationsVisibleToCaller(enrollments)
@@ -244,10 +241,8 @@ public class BridgeUtilsTest {
     @Test
     public void collectExternalIds() {
         Account account = Account.create();
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId");
-        as1.setExternalId("subAextId");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId");
-        as2.setExternalId("subBextId");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId", "subAextId");
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId", "subBextId");
         Enrollment as3 = Enrollment.create(TEST_APP_ID, "substudyC", "userId");
         account.setEnrollments(ImmutableSet.of(as1, as2, as3));
         

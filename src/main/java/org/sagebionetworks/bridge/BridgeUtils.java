@@ -119,10 +119,10 @@ public class BridgeUtils {
 
     public static Map<String,String> mapSubstudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        for (Enrollment acctSubstudy : account.getEnrollments()) {
-            String value = (acctSubstudy.getExternalId() == null) ? 
-                    "<none>" : acctSubstudy.getExternalId();
-            builder.put(acctSubstudy.getSubstudyId(), value);
+        for (Enrollment enrollment : account.getEnrollments()) {
+            String value = (enrollment.getExternalId() == null) ? 
+                    "<none>" : enrollment.getExternalId();
+            builder.put(enrollment.getSubstudyId(), value);
         }
         return builder.build();
     }
@@ -194,7 +194,7 @@ public class BridgeUtils {
     }
     
     /**
-     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
+     * Callers only see the enrollment records they themselves are assigned to, unless they have no
      * substudy memberships (then they are global and see everything).
      */
     public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends Enrollment> enrollments) {
@@ -204,11 +204,11 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        for (Enrollment acctSubstudy : enrollments) {
-            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
-                substudyIds.add(acctSubstudy.getSubstudyId());
-                if (acctSubstudy.getExternalId() != null) {
-                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
+        for (Enrollment enrollment : enrollments) {
+            if (callerSubstudies.isEmpty() || callerSubstudies.contains(enrollment.getSubstudyId())) {
+                substudyIds.add(enrollment.getSubstudyId());
+                if (enrollment.getExternalId() != null) {
+                    externalIds.put(enrollment.getSubstudyId(), enrollment.getExternalId());
                 }
             }
         }

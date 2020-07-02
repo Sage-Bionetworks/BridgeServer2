@@ -590,10 +590,10 @@ public class ParticipantService {
             Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getEnrollments());
             
             // Remove substudy relationship if it's not desired and unassign external ID
-            for (Enrollment acctSubstudy : enrollments) {
-                if (!participant.getSubstudyIds().contains(acctSubstudy.getSubstudyId())) {
-                    externalIdService.unassignExternalId(account, acctSubstudy.getExternalId());
-                    account.getEnrollments().remove(acctSubstudy);
+            for (Enrollment enrollment : enrollments) {
+                if (!participant.getSubstudyIds().contains(enrollment.getSubstudyId())) {
+                    externalIdService.unassignExternalId(account, enrollment.getExternalId());
+                    account.getEnrollments().remove(enrollment);
                     clearCache = true;
                 }
             }
@@ -609,15 +609,16 @@ public class ParticipantService {
             }
         }
         if (externalId != null) {
-            Enrollment acctSubstudy = Enrollment.create(account.getAppId(),
-                    externalId.getSubstudyId(), account.getId());
+            Enrollment acctSubstudy = Enrollment.create(account.getAppId(), externalId.getSubstudyId(),
+                    account.getId());
             
             // If a substudy relationship exists without the external ID, remove it because
             // we're about to create it with an external ID
             if (account.getEnrollments().contains(acctSubstudy)) {
                 account.getEnrollments().remove(acctSubstudy);
             }
-            acctSubstudy.setExternalId(externalId.getIdentifier());
+            acctSubstudy = Enrollment.create(account.getAppId(), externalId.getSubstudyId(), account.getId(),
+                    externalId.getIdentifier());
             account.getEnrollments().add(acctSubstudy);
             clearCache = true;
         }
@@ -887,14 +888,15 @@ public class ParticipantService {
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
         if (externalId != null) {
-            Enrollment acctSubstudy = Enrollment.create(account.getAppId(),
+            Enrollment enrollment = Enrollment.create(account.getAppId(),
                     externalId.getSubstudyId(), account.getId());
             // Highly unlikely this was an admin account, but just in case
-            if (account.getEnrollments().contains(acctSubstudy)) {
-                account.getEnrollments().remove(acctSubstudy);
+            if (account.getEnrollments().contains(enrollment)) {
+                account.getEnrollments().remove(enrollment);
             }
-            acctSubstudy.setExternalId(externalId.getIdentifier());
-            account.getEnrollments().add(acctSubstudy);
+            enrollment = Enrollment.create(account.getAppId(), externalId.getSubstudyId(), account.getId(),
+                    externalId.getIdentifier());
+            account.getEnrollments().add(enrollment);
             try {
                 accountService.updateAccount(account,
                         (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));

@@ -387,14 +387,13 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
-        acctSubstudy.setExternalId(ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.getEnrollments().add(acctSubstudy);
+        account.getEnrollments().add(enrollment);
 
         dao.unassignExternalId(account, ID);
 
@@ -406,8 +405,7 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
-        as.setExternalId(ID);
+        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -425,8 +423,7 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
-        as.setExternalId(ID);
+        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -445,8 +442,7 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID);
-        acctSubstudy.setExternalId(ID);
+        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

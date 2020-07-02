@@ -211,10 +211,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             mapper.save(identifier);
         }
         if (identifier.getSubstudyId() != null) {
-            Enrollment acctSubstudy = Enrollment.create(account.getAppId(),
-                    identifier.getSubstudyId(), account.getId());
-            acctSubstudy.setExternalId(identifier.getIdentifier());
-            account.getEnrollments().remove(acctSubstudy);
+            Enrollment enrollment = Enrollment.create(account.getAppId(),
+                    identifier.getSubstudyId(), account.getId(), identifier.getIdentifier());
+            account.getEnrollments().remove(enrollment);
         }
     }
     

@@ -53,10 +53,9 @@ public class FPHSService {
         fphsDao.registerExternalId(externalId);
 
         accountService.editAccount(appId, healthCode, account -> {
-            Enrollment acctSubstudy = Enrollment.create(appId, "harvard", account.getId());
-            acctSubstudy.setExternalId(externalId.getIdentifier());
+            Enrollment enrollment = Enrollment.create(appId, "harvard", account.getId(), externalId.getIdentifier());
             account.getDataGroups().add("football_player");
-            account.getEnrollments().add(acctSubstudy);
+            account.getEnrollments().add(enrollment);
         });
     }
     

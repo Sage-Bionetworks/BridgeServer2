@@ -111,16 +111,16 @@ public class AccountPersistenceExceptionConverterTest {
 
     @Test
     public void entityAlreadyExistsForExternalId() {
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, "something", USER_ID, "ext");
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "something", USER_ID, "ext");
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        account.setEnrollments(ImmutableSet.of(acctSubstudy));
+        account.setEnrollments(ImmutableSet.of(enrollment));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
         existing.setAppId(TEST_APP_ID);
-        existing.setEnrollments(ImmutableSet.of(acctSubstudy));
+        existing.setEnrollments(ImmutableSet.of(enrollment));
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "ext"))).thenReturn(Optional.of(existing));
         

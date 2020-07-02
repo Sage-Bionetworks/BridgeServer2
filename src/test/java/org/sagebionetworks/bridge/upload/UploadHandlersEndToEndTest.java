@@ -285,14 +285,13 @@ public class UploadHandlersEndToEndTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         strictValidationHandler.setAppService(mockAppService);
 
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, "test-substudy", "userId");
-        acctSubstudy.setExternalId(EXTERNAL_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "test-substudy", "userId", EXTERNAL_ID);
 
         // set up TranscribeConsentHandler
         Account account = Account.create();
         account.setDataGroups(ImmutableSet.of("parkinson","test_user"));
         account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
-        account.setEnrollments(ImmutableSet.of(acctSubstudy));
+        account.setEnrollments(ImmutableSet.of(enrollment));
 
         AccountService mockAccountService = mock(AccountService.class);
         when(mockAccountService.getAccount(any())).thenReturn(account);

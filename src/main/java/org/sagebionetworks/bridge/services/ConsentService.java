@@ -202,9 +202,9 @@ public class ConsentService {
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
         for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            Enrollment acctSubstudy = Enrollment.create(
+            Enrollment enrollment = Enrollment.create(
                     app.getIdentifier(), substudyId, account.getId());
-            account.getEnrollments().add(acctSubstudy);
+            account.getEnrollments().add(enrollment);
         }
         
         accountService.updateAccount(account, null);
