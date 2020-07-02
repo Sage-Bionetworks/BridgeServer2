@@ -201,15 +201,17 @@ public class HibernateAccountDao implements AccountDao {
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
-                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
-                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
+                .withRequestParam(ResourceList.ADMIN_ONLY, search.isAdminOnly())
+                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
                 .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())
-                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
-                .withRequestParam(ResourceList.START_TIME, search.getStartTime())
                 .withRequestParam(ResourceList.END_TIME, search.getEndTime())
                 .withRequestParam(ResourceList.LANGUAGE, search.getLanguage())
-                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
-                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups());
+                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups())
+                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(ResourceList.ORG_MEMBERSHIP, search.getOrgMembership())
+                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
+                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
+                .withRequestParam(ResourceList.START_TIME, search.getStartTime());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
