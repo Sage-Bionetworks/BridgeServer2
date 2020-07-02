@@ -894,8 +894,8 @@ public class ParticipantServiceTest extends Mockito {
         account.setLastName("lastName");
         Set<Enrollment> enrollments = new HashSet<>();
         for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
-            Enrollment acctSubstudy = Enrollment.create(APP.getIdentifier(), substudyId, ID);
-            enrollments.add(acctSubstudy);
+            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), substudyId, ID);
+            enrollments.add(enrollment);
         }
         account.setEnrollments(enrollments);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
@@ -1281,11 +1281,11 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = mockSubstudiesInRequest(ImmutableSet.of(), substudies, ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        Enrollment asA = Enrollment.create(APP.getIdentifier(), "substudyA", ID);
-        account.getEnrollments().add(asA);
+        Enrollment enA = Enrollment.create(APP.getIdentifier(), "substudyA", ID);
+        account.getEnrollments().add(enA);
         
-        Enrollment asB = Enrollment.create(APP.getIdentifier(), "substudyB", ID, "extB");
-        account.getEnrollments().add(asB);
+        Enrollment enB = Enrollment.create(APP.getIdentifier(), "substudyB", ID, "extB");
+        account.getEnrollments().add(enB);
         
         participantService.updateParticipant(APP, participant);
         
@@ -1952,8 +1952,8 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
         mockHealthCodeAndAccountRetrieval();
-        Enrollment as = Enrollment.create(TEST_APP_ID, "substudyB", ID, EXTERNAL_ID);
-        account.setEnrollments(Sets.newHashSet(as));
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "substudyB", ID, EXTERNAL_ID);
+        account.setEnrollments(Sets.newHashSet(enrollment)); // must be mutable set
         account.setId(ID);
         
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
@@ -2747,12 +2747,12 @@ public class ParticipantServiceTest extends Mockito {
     @Test 
     public void beginAssignExternalIdAccountHasSingleSubstudyId() {
         // Note that this association does not have an external ID
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID);
         
         account.setId(ID);
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
-        account.getEnrollments().add(acctSubstudy);
+        account.getEnrollments().add(enrollment);
         
         ExternalIdentifier existing = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         existing.setSubstudyId(SUBSTUDY_ID);
@@ -2851,11 +2851,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertNull(acctSubstudy.getExternalId());
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertNull(enrollment.getExternalId());
+        assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
     public void adminCanAddSubstudyIdOnUpdate() {
@@ -2873,11 +2873,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertNull(acctSubstudy.getExternalId());
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertNull(enrollment.getExternalId());
+        assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
     public void adminCanAddExternalIdOnCreate() {
@@ -2895,11 +2895,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
@@ -2922,11 +2922,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);       
@@ -2963,11 +2963,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertNull(acctSubstudy.getExternalId());
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertNull(enrollment.getExternalId());
+        assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
     public void researcherCanAddExternalIdOnCreate() {
@@ -2985,11 +2985,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
@@ -3027,11 +3027,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);       
@@ -3084,11 +3084,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertNull(acctSubstudy.getExternalId());
-        assertEquals(acctSubstudy.getAccountId(), ID);        
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertNull(enrollment.getExternalId());
+        assertEquals(enrollment.getAccountId(), ID);        
     }
     @Test
     public void substudyResearcherCanAddExternalIdOnCreate() {
@@ -3108,11 +3108,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
@@ -3158,8 +3158,8 @@ public class ParticipantServiceTest extends Mockito {
         
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
     }
     
     @Test
@@ -3216,11 +3216,11 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         
-        Enrollment acctSubstudy = Iterables.getFirst(captured.getEnrollments(), null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), SUBSTUDY_ID);
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
-        assertEquals(acctSubstudy.getAccountId(), ID);
+        Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
+        assertEquals(enrollment.getAccountId(), ID);
         
         verify(externalIdService).commitAssignExternalId(extId);
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
@@ -3399,9 +3399,9 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     private Enrollment findBySubstudyId(Account account, String substudyId) {
-        for (Enrollment acctSubstudy : account.getEnrollments()) {
-            if (acctSubstudy.getSubstudyId().equals(substudyId)) {
-                return acctSubstudy;
+        for (Enrollment enrollment : account.getEnrollments()) {
+            if (enrollment.getSubstudyId().equals(substudyId)) {
+                return enrollment;
             }
         }
         return null;

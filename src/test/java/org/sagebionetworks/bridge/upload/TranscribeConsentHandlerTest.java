@@ -81,12 +81,12 @@ public class TranscribeConsentHandlerTest {
 
     @Test
     public void test() {
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "subA", "id1");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "subB", "id2", "extB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "subA", "id1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "subB", "id2", "extB");
         
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
-        when(mockAccount.getEnrollments()).thenReturn(ImmutableSet.of(as1, as2));
+        when(mockAccount.getEnrollments()).thenReturn(ImmutableSet.of(en1, en2));
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();

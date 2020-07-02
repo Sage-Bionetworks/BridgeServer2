@@ -405,11 +405,11 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
-        account.getEnrollments().add(as);
+        account.getEnrollments().add(enrollment);
 
         dao.unassignExternalId(account, ID);
 
@@ -423,13 +423,13 @@ public class DynamoExternalIdDaoMockTest {
         externalId.setSubstudyId(SUBSTUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment as = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.getEnrollments().add(as);
+        account.getEnrollments().add(enrollment);
 
         dao.unassignExternalId(account, ID);
 
@@ -441,8 +441,6 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdWithoutSubstudySkipsAccountUpdate() {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
-
-        Enrollment acctSubstudy = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

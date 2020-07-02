@@ -609,17 +609,17 @@ public class ParticipantService {
             }
         }
         if (externalId != null) {
-            Enrollment acctSubstudy = Enrollment.create(account.getAppId(), externalId.getSubstudyId(),
+            Enrollment enrollment = Enrollment.create(account.getAppId(), externalId.getSubstudyId(),
                     account.getId());
             
             // If a substudy relationship exists without the external ID, remove it because
             // we're about to create it with an external ID
-            if (account.getEnrollments().contains(acctSubstudy)) {
-                account.getEnrollments().remove(acctSubstudy);
+            if (account.getEnrollments().contains(enrollment)) {
+                account.getEnrollments().remove(enrollment);
             }
-            acctSubstudy = Enrollment.create(account.getAppId(), externalId.getSubstudyId(), account.getId(),
+            enrollment = Enrollment.create(account.getAppId(), externalId.getSubstudyId(), account.getId(),
                     externalId.getIdentifier());
-            account.getEnrollments().add(acctSubstudy);
+            account.getEnrollments().add(enrollment);
             clearCache = true;
         }
         // We have to clear the cache if we make changes that can alter the security profile of 

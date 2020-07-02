@@ -316,13 +316,13 @@ public class UserAdminServiceMockTest {
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId", "subAextId");
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId", "subBextId");
-        Set<Enrollment> substudies = ImmutableSet.of(as1, as2);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId", "subAextId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId", "subBextId");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn(substudies).when(account).getEnrollments();
+        doReturn(enrollments).when(account).getEnrollments();
         doReturn(account).when(accountService).getAccount(accountId);
         
         service.deleteUser(app, "userId");

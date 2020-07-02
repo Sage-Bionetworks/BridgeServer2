@@ -138,13 +138,9 @@ public class AccountPersistenceExceptionConverterTest {
     public void entityAlreadyExistsForExternalIdWhenThereAreMultiple() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateEnrollment as1 = (HibernateEnrollment) Enrollment
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
-        HibernateEnrollment as2 = (HibernateEnrollment) Enrollment
-                .create(TEST_APP_ID, "substudyB", USER_ID);
-        as2.setExternalId("externalIdB");
-        account.setEnrollments(ImmutableSet.of(as1, as2));
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID, "externalIdB");
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
@@ -170,13 +166,9 @@ public class AccountPersistenceExceptionConverterTest {
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateEnrollment as1 = (HibernateEnrollment) Enrollment
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
-        HibernateEnrollment as2 = (HibernateEnrollment) Enrollment
-                .create(TEST_APP_ID, "substudyB", USER_ID);
-        as2.setExternalId("externalIdB");
-        account.setEnrollments(ImmutableSet.of(as1, as2));
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID, "externalIdB");
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
@@ -205,9 +197,7 @@ public class AccountPersistenceExceptionConverterTest {
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateEnrollment as1 = (HibernateEnrollment) Enrollment
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
         account.setEnrollments(ImmutableSet.of(as1));
         
         Account existing = Account.create();

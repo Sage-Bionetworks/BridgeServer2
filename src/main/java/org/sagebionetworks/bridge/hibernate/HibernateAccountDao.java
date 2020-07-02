@@ -118,8 +118,8 @@ public class HibernateAccountDao implements AccountDao {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
-        builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
-        builder.append("WITH acct.id = acctSubstudy.accountId");
+        builder.append("LEFT JOIN acct.enrollments AS enrollment");
+        builder.append("WITH acct.id = enrollment.accountId");
         builder.append("WHERE acct.appId = :appId", "appId", appId);
         
         if (accountId != null) {
@@ -135,7 +135,7 @@ public class HibernateAccountDao implements AccountDao {
             } else if (unguarded.getSynapseUserId() != null) {
                 builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
+                builder.append("AND enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
@@ -164,7 +164,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         Set<String> callerSubstudies = context.getCallerSubstudies();
         if (!callerSubstudies.isEmpty()) {
-            builder.append("AND acctSubstudy.substudyId IN (:substudies)", "substudies", callerSubstudies);
+            builder.append("AND enrollment.substudyId IN (:substudies)", "substudies", callerSubstudies);
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");        

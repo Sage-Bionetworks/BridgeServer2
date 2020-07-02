@@ -103,8 +103,8 @@ public class CRCControllerTest extends Mockito {
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
-    static final Enrollment ACCT_SUB1 = Enrollment.create(APP_ID, "substudyA", USER_ID);
-    static final Enrollment ACCT_SUB2 = Enrollment.create(APP_ID, "substudyB", USER_ID);
+    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "substudyA", USER_ID);
+    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "substudyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
@@ -177,7 +177,7 @@ public class CRCControllerTest extends Mockito {
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
-        account.setEnrollments(ImmutableSet.of(ACCT_SUB1, ACCT_SUB2));
+        account.setEnrollments(ImmutableSet.of(ENROLLMENT1, ENROLLMENT2));
         account.setDataGroups(ImmutableSet.of("group1", TEST_USER_GROUP));
         
         app = App.create();

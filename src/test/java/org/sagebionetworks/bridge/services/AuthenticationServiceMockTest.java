@@ -213,12 +213,12 @@ public class AuthenticationServiceMockTest {
     public void signIn() {
         app.setReauthenticationEnabled(true);
         
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
-        account.setEnrollments(ImmutableSet.of(as1, as2));
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         account.setId(USER_ID);
         
         setIpAddress(IP_ADDRESS);
@@ -288,12 +288,12 @@ public class AuthenticationServiceMockTest {
     public void signInThrowsConsentRequiredException() {
         app.setReauthenticationEnabled(true);
         
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
-        account.setEnrollments(ImmutableSet.of(as1, as2));
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         account.setId(USER_ID);
         
         setIpAddress(IP_ADDRESS);

@@ -84,7 +84,7 @@ public class AccountServiceTest extends Mockito {
     
     private static final String SUBSTUDY_A = "substudyA";
     private static final String SUBSTUDY_B = "substudyB";
-    private static final Set<Enrollment> ACCOUNT_SUBSTUDIES = ImmutableSet
+    private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, SUBSTUDY_A, USER_ID));
     private static final ImmutableSet<String> CALLER_SUBSTUDIES = ImmutableSet.of(SUBSTUDY_B);
     
@@ -939,7 +939,7 @@ public class AccountServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(CALLER_SUBSTUDIES).build());
 
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(ACCOUNT_SUBSTUDIES);
+        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
 
         service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
@@ -951,7 +951,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void getAccountMatchesSubstudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
-        persistedAccount.setEnrollments(ACCOUNT_SUBSTUDIES);
+        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
@@ -965,7 +965,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void getAccountFiltersSubstudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
-        persistedAccount.setEnrollments(ACCOUNT_SUBSTUDIES);
+        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_B)).build());
