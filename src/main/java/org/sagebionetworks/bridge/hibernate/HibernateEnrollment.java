@@ -48,12 +48,6 @@ public final class HibernateEnrollment implements Enrollment {
     public String getExternalId() {
         return externalId;
     }
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
-    public void setSubstudyId(String substudyId) {
-        this.substudyId = substudyId;
-    }
 
     @Override
     public int hashCode() {

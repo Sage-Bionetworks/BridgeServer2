@@ -24,8 +24,5 @@ public class HibernateEnrollmentTest {
         assertEquals(enrollment.getSubstudyId(), "substudyId");
         assertEquals(enrollment.getAccountId(), "accountId");
         assertEquals(enrollment.getExternalId(), "externalId");
-        
-        enrollment.setSubstudyId("newSubstudyId");
-        assertEquals(enrollment.getSubstudyId(), "newSubstudyId");
     }
 }
