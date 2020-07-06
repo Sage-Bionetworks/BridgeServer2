@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
@@ -113,6 +114,25 @@ public class CRCControllerTest extends Mockito {
             +"'Collection Site' } ] }, 'telecom': [ { 'system': 'phone', 'value': '1231231235', 'use': "
             +"'work' } ], 'address': { 'line': [ '123 east 165' ], 'city': 'New York', 'state': 'NY', "
             +"'postalCode': '10021' } }");
+    static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
+            +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
+            +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
+            +" 'short_name' : '3rd Ave', 'types' : [ 'route' ] }, { 'long_name' : 'Downtown Seattle', "
+            +"'short_name' : 'Downtown Seattle', 'types' : [ 'neighborhood', 'political' ] }, { 'long_name' "
+            +": 'Seattle', 'short_name' : 'Seattle', 'types' : [ 'locality', 'political' ] }, { 'long_name' "
+            +": 'King County', 'short_name' : 'King County', 'types' : [ 'administrative_area_level_2', "
+            +"'political' ] }, { 'long_name' : 'Washington', 'short_name' : 'WA', 'types' : [ "
+            +"'administrative_area_level_1', 'political' ] }, { 'long_name' : 'United States', 'short_name' "
+            +": 'US', 'types' : [ 'country', 'political' ] }, { 'long_name' : '98121', 'short_name' : "
+            +"'98121', 'types' : [ 'postal_code' ] } ], 'formatted_address' : '2901 3rd Ave #330, Seattle, "
+            +"WA 98121, USA', 'geometry' : { 'bounds' : { 'northeast' : { 'lat' : 47.6184148, 'lng' : "
+            +"-122.3510372 }, 'southwest' : { 'lat' : 47.617759, 'lng' : -122.3525807 } }, 'location' : { "
+            +"'lat' : 47.6180007, 'lng' : -122.3516149 }, 'location_type' : 'ROOFTOP', 'viewport' : { "
+            +"'northeast' : { 'lat' : 47.6194358802915, 'lng' : -122.3504599697085 }, 'southwest' : { 'lat' "
+            +": 47.6167379197085, 'lng' : -122.3531579302915 } } }, 'place_id' : 'EikyOTAxIDNyZCBBdmUgIzMzMC"
+            +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
+            +"'subpremise' ] } ], 'status' : 'OK' }");
+    static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
     
     @Mock
     ParticipantService mockParticipantService;
@@ -196,6 +216,7 @@ public class CRCControllerTest extends Mockito {
         when(mockConfig.get("cuimc.prod.location.url")).thenReturn("http://testServer/location/${location}");
         when(mockConfig.get("cuimc.prod.username")).thenReturn("prodUsername");
         when(mockConfig.get("cuimc.prod.password")).thenReturn("prodPassword");
+        when(mockConfig.get("crc.geocode.api.key")).thenReturn("GEOKEY");
     }
     
     @AfterMethod
@@ -414,6 +435,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
+        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -443,6 +465,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
+        System.out.println(capturedReport.getData());
         assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
@@ -455,11 +478,15 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), TestUtils.createJson("{'resourceType':'Appointment',"
-                +"'participant':[{'actor':{'reference':'Location/some-other-id','telecom':[{'system':"
-                +"'phone','value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city'"
-                +":'New York','state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':"
-                +"'https://ws.sagebridge.org/#userId','value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), createJson("{'resourceType':'Appointment','participant':[{'actor'"
+                +":{'reference':'Location/some-other-id','telecom':[{'system':'phone','value':'1231231235',"
+                +"'use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':'NY',"
+                +"'postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,'lng':"
+                +"-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+                +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+                +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+                +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+                +"'value':'userId'}}}]}"));
     }
     
     @Test
@@ -469,6 +496,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
+        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -494,12 +522,14 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), TestUtils.createJson("{'resourceType':'Appointment',"
-                +"'participant':[{'actor':{'reference':'Location/foo','telecom':"
-                +"[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
-                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}},"
-                +"{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-                +"'value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), createJson("{'resourceType':'Appointment','participant':"
+                +"[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':'1231231235','use':"
+                +"'work'}],'address':{'line':['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'"
+                +"},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,'lng':-122.3510372},'southwest':{'lat':"
+                +"47.617759,'lng':-122.3525807}},'location':{'lat':47.6180007,'lng':-122.3516149},'location_type'"
+                +":'ROOFTOP','viewport':{'northeast':{'lat':47.6194358802915,'lng':-122.3504599697085},'southwest'"
+                +":{'lat':47.6167379197085,'lng':-122.3531579302915}}}}},{'actor':{'identifier':{'system':"
+                +"'https://ws.sagebridge.org/#userId','value':'userId'}}}]}"));
     }
     
     @Test
@@ -715,6 +745,19 @@ public class CRCControllerTest extends Mockito {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockResponse.getEntity()).thenReturn(mockEntity);
         when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
+    }
+    
+    void mockGetGeocoding() throws Exception {
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(EXPECTED_GEOCODING_URL);
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(GEOCODE_JSON));
     }
     
     @Test

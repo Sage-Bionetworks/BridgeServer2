@@ -6,6 +6,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
+import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,6 +30,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.io.IOUtils;
@@ -96,6 +100,8 @@ public class CRCController extends BaseController {
     private static final String UNAVAILABLE_ERROR = "The server encountered an error";
     private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
     private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
+    static final String GEOCODING_API = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s";
+    static final String GEOCODE_KEY = "crc.geocode.api.key";
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
     static final String USER_ID_VALUE_NS = "https://ws.sagebridge.org/#userId";
     static final String APP_ID = "czi-coronavirus";
@@ -298,6 +304,7 @@ public class CRCController extends BaseController {
                         }
                         if (address != null) {
                             actor.set("address", address);
+                            addGeocodingInformation(actor);                            
                         }
                         break;
                     }
@@ -308,6 +315,55 @@ public class CRCController extends BaseController {
             throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
         }
         LOG.info("Location added to appointment record for user " + account.getId());
+    }
+
+    void addGeocodingInformation(ObjectNode actor) {
+        String addressString = combineLocationJson(actor);
+        if (addressString != null) {
+            String url = String.format(GEOCODING_API, addressString, bridgeConfig.get(GEOCODE_KEY)); 
+            try {
+                HttpResponse response = get(url);
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    LOG.error("HTTP error response when geocoding address", response.getStatusLine().toString());
+                    return;
+                }
+                String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
+                JsonNode payload = BridgeObjectMapper.get().readTree(body);
+                
+                if (payload.has("results") && payload.get("results").size() > 0
+                        && payload.get("results").get(0).has("geometry")) {
+                    JsonNode geometry = payload.get("results").get(0).get("geometry");
+                    actor.set("geocoding", geometry);
+                }
+            } catch (IOException e) {
+                LOG.error("Error geocoding address", e);
+            }
+        }
+    }
+    
+    String combineLocationJson(JsonNode actor) {
+        if (actor.has("address")) {
+            List<String> elements = Lists.newArrayList();
+            JsonNode address = actor.get("address");
+            if (address.has("line")) {
+                ArrayNode lines = (ArrayNode)address.get("line");
+                for (int i=0; i < lines.size(); i++) {
+                    String line = lines.get(i).textValue();
+                    elements.add(line);
+                }
+            }
+            if (address.has("city")) {
+                elements.add(address.get("city").textValue());    
+            }
+            if (address.has("state")) {
+                elements.add(address.get("state").textValue());
+            }
+            if (address.has("postalCode")) {
+                elements.add(address.get("postalCode").textValue());    
+            }
+            return encodeURIComponent(SPACE_JOINER.join(elements));
+        }
+        return null;
     }
 
     private void throwExceptions(HttpResponse response, String userId) {
@@ -328,6 +384,10 @@ public class CRCController extends BaseController {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
         request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
+    }
+    
+    HttpResponse get(String url) throws IOException {
+        return Request.Get(url).execute().returnResponse();
     }
     
     HttpResponse get(String url, Account account) throws IOException {
@@ -491,7 +551,7 @@ public class CRCController extends BaseController {
         BridgeUtils.setRequestContext(builder.build());
         return app;
     }
-
+    
     Patient createPatient(Account account) {
         Patient patient = new Patient();
         patient.setActive(true);
