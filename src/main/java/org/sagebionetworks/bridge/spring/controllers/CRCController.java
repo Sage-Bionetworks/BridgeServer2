@@ -200,6 +200,7 @@ public class CRCController extends BaseController {
         String userId = findUserId(appointment);
         
         // Columbia wants us to call back to them to get information about the location.
+        // And UI team wants geocoding of location to render a map. 
         String locationString = findLocation(appointment);
         if (locationString != null) {
             AccountId accountId = parseAccountId(app.getIdentifier(), userId);
