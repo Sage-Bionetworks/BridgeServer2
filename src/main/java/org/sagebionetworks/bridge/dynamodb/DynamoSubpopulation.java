@@ -19,6 +19,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -47,12 +48,12 @@ public final class DynamoSubpopulation implements Subpopulation {
     private long publishedConsentCreatedOn;
     private Criteria criteria;
     private Set<String> dataGroupsAssignedWhileConsented;
-    private Set<String> substudyIdsAssignedOnConsent;
+    private Set<String> studyIdsAssignedOnConsent;
 
     public DynamoSubpopulation() {
         criteria = Criteria.create();
         dataGroupsAssignedWhileConsented = new HashSet<>();
-        substudyIdsAssignedOnConsent = new HashSet<>();
+        studyIdsAssignedOnConsent = new HashSet<>();
     }
     
     @Override
@@ -192,21 +193,22 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
 
     /** {@inheritDoc */
-    public void setSubstudyIdsAssignedOnConsent(Set<String> substudyIds) {
-        this.substudyIdsAssignedOnConsent = (substudyIds != null) ? 
-                new HashSet<>(substudyIds) : new HashSet<>();
+    @JsonAlias("substudyIdsAssignedOnConsent")
+    public void setStudyIdsAssignedOnConsent(Set<String> studyIds) {
+        this.studyIdsAssignedOnConsent = (studyIds != null) ? 
+                new HashSet<>(studyIds) : new HashSet<>();
     }
     
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
-    public Set<String> getSubstudyIdsAssignedOnConsent() {
-        return substudyIdsAssignedOnConsent;
+    public Set<String> getStudyIdsAssignedOnConsent() {
+        return studyIdsAssignedOnConsent;
     }
     
     @Override
     public int hashCode() {
         return Objects.hash(name, description, required, deleted, defaultGroup, guid, appId,
                 publishedConsentCreatedOn, version, criteria, autoSendConsentSuppressed, dataGroupsAssignedWhileConsented,
-                substudyIdsAssignedOnConsent);
+                studyIdsAssignedOnConsent);
     }
     @Override
     public boolean equals(Object obj) {
@@ -223,7 +225,7 @@ public final class DynamoSubpopulation implements Subpopulation {
                 && Objects.equals(criteria, other.criteria)
                 && Objects.equals(autoSendConsentSuppressed, other.autoSendConsentSuppressed)
                 && Objects.equals(dataGroupsAssignedWhileConsented, other.dataGroupsAssignedWhileConsented)
-                && Objects.equals(substudyIdsAssignedOnConsent, other.substudyIdsAssignedOnConsent);
+                && Objects.equals(studyIdsAssignedOnConsent, other.studyIdsAssignedOnConsent);
     }
     @Override
     public String toString() {
@@ -231,7 +233,7 @@ public final class DynamoSubpopulation implements Subpopulation {
                 + description + ", required=" + required + ", deleted=" + deleted + ", criteria=" + criteria
                 + ", publishedConsentCreatedOn=" + publishedConsentCreatedOn + ", version=" + version
                 + ", autoSendConsentSuppressed=" + autoSendConsentSuppressed + ", dataGroupsAssignedWhileConsented="
-                + dataGroupsAssignedWhileConsented + ", substudyIdsAssignedOnConsent=" + substudyIdsAssignedOnConsent
+                + dataGroupsAssignedWhileConsented + ", studyIdsAssignedOnConsent=" + studyIdsAssignedOnConsent
                 + "]";
     }
 

@@ -26,8 +26,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.StudyService;
 
 public class AssessmentValidatorTest extends Mockito {
 
@@ -35,7 +35,7 @@ public class AssessmentValidatorTest extends Mockito {
     AssessmentDao mockAssessmentDao;
     
     @Mock
-    SubstudyService mockSubstudyService;
+    StudyService mockStudyService;
     
     AssessmentValidator validator;
     
@@ -49,22 +49,22 @@ public class AssessmentValidatorTest extends Mockito {
         when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
         
-        validator = new AssessmentValidator(mockSubstudyService, TEST_APP_ID);
+        validator = new AssessmentValidator(mockStudyService, TEST_APP_ID);
     }
     
     @Test
     public void validAssessment() {
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, assessment.getOwnerId(), false))
-            .thenReturn(Substudy.create());
+        when(mockStudyService.getStudy(TEST_APP_ID, assessment.getOwnerId(), false))
+            .thenReturn(Study.create());
         
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
     public void validSharedAssessment() {
-        validator = new AssessmentValidator(mockSubstudyService, SHARED_APP_ID);
+        validator = new AssessmentValidator(mockStudyService, SHARED_APP_ID);
         assessment.setOwnerId(TEST_APP_ID + ":" + OWNER_ID);
         
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, OWNER_ID, false)).thenReturn(Substudy.create());
+        when(mockStudyService.getStudy(TEST_APP_ID, OWNER_ID, false)).thenReturn(Study.create());
     
         Validate.entityThrowingException(validator, assessment);
     }
@@ -109,8 +109,8 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void osNameUniversalIsValid() {
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, assessment.getOwnerId(), false))
-            .thenReturn(Substudy.create());
+        when(mockStudyService.getStudy(TEST_APP_ID, assessment.getOwnerId(), false))
+            .thenReturn(Study.create());
         
         assessment.setOsName("Universal");
         Validate.entityThrowingException(validator, assessment);

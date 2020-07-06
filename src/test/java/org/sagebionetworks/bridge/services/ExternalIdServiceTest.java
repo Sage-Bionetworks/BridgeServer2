@@ -28,15 +28,15 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableSet;
 
 public class ExternalIdServiceTest {
 
     private static final String ID = "AAA";
-    private static final String SUBSTUDY_ID = "substudyId";
-    private static final Set<String> SUBSTUDIES = ImmutableSet.of(SUBSTUDY_ID);
+    private static final String STUDY_ID = "studyId";
+    private static final Set<String> STUDIES = ImmutableSet.of(STUDY_ID);
     private static final String HEALTH_CODE = "healthCode";
     
     private App app;
@@ -46,7 +46,7 @@ public class ExternalIdServiceTest {
     private ExternalIdDao externalIdDao;
     
     @Mock
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     private ExternalIdService externalIdService;
 
@@ -59,10 +59,10 @@ public class ExternalIdServiceTest {
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
         extId = ExternalIdentifier.create(TEST_APP_ID, ID);
-        extId.setSubstudyId(SUBSTUDY_ID);
+        extId.setStudyId(STUDY_ID);
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
-        externalIdService.setSubstudyService(substudyService);
+        externalIdService.setStudyService(studyService);
     }
     
     @AfterMethod
@@ -119,8 +119,8 @@ public class ExternalIdServiceTest {
     
     @Test
     public void createExternalId() {
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false))
-            .thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
+            .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
         
         externalIdService.createExternalId(extId, false);
@@ -130,12 +130,12 @@ public class ExternalIdServiceTest {
     
     @Test
     public void createExternalIdEnforcesAppId() {
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false))
-            .thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
+            .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
         
         ExternalIdentifier newExtId = ExternalIdentifier.create("some-dumb-id", ID);
-        newExtId.setSubstudyId(SUBSTUDY_ID);
+        newExtId.setStudyId(STUDY_ID);
         externalIdService.createExternalId(newExtId, false);
         
         // still matches and verifies
@@ -143,14 +143,14 @@ public class ExternalIdServiceTest {
     }
     
     @Test
-    public void createExternalIdSetsSubstudyIdIfMissingAndUnambiguous() {
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false))
-            .thenReturn(Substudy.create());
+    public void createExternalIdSetsStudyIdIfMissingAndUnambiguous() {
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
+            .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerSubstudies(SUBSTUDIES).build());
+                .withCallerStudies(STUDIES).build());
         
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID,
                 extId.getIdentifier());
@@ -161,12 +161,12 @@ public class ExternalIdServiceTest {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void createExternalIdDoesNotSetSubstudyIdAmbiguous() {
-        extId.setSubstudyId(null); // not set by caller
+    public void createExternalIdDoesNotSetStudyIdAmbiguous() {
+        extId.setStudyId(null); // not set by caller
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID, "anotherSubstudy")).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
         
         externalIdService.createExternalId(extId, false);
     }
@@ -178,10 +178,10 @@ public class ExternalIdServiceTest {
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createExternalIdAlreadyExistsThrows() {
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false))
-            .thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
+            .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
-        extId.setSubstudyId(SUBSTUDY_ID);
+        extId.setStudyId(STUDY_ID);
         
         externalIdService.createExternalId(extId, false);
     }
@@ -203,11 +203,11 @@ public class ExternalIdServiceTest {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void deleteExternalIdPermanentlyOutsideSubstudiesThrows() {
+    public void deleteExternalIdPermanentlyOutsideStudiesThrows() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerSubstudies(SUBSTUDIES).build());        
-        extId.setSubstudyId("someOtherId");
+                .withCallerStudies(STUDIES).build());        
+        extId.setStudyId("someOtherId");
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
         
         externalIdService.deleteExternalIdPermanently(app, extId);

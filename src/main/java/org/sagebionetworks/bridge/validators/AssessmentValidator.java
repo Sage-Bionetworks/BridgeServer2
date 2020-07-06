@@ -15,15 +15,15 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 public class AssessmentValidator implements Validator {
 
-    private final SubstudyService substudyService;
+    private final StudyService studyService;
     private final String appId;
     
-    public AssessmentValidator(SubstudyService substudyService, String appId) {
-        this.substudyService = substudyService;
+    public AssessmentValidator(StudyService studyService, String appId) {
+        this.studyService = studyService;
         this.appId = appId;
     }
     
@@ -75,23 +75,23 @@ public class AssessmentValidator implements Validator {
             }
         }
         
-        // ownerId == substudyId except in the shared assessments app, where it must include
-        // the app as a namespace prefix, e.g. "appId:substudyId". Assessments are always 
+        // ownerId == studyId except in the shared assessments app, where it must include
+        // the app as a namespace prefix, e.g. "appId:studyId". Assessments are always 
         // owned by some organization.
         if (isBlank(assessment.getOwnerId())) {
             errors.rejectValue("ownerId", CANNOT_BE_BLANK);
         } else {
-            String substudyId = null;
-            String ownerId = null;
+            String finalAppId = null;
+            String finalStudyId = null;
             if (SHARED_APP_ID.equals(appId)) {
                 String[] parts = assessment.getOwnerId().split(":");
-                substudyId = parts[0];
-                ownerId = parts[1];
+                finalAppId = parts[0];
+                finalStudyId = parts[1];
             } else {
-                substudyId = appId;
-                ownerId = assessment.getOwnerId();
+                finalAppId = appId;
+                finalStudyId = assessment.getOwnerId();
             }
-            if (substudyService.getSubstudy(substudyId, ownerId, false) == null) {
+            if (studyService.getStudy(finalAppId, finalStudyId, false) == null) {
                 errors.rejectValue("ownerId", "is not a valid organization ID");
             }
         }

@@ -208,7 +208,7 @@ public class UserAdminService {
             for (String externalId : BridgeUtils.collectExternalIds(account)) {
                 externalIdService.unassignExternalId(account, externalId);
             }
-            // AccountSecret records and AccountsSubstudies records are are deleted on a 
+            // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);
         }

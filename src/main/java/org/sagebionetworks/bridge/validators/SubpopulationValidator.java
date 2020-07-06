@@ -14,11 +14,11 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 public class SubpopulationValidator implements Validator {
 
     private Set<String> dataGroups;
-    private Set<String> substudyIds;
+    private Set<String> studyIds;
     
-    public SubpopulationValidator(Set<String> dataGroups, Set<String> substudyIds) {
+    public SubpopulationValidator(Set<String> dataGroups, Set<String> studyIds) {
         this.dataGroups = dataGroups;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
     }
     
     @Override
@@ -46,13 +46,13 @@ public class SubpopulationValidator implements Validator {
                 errors.rejectValue("dataGroupsAssignedWhileConsented", message);
             }
         }
-        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            if (!substudyIds.contains(substudyId)) {
-                String listStr = (substudyIds.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(substudyIds);
-                String message = String.format("'%s' is not in enumeration: %s", substudyId, listStr);
-                errors.rejectValue("substudyIdsAssignedOnConsent", message);
+        for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
+            if (!studyIds.contains(studyId)) {
+                String listStr = (studyIds.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(studyIds);
+                String message = String.format("'%s' is not in enumeration: %s", studyId, listStr);
+                errors.rejectValue("studyIdsAssignedOnConsent", message);
             }
         }
-        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, substudyIds, errors);
+        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, studyIds, errors);
     }
 }

@@ -128,7 +128,7 @@ public class AppService {
     private String synapseTrackingViewId;
     private ParticipantService participantService;
     private ExternalIdService externalIdService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
     private OrganizationDao organizationDao;
@@ -214,8 +214,8 @@ public class AppService {
         this.externalIdService = externalIdService;
     }
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     @Autowired
     @Qualifier("bridgePFSynapseClient")
@@ -273,7 +273,7 @@ public class AppService {
         checkNotNull(appAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
         App app = appAndUsers.getApp();
-        StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService,
+        StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, studyService,
                 organizationDao, app, true);
         
         Errors errors = Validate.getErrorsFor(appAndUsers);

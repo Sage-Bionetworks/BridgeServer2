@@ -49,7 +49,7 @@ public class AppConfigService {
     
     private AppService appService;
     
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     private SurveyService surveyService;
     
@@ -70,8 +70,8 @@ public class AppConfigService {
     }
     
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     @Autowired
@@ -243,10 +243,10 @@ public class AppConfigService {
         
         App app = appService.getApp(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, assessmentService, app.getDataGroups(), substudyIds, true);
+                fileService, assessmentService, app.getDataGroups(), studyIds, true);
         Validate.entityThrowingException(validator, appConfig);
 
         long timestamp = getCurrentTimestamp();
@@ -278,10 +278,10 @@ public class AppConfigService {
         
         App app = appService.getApp(appId);
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
         Validator validator = new AppConfigValidator(surveyService, schemaService, appConfigElementService, 
-                fileService, assessmentService, app.getDataGroups(), substudyIds, false);
+                fileService, assessmentService, app.getDataGroups(), studyIds, false);
         Validate.entityThrowingException(validator, appConfig);
         
         // Throw a 404 if the GUID is not valid.

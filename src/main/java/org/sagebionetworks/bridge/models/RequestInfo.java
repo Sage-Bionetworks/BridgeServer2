@@ -54,7 +54,8 @@ public final class RequestInfo {
     @Convert(converter = StringSetConverter.class)
     private Set<String> userDataGroups;
     @Convert(converter = StringSetConverter.class)
-    private Set<String> userSubstudyIds;
+    @Column(name = "userSubstudyIds")
+    private Set<String> userStudyIds;
     @JsonSerialize(using=DateTimeSerializer.class)
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime activitiesAccessedOn;
@@ -92,8 +93,8 @@ public final class RequestInfo {
         return userDataGroups;
     }
 
-    public Set<String> getUserSubstudyIds() {
-        return userSubstudyIds;
+    public Set<String> getUserStudyIds() {
+        return userStudyIds;
     }
     
     public DateTime getActivitiesAccessedOn() {
@@ -119,7 +120,7 @@ public final class RequestInfo {
     @Override
     public int hashCode() {
         return Objects.hash(getActivitiesAccessedOn(), clientInfo, userAgent, languages, getSignedInOn(),
-                userDataGroups, userSubstudyIds, userId, timeZone, uploadedOn, appId);
+                userDataGroups, userStudyIds, userId, timeZone, uploadedOn, appId);
     }
 
     @Override
@@ -136,7 +137,7 @@ public final class RequestInfo {
                Objects.equals(getSignedInOn(), other.getSignedInOn()) && 
                Objects.equals(getUploadedOn(), other.getUploadedOn()) &&
                Objects.equals(userDataGroups, other.userDataGroups) && 
-               Objects.equals(userSubstudyIds, other.userSubstudyIds) && 
+               Objects.equals(userStudyIds, other.userStudyIds) && 
                Objects.equals(userId, other.userId) && 
                Objects.equals(timeZone, other.timeZone) && 
                Objects.equals(appId, other.appId);
@@ -145,7 +146,7 @@ public final class RequestInfo {
     @Override
     public String toString() {
         return "RequestInfo [userId=" + userId + ", userAgent=" + userAgent + ", languages=" + languages
-                + ", userDataGroups=" + userDataGroups + ", userSubstudyIds=" + userSubstudyIds 
+                + ", userDataGroups=" + userDataGroups + ", userStudyIds=" + userStudyIds 
                 + ", activitiesAccessedOn=" + getActivitiesAccessedOn() + ", signedInOn=" + getSignedInOn() 
                 + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone + ", appId=" 
                 + appId + "]";
@@ -157,7 +158,7 @@ public final class RequestInfo {
         private String userAgent;
         private List<String> languages;
         private Set<String> userDataGroups;
-        private Set<String> userSubstudyIds;
+        private Set<String> userStudyIds;
         private DateTime activitiesAccessedOn;
         private DateTime signedInOn;
         private DateTime uploadedOn;
@@ -171,7 +172,7 @@ public final class RequestInfo {
                 withUserAgent(requestInfo.getUserAgent());
                 withLanguages(requestInfo.getLanguages());
                 withUserDataGroups(requestInfo.getUserDataGroups());
-                withUserSubstudyIds(requestInfo.getUserSubstudyIds());
+                withUserStudyIds(requestInfo.getUserStudyIds());
                 withActivitiesAccessedOn(requestInfo.getActivitiesAccessedOn());
                 withSignedInOn(requestInfo.getSignedInOn());
                 withUploadedOn(requestInfo.getUploadedOn());
@@ -210,9 +211,9 @@ public final class RequestInfo {
             }
             return this;
         }
-        public Builder withUserSubstudyIds(Set<String> userSubstudyIds) {
-            if (userSubstudyIds != null) {
-                this.userSubstudyIds = userSubstudyIds;
+        public Builder withUserStudyIds(Set<String> userStudyIds) {
+            if (userStudyIds != null) {
+                this.userStudyIds = userStudyIds;
             }
             return this;
         }
@@ -254,7 +255,7 @@ public final class RequestInfo {
             info.userAgent = userAgent;
             info.languages = languages;
             info.userDataGroups = userDataGroups;
-            info.userSubstudyIds = userSubstudyIds;
+            info.userStudyIds = userStudyIds;
             info.activitiesAccessedOn = activitiesAccessedOn;
             info.signedInOn = signedInOn;
             info.uploadedOn = uploadedOn;

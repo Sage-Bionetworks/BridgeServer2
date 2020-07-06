@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
+import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -162,9 +162,9 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
-        Set<String> callerSubstudies = context.getCallerSubstudies();
-        if (!callerSubstudies.isEmpty()) {
-            builder.append("AND enrollment.substudyId IN (:substudies)", "substudies", callerSubstudies);
+        Set<String> callerStudies = context.getCallerStudies();
+        if (!callerStudies.isEmpty()) {
+            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");        
@@ -184,7 +184,7 @@ public class HibernateAccountDao implements AccountDao {
         // Getting the IDs and loading the records individually leads to N+1 queries (one id query and a 
         // query for each object), whereas querying for a constructor of a subset of columns leads to 
         // (N*Y)+1 queries as we must load each collection individually... Y=1 in the prior code to load
-        // substudies, and Y=2 once we add attributes. On the downside, this approach loads all 
+        // studies, and Y=2 once we add attributes. On the downside, this approach loads all 
         // HibernateAccount fields, like clientData, though it is not returned.
         QueryBuilder builder = makeQuery(ID_QUERY, appId, null, search, false);
         List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
@@ -244,12 +244,12 @@ public class HibernateAccountDao implements AccountDao {
         builder.withAttributes(acct.getAttributes());
         builder.withOrgMembership(acct.getOrgMembership());
         
-        SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
+        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getEnrollments());
+            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct.getEnrollments());
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
-        builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());
+        builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());
         return builder.build();
     }
 }

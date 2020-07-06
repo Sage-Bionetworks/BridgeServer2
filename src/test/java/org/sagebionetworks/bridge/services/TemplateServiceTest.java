@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
@@ -87,7 +87,7 @@ public class TemplateServiceTest extends Mockito {
     AppService mockAppService;
     
     @Mock
-    SubstudyService mockSubstudyService;
+    StudyService mockStudyService;
     
     @InjectMocks
     @Spy
@@ -138,7 +138,7 @@ public class TemplateServiceTest extends Mockito {
         app.setDataGroups(USER_DATA_GROUPS);
         app.setDefaultTemplates(new HashMap<>());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(USER_SUBSTUDY_IDS);
+        when(mockStudyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
     }
     
     @AfterMethod
@@ -156,8 +156,8 @@ public class TemplateServiceTest extends Mockito {
         criteria.setLanguage(lang);
         criteria.setAllOfGroups(ImmutableSet.of());
         criteria.setNoneOfGroups(ImmutableSet.of());
-        criteria.setAllOfSubstudyIds(ImmutableSet.of());
-        criteria.setNoneOfSubstudyIds(ImmutableSet.of());
+        criteria.setAllOfStudyIds(ImmutableSet.of());
+        criteria.setNoneOfStudyIds(ImmutableSet.of());
         when(mockCriteriaDao.getCriteria("template:"+guid)).thenReturn(criteria);
         return criteria;
     }

@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
@@ -85,7 +85,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -103,8 +103,8 @@ public class CRCControllerTest extends Mockito {
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
-    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "substudyA", USER_ID);
-    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "substudyB", USER_ID);
+    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "studyA", USER_ID);
+    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
@@ -241,7 +241,7 @@ public class CRCControllerTest extends Mockito {
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
                 +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
                 +"'COVID Recovery Corps'}}]}"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
     
     @Test
@@ -272,7 +272,7 @@ public class CRCControllerTest extends Mockito {
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
                 +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
                 +"'COVID Recovery Corps'}}]}"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -443,7 +443,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -578,7 +578,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -644,7 +644,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -730,7 +730,7 @@ public class CRCControllerTest extends Mockito {
         RequestContext context = BridgeUtils.getRequestContext();
         assertEquals(context.getCallerAppId(), APP_ID);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
-        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getCallerStudies(), USER_STUDY_IDS);
     }
     
     @Test(expectedExceptions = NotAuthenticatedException.class)

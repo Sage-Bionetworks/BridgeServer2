@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -56,11 +56,11 @@ public class RequestInfoTest {
         );
         assertEquals(groups, USER_DATA_GROUPS);
         
-        Set<String> substudyIds = Sets.newHashSet(
-            node.get("userSubstudyIds").get(0).textValue(),
-            node.get("userSubstudyIds").get(1).textValue()
+        Set<String> studyIds = Sets.newHashSet(
+            node.get("userStudyIds").get(0).textValue(),
+            node.get("userStudyIds").get(1).textValue()
         );
-        assertEquals(substudyIds, USER_SUBSTUDY_IDS);
+        assertEquals(studyIds, USER_STUDY_IDS);
         assertEquals(node.get("signedInOn").textValue(), SIGNED_IN_ON.withZone(MST).toString());
         assertEquals(node.get("timeZone").textValue(), "+03:00");
         assertEquals(node.get("type").textValue(), "RequestInfo");
@@ -99,7 +99,7 @@ public class RequestInfoTest {
         assertEquals(copy.getClientInfo(), CLIENT_INFO);
         assertEquals(copy.getUserAgent(), USER_AGENT_STRING);
         assertEquals(copy.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(copy.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(copy.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(copy.getLanguages(), LANGUAGES);
         assertEquals(copy.getUserId(), USER_ID);
         assertEquals(copy.getTimeZone(), MST);
@@ -114,7 +114,7 @@ public class RequestInfoTest {
                 .withClientInfo(CLIENT_INFO)
                 .withUserAgent(USER_AGENT_STRING)
                 .withUserDataGroups(USER_DATA_GROUPS)
-                .withUserSubstudyIds(USER_SUBSTUDY_IDS)
+                .withUserStudyIds(USER_STUDY_IDS)
                 .withLanguages(LANGUAGES)
                 .withUserId(USER_ID)
                 .withTimeZone(MST)

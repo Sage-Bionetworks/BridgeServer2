@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.substudies;
+package org.sagebionetworks.bridge.models.studies;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -8,7 +8,7 @@ import javax.persistence.Embeddable;
 
 @SuppressWarnings("serial")
 @Embeddable
-public final class SubstudyId implements Serializable {
+public final class StudyId implements Serializable {
     
     @Column(name = "studyId")
     private String appId;
@@ -16,10 +16,10 @@ public final class SubstudyId implements Serializable {
     @Column(name = "id")
     private String id;
 
-    public SubstudyId() {
+    public StudyId() {
     }
  
-    public SubstudyId(String appId, String id) {
+    public StudyId(String appId, String id) {
         this.appId = appId;
         this.id = id;
     }
@@ -43,7 +43,7 @@ public final class SubstudyId implements Serializable {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        SubstudyId other = (SubstudyId) obj;
+        StudyId other = (StudyId) obj;
         return Objects.equals(appId, other.appId) && Objects.equals(id, other.id);
     }
 }

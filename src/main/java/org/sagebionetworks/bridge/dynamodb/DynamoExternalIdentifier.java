@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 public final class DynamoExternalIdentifier implements ExternalIdentifier {
 
     private String appId;
-    private String substudyId;
+    private String studyId;
     private String identifier;
     private String healthCode;
     
@@ -47,12 +47,12 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
     @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyId-substudyId-index")
     @DynamoDBAttribute
     @Override
-    public String getSubstudyId() {
-        return substudyId;
+    public String getStudyId() {
+        return studyId;
     }
     @Override
-    public void setSubstudyId(String substudyId) {
-        this.substudyId = substudyId;
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
     }
     
     @DynamoDBRangeKey
@@ -75,7 +75,7 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
 
     @Override
     public int hashCode() {
-        return Objects.hash(healthCode, identifier, appId, substudyId);
+        return Objects.hash(healthCode, identifier, appId, studyId);
     }
 
     @Override
@@ -88,12 +88,12 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
         return Objects.equals(healthCode, other.healthCode) &&
                Objects.equals(identifier, other.identifier) &&
                Objects.equals(appId, other.appId) &&
-               Objects.equals(substudyId, other.substudyId);
+               Objects.equals(studyId, other.studyId);
     }
 
     @Override
     public String toString() {
-        return "DynamoExternalIdentifier [appId=" + appId + ", substudyId=" + substudyId + ", identifier="
+        return "DynamoExternalIdentifier [appId=" + appId + ", studyId=" + studyId + ", identifier="
                 + identifier + ", healthCode=" + healthCode + "]";
     }
 }

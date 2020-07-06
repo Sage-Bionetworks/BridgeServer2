@@ -41,8 +41,8 @@ public class DynamoCriteriaTest {
         Criteria criteria = TestUtils.createCriteria(2, 8, SET_A, SET_B);
         criteria.setMinAppVersion(ANDROID, 10);
         criteria.setMaxAppVersion(ANDROID, 15);
-        criteria.setAllOfSubstudyIds(SET_A);
-        criteria.setNoneOfSubstudyIds(SET_B);
+        criteria.setAllOfStudyIds(SET_A);
+        criteria.setNoneOfStudyIds(SET_B);
         criteria.setKey("subpopulation:AAA");
         criteria.setLanguage("fr");
         
@@ -50,8 +50,8 @@ public class DynamoCriteriaTest {
         assertEquals(node.get("language").asText(), "fr");
         assertEquals(JsonUtils.asStringSet(node, "allOfGroups"), SET_A);
         assertEquals(JsonUtils.asStringSet(node, "noneOfGroups"), SET_B);
-        assertEquals(JsonUtils.asStringSet(node, "allOfSubstudyIds"), SET_A);
-        assertEquals(JsonUtils.asStringSet(node, "noneOfSubstudyIds"), SET_B);
+        assertEquals(JsonUtils.asStringSet(node, "allOfStudyIds"), SET_A);
+        assertEquals(JsonUtils.asStringSet(node, "noneOfStudyIds"), SET_B);
         
         JsonNode minValues = node.get("minAppVersions");
         assertEquals(minValues.get(IOS).asInt(), 2);
@@ -67,7 +67,7 @@ public class DynamoCriteriaTest {
         
         // However, we will except the older variant of JSON for the time being
         String json = makeJson("{'minAppVersion':2,'maxAppVersion':8,'language':'de','allOfGroups':['a','b'],"+
-        "'noneOfGroups':['c','d'],'allOfSubstudyIds':['a','b'],'noneOfSubstudyIds':['c','d']}");
+        "'noneOfGroups':['c','d'],'allOfStudyIds':['a','b'],'noneOfStudyIds':['c','d']}");
         
         Criteria crit = BridgeObjectMapper.get().readValue(json, Criteria.class);
         assertEquals(crit.getMinAppVersion(IOS), new Integer(2));
@@ -75,8 +75,8 @@ public class DynamoCriteriaTest {
         assertEquals(crit.getLanguage(), "de");
         assertEquals(crit.getAllOfGroups(), SET_A);
         assertEquals(crit.getNoneOfGroups(), SET_B);
-        assertEquals(crit.getAllOfSubstudyIds(), SET_A);
-        assertEquals(crit.getNoneOfSubstudyIds(), SET_B);
+        assertEquals(crit.getAllOfStudyIds(), SET_A);
+        assertEquals(crit.getNoneOfStudyIds(), SET_B);
         assertNull(crit.getKey());
     }
 
@@ -140,13 +140,13 @@ public class DynamoCriteriaTest {
         DynamoCriteria criteria = new DynamoCriteria();
         criteria.setAllOfGroups(null);
         criteria.setNoneOfGroups(null);
-        criteria.setAllOfSubstudyIds(null);
-        criteria.setNoneOfSubstudyIds(null);
+        criteria.setAllOfStudyIds(null);
+        criteria.setNoneOfStudyIds(null);
         
         assertTrue(criteria.getAllOfGroups().isEmpty());
         assertTrue(criteria.getNoneOfGroups().isEmpty());
-        assertTrue(criteria.getAllOfSubstudyIds().isEmpty());
-        assertTrue(criteria.getNoneOfSubstudyIds().isEmpty());
+        assertTrue(criteria.getAllOfStudyIds().isEmpty());
+        assertTrue(criteria.getNoneOfStudyIds().isEmpty());
     }
     
     @Test

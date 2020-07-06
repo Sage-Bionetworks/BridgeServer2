@@ -40,7 +40,7 @@ public class SubpopulationService {
     private SubpopulationDao subpopDao;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
     private StudyConsentForm defaultConsentDocument;
     private CacheProvider cacheProvider;
     
@@ -61,8 +61,8 @@ public class SubpopulationService {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     @Value("classpath:conf/app-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
@@ -86,9 +86,9 @@ public class SubpopulationService {
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setAppId(app.getIdentifier());
 
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation created = subpopDao.createSubpopulation(subpop);
@@ -145,9 +145,9 @@ public class SubpopulationService {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);

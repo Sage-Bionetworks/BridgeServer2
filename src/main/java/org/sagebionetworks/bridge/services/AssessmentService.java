@@ -60,7 +60,7 @@ public class AssessmentService {
     
     private AssessmentConfigService configService;
     
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
@@ -73,8 +73,8 @@ public class AssessmentService {
     }
     
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     // accessor to mock for tests
@@ -195,7 +195,7 @@ public class AssessmentService {
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
+        AssessmentValidator validator = new AssessmentValidator(studyService, appId);
         Validate.entityThrowingException(validator, assessment);
 
         return dao.updateAssessment(appId, assessment);        
@@ -264,8 +264,8 @@ public class AssessmentService {
 
     /**
      * Takes a reference to an assessment in the caller's context (appId), and creates an 
-     * assessment in the shared context. Stores the full substudy identifier (appId + 
-     * substudyId) as the "ownerId" in shared context for authorization checks on 
+     * assessment in the shared context. Stores the full study identifier (appId + 
+     * studyId) as the "ownerId" in shared context for authorization checks on 
      * operations in the shared context (only owners can edit their shared assessments).
      * The caller must be associated to the organization that own's the assessment 
      * locally.
@@ -330,7 +330,7 @@ public class AssessmentService {
         // If the caller did not provide an ownerId, but they only have one ownerId, use 
         // that ownerId. It's possible there are client apps where the organizational 
         // memberships are not exposed to the calling user.
-        Set<String> ownerIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> ownerIds = BridgeUtils.getRequestContext().getCallerStudies();
         if (ownerId == null && ownerIds.size() == 1) {
             ownerId = Iterables.getFirst(ownerIds, null);
         }
@@ -395,7 +395,7 @@ public class AssessmentService {
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
+        AssessmentValidator validator = new AssessmentValidator(studyService, appId);
         Validate.entityThrowingException(validator, assessment);
         
         AssessmentConfig config = new AssessmentConfig();

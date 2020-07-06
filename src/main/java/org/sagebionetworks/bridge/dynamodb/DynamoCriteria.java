@@ -33,8 +33,8 @@ public final class DynamoCriteria implements Criteria {
     private String language;
     private Set<String> allOfGroups = Sets.newHashSet();
     private Set<String> noneOfGroups = Sets.newHashSet();
-    private Set<String> allOfSubstudyIds = Sets.newHashSet();
-    private Set<String> noneOfSubstudyIds = Sets.newHashSet();
+    private Set<String> allOfStudyIds = Sets.newHashSet();
+    private Set<String> noneOfStudyIds = Sets.newHashSet();
     private Map<String, Integer> minAppVersions = Maps.newHashMap();
     private Map<String, Integer> maxAppVersions = Maps.newHashMap();
     
@@ -112,20 +112,20 @@ public final class DynamoCriteria implements Criteria {
     @Override
     @DynamoDBAttribute
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
-    public Set<String> getAllOfSubstudyIds() {
-        return allOfSubstudyIds;
+    public Set<String> getAllOfStudyIds() {
+        return allOfStudyIds;
     }
-    public void setAllOfSubstudyIds(Set<String> allOfSubstudyIds) {
-        this.allOfSubstudyIds = (allOfSubstudyIds == null) ? new HashSet<>() : allOfSubstudyIds;
+    public void setAllOfStudyIds(Set<String> allOfStudyIds) {
+        this.allOfStudyIds = (allOfStudyIds == null) ? new HashSet<>() : allOfStudyIds;
     }
     @Override
     @DynamoDBAttribute
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
-    public Set<String> getNoneOfSubstudyIds() {
-        return noneOfSubstudyIds;
+    public Set<String> getNoneOfStudyIds() {
+        return noneOfStudyIds;
     }
-    public void setNoneOfSubstudyIds(Set<String> noneOfSubstudyIds) {
-        this.noneOfSubstudyIds = (noneOfSubstudyIds == null) ? new HashSet<>() : noneOfSubstudyIds;
+    public void setNoneOfStudyIds(Set<String> noneOfStudyIds) {
+        this.noneOfStudyIds = (noneOfStudyIds == null) ? new HashSet<>() : noneOfStudyIds;
     }
     
     /**
@@ -188,8 +188,8 @@ public final class DynamoCriteria implements Criteria {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups, allOfSubstudyIds,
-                noneOfSubstudyIds);
+        return Objects.hash(key, language, maxAppVersions, minAppVersions, allOfGroups, noneOfGroups, allOfStudyIds,
+                noneOfStudyIds);
     }
     @Override
     public boolean equals(Object obj) {
@@ -202,8 +202,8 @@ public final class DynamoCriteria implements Criteria {
                 Objects.equals(language, other.language) && 
                 Objects.equals(noneOfGroups, other.noneOfGroups) && 
                 Objects.equals(allOfGroups, other.allOfGroups) && 
-                Objects.equals(noneOfSubstudyIds, other.noneOfSubstudyIds) && 
-                Objects.equals(allOfSubstudyIds, other.allOfSubstudyIds) && 
+                Objects.equals(noneOfStudyIds, other.noneOfStudyIds) && 
+                Objects.equals(allOfStudyIds, other.allOfStudyIds) && 
                 Objects.equals(minAppVersions, other.minAppVersions) && 
                 Objects.equals(maxAppVersions, other.maxAppVersions);
     }

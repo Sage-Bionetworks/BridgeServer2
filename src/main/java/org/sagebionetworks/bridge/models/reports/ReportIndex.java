@@ -12,9 +12,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 /**
  * <p>An index entry of an identifier used for a report in a study. It's possible to have the same identifier 
  * used for a study and a participant report, so the ReportIndex tables support this by including the type 
- * as well as the app in the record's hash key. When an index is created, the substudies it is associated 
- * to must be a subset of the caller's substudies (if the caller has substudies... otherwise setting substudies 
- * is optional and any substudies can be set). This information is used to filter the reports that other 
+ * as well as the app in the record's hash key. When an index is created, the studies it is associated 
+ * to must be a subset of the caller's studies (if the caller has studies... otherwise setting studies 
+ * is optional and any studies can be set). This information is used to filter the reports that other 
  * callers can see. </p>
  *
  * <p>Study index records can be deleted when study reports are deleted, but we can't do the same for 
@@ -36,8 +36,8 @@ public interface ReportIndex extends BridgeEntity {
     String getIdentifier();
     void setIdentifier(String identifier);
     
-    Set<String> getSubstudyIds();
-    void setSubstudyIds(Set<String> substudyIds);
+    Set<String> getStudyIds();
+    void setStudyIds(Set<String> studyIds);
     
     boolean isPublic();
     void setPublic(boolean isPublic);

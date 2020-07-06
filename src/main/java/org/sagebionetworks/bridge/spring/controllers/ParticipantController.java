@@ -142,7 +142,7 @@ public class ParticipantController extends BaseController {
         participantService.updateParticipant(app, updated);
         
         // Construction of the participant record now includes some fields that aren't set directly by the update,
-        // such as substudy associations. Load a completely updated participant record. Do get history 
+        // such as study associations. Load a completely updated participant record. Do get history 
         // for consent and session.
         StudyParticipant updatedParticipant = participantService.getParticipant(app, session.getId(), true);
         RequestContext reqContext = BridgeUtils.getRequestContext();
@@ -153,7 +153,7 @@ public class ParticipantController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updatedParticipant.getDataGroups())
-                .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
+                .withUserStudyIds(updatedParticipant.getStudyIds())
                 .withAppId(session.getAppId())
                 .build();
         

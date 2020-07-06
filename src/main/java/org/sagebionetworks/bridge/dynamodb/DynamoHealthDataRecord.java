@@ -49,7 +49,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
-    private Map<String, String> userSubstudyMemberships;
+    private Map<String, String> userStudyMemberships;
     private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
@@ -320,15 +320,15 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     
     /** {@inheritDoc} */
     @Override
-    public Map<String, String> getUserSubstudyMemberships() {
-        return userSubstudyMemberships;
+    public Map<String, String> getUserStudyMemberships() {
+        return userStudyMemberships;
     }
     
-    /** @see #getUserSubstudyMemberships() */
+    /** @see #getUserStudyMemberships() */
     @Override
-    public void setUserSubstudyMemberships(Map<String, String> userSubstudyMemberships) {
-        this.userSubstudyMemberships = (userSubstudyMemberships != null && !userSubstudyMemberships.isEmpty())
-                ? userSubstudyMemberships : null;
+    public void setUserStudyMemberships(Map<String, String> userStudyMemberships) {
+        this.userStudyMemberships = (userStudyMemberships != null && !userStudyMemberships.isEmpty())
+                ? userStudyMemberships : null;
     }
 
     /** {@inheritDoc} */

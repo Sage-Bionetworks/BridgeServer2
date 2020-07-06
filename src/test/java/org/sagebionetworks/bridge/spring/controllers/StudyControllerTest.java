@@ -38,17 +38,17 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.StudyService;
 
-public class SubstudyControllerTest extends Mockito {
+public class StudyControllerTest extends Mockito {
 
     private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
-    private static final List<Substudy> SUBSTUDIES = ImmutableList.of(Substudy.create(), Substudy.create());
+    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
 
     @Mock
-    SubstudyService service;
+    StudyService service;
 
     @Mock
     HttpServletRequest mockRequest;
@@ -57,11 +57,11 @@ public class SubstudyControllerTest extends Mockito {
     HttpServletResponse mockResponse;
 
     @Captor
-    ArgumentCaptor<Substudy> substudyCaptor;
+    ArgumentCaptor<Study> studyCaptor;
 
     @Spy
     @InjectMocks
-    SubstudyController controller;
+    StudyController controller;
 
     UserSession session;
 
@@ -72,7 +72,7 @@ public class SubstudyControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
         session.setAppId(TEST_APP_ID);
 
-        controller.setSubstudyService(service);
+        controller.setStudyService(service);
 
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
@@ -83,106 +83,106 @@ public class SubstudyControllerTest extends Mockito {
 
     @Test
     public void verifyAnnotations() throws Exception {
-        assertCrossOrigin(SubstudyController.class);
-        assertGet(SubstudyController.class, "getSubstudies");
-        assertCreate(SubstudyController.class, "createSubstudy");
-        assertGet(SubstudyController.class, "getSubstudy");
-        assertPost(SubstudyController.class, "updateSubstudy");
-        assertDelete(SubstudyController.class, "deleteSubstudy");
+        assertCrossOrigin(StudyController.class);
+        assertGet(StudyController.class, "getStudies");
+        assertCreate(StudyController.class, "createStudy");
+        assertGet(StudyController.class, "getStudy");
+        assertPost(StudyController.class, "updateStudy");
+        assertDelete(StudyController.class, "deleteStudy");
     }
 
     @Test
-    public void getSubstudiesExcludeDeleted() throws Exception {
-        when(service.getSubstudies(TEST_APP_ID, false)).thenReturn(SUBSTUDIES);
+    public void getStudiesExcludeDeleted() throws Exception {
+        when(service.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
 
-        ResourceList<Substudy> result = controller.getSubstudies(false);
+        ResourceList<Study> result = controller.getStudies(false);
 
         assertEquals(result.getItems().size(), 2);
         assertFalse((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getSubstudies(TEST_APP_ID, false);
+        verify(service).getStudies(TEST_APP_ID, false);
     }
 
     @Test
-    public void getSubstudiesIncludeDeleted() throws Exception {
-        when(service.getSubstudies(TEST_APP_ID, true)).thenReturn(SUBSTUDIES);
+    public void getStudiesIncludeDeleted() throws Exception {
+        when(service.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
 
-        ResourceList<Substudy> result = controller.getSubstudies(true);
+        ResourceList<Study> result = controller.getStudies(true);
 
         assertEquals(result.getItems().size(), 2);
         assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getSubstudies(TEST_APP_ID, true);
+        verify(service).getStudies(TEST_APP_ID, true);
     }
 
     @Test
-    public void createSubstudy() throws Exception {
-        when(service.createSubstudy(any(), any())).thenReturn(VERSION_HOLDER);
+    public void createStudy() throws Exception {
+        when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
 
-        Substudy substudy = Substudy.create();
-        substudy.setId("oneId");
-        substudy.setName("oneName");
-        mockRequestBody(mockRequest, substudy);
+        Study study = Study.create();
+        study.setId("oneId");
+        study.setName("oneName");
+        mockRequestBody(mockRequest, study);
 
-        VersionHolder result = controller.createSubstudy();
+        VersionHolder result = controller.createStudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createSubstudy(eq(TEST_APP_ID), substudyCaptor.capture());
+        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
-        Substudy persisted = substudyCaptor.getValue();
+        Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
-    public void getSubstudy() throws Exception {
-        Substudy substudy = Substudy.create();
-        substudy.setId("oneId");
-        substudy.setName("oneName");
-        when(service.getSubstudy(TEST_APP_ID, "id", true)).thenReturn(substudy);
+    public void getStudy() throws Exception {
+        Study study = Study.create();
+        study.setId("oneId");
+        study.setName("oneName");
+        when(service.getStudy(TEST_APP_ID, "id", true)).thenReturn(study);
 
-        Substudy result = controller.getSubstudy("id");
-        assertEquals(result, substudy);
+        Study result = controller.getStudy("id");
+        assertEquals(result, study);
 
         assertEquals(result.getId(), "oneId");
         assertEquals(result.getName(), "oneName");
 
-        verify(service).getSubstudy(TEST_APP_ID, "id", true);
+        verify(service).getStudy(TEST_APP_ID, "id", true);
     }
 
     @Test
-    public void updateSubstudy() throws Exception {
-        Substudy substudy = Substudy.create();
-        substudy.setId("oneId");
-        substudy.setName("oneName");
-        mockRequestBody(mockRequest, substudy);
+    public void updateStudy() throws Exception {
+        Study study = Study.create();
+        study.setId("oneId");
+        study.setName("oneName");
+        mockRequestBody(mockRequest, study);
 
-        when(service.updateSubstudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
+        when(service.updateStudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
 
-        VersionHolder result = controller.updateSubstudy("id");
+        VersionHolder result = controller.updateStudy("id");
 
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).updateSubstudy(eq(TEST_APP_ID), substudyCaptor.capture());
+        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
-        Substudy persisted = substudyCaptor.getValue();
+        Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
-    public void deleteSubstudyLogical() throws Exception {
-        StatusMessage result = controller.deleteSubstudy("id", false);
-        assertEquals(result, SubstudyController.DELETED_MSG);
+    public void deleteStudyLogical() throws Exception {
+        StatusMessage result = controller.deleteStudy("id", false);
+        assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteSubstudy(TEST_APP_ID, "id");
+        verify(service).deleteStudy(TEST_APP_ID, "id");
     }
 
     @Test
-    public void deleteSubstudyPhysical() throws Exception {
-        StatusMessage result = controller.deleteSubstudy("id", true);
-        assertEquals(result, SubstudyController.DELETED_MSG);
+    public void deleteStudyPhysical() throws Exception {
+        StatusMessage result = controller.deleteStudy("id", true);
+        assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteSubstudyPermanently(TEST_APP_ID, "id");
+        verify(service).deleteStudyPermanently(TEST_APP_ID, "id");
     }
 }

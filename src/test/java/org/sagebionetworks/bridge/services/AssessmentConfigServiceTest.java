@@ -131,10 +131,10 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "AssessmentConfig not found.")
     public void getSharedAssessmentConfigNotFound() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                .withCallerStudies(ImmutableSet.of("studyA")).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("api:substudyA");
+        assessment.setOwnerId("api:studyA");
         when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, GUID))
             .thenReturn(assessment);
         
@@ -313,10 +313,10 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void getAssessmentConfigCheckOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                .withCallerStudies(ImmutableSet.of("studyA")).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("substudyB");
+        assessment.setOwnerId("studyB");
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
@@ -327,10 +327,10 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void updateAssessmentConfigCheckOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                .withCallerStudies(ImmutableSet.of("studyA")).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("substudyB");
+        assessment.setOwnerId("studyB");
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         
@@ -342,10 +342,10 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void customizeAssessmentConfigCheckOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                .withCallerStudies(ImmutableSet.of("studyA")).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId("substudyB");
+        assessment.setOwnerId("studyB");
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
         

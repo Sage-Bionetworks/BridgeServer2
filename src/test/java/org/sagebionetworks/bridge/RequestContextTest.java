@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 public class RequestContextTest {
 
     private static final String REQUEST_ID = "requestId";
-    private static final Set<String> SUBSTUDIES = ImmutableSet.of("testA", "testB");
+    private static final Set<String> STUDIES = ImmutableSet.of("testA", "testB");
     private static final Set<Roles> ROLES = ImmutableSet.of(DEVELOPER, WORKER);
 
     @Test
@@ -39,11 +39,11 @@ public class RequestContextTest {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerAppId(null)
-                .withCallerSubstudies(null).withCallerRoles(null).withCallerUserId(null).withCallerLanguages(null)
+                .withCallerStudies(null).withCallerRoles(null).withCallerUserId(null).withCallerLanguages(null)
                 .withCallerClientInfo(null).withCallerOrgMembership(null).build();
         
         assertNotNull(nullContext.getId());
-        assertTrue(nullContext.getCallerSubstudies().isEmpty());
+        assertTrue(nullContext.getCallerStudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerAppId());
         assertNull(nullContext.getCallerUserId());
@@ -64,7 +64,7 @@ public class RequestContextTest {
         // clear the ThreadLocal variable in a way that prevents making logs of null-pointer checks
         // in the code).
         assertNull(NULL_INSTANCE.getId());
-        assertTrue(NULL_INSTANCE.getCallerSubstudies().isEmpty());
+        assertTrue(NULL_INSTANCE.getCallerStudies().isEmpty());
         assertTrue(NULL_INSTANCE.getCallerRoles().isEmpty());
         assertNull(NULL_INSTANCE.getCallerAppId());
         assertNull(NULL_INSTANCE.getCallerUserId());
@@ -81,14 +81,14 @@ public class RequestContextTest {
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerSubstudies(SUBSTUDIES)
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudies(STUDIES)
                 .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
                 .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo)
                 .withCallerOrgMembership(TEST_ORG_ID).build();
 
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
-        assertEquals(context.getCallerSubstudies(), SUBSTUDIES);
+        assertEquals(context.getCallerStudies(), STUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
         assertEquals(context.getCallerLanguages(), LANGUAGES);
@@ -105,7 +105,7 @@ public class RequestContextTest {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
-                .withCallerAppId(TEST_APP_ID).withCallerSubstudies(SUBSTUDIES).withMetrics(metrics)
+                .withCallerAppId(TEST_APP_ID).withCallerStudies(STUDIES).withMetrics(metrics)
                 .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
                 .withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID).build();
         
@@ -113,7 +113,7 @@ public class RequestContextTest {
         
         assertEquals(copy.getId(), "did-change-this");
         assertEquals(copy.getCallerAppId(), TEST_APP_ID);
-        assertEquals(copy.getCallerSubstudies(), SUBSTUDIES);
+        assertEquals(copy.getCallerStudies(), STUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);
         assertEquals(copy.getCallerUserId(), USER_ID);
         assertEquals(copy.getCallerLanguages(), LANGUAGES);
