@@ -40,6 +40,8 @@ public class OrganizationService {
     
     private AccountDao accountDao;
     
+    private SessionUpdateService sessionUpdateService;
+    
     @Autowired
     final void setOrganizationDao(OrganizationDao orgDao) {
         this.orgDao = orgDao;
@@ -48,6 +50,11 @@ public class OrganizationService {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
+    }
+    
+    @Autowired
+    final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
+        this.sessionUpdateService = sessionUpdateService;
     }
     
     DateTime getCreatedOn() {
@@ -177,6 +184,7 @@ public class OrganizationService {
 
         account.setOrgMembership(identifier);
         accountDao.updateAccount(account, null);
+        sessionUpdateService.updateOrgMembership(account.getId(), identifier);
     }
     
     public void removeMember(String appId, String identifier, AccountId accountId) {
@@ -198,5 +206,7 @@ public class OrganizationService {
         }
         account.setOrgMembership(null);
         accountDao.updateAccount(account, null);
+        sessionUpdateService.updateOrgMembership(account.getId(), null);
     }
+
 }
