@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -83,20 +83,20 @@ public class FPHSServiceTest {
     public void registerExternalIdentifier() throws Exception {
         TestUtils.mockEditAccount(mockAccountService, mockAccount);
         Set<String> dataGroups = Sets.newHashSet();
-        Set<AccountSubstudy> accountSubstudies = Sets.newHashSet();
+        Set<Enrollment> enrollments = Sets.newHashSet();
         when(mockAccount.getDataGroups()).thenReturn(dataGroups);
-        when(mockAccount.getAccountSubstudies()).thenReturn(accountSubstudies);
+        when(mockAccount.getEnrollments()).thenReturn(enrollments);
         when(mockAccount.getId()).thenReturn("userId");
         
         service.registerExternalIdentifier(TEST_APP_ID, EXTERNAL_ID, externalId);
         verify(mockDao).registerExternalId(externalId);
         assertEquals(dataGroups, ImmutableSet.of("football_player"));
-        assertEquals(accountSubstudies.size(), 1);
+        assertEquals(enrollments.size(), 1);
         
-        AccountSubstudy acctSubstudy = Iterables.getFirst(accountSubstudies, null);
-        assertEquals(acctSubstudy.getAppId(), TEST_APP_ID);
-        assertEquals(acctSubstudy.getSubstudyId(), "harvard");
-        assertEquals(acctSubstudy.getExternalId(), EXTERNAL_ID);
+        Enrollment enrollment = Iterables.getFirst(enrollments, null);
+        assertEquals(enrollment.getAppId(), TEST_APP_ID);
+        assertEquals(enrollment.getSubstudyId(), "harvard");
+        assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
     }
     
     @Test

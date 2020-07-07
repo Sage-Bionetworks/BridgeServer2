@@ -29,7 +29,7 @@ import com.google.common.collect.Iterables;
 /**
  * Service for managing external IDs. These methods can be called whether or not strict validation of IDs is enabled. 
  * If it's enabled, reservation and assignment will work as expected, otherwise these silently do nothing. The external 
- * ID will be associated via the AccountSubstudy collection, thus assignment of an external ID associates an account 
+ * ID will be associated via the Enrollment collection, thus assignment of an external ID associates an account 
  * to a substudy (and removing an external ID removes that assignment).
  */
 @Component

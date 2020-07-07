@@ -8,13 +8,13 @@ import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudyId;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.substudies.EnrollmentId;
 
 @Entity
 @Table(name = "AccountsSubstudies")
-@IdClass(AccountSubstudyId.class)
-public final class HibernateAccountSubstudy implements AccountSubstudy {
+@IdClass(EnrollmentId.class)
+public final class HibernateEnrollment implements Enrollment {
 
     @Id
     private String appId;
@@ -26,13 +26,14 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
     private String externalId;
     
     // Needed for Hibernate, or else you have to create an instantiation helper class
-    public HibernateAccountSubstudy() {
+    public HibernateEnrollment() {
     }
     
-    public HibernateAccountSubstudy(String appId, String substudyId, String accountId) {
+    public HibernateEnrollment(String appId, String substudyId, String accountId, String externalId) {
         this.appId = appId;
         this.substudyId = substudyId;
         this.accountId = accountId;
+        this.externalId = externalId;
     }
     
     public String getAppId() {
@@ -47,12 +48,6 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
     public String getExternalId() {
         return externalId;
     }
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
-    public void setSubstudyId(String substudyId) {
-        this.substudyId = substudyId;
-    }
 
     @Override
     public int hashCode() {
@@ -65,7 +60,7 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        HibernateAccountSubstudy other = (HibernateAccountSubstudy) obj;
+        HibernateEnrollment other = (HibernateEnrollment) obj;
         return Objects.equals(accountId, other.accountId) && 
                Objects.equals(externalId, other.externalId) && 
                Objects.equals(appId, other.appId) && 
@@ -74,7 +69,7 @@ public final class HibernateAccountSubstudy implements AccountSubstudy {
 
     @Override
     public String toString() {
-        return "HibernateAccountSubstudy [appId=" + appId + ", substudyId=" + substudyId + ", accountId="
+        return "HibernateEnrollment [appId=" + appId + ", substudyId=" + substudyId + ", accountId="
                 + accountId + ", externalId=" + externalId + "]";
     }
 }

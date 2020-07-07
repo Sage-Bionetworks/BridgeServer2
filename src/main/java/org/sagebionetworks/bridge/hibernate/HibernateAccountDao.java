@@ -118,8 +118,8 @@ public class HibernateAccountDao implements AccountDao {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
-        builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
-        builder.append("WITH acct.id = acctSubstudy.accountId");
+        builder.append("LEFT JOIN acct.enrollments AS enrollment");
+        builder.append("WITH acct.id = enrollment.accountId");
         builder.append("WHERE acct.appId = :appId", "appId", appId);
         
         if (accountId != null) {
@@ -135,7 +135,7 @@ public class HibernateAccountDao implements AccountDao {
             } else if (unguarded.getSynapseUserId() != null) {
                 builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
+                builder.append("AND enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
@@ -164,7 +164,7 @@ public class HibernateAccountDao implements AccountDao {
         }
         Set<String> callerSubstudies = context.getCallerSubstudies();
         if (!callerSubstudies.isEmpty()) {
-            builder.append("AND acctSubstudy.substudyId IN (:substudies)", "substudies", callerSubstudies);
+            builder.append("AND enrollment.substudyId IN (:substudies)", "substudies", callerSubstudies);
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");        
@@ -187,6 +187,9 @@ public class HibernateAccountDao implements AccountDao {
         // substudies, and Y=2 once we add attributes. On the downside, this approach loads all 
         // HibernateAccount fields, like clientData, though it is not returned.
         QueryBuilder builder = makeQuery(ID_QUERY, appId, null, search, false);
+        
+        System.out.println(builder.getQuery());
+        
         List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
                 search.getOffsetBy(), search.getPageSize(), String.class);
         
@@ -248,7 +251,7 @@ public class HibernateAccountDao implements AccountDao {
         
         SubstudyAssociations assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getAccountSubstudies());
+            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(acct.getEnrollments());
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSubstudyIds(assoc.getSubstudyIdsVisibleToCaller());

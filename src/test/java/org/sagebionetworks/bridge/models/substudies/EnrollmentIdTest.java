@@ -8,17 +8,17 @@ import org.testng.annotations.Test;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
-public class AccountSubstudyIdTest {
+public class EnrollmentIdTest {
 
     @Test
     public void hashCodeEquals() {
-        EqualsVerifier.forClass(AccountSubstudyId.class).allFieldsShouldBeUsed().suppress(Warning.NONFINAL_FIELDS)
+        EqualsVerifier.forClass(EnrollmentId.class).allFieldsShouldBeUsed().suppress(Warning.NONFINAL_FIELDS)
                 .verify();
     }
     
     @Test
     public void create() { 
-        AccountSubstudyId key = new AccountSubstudyId(TEST_APP_ID, "substudyId", "accountId");
+        EnrollmentId key = new EnrollmentId(TEST_APP_ID, "substudyId", "accountId");
         assertEquals(key.getAppId(), TEST_APP_ID);
         assertEquals(key.getSubstudyId(), "substudyId");
         assertEquals(key.getAccountId(), "accountId");

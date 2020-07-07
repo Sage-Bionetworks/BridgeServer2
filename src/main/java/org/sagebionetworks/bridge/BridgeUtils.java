@@ -57,7 +57,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 import org.springframework.core.annotation.AnnotationUtils;
@@ -114,10 +114,10 @@ public class BridgeUtils {
 
     public static Map<String,String> mapSubstudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
-            String value = (acctSubstudy.getExternalId() == null) ? 
-                    "<none>" : acctSubstudy.getExternalId();
-            builder.put(acctSubstudy.getSubstudyId(), value);
+        for (Enrollment enrollment : account.getEnrollments()) {
+            String value = (enrollment.getExternalId() == null) ? 
+                    "<none>" : enrollment.getExternalId();
+            builder.put(enrollment.getSubstudyId(), value);
         }
         return builder.build();
     }
@@ -140,15 +140,15 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        return account.getAccountSubstudies().stream()
-                .map(AccountSubstudy::getExternalId)
+        return account.getEnrollments().stream()
+                .map(Enrollment::getExternalId)
                 .filter(Objects::nonNull)
                 .collect(toImmutableSet());
     }
     
     public static Set<String> collectSubstudyIds(Account account) {
-        return account.getAccountSubstudies().stream()
-                .map(AccountSubstudy::getSubstudyId)
+        return account.getEnrollments().stream()
+                .map(Enrollment::getSubstudyId)
                 .collect(toImmutableSet());
     }
     
@@ -173,7 +173,7 @@ public class BridgeUtils {
             if (BridgeUtils.isEmpty(callerSubstudies)) {
                 return account;
             }
-            Set<AccountSubstudy> matched = account.getAccountSubstudies().stream()
+            Set<Enrollment> matched = account.getEnrollments().stream()
                     .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
                     .collect(toSet());
             
@@ -181,7 +181,7 @@ public class BridgeUtils {
                 // Hibernate managed objects use a collection implementation that tracks changes,
                 // and shouldn't be set with a Java library collection. Here it is okay because 
                 // we're filtering an object to return through the API, and it won't be persisted.
-                account.setAccountSubstudies(matched);
+                account.setEnrollments(matched);
                 return account;
             }
         }
@@ -189,21 +189,21 @@ public class BridgeUtils {
     }
     
     /**
-     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
+     * Callers only see the enrollment records they themselves are assigned to, unless they have no
      * substudy memberships (then they are global and see everything).
      */
-    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
-        if (accountSubstudies == null || accountSubstudies.isEmpty()) {
+    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends Enrollment> enrollments) {
+        if (enrollments == null || enrollments.isEmpty()) {
             return NO_ASSOCIATIONS;
         }
         ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        for (AccountSubstudy acctSubstudy : accountSubstudies) {
-            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
-                substudyIds.add(acctSubstudy.getSubstudyId());
-                if (acctSubstudy.getExternalId() != null) {
-                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
+        for (Enrollment enrollment : enrollments) {
+            if (callerSubstudies.isEmpty() || callerSubstudies.contains(enrollment.getSubstudyId())) {
+                substudyIds.add(enrollment.getSubstudyId());
+                if (enrollment.getExternalId() != null) {
+                    externalIds.put(enrollment.getSubstudyId(), enrollment.getExternalId());
                 }
             }
         }
