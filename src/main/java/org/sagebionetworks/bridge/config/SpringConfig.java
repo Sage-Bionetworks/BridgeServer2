@@ -621,7 +621,6 @@ public class SpringConfig {
         // https://stackoverflow.com/questions/27536380/how-to-connect-to-a-remote-mysql-database-via-ssl-using-play-framework/27536391
         Path trustStorePath = null;
         try {
-            //trustStorePath = Paths.get(new ClassPathResource("truststore.jks").getURI().toString());
             trustStorePath = Paths.get(classLoader.getResource("truststore.jks").toURI());
         } catch (URISyntaxException ex/*IOException ex*/) {
             throw new RuntimeException("Error loading truststore from classpath: " + ex.getMessage(), ex);
@@ -633,7 +632,6 @@ public class SpringConfig {
         Properties props = new Properties();
         props.put("hibernate.connection.characterEncoding", "UTF-8");
         props.put("hibernate.connection.CharSet", "UTF-8");
-        props.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
         props.put("hibernate.connection.useUnicode", true);
         props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 

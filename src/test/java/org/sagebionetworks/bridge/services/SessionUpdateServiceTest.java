@@ -5,8 +5,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTimeZone;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -223,5 +226,33 @@ public class SessionUpdateServiceTest {
         
         verify(mockCacheProvider).setUserSession(session);
         assertEquals(session.getParticipant().getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
+    }
+    
+    @Test
+    public void updateOrgMembershipAddMembership() {
+        UserSession session = new UserSession();
+        session.setParticipant(new StudyParticipant.Builder().withOrgMembership("test").build());
+        when(mockCacheProvider.getUserSessionByUserId(USER_ID)).thenReturn(session);
+        
+        ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        
+        service.updateOrgMembership(USER_ID, "newOrgId");
+        
+        verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
+        assertEquals("newOrgId", sessionCaptor.getValue().getParticipant().getOrgMembership());
+    }
+
+    @Test
+    public void updateOrgMembershipRemoveMembership() {
+        UserSession session = new UserSession();
+        session.setParticipant(new StudyParticipant.Builder().withOrgMembership("test").build());
+        when(mockCacheProvider.getUserSessionByUserId(USER_ID)).thenReturn(session);
+        
+        ArgumentCaptor<UserSession> sessionCaptor = ArgumentCaptor.forClass(UserSession.class);
+        
+        service.updateOrgMembership(USER_ID, null);
+        
+        verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
+        assertNull(sessionCaptor.getValue().getParticipant().getOrgMembership());
     }
 }
