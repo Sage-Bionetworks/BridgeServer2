@@ -15,16 +15,16 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidator implements Validator {
 
-    private final SubstudyService substudyService;
     private final String appId;
+    private final OrganizationService organizationService;
     
-    public AssessmentValidator(SubstudyService substudyService, String appId) {
-        this.substudyService = substudyService;
+    public AssessmentValidator(String appId, OrganizationService organizationService) {
         this.appId = appId;
+        this.organizationService = organizationService;
     }
     
     @Override
@@ -81,17 +81,17 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getOwnerId())) {
             errors.rejectValue("ownerId", CANNOT_BE_BLANK);
         } else {
-            String substudyId = null;
-            String ownerId = null;
+            String ownerAppId = null;
+            String ownerOrgId = null;
             if (SHARED_APP_ID.equals(appId)) {
                 String[] parts = assessment.getOwnerId().split(":");
-                substudyId = parts[0];
-                ownerId = parts[1];
+                ownerAppId = parts[0];
+                ownerOrgId = parts[1];
             } else {
-                substudyId = appId;
-                ownerId = assessment.getOwnerId();
+                ownerAppId = appId;
+                ownerOrgId = assessment.getOwnerId();
             }
-            if (substudyService.getSubstudy(substudyId, ownerId, false) == null) {
+            if (organizationService.getOrganization(ownerAppId, ownerOrgId) == null) {
                 errors.rejectValue("ownerId", "is not a valid organization ID");
             }
         }

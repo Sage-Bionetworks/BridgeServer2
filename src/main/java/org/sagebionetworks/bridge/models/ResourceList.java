@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
  */
 public class ResourceList<T> {
     
+    public static final String ADMIN_ONLY = "adminOnly";
     public static final String ALL_OF_GROUPS = "allOfGroups";
     public static final String ASSIGNMENT_FILTER = "assignmentFilter";
     public static final String CATEGORIES = "categories"; // should be a set or list
@@ -37,6 +38,7 @@ public class ResourceList<T> {
     public static final String NONE_OF_GROUPS = "noneOfGroups";
     public static final String OFFSET_BY = "offsetBy";
     public static final String OFFSET_KEY = "offsetKey";
+    public static final String ORG_MEMBERSHIP = "orgMembership";
     public static final String PAGE_SIZE = "pageSize";
     public static final String PHONE_FILTER = "phoneFilter";
     public static final String REPORT_TYPE = "reportType";

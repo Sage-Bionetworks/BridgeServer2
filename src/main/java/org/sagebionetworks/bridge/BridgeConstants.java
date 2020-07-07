@@ -30,7 +30,7 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
-    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
+    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to the caller’s organization.";
     public static final String NEGATIVE_OFFSET_ERROR = "offsetBy cannot be negative";
     public static final String NONPOSITIVE_REVISION_ERROR = "revision cannot be less than 1";
 
