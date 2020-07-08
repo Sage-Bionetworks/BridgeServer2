@@ -22,6 +22,7 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -34,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -77,6 +79,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -133,6 +137,20 @@ public class CRCControllerTest extends Mockito {
             +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
             +"'subpremise' ] } ], 'status' : 'OK' }");
     static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
+    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','participant'"
+            +":[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':"
+            +"'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':"
+            +"'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
     
     @Mock
     ParticipantService mockParticipantService;
@@ -444,7 +462,7 @@ public class CRCControllerTest extends Mockito {
         Appointment appointment = new Appointment();
 
         // add a wrong participant to verify we go through them all and look for ours
-        addAppointmentParticipantComponent(appointment, "Location/some-other-id");
+        addAppointmentParticipantComponent(appointment, "Location/foo");
         addAppointmentSageId(appointment, USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
@@ -477,15 +495,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), createJson("{'resourceType':'Appointment','participant':[{'actor'"
-                +":{'reference':'Location/some-other-id','telecom':[{'system':'phone','value':'1231231235',"
-                +"'use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':'NY',"
-                +"'postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,'lng':"
-                +"-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
-                +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
-                +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
-                +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-                +"'value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
     }
     
     @Test
@@ -521,14 +531,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), createJson("{'resourceType':'Appointment','participant':"
-                +"[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':'1231231235','use':"
-                +"'work'}],'address':{'line':['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'"
-                +"},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,'lng':-122.3510372},'southwest':{'lat':"
-                +"47.617759,'lng':-122.3525807}},'location':{'lat':47.6180007,'lng':-122.3516149},'location_type'"
-                +":'ROOFTOP','viewport':{'northeast':{'lat':47.6194358802915,'lng':-122.3504599697085},'southwest'"
-                +":{'lat':47.6167379197085,'lng':-122.3531579302915}}}}},{'actor':{'identifier':{'system':"
-                +"'https://ws.sagebridge.org/#userId','value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
     }
     
     @Test
@@ -1020,6 +1023,121 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getTelecom().size(), 1);
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
+    
+    @Test(expectedExceptions = ServiceUnavailableException.class)
+    public void addLocationIOException() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree("{}");
+        Account account = Account.create();
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+        
+        doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
+        
+        controller.addLocation(node, account, location);
+    }
+
+    @Test
+    public void addGeocodingInformationIOException() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(APPOINTMENT_JSON);
+        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+        doThrow(new IOException("Bad")).when(controller).get(any());
+        
+        controller.addGeocodingInformation(actor);
+        // JSON remains unchanged because request for geocoding failed.
+        assertEquals(appointment.toString(), APPOINTMENT_JSON);
+    }
+    
+    @Test
+    public void addGeocodingInformationHttpErrorResponse() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockGetLocation();
+
+        // However, the request for geocoding information goes awry
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(400);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(""));
+
+        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+      
+        controller.addLocation(node, account, location);
+        // JSON remains unchanged because request for geocoding failed.
+        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+    }
+
+    @Test
+    public void addGeocodingInformationBadPayload() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockGetLocation();
+
+        // However, the request for geocoding information goes awry
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("{\"foo\":\"bar\"}"));
+
+        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+      
+        controller.addLocation(node, account, location);
+        // Again, no error beyond logging, and JSON is unchanged.
+        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+    }
+
+    @Test
+    public void combineLocationJsonWorks() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+New+York+NY+10021");
+    }
+
+    @Test
+    public void combineLocationJsonIgnoresNull() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+        actor.remove("address");
+        
+        String result = controller.combineLocationJson(actor);
+        assertNull(result);
+    }
+    
+    @Test
+    public void combineLocationJsonIgnoresMissingFields() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        ((ObjectNode)actor.get("address")).remove("city");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+NY+10021");
+    }    
     
     private void verifyParticipant(JsonNode payload) {
         ArrayNode identifiers = (ArrayNode)payload.get("participant");

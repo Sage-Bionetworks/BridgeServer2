@@ -294,20 +294,22 @@ public class CRCController extends BaseController {
             JsonNode address = locationJson.get("address");
             
             ArrayNode participants = (ArrayNode)node.get("participant");
-            for (int i=0 ; i < participants.size(); i++) {
-                JsonNode child = participants.get(i);
-                ObjectNode actor = (ObjectNode)child.get("actor");
-                if (actor != null && actor.has("reference")) {
-                    String ref = actor.get("reference").textValue();
-                    if (ref.startsWith("Location")) {
-                        if (telecom != null) {
-                            actor.set("telecom", telecom);    
+            if (participants != null) {
+                for (int i=0 ; i < participants.size(); i++) {
+                    JsonNode child = participants.get(i);
+                    ObjectNode actor = (ObjectNode)child.get("actor");
+                    if (actor != null && actor.has("reference")) {
+                        String ref = actor.get("reference").textValue();
+                        if (ref.startsWith("Location")) {
+                            if (telecom != null) {
+                                actor.set("telecom", telecom);    
+                            }
+                            if (address != null) {
+                                actor.set("address", address);
+                                addGeocodingInformation(actor);                            
+                            }
+                            break;
                         }
-                        if (address != null) {
-                            actor.set("address", address);
-                            addGeocodingInformation(actor);                            
-                        }
-                        break;
                     }
                 }
             }
@@ -335,6 +337,8 @@ public class CRCController extends BaseController {
                         && payload.get("results").get(0).has("geometry")) {
                     JsonNode geometry = payload.get("results").get(0).get("geometry");
                     actor.set("geocoding", geometry);
+                } else {
+                    LOG.error("Error geocoding address (bad payload returned): " + payload.toString());
                 }
             } catch (IOException e) {
                 LOG.error("Error geocoding address", e);
