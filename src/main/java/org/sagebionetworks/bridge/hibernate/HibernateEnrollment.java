@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.Objects;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -17,8 +18,10 @@ import org.sagebionetworks.bridge.models.studies.EnrollmentId;
 public final class HibernateEnrollment implements Enrollment {
 
     @Id
+    @Column(name = "studyId")
     private String appId;
     @Id
+    @Column(name = "substudyId")
     private String studyId;
     @Id
     @JoinColumn(name = "account_id")

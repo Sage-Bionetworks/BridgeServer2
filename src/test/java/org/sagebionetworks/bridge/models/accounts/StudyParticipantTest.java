@@ -322,11 +322,14 @@ public class StudyParticipantTest {
     @Test
     public void oldJsonParsesCorrectly() throws Exception {
         // Old clients will continue to submit a username, this will be ignored.
-        String json = "{\"email\":\"email@email.com\",\"username\":\"username@email.com\",\"password\":\"password\",\"roles\":[],\"dataGroups\":[],\"type\":\"SignUp\"}";
+        String json = TestUtils.createJson("{'substudyIds': ['A', 'B'], 'email':'email@email.com',"
+                +"'username':'username@email.com','password':'password','roles':[],'dataGroups':"
+                +"[],'type':'SignUp'}");
         
         StudyParticipant participant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         assertEquals(participant.getEmail(), "email@email.com");
         assertEquals(participant.getPassword(), "password");
+        assertEquals(participant.getStudyIds(), ImmutableSet.of("A", "B"));
     }
     
     @Test

@@ -12,11 +12,13 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -106,6 +108,14 @@ public class RequestInfoTest {
         assertEquals(copy.getActivitiesAccessedOn(), ACTIVITIES_REQUESTED_ON.withZone(copy.getTimeZone()));
         assertEquals(copy.getUploadedOn(), UPLOADED_ON.withZone(copy.getTimeZone()));
         assertEquals(copy.getSignedInOn(), SIGNED_IN_ON.withZone(copy.getTimeZone()));
+    }
+    
+    @Test
+    public void deserializesSubstudyIdsCorrectly() throws Exception {
+        String json = TestUtils.createJson("{'userSubstudyIds': ['A','B']}");
+        
+        RequestInfo info = BridgeObjectMapper.get().readValue(json, RequestInfo.class);
+        assertEquals(info.getUserStudyIds(), ImmutableSet.of("A", "B"));
     }
 
     private RequestInfo createRequestInfo() {

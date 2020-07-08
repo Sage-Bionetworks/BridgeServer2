@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.hibernate.StringSetConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -211,6 +212,7 @@ public final class RequestInfo {
             }
             return this;
         }
+        @JsonAlias("userSubstudyIds")
         public Builder withUserStudyIds(Set<String> userStudyIds) {
             if (userStudyIds != null) {
                 this.userStudyIds = userStudyIds;

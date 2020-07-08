@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
@@ -207,6 +208,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-uploadedOn-index")
+    @DynamoDBAttribute(attributeName = "studyId")
     @Override
     public String getAppId() {
         return appId;
@@ -320,6 +322,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     
     /** {@inheritDoc} */
     @Override
+    @DynamoDBAttribute(attributeName = "userSubstudyMemberships")
     public Map<String, String> getUserStudyMemberships() {
         return userStudyMemberships;
     }

@@ -110,7 +110,7 @@ public final class DynamoCriteria implements Criteria {
     }
 
     @Override
-    @DynamoDBAttribute
+    @DynamoDBAttribute(attributeName = "allOfSubstudyIds")
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     public Set<String> getAllOfStudyIds() {
         return allOfStudyIds;
@@ -119,7 +119,7 @@ public final class DynamoCriteria implements Criteria {
         this.allOfStudyIds = (allOfStudyIds == null) ? new HashSet<>() : allOfStudyIds;
     }
     @Override
-    @DynamoDBAttribute
+    @DynamoDBAttribute(attributeName = "noneOfSubstudyIds")
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     public Set<String> getNoneOfStudyIds() {
         return noneOfStudyIds;

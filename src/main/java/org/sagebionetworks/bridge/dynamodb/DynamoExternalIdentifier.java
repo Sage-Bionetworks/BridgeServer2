@@ -45,7 +45,7 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
     
     @DynamoDBIndexRangeKey(attributeName = "substudyId", globalSecondaryIndexName = "studyId-substudyId-index")
     @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "studyId-substudyId-index")
-    @DynamoDBAttribute
+    @DynamoDBAttribute(attributeName = "substudyId")
     @Override
     public String getStudyId() {
         return studyId;

@@ -47,6 +47,7 @@ public class DynamoReportIndex implements ReportIndex {
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
     @JsonAlias("substudyIds")
+    @DynamoDBAttribute(attributeName = "substudyIds")
     public Set<String> getStudyIds(){
         return this.studyIds;
     }

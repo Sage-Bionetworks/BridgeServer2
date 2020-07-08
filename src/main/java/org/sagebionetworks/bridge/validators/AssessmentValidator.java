@@ -76,7 +76,7 @@ public class AssessmentValidator implements Validator {
         }
         
         // ownerId == studyId except in the shared assessments app, where it must include
-        // the app as a namespace prefix, e.g. "appId:studyId". Assessments are always 
+        // the app as a namespace prefix, e.g. "appId:orgId". Assessments are always 
         // owned by some organization.
         if (isBlank(assessment.getOwnerId())) {
             errors.rejectValue("ownerId", CANNOT_BE_BLANK);

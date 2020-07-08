@@ -200,6 +200,7 @@ public final class DynamoSubpopulation implements Subpopulation {
     }
     
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
+    @DynamoDBAttribute(attributeName = "substudyIdsAssignedOnConsent")
     public Set<String> getStudyIdsAssignedOnConsent() {
         return studyIdsAssignedOnConsent;
     }

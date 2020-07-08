@@ -16,6 +16,7 @@ import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -497,6 +498,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.clientData = clientData;
             return this;
         }
+        @JsonAlias("substudyIds")
         public Builder withStudyIds(Set<String> studyIds) {
             this.studyIds = studyIds;
             return this;
