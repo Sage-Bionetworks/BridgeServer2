@@ -101,7 +101,7 @@ import org.sagebionetworks.bridge.heartbeat.HeartbeatLogger;
 import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
-import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
@@ -653,7 +653,7 @@ public class SpringConfig {
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(HibernateAccount.class);
         metadataSources.addAnnotatedClass(HibernateSubstudy.class);
-        metadataSources.addAnnotatedClass(HibernateAccountSubstudy.class);
+        metadataSources.addAnnotatedClass(HibernateEnrollment.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
         metadataSources.addAnnotatedClass(HibernateTemplate.class);

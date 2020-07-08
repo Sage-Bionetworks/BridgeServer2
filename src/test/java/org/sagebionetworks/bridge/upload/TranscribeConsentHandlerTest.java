@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
@@ -81,22 +81,19 @@ public class TranscribeConsentHandlerTest {
 
     @Test
     public void test() {
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "subA",
-                "id1");
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "subB",
-                "id2");
-        as2.setExternalId("extB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "subA", "id1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "subB", "id2", "extB");
         
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
-        when(mockAccount.getAccountSubstudies()).thenReturn(ImmutableSet.of(as1, as2));
+        when(mockAccount.getEnrollments()).thenReturn(ImmutableSet.of(en1, en2));
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();
 
         assertSame(outputRecord, inputRecord);
         assertEquals(outputRecord.getUserSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
-        // For backwards compatibility we take one external ID from the AccountSubstudy records and 
+        // For backwards compatibility we take one external ID from the Enrollment records and 
         // put it in this field. In 99.9% of our cases right now, it's the same as what was in externalId.
         assertEquals(outputRecord.getUserExternalId(), "extB");
         assertEquals(outputRecord.getUserDataGroups(), Sets.newHashSet("test-group1","test-group2"));

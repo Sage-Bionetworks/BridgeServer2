@@ -77,7 +77,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -213,12 +213,12 @@ public class AuthenticationServiceMockTest {
     public void signIn() {
         app.setReauthenticationEnabled(true);
         
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", USER_ID);
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
-        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         account.setId(USER_ID);
         
         setIpAddress(IP_ADDRESS);
@@ -288,12 +288,12 @@ public class AuthenticationServiceMockTest {
     public void signInThrowsConsentRequiredException() {
         app.setReauthenticationEnabled(true);
         
-        AccountSubstudy as1 = AccountSubstudy.create(TEST_APP_ID, "substudyA", USER_ID);
-        AccountSubstudy as2 = AccountSubstudy.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
-        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         account.setId(USER_ID);
         
         setIpAddress(IP_ADDRESS);
@@ -1121,7 +1121,7 @@ public class AuthenticationServiceMockTest {
         when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
-        account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(app.getIdentifier(), "substudyA", "id")));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "substudyA", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }
@@ -1137,7 +1137,7 @@ public class AuthenticationServiceMockTest {
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setAccountSubstudies(ImmutableSet.of(AccountSubstudy.create(app.getIdentifier(), "substudyB", "id")));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "substudyB", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }

@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,10 +211,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             mapper.save(identifier);
         }
         if (identifier.getSubstudyId() != null) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(account.getAppId(),
-                    identifier.getSubstudyId(), account.getId());
-            acctSubstudy.setExternalId(identifier.getIdentifier());
-            account.getAccountSubstudies().remove(acctSubstudy);
+            Enrollment enrollment = Enrollment.create(account.getAppId(),
+                    identifier.getSubstudyId(), account.getId(), identifier.getIdentifier());
+            account.getEnrollments().remove(enrollment);
         }
     }
     

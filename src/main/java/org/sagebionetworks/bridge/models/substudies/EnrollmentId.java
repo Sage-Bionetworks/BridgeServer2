@@ -8,7 +8,7 @@ import javax.persistence.Embeddable;
 
 @SuppressWarnings("serial")
 @Embeddable
-public final class AccountSubstudyId implements Serializable {
+public final class EnrollmentId implements Serializable {
 
     @Column(name = "studyId")
     private String appId;
@@ -19,9 +19,9 @@ public final class AccountSubstudyId implements Serializable {
     @Column(name = "accountId")
     private String accountId;
 
-    public AccountSubstudyId() {
+    public EnrollmentId() {
     }
-    public AccountSubstudyId(String appId, String substudyId, String accountId) {
+    public EnrollmentId(String appId, String substudyId, String accountId) {
         this.appId = appId;
         this.substudyId = substudyId;
         this.accountId = accountId;
@@ -48,7 +48,7 @@ public final class AccountSubstudyId implements Serializable {
             return true;
         if (obj == null || getClass() != obj.getClass())
             return false;
-        AccountSubstudyId other = (AccountSubstudyId) obj;
+        EnrollmentId other = (EnrollmentId) obj;
         return Objects.equals(appId, other.appId) &&
                 Objects.equals(substudyId, other.substudyId) &&
                 Objects.equals(accountId, other.accountId);

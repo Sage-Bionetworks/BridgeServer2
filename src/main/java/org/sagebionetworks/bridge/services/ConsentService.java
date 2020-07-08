@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -202,9 +202,9 @@ public class ConsentService {
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
         for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(
+            Enrollment enrollment = Enrollment.create(
                     app.getIdentifier(), substudyId, account.getId());
-            account.getAccountSubstudies().add(acctSubstudy);
+            account.getEnrollments().add(enrollment);
         }
         
         accountService.updateAccount(account, null);

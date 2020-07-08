@@ -287,7 +287,7 @@ public class HibernateAccountTest {
     @Test
     public void collectionsNotNull() {
         HibernateAccount account = new HibernateAccount();
-        assertTrue(account.getAccountSubstudies().isEmpty());
+        assertTrue(account.getEnrollments().isEmpty());
         assertTrue(account.getAttributes().isEmpty());
         assertTrue(account.getConsents().isEmpty());
         assertTrue(account.getDataGroups().isEmpty());
