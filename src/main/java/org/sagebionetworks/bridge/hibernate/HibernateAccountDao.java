@@ -188,8 +188,6 @@ public class HibernateAccountDao implements AccountDao {
         // HibernateAccount fields, like clientData, though it is not returned.
         QueryBuilder builder = makeQuery(ID_QUERY, appId, null, search, false);
         
-        System.out.println(builder.getQuery());
-        
         List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
                 search.getOffsetBy(), search.getPageSize(), String.class);
         

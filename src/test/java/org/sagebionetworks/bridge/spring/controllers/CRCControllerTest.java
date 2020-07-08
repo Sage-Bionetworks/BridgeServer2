@@ -465,7 +465,6 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
-        System.out.println(capturedReport.getData());
         assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
