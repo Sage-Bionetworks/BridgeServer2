@@ -11,7 +11,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-import com.fasterxml.jackson.annotation.JsonAlias;
 
 /**
  * Implementation of external identifier.
@@ -38,7 +37,6 @@ public final class DynamoExternalIdentifier implements ExternalIdentifier {
         return appId;
     }
     @Override
-    @JsonAlias("studyId")
     public void setAppId(String appId) {
         this.appId = appId;
     }
