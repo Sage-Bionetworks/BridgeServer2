@@ -419,11 +419,11 @@ public class CRCController extends BaseController {
             throw new BridgeServiceException(e);
         }
 
-        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerStudyIds = BridgeUtils.getRequestContext().getCallerStudies();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
         report.setData(data);
-        report.setSubstudyIds(callerSubstudyIds);
+        report.setStudyIds(callerStudyIds);
 
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, reportName,
                 account.getHealthCode(), JAN1, JAN2);
@@ -484,10 +484,10 @@ public class CRCController extends BaseController {
 
         // This method of verification sidesteps RequestContext initialization
         // through a session. Set up what is needed in the controller.
-        Set<String> substudies = BridgeUtils.collectSubstudyIds(account);
+        Set<String> studies = BridgeUtils.collectStudyIds(account);
 
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId)
-                .withCallerSubstudies(substudies).withCallerOrgMembership(account.getOrgMembership());
+                .withCallerStudies(studies).withCallerOrgMembership(account.getOrgMembership());
         BridgeUtils.setRequestContext(builder.build());
         return app;
     }

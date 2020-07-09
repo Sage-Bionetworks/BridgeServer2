@@ -40,7 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -77,7 +77,7 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<AccountSubstudy> accountSubstudies; 
+    private Set<Enrollment> enrollments; 
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
@@ -462,18 +462,18 @@ public class HibernateAccount implements Account {
     }
     
     @OneToMany(mappedBy = "accountId", cascade = CascadeType.ALL, orphanRemoval = true, 
-        fetch = FetchType.EAGER, targetEntity=HibernateAccountSubstudy.class)
+        fetch = FetchType.EAGER, targetEntity=HibernateEnrollment.class)
     @OnDelete(action=OnDeleteAction.CASCADE)
     @Override
-    public Set<AccountSubstudy> getAccountSubstudies() {
-        if (accountSubstudies == null) {
-            accountSubstudies = new HashSet<>();
+    public Set<Enrollment> getEnrollments() {
+        if (enrollments == null) {
+            enrollments = new HashSet<>();
         }
-        return accountSubstudies;
+        return enrollments;
     }
 
     @Override
-    public void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies) {
-        this.accountSubstudies = accountSubstudies;
+    public void setEnrollments(Set<Enrollment> enrollments) {
+        this.enrollments = enrollments;
     }
 }

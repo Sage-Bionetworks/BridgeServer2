@@ -29,8 +29,8 @@ import com.google.common.collect.Iterables;
 /**
  * Service for managing external IDs. These methods can be called whether or not strict validation of IDs is enabled. 
  * If it's enabled, reservation and assignment will work as expected, otherwise these silently do nothing. The external 
- * ID will be associated via the AccountSubstudy collection, thus assignment of an external ID associates an account 
- * to a substudy (and removing an external ID removes that assignment).
+ * ID will be associated via the Enrollment collection, thus assignment of an external ID associates an account 
+ * to a study (and removing an external ID removes that assignment).
  */
 @Component
 public class ExternalIdService {
@@ -39,7 +39,7 @@ public class ExternalIdService {
     
     private ExternalIdDao externalIdDao;
     
-    private SubstudyService substudyService;
+    private StudyService studyService;
 
     @Autowired
     public final void setExternalIdDao(ExternalIdDao externalIdDao) {
@@ -47,8 +47,8 @@ public class ExternalIdService {
     }
     
     @Autowired
-    public final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     public Optional<ExternalIdentifier> getExternalId(String appId, String externalId) {
@@ -84,16 +84,16 @@ public class ExternalIdService {
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error
-        Set<String> callerSubstudyIds = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (externalId.getSubstudyId() == null && callerSubstudyIds.size() == 1) {
-            externalId.setSubstudyId( Iterables.getFirst(callerSubstudyIds, null) );
+        Set<String> callerStudyIds = BridgeUtils.getRequestContext().getCallerStudies();
+        if (externalId.getStudyId() == null && callerStudyIds.size() == 1) {
+            externalId.setStudyId( Iterables.getFirst(callerStudyIds, null) );
         }
         
-        ExternalIdValidator validator = new ExternalIdValidator(substudyService, isV3);
+        ExternalIdValidator validator = new ExternalIdValidator(studyService, isV3);
         Validate.entityThrowingException(validator, externalId);
         
-        // Note that this external ID must be unique across the whole app, not just a substudy, or else
-        // it cannot be used to identify the substudy, and that's a significant purpose behind the 
+        // Note that this external ID must be unique across the whole app, not just a study, or else
+        // it cannot be used to identify the study, and that's a significant purpose behind the 
         // association of the two
         if (externalIdDao.getExternalId(appId, externalId.getIdentifier()).isPresent()) {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", externalId.getIdentifier());
@@ -107,7 +107,7 @@ public class ExternalIdService {
         
         ExternalIdentifier existing = externalIdDao.getExternalId(app.getIdentifier(), externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
-        if (BridgeUtils.filterForSubstudy(existing) == null) {
+        if (BridgeUtils.filterForStudy(existing) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         externalIdDao.deleteExternalId(externalId);

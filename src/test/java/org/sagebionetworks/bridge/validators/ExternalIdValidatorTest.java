@@ -15,8 +15,8 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -25,13 +25,13 @@ public class ExternalIdValidatorTest {
     private ExternalIdValidator validatorV4;
     
     @Mock
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        validatorV4 = new ExternalIdValidator(substudyService, false);
+        validatorV4 = new ExternalIdValidator(studyService, false);
     }
     
     @AfterMethod
@@ -42,12 +42,12 @@ public class ExternalIdValidatorTest {
     @Test
     public void validates() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudy-id"))
+                .withCallerStudies(ImmutableSet.of("study-id"))
                 .withCallerAppId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, "study-id", false)).thenReturn(Study.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
-        id.setSubstudyId("substudy-id");
+        id.setStudyId("study-id");
         
         Validate.entityThrowingException(validatorV4, id);
     }
@@ -59,7 +59,7 @@ public class ExternalIdValidatorTest {
         
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
         
-        ExternalIdValidator validatorV3 = new ExternalIdValidator(substudyService, true);
+        ExternalIdValidator validatorV3 = new ExternalIdValidator(studyService, true);
         Validate.entityThrowingException(validatorV3, id);
     }
     
@@ -97,49 +97,49 @@ public class ExternalIdValidatorTest {
     }
     
     @Test
-    public void substudyIdCannotBeNull() {
+    public void studyIdCannotBeNull() {
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
-        assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
+        assertValidatorMessage(validatorV4, id, "studyId", "cannot be null or blank");
     }
     
     @Test
-    public void substudyIdCannotBeBlank() {
+    public void studyIdCannotBeBlank() {
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
-        id.setSubstudyId("   ");
-        assertValidatorMessage(validatorV4, id, "substudyId", "cannot be null or blank");
+        id.setStudyId("   ");
+        assertValidatorMessage(validatorV4, id, "studyId", "cannot be null or blank");
     }
     
     @Test
-    public void substudyIdMustBeValid() {
+    public void studyIdMustBeValid() {
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
-        id.setSubstudyId("not-real");
-        assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
+        id.setStudyId("not-real");
+        assertValidatorMessage(validatorV4, id, "studyId", "is not a valid study");
     }
     
     @Test
-    public void substudyIdCanBeAnythingForAdmins() {
+    public void studyIdCanBeAnythingForAdmins() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
                 .withCallerAppId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, "study-id", false)).thenReturn(Study.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
-        id.setSubstudyId("substudy-id");
+        id.setStudyId("study-id");
         
         Validate.entityThrowingException(validatorV4, id);
     }
     
     @Test
-    public void substudyIdMustMatchCallersSubstudies() {
+    public void studyIdMustMatchCallersStudies() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB"))
+                .withCallerStudies(ImmutableSet.of("studyB"))
                 .withCallerAppId(TEST_APP_ID).build());
         
-        when(substudyService.getSubstudy(TEST_APP_ID, "substudy-id", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, "study-id", false)).thenReturn(Study.create());
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
-        id.setSubstudyId("substudy-id");
+        id.setStudyId("study-id");
         
-        assertValidatorMessage(validatorV4, id, "substudyId", "is not a valid substudy");
+        assertValidatorMessage(validatorV4, id, "studyId", "is not a valid study");
     }
     
     @Test(expectedExceptions = BadRequestException.class)

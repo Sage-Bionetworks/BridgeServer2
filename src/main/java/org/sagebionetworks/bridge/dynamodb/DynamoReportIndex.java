@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @DynamoDBTable(tableName = "ReportIndex")
@@ -16,7 +17,7 @@ public class DynamoReportIndex implements ReportIndex {
 
     private String key;
     private String identifier;
-    private Set<String> substudyIds;
+    private Set<String> studyIds;
     private boolean isPublic;
     
     @JsonIgnore
@@ -45,13 +46,15 @@ public class DynamoReportIndex implements ReportIndex {
     
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
-    public Set<String> getSubstudyIds(){
-        return this.substudyIds;
+    @JsonAlias("substudyIds")
+    @DynamoDBAttribute(attributeName = "substudyIds")
+    public Set<String> getStudyIds(){
+        return this.studyIds;
     }
     
     @Override
-    public void setSubstudyIds(Set<String> substudyIds) {
-        this.substudyIds = substudyIds;
+    public void setStudyIds(Set<String> studyIds) {
+        this.studyIds = studyIds;
     }
     
     @DynamoDBAttribute

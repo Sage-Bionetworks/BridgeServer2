@@ -55,13 +55,13 @@ public class DynamoReportIndexDao implements ReportIndexDao {
     }
 
     @Override
-    public void addIndex(ReportDataKey key, Set<String> substudies) {
+    public void addIndex(ReportDataKey key, Set<String> studies) {
         checkNotNull(key);
         
         DynamoReportIndex index = new DynamoReportIndex();
         index.setKey(key.getIndexKeyString());
         index.setIdentifier(key.getIdentifier());
-        index.setSubstudyIds(substudies);
+        index.setStudyIds(studies);
 
         // Optimization: Reads are significantly cheaper than writes. Check to see if the index already exists. If it
         // does, don't bother writing it.

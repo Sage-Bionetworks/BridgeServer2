@@ -169,8 +169,8 @@ public final class ScheduleContext {
             contextBuilder.withUserDataGroups(userDataGroups);
             return this;
         }
-        public Builder withUserSubstudyIds(Set<String> userSubstudyIds) {
-            contextBuilder.withUserSubstudyIds(userSubstudyIds);
+        public Builder withUserStudyIds(Set<String> userStudyIds) {
+            contextBuilder.withUserStudyIds(userStudyIds);
             return this;
         }
         public Builder withStartsOn(DateTime startsOn) {

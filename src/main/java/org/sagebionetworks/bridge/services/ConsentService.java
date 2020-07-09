@@ -38,11 +38,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -201,10 +201,10 @@ public class ConsentService {
         account.setSharingScope(sharingScope);
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
-        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(
-                    app.getIdentifier(), substudyId, account.getId());
-            account.getAccountSubstudies().add(acctSubstudy);
+        for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
+            Enrollment enrollment = Enrollment.create(
+                    app.getIdentifier(), studyId, account.getId());
+            account.getEnrollments().add(enrollment);
         }
         
         accountService.updateAccount(account, null);
@@ -346,8 +346,8 @@ public class ConsentService {
         
         // Forget this person. If the user registers again at a later date, it is as if they have 
         // created a new account. But we hold on to this record so we can still retrieve the consent 
-        // records for a given healthCode. We also don't delete external ID/substudy releationships
-        // so substudies can continue to view withdrawals by health code.
+        // records for a given healthCode. We also don't delete external ID/study releationships
+        // so studies can continue to view withdrawals by health code.
         account.setSharingScope(SharingScope.NO_SHARING);
         account.setFirstName(null);
         account.setLastName(null);

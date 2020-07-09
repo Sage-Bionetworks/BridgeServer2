@@ -275,7 +275,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionUnauthorized() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerOrgMembership("substudyD").build());
+                .withCallerStudies(ImmutableSet.of("studyD")).build());
         Assessment assessment = AssessmentTest.createAssessment();
         service.createAssessmentRevision(TEST_APP_ID, GUID, assessment);
     }
@@ -1272,7 +1272,7 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessmentChecksOwnership() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();
         sharedAssessment.setDeleted(false);
-        sharedAssessment.setOwnerId("wrongApp:wrongsubstudy");
+        sharedAssessment.setOwnerId("wrongApp:wrongstudy");
         when(mockDao.getAssessment(SHARED_APP_ID, GUID)).thenReturn(Optional.of(sharedAssessment));
         
         service.updateSharedAssessment(TEST_APP_ID, sharedAssessment);

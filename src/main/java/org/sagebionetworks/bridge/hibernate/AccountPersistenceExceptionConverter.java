@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableMap;
 public class AccountPersistenceExceptionConverter implements PersistenceExceptionConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AccountPersistenceExceptionConverter.class);
 
-    static final String NON_UNIQUE_MSG = "This account has already been associated to the substudy (possibly through another external ID).";
+    static final String NON_UNIQUE_MSG = "This account has already been associated to the study (possibly through another external ID).";
     
     private final AccountDao accountDao;
 
@@ -47,7 +47,7 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
             return new ConcurrentModificationException(
                     "Account has the wrong version number; it may have been saved in the background.");
         }
-        // You can reliably trigger this exception by assigning a second external ID from a substudy 
+        // You can reliably trigger this exception by assigning a second external ID from a study 
         // that an account is already associated to.
         if (exception instanceof NonUniqueObjectException) {
             return new ConstraintViolationException.Builder().withMessage(NON_UNIQUE_MSG).build();
@@ -67,7 +67,7 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 EntityAlreadyExistsException eae = null;
                 if (message.matches("Duplicate entry.*for key 'Accounts-StudyId-ExternalId-Index'")) {
                     // We do not know which external ID is the conflict without parsing the error message. 
-                    // Try them until we find one. This external ID could be in a substudy the caller is 
+                    // Try them until we find one. This external ID could be in a study the caller is 
                     // not associated to, but external IDs have to be unique at the scope of the app, 
                     // so the external ID must be exposed to the caller to troubleshoot.
                     for (String externalId : BridgeUtils.collectExternalIds(account)) {

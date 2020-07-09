@@ -108,9 +108,9 @@ public class ReportDataValidatorTest {
     }
     
     @Test
-    public void existingIndexNoSubstudyChangeOK() {
+    public void existingIndexNoStudyChangeOK() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
 
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
@@ -121,7 +121,7 @@ public class ReportDataValidatorTest {
         data.setReportDataKey(key);
         data.setData(TestUtils.getClientData());
         data.setLocalDate(LocalDate.parse("2017-09-06"));
-        data.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        data.setStudyIds(TestConstants.USER_STUDY_IDS);
         
         validator = new ReportDataValidator(index);
         
@@ -129,9 +129,9 @@ public class ReportDataValidatorTest {
     }
     
     @Test
-    public void existingIndexChangedSubstudiesInvalid() {
+    public void existingIndexChangedStudiesInvalid() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
 
         ReportDataKey key = new ReportDataKey.Builder()
                 .withReportType(ReportType.STUDY)
@@ -142,10 +142,10 @@ public class ReportDataValidatorTest {
         data.setReportDataKey(key);
         data.setData(TestUtils.getClientData());
         data.setLocalDate(LocalDate.parse("2017-09-06"));
-        data.setSubstudyIds(ImmutableSet.of("substudyA", "substudyC"));
+        data.setStudyIds(ImmutableSet.of("studyA", "studyC"));
         
         validator = new ReportDataValidator(index);
         
-        TestUtils.assertValidatorMessage(validator, data, "substudyIds", "cannot be changed once created for a report");
+        TestUtils.assertValidatorMessage(validator, data, "studyIds", "cannot be changed once created for a report");
     }
 }

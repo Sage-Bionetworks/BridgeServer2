@@ -18,19 +18,19 @@ public class ReportIndexTest {
         index.setKey("asdf:STUDY");
         index.setIdentifier("asdf");
         index.setPublic(true);
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(index);
         assertEquals(node.get("identifier").textValue(), "asdf");
         assertEquals(node.get("type").textValue(), "ReportIndex");
         assertTrue(node.get("public").booleanValue());
-        assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
-        assertEquals(node.get("substudyIds").get(1).textValue(), "substudyB");
+        assertEquals(node.get("studyIds").get(0).textValue(), "studyA");
+        assertEquals(node.get("studyIds").get(1).textValue(), "studyB");
         assertEquals(node.size(), 4);
         
         ReportIndex deser = BridgeObjectMapper.get().readValue(node.toString(), ReportIndex.class);
         assertEquals(deser.getIdentifier(), "asdf");
         assertTrue(deser.isPublic());
-        assertEquals(deser.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(deser.getStudyIds(), TestConstants.USER_STUDY_IDS);
     }
 }

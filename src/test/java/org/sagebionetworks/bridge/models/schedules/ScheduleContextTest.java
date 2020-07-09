@@ -77,7 +77,7 @@ public class ScheduleContextTest {
                 .withHealthCode(HEALTH_CODE)
                 .withAccountCreatedOn(accountCreatedOn)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
+                .withUserStudyIds(TestConstants.USER_STUDY_IDS).build();
         
         assertEquals(context.getCriteriaContext().getAppId(), TEST_APP_ID);
         assertEquals(context.getCriteriaContext().getClientInfo(), clientInfo);
@@ -87,7 +87,7 @@ public class ScheduleContextTest {
         assertEquals(context.getMinimumPerSchedule(), 3);
         assertEquals(context.getCriteriaContext().getHealthCode(), HEALTH_CODE);
         assertEquals(context.getCriteriaContext().getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(context.getCriteriaContext().getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(context.getCriteriaContext().getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(context.getStartsOn(), startsOn);
         assertEquals(context.getAccountCreatedOn(), accountCreatedOn);
 
@@ -106,7 +106,7 @@ public class ScheduleContextTest {
         assertEquals(EMPTY_CONTEXT.getMinimumPerSchedule(), 0);
         assertNull(EMPTY_CONTEXT.getAccountCreatedOn());
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserDataGroups().isEmpty());
-        assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserSubstudyIds().isEmpty());
+        assertTrue(EMPTY_CONTEXT.getCriteriaContext().getUserStudyIds().isEmpty());
         assertTrue(EMPTY_CONTEXT.getCriteriaContext().getLanguages().isEmpty());
         assertNull(EMPTY_CONTEXT.getCriteriaContext().getHealthCode());
         assertNull(EMPTY_CONTEXT.getCriteriaContext().getUserId());
