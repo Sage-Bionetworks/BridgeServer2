@@ -23,7 +23,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -138,7 +138,7 @@ public class ParticipantControllerTest extends Mockito {
 
     private static final Set<Roles> CALLER_ROLES = ImmutableSet.of(RESEARCHER);
 
-    private static final Set<String> CALLER_SUBS = ImmutableSet.of("substudyA");
+    private static final Set<String> CALLER_STUDIES = ImmutableSet.of("studyA");
 
     private static final String ACTIVITY_GUID = ACTIVITY_1.getGuid();
 
@@ -241,7 +241,7 @@ public class ParticipantControllerTest extends Mockito {
         app.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
         app.setIdentifier(TEST_APP_ID);
 
-        participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withSubstudyIds(CALLER_SUBS)
+        participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withStudyIds(CALLER_STUDIES)
                 .withId(USER_ID).build();
 
         session = new UserSession(participant);
@@ -472,7 +472,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.updateParticipant(USER_ID);
         assertEquals(result.getMessage(), "Participant updated.");
 
-        // Both the caller roles and the caller's substudies are passed to participantService
+        // Both the caller roles and the caller's studies are passed to participantService
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
 
         StudyParticipant participant = participantCaptor.getValue();
@@ -709,13 +709,13 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void updateSelfParticipant() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class)).withId(USER_ID)
                 .withLanguages(LANGUAGES).withRoles(ImmutableSet.of(DEVELOPER)) // <-- should not be passed along
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withHealthCode(HEALTH_CODE).build();
         session.setParticipant(participant);
         session.setIpAddress(IP_ADDRESS); // if this is not the same as request, you get an authentication error
@@ -735,7 +735,7 @@ public class ParticipantControllerTest extends Mockito {
         
         InOrder inOrder = inOrder(mockParticipantService);
         inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, false);
-        // No roles are passed in this method, and the substudies of the user are passed
+        // No roles are passed in this method, and the studies of the user are passed
         inOrder.verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, true);
         
@@ -746,7 +746,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
         assertTrue(captured.isNotifyByEmail());
         assertEquals(captured.getDataGroups(), USER_DATA_GROUPS);
-        assertEquals(captured.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(captured.getStudyIds(), USER_STUDY_IDS);
         assertEquals(captured.getAttributes().get("can_be_recontacted"), "true");
 
         verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
@@ -756,7 +756,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(context.getLanguages(), LANGUAGES);
     }
     

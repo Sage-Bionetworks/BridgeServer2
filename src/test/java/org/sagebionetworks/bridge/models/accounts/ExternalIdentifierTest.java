@@ -23,17 +23,17 @@ public class ExternalIdentifierTest {
     
     @Test
     public void canSerialize() throws Exception {
-        String json = TestUtils.createJson("{'identifier':'AAA','substudyId':'substudy-id'}");
+        String json = TestUtils.createJson("{'identifier':'AAA','studyId':'study-id'}");
         
         ExternalIdentifier identifier = BridgeObjectMapper.get().readValue(json, ExternalIdentifier.class);
         assertEquals(identifier.getIdentifier(), "AAA");
-        assertEquals(identifier.getSubstudyId(), "substudy-id");
+        assertEquals(identifier.getStudyId(), "study-id");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(identifier);
         
         assertEquals(node.size(), 3);
         assertEquals(node.get("identifier").textValue(), "AAA");
-        assertEquals(node.get("substudyId").textValue(), "substudy-id");
+        assertEquals(node.get("studyId").textValue(), "study-id");
         assertEquals(node.get("type").textValue(), "ExternalIdentifier");
     }
     

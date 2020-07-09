@@ -95,8 +95,8 @@ public class BridgeExceptionHandlerTest extends Mockito {
                 .withHealthCode("healthCode")
                 .withNotifyByEmail(true)
                 .withId("userId")
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
-                .withExternalIds(ImmutableMap.of("substudyA", "externalIdA"))
+                .withStudyIds(ImmutableSet.of("studyA"))
+                .withExternalIds(ImmutableMap.of("studyA", "externalIdA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(ImmutableSet.of("group1")).build();
         
@@ -127,7 +127,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
         assertEquals(node.get("reauthToken").textValue(), "reauthToken");
         assertTrue(node.get("dataSharing").booleanValue());
         assertTrue(node.get("notifyByEmail").booleanValue());
-        assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
+        assertEquals(node.get("studyIds").get(0).textValue(), "studyA");
         assertEquals(node.get("type").textValue(), "UserSessionInfo");
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(array.size(), 0);
@@ -135,7 +135,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
         assertEquals(array.size(), 1);
         assertEquals(array.get(0).textValue(), "group1");
         assertEquals(node.get("consentStatuses").size(), 0);
-        assertEquals(node.get("externalIds").get("substudyA").textValue(), "externalIdA");
+        assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("externalId").textValue(), "externalIdA");
         // And no further properties
         assertEquals(node.size(), 23);

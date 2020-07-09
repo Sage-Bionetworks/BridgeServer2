@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -425,14 +425,14 @@ public class ParticipantReportControllerTest extends Mockito {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(REPORT_ID);
         index.setPublic(true);
-        index.setSubstudyIds(USER_SUBSTUDY_IDS);
+        index.setStudyIds(USER_STUDY_IDS);
         
         when(mockReportService.getReportIndex(any())).thenReturn(index);
         
         ReportIndex result = controller.getParticipantReportIndex(REPORT_ID);
         
         assertEquals(result.getIdentifier(), REPORT_ID);
-        assertEquals(result.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(result.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockReportService).getReportIndex(reportDataKeyCaptor.capture());
         ReportDataKey key = reportDataKeyCaptor.getValue();

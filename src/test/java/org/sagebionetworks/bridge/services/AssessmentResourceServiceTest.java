@@ -405,7 +405,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteResourceChecksAssessmentOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID).build());        
+                .withCallerOrgMembership(TEST_ORG_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("owner-id");
@@ -671,7 +671,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentResourcesCallerWrongAppContext() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerStudies(ImmutableSet.of(OWNER_ID)).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);

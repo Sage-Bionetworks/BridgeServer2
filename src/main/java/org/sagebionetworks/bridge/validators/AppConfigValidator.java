@@ -39,18 +39,18 @@ public class AppConfigValidator implements Validator {
     private AssessmentService assessmentService;
     private boolean isNew;
     private Set<String> dataGroups;
-    private Set<String> substudyIds;
+    private Set<String> studyIds;
     
     public AppConfigValidator(SurveyService surveyService, UploadSchemaService schemaService,
             AppConfigElementService appConfigElementService, FileService fileService,
-            AssessmentService assessmentService, Set<String> dataGroups, Set<String> substudyIds, boolean isNew) {
+            AssessmentService assessmentService, Set<String> dataGroups, Set<String> studyIds, boolean isNew) {
         this.surveyService = surveyService;
         this.schemaService = schemaService;
         this.fileService = fileService;
         this.appConfigElementService = appConfigElementService;
         this.assessmentService = assessmentService;
         this.dataGroups = dataGroups;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
         this.isNew = isNew;
     }
     
@@ -72,7 +72,7 @@ public class AppConfigValidator implements Validator {
         if (appConfig.getCriteria() == null) {
             errors.rejectValue("criteria", "are required");
         } else {
-            CriteriaUtils.validate(appConfig.getCriteria(), dataGroups, substudyIds, errors);    
+            CriteriaUtils.validate(appConfig.getCriteria(), dataGroups, studyIds, errors);    
         }
         if (isBlank(appConfig.getAppId())) {
             errors.rejectValue("appId", "is required");

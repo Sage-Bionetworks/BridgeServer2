@@ -241,7 +241,7 @@ public class ScheduledActivityController extends BaseController {
         builder.withEndsOn(endsOn);
         builder.withInitialTimeZone(initialTimeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
-        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
+        builder.withUserStudyIds(session.getParticipant().getStudyIds());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
         builder.withAppId(session.getAppId());

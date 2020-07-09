@@ -23,13 +23,13 @@ public final class AccountSummary {
     private final DateTime createdOn;
     private final AccountStatus status;
     private final String appId;
-    private final Set<String> substudyIds;
+    private final Set<String> studyIds;
     private final Map<String, String> attributes;
     private final String orgMembership;
     
     private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
             Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
-            Set<String> substudyIds, Map<String, String> attributes, String orgMembership) {
+            Set<String> studyIds, Map<String, String> attributes, String orgMembership) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -40,7 +40,7 @@ public final class AccountSummary {
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
         this.appId = appId;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
         this.attributes = attributes;
         this.orgMembership = orgMembership;
     }
@@ -96,8 +96,8 @@ public final class AccountSummary {
         return appId;
     }
     
-    public Set<String> getSubstudyIds() {
-        return substudyIds;
+    public Set<String> getStudyIds() {
+        return studyIds;
     }
     
     public Map<String, String> getAttributes() {
@@ -111,7 +111,7 @@ public final class AccountSummary {
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                appId, substudyIds, attributes, orgMembership);
+                appId, studyIds, attributes, orgMembership);
     }
 
     @Override
@@ -126,7 +126,7 @@ public final class AccountSummary {
                 && Objects.equals(externalIds, other.externalIds) && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
                 && Objects.equals(id, other.id) && Objects.equals(appId, other.appId)
-                && Objects.equals(substudyIds, other.substudyIds)
+                && Objects.equals(studyIds, other.studyIds)
                 && Objects.equals(attributes, other.attributes)
                 && Objects.equals(orgMembership, other.orgMembership);
     }
@@ -143,7 +143,7 @@ public final class AccountSummary {
         private AccountStatus status;
         private String appId;
         private Map<String,String> externalIds;
-        private Set<String> substudyIds;
+        private Set<String> studyIds;
         private Map<String, String> attributes;
         private String orgMembership;
         
@@ -187,8 +187,8 @@ public final class AccountSummary {
             this.externalIds = externalIds;
             return this;
         }
-        public Builder withSubstudyIds(Set<String> substudyIds) {
-            this.substudyIds = substudyIds;
+        public Builder withStudyIds(Set<String> studyIds) {
+            this.studyIds = studyIds;
             return this;
         }
         public Builder withAttributes(Map<String, String> attributes) {
@@ -201,7 +201,7 @@ public final class AccountSummary {
         }
         public AccountSummary build() {
             return new AccountSummary(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn,
-                    status, appId, substudyIds, attributes, orgMembership);
+                    status, appId, studyIds, attributes, orgMembership);
         }
     }
 }

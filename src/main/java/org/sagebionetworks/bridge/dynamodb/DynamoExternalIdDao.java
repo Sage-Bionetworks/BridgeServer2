@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
     static final int PAGE_SCAN_LIMIT = 200;
     static final String HEALTH_CODE = "healthCode";
     static final String IDENTIFIER = "identifier";
-    static final String SUBSTUDY_ID = "substudyId";
+    static final String STUDY_ID = "substudyId";
     static final String APP_ID = "studyId";
 
     private RateLimiter getExternalIdRateLimiter;
@@ -103,7 +103,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             nextPageOffsetKey = null;
         }
         
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
         
         List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
         
@@ -125,13 +125,13 @@ public class DynamoExternalIdDao implements ExternalIdDao {
                     break;
                 }
                 
-                // Users see all external IDs, but they don't see the substudy membership of an external ID
+                // Users see all external IDs, but they don't see the study membership of an external ID
                 // unless they meet the standard rules
-                boolean visible = callerSubstudies.isEmpty() || callerSubstudies.contains(id.getSubstudyId());
-                String substudyId = (visible) ? id.getSubstudyId() : null;
+                boolean visible = callerStudies.isEmpty() || callerStudies.contains(id.getStudyId());
+                String studyId = (visible) ? id.getStudyId() : null;
                 
                 ExternalIdentifierInfo info = new ExternalIdentifierInfo(
-                        id.getIdentifier(), substudyId, id.getHealthCode() != null);
+                        id.getIdentifier(), studyId, id.getHealthCode() != null);
                 externalIds.add(info);
             }
             capacityConsumed = queryResultPage.getConsumedCapacity().getCapacityUnits().intValue();
@@ -210,9 +210,9 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             identifier.setHealthCode(null);
             mapper.save(identifier);
         }
-        if (identifier.getSubstudyId() != null) {
+        if (identifier.getStudyId() != null) {
             Enrollment enrollment = Enrollment.create(account.getAppId(),
-                    identifier.getSubstudyId(), account.getId(), identifier.getIdentifier());
+                    identifier.getStudyId(), account.getId(), identifier.getIdentifier());
             account.getEnrollments().remove(enrollment);
         }
     }

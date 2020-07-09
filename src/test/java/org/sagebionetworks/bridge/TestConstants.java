@@ -123,7 +123,7 @@ public class TestConstants {
     
     public static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1","group2");
 
-    public static final Set<String> USER_SUBSTUDY_IDS = ImmutableSet.of("substudyA","substudyB");
+    public static final Set<String> USER_STUDY_IDS = ImmutableSet.of("studyA","studyB");
     
     public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     
@@ -185,12 +185,12 @@ public class TestConstants {
     
     public static final AccountSummary SUMMARY1 = new AccountSummary.Builder().withFirstName("firstName1")
             .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
-            .withExternalIds(ImmutableMap.of("substudy1", "externalId1")).withId("id")
-            .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
+            .withExternalIds(ImmutableMap.of("study1", "externalId1")).withId("id")
+            .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
             .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
     public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
             .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
-            .withExternalIds(ImmutableMap.of("substudy2", "externalId2")).withId("id2")
-            .withSubstudyIds(ImmutableSet.of("substudy1", "substudy2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
+            .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
+            .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
             .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
 }

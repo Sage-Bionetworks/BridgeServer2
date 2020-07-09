@@ -18,18 +18,18 @@ public final class CriteriaContext {
     private final String userId;
     private final ClientInfo clientInfo;
     private final Set<String> userDataGroups;
-    private final Set<String> userSubstudyIds;
+    private final Set<String> userStudyIds;
     // This set has ordered keys (most to least preferential)
     private final List<String> languages;
     
     private CriteriaContext(String appId, String healthCode, String userId, ClientInfo clientInfo,
-            Set<String> userDataGroups, Set<String> userSubstudyIds, List<String> languages) {
+            Set<String> userDataGroups, Set<String> userStudyIds, List<String> languages) {
         this.appId = appId;
         this.healthCode = healthCode;
         this.userId = userId;
         this.clientInfo = clientInfo;
         this.userDataGroups = (userDataGroups == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userDataGroups);
-        this.userSubstudyIds = (userSubstudyIds == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userSubstudyIds);
+        this.userStudyIds = (userStudyIds == null) ? ImmutableSet.of() : ImmutableSet.copyOf(userStudyIds);
         this.languages = (languages == null) ? ImmutableList.of() : languages;
     }
     
@@ -48,8 +48,8 @@ public final class CriteriaContext {
         return userDataGroups;
     }
     
-    public Set<String> getUserSubstudyIds() {
-        return userSubstudyIds;
+    public Set<String> getUserStudyIds() {
+        return userStudyIds;
     }
     
     public String getAppId() {
@@ -77,7 +77,7 @@ public final class CriteriaContext {
 
     @Override
     public int hashCode() {
-        return Objects.hash(appId, healthCode, userId, clientInfo, userDataGroups, userSubstudyIds, languages);
+        return Objects.hash(appId, healthCode, userId, clientInfo, userDataGroups, userStudyIds, languages);
     }
 
     @Override
@@ -89,7 +89,7 @@ public final class CriteriaContext {
         CriteriaContext other = (CriteriaContext)obj;
         return (Objects.equals(clientInfo, other.clientInfo) &&
                 Objects.equals(userDataGroups, other.userDataGroups) &&
-                Objects.equals(userSubstudyIds, other.userSubstudyIds) &&
+                Objects.equals(userStudyIds, other.userStudyIds) &&
                 Objects.equals(appId, other.appId) && 
                 Objects.equals(healthCode, other.healthCode) && 
                 Objects.equals(userId, other.userId) &&
@@ -99,7 +99,7 @@ public final class CriteriaContext {
     @Override
     public String toString() {
         return "CriteriaContext [appId=" + appId + ", userId=" + userId + ", clientInfo=" + clientInfo
-                + ", userDataGroups=" + userDataGroups + ", userSubstudies=" + userSubstudyIds + ", languages="
+                + ", userDataGroups=" + userDataGroups + ", userStudies=" + userStudyIds + ", languages="
                 + languages + "]";
     }
 
@@ -109,7 +109,7 @@ public final class CriteriaContext {
         private String userId;
         private ClientInfo clientInfo;
         private Set<String> userDataGroups;
-        private Set<String> userSubstudyIds;
+        private Set<String> userStudyIds;
         private List<String> languages;
 
         public Builder withAppId(String appId) {
@@ -132,8 +132,8 @@ public final class CriteriaContext {
             this.userDataGroups = userDataGroups;
             return this;
         }
-        public Builder withUserSubstudyIds(Set<String> userSubstudyIds) {
-            this.userSubstudyIds = userSubstudyIds;
+        public Builder withUserStudyIds(Set<String> userStudyIds) {
+            this.userStudyIds = userStudyIds;
             return this;
         }
         public Builder withLanguages(List<String> languages) {
@@ -147,7 +147,7 @@ public final class CriteriaContext {
             this.userId = context.userId;
             this.clientInfo = context.clientInfo;
             this.userDataGroups = context.userDataGroups;
-            this.userSubstudyIds = context.userSubstudyIds;
+            this.userStudyIds = context.userStudyIds;
             this.languages = context.languages;
             return this;
         }
@@ -158,7 +158,7 @@ public final class CriteriaContext {
                 clientInfo = ClientInfo.UNKNOWN_CLIENT;
             }
             return new CriteriaContext(appId, healthCode, userId, clientInfo, userDataGroups,
-                    userSubstudyIds, languages);
+                    userStudyIds, languages);
         }
     }
 }

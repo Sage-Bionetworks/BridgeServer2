@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.json.LocalDateToStringSerializer;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
@@ -49,7 +50,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private SharingScope userSharingScope;
     private String userExternalId;
     private Set<String> userDataGroups;
-    private Map<String, String> userSubstudyMemberships;
+    private Map<String, String> userStudyMemberships;
     private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
@@ -207,6 +208,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "study-uploadedOn-index")
+    @DynamoDBAttribute(attributeName = "studyId")
     @Override
     public String getAppId() {
         return appId;
@@ -320,15 +322,16 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     
     /** {@inheritDoc} */
     @Override
-    public Map<String, String> getUserSubstudyMemberships() {
-        return userSubstudyMemberships;
+    @DynamoDBAttribute(attributeName = "userSubstudyMemberships")
+    public Map<String, String> getUserStudyMemberships() {
+        return userStudyMemberships;
     }
     
-    /** @see #getUserSubstudyMemberships() */
+    /** @see #getUserStudyMemberships() */
     @Override
-    public void setUserSubstudyMemberships(Map<String, String> userSubstudyMemberships) {
-        this.userSubstudyMemberships = (userSubstudyMemberships != null && !userSubstudyMemberships.isEmpty())
-                ? userSubstudyMemberships : null;
+    public void setUserStudyMemberships(Map<String, String> userStudyMemberships) {
+        this.userStudyMemberships = (userStudyMemberships != null && !userStudyMemberships.isEmpty())
+                ? userStudyMemberships : null;
     }
 
     /** {@inheritDoc} */

@@ -66,7 +66,7 @@ import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class AccountServiceTest extends Mockito {
@@ -82,11 +82,11 @@ public class AccountServiceTest extends Mockito {
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     
-    private static final String SUBSTUDY_A = "substudyA";
-    private static final String SUBSTUDY_B = "substudyB";
+    private static final String STUDY_A = "studyA";
+    private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
-            .of(Enrollment.create(TEST_APP_ID, SUBSTUDY_A, USER_ID));
-    private static final ImmutableSet<String> CALLER_SUBSTUDIES = ImmutableSet.of(SUBSTUDY_B);
+            .of(Enrollment.create(TEST_APP_ID, STUDY_A, USER_ID));
+    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -935,8 +935,8 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void editAccountFailsAcrossSubstudies() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(CALLER_SUBSTUDIES).build());
+    public void editAccountFailsAcrossStudies() throws Exception {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(CALLER_STUDIES).build());
 
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
@@ -949,12 +949,12 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void getAccountMatchesSubstudies() throws Exception {
+    public void getAccountMatchesStudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_A)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertEquals(persistedAccount, account);
@@ -963,12 +963,12 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void getAccountFiltersSubstudies() throws Exception {
+    public void getAccountFiltersStudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_B)).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_B)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertNull(account);

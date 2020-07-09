@@ -11,10 +11,10 @@ import org.sagebionetworks.bridge.models.reports.ReportIndex;
 
 public class ReportDataValidator implements Validator {
 
-    private final Set<String> existingSubstudies;
+    private final Set<String> existingStudies;
     
     public ReportDataValidator(ReportIndex index) {
-        this.existingSubstudies = (index == null) ? null : index.getSubstudyIds();    
+        this.existingStudies = (index == null) ? null : index.getStudyIds();    
     }
     
     @Override
@@ -34,9 +34,9 @@ public class ReportDataValidator implements Validator {
         if (data.getData() == null) {
             errors.rejectValue("data", "is required");
         }
-        if (existingSubstudies != null && data.getSubstudyIds() != null) {
-            if (!existingSubstudies.equals(data.getSubstudyIds())) {
-                errors.rejectValue("substudyIds", "cannot be changed once created for a report");
+        if (existingStudies != null && data.getStudyIds() != null) {
+            if (!existingStudies.equals(data.getStudyIds())) {
+                errors.rejectValue("studyIds", "cannot be changed once created for a report");
             }
         }
         ReportDataKey key = data.getReportDataKey();

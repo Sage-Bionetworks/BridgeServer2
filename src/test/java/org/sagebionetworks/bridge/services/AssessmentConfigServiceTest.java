@@ -273,9 +273,9 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         HashMap<String, JsonNode> nodeUpdates = new HashMap<>();
-        // TODO: Note that we need to persist this kind of null and we generally don't
-        // with our default serialization. But the controller for customization calls
-        // handles this with its own ObjectMapper.
+        // Note that we need to persist this kind of null and we generally don't
+        // with our default serialization. But the controller for this customization call
+        // uses a differently configured ObjectMapper to persist these.
         nodeUpdates.put("identifier", null);
         updates.put("anIdentifier", nodeUpdates);
         

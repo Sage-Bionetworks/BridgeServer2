@@ -82,7 +82,7 @@ public class DynamoReportIndexDaoMockTest {
 
     @Test
     public void addIndex() {
-        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
+        dao.addIndex(KEY, TestConstants.USER_STUDY_IDS);
         
         verify(mapper).load(loadIndexCaptor.capture());
         verify(mapper).save(saveIndexCaptor.capture(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
@@ -90,19 +90,19 @@ public class DynamoReportIndexDaoMockTest {
         DynamoReportIndex lookupKey = loadIndexCaptor.getValue();
         assertEquals(lookupKey.getKey(), KEY.getIndexKeyString());
         assertEquals(lookupKey.getIdentifier(), KEY.getIdentifier());
-        assertEquals(lookupKey.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(lookupKey.getStudyIds(), TestConstants.USER_STUDY_IDS);
         
         DynamoReportIndex savedIndex = saveIndexCaptor.getValue();
         assertEquals(savedIndex.getKey(), KEY.getIndexKeyString());
         assertEquals(savedIndex.getIdentifier(), KEY.getIdentifier());
-        assertEquals(savedIndex.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(savedIndex.getStudyIds(), TestConstants.USER_STUDY_IDS);
     }
     
     @Test
     public void addIndexDoesNothingIfIndexExists() {
         when(mapper.load(any())).thenReturn(ReportIndex.create());
         
-        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
+        dao.addIndex(KEY, TestConstants.USER_STUDY_IDS);
         
         verify(mapper, never()).save(any(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
     }
@@ -112,7 +112,7 @@ public class DynamoReportIndexDaoMockTest {
         doThrow(new ConditionalCheckFailedException("message"))
             .when(mapper).save(any(), eq(DynamoReportIndexDao.DOES_NOT_EXIST_EXPRESSION));
         
-        dao.addIndex(KEY, TestConstants.USER_SUBSTUDY_IDS);
+        dao.addIndex(KEY, TestConstants.USER_STUDY_IDS);
     }
 
     @Test
@@ -141,13 +141,13 @@ public class DynamoReportIndexDaoMockTest {
     public void updateIndex() {
         ReportIndex updatedIndex = ReportIndex.create();
         updatedIndex.setIdentifier("asdf");
-        updatedIndex.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        updatedIndex.setStudyIds(TestConstants.USER_STUDY_IDS);
         updatedIndex.setPublic(true);
         updatedIndex.setKey(KEY.getIndexKeyString());
         
         // This enforces that the update is being done on an existing key/identifier pair.
-        // It does not enforce substudy permissions... these are handled in the service.
-        // Adding substudies here would always be allowed if it hadn't been blocked by the 
+        // It does not enforce study permissions... these are handled in the service.
+        // Adding studies here would always be allowed if it hadn't been blocked by the 
         // service.
         dao.updateIndex(updatedIndex);
         
@@ -156,7 +156,7 @@ public class DynamoReportIndexDaoMockTest {
         DynamoReportIndex index = saveIndexCaptor.getValue();
         assertEquals(index.getKey(), TEST_APP_ID + ":STUDY");
         assertEquals(index.getIdentifier(), updatedIndex.getIdentifier());
-        assertEquals(index.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(index.getStudyIds(), TestConstants.USER_STUDY_IDS);
         assertTrue(index.isPublic());
         
         DynamoDBSaveExpression expr = saveExpressionCaptor.getValue();
