@@ -70,6 +70,7 @@ import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
@@ -77,7 +78,6 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -140,7 +140,7 @@ public class AuthenticationServiceMockTest {
     private static final String HEALTH_CODE = "health-code";
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
-            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withSubstudyIds(TestConstants.USER_SUBSTUDY_IDS)
+            .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withStudyIds(TestConstants.USER_STUDY_IDS)
             .withLanguages(LANGUAGES).build();
 
     @Mock
@@ -213,8 +213,8 @@ public class AuthenticationServiceMockTest {
     public void signIn() {
         app.setReauthenticationEnabled(true);
         
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
@@ -255,7 +255,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
-        assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(updatedContext.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
@@ -288,8 +288,8 @@ public class AuthenticationServiceMockTest {
     public void signInThrowsConsentRequiredException() {
         app.setReauthenticationEnabled(true);
         
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID);
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
         
         account.setReauthToken("REAUTH_TOKEN");
         account.setHealthCode(HEALTH_CODE);
@@ -335,7 +335,7 @@ public class AuthenticationServiceMockTest {
         assertEquals(updatedContext.getHealthCode(), HEALTH_CODE);
         assertEquals(updatedContext.getLanguages(), LANGUAGES);
         assertEquals(updatedContext.getUserDataGroups(), DATA_GROUP_SET);
-        assertEquals(updatedContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(updatedContext.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(updatedContext.getUserId(), USER_ID);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
@@ -1112,32 +1112,32 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void generatePasswordExternalIdMismatchesCallerSubstudies() {
+    public void generatePasswordExternalIdMismatchesCallerStudies() {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setSubstudyId("substudyA");
+        externalIdentifier.setStudyId("studyA");
         when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "substudyA", "id")));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "studyA", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void generatePasswordAccountMismatchesCallerSubstudies() {
+    public void generatePasswordAccountMismatchesCallerStudies() {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setSubstudyId("substudyA");
+        externalIdentifier.setStudyId("studyA");
         when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "substudyB", "id")));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "studyB", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }

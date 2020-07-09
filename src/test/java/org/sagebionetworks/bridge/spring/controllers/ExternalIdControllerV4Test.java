@@ -131,7 +131,7 @@ public class ExternalIdControllerV4Test extends Mockito {
     @Test
     public void createExternalIdentifier() throws Exception {
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, "identifier");
-        extId.setSubstudyId("substudyId");
+        extId.setStudyId("studyId");
         mockRequestBody(mockRequest, extId);
 
         StatusMessage result = controller.createExternalIdentifier();
@@ -141,7 +141,7 @@ public class ExternalIdControllerV4Test extends Mockito {
 
         ExternalIdentifier retrievedId = externalIdCaptor.getValue();
         assertEquals(retrievedId.getAppId(), TEST_APP_ID);
-        assertEquals(retrievedId.getSubstudyId(), "substudyId");
+        assertEquals(retrievedId.getStudyId(), "studyId");
         assertEquals(retrievedId.getIdentifier(), "identifier");
     }
 

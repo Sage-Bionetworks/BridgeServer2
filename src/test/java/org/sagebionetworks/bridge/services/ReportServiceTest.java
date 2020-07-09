@@ -149,54 +149,54 @@ public class ReportServiceTest {
     }
     
     @Test
-    public void canAccessIfReportHasNullSubstudies() {
+    public void canAccessIfReportHasNullStudies() {
         ReportIndex index = ReportIndex.create();
         assertTrue(service.canAccess(index));
     }
     
     @Test
-    public void canAccessIfReportHasEmptySubstudies() {
+    public void canAccessIfReportHasEmptyStudies() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(ImmutableSet.of());
+        index.setStudyIds(ImmutableSet.of());
         assertTrue(service.canAccess(index));        
     }
 
     @Test
-    public void canAccessIfCallerHasNoSubstudies() {
+    public void canAccessIfCallerHasNoStudies() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
         assertTrue(service.canAccess(index));
     }
 
     @Test
-    public void canAccessIfCallerHasMatchingSubstudy() {
+    public void canAccessIfCallerHasMatchingStudy() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
         assertTrue(service.canAccess(index));
     }
 
-    // If the index has substudies, and the user doesn't have one of those substudies, this fails
+    // If the index has studies, and the user doesn't have one of those studies, this fails
     @Test
-    public void canAccessFailsIfCallerDoesNotMatchSubstudies() {
+    public void canAccessFailsIfCallerDoesNotMatchStudies() {
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyC")).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyC")).build());
         assertFalse(service.canAccess(index));        
     }
     
     @Test
     public void canAccessIfPublic() {
-        // Create a situation where the user shares no substudies in common with the index, but 
+        // Create a situation where the user shares no studies in common with the index, but 
         // the index is public. In that case, access is allowed.
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(ImmutableSet.of("substudyC"));
+        index.setStudyIds(ImmutableSet.of("studyC"));
         index.setPublic(true);
         
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         assertTrue(service.canAccess(index));        
     }
     
@@ -760,10 +760,10 @@ public class ReportServiceTest {
     public void getReportIndexDoesNotAuthorize() {
         // These don't match, but the call succeeds
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyC")).build());
+                .withCallerStudies(ImmutableSet.of("studyC")).build());
         
         ReportIndex index = ReportIndex.create();
-        index.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        index.setStudyIds(TestConstants.USER_STUDY_IDS);
         
         when(mockReportIndexDao.getIndex(STUDY_REPORT_DATA_KEY)).thenReturn(index);
         
@@ -771,16 +771,16 @@ public class ReportServiceTest {
         assertEquals(retrieved, index);
     }
     
-    private ReportIndex setupMismatchedSubstudies(ReportDataKey reportKey, 
-            Set<String> callerSubstudies, Set<String> indexSubstudies) {
+    private ReportIndex setupMismatchedStudies(ReportDataKey reportKey, 
+            Set<String> callerStudies, Set<String> indexStudies) {
         // These don't match and the call succeeds
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(callerSubstudies).build());
+                .withCallerStudies(callerStudies).build());
         
         ReportIndex index = ReportIndex.create();
         index.setKey(reportKey.getIndexKeyString());
         index.setIdentifier(reportKey.getIdentifier());
-        index.setSubstudyIds(indexSubstudies);
+        index.setStudyIds(indexStudies);
         
         when(mockReportIndexDao.getIndex(any())).thenReturn(index);
         return index;
@@ -788,21 +788,21 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getStudyReportAuthorizes() {
-        setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.getStudyReport(TEST_APP_ID, IDENTIFIER, START_DATE, END_DATE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantReportAuthorizes() {
-        setupMismatchedSubstudies(PARTICIPANT_REPORT_DATA_KEY);
+        setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.getParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantReportV4Authorizes() {
-        setupMismatchedSubstudies(PARTICIPANT_REPORT_DATA_KEY);
+        setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, 
                 START_TIME, END_TIME, null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
@@ -816,7 +816,7 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getStudyReportV4Authorizes() {
-        setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.getStudyReportV4(TEST_APP_ID, IDENTIFIER, 
                 START_TIME, END_TIME, null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
@@ -824,7 +824,7 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void saveStudyReportAuthorizes() {
-        setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         ReportData data = createReport(START_DATE, "value", "value2");
         
@@ -833,7 +833,7 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void saveParticipantReportAuthorizes() {
-        setupMismatchedSubstudies(PARTICIPANT_REPORT_DATA_KEY);
+        setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         ReportData data = createReport(START_DATE, "value", "value2");
         
@@ -842,28 +842,28 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteStudyReportAuthorizes() {
-        setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.deleteStudyReport(TEST_APP_ID, IDENTIFIER);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteStudyReportRecordAuthorizes() {
-        setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.deleteStudyReportRecord(TEST_APP_ID, IDENTIFIER, START_DATE.toString());
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteParticipantReportAuthorizes() {
-        setupMismatchedSubstudies(PARTICIPANT_REPORT_DATA_KEY);
+        setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.deleteParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteParticipantReportRecordAuthorizes() {
-        setupMismatchedSubstudies(PARTICIPANT_REPORT_DATA_KEY);
+        setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.deleteParticipantReportRecord(TEST_APP_ID, 
                 IDENTIFIER, START_DATE.toString(), HEALTH_CODE);
@@ -876,7 +876,7 @@ public class ReportServiceTest {
                    .withReportType(ReportType.PARTICIPANT)
                    .withIdentifier(IDENTIFIER)
                    .withAppId(TEST_APP_ID).build();
-        setupMismatchedSubstudies(key);
+        setupMismatchedStudies(key);
         
         service.deleteParticipantReportIndex(TEST_APP_ID, IDENTIFIER);
     }
@@ -894,47 +894,47 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateReportIndexAuthorizes() {
-        ReportIndex index = setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY);
+        ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.updateReportIndex(TEST_APP_ID, ReportType.STUDY, index);
     }
     
     @Test
-    public void updateReportWithSubstudiesCannotChangeSubstudies() {
-        // This is a removal, and it is not allowed because user has substudies memberships
-        ReportIndex index = setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY, 
-                TestConstants.USER_SUBSTUDY_IDS, ImmutableSet.of("substudyA"));
+    public void updateReportWithStudiesCannotChangeStudies() {
+        // This is a removal, and it is not allowed because user has studies memberships
+        ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY, 
+                TestConstants.USER_STUDY_IDS, ImmutableSet.of("studyA"));
         
         ReportIndex existingIndex = ReportIndex.create();
-        existingIndex.setSubstudyIds(ImmutableSet.of("substudyA", "substudyE"));
+        existingIndex.setStudyIds(ImmutableSet.of("studyA", "studyE"));
         when(mockReportIndexDao.getIndex(any())).thenReturn(existingIndex);
         
         service.updateReportIndex(TEST_APP_ID, ReportType.STUDY, index);
         
         verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
         
-        assertEquals(reportIndexCaptor.getValue().getSubstudyIds(), ImmutableSet.of("substudyA", "substudyE"));
+        assertEquals(reportIndexCaptor.getValue().getStudyIds(), ImmutableSet.of("studyA", "studyE"));
     }
     
     @Test
-    public void updateReportWithNoSubstudiesCanChangeSubstudies() {
-        // This is a removal, and it IS allowed because user has no substudies
-        ReportIndex index = setupMismatchedSubstudies(STUDY_REPORT_DATA_KEY, 
-                ImmutableSet.of(), ImmutableSet.of("substudyA"));
+    public void updateReportWithNoStudiesCanChangeStudies() {
+        // This is a removal, and it IS allowed because user has no studies
+        ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY, 
+                ImmutableSet.of(), ImmutableSet.of("studyA"));
         
         ReportIndex existingIndex = ReportIndex.create();
-        existingIndex.setSubstudyIds(ImmutableSet.of("substudyA", "substudyE"));
+        existingIndex.setStudyIds(ImmutableSet.of("studyA", "studyE"));
         when(mockReportIndexDao.getIndex(any())).thenReturn(existingIndex);
         
         service.updateReportIndex(TEST_APP_ID, ReportType.STUDY, index);
         
         verify(mockReportIndexDao).updateIndex(reportIndexCaptor.capture());
         
-        assertEquals(reportIndexCaptor.getValue().getSubstudyIds(), ImmutableSet.of("substudyA"));
+        assertEquals(reportIndexCaptor.getValue().getStudyIds(), ImmutableSet.of("studyA"));
     }
     
-    private ReportIndex setupMismatchedSubstudies(ReportDataKey reportKey) {
-        return setupMismatchedSubstudies(reportKey, ImmutableSet.of("substudyC"), TestConstants.USER_SUBSTUDY_IDS);
+    private ReportIndex setupMismatchedStudies(ReportDataKey reportKey) {
+        return setupMismatchedStudies(reportKey, ImmutableSet.of("studyC"), TestConstants.USER_STUDY_IDS);
     }
     
     private void invalid(Runnable runnable, String fieldName, String message) {

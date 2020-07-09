@@ -38,12 +38,12 @@ public class AccountSummaryTest {
         assertEquals(node.get("phone").get("number").textValue(), PHONE.getNumber());
         assertEquals(node.get("phone").get("regionCode").textValue(), PHONE.getRegionCode());
         assertEquals(node.get("phone").get("nationalFormat").textValue(), PHONE.getNationalFormat());
-        assertEquals(node.get("externalIds").get("substudy1").textValue(), "externalId1");
+        assertEquals(node.get("externalIds").get("study1").textValue(), "externalId1");
         assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
         assertEquals(node.get("status").textValue(), "disabled");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
-        assertEquals(node.get("substudyIds").get(0).textValue(), "substudy1");
-        assertEquals(node.get("substudyIds").get(1).textValue(), "substudy2");
+        assertEquals(node.get("studyIds").get(0).textValue(), "study1");
+        assertEquals(node.get("studyIds").get(1).textValue(), "study2");
         assertEquals(node.get("externalId").textValue(), "externalId1");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "AccountSummary");

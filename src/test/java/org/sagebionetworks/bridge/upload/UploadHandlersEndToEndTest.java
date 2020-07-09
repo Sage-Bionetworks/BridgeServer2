@@ -47,7 +47,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
@@ -285,7 +285,7 @@ public class UploadHandlersEndToEndTest {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(APP);
         strictValidationHandler.setAppService(mockAppService);
 
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "test-substudy", "userId", EXTERNAL_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "test-study", "userId", EXTERNAL_ID);
 
         // set up TranscribeConsentHandler
         Account account = Account.create();

@@ -42,10 +42,10 @@ import org.sagebionetworks.bridge.validators.Validate;
  * that are saved given either a LocalDate or DateTime value, but all the records in a given report (represented by a
  * single report index) should use the same timestamp value, and not mix the two types.</p> 
  * 
- * <p>Some methods in this service will enforce specific substudy permissions in the following manner. If the caller or 
- * the index for a given report have no substudy memberships, the call is allowed. If both have substudy memberships, 
- * then the caller must have at least one substudy in common with the report in order for the method to succeed. Because 
- * the identifiers for these reports are scoped by study, not by substudy, all users can see all the indices for all 
+ * <p>Some methods in this service will enforce specific study permissions in the following manner. If the caller or 
+ * the index for a given report have no study memberships, the call is allowed. If both have study memberships, 
+ * then the caller must have at least one study in common with the report in order for the method to succeed. Because 
+ * the identifiers for these reports are scoped by study, not by study, all users can see all the indices for all 
  * reports, even if they cannot retrieve individual records (this is needed to provide information on potential 
  * conflicts).</p>
  */
@@ -75,7 +75,7 @@ public class ReportService {
     }
     
     /**
-     * Get a report index. Substudy memberships are ignored.
+     * Get a report index. Study memberships are ignored.
      */
     public ReportIndex getReportIndex(ReportDataKey key) {
         checkNotNull(key);
@@ -84,7 +84,7 @@ public class ReportService {
     }
     
     /**
-     * Return set of study report records based on the provided local date range. Substudy memberships are enforced.
+     * Return set of study report records based on the provided local date range. Study memberships are enforced.
      */
     public DateRangeResourceList<? extends ReportData> getStudyReport(String appId, String identifier,
             LocalDate startDate, LocalDate endDate) {
@@ -107,7 +107,7 @@ public class ReportService {
     }
     
     /**
-     * Return set of participant report records based on the provided local date range. Substudy memberships are
+     * Return set of participant report records based on the provided local date range. Study memberships are
      * enforced.
      */
     public DateRangeResourceList<? extends ReportData> getParticipantReport(String appId, String identifier,
@@ -132,7 +132,7 @@ public class ReportService {
     }
     
     /**
-     * Return set of participant report records based on the provided datetime range. Substudy memberships are enforced.
+     * Return set of participant report records based on the provided datetime range. Study memberships are enforced.
      */
     public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String appId,
             final String identifier, final String healthCode, final DateTime startTime, final DateTime endTime,
@@ -158,7 +158,7 @@ public class ReportService {
     }
     
     /**
-     * Return set of study report records based on the provided datetime range. Substudy memberships are enforced.
+     * Return set of study report records based on the provided datetime range. Study memberships are enforced.
      */
     public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String appId,
             final String identifier, final DateTime startTime, final DateTime endTime, final String offsetKey,
@@ -188,8 +188,8 @@ public class ReportService {
 
     /**
      * Save a study report record. If this is the first record for this report, the data can contain one or more
-     * substudies defining who can see this report. The user can submit any substudies regardless of membership (if 
-     * the user locks themselves out of the app we do not prevent it). On subsequent saves, the substudy 
+     * studies defining who can see this report. The user can submit any studies regardless of membership (if 
+     * the user locks themselves out of the app we do not prevent it). On subsequent saves, the study 
      * memberships will be enforced based on the existing report index.
      */
     public void saveStudyReport(String appId, String identifier, ReportData reportData) {
@@ -211,15 +211,15 @@ public class ReportService {
         
         reportDataDao.saveReportData(reportData);
         if (index == null) {
-            addToIndex(key, reportData.getSubstudyIds());    
+            addToIndex(key, reportData.getStudyIds());    
         }
     }
     
     /**
      * Save a participant report record. If this is the first record for this report, the data can contain one 
-     * or more substudies defining who can see this report. The substudies can be any substudy if the caller has 
-     * no substudy memberships, or it must be a subset of the substudies assigned to the caller. If it is a 
-     * subsequent record, then substudy memberships will be enforced based on the existing report index.
+     * or more studies defining who can see this report. The studies can be any study if the caller has 
+     * no study memberships, or it must be a subset of the studies assigned to the caller. If it is a 
+     * subsequent record, then study memberships will be enforced based on the existing report index.
      */
     public void saveParticipantReport(String appId, String identifier, String healthCode,
             ReportData reportData) {
@@ -242,12 +242,12 @@ public class ReportService {
 
         reportDataDao.saveReportData(reportData);
         if (index == null) {
-            addToIndex(key, reportData.getSubstudyIds());    
+            addToIndex(key, reportData.getStudyIds());    
         }
     }
     
     /**
-     * Delete all records for a study report. Substudy memberships will be enforced.
+     * Delete all records for a study report. Study memberships will be enforced.
      */
     public void deleteStudyReport(String appId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
@@ -265,7 +265,7 @@ public class ReportService {
     }
     
     /**
-     * Delete one record of a study report. Substudy memberships will be enforced.
+     * Delete one record of a study report. Study memberships will be enforced.
      */
     public void deleteStudyReportRecord(String appId, String identifier, String date) {
         if (StringUtils.isBlank(date)) {
@@ -294,7 +294,7 @@ public class ReportService {
     }
     
     /**
-     * Return all report indices for the supplied type (participant or study). No substudy memberships are enforced.
+     * Return all report indices for the supplied type (participant or study). No study memberships are enforced.
      */
     public ReportTypeResourceList<? extends ReportIndex> getReportIndices(String appId, ReportType reportType) {
         checkNotNull(appId);
@@ -304,7 +304,7 @@ public class ReportService {
     }
     
     /**
-     * Delete all records of a participant report. Substudy memberships are enforced. 
+     * Delete all records of a participant report. Study memberships are enforced. 
      */
     public void deleteParticipantReport(String appId, String identifier, String healthCode) {
         ReportDataKey key = new ReportDataKey.Builder()
@@ -322,7 +322,7 @@ public class ReportService {
     }
     
     /**
-     * Delete one record of a participant report. Substudy memberships are enforced. 
+     * Delete one record of a participant report. Study memberships are enforced. 
      */
     public void deleteParticipantReportRecord(String appId, String identifier, String date, String healthCode) {
         if (StringUtils.isBlank(date)) {
@@ -344,7 +344,7 @@ public class ReportService {
     }
     
     /**
-     * Delete a participant report index. Substudy memberships are enforced. Typically we do not automatically 
+     * Delete a participant report index. Study memberships are enforced. Typically we do not automatically 
      * delete these because we cannot determine all individual records have been deleted without a table scan, 
      * but this method is provided for tests. 
      */
@@ -364,8 +364,8 @@ public class ReportService {
     }
 
     /**
-     * Update a report index. Substudy memberships are enforced. Only a user who is not associated to any substudies 
-     * may change the substudy associations of the report index.
+     * Update a report index. Study memberships are enforced. Only a user who is not associated to any studies 
+     * may change the study associations of the report index.
      */
     public void updateReportIndex(String appId, ReportType reportType, ReportIndex index) {
         if (reportType == ReportType.PARTICIPANT) {
@@ -384,30 +384,30 @@ public class ReportService {
         if (!canAccess(existingIndex)) {
             throw new UnauthorizedException();
         }
-        // Caller cannot change substudy relationships unless they are not associated to any substudy. 
-        // We could allow users to add/remove the substudies they have membership in, but in practice that's
-        // only one substudy and not likely to be very useful. It requires about 5 lines of set-based checks 
+        // Caller cannot change study relationships unless they are not associated to any study. 
+        // We could allow users to add/remove the studies they have membership in, but in practice that's
+        // only one study and not likely to be very useful. It requires about 5 lines of set-based checks 
         // and a lot of tests, so skipping it for now.
-        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerStudies();
         if (!callerRoles.isEmpty()) {
-            index.setSubstudyIds(existingIndex.getSubstudyIds());
+            index.setStudyIds(existingIndex.getStudyIds());
         }
         reportIndexDao.updateIndex(index);
     }
     
     protected boolean canAccess(ReportIndex index) {
-        if (index == null || index.getSubstudyIds() == null || index.getSubstudyIds().isEmpty() || index.isPublic()) {
+        if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
             return true;
         }
-        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerStudies();
         if (callerRoles.isEmpty()) {
             return true;
         }
-        return !Sets.intersection(callerRoles, index.getSubstudyIds()).isEmpty();
+        return !Sets.intersection(callerRoles, index.getStudyIds()).isEmpty();
     }
 
-    private void addToIndex(ReportDataKey key, Set<String> substudies) {
-        reportIndexDao.addIndex(key, substudies);
+    private void addToIndex(ReportDataKey key, Set<String> studies) {
+        reportIndexDao.addIndex(key, studies);
     }
     
     private RangeTuple<DateTime> validateDateTimeRange(DateTime startTime, DateTime endTime) {

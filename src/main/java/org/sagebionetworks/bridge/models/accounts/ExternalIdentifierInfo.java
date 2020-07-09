@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -15,14 +16,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class ExternalIdentifierInfo implements BridgeEntity {
 
     private final String identifier;
-    private final String substudyId; 
+    private final String studyId; 
     private final boolean isAssigned;
 
     @JsonCreator
     public ExternalIdentifierInfo(@JsonProperty("identifier") String identifier,
-            @JsonProperty("substudyId") String substudyId, @JsonProperty("assigned") boolean isAssigned) {
+            @JsonAlias("substudyId") @JsonProperty("studyId") String studyId,
+            @JsonProperty("assigned") boolean isAssigned) {
         this.identifier = identifier;
-        this.substudyId = substudyId;
+        this.studyId = studyId;
         this.isAssigned = isAssigned;
     }
     
@@ -30,8 +32,8 @@ public final class ExternalIdentifierInfo implements BridgeEntity {
         return identifier;
     }
     
-    public String getSubstudyId() {
-        return substudyId;
+    public String getStudyId() {
+        return studyId;
     }
 
     public boolean isAssigned() {
@@ -40,7 +42,7 @@ public final class ExternalIdentifierInfo implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, substudyId, isAssigned);
+        return Objects.hash(identifier, studyId, isAssigned);
     }
 
     @Override
@@ -50,7 +52,7 @@ public final class ExternalIdentifierInfo implements BridgeEntity {
         if (obj == null || getClass() != obj.getClass())
             return false;
         ExternalIdentifierInfo other = (ExternalIdentifierInfo) obj;
-        return Objects.equals(identifier, other.identifier) && Objects.equals(substudyId, other.substudyId)
+        return Objects.equals(identifier, other.identifier) && Objects.equals(studyId, other.studyId)
                 && Objects.equals(isAssigned, other.isAssigned);
     }
 }

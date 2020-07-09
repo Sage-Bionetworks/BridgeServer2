@@ -14,6 +14,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -25,7 +26,7 @@ public class DynamoReportData implements ReportData {
     private LocalDate localDate;
     // These values are held to make it easier to validate the report object
     private ReportDataKey reportDataKey;
-    private Set<String> substudyIds;
+    private Set<String> studyIds;
     private DateTime dateTime;
     private JsonNode data;
     
@@ -54,13 +55,14 @@ public class DynamoReportData implements ReportData {
     
     @Override
     @DynamoDBIgnore
-    public Set<String> getSubstudyIds() {
-        return this.substudyIds;
+    public Set<String> getStudyIds() {
+        return this.studyIds;
     }
     
     @Override
-    public void setSubstudyIds(Set<String> substudyIds) {
-        this.substudyIds = substudyIds;
+    @JsonAlias("substudyIds")
+    public void setStudyIds(Set<String> studyIds) {
+        this.studyIds = studyIds;
     }
     
     @DynamoDBRangeKey

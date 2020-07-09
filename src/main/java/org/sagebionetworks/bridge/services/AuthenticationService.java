@@ -334,17 +334,17 @@ public class AuthenticationService {
         ExternalIdentifier externalIdObj = externalIdService.getExternalId(app.getIdentifier(), externalId)
                 .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
         
-        // The *caller* must be associated to the external IDs substudy, if any
-        if (BridgeUtils.filterForSubstudy(externalIdObj) == null) {
+        // The *caller* must be associated to the external IDs study, if any
+        if (BridgeUtils.filterForStudy(externalIdObj) == null) {
             throw new EntityNotFoundException(Account.class);
         }
 
         AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
         Account account = accountService.getAccount(accountId);
         
-        // The *target* must be associated to the substudy, if any
-        boolean existsButWrongSubstudy = account != null && BridgeUtils.filterForSubstudy(account) == null;
-        if (existsButWrongSubstudy) {
+        // The *target* must be associated to the study, if any
+        boolean existsButWrongStudy = account != null && BridgeUtils.filterForStudy(account) == null;
+        if (existsButWrongStudy) {
             throw new EntityNotFoundException(Account.class);
         }
         // No account and user doesn't want to create it, treat as a 404
@@ -357,7 +357,7 @@ public class AuthenticationService {
         if (account == null) {
             // Create an account with password and external ID assigned. If the external ID has been 
             // assigned to another account, this creation will fail (external ID is a unique column).
-            // Currently this user cannot be assigned to a substudy, but the external ID will eventually 
+            // Currently this user cannot be assigned to a study, but the external ID will eventually 
             // establish such a relationship.
             StudyParticipant participant = new StudyParticipant.Builder()
                     .withExternalId(externalId).withPassword(password).build();
@@ -542,7 +542,7 @@ public class AuthenticationService {
                 .withHealthCode(session.getHealthCode())
                 .withLanguages(session.getParticipant().getLanguages())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+                .withUserStudyIds(session.getParticipant().getStudyIds())
                 .withUserId(session.getId())
                 .build();
     }

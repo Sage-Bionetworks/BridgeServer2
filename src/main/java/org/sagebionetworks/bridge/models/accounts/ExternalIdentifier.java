@@ -23,8 +23,8 @@ public interface ExternalIdentifier extends BridgeEntity {
     String getAppId();
     void setAppId(String appId);
     
-    String getSubstudyId();
-    void setSubstudyId(String substudyId);
+    String getStudyId();
+    void setStudyId(String studyId);
     
     String getIdentifier();
     void setIdentifier(String identifier);

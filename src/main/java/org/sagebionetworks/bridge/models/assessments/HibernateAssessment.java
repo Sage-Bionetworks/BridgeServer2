@@ -72,10 +72,8 @@ public class HibernateAssessment {
     // easier to query for these.
     private String originGuid;
     
-    // Substudy will be refactored into organization with a system-wide, unique
-    // identifier of "appId:substudyId". In local apps it remains identical 
-    // to the substudy ID, but in the shared context, the compound key must be 
-    // used.
+    // In local apps this is the ID of an organization. In the shared context, 
+    // this is an appId, ":", and an organization ID (e.g. "appId:orgId").
     private String ownerId;
     
     @ManyToMany(cascade = { MERGE, PERSIST }, fetch = EAGER)

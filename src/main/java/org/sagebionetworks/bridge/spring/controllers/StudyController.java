@@ -22,64 +22,64 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.StudyService;
 
 @CrossOrigin
 @RestController
-public class SubstudyController extends BaseController {
+public class StudyController extends BaseController {
 
-    static final StatusMessage DELETED_MSG = new StatusMessage("Substudy deleted.");
+    static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
     private static final String INCLUDE_DELETED = "includeDeleted";
-    private SubstudyService service;
+    private StudyService service;
 
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.service = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.service = studyService;
     }
 
-    @GetMapping("/v3/substudies")
-    public ResourceList<Substudy> getSubstudies(@RequestParam(defaultValue = "false") boolean includeDeleted) {
+    @GetMapping(path = {"/v5/studies", "/v3/substudies"})
+    public ResourceList<Study> getStudies(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
-        List<Substudy> substudies = service.getSubstudies(session.getAppId(), includeDeleted);
+        List<Study> studies = service.getStudies(session.getAppId(), includeDeleted);
 
-        return new ResourceList<>(substudies).withRequestParam(INCLUDE_DELETED, includeDeleted);
+        return new ResourceList<>(studies).withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
 
-    @PostMapping("/v3/substudies")
+    @PostMapping(path = {"/v5/studies", "/v3/substudies"})
     @ResponseStatus(HttpStatus.CREATED)
-    public VersionHolder createSubstudy() {
+    public VersionHolder createStudy() {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        Substudy substudy = parseJson(Substudy.class);
-        return service.createSubstudy(session.getAppId(), substudy);
+        Study study = parseJson(Study.class);
+        return service.createStudy(session.getAppId(), study);
     }
 
-    @GetMapping("/v3/substudies/{id}")
-    public Substudy getSubstudy(@PathVariable String id) {
+    @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
+    public Study getStudy(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        return service.getSubstudy(session.getAppId(), id, true);
+        return service.getStudy(session.getAppId(), id, true);
     }
 
-    @PostMapping("/v3/substudies/{id}")
-    public VersionHolder updateSubstudy(@PathVariable String id) {
+    @PostMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
+    public VersionHolder updateStudy(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        Substudy substudy = parseJson(Substudy.class);
-        return service.updateSubstudy(session.getAppId(), substudy);
+        Study study = parseJson(Study.class);
+        return service.updateStudy(session.getAppId(), study);
     }
 
-    @DeleteMapping("/v3/substudies/{id}")
-    public StatusMessage deleteSubstudy(@PathVariable String id,
+    @DeleteMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
+    public StatusMessage deleteStudy(@PathVariable String id,
             @RequestParam(defaultValue = "false") boolean physical) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         if (physical) {
-            service.deleteSubstudyPermanently(session.getAppId(), id);
+            service.deleteStudyPermanently(session.getAppId(), id);
         } else {
-            service.deleteSubstudy(session.getAppId(), id);
+            service.deleteStudy(session.getAppId(), id);
         }
         return DELETED_MSG;
     }

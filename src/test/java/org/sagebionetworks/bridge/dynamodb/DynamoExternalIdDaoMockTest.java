@@ -60,14 +60,14 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class DynamoExternalIdDaoMockTest {
 
     private static final String HEALTH_CODE = "healthCode";
     private static final String USER_ID = "userId";
     private static final String ID = "external-id";
-    private static final String SUBSTUDY_ID = "substudy-id";
+    private static final String STUDY_ID = "study-id";
 
     @Mock
     private RateLimiter rateLimiter;
@@ -212,35 +212,35 @@ public class DynamoExternalIdDaoMockTest {
     }
 
     @Test
-    public void getExternalIdsFiltersSubstudyInExternalIdentifierInfo() {
+    public void getExternalIdsFiltersStudyInExternalIdentifierInfo() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
         
         // Verify here that prior to migration, a lack of association doesn't break anything
         DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TEST_APP_ID, "extId1");
-        extId1.setSubstudyId(null); // should see this external identifier record
+        extId1.setStudyId(null); // should see this external identifier record
         DynamoExternalIdentifier extId2 = new DynamoExternalIdentifier(TEST_APP_ID, "extId2");
-        extId2.setSubstudyId("substudyA");
+        extId2.setStudyId("studyA");
         DynamoExternalIdentifier extId3 = new DynamoExternalIdentifier(TEST_APP_ID, "extId3");
-        extId3.setSubstudyId("substudyB");
+        extId3.setStudyId("studyB");
         DynamoExternalIdentifier extId4 = new DynamoExternalIdentifier(TEST_APP_ID, "extId4");
-        extId4.setSubstudyId("substudyC");
+        extId4.setStudyId("studyC");
         DynamoExternalIdentifier extId5 = new DynamoExternalIdentifier(TEST_APP_ID, "extId5");
-        extId5.setSubstudyId("substudyD");
+        extId5.setStudyId("studyD");
         setupQueryOfIds(ImmutableList.of(extId1, extId2, extId3, extId4, extId5));
         
         ForwardCursorPagedResourceList<ExternalIdentifierInfo> externalIds = dao.getExternalIds(TEST_APP_ID, null, 10,
                 null, null);
         assertExternalId(externalIds.getItems().get(0), "extId1", null);  
-        assertExternalId(externalIds.getItems().get(1), "extId2", "substudyA");
-        assertExternalId(externalIds.getItems().get(2), "extId3", "substudyB");
+        assertExternalId(externalIds.getItems().get(1), "extId2", "studyA");
+        assertExternalId(externalIds.getItems().get(2), "extId3", "studyB");
         assertExternalId(externalIds.getItems().get(3), "extId4", null);
         assertExternalId(externalIds.getItems().get(4), "extId5", null);
     }
     
-    private void assertExternalId(ExternalIdentifierInfo info, String expectedExternalId, String substudyId) {
+    private void assertExternalId(ExternalIdentifierInfo info, String expectedExternalId, String studyId) {
         assertEquals(info.getIdentifier(), expectedExternalId);
-        assertEquals(info.getSubstudyId(), substudyId);
+        assertEquals(info.getStudyId(), studyId);
     }
     
     @Test
@@ -384,10 +384,10 @@ public class DynamoExternalIdDaoMockTest {
     @Test
     public void unassignExternalId() {
         externalId.setHealthCode(HEALTH_CODE);
-        externalId.setSubstudyId(SUBSTUDY_ID);
+        externalId.setStudyId(STUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, STUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -405,7 +405,7 @@ public class DynamoExternalIdDaoMockTest {
     public void unassignExternalIdMissingIdDoesNothing() {
         when(mapper.load(any())).thenReturn(null);
 
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, STUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -420,10 +420,10 @@ public class DynamoExternalIdDaoMockTest {
     // This could result from a data integrity issue. We will allow unassignment to clear account
     @Test
     public void unassignExternalIdNotAssignedJustUpdatesAccount() {
-        externalId.setSubstudyId(SUBSTUDY_ID);
+        externalId.setStudyId(STUDY_ID);
         when(mapper.load(any())).thenReturn(externalId);
 
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, USER_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, STUDY_ID, USER_ID, ID);
 
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -438,7 +438,7 @@ public class DynamoExternalIdDaoMockTest {
     }
     
     @Test
-    public void unassignExternalIdWithoutSubstudySkipsAccountUpdate() {
+    public void unassignExternalIdWithoutStudySkipsAccountUpdate() {
         externalId.setHealthCode(HEALTH_CODE);
         when(mapper.load(any())).thenReturn(externalId);
 
