@@ -37,4 +37,19 @@ public class ExternalIdentifierTest {
         assertEquals(node.get("type").textValue(), "ExternalIdentifier");
     }
     
+    @Test
+    public void testMigrationToNewNomenclature() throws Exception {
+        String oldJson = TestUtils.createJson("{'identifier':'AAA','studyId':'study-id', 'substudyId': 'substudy-id'}");
+        ExternalIdentifier identifier = BridgeObjectMapper.get().readValue(oldJson, ExternalIdentifier.class);
+        assertEquals(identifier.getIdentifier(), "AAA");
+        assertEquals(identifier.getAppId(), "study-id");
+        assertEquals(identifier.getStudyId(), "substudy-id");
+        
+        String newJson = TestUtils.createJson("{'identifier':'AAA','appId':'app-id', 'studyId': 'study-id'}");
+        identifier = BridgeObjectMapper.get().readValue(newJson, ExternalIdentifier.class);
+        assertEquals(identifier.getIdentifier(), "AAA");
+        assertEquals(identifier.getAppId(), "app-id");
+        assertEquals(identifier.getStudyId(), "study-id");
+    }
+    
 }
