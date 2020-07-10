@@ -33,7 +33,6 @@ public final class CacheKey {
     public static final CacheKey tagList() {
         return new CacheKey("TagList");
     }
-
     public static final CacheKey reauthTokenLookupKey(String userId, String appId) {
         return new CacheKey(userId, appId, "ReauthToken");
     }
