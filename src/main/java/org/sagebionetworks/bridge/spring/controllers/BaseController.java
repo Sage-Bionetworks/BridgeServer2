@@ -354,19 +354,11 @@ public abstract class BaseController {
     /** Combines metrics logging with the setting of the session token as a cookie in local
      * environments (useful for testing).
      */
-    protected void setCookieAndRecordMetrics(UserSession session) {
-        writeSessionInfoToMetrics(session);  
+    protected void updateRequestInfoFromSession(UserSession session) {
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withSignedInOn(DateUtils.getCurrentDateTime()).build();
         
         requestInfoService.updateRequestInfo(requestInfo);
-        
-        // only set cookie in local environment
-        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
-            String sessionToken = session.getSessionToken();
-            Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-            response().addCookie(cookie);
-        }
     }
     
     protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {

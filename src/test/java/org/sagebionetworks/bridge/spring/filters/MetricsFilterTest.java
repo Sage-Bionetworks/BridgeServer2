@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import javax.servlet.FilterChain;
@@ -19,6 +20,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -89,6 +93,24 @@ public class MetricsFilterTest extends Mockito {
         assertFalse(paramNode.has("email"));
 
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
+    }
+
+    @Test
+    public void metricsUserSessionTest() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withId("participant").build();
+        UserSession session =  new UserSession(participant);
+        session.setInternalSessionToken("internal_token");
+        session.setAppId("app_ID");
+        when(mockRequest.getAttribute("CreatedUserSession")).thenReturn(session);
+
+        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        Metrics metrics = BridgeUtils.getRequestContext().getMetrics();
+        JsonNode node = metrics.getJson();
+
+        assertEquals("internal_token", node.get("session_id").textValue());
+        assertEquals("app_ID", node.get("app_id").textValue());
+        assertEquals("participant", node.get("user_id").textValue());
     }
 
     @Test

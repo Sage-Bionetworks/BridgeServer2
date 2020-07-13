@@ -20,9 +20,13 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -38,6 +42,16 @@ public class MetricsFilter implements Filter {
     // Allow-list for query parameters metrics logging.
     private static final List<String> ALLOW_LIST =
             BridgeConfigFactory.getConfig().getList("query.param.allowlist");
+
+    /**
+     * Redis CacheProvider to give UserSession objects for Metrics.
+     */
+    CacheProvider cacheProvider;
+
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
     
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -61,10 +75,21 @@ public class MetricsFilter implements Filter {
 
         metrics.setQueryParams(paramsMap);
 
+        // Used for record metrics from the UserSession.
+        UserSession session = null;
+        // Log session info when a session is present
         try {
             chain.doFilter(req, res);
             metrics.setStatus(response.getStatus());
+            session = (UserSession) request.getAttribute("CreatedUserSession");
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            throw e;
         } finally {
+            if (session != null) {
+                // Record UserSession to Metrics.
+                writeSessionInfoToMetrics(metrics, session);
+            }
             if (response.getHeader(X_PASSTHROUGH) == null) {
                 metrics.end();
                 LOG.info(metrics.toJsonString());
@@ -75,6 +100,16 @@ public class MetricsFilter implements Filter {
     private String header(HttpServletRequest request, String name, String defaultVal) {
         final String value = request.getHeader(name);
         return (value != null) ? value : defaultVal;
+    }
+
+    /**
+     * Writes the user's account ID, internal session ID, and app ID to the metrics.
+     * Requires @NotNull for both metrics and session.
+     */
+    private void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
+        metrics.setSessionId(session.getInternalSessionToken());
+        metrics.setUserId(session.getId());
+        metrics.setAppId(session.getAppId());
     }
 
     @Override

@@ -85,14 +85,18 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
+
         UserSession session = null;
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            updateRequestInfoFromSession(session);
             throw e;
+        } finally {
+            request().setAttribute("CreatedUserSession", session);
         }
-        setCookieAndRecordMetrics(session);
+        updateRequestInfoFromSession(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -124,15 +128,18 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
+
         UserSession session = null;
         try {
             session = authenticationService.phoneSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            updateRequestInfoFromSession(session);
             throw e;
+        } finally {
+            request().setAttribute("CreatedUserSession", session);
         }
-        setCookieAndRecordMetrics(session);
+        updateRequestInfoFromSession(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -147,15 +154,18 @@ public class AuthenticationController extends BaseController {
 
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.signIn(app, context, signIn);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
+            updateRequestInfoFromSession(session);
             throw e;
+        } finally {
+            request().setAttribute("CreatedUserSession", session);
         }
+        updateRequestInfoFromSession(session);
 
-        setCookieAndRecordMetrics(session);
         return UserSessionInfo.toJSON(session);
     }
 
@@ -172,15 +182,17 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.reauthenticate(app, context, signInRequest);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
+            updateRequestInfoFromSession(session);
             throw e;
+        } finally {
+            request().setAttribute("CreatedUserSession", session);
         }
-
-        setCookieAndRecordMetrics(session);
+        updateRequestInfoFromSession(session);
         
         return UserSessionInfo.toJSON(session);
     }
@@ -362,9 +374,18 @@ public class AuthenticationController extends BaseController {
         
         App app = appService.getApp(token.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
-        UserSession session = authenticationService.oauthSignIn(context, token);
-        setCookieAndRecordMetrics(session);
+
+        UserSession session = null;
+        try {
+            session = authenticationService.oauthSignIn(context, token);
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            updateRequestInfoFromSession(session);
+            throw e;
+        } finally {
+            request().setAttribute("CreatedUserSession", session);
+        }
+        updateRequestInfoFromSession(session);
         
         return UserSessionInfo.toJSON(session);
     }

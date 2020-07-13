@@ -4,6 +4,8 @@ import static java.util.stream.Collectors.toCollection;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
@@ -26,6 +28,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -33,8 +36,14 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -43,6 +52,13 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 
 @Component
 public class RequestFilter implements Filter {
+    BridgeConfig bridgeConfig;
+
+    @Autowired
+    final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
+    }
+
     private final static Logger LOG = LoggerFactory.getLogger(RequestFilter.class);
     
     private static class RequestIdWrapper extends HttpServletRequestWrapper {
@@ -95,11 +111,23 @@ public class RequestFilter implements Filter {
         setRequestContext(builder.build());
 
         req = new RequestIdWrapper(request, requestId);
+
+        // set local cookies when a session in present
+        UserSession session = null;
         try {
             chain.doFilter(req, res);
+            session = (UserSession) request.getAttribute("CreatedUserSession");
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
         } finally {
             // Clear request context when finished.
             setRequestContext(null);
+            // Set Cookies from UserSession if environment is LOCAL
+            if (session != null && bridgeConfig.getEnvironment() == Environment.LOCAL) {
+                String sessionToken = session.getSessionToken();
+                Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                response.addCookie(cookie);
+            }
         }
     }
     
@@ -111,6 +139,16 @@ public class RequestFilter implements Filter {
     // Isolated for testing
     protected void setRequestContext(RequestContext context) {
         BridgeUtils.setRequestContext(context);
+    }
+
+    protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
+        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
+        cookie.setMaxAge(expireInSeconds);
+        cookie.setPath("/");
+        cookie.setDomain("localhost");
+        cookie.setHttpOnly(false);
+        cookie.setSecure(false);
+        return cookie;
     }
 
     @Override

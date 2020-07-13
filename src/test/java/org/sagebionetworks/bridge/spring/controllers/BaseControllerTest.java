@@ -509,43 +509,15 @@ public class BaseControllerTest extends Mockito {
     }
     
     @Test
-    public void setCookieAndRecordMetrics() {
+    public void updateRequestInfoFromSessionTest() {
         session.setSessionToken(SESSION_TOKEN);
         session.setAppId(TEST_APP_ID);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getValue(), SESSION_TOKEN);
-        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
-        assertEquals(cookie.getDomain(), "localhost");
-        
-        verify(controller).writeSessionInfoToMetrics(session);
+        controller.updateRequestInfoFromSession(session);
+
         verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());
-    }
-    
-    @Test
-    public void setCookieAndRecordMetricsNoCookieOutsideLocal() throws Exception {
-        session.setSessionToken(SESSION_TOKEN);
-        session.setAppId(TEST_APP_ID);
-        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
-        when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
-        
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse, never()).addCookie(any());
-        
-        verify(controller).writeSessionInfoToMetrics(session);
-        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());        
     }
 
     @Test
