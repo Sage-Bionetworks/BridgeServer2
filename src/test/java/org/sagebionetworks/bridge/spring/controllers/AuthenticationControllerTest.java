@@ -1423,7 +1423,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     private void verifyCommonLoggingForSignIns() throws Exception {
-        // verifyMetrics();
+        verify(controller).updateRequestInfoFromSession(any(UserSession.class));
         verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockResponse, never()).addCookie(any());        
