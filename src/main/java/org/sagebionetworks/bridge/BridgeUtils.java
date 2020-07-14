@@ -755,18 +755,6 @@ public class BridgeUtils {
     }
 
     /**
-     * Writes the user's account ID, internal session ID, and app ID to the metrics.
-     * If either metrics or session is null, then this method does nothing.
-     */
-    public static void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
-        if (metrics != null && session != null) {
-            metrics.setSessionId(session.getInternalSessionToken());
-            metrics.setUserId(session.getId());
-            metrics.setAppId(session.getAppId());
-        }
-    }
-
-    /**
      * Make a session web cookie based on given sessonToken and expireInSeconds (duration).
      *
      * @param sessionToken the sessionToken of the cookie

@@ -86,12 +86,14 @@ public class MetricsFilter implements Filter {
 
     /**
      * Writes the user's account ID, internal session ID, and app ID to the metrics.
-     * Requires @NotNull for both metrics and session.
+     * If either metrics or session is null, then this method does nothing.
      */
-    private void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
-        metrics.setSessionId(session.getInternalSessionToken());
-        metrics.setUserId(session.getId());
-        metrics.setAppId(session.getAppId());
+    private static void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
+        if (metrics != null && session != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            metrics.setUserId(session.getId());
+            metrics.setAppId(session.getAppId());
+        }
     }
 
     @Override
