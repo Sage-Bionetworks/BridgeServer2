@@ -111,15 +111,13 @@ public class RequestFilter implements Filter {
 
         req = new RequestIdWrapper(request, requestId);
 
-        // set local cookies when a session in present
-        UserSession session = null;
         try {
             chain.doFilter(req, res);
-            session = (UserSession) request.getAttribute("CreatedUserSession");
         } finally {
             // Clear request context when finished.
             setRequestContext(null);
-            // Set Cookies from UserSession if environment is LOCAL
+            // Set Cookies from UserSession only if environment is LOCAL
+            UserSession session = (UserSession) request.getAttribute("CreatedUserSession");
             if (session != null && bridgeConfig.getEnvironment() == Environment.LOCAL) {
                 String sessionToken = session.getSessionToken();
                 Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);

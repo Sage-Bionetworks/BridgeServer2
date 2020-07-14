@@ -62,14 +62,12 @@ public class MetricsFilter implements Filter {
 
         metrics.setQueryParams(paramsMap);
 
-        // Used for record metrics from the UserSession.
-        UserSession session = null;
-        // Log session info when a session is present
         try {
             chain.doFilter(req, res);
             metrics.setStatus(response.getStatus());
-            session = (UserSession) request.getAttribute("CreatedUserSession");
         } finally {
+            // Log session info when a session is present
+            UserSession session = (UserSession) request.getAttribute("CreatedUserSession");
             if (session != null) {
                 // Record UserSession to Metrics.
                 writeSessionInfoToMetrics(metrics, session);
