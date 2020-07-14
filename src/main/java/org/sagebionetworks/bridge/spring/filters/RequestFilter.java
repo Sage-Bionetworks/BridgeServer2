@@ -120,7 +120,7 @@ public class RequestFilter implements Filter {
             UserSession session = (UserSession) request.getAttribute("CreatedUserSession");
             if (session != null && bridgeConfig.getEnvironment() == Environment.LOCAL) {
                 String sessionToken = session.getSessionToken();
-                Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                Cookie cookie = BridgeUtils.makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response.addCookie(cookie);
             }
         }
@@ -134,16 +134,6 @@ public class RequestFilter implements Filter {
     // Isolated for testing
     protected void setRequestContext(RequestContext context) {
         BridgeUtils.setRequestContext(context);
-    }
-
-    protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
-        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
-        cookie.setMaxAge(expireInSeconds);
-        cookie.setPath("/");
-        cookie.setDomain("localhost");
-        cookie.setHttpOnly(false);
-        cookie.setSecure(false);
-        return cookie;
     }
 
     @Override

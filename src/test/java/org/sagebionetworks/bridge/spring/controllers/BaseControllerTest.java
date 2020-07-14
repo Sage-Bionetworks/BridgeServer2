@@ -174,6 +174,8 @@ public class BaseControllerTest extends Mockito {
 
         UserSession returnedSession = controller.getSessionIfItExists();
         assertEquals(returnedSession, session);
+
+        verify(mockRequest).setAttribute(eq(BaseController.USER_SESSION_FLAG), any(UserSession.class));
     }
 
     @Test
@@ -467,45 +469,6 @@ public class BaseControllerTest extends Mockito {
         
         Metrics retrievedMetrics = controller.getMetrics();
         assertEquals(retrievedMetrics, metrics);
-    }
-
-    @Test
-    public void writeSessionInfoToMetrics() {
-        // Mock metrics
-        Metrics metrics = new Metrics(REQUEST_ID);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        session.setInternalSessionToken("internalSessionToken");
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        session.setAppId(TEST_APP_ID);
-        
-        controller.writeSessionInfoToMetrics(session);
-        
-        ObjectNode node = metrics.getJson();
-        assertEquals(node.get("session_id").textValue(), "internalSessionToken");
-        assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("app_id").textValue(), TEST_APP_ID);
-    }
-    
-    @Test
-    public void writeSessionInfoToMetricsNoSession() {
-        // Mock metrics
-        Metrics metrics = mock(Metrics.class);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
-    }
-
-    @Test
-    public void writeSessionInfoToMetricsNoMetrics() {
-        Metrics metrics = mock(Metrics.class);
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
     }
     
     @Test

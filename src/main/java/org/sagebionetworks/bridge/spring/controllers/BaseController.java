@@ -51,6 +51,12 @@ import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
+
+    /**
+     * The attribute key in request() for Filters to catch UserSession if it
+     * exists.
+     */
+    public final static String USER_SESSION_FLAG = "CreatedUserSession";
     
     @FunctionalInterface
     private static interface ExceptionThrowingSupplier<T> {
@@ -130,7 +136,8 @@ public abstract class BaseController {
             return null;
         }
         final UserSession session = authenticationService.getSession(sessionToken);
-        writeSessionInfoToMetrics(session);
+        // Raise a "flag" in the request to let MetricsFilter record the metrics.
+        request().setAttribute(USER_SESSION_FLAG, session);
         return session;
     }
 
@@ -239,7 +246,7 @@ public abstract class BaseController {
             // Not sure why this is 
             Cookie sessionCookie = WebUtils.getCookie(request(), SESSION_TOKEN_HEADER);
             if (sessionCookie != null && StringUtils.isNotBlank(sessionCookie.getValue())) {
-                Cookie cookie = makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                Cookie cookie = BridgeUtils.makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response().addCookie(cookie);
                 return sessionCookie.getValue();
             }
@@ -341,18 +348,8 @@ public abstract class BaseController {
         return BridgeUtils.getRequestContext().getMetrics();
     }
 
-    /** Writes the user's account ID, internal session ID, and app ID to the metrics. */
-    protected void writeSessionInfoToMetrics(UserSession session) {
-        Metrics metrics = getMetrics();
-        if (metrics != null && session != null) {
-            metrics.setSessionId(session.getInternalSessionToken());
-            metrics.setUserId(session.getId());
-            metrics.setAppId(session.getAppId());
-        }
-    }
-
     /**
-     * Updates the request info from the given session. Also sets the "CreatedUserSession"
+     * Updates the request info from the given session. Also sets the USER_SESSION_FLAG
      * attribute in request() so that Filters can get the UserSession.
      *
      * @param session the given UserSession. If it is null, then do nothing.
@@ -364,7 +361,7 @@ public abstract class BaseController {
 
             requestInfoService.updateRequestInfo(requestInfo);
 
-            request().setAttribute("CreatedUserSession", session);
+            request().setAttribute(USER_SESSION_FLAG, session);
         }
     }
     
@@ -389,14 +386,4 @@ public abstract class BaseController {
         builder.withAppId(session.getAppId());
         return builder;
     }
-    
-    protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
-        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
-        cookie.setMaxAge(expireInSeconds);
-        cookie.setPath("/");
-        cookie.setDomain("localhost");
-        cookie.setHttpOnly(false);
-        cookie.setSecure(false);
-        return cookie;
-    }    
 }
