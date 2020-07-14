@@ -55,7 +55,7 @@ public abstract class BaseController {
     @FunctionalInterface
     private static interface ExceptionThrowingSupplier<T> {
         T get() throws Throwable;
-    };
+    }
     
     protected final static ObjectMapper MAPPER = BridgeObjectMapper.get();
 
@@ -350,15 +350,22 @@ public abstract class BaseController {
             metrics.setAppId(session.getAppId());
         }
     }
-    
-    /** Combines metrics logging with the setting of the session token as a cookie in local
-     * environments (useful for testing).
+
+    /**
+     * Updates the request info from the given session. Also sets the "CreatedUserSession"
+     * attribute in request() so that Filters can get the UserSession.
+     *
+     * @param session the given UserSession. If it is null, then do nothing.
      */
     protected void updateRequestInfoFromSession(UserSession session) {
-        RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-        
-        requestInfoService.updateRequestInfo(requestInfo);
+        if (session != null) {
+            RequestInfo requestInfo = getRequestInfoBuilder(session)
+                    .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+
+            requestInfoService.updateRequestInfo(requestInfo);
+
+            request().setAttribute("CreatedUserSession", session);
+        }
     }
     
     protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {

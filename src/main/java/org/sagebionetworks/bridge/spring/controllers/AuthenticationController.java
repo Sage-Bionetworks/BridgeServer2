@@ -91,12 +91,10 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.emailSignIn(context, signInRequest);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
-            updateRequestInfoFromSession(session);
             throw e;
         } finally {
-            request().setAttribute("CreatedUserSession", session);
+            updateRequestInfoFromSession(session);
         }
-        updateRequestInfoFromSession(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -134,12 +132,10 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.phoneSignIn(context, signInRequest);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
-            updateRequestInfoFromSession(session);
             throw e;
         } finally {
-            request().setAttribute("CreatedUserSession", session);
+            updateRequestInfoFromSession(session);
         }
-        updateRequestInfoFromSession(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -159,12 +155,10 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.signIn(app, context, signIn);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
-            updateRequestInfoFromSession(session);
             throw e;
         } finally {
-            request().setAttribute("CreatedUserSession", session);
+            updateRequestInfoFromSession(session);
         }
-        updateRequestInfoFromSession(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -187,12 +181,10 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.reauthenticate(app, context, signInRequest);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
-            updateRequestInfoFromSession(session);
             throw e;
         } finally {
-            request().setAttribute("CreatedUserSession", session);
+            updateRequestInfoFromSession(session);
         }
-        updateRequestInfoFromSession(session);
         
         return UserSessionInfo.toJSON(session);
     }
@@ -380,12 +372,10 @@ public class AuthenticationController extends BaseController {
             session = authenticationService.oauthSignIn(context, token);
         } catch (ConsentRequiredException e) {
             session = e.getUserSession();
-            updateRequestInfoFromSession(session);
             throw e;
         } finally {
-            request().setAttribute("CreatedUserSession", session);
+            updateRequestInfoFromSession(session);
         }
-        updateRequestInfoFromSession(session);
         
         return UserSessionInfo.toJSON(session);
     }
