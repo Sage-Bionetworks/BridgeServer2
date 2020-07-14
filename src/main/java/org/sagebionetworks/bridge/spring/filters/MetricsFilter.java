@@ -42,16 +42,6 @@ public class MetricsFilter implements Filter {
     // Allow-list for query parameters metrics logging.
     private static final List<String> ALLOW_LIST =
             BridgeConfigFactory.getConfig().getList("query.param.allowlist");
-
-    /**
-     * Redis CacheProvider to give UserSession objects for Metrics.
-     */
-    CacheProvider cacheProvider;
-
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
     
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -82,9 +72,6 @@ public class MetricsFilter implements Filter {
             chain.doFilter(req, res);
             metrics.setStatus(response.getStatus());
             session = (UserSession) request.getAttribute("CreatedUserSession");
-        } catch (ConsentRequiredException e) {
-            session = e.getUserSession();
-            throw e;
         } finally {
             if (session != null) {
                 // Record UserSession to Metrics.

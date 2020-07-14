@@ -37,7 +37,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -117,8 +116,6 @@ public class RequestFilter implements Filter {
         try {
             chain.doFilter(req, res);
             session = (UserSession) request.getAttribute("CreatedUserSession");
-        } catch (ConsentRequiredException e) {
-            session = e.getUserSession();
         } finally {
             // Clear request context when finished.
             setRequestContext(null);
