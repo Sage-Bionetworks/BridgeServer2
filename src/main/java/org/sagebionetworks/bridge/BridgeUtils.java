@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -29,6 +30,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.servlet.http.Cookie;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -47,6 +49,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -748,5 +752,34 @@ public class BridgeUtils {
             return new InvalidEntityException(msg);
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
+    }
+
+    /**
+     * Writes the user's account ID, internal session ID, and app ID to the metrics.
+     * If either metrics or session is null, then this method does nothing.
+     */
+    public static void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
+        if (metrics != null && session != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            metrics.setUserId(session.getId());
+            metrics.setAppId(session.getAppId());
+        }
+    }
+
+    /**
+     * Make a session web cookie based on given sessonToken and expireInSeconds (duration).
+     *
+     * @param sessionToken the sessionToken of the cookie
+     * @param expireInSeconds the effective duration of this cookie
+     * @return the Cookie
+     */
+    public static Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
+        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
+        cookie.setMaxAge(expireInSeconds);
+        cookie.setPath("/");
+        cookie.setDomain("localhost");
+        cookie.setHttpOnly(false);
+        cookie.setSecure(false);
+        return cookie;
     }
 }
