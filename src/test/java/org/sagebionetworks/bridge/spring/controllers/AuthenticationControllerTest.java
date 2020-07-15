@@ -405,7 +405,7 @@ public class AuthenticationControllerTest extends Mockito {
         // execute and validate
         UserSession retVal = controller.getSessionIfItExists();
         assertSame(userSession, retVal);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -464,7 +464,7 @@ public class AuthenticationControllerTest extends Mockito {
         // execute and validate
         UserSession retVal = controller.getAuthenticatedSession();
         assertSame(session, retVal);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -632,7 +632,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).signOut(session);
         verify(mockResponse).addCookie(cookieCaptor.capture());
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         
         Cookie cookie = cookieCaptor.getValue();
         assertEquals(cookie.getValue(), "");
@@ -657,7 +657,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).signOut(session);
         verify(mockResponse).addCookie(cookieCaptor.capture());
         verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         
         Cookie cookie = cookieCaptor.getValue();
         assertEquals(cookie.getValue(), "");
@@ -1387,13 +1387,6 @@ public class AuthenticationControllerTest extends Mockito {
         String escapedJson = TestUtils.createJson(json);
         ServletInputStream is = TestUtils.toInputStream(escapedJson);
         when(mockRequest.getInputStream()).thenReturn(is);
-    }
-    
-    private void verifyMetrics() {
-        verify(controller, atLeastOnce()).getMetrics();
-        verify(metrics, atLeastOnce()).setSessionId(TEST_INTERNAL_SESSION_ID);
-        verify(metrics, atLeastOnce()).setUserId(TEST_ACCOUNT_ID);
-        verify(metrics, atLeastOnce()).setAppId(TEST_APP_ID);
     }
     
     private void verifyCommonLoggingForSignIns() throws Exception {
