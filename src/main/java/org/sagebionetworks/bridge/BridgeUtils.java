@@ -7,7 +7,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -30,7 +29,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
-import javax.servlet.http.Cookie;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -49,8 +47,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -318,7 +314,7 @@ public class BridgeUtils {
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
      * method as a map. Variables that are not found in the map will be left in the string as is.
      *
-     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
+     * @see <a href="https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate"></a>
      * 
      * @param template
      * @param values
