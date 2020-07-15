@@ -51,7 +51,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 
 @Component
 public class RequestFilter implements Filter {
-    BridgeConfig bridgeConfig;
+    private BridgeConfig bridgeConfig;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
