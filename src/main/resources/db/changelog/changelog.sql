@@ -377,11 +377,6 @@ CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`)
 
 -- changeset bridge:18
 
--- ALTER TABLE `Accounts` DROP FOREIGN KEY `accounts_ibfk_1`;
--- ALTER TABLE `Organizations` MODIFY `appId` varchar(60);
--- ALTER TABLE `Organizations` MODIFY `identifier` varchar(60);
--- ALTER TABLE `Accounts` ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
-
 -- Sponsors. Named consistent with other associative tables. Needed to adjust col size of Organizations
 -- to match studies (nee substudies) table.
 CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (

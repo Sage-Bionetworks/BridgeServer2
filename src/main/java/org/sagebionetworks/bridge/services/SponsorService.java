@@ -98,8 +98,9 @@ public class SponsorService {
         if (sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId)) {
             sponsorDao.removeStudySponsor(appId, studyId, orgId);
         } else {
-            // Either one of the two entities is missing, or if they both exists, the org
-            // does not sponsor this study. So one of these is going to throw an exception.
+            // Either one of the two entities is missing, or if they both exist, the org
+            // does not sponsor this study. So one way or another, an exception must be 
+            // thrown.
             studyService.getStudy(appId, studyId, true);
             organizationService.getOrganization(appId, orgId);
             throw new BadRequestException(String.format(NOT_A_SPONSOR_MSG, orgId, studyId));

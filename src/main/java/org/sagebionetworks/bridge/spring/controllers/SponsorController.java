@@ -30,8 +30,8 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 @RestController
 public class SponsorController extends BaseController {
     
-    static final String REMOVE_SPONSOR_MSG = "Organization '%s' removed as sponsor of study '%s'.";
-    static final String ADD_SPONSOR_MSG = "Organization '%s' added as sponsor of study '%s'.";
+    static final String REMOVE_SPONSOR_MSG = "Organization '%s' removed as a sponsor of study '%s'.";
+    static final String ADD_SPONSOR_MSG = "Organization '%s' added as a sponsor of study '%s'.";
     
     private SponsorService sponsorService;
     
