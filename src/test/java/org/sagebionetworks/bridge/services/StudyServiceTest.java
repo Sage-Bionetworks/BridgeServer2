@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
@@ -12,7 +13,6 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -23,17 +23,19 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableList;
 
 public class StudyServiceTest {
-    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
+    private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(ImmutableList.of(Study.create(), Study.create()), 5);
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
     
     @Mock
@@ -70,9 +72,9 @@ public class StudyServiceTest {
         
         Study studyB = Study.create();
         studyB.setId("studyB");
-        List<Study> studies = ImmutableList.of(studyA, studyB); 
+        PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 10); 
         
-        when(studyDao.getStudies(TEST_APP_ID, false)).thenReturn(studies);
+        when(studyDao.getStudies(TEST_APP_ID, 0, API_MAXIMUM_PAGE_SIZE, false)).thenReturn(studies);
         
         Set<String> studyIds = service.getStudyIds(TEST_APP_ID);
         assertEquals(studyIds, USER_STUDY_IDS);
@@ -91,22 +93,22 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesIncludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
         
-        List<Study> returnedValue = service.getStudies(TEST_APP_ID, true);
+        PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 50, true);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, true);
+        verify(studyDao).getStudies(TEST_APP_ID, 0, 50, true);
     }
     
     @Test
     public void getStudiesExcludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, 0, 10, false)).thenReturn(STUDIES);
         
-        List<Study> returnedValue = service.getStudies(TEST_APP_ID, false);
+        PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 10, false);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, false);
+        verify(studyDao).getStudies(TEST_APP_ID, 0, 10, false);
     }
     
     @Test

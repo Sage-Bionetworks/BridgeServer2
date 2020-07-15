@@ -15,8 +15,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,6 +31,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -44,7 +43,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyControllerTest extends Mockito {
 
     private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
-    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
+    private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(ImmutableList.of(Study.create(), Study.create()), 2);
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
 
     @Mock
@@ -93,26 +92,22 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void getStudiesExcludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
+        when(service.getStudies(TEST_APP_ID, 0, 50, false)).thenReturn(STUDIES);
 
-        ResourceList<Study> result = controller.getStudies(false);
-
+        PagedResourceList<Study> result = controller.getStudies("0", "50", false);
         assertEquals(result.getItems().size(), 2);
-        assertFalse((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, false);
+        verify(service).getStudies(TEST_APP_ID, 0, 50, false);
     }
 
     @Test
     public void getStudiesIncludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
+        when(service.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
 
-        ResourceList<Study> result = controller.getStudies(true);
-
+        ResourceList<Study> result = controller.getStudies("0", "50", true);
         assertEquals(result.getItems().size(), 2);
-        assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, true);
+        verify(service).getStudies(TEST_APP_ID, 0, 50, true);
     }
 
     @Test

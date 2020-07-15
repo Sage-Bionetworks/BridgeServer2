@@ -19,12 +19,12 @@ public class DateTimeRangeResourceList<T> extends ResourceList<T> {
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return getDateTime(START_TIME);
+        return v2 ? null : getDateTime(START_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return getDateTime(END_TIME);
+        return v2 ? null : getDateTime(END_TIME);
     }
     public DateTimeRangeResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);

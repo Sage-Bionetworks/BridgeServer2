@@ -374,3 +374,22 @@ ADD COLUMN `orgMembership` varchar(255),
 ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
 
 CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`);
+
+-- changeset bridge:18
+
+-- ALTER TABLE `Accounts` DROP FOREIGN KEY `accounts_ibfk_1`;
+-- ALTER TABLE `Organizations` MODIFY `appId` varchar(60);
+-- ALTER TABLE `Organizations` MODIFY `identifier` varchar(60);
+-- ALTER TABLE `Accounts` ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
+
+-- Sponsors. Named consistent with other associative tables. Needed to adjust col size of Organizations
+-- to match studies (nee substudies) table.
+CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `orgId` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`,`studyId`,`orgId`),
+  CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`),
+  CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+

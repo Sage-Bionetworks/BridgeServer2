@@ -49,7 +49,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
         
         List<Organization> orgs = hibernateOrgs.stream().map(o -> (Organization)o).collect(toList());
         
-        return new PagedResourceList<Organization>(orgs, total);
+        return new PagedResourceList<Organization>(orgs, total, true);
     }
 
     @Override

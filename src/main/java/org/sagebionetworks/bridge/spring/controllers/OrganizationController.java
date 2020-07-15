@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -99,6 +100,7 @@ public class OrganizationController extends BaseController {
     }
     
     @PostMapping("/v1/organizations/{orgId}/members/{userId}")
+    @ResponseStatus(code = CREATED)
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         

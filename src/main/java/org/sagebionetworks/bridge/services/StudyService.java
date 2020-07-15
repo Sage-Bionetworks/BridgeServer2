@@ -1,14 +1,23 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
-import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
@@ -46,14 +55,23 @@ public class StudyService {
      * so we can provide a cache for these infrequently changing identifiers.
      */
     public Set<String> getStudyIds(String appId) {
-        return getStudies(appId, false).stream()
+        return getStudies(appId, 0, API_MAXIMUM_PAGE_SIZE, false).getItems().stream()
                 .map(Study::getId).collect(BridgeCollectors.toImmutableSet());
     }
     
-    public List<Study> getStudies(String appId, boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
-        
-        return studyDao.getStudies(appId, includeDeleted);
+
+        if (offsetBy < 0) {
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
+        }
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        return studyDao.getStudies(appId, offsetBy, pageSize, includeDeleted)
+                .withRequestParam(OFFSET_BY, offsetBy)
+                .withRequestParam(PAGE_SIZE, pageSize)
+                .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
     public VersionHolder createStudy(String appId, Study study) {

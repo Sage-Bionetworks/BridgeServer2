@@ -27,37 +27,38 @@ public class PagedResourceList<T> extends ResourceList<T> {
     
     private final Integer total;
 
-    // This could have a nextPageOffsetBy, but it's trivial to calculate client-side
-    @JsonCreator
-    public PagedResourceList(
-            @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(TOTAL) Integer total) {
-        super(items);
+    public PagedResourceList(@JsonProperty(ITEMS) List<T> items, @JsonProperty(TOTAL) Integer total, boolean v2) {
+        super(items, v2);
         checkNotNull(total);
         this.total = total;
+    }
+    
+    @JsonCreator
+    public PagedResourceList(@JsonProperty(ITEMS) List<T> items, @JsonProperty(TOTAL) Integer total) {
+        this(items, total, false);
     }
 
     @Deprecated
     public String getEmailFilter() {
-        return (String)getRequestParams().get(EMAIL_FILTER);
+        return v2 ? null : (String)getRequestParams().get(EMAIL_FILTER);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return getDateTime(START_TIME);
+        return v2 ? null : getDateTime(START_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return getDateTime(END_TIME);
+        return v2 ? null : getDateTime(END_TIME);
     }
     @Deprecated
-    public int getPageSize() {
-        return (Integer)getRequestParams().get(PAGE_SIZE);
+    public Integer getPageSize() {
+        return v2 ? null : (Integer)getRequestParams().get(PAGE_SIZE);
     }
     @Deprecated
     public Integer getOffsetBy() {
-        return (Integer)getRequestParams().get(OFFSET_BY);
+        return v2 ? null : (Integer)getRequestParams().get(OFFSET_BY);
     }
     public Integer getTotal() {
         return total;
