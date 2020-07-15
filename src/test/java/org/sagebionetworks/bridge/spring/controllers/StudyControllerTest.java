@@ -115,7 +115,7 @@ public class StudyControllerTest extends Mockito {
         when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -125,21 +125,21 @@ public class StudyControllerTest extends Mockito {
         verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
+        assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
     public void getStudy() throws Exception {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         when(service.getStudy(TEST_APP_ID, "id", true)).thenReturn(study);
 
         Study result = controller.getStudy("id");
         assertEquals(result, study);
 
-        assertEquals(result.getId(), "oneId");
+        assertEquals(result.getIdentifier(), "oneId");
         assertEquals(result.getName(), "oneName");
 
         verify(service).getStudy(TEST_APP_ID, "id", true);
@@ -148,7 +148,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void updateStudy() throws Exception {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -161,7 +161,7 @@ public class StudyControllerTest extends Mockito {
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
+        assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 

@@ -101,7 +101,7 @@ public class HibernateStudyDaoTest {
         verify(hibernateHelper).getById(eq(HibernateStudy.class), studyIdCaptor.capture());
         
         StudyId studyId = studyIdCaptor.getValue();
-        assertEquals(studyId.getId(), "id");
+        assertEquals(studyId.getIdentifier(), "id");
         assertEquals(studyId.getAppId(), TEST_APP_ID);
     }
     
@@ -139,7 +139,7 @@ public class HibernateStudyDaoTest {
         
         verify(hibernateHelper).deleteById(eq(HibernateStudy.class), studyIdCaptor.capture());
         StudyId studyId = studyIdCaptor.getValue();
-        assertEquals(studyId.getId(), "oneId");
+        assertEquals(studyId.getIdentifier(), "oneId");
         assertEquals(studyId.getAppId(), TEST_APP_ID);
     }    
 

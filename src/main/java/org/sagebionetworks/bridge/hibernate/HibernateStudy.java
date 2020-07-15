@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -20,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @BridgeTypeName("Study")
 public class HibernateStudy implements Study {
     @Id
-    private String id;
+    private String identifier;
     @Id
     private String appId;
     private String name;
@@ -33,13 +34,14 @@ public class HibernateStudy implements Study {
     private Long version;
     
     @Override
-    public String getId() {
-        return id;
+    @JsonAlias("id")
+    public String getIdentifier() {
+        return identifier;
     }
 
     @Override
-    public void setId(String id) {
-        this.id = id;
+    public void setIdentifier(String id) {
+        this.identifier = id;
     }
 
     @JsonIgnore

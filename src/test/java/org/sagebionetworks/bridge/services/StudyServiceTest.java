@@ -68,10 +68,10 @@ public class StudyServiceTest {
     @Test
     public void getStudyIds() {
         Study studyA = Study.create();
-        studyA.setId("studyA");
+        studyA.setIdentifier("studyA");
         
         Study studyB = Study.create();
-        studyB.setId("studyB");
+        studyB.setIdentifier("studyB");
         PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 10); 
         
         when(studyDao.getStudies(TEST_APP_ID, 0, API_MAXIMUM_PAGE_SIZE, false)).thenReturn(studies);
@@ -114,7 +114,7 @@ public class StudyServiceTest {
     @Test
     public void createStudy() {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         study.setAppId("junk");
         study.setVersion(10L);
@@ -131,7 +131,7 @@ public class StudyServiceTest {
         verify(studyDao).createStudy(studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
+        assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
         assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertNull(persisted.getVersion());
@@ -148,7 +148,7 @@ public class StudyServiceTest {
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createStudyAlreadyExists() {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
@@ -159,7 +159,7 @@ public class StudyServiceTest {
     @Test
     public void updateStudy() {
         Study existing = Study.create();
-        existing.setId("oneId");
+        existing.setIdentifier("oneId");
         existing.setName("oldName");
         existing.setCreatedOn(DateTime.now());
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
@@ -167,7 +167,7 @@ public class StudyServiceTest {
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("newName");
         
         VersionHolder versionHolder = service.updateStudy(TEST_APP_ID, study);
@@ -177,7 +177,7 @@ public class StudyServiceTest {
         
         Study returnedValue = studyCaptor.getValue();
         assertEquals(returnedValue.getAppId(), TEST_APP_ID);
-        assertEquals(returnedValue.getId(), "oneId");
+        assertEquals(returnedValue.getIdentifier(), "oneId");
         assertEquals(returnedValue.getName(), "newName");
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
@@ -191,7 +191,7 @@ public class StudyServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateStudyEntityNotFound() {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         study.setDeleted(true);
 
@@ -205,7 +205,7 @@ public class StudyServiceTest {
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
 
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         study.setDeleted(true);
         

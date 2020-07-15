@@ -56,7 +56,7 @@ public class StudyService {
      */
     public Set<String> getStudyIds(String appId) {
         return getStudies(appId, 0, API_MAXIMUM_PAGE_SIZE, false).getItems().stream()
-                .map(Study::getId).collect(BridgeCollectors.toImmutableSet());
+                .map(Study::getIdentifier).collect(BridgeCollectors.toImmutableSet());
     }
     
     public PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
@@ -87,10 +87,10 @@ public class StudyService {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
         
-        Study existing = studyDao.getStudy(appId, study.getId());
+        Study existing = studyDao.getStudy(appId, study.getIdentifier());
         if (existing != null) {
             throw new EntityAlreadyExistsException(Study.class,
-                    ImmutableMap.of("id", existing.getId()));
+                    ImmutableMap.of("id", existing.getIdentifier()));
         }
         return studyDao.createStudy(study);
     }
@@ -102,7 +102,7 @@ public class StudyService {
         study.setAppId(appId);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
-        Study existing = getStudy(appId, study.getId(), true);
+        Study existing = getStudy(appId, study.getIdentifier(), true);
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
