@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
@@ -129,7 +130,8 @@ public class CRCController extends BaseController {
         SELECTED, 
         DECLINED, 
         TESTS_REQUESTED, 
-        TESTS_SCHEDULED, 
+        TESTS_SCHEDULED,
+        TESTS_CANCELLED, 
         TESTS_COLLECTED, 
         TESTS_AVAILABLE
     }
@@ -210,10 +212,16 @@ public class CRCController extends BaseController {
             }
             addLocation(data, account, locationString);
         }
-
-        int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, TESTS_SCHEDULED);
+        
+        // They send appointment when it is booked and when it is cancelled. They may send it
+        // other times, as there are more statuses in the AppointmentStatus enum. I am asking
+        // about that now.
+        String apptStatus = data.get("status").asText();
+        AccountStates state = ("cancelled".equals(apptStatus)) ? TESTS_CANCELLED : TESTS_SCHEDULED;
+        
+        int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state);
         if (status == 200) {
-            return ResponseEntity.ok(new StatusMessage("Appointment updated."));
+            return ResponseEntity.ok(new StatusMessage("Appointment updated (to " + apptStatus + ")."));
         }
         return ResponseEntity.created(URI.create("/v1/cuimc/appointments/" + userId))
                 .body(new StatusMessage("Appointment created."));
