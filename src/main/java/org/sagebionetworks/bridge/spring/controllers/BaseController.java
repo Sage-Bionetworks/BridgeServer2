@@ -246,7 +246,7 @@ public abstract class BaseController {
             // Not sure why this is 
             Cookie sessionCookie = WebUtils.getCookie(request(), SESSION_TOKEN_HEADER);
             if (sessionCookie != null && StringUtils.isNotBlank(sessionCookie.getValue())) {
-                Cookie cookie = BridgeUtils.makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                Cookie cookie = HttpUtil.makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response().addCookie(cookie);
                 return sessionCookie.getValue();
             }

@@ -754,20 +754,4 @@ public class BridgeUtils {
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
 
-    /**
-     * Make a session web cookie based on given sessonToken and expireInSeconds (duration).
-     *
-     * @param sessionToken the sessionToken of the cookie
-     * @param expireInSeconds the effective duration of this cookie
-     * @return the Cookie
-     */
-    public static Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
-        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
-        cookie.setMaxAge(expireInSeconds);
-        cookie.setPath("/");
-        cookie.setDomain("localhost");
-        cookie.setHttpOnly(false);
-        cookie.setSecure(false);
-        return cookie;
-    }
 }

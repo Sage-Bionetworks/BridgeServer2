@@ -9,7 +9,7 @@ import javax.servlet.http.Cookie;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -152,7 +152,7 @@ public class ConsentController extends BaseController {
         
         authenticationService.signOut(session);
         
-        Cookie cookie = BridgeUtils.makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         return new StatusMessage("Signed out.");
     }

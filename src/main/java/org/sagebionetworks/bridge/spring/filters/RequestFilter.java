@@ -38,8 +38,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.Environment;
-import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,7 +120,7 @@ public class RequestFilter implements Filter {
             UserSession session = (UserSession) request.getAttribute("CreatedUserSession");
             if (session != null && bridgeConfig.getEnvironment() == Environment.LOCAL) {
                 String sessionToken = session.getSessionToken();
-                Cookie cookie = BridgeUtils.makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                Cookie cookie = HttpUtil.makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response.addCookie(cookie);
             }
         }

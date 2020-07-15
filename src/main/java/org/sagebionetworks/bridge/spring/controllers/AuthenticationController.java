@@ -12,7 +12,7 @@ import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -211,7 +211,7 @@ public class AuthenticationController extends BaseController {
             authenticationService.signOut(session);
         }
         // Servlet API has no way to delete cookies. strange but true. Set it "blank" to remove
-        Cookie cookie = BridgeUtils.makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         return new StatusMessage("Signed out.");
     }
@@ -226,7 +226,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage signOutV4() {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
-        Cookie cookie = BridgeUtils.makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         response().setHeader(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
         if (session != null) {
