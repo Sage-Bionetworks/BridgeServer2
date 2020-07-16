@@ -104,17 +104,6 @@ public class ParticipantController extends BaseController {
         participantService.createSmsRegistration(app, userId);
         return new StatusMessage("SMS notification registration created");
     }
-
-    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
-        UserSession session = getAuthenticatedSession();
-        App app = appService.getApp(session.getAppId());
-        
-        CriteriaContext context = getCriteriaContext(session);
-        StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
-        
-        return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
-    }
     
     @PostMapping("/v3/participants/self")
     public JsonNode updateSelfParticipant() {
@@ -294,6 +283,9 @@ public class ParticipantController extends BaseController {
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        if ("self".equals(userId)) {
+            userId = session.getId();
+        }
         checkSelfOrResearcherAndThrow(userId);
         App app = appService.getApp(session.getAppId());
 
@@ -304,8 +296,14 @@ public class ParticipantController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        StudyParticipant participant = participantService.getParticipant(app, userId, consents);
-
+        StudyParticipant participant; 
+        if (session.getId().equals(userId)) {
+            CriteriaContext context = getCriteriaContext(session);
+            participant = participantService.getSelfParticipant(app, context, consents);
+        } else {
+            participant = participantService.getParticipant(app, userId, consents);
+        }
+        
         ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
