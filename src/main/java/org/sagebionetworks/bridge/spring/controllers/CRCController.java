@@ -216,6 +216,9 @@ public class CRCController extends BaseController {
         // They send appointment when it is booked and when it is cancelled. They may send it
         // other times, as there are more statuses in the AppointmentStatus enum. I am asking
         // about that now.
+        if (!data.has("status")) {
+            throw new BadRequestException("Appointment is missing a status property.");
+        }
         String apptStatus = data.get("status").asText();
         AccountStates state = ("cancelled".equals(apptStatus)) ? TESTS_CANCELLED : TESTS_SCHEDULED;
         
