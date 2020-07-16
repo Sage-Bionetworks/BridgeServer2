@@ -852,7 +852,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cannotResetPasswordIfNotResearcher() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).build();
+                .withId("notUserId").withRoles(ImmutableSet.of(DEVELOPER)).build();
         session.setParticipant(participant);
 
         controller.requestResetPassword(USER_ID);
@@ -1420,7 +1420,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.ADMIN))
-                .build();
+                .withId("notUserId").build();
         session.setParticipant(participant);
 
         controller.deleteTestParticipant(USER_ID);

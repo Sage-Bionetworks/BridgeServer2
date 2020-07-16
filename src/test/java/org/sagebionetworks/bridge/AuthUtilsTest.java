@@ -2,11 +2,14 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -137,5 +140,40 @@ public class AuthUtilsTest {
         // still doesn't pass because the appId must always match (global users must call 
         // this API after associating to the right app context):
         AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, "other:"+OWNER_ID);        
+    }
+    
+    @Test
+    public void checkSelfOrResearcherSucceedsBecauseSelf() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId(USER_ID).build());
+        
+        assertTrue(AuthUtils.checkSelfOrResearcher(USER_ID));
+    }
+    
+    @Test
+    public void checkSelfOrResearcherSucceedsBecauseResearcher() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withCallerUserId("notUserId").build());
+        
+        assertTrue(AuthUtils.checkSelfOrResearcher(USER_ID));
+    }
+    
+    @Test
+    public void checkSelfOrResearcherFails() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerUserId("notUserId").build());
+        
+        assertFalse(AuthUtils.checkSelfOrResearcher(USER_ID));
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkSelfOrResearcherAndThrow() { 
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerUserId("notUserId").build());
+        
+        AuthUtils.checkSelfOrResearcherAndThrow(USER_ID);
     }
 }
