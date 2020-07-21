@@ -44,11 +44,11 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
         builder.getParameters().put("assessmentId", assessmentId);
         builder.getParameters().put("appId", appId);
         if (minRevision != null) {
-            clauses.add("(minRevision is null OR minRevision >= :minRevision)");
+            clauses.add("(minRevision is null OR minRevision <= :minRevision)");
             builder.getParameters().put("minRevision", minRevision);
         }
         if (maxRevision != null) {
-            clauses.add("(maxRevision is null OR maxRevision <= :maxRevision)");
+            clauses.add("(maxRevision is null OR maxRevision >= :maxRevision)");
             builder.getParameters().put("maxRevision", maxRevision);
         }
         if (!includeDeleted) {

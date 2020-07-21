@@ -374,3 +374,25 @@ ADD COLUMN `orgMembership` varchar(255),
 ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
 
 CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`);
+
+-- changeset bridge:18
+
+ -- Sponsors. Named consistent with other associative tables. Needed to adjust col size of Organizations
+ -- to match studies (nee substudies) table.
+ CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
+   `appId` varchar(255) NOT NULL,
+   `studyId` varchar(255) NOT NULL,
+   `orgId` varchar(255) NOT NULL,
+   PRIMARY KEY (`appId`,`studyId`,`orgId`),
+   CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`),
+   CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:19
+
+ALTER TABLE `ExternalResources`
+MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY', 
+    'SCIENCE_DOCUMENTATION', 'DEVELOPER_DOCUMENTATION', 'LICENSE', 
+    'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
+    'SCREENSHOT', 'VIDEO_PREVIEW', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
+    'OTHER') NOT NULL;

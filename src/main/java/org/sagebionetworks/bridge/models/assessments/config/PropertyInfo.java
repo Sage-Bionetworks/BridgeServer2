@@ -20,8 +20,8 @@ public final class PropertyInfo {
      */
     private final String description;
     /**
-     * Type of data being collected. Not constrained for complex cases, 
-     * but we suggest 'string', 'number' and 'boolean' to start.
+     * Type of data being collected. This indicates the JSON type; the Bridge Study Manager
+     * supports 'string', 'boolean' and 'number' (integer) to start.
      */
     private final String propType;
     

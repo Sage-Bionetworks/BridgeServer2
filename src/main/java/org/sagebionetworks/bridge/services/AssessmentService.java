@@ -123,7 +123,8 @@ public class AssessmentService {
         if (assessment.getIdentifier() != null) {
             // If an assessment under this identifier exists, use the revisions API. We want to 
             // warn people when they are unintentionally stomping on an existing identifier.
-            Optional<Assessment> opt = getLatestInternal(appId, assessment.getIdentifier(), true);
+            
+            Optional<Assessment> opt = dao.getAssessment(appId, assessment.getIdentifier(), assessment.getRevision());
             if (opt.isPresent()) {
                 Assessment e = opt.get();
                 Map<String,Object> map = new ImmutableMap.Builder<String,Object>()
@@ -388,6 +389,7 @@ public class AssessmentService {
         assessment.setCreatedOn(timestamp);
         assessment.setModifiedOn(timestamp);
         assessment.setDeleted(false);
+        assessment.setOriginGuid(null);
         sanitizeAssessment(assessment);
 
         String osName = assessment.getOsName();

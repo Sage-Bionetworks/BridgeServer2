@@ -8,6 +8,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 
 public class AssessmentResourceValidator implements Validator {
     
@@ -54,6 +55,15 @@ public class AssessmentResourceValidator implements Validator {
                     errors.rejectValue("publishers["+i+"]", CANNOT_BE_BLANK);
                 }
             }
+        }
+        if (resource.getMinRevision() != null && resource.getMaxRevision() != null && 
+                resource.getMinRevision() < resource.getMaxRevision()) {
+            errors.rejectValue("minRevision", "should not be less than maxRevision");
+        }
+        if (resource.getCategory() == ResourceCategory.RELEASE_NOTE && 
+                resource.getMinRevision() != null && 
+                resource.getMinRevision() != resource.getMaxRevision()) {
+            errors.rejectValue("category", "must specify same min/max revision value for release notes");
         }
     }
 }
