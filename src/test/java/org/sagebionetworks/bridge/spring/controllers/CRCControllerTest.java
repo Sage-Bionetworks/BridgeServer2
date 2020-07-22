@@ -4,6 +4,7 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.CANCELLED;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.ENTEREDINERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -586,6 +587,31 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test
+    public void postAppointmentMistakeRollsBackAccount() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(ENTEREDINERROR);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment deleted.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("selected"));
+        
+        verify(mockAccountService).updateAccount(account, null);
+        verify(mockReportService).deleteParticipantReportRecord(APP_ID, APPOINTMENT_REPORT, 
+                JAN1.toString(), HEALTH_CODE);
+    }
+    
+    @Test
     public void postAppointmentFailsWhenLocationCallFails() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
@@ -599,6 +625,7 @@ public class CRCControllerTest extends Mockito {
         when(mockStatusLine.getStatusCode()).thenReturn(500);
         
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
         addAppointmentSageId(appointment, USER_ID);
         
