@@ -182,9 +182,9 @@ public class CRCController extends BaseController {
         // This is temporary so we can start using the CRC system in production, 
         // while continuing to test. The calling code should not update the state of
         // the user if it receives a 400.
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new BadRequestException("Production accounts are not yet enabled.");
-        }
+//        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+//            throw new BadRequestException("Production accounts are not yet enabled.");
+//        }
         // All the code related to requesting a lab order will be removed once we've 
         // confirmed that this is Columbia's final approach to the integration.
         // createLabOrder(account);

@@ -361,7 +361,7 @@ public class CRCControllerTest extends Mockito {
                 
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
     }
-    
+    /*
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "Production accounts are not yet enabled.")
     public void updateParticipantFailsOnProductionAccount() throws Exception {
@@ -373,6 +373,7 @@ public class CRCControllerTest extends Mockito {
         
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
     }
+    */
 
     @Test
     public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
