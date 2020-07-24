@@ -279,7 +279,7 @@ public class ParticipantControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ParticipantController.class);
         assertCreate(ParticipantController.class, "createSmsRegistration");
-        //assertGet(ParticipantController.class, "getSelfParticipant");
+        assertGet(ParticipantController.class, "getSelfParticipant");
         assertPost(ParticipantController.class, "updateSelfParticipant");
         assertDelete(ParticipantController.class, "deleteTestParticipant");
         assertGet(ParticipantController.class, "getActivityEventsForWorker");
@@ -644,7 +644,7 @@ public class ParticipantControllerTest extends Mockito {
 
         when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
 
-        String result = controller.getParticipant("self", false);
+        String result = controller.getSelfParticipant(false);
 
         verify(mockParticipantService).getSelfParticipant(eq(app), contextCaptor.capture(), eq(false));
         assertEquals(contextCaptor.getValue().getUserId(), USER_ID);
@@ -674,7 +674,7 @@ public class ParticipantControllerTest extends Mockito {
 
         when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
 
-        String result = controller.getParticipant("self", true);
+        String result = controller.getSelfParticipant(true);
 
         verify(mockParticipantService).getSelfParticipant(eq(app), any(), eq(true));
 

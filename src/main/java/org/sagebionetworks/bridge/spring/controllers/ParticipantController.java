@@ -279,6 +279,17 @@ public class ParticipantController extends BaseController {
         return participantService.createParticipant(app, participant, true);
     }
 
+    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
+        UserSession session = getAuthenticatedSession();
+        App app = appService.getApp(session.getAppId());
+        
+        CriteriaContext context = getCriteriaContext(session);
+        StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
+        
+        return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+    }
+    
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
