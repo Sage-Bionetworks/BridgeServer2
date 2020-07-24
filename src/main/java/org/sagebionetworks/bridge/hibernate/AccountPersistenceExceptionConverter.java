@@ -35,8 +35,6 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
     
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        LOG.debug(exception.getMessage(), exception);
-        
         // Some of these exceptions subclass PersistenceException, and some are wrapped by 
         // PersistenceException (such as org.hibernate.exception.ConstraintViolationException). I 
         // do not know the logic behind this. 
