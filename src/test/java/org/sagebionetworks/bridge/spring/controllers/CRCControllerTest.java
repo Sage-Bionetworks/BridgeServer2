@@ -265,7 +265,32 @@ public class CRCControllerTest extends Mockito {
     public void getUserAgentDefault() {
         assertEquals(controller.getUserAgent(), "<Unknown>");
     }
+
+    @Test
+    public void updateParticipantSetsSelected() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+                
+        doReturn(mockResponse).when(controller).put(any(), any(), any());
+        
+        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
+
+        verify(mockAccountService).updateAccount(account, null);
+        verify(controller, never()).createLabOrder(account);
+
+        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
+    }
     
+    /*
     @Test
     public void updateParticipantCallsExternalTest() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
@@ -326,6 +351,7 @@ public class CRCControllerTest extends Mockito {
                 +"'COVID Recovery Corps'}}]}"));
         assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
+    */
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")

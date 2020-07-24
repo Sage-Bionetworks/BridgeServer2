@@ -45,7 +45,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
