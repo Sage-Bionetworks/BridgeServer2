@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
@@ -141,7 +143,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(mockMetrics).when(controller).getMetrics();
 
         // mock sessions
-        doReturn(true).when(mockWorkerSession).isInRole(Roles.WORKER);
+        doReturn(true).when(mockWorkerSession).isInRole(WORKER);
         
         doReturn("consented-user-health-code").when(mockConsentedUserSession).getHealthCode();
         doReturn("consented-user-app-id").when(mockConsentedUserSession).getAppId();
@@ -309,8 +311,9 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void getUploadById() {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockResearcherSession.isInRole(EnumSet.of(SUPERADMIN, WORKER))).thenReturn(true);
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setHealthCode(HEALTH_CODE);
@@ -331,10 +334,11 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp=".*App admin cannot retrieve upload in another app.*")
+            expectedExceptionsMessageRegExp=".*Caller does not have permission to access upload.*")
     public void getUploadByIdRejectsAppAdmin() {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockResearcherSession.isInRole(ADMIN)).thenReturn(true);
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setHealthCode(HEALTH_CODE);
@@ -351,7 +355,7 @@ public class UploadControllerTest extends Mockito {
 
     @Test
     public void getUploadByIdWorksForFullAdmin() {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
         when(mockResearcherSession.isInRole(EnumSet.of(Roles.SUPERADMIN, Roles.WORKER))).thenReturn(true);
 
@@ -370,10 +374,33 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test
+    public void getUploadByIdWorksForDevelopersOwnAccount() {
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockResearcherSession.getHealthCode()).thenReturn(HEALTH_CODE);
+        when(mockResearcherSession.isInRole(DEVELOPER)).thenReturn(true);
+
+        HealthDataRecord record = HealthDataRecord.create();
+        record.setHealthCode(HEALTH_CODE);
+
+        DynamoUpload2 upload = new DynamoUpload2();
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setAppId("some-other-app");
+        upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
+        UploadView uploadView = new UploadView.Builder().withUpload(upload).withHealthDataRecord(record).build();
+
+        when(mockUploadService.getUploadView(UPLOAD_ID)).thenReturn(uploadView);
+
+        UploadView view = controller.getUpload(UPLOAD_ID);
+        assertNotNull(view);        
+    }
+    
+    @Test
     public void getUploadByRecordId() throws Exception {
         doReturn(USER_ID).when(mockResearcherSession).getId();
         doReturn(TEST_APP_ID).when(mockResearcherSession).getAppId();
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(true).when(mockResearcherSession).isInRole(EnumSet.of(SUPERADMIN, WORKER));
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppId(TEST_APP_ID);
@@ -397,11 +424,12 @@ public class UploadControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp=".*App admin cannot retrieve upload in another app.*")
+            expectedExceptionsMessageRegExp=".*Caller does not have permission to access upload.*")
     public void getUploadByRecordIdRejectsAppAdmin() throws Exception {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
+        doReturn(true).when(mockResearcherSession).isInRole(ADMIN);
         doReturn(USER_ID).when(mockResearcherSession).getId();
-        when(mockResearcherSession.getAppId()).thenReturn("researcher-app-id");
+        when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppId(TEST_APP_ID);
@@ -421,7 +449,7 @@ public class UploadControllerTest extends Mockito {
 
     @Test
     public void getUploadByRecordIdWorksForFullAdmin() throws Exception {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         doReturn(true).when(mockResearcherSession).isInRole(EnumSet.of(Roles.SUPERADMIN, Roles.WORKER));
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
@@ -445,7 +473,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getUploadByRecordIdRecordMissing() throws Exception {
-        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         
         when(mockHealthDataService.getRecordById("record-id")).thenReturn(null);
 

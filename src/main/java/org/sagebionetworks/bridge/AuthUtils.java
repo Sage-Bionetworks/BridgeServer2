@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import com.google.common.collect.ImmutableSet;
@@ -11,23 +12,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 
 public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
     
+    public static boolean checkSelfOrResearcher(String targetUserId) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        String callerUserId = context.getCallerUserId();
+        
+        return context.isInRole(RESEARCHER) || targetUserId.equals(callerUserId);
+    }
+    
+    public static void checkSelfOrResearcherAndThrow(String targetUserId) {
+        if (!checkSelfOrResearcher(targetUserId)) {
+            throw new UnauthorizedException();
+        }
+    }
+    
     /**
      * Unless you are a superadmin, you can only list the members of your own organization.
      */
-    public static boolean checkOrgMembership(String proposedOrgId) {
+    public static boolean checkOrgMembership(String targetOrgId) {
         RequestContext context = BridgeUtils.getRequestContext();
         String callerOrgMembership = context.getCallerOrgMembership();
         
-        return context.isInRole(SUPERADMIN) || proposedOrgId.equals(callerOrgMembership);
+        return context.isInRole(SUPERADMIN) || targetOrgId.equals(callerOrgMembership);
     }
     
-    public static void checkOrgMembershipAndThrow(String proposedOrgId) {
-        if (!checkOrgMembership(proposedOrgId)) {
-            throw new UnauthorizedException("Caller is not a member of " + proposedOrgId);    
+    public static void checkOrgMembershipAndThrow(String targetOrgId) {
+        if (!checkOrgMembership(targetOrgId)) {
+            throw new UnauthorizedException("Caller is not a member of " + targetOrgId);    
         }
     }
     
