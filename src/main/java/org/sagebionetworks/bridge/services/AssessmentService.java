@@ -117,8 +117,6 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
-        checkAssessmentOwnership(appId, assessment.getOwnerId());
-        
         // If the identifier is missing, it will be a validation error.
         if (assessment.getIdentifier() != null) {
             // If an assessment under this identifier exists, use the revisions API. We want to 
@@ -141,8 +139,6 @@ public class AssessmentService {
     public Assessment createAssessmentRevision(String appId, String guid, Assessment assessment) {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
-        
-        checkAssessmentOwnership(appId, assessment.getOwnerId());
         
         // Verify this is an existing assessment, and that we're trying to add a revision
         // with the same identifier.
@@ -399,6 +395,8 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
         
+        checkAssessmentOwnership(appId, assessment.getOwnerId());
+
         AssessmentConfig config = new AssessmentConfig();
         config.setCreatedOn(timestamp);
         config.setModifiedOn(timestamp);
