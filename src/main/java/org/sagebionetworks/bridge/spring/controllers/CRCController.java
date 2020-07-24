@@ -12,7 +12,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
-import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_REQUESTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
@@ -183,12 +182,14 @@ public class CRCController extends BaseController {
         // This is temporary so we can start using the CRC system in production, 
         // while continuing to test. The calling code should not update the state of
         // the user if it receives a 400.
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new BadRequestException("Production accounts are not yet enabled.");
-        }
-        createLabOrder(account);
+//        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+//            throw new BadRequestException("Production accounts are not yet enabled.");
+//        }
+        // All the code related to requesting a lab order will be removed once we've 
+        // confirmed that this is Columbia's final approach to the integration.
+        // createLabOrder(account);
 
-        updateState(account, TESTS_REQUESTED);
+        updateState(account, SELECTED);
         accountService.updateAccount(account, null);
         return new StatusMessage("Participant updated.");
     }
