@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_REQUESTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
@@ -187,7 +188,7 @@ public class CRCController extends BaseController {
         }
         createLabOrder(account);
 
-        updateState(account, AccountStates.TESTS_REQUESTED);
+        updateState(account, TESTS_REQUESTED);
         accountService.updateAccount(account, null);
         return new StatusMessage("Participant updated.");
     }
