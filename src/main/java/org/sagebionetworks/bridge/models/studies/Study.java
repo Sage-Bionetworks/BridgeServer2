@@ -1,16 +1,16 @@
-package org.sagebionetworks.bridge.models.substudies;
+package org.sagebionetworks.bridge.models.studies;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-@JsonDeserialize(as=HibernateSubstudy.class)
-public interface Substudy extends BridgeEntity {
+@JsonDeserialize(as=HibernateStudy.class)
+public interface Study extends BridgeEntity {
     
-    public static Substudy create() {
-        return new HibernateSubstudy();
+    public static Study create() {
+        return new HibernateStudy();
     }
 
     String getId();

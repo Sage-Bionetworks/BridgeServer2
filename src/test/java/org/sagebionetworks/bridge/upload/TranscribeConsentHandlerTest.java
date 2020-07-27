@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 
@@ -98,9 +98,9 @@ public class TranscribeConsentHandlerTest {
         assertEquals(outputRecord.getUserExternalId(), "extB");
         assertEquals(outputRecord.getUserDataGroups(), Sets.newHashSet("test-group1","test-group2"));
         
-        Map<String,String> substudyMemberships = outputRecord.getUserSubstudyMemberships();
-        assertEquals(substudyMemberships.get("subA"), "<none>");
-        assertEquals(substudyMemberships.get("subB"), "extB");
+        Map<String,String> studyMemberships = outputRecord.getUserStudyMemberships();
+        assertEquals(studyMemberships.get("subA"), "<none>");
+        assertEquals(studyMemberships.get("subB"), "extB");
 
         assertEquals(outputRecord.getDayInStudy().intValue(), 5);
     }
@@ -117,7 +117,7 @@ public class TranscribeConsentHandlerTest {
         assertEquals(outputRecord.getUserSharingScope(), SharingScope.NO_SHARING);
         assertNull(outputRecord.getUserExternalId());
         assertNull(outputRecord.getUserDataGroups());
-        assertNull(outputRecord.getUserSubstudyMemberships());
+        assertNull(outputRecord.getUserStudyMemberships());
     }
 
     @Test

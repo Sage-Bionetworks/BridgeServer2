@@ -105,10 +105,10 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
-import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
-import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.StudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -659,7 +659,7 @@ public class SpringConfig {
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(HibernateAccount.class);
-        metadataSources.addAnnotatedClass(HibernateSubstudy.class);
+        metadataSources.addAnnotatedClass(HibernateStudy.class);
         metadataSources.addAnnotatedClass(HibernateEnrollment.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
@@ -707,10 +707,10 @@ public class SpringConfig {
         return new HibernateHelper(sessionFactory, converter);
     }
     
-    @Bean(name = "substudyHibernateHelper")
+    @Bean(name = "studyHibernateHelper")
     @Autowired
-    public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
-            SubstudyPersistenceExceptionConverter converter) {
+    public HibernateHelper studyHibernateHelper(SessionFactory sessionFactory,
+            StudyPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

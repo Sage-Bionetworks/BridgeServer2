@@ -31,7 +31,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -138,8 +138,8 @@ public class AccountPersistenceExceptionConverterTest {
     public void entityAlreadyExistsForExternalIdWhenThereAreMultiple() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
         account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
@@ -160,14 +160,14 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
-    public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringSubstudies() {
+    public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringStudies() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", USER_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
         account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
@@ -191,13 +191,13 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
-    public void entityAlreadyExistsForExternalIdWhenSubstudyOutsideOfCallerSubstudy() {
+    public void entityAlreadyExistsForExternalIdWhenStudyOutsideOfCallerStudy() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", USER_ID, "externalIdA");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
         account.setEnrollments(ImmutableSet.of(as1));
         
         Account existing = Account.create();

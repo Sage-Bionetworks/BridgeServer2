@@ -30,9 +30,9 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -51,18 +51,18 @@ public class StudyParticipantValidatorTest {
     private ExternalIdService externalIdService;
     
     @Mock
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     @Mock
     private OrganizationDao mockOrganizationDao;
     
-    private Substudy substudy;
+    private Study study;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        substudy = Substudy.create();
+        study = Study.create();
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -382,25 +382,25 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
     }
     @Test
-    public void substudyAllowedIfCallerHasNoSubstudies() {
-        // In other words, you can "taint" a user with substudies, putting them in a limited security role.
-        StudyParticipant participant = withSubstudies("substudyA", "substudyB");
+    public void studyAllowedIfCallerHasNoStudies() {
+        // In other words, you can "taint" a user with studies, putting them in a limited security role.
+        StudyParticipant participant = withStudies("studyA", "studyB");
         
-        when(substudyService.getSubstudy(app.getIdentifier(), "substudyA", false)).thenReturn(substudy);
-        when(substudyService.getSubstudy(app.getIdentifier(), "substudyB", false)).thenReturn(substudy);
+        when(studyService.getStudy(app.getIdentifier(), "studyA", false)).thenReturn(study);
+        when(studyService.getStudy(app.getIdentifier(), "studyB", false)).thenReturn(study);
         
         validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     @Test
-    public void subsetOfsubstudiesOK() {
+    public void subsetOfStudiesOK() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB", "substudyC")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyB", "studyC")).build());
         try {
-            // The user (in three substudies) can create a participant in only one of those substudies
-            StudyParticipant participant = withSubstudies("substudyB");
+            // The user (in three studies) can create a participant in only one of those studies
+            StudyParticipant participant = withStudies("studyB");
             
-            when(substudyService.getSubstudy(app.getIdentifier(), "substudyB", false)).thenReturn(substudy);
+            when(studyService.getStudy(app.getIdentifier(), "studyB", false)).thenReturn(study);
             
             validator = makeValidator(true);
             Validate.entityThrowingException(validator, participant);
@@ -409,14 +409,14 @@ public class StudyParticipantValidatorTest {
         }
     }
     @Test
-    public void nonexistentSubstudyIds() {
+    public void nonexistentStudyIds() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyC")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyC")).build());
         try {
-            StudyParticipant participant = withSubstudies("substudyA");
+            StudyParticipant participant = withStudies("studyA");
             
             validator = makeValidator(true);
-            assertValidatorMessage(validator, participant, "substudyIds[substudyA]", "is not a substudy");
+            assertValidatorMessage(validator, participant, "studyIds[studyA]", "is not a study");
         } finally {
             BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
         }
@@ -466,11 +466,11 @@ public class StudyParticipantValidatorTest {
     }
     
     private StudyParticipantValidator makeValidator(boolean isNew) {
-        return new StudyParticipantValidator(externalIdService, substudyService, mockOrganizationDao, app, isNew);
+        return new StudyParticipantValidator(externalIdService, studyService, mockOrganizationDao, app, isNew);
     }
 
-    private StudyParticipant withSubstudies(String... substudyIds) {
-        return new StudyParticipant.Builder().withEmail("email@email.com").withSubstudyIds(ImmutableSet.copyOf(substudyIds)).build();
+    private StudyParticipant withStudies(String... studyIds) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withStudyIds(ImmutableSet.copyOf(studyIds)).build();
     }
     private StudyParticipant withMemberOrganization(String orgId) {
         return new StudyParticipant.Builder().withEmail("email@email.com").withOrgMembership(orgId).build();

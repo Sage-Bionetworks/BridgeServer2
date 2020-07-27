@@ -2,13 +2,17 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.CANCELLED;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.ENTEREDINERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
@@ -21,6 +25,7 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -33,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +53,7 @@ import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
+import org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.Identifier;
@@ -76,6 +83,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -85,7 +94,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.HealthDataService;
@@ -103,8 +112,8 @@ public class CRCControllerTest extends Mockito {
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
-    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "substudyA", USER_ID);
-    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "substudyB", USER_ID);
+    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "studyA", USER_ID);
+    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
@@ -113,6 +122,48 @@ public class CRCControllerTest extends Mockito {
             +"'Collection Site' } ] }, 'telecom': [ { 'system': 'phone', 'value': '1231231235', 'use': "
             +"'work' } ], 'address': { 'line': [ '123 east 165' ], 'city': 'New York', 'state': 'NY', "
             +"'postalCode': '10021' } }");
+    static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
+            +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
+            +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
+            +" 'short_name' : '3rd Ave', 'types' : [ 'route' ] }, { 'long_name' : 'Downtown Seattle', "
+            +"'short_name' : 'Downtown Seattle', 'types' : [ 'neighborhood', 'political' ] }, { 'long_name' "
+            +": 'Seattle', 'short_name' : 'Seattle', 'types' : [ 'locality', 'political' ] }, { 'long_name' "
+            +": 'King County', 'short_name' : 'King County', 'types' : [ 'administrative_area_level_2', "
+            +"'political' ] }, { 'long_name' : 'Washington', 'short_name' : 'WA', 'types' : [ "
+            +"'administrative_area_level_1', 'political' ] }, { 'long_name' : 'United States', 'short_name' "
+            +": 'US', 'types' : [ 'country', 'political' ] }, { 'long_name' : '98121', 'short_name' : "
+            +"'98121', 'types' : [ 'postal_code' ] } ], 'formatted_address' : '2901 3rd Ave #330, Seattle, "
+            +"WA 98121, USA', 'geometry' : { 'bounds' : { 'northeast' : { 'lat' : 47.6184148, 'lng' : "
+            +"-122.3510372 }, 'southwest' : { 'lat' : 47.617759, 'lng' : -122.3525807 } }, 'location' : { "
+            +"'lat' : 47.6180007, 'lng' : -122.3516149 }, 'location_type' : 'ROOFTOP', 'viewport' : { "
+            +"'northeast' : { 'lat' : 47.6194358802915, 'lng' : -122.3504599697085 }, 'southwest' : { 'lat' "
+            +": 47.6167379197085, 'lng' : -122.3531579302915 } } }, 'place_id' : 'EikyOTAxIDNyZCBBdmUgIzMzMC"
+            +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
+            +"'subpremise' ] } ], 'status' : 'OK' }");
+    static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
+    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','status':'booked','participant'"
+            +":[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':"
+            +"'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':"
+            +"'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
     
     @Mock
     ParticipantService mockParticipantService;
@@ -196,6 +247,7 @@ public class CRCControllerTest extends Mockito {
         when(mockConfig.get("cuimc.prod.location.url")).thenReturn("http://testServer/location/${location}");
         when(mockConfig.get("cuimc.prod.username")).thenReturn("prodUsername");
         when(mockConfig.get("cuimc.prod.password")).thenReturn("prodPassword");
+        when(mockConfig.get("crc.geocode.api.key")).thenReturn("GEOKEY");
     }
     
     @AfterMethod
@@ -213,7 +265,32 @@ public class CRCControllerTest extends Mockito {
     public void getUserAgentDefault() {
         assertEquals(controller.getUserAgent(), "<Unknown>");
     }
+
+    @Test
+    public void updateParticipantSetsSelected() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+                
+        doReturn(mockResponse).when(controller).put(any(), any(), any());
+        
+        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
+        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
+
+        verify(mockAccountService).updateAccount(account, null);
+        verify(controller, never()).createLabOrder(account);
+
+        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
+    }
     
+    /*
     @Test
     public void updateParticipantCallsExternalTest() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
@@ -241,7 +318,7 @@ public class CRCControllerTest extends Mockito {
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
                 +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
                 +"'COVID Recovery Corps'}}]}"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
     
     @Test
@@ -272,8 +349,9 @@ public class CRCControllerTest extends Mockito {
                 +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
                 +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
                 +"'COVID Recovery Corps'}}]}"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerSubstudies().isEmpty());
+        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
+    */
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
@@ -283,7 +361,7 @@ public class CRCControllerTest extends Mockito {
                 
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
     }
-    
+    /*
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "Production accounts are not yet enabled.")
     public void updateParticipantFailsOnProductionAccount() throws Exception {
@@ -295,6 +373,7 @@ public class CRCControllerTest extends Mockito {
         
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
     }
+    */
 
     @Test
     public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
@@ -414,15 +493,16 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
+        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
-
+        appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
-        addAppointmentParticipantComponent(appointment, "Location/some-other-id");
+        addAppointmentParticipantComponent(appointment, "Location/foo");
         addAppointmentSageId(appointment, USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
@@ -443,7 +523,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -455,11 +535,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), TestUtils.createJson("{'resourceType':'Appointment',"
-                +"'participant':[{'actor':{'reference':'Location/some-other-id','telecom':[{'system':"
-                +"'phone','value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city'"
-                +":'New York','state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':"
-                +"'https://ws.sagebridge.org/#userId','value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
     }
     
     @Test
@@ -469,12 +545,14 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
+        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
         addAppointmentSageId(appointment, USER_ID);
@@ -483,8 +561,10 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         ResponseEntity<StatusMessage> retValue = controller.postAppointment();
-        assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
+        assertEquals(retValue.getBody().getMessage(), "Appointment updated (to booked).");
         assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("tests_scheduled"));
         
         verify(controller).addLocation(any(), eq(account), eq("foo"));
         verify(controller).get("http://testServer/location/foo", account);
@@ -494,12 +574,68 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), TestUtils.createJson("{'resourceType':'Appointment',"
-                +"'participant':[{'actor':{'reference':'Location/foo','telecom':"
-                +"[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
-                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}},"
-                +"{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-                +"'value':'userId'}}}]}"));
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
+    }
+    
+    @Test
+    public void postAppointmentCancelled() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        mockGetLocation();
+        mockGetGeocoding();
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(CANCELLED);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment updated (to cancelled).");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("tests_cancelled"));
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED);
+    }
+    
+    @Test
+    public void postAppointmentMistakeRollsBackAccount() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(ENTEREDINERROR);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment deleted.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("selected"));
+        
+        verify(mockAccountService).updateAccount(account, null);
+        verify(mockReportService).deleteParticipantReportRecord(APP_ID, APPOINTMENT_REPORT, 
+                JAN1.toString(), HEALTH_CODE);
     }
     
     @Test
@@ -516,6 +652,7 @@ public class CRCControllerTest extends Mockito {
         when(mockStatusLine.getStatusCode()).thenReturn(500);
         
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
         addAppointmentSageId(appointment, USER_ID);
         
@@ -541,6 +678,7 @@ public class CRCControllerTest extends Mockito {
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
 
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         addAppointmentSageId(appointment, USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
@@ -578,7 +716,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -644,7 +782,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -717,6 +855,19 @@ public class CRCControllerTest extends Mockito {
         when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
     }
     
+    void mockGetGeocoding() throws Exception {
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(EXPECTED_GEOCODING_URL);
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(GEOCODE_JSON));
+    }
+    
     @Test
     public void authenticationPopulatesRequestContext() {
         account.setOrgMembership(TEST_ORG_ID);
@@ -730,7 +881,7 @@ public class CRCControllerTest extends Mockito {
         RequestContext context = BridgeUtils.getRequestContext();
         assertEquals(context.getCallerAppId(), APP_ID);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
-        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getCallerStudies(), USER_STUDY_IDS);
     }
     
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -829,7 +980,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment(null));
+        mockRequestBody(mockRequest, makeAppointment(null, BOOKED));
         
         mockGetLocation();
         
@@ -842,7 +993,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment("not-the-right-id"));
+        mockRequestBody(mockRequest, makeAppointment("not-the-right-id", BOOKED));
         
         mockGetLocation();
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
@@ -920,7 +1071,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         mockGetLocation();
         
         controller.postAppointment();
@@ -930,7 +1081,7 @@ public class CRCControllerTest extends Mockito {
     public void callerUserNameIncorrect() throws Exception {
         String auth = new String(Base64.getEncoder().encode(("foo:dummy-password").getBytes()));
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn("Basic " + auth);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         
         controller.postProcedureRequest();
     }
@@ -979,6 +1130,121 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
     
+    @Test(expectedExceptions = ServiceUnavailableException.class)
+    public void addLocationIOException() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree("{}");
+        Account account = Account.create();
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+        
+        doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
+        
+        controller.addLocation(node, account, location);
+    }
+
+    @Test
+    public void addGeocodingInformationIOException() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(APPOINTMENT_JSON);
+        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+        doThrow(new IOException("Bad")).when(controller).get(any());
+        
+        controller.addGeocodingInformation(actor);
+        // JSON remains unchanged because request for geocoding failed.
+        assertEquals(appointment.toString(), APPOINTMENT_JSON);
+    }
+    
+    @Test
+    public void addGeocodingInformationHttpErrorResponse() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+        mockGetLocation();
+
+        // However, the request for geocoding information goes awry
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(400);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(""));
+
+        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+      
+        controller.addLocation(node, account, location);
+        // JSON remains unchanged because request for geocoding failed.
+        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+    }
+
+    @Test
+    public void addGeocodingInformationBadPayload() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+        mockGetLocation();
+
+        // However, the request for geocoding information goes awry
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("{\"foo\":\"bar\"}"));
+
+        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+        
+        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+      
+        controller.addLocation(node, account, location);
+        // Again, no error beyond logging, and JSON is unchanged.
+        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+    }
+
+    @Test
+    public void combineLocationJsonWorks() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+New+York+NY+10021");
+    }
+
+    @Test
+    public void combineLocationJsonIgnoresNull() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+        actor.remove("address");
+        
+        String result = controller.combineLocationJson(actor);
+        assertNull(result);
+    }
+    
+    @Test
+    public void combineLocationJsonIgnoresMissingFields() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        ((ObjectNode)actor.get("address")).remove("city");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+NY+10021");
+    }    
+    
     private void verifyParticipant(JsonNode payload) {
         ArrayNode identifiers = (ArrayNode)payload.get("participant");
         for (int i=0; i < identifiers.size(); i++) {
@@ -998,12 +1264,13 @@ public class CRCControllerTest extends Mockito {
         return ImmutableSet.of(state.name().toLowerCase(), unaffectedGroup, TEST_USER_GROUP);
     }
     
-    private String makeAppointment(String identifier) {
+    private String makeAppointment(String identifier, AppointmentStatus status) {
         Appointment appt = new Appointment();
         if (identifier != null) {
             addAppointmentSageId(appt, identifier);
         }
         addAppointmentParticipantComponent(appt, LOCATION_NS + "ny-location");
+        appt.setStatus(status);
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(appt);
     }
     

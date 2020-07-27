@@ -55,11 +55,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -375,7 +375,7 @@ public class ConsentServiceMockTest {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
-        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
+        verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
     @Test
@@ -423,7 +423,7 @@ public class ConsentServiceMockTest {
         // This association is not removed
         assertEquals(account.getEnrollments().size(), 1);
         Enrollment enrollment = account.getEnrollments().iterator().next();
-        assertEquals(enrollment.getSubstudyId(), "substudyId");
+        assertEquals(enrollment.getStudyId(), "studyId");
         assertEquals(enrollment.getExternalId(), "anExternalId");
         for (List<ConsentSignature> signatures : updatedAccount.getAllConsentSignatureHistories().values()) {
             for (ConsentSignature sig : signatures) {
@@ -471,7 +471,7 @@ public class ConsentServiceMockTest {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("remainingDataGroup1", "remainingDataGroup2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
-        verify(subpopulation, never()).getSubstudyIdsAssignedOnConsent();
+        verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
     @Test
@@ -913,9 +913,9 @@ public class ConsentServiceMockTest {
     }
 
     @Test
-    public void consentToResearchAssignsDataGroupsAndSubstudies() throws Exception {
+    public void consentToResearchAssignsDataGroupsAndStudies() throws Exception {
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopulation.getSubstudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_STUDY_IDS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
@@ -925,8 +925,8 @@ public class ConsentServiceMockTest {
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
         assertEquals(account.getEnrollments().stream().map(
-                Enrollment::getSubstudyId).collect(Collectors.toSet()),
-                TestConstants.USER_SUBSTUDY_IDS);
+                Enrollment::getStudyId).collect(Collectors.toSet()),
+                TestConstants.USER_STUDY_IDS);
     }
 
     @Test
@@ -1051,7 +1051,7 @@ public class ConsentServiceMockTest {
         account.setEmail(EMAIL);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "substudyId", ID, "anExternalId");
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "studyId", ID, "anExternalId");
         account.getEnrollments().add(enrollment);
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
     }

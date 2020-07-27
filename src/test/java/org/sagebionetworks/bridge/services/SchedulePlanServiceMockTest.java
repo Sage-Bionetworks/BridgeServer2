@@ -53,7 +53,7 @@ public class SchedulePlanServiceMockTest {
     
     private SchedulePlanDao mockSchedulePlanDao;
     private SurveyService mockSurveyService;
-    private SubstudyService mockSubstudyService;
+    private StudyService mockStudyService;
     
     @BeforeMethod
     public void before() {
@@ -64,12 +64,12 @@ public class SchedulePlanServiceMockTest {
         
         mockSchedulePlanDao = mock(SchedulePlanDao.class);
         mockSurveyService = mock(SurveyService.class);
-        mockSubstudyService = mock(SubstudyService.class);
+        mockStudyService = mock(StudyService.class);
         
         service = new SchedulePlanService();
         service.setSchedulePlanDao(mockSchedulePlanDao);
         service.setSurveyService(mockSurveyService);
-        service.setSubstudyService(mockSubstudyService);
+        service.setStudyService(mockStudyService);
         
         Survey survey1 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
         survey1.setIdentifier("identifier1");
@@ -245,8 +245,8 @@ public class SchedulePlanServiceMockTest {
                     "strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: tapTest, taskGuid, CCC");
             assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0),
                     "strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA");
-            assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0),
-                    "strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>");
+            assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfStudyIds").get(0),
+                    "strategy.scheduleCriteria[0].criteria.noneOfStudyIds 'studyD' is not in enumeration: <empty>");
         }
     }
 
@@ -264,8 +264,8 @@ public class SchedulePlanServiceMockTest {
                     "strategy.scheduleCriteria[0].schedule.activities[0].task.identifier 'DDD' is not in enumeration: tapTest, taskGuid, CCC");
             assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.allOfGroups").get(0),
                     "strategy.scheduleCriteria[0].criteria.allOfGroups 'FFF' is not in enumeration: AAA");
-            assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds").get(0),
-                    "strategy.scheduleCriteria[0].criteria.noneOfSubstudyIds 'substudyD' is not in enumeration: <empty>");
+            assertEquals(e.getErrors().get("strategy.scheduleCriteria[0].criteria.noneOfStudyIds").get(0),
+                    "strategy.scheduleCriteria[0].criteria.noneOfStudyIds 'studyD' is not in enumeration: <empty>");
         }
     }
     
@@ -310,7 +310,7 @@ public class SchedulePlanServiceMockTest {
         schedule.addActivity(new Activity.Builder().withTask("DDD").build());
         
         Criteria criteria = TestUtils.createCriteria(null, null, Sets.newHashSet("FFF"), null);
-        criteria.setNoneOfSubstudyIds(ImmutableSet.of("substudyD"));
+        criteria.setNoneOfStudyIds(ImmutableSet.of("studyD"));
         ScheduleCriteria scheduleCriteria = new ScheduleCriteria(schedule, criteria);
         
         CriteriaScheduleStrategy strategy = new CriteriaScheduleStrategy();

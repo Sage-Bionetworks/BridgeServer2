@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.List;
@@ -86,9 +86,9 @@ public class AppConfigValidatorTest extends Mockito {
         appConfig.setAppId(TEST_APP_ID);
         
         this.newValidator = new AppConfigValidator(mockSurveyService, mockSchemaService, mockAppConfigElementService,
-                mockFileService, mockAssessmentService, USER_DATA_GROUPS, USER_SUBSTUDY_IDS, true);
+                mockFileService, mockAssessmentService, USER_DATA_GROUPS, USER_STUDY_IDS, true);
         this.updateValidator = new AppConfigValidator(mockSurveyService, mockSchemaService, mockAppConfigElementService,
-                mockFileService, mockAssessmentService, USER_DATA_GROUPS, USER_SUBSTUDY_IDS, false);
+                mockFileService, mockAssessmentService, USER_DATA_GROUPS, USER_STUDY_IDS, false);
     }
     
     @Test
@@ -308,12 +308,12 @@ public class AppConfigValidatorTest extends Mockito {
     public void criteriaAreValidated() { 
         Criteria criteria = Criteria.create();
         criteria.setNoneOfGroups(Sets.newHashSet("bad-group"));
-        criteria.setAllOfSubstudyIds(Sets.newHashSet("wrong-group"));
+        criteria.setAllOfStudyIds(Sets.newHashSet("wrong-group"));
         
         appConfig.setCriteria(criteria);
         
         assertValidatorMessage(newValidator, appConfig, "noneOfGroups", "'bad-group' is not in enumeration: group1, group2");
-        assertValidatorMessage(newValidator, appConfig, "allOfSubstudyIds", "'wrong-group' is not in enumeration: substudyA, substudyB");
+        assertValidatorMessage(newValidator, appConfig, "allOfStudyIds", "'wrong-group' is not in enumeration: studyA, studyB");
     }
     
     @Test

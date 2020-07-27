@@ -19,7 +19,7 @@ public class RequestContext {
     private final String requestId;
     private final String callerAppId;
     private final String callerOrgMembership;
-    private final Set<String> callerSubstudies;
+    private final Set<String> callerStudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
     private final ClientInfo callerClientInfo;
@@ -28,12 +28,12 @@ public class RequestContext {
     private final String callerIpAddress;
     
     private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
-            Set<String> callerSubstudies, Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo,
+            Set<String> callerStudies, Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo,
             List<String> callerLanguages, String callerIpAddress) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
         this.callerOrgMembership = callerOrgMembership;
-        this.callerSubstudies = callerSubstudies;
+        this.callerStudies = callerStudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
         this.callerClientInfo = callerClientInfo;
@@ -54,8 +54,8 @@ public class RequestContext {
     public String getCallerOrgMembership() {
         return callerOrgMembership;
     }
-    public Set<String> getCallerSubstudies() {
-        return callerSubstudies;
+    public Set<String> getCallerStudies() {
+        return callerStudies;
     }
     // Only accessible to tests to verify
     Set<Roles> getCallerRoles() {
@@ -91,7 +91,7 @@ public class RequestContext {
             .withCallerOrgMembership(callerOrgMembership)
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
-            .withCallerSubstudies(callerSubstudies)
+            .withCallerStudies(callerStudies)
             .withCallerUserId(callerUserId)
             .withMetrics(metrics)
             .withCallerIpAddress(callerIpAddress);
@@ -101,7 +101,7 @@ public class RequestContext {
         private Metrics metrics;
         private String callerAppId;
         private String callerOrgMembership;
-        private Set<String> callerSubstudies;
+        private Set<String> callerStudies;
         private Set<Roles> callerRoles;
         private String requestId;
         private String callerUserId;
@@ -121,8 +121,8 @@ public class RequestContext {
             this.callerOrgMembership = orgId;
             return this;
         }
-        public Builder withCallerSubstudies(Set<String> callerSubstudies) {
-            this.callerSubstudies = (callerSubstudies == null) ? null : ImmutableSet.copyOf(callerSubstudies);
+        public Builder withCallerStudies(Set<String> callerStudies) {
+            this.callerStudies = (callerStudies == null) ? null : ImmutableSet.copyOf(callerStudies);
             return this;
         }
         public Builder withCallerRoles(Set<Roles> roles) {
@@ -154,8 +154,8 @@ public class RequestContext {
             if (requestId == null) {
                 requestId = BridgeUtils.generateGuid();
             }
-            if (callerSubstudies == null) {
-                callerSubstudies = ImmutableSet.of();
+            if (callerStudies == null) {
+                callerStudies = ImmutableSet.of();
             }
             if (callerRoles == null) {
                 callerRoles = ImmutableSet.of();
@@ -169,7 +169,7 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
-            return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerSubstudies,
+            return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerStudies,
                     callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
@@ -177,7 +177,7 @@ public class RequestContext {
     @Override
     public String toString() {
         return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
-                + callerOrgMembership + ", callerSubstudies=" + callerSubstudies + ", callerRoles=" + callerRoles
+                + callerOrgMembership + ", callerStudies=" + callerStudies + ", callerRoles=" + callerRoles
                 + ", callerUserId=" + callerUserId + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress="
                 + callerIpAddress + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
     }

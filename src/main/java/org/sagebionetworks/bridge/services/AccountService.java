@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeUtils.filterForSubstudy;
+import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -208,7 +208,7 @@ public class AccountService {
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
 
-        // Create account. We don't verify substudies because this is handled by validation
+        // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account, afterPersistConsumer);
     }
     
@@ -237,7 +237,7 @@ public class AccountService {
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
-        // Update. We don't verify substudies because this is handled by validation
+        // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account, afterPersistConsumer);         
     }
     
@@ -260,16 +260,16 @@ public class AccountService {
     /**
      * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
-     * the correct substudy associations to access the account. (Other methods in this service 
-     * also make a check for substudy associations by relying on this method internally).
+     * the correct study associations to access the account. (Other methods in this service 
+     * also make a check for study associations by relying on this method internally).
      */
     public Account getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
-            // filtering based on the substudy associations of the caller.
-            return filterForSubstudy(optional.get());
+            // filtering based on the study associations of the caller.
+            return filterForStudy(optional.get());
         }
         return null;
     }

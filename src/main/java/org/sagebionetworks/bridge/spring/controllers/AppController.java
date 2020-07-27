@@ -169,16 +169,15 @@ public class AppController extends BaseController {
         if (session.getParticipant().getRoles().isEmpty()) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
-        List<String> appIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
-        
         Stream<App> stream = null;
-        // In our current app permissions model, an admin in the API app is a 
-        // "cross-app admin" and can see all apps and can switch between all apps, 
-        // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
+            // Superadmins can see all apps and can switch between all apps.
             stream = appService.getApps().stream()
                 .filter(s -> s.isActive());
         } else {
+            // Otherwise, apps are linked by Synapse user ID.
+            List<String> appIds = accountService
+                    .getAppIdsForUser(session.getParticipant().getSynapseUserId());
             stream = appIds.stream()
                 .map(id -> appService.getApp(id))
                 .filter(s -> s.isActive() && appIds.contains(s.getIdentifier()));

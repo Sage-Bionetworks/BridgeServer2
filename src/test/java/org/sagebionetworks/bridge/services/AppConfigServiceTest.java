@@ -82,7 +82,7 @@ public class AppConfigServiceTest {
     private AppConfigElementService mockAppConfigElementService;
     
     @Mock
-    private SubstudyService mockSubstudyService;
+    private StudyService mockStudyService;
     
     @Mock
     private SurveyService mockSurveyService;
@@ -140,7 +140,7 @@ public class AppConfigServiceTest {
         when(mockDao.getAppConfig(TEST_APP_ID, GUID)).thenReturn(savedAppConfig);
         when(mockDao.updateAppConfig(any())).thenReturn(savedAppConfig);
      
-        when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(TestConstants.USER_SUBSTUDY_IDS);
+        when(mockStudyService.getStudyIds(TEST_APP_ID)).thenReturn(TestConstants.USER_STUDY_IDS);
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -521,7 +521,7 @@ public class AppConfigServiceTest {
         assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
         assertEquals(captured.getFileReferences(), FILE_REF_LIST);
         
-        verify(mockSubstudyService).getSubstudyIds(TEST_APP_ID);
+        verify(mockStudyService).getStudyIds(TEST_APP_ID);
     }
     
     @Test
@@ -540,7 +540,7 @@ public class AppConfigServiceTest {
         verify(mockDao).updateAppConfig(appConfigCaptor.capture());
         assertEquals(appConfigCaptor.getValue(), oldConfig);
         
-        verify(mockSubstudyService).getSubstudyIds(TEST_APP_ID);
+        verify(mockStudyService).getStudyIds(TEST_APP_ID);
 
         assertEquals(oldConfig, returnValue);
     }

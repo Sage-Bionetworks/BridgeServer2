@@ -5,7 +5,7 @@ import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -14,23 +14,23 @@ import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class HibernateSubstudyTest {
+public class HibernateStudyTest {
 
     private static final DateTime CREATED_ON = DateTime.now().withZone(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     
     @Test
     public void canSerialize() throws Exception {
-        Substudy substudy = Substudy.create();
-        substudy.setId("oneId");
-        substudy.setAppId(TEST_APP_ID);
-        substudy.setName("name");
-        substudy.setDeleted(true);
-        substudy.setCreatedOn(CREATED_ON);
-        substudy.setModifiedOn(MODIFIED_ON);
-        substudy.setVersion(3L);
+        Study study = Study.create();
+        study.setId("oneId");
+        study.setAppId(TEST_APP_ID);
+        study.setName("name");
+        study.setDeleted(true);
+        study.setCreatedOn(CREATED_ON);
+        study.setModifiedOn(MODIFIED_ON);
+        study.setVersion(3L);
         
-        JsonNode node = BridgeObjectMapper.get().valueToTree(substudy);
+        JsonNode node = BridgeObjectMapper.get().valueToTree(study);
         assertEquals(node.size(), 7);
         assertEquals(node.get("id").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
@@ -38,11 +38,11 @@ public class HibernateSubstudyTest {
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("version").longValue(), 3L);
-        assertEquals(node.get("type").textValue(), "Substudy");
+        assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
         
-        Substudy deser = BridgeObjectMapper.get().readValue(node.toString(), Substudy.class);
+        Study deser = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
         assertEquals(deser.getId(), "oneId");
         assertEquals(deser.getName(), "name");
         assertTrue(deser.isDeleted());

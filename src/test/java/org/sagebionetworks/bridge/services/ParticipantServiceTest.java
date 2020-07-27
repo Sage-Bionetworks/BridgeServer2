@@ -91,11 +91,11 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
@@ -140,7 +140,7 @@ public class ParticipantServiceTest extends Mockito {
     private static final List<String> USER_LANGUAGES = ImmutableList.copyOf(BridgeUtils.commaListToOrderedSet("de,fr"));
     private static final String EMAIL = "email@email.com";
     private static final String ID = "ASDF";
-    private static final String SUBSTUDY_ID = "substudyId";
+    private static final String STUDY_ID = "studyId";
     private static final DateTimeZone USER_TIME_ZONE = DateTimeZone.forOffsetHours(-3);
     private static final Map<String,String> ATTRS = ImmutableMap.of("can_be_recontacted","true");
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(APP.getIdentifier());
@@ -200,7 +200,7 @@ public class ParticipantServiceTest extends Mockito {
     private UploadService uploadService;
     
     @Mock
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     @Mock
     private RequestInfoService requestInfoService;
@@ -253,7 +253,7 @@ public class ParticipantServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        extId.setSubstudyId(SUBSTUDY_ID);
+        extId.setStudyId(STUDY_ID);
         APP.setExternalIdRequiredOnSignup(false);
         APP.setEmailVerificationEnabled(false);
         APP.setAccountLimit(0);
@@ -281,7 +281,7 @@ public class ParticipantServiceTest extends Mockito {
         }).when(accountService).updateAccount(any(), any());
         
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerSubstudies(CALLER_SUBS).build());
+                .withCallerStudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
@@ -289,9 +289,9 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(NULL_INSTANCE);
     }
     
-    private void mockAccountRetrievalWithSubstudyD() {
+    private void mockAccountRetrievalWithStudyD() {
         mockHealthCodeAndAccountRetrieval();
-        Enrollment as = Enrollment.create(APP.getIdentifier(), "substudyD", ID, EXTERNAL_ID);
+        Enrollment as = Enrollment.create(APP.getIdentifier(), "studyD", ID, EXTERNAL_ID);
         account.setEnrollments(Sets.newHashSet(as));
     }
     
@@ -306,7 +306,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setPhone(phone);
         Set<Enrollment> enrollments = new HashSet<>();
         if (externalId != null) {
-            Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID, externalId);
+            Enrollment enrollment = Enrollment.create(TEST_APP_ID, STUDY_ID, ID, externalId);
             enrollments.add(enrollment);
         }
         account.setEnrollments(enrollments);
@@ -327,7 +327,7 @@ public class ParticipantServiceTest extends Mockito {
         APP.setEmailVerificationEnabled(true);
         when(participantService.generateGUID()).thenReturn(ID);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID)
                 .withSynapseUserId(SYNAPSE_USER_ID).build();
@@ -372,9 +372,9 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void createParticipantTransfersSubstudyIds() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies).build();
+    public void createParticipantTransfersStudyIds() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        StudyParticipant participant = mockStudiesInRequest(studies, studies).build();
         mockHealthCodeAndAccountRetrieval();
         
         participantService.createParticipant(APP, participant, false);
@@ -384,17 +384,17 @@ public class ParticipantServiceTest extends Mockito {
         Set<Enrollment> enrollments = accountCaptor.getValue().getEnrollments();
         assertEquals(enrollments.size(), 2);
         
-        Enrollment substudyA = enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
-        assertEquals(substudyA.getAppId(), APP.getIdentifier());
-        assertEquals(substudyA.getSubstudyId(), "substudyA");
-        assertEquals(substudyA.getAccountId(), ID);
+        Enrollment studyA = enrollments.stream()
+                .filter((as) -> as.getStudyId().equals("studyA")).findAny().get();
+        assertEquals(studyA.getAppId(), APP.getIdentifier());
+        assertEquals(studyA.getStudyId(), "studyA");
+        assertEquals(studyA.getAccountId(), ID);
         
-        Enrollment substudyB = enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
-        assertEquals(substudyB.getAppId(), APP.getIdentifier());
-        assertEquals(substudyB.getSubstudyId(), "substudyB");
-        assertEquals(substudyB.getAccountId(), ID);
+        Enrollment studyB = enrollments.stream()
+                .filter((as) -> as.getStudyId().equals("studyB")).findAny().get();
+        assertEquals(studyB.getAppId(), APP.getIdentifier());
+        assertEquals(studyB.getStudyId(), "studyB");
+        assertEquals(studyB.getAccountId(), ID);
     }
 
     @Test
@@ -402,7 +402,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID))
             .thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(APP, participant, false);
@@ -415,7 +415,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void createParticipantWithInvalidParticipant() {
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         
         // It doesn't get more invalid than this...
         StudyParticipant participant = new StudyParticipant.Builder().build();
@@ -430,17 +430,17 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void createParticipantWithExternalIdAndSubstudyCallerValidates() { 
-        // This is a substudy caller, so the substudy relationship needs to be enforced
+    public void createParticipantWithExternalIdAndStudyCallerValidates() { 
+        // This is a study caller, so the study relationship needs to be enforced
         // when creating a participant. In this case, the relationship is implied by the 
         // external ID but not provided in the externalIds set. It works anyway.
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+                .withCallerStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        extId.setSubstudyId("substudy1");
+        extId.setStudyId("study1");
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, "substudy1", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, "study1", false)).thenReturn(Study.create());
         
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
         
@@ -448,17 +448,17 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = ".*substudy2.*is not a substudy of the caller")
-    public void createParticipantWithExternalIdAndSubstudyCallerThatDontMatch() throws Exception { 
-        // This is a substudy caller assigning an external ID, but the external ID is not in one of the 
-        // caller's substudies.
+            expectedExceptionsMessageRegExp = ".*study2.*is not a study of the caller")
+    public void createParticipantWithExternalIdAndStudyCallerThatDontMatch() throws Exception { 
+        // This is a study caller assigning an external ID, but the external ID is not in one of the 
+        // caller's studies.
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+                .withCallerStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        extId.setSubstudyId("substudy2");
+        extId.setStudyId("study2");
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, "substudy2", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, "study2", false)).thenReturn(Study.create());
         
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId(EXTERNAL_ID).build();
         
@@ -467,10 +467,10 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*externalId is not a valid external ID.*")
-    public void createParticipantWithMissingExternalIdAndSubstudyCaller() { 
-        // This is a substudy caller supplying an external ID that doesn't exist.
+    public void createParticipantWithMissingExternalIdAndStudyCaller() { 
+        // This is a study caller supplying an external ID that doesn't exist.
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerSubstudies(ImmutableSet.of("substudy1")).build());
+                .withCallerStudies(ImmutableSet.of("study1")).build());
 
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.empty());
         
@@ -622,7 +622,7 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantExternalIdNoPasswordIsUnverified() {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant idParticipant = withParticipant().withPhone(null).withEmail(null).withPassword(null)
                 .withExternalId(EXTERNAL_ID).build();
@@ -637,7 +637,7 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantExternalIdAndPasswordIsEnabled() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withExternalId(EXTERNAL_ID)
                 .withPassword(PASSWORD).build();
@@ -672,10 +672,10 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp=".*must be assigned to one or more of these substudies: substudyId.*")
-    public void createParticipantMustIncludeCallerSubstudy() {
+            expectedExceptionsMessageRegExp=".*must be assigned to one or more of these studies: studyId.*")
+    public void createParticipantMustIncludeCallerStudy() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID)).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
         
         participantService.createParticipant(APP, PARTICIPANT, false);
     }
@@ -751,8 +751,8 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval(null, PHONE, null);
         account.setPhoneVerified(true);
         account.setDataGroups(TestConstants.USER_DATA_GROUPS);
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "substudyA", ID);
-        Enrollment as2 = Enrollment.create(TEST_APP_ID, "substudyB", ID);
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "studyA", ID);
+        Enrollment as2 = Enrollment.create(TEST_APP_ID, "studyB", ID);
         account.setEnrollments(ImmutableSet.of(as1, as2));
 
         // Mock request info.
@@ -786,7 +786,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
         assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
         assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(criteriaContext.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(criteriaContext.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
 
         NotificationRegistration registration = registrationCaptor.getValue();
         assertEquals(registration.getHealthCode(), HEALTH_CODE);
@@ -887,14 +887,14 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
         account.setId(ID);
         account.setLastName("lastName");
         Set<Enrollment> enrollments = new HashSet<>();
-        for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
-            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), substudyId, ID);
+        for (String studyId : ImmutableList.of("studyA", "studyB", "studyC")) {
+            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), studyId, ID);
             enrollments.add(enrollment);
         }
         account.setEnrollments(enrollments);
@@ -914,7 +914,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
         assertEquals(retrieved.getLastName(), "lastName");
         // These have been filtered
-        assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(retrieved.getStudyIds(), TestConstants.USER_STUDY_IDS);
         // Consent was calculated
         assertTrue(retrieved.isConsented());
         // There is history
@@ -925,14 +925,14 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getSelfParticipantNoHistory() {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(TestConstants.USER_SUBSTUDY_IDS).build());
+                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
         account.setId(ID);
         account.setSynapseUserId(SYNAPSE_USER_ID);
         Set<Enrollment> enrollments = new HashSet<>();
-        for (String substudyId : ImmutableList.of("substudyA", "substudyB", "substudyC")) {
-            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), substudyId, ID);
+        for (String studyId : ImmutableList.of("studyA", "studyB", "studyC")) {
+            Enrollment enrollment = Enrollment.create(APP.getIdentifier(), studyId, ID);
             enrollments.add(enrollment);
         }
         account.setEnrollments(enrollments);
@@ -947,7 +947,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
         assertEquals(retrieved.getSynapseUserId(), SYNAPSE_USER_ID);
         // These have been filtered
-        assertEquals(retrieved.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(retrieved.getStudyIds(), TestConstants.USER_STUDY_IDS);
         // Consent was calculated
         assertTrue(retrieved.isConsented());
         // There is no history
@@ -984,11 +984,11 @@ public class ParticipantServiceTest extends Mockito {
         account.setLanguages(USER_LANGUAGES);
         account.setTimeZone(USER_TIME_ZONE);
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID, "externalIdA");
-        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID, "externalIdB");
-        Enrollment acctSubstudy3 = Enrollment.create(TEST_APP_ID, "substudyC", ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ID, "externalIdB");
+        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", ID);
         // no third external ID, this one is just not in the external IDs map
-        account.setEnrollments(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
@@ -1040,8 +1040,8 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getClientData(), TestUtils.getClientData());
         assertEquals(participant.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(participant.getExternalIds().size(), 2);
-        assertEquals(participant.getExternalIds().get("substudyA"), "externalIdA");
-        assertEquals(participant.getExternalIds().get("substudyB"), "externalIdB");
+        assertEquals(participant.getExternalIds().get("studyA"), "externalIdA");
+        assertEquals(participant.getExternalIds().get("studyB"), "externalIdB");
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
         
         assertNull(participant.getAttributes().get("attr1"));
@@ -1064,27 +1064,27 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
         assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
         assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(criteriaContext.getUserSubstudyIds(), ImmutableSet.of("substudyA", "substudyB", "substudyC"));
+        assertEquals(criteriaContext.getUserStudyIds(), ImmutableSet.of("studyA", "studyB", "studyC"));
     }
     
     @Test
-    public void getStudyParticipantFilteringSubstudiesAndExternalIds() {
-        // There is a partial overlap of substudy memberships between caller and user, the substudies that are 
+    public void getStudyParticipantFilteringStudiesAndExternalIds() {
+        // There is a partial overlap of study memberships between caller and user, the studies that are 
         // not in the intersection, and the external IDs, should be removed from the participant
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, null);
-        Enrollment acctSubstudy1 = Enrollment.create(TEST_APP_ID, "substudyA", ID, "externalIdA");
-        Enrollment acctSubstudy2 = Enrollment.create(TEST_APP_ID, "substudyB", ID, "externalIdB");
-        Enrollment acctSubstudy3 = Enrollment.create(TEST_APP_ID, "substudyC", ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ID, "externalIdB");
+        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", ID);
         // no third external ID, this one is just not in the external IDs map
-        account.setEnrollments(ImmutableSet.of(acctSubstudy1, acctSubstudy2, acctSubstudy3));
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         
         // Now, the caller only sees A and C
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyC")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
-        assertEquals(participant.getSubstudyIds(), ImmutableSet.of("substudyA", "substudyC"));
-        assertEquals(participant.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA"));
+        assertEquals(participant.getStudyIds(), ImmutableSet.of("studyA", "studyC"));
+        assertEquals(participant.getExternalIds(), ImmutableMap.of("studyA", "externalIdA"));
     }
 
     @Test
@@ -1205,13 +1205,13 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void updateParticipantTransfersSubstudyIdsForAdmins() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies, ADMIN).build();
+    public void updateParticipantTransfersStudyIdsForAdmins() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        StudyParticipant participant = mockStudiesInRequest(studies, studies, ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyC", ID));
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyA", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyC", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyA", ID));
         
         participantService.updateParticipant(APP, participant);
         
@@ -1221,20 +1221,18 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(enrollments.size(), 2);
         
         // get() throws exception if Enrollment not found
-        enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
-        enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+        enrollments.stream().filter((as) -> as.getStudyId().equals("studyA")).findAny().get();
+        enrollments.stream().filter((as) -> as.getStudyId().equals("studyB")).findAny().get();
     }
     
     @Test
-    public void updateParticipantTransfersSubstudyIdsForSuperadmins() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies, SUPERADMIN).build();
+    public void updateParticipantTransfersStudyIdsForSuperadmins() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        StudyParticipant participant = mockStudiesInRequest(studies, studies, SUPERADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyC", ID));
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyA", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyC", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyA", ID));
         
         participantService.updateParticipant(APP, participant);
         
@@ -1243,30 +1241,28 @@ public class ParticipantServiceTest extends Mockito {
         Set<Enrollment> enrollments = accountCaptor.getValue().getEnrollments();
         assertEquals(enrollments.size(), 2);
         
-        // get() throws exception if accountSubstudy not found
-        enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyA")).findAny().get();
-        enrollments.stream()
-                .filter((as) -> as.getSubstudyId().equals("substudyB")).findAny().get();
+        // get() throws exception if enrollment not found
+        enrollments.stream().filter((as) -> as.getStudyId().equals("studyA")).findAny().get();
+        enrollments.stream().filter((as) -> as.getStudyId().equals("studyB")).findAny().get();
     }    
     
     // The exception here results from the fact that the caller can't see the existance of the 
-    // participant, because the substudy IDs don't overlap
+    // participant, because the study IDs don't overlap
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void updateParticipantMustIncludeCallerSubstudy() {
+    public void updateParticipantMustIncludeCallerStudy() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID)).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
 
         participantService.updateParticipant(APP, PARTICIPANT);
     }
     
     @Test
-    public void addingSubstudyToAccountClearsCache() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyB");
-        StudyParticipant participant = mockSubstudiesInRequest(ImmutableSet.of(), substudies, ADMIN).build();
+    public void addingStudyToAccountClearsCache() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        StudyParticipant participant = mockStudiesInRequest(ImmutableSet.of(), studies, ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyA", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyA", ID));
         
         participantService.updateParticipant(APP, participant);
         
@@ -1276,37 +1272,37 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void removingSubstudyFromAccountClearsCache() { 
-        Set<String> substudies = ImmutableSet.of("substudyA");
-        StudyParticipant participant = mockSubstudiesInRequest(ImmutableSet.of(), substudies, ADMIN).build();
+    public void removingStudyFromAccountClearsCache() { 
+        Set<String> studies = ImmutableSet.of("studyA");
+        StudyParticipant participant = mockStudiesInRequest(ImmutableSet.of(), studies, ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        Enrollment enA = Enrollment.create(APP.getIdentifier(), "substudyA", ID);
+        Enrollment enA = Enrollment.create(APP.getIdentifier(), "studyA", ID);
         account.getEnrollments().add(enA);
         
-        Enrollment enB = Enrollment.create(APP.getIdentifier(), "substudyB", ID, "extB");
+        Enrollment enB = Enrollment.create(APP.getIdentifier(), "studyB", ID, "extB");
         account.getEnrollments().add(enB);
         
         participantService.updateParticipant(APP, participant);
         
-        // We've tested this collection more thoroughly in updateParticipantTransfersSubstudyIdsForAdmins()
+        // We've tested this collection more thoroughly in updateParticipantTransfersStudyIdsForAdmins()
         assertEquals(account.getEnrollments().size(), 1);
         verify(externalIdService).unassignExternalId(account, "extB");
         verify(cacheProvider).removeSessionByUserId(ID);
     }
     
     @Test
-    public void updateParticipantWithoutSubstudyChangesForAdmins() {
-        Set<String> substudies = ImmutableSet.of("substudyA", "substudyC");
-        StudyParticipant participant = mockSubstudiesInRequest(substudies, substudies, ADMIN).build();
+    public void updateParticipantWithoutStudyChangesForAdmins() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyC");
+        StudyParticipant participant = mockStudiesInRequest(studies, studies, ADMIN).build();
         
         mockHealthCodeAndAccountRetrieval();
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyC", ID));
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "substudyA", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyC", ID));
+        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyA", ID));
         
         participantService.updateParticipant(APP, participant);
         
-        // We've tested this collection more thoroughly in updateParticipantTransfersSubstudyIdsForAdmins()
+        // We've tested this collection more thoroughly in updateParticipantTransfersStudyIdsForAdmins()
         verify(cacheProvider, never()).removeSessionByUserId(any());
     }
     
@@ -1873,7 +1869,7 @@ public class ParticipantServiceTest extends Mockito {
         APP.setExternalIdRequiredOnSignup(true);
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         
@@ -1918,18 +1914,18 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     // This test does not make sense in that the caller is always operating on their own account.
-    // However adding involves adding a new substudy.
+    // However adding involves adding a new study.
     @Test
-    public void updateIdentifiersCanAddExternalIdInOtherSubstudy() {
-        // caller in question is in substudyA
+    public void updateIdentifiersCanAddExternalIdInOtherStudy() {
+        // caller in question is in studyA
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID)).build());
+                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
         
-        // account is associated to the EXTERNAL_ID in SUBSTUDY_ID
+        // account is associated to the EXTERNAL_ID in STUDY_ID
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
         
-        // extId is not in the same substudy. This should work
-        extId.setSubstudyId("anotherSubstudy");
+        // extId is not in the same study. This should work
+        extId.setStudyId("anotherStudy");
         extId.setIdentifier("newExtId");
         when(externalIdService.getExternalId(TEST_APP_ID, "newExtId")).thenReturn(Optional.of(extId));
         
@@ -1943,23 +1939,23 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(accountCaptor.getValue().getEnrollments().size(), 2);
         RequestContext context = BridgeUtils.getRequestContext();
-        assertEquals(context.getCallerSubstudies(), ImmutableSet.of(SUBSTUDY_ID, "anotherSubstudy"));
+        assertEquals(context.getCallerStudies(), ImmutableSet.of(STUDY_ID, "anotherStudy"));
     }
     
     @Test
     public void updateIdentifiersAssignsExternalIdEvenWhenAlreadyAssigned() {
         // Fully associated external ID can be changed by an update.
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyB")).build());
         mockHealthCodeAndAccountRetrieval();
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "substudyB", ID, EXTERNAL_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "studyB", ID, EXTERNAL_ID);
         account.setEnrollments(Sets.newHashSet(enrollment)); // must be mutable set
         account.setId(ID);
         
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID, "newExternalId");
-        newExtId.setSubstudyId("substudyA");
+        newExtId.setStudyId("studyA");
         when(externalIdService.getExternalId(TEST_APP_ID, "newExternalId")).thenReturn(Optional.of(newExtId));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, null, "newExternalId", null);
@@ -1969,13 +1965,13 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getEnrollments().size(), 2);
         
-        Enrollment acctSubstudyA = findBySubstudyId(account, "substudyA");
-        assertEquals(acctSubstudyA.getSubstudyId(), "substudyA");
-        assertEquals(acctSubstudyA.getExternalId(), "newExternalId");
+        Enrollment enA = findByStudyId(account, "studyA");
+        assertEquals(enA.getStudyId(), "studyA");
+        assertEquals(enA.getExternalId(), "newExternalId");
         
-        Enrollment acctSubstudyB = findBySubstudyId(account, "substudyB");
-        assertEquals(acctSubstudyB.getSubstudyId(), "substudyB");
-        assertEquals(acctSubstudyB.getExternalId(), EXTERNAL_ID);
+        Enrollment enB = findByStudyId(account, "studyB");
+        assertEquals(enB.getStudyId(), "studyB");
+        assertEquals(enB.getExternalId(), EXTERNAL_ID);
     }
     
     @Test
@@ -2108,7 +2104,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersCreatesExternalIdWithAssignment() {
         ExternalIdentifier differentExternalId = ExternalIdentifier.create(TEST_APP_ID, "extid");
-        differentExternalId.setSubstudyId(SUBSTUDY_ID);
+        differentExternalId.setStudyId(STUDY_ID);
         
         mockAccountNoEmail();
         when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
@@ -2228,7 +2224,7 @@ public class ParticipantServiceTest extends Mockito {
     public void createManagedExternalIdOK() {
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(APP, participant, false);
@@ -2255,7 +2251,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void usedExternalIdThrows() {
         mockHealthCodeAndAccountRetrieval();
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         extId.setHealthCode("AAA");
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -2310,17 +2306,17 @@ public class ParticipantServiceTest extends Mockito {
         verify(externalIdService, never()).commitAssignExternalId(any());
     }
 
-    // To change the ID associated to a substudy, you'd have to be an researcher/admin and do it in two 
+    // To change the ID associated to a study, you'd have to be an researcher/admin and do it in two 
     // steps, unassigning the first ID and then assigning the second ID. Non-admin users cannot do this, 
     // they can only add external IDs.
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void changingExternalIdDoesNotWork() throws Exception {
         ExternalIdentifier newExternalId = ExternalIdentifier.create(TEST_APP_ID, "newExternalId");
-        newExternalId.setSubstudyId(SUBSTUDY_ID);
+        newExternalId.setStudyId(STUDY_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, "newExternalId")).thenReturn(Optional.of(newExternalId));
         
         ExternalIdentifier identifier = ExternalIdentifier.create(TEST_APP_ID, "oldExternalId");
-        identifier.setSubstudyId(SUBSTUDY_ID);
+        identifier.setStudyId(STUDY_ID);
         identifier.setHealthCode(HEALTH_CODE);
         when(externalIdService.getExternalId(TEST_APP_ID, "oldExternalId")).thenReturn(Optional.of(identifier));
         mockHealthCodeAndAccountRetrieval(EMAIL, null, "oldExternalId");
@@ -2398,7 +2394,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void createParticipantValidatesUnmanagedExternalId() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId("  ").build();
         
@@ -2438,7 +2434,7 @@ public class ParticipantServiceTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
         participantService.createParticipant(APP, participant, false);
@@ -2503,7 +2499,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantExternalIdsExistNoneAddedDoesNothing() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().build());
-        mockAccountRetrievalWithSubstudyD();
+        mockAccountRetrievalWithStudyD();
         
         StudyParticipant participant = withParticipant().withExternalId(null).build();
         
@@ -2542,10 +2538,10 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void updateParticipantAsResearcherExternalIdsExistNoneMatchOneAddedUpdates() {
-        mockAccountRetrievalWithSubstudyD();
+        mockAccountRetrievalWithStudyD();
         
         ExternalIdentifier nextExtId = ExternalIdentifier.create(TEST_APP_ID, "newExternalId");
-        nextExtId.setSubstudyId(SUBSTUDY_ID);
+        nextExtId.setStudyId(STUDY_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, "newExternalId"))
             .thenReturn(Optional.of(nextExtId));
 
@@ -2560,7 +2556,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void updateParticipantAsResearcherExternalIdsExistAndMatchOneAddedDoesNothing() {
-        mockAccountRetrievalWithSubstudyD();
+        mockAccountRetrievalWithStudyD();
 
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
 
@@ -2649,7 +2645,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
         BridgeUtils.setRequestContext(NULL_INSTANCE);
         
-        extId.setSubstudyId(SUBSTUDY_ID); // same substudy, which is not allowable
+        extId.setStudyId(STUDY_ID); // same study, which is not allowable
         when(externalIdService.getExternalId(TEST_APP_ID, "differentId")).thenReturn(Optional.of(extId));
         
         StudyParticipant participant = withParticipant().withExternalId("differentId").build();
@@ -2662,7 +2658,7 @@ public class ParticipantServiceTest extends Mockito {
         
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID, "newExternalId");
-        newExtId.setSubstudyId(SUBSTUDY_ID);
+        newExtId.setStudyId(STUDY_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, "newExternalId")).thenReturn(Optional.of(newExtId));
 
         participantService.updateParticipant(APP, participant);
@@ -2681,7 +2677,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         
         ExternalIdentifier existing = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        existing.setSubstudyId(SUBSTUDY_ID);
+        existing.setStudyId(STUDY_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(existing));
         
         ExternalIdentifier externalId = participantService.beginAssignExternalId(account, EXTERNAL_ID);
@@ -2689,7 +2685,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(externalId.getIdentifier(), EXTERNAL_ID);
         assertEquals(externalId.getHealthCode(), HEALTH_CODE);
         assertEquals(externalId.getAppId(), TEST_APP_ID);
-        assertEquals(externalId.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(externalId.getStudyId(), STUDY_ID);
     }    
     
     @Test
@@ -2721,7 +2717,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         
         ExternalIdentifier existing = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        existing.setSubstudyId(SUBSTUDY_ID);
+        existing.setStudyId(STUDY_ID);
         existing.setHealthCode(HEALTH_CODE); // despite assignment, we update everything
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(existing));
         
@@ -2745,9 +2741,9 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test 
-    public void beginAssignExternalIdAccountHasSingleSubstudyId() {
+    public void beginAssignExternalIdAccountHasSingleStudyId() {
         // Note that this association does not have an external ID
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, STUDY_ID, ID);
         
         account.setId(ID);
         account.setAppId(TEST_APP_ID);
@@ -2755,7 +2751,7 @@ public class ParticipantServiceTest extends Mockito {
         account.getEnrollments().add(enrollment);
         
         ExternalIdentifier existing = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
-        existing.setSubstudyId(SUBSTUDY_ID);
+        existing.setStudyId(STUDY_ID);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(existing));
         
         ExternalIdentifier externalId = participantService.beginAssignExternalId(account, EXTERNAL_ID);
@@ -2772,7 +2768,7 @@ public class ParticipantServiceTest extends Mockito {
     public void rollbackCreateParticipantWhenAccountCreationFails() {
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         doThrow(new ConcurrentModificationException("")).when(accountService).createAccount(eq(APP), eq(account), any());
         
         try {
@@ -2805,7 +2801,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         account.setEnrollments(new HashSet<>());
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        extId.setSubstudyId("substudyA");
+        extId.setStudyId("studyA");
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         // Now... accountService throws an exception
@@ -2837,13 +2833,13 @@ public class ParticipantServiceTest extends Mockito {
     /* ==================== */
     
     @Test
-    public void adminCanAddSubstudyIdOnCreate() {
+    public void adminCanAddStudyIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture(), any());
@@ -2853,19 +2849,19 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertNull(enrollment.getExternalId());
         assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
-    public void adminCanAddSubstudyIdOnUpdate() {
+    public void adminCanAddStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.updateParticipant(APP, participant);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -2875,14 +2871,14 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertNull(enrollment.getExternalId());
         assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
     public void adminCanAddExternalIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -2897,7 +2893,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -2907,7 +2903,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void adminCanAddExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         account.setId(ID);
@@ -2924,7 +2920,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -2932,14 +2928,14 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(extId.getHealthCode(), HEALTH_CODE);       
     }
     @Test
-    public void adminCanRemoveSubstudyIdOnUpdate() {
+    public void adminCanRemoveStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        // participant does not have the substudy. It will be removed
+        // participant does not have the study. It will be removed
         participantService.updateParticipant(APP, PARTICIPANT);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -2949,13 +2945,13 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void researcherCanAddSubstudyIdOnCreate() {
+    public void researcherCanAddStudyIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture(), any());
@@ -2965,14 +2961,14 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertNull(enrollment.getExternalId());
         assertEquals(enrollment.getAccountId(), ID);
     }
     @Test
     public void researcherCanAddExternalIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -2987,7 +2983,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -2995,14 +2991,14 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
     }
     @Test
-    public void researcherCannotAddSubstudyIdOnUpdate() {
+    public void researcherCannotAddStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.updateParticipant(APP, participant);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -3013,7 +3009,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void researcherCanAddExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -3029,7 +3025,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -3039,7 +3035,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void researcherCannotRemoveExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         participantService.updateParticipant(APP, PARTICIPANT);
@@ -3051,14 +3047,14 @@ public class ParticipantServiceTest extends Mockito {
         assertSame(captured.getEnrollments(), account.getEnrollments());
     }
     @Test
-    public void researcherCannotRemoveSubstudyIdOnUpdate() {
+    public void researcherCannotRemoveStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        // participant does not have the substudy. It will be removed
+        // participant does not have the study. It will be removed
         participantService.updateParticipant(APP, PARTICIPANT);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -3068,15 +3064,15 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void substudyResearcherCanAddSubstudyIdOnCreate() {
+    public void studyResearcherCanAddStudyIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture(), any());
@@ -3086,16 +3082,16 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertNull(enrollment.getExternalId());
         assertEquals(enrollment.getAccountId(), ID);        
     }
     @Test
-    public void substudyResearcherCanAddExternalIdOnCreate() {
+    public void studyResearcherCanAddExternalIdOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -3110,7 +3106,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -3118,18 +3114,18 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(extId.getHealthCode(), HEALTH_CODE);
     }
     @Test
-    public void substudyResearcherCannotAddSubstudyIdOnUpdate() {
+    public void studyResearcherCannotAddStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID, "secondSubstudyId"))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID, "secondStudyId"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
-        when(substudyService.getSubstudy(TEST_APP_ID, "secondSubstudyId", false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        when(studyService.getStudy(TEST_APP_ID, "secondStudyId", false)).thenReturn(Study.create());
         account.setId(ID);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of("secondSubstudyId")).build();
+                .withStudyIds(ImmutableSet.of("secondStudyId")).build();
         participantService.updateParticipant(APP, participant);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -3139,16 +3135,16 @@ public class ParticipantServiceTest extends Mockito {
         assertSame(captured.getEnrollments(), account.getEnrollments());
     }
     @Test
-    public void substudyResearcherCanAddExternalIdOnUpdate() {
+    public void studyResearcherCanAddExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
         account.setEnrollments(null);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setId(ID);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalId(EXTERNAL_ID).build();
@@ -3163,11 +3159,11 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void substudyResearcherCannotRemoveExternalIdOnUpdate() {
+    public void studyResearcherCannotRemoveExternalIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         participantService.updateParticipant(APP, PARTICIPANT);
@@ -3178,16 +3174,16 @@ public class ParticipantServiceTest extends Mockito {
         assertSame(captured.getEnrollments(), account.getEnrollments());        
     }
     @Test
-    public void substudyResearcherCannotRemoveSubstudyIdOnUpdate() {
+    public void studyResearcherCannotRemoveStudyIdOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        // participant does not have the substudy. It will be removed
+        // participant does not have the study. It will be removed
         participantService.updateParticipant(APP, PARTICIPANT);
         
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -3197,13 +3193,13 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp="someOtherSubstudy is not a substudy of the caller")
-    public void substudyResearcherCannotAddExternalIdOfOtherSubstudyOnCreate() {
+            expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
+    public void studyResearcherCannotAddExternalIdOfOtherStudyOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
-        extId.setSubstudyId("someOtherSubstudy");
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        extId.setStudyId("someOtherStudy");
         when(externalIdService.getExternalId(TEST_APP_ID, "otherExternalId")).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
         
@@ -3218,7 +3214,7 @@ public class ParticipantServiceTest extends Mockito {
         
         Enrollment enrollment = Iterables.getFirst(captured.getEnrollments(), null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), SUBSTUDY_ID);
+        assertEquals(enrollment.getStudyId(), STUDY_ID);
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
         assertEquals(enrollment.getAccountId(), ID);
         
@@ -3227,16 +3223,16 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp="substudyId is not a substudy of the caller")
-    public void substudyResearcherCannotAddSubstudyIdOfOtherSubstudyOnCreate() {
+            expectedExceptionsMessageRegExp="studyId is not a study of the caller")
+    public void studyResearcherCannotAddStudyIdOfOtherSstudyOnCreate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("someOtherSubstudy"))
+                .withCallerStudies(ImmutableSet.of("someOtherStudy"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, SUBSTUDY_ID, false)).thenReturn(Substudy.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         
-        // participant does not have the substudy. It will be removed
+        // participant does not have the study. It will be removed
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of(SUBSTUDY_ID)).build();
+                .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture(), any());
@@ -3246,14 +3242,14 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp="someOtherSubstudy is not a substudy of the caller")
-    public void substudyResearcherCannotAddExternalIdOfOtherSubstudyOnUpdate() {
+            expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
+    public void studyResearcherCannotAddExternalIdOfOtherStudyOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        extId.setSubstudyId("someOtherSubstudy");
+        extId.setStudyId("someOtherStudy");
         when(externalIdService.getExternalId(TEST_APP_ID, "otherExternalId")).thenReturn(Optional.of(extId));
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
@@ -3263,19 +3259,19 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void substudyResearcherCannotAddSubstudyIdOfOtherSubstudyOnUpdate() {
+    public void studyResearcherCannotAddStudyIdOfOtherStudyOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        when(substudyService.getSubstudy(TEST_APP_ID, "someOtherSubstudy", false)).thenReturn(Substudy.create());
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        when(studyService.getStudy(TEST_APP_ID, "someOtherStudy", false)).thenReturn(Study.create());
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
 
-        // participant does not have the substudy. It will be removed
+        // participant does not have the study. It will be removed
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withSubstudyIds(ImmutableSet.of("someOtherSubstudy")).build();
+                .withStudyIds(ImmutableSet.of("someOtherStudy")).build();
         
-        // This doesn't throw an exception because you just can't change the substudy association
+        // This doesn't throw an exception because you just can't change the study association
         // after the participant is created (unlike external ID where you can add them to an existing
         // account).
         participantService.updateParticipant(APP, participant);
@@ -3288,14 +3284,14 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void substudyResearcherCannotAddHaveNoSubstudyOnUpdate() {
+    public void studyResearcherCannotAddHaveNoStudyOnUpdate() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(SUBSTUDY_ID))
+                .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, SUBSTUDY_ID, ID));
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
 
-        // participant does not have the substudy. This should throw an error
+        // participant does not have the study. This should throw an error
         participantService.updateParticipant(APP, PARTICIPANT);
 
         verify(accountService).updateAccount(accountCaptor.capture(), any());
@@ -3305,7 +3301,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(captured.getEnrollments(), account.getEnrollments());
     }
     
-    // getPagedAccountSummaries() filters substudies in the query itself, as this is the only 
+    // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
@@ -3383,24 +3379,24 @@ public class ParticipantServiceTest extends Mockito {
         return app;
     }
     
-    private StudyParticipant.Builder mockSubstudiesInRequest(Set<String> callerSubstudies, Set<String> participantSubstudies, Roles... callerRoles) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(callerSubstudies)
+    private StudyParticipant.Builder mockStudiesInRequest(Set<String> callerStudies, Set<String> participantStudies, Roles... callerRoles) {
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies)
                 .withCallerRoles( (callerRoles.length == 0) ? null : ImmutableSet.copyOf(callerRoles)).build());
         
-        StudyParticipant.Builder builder = withParticipant().withSubstudyIds(participantSubstudies);
+        StudyParticipant.Builder builder = withParticipant().withStudyIds(participantStudies);
         
-        for (String substudyId : callerSubstudies) {
-            when(substudyService.getSubstudy(APP.getIdentifier(), substudyId, false)).thenReturn(Substudy.create());
+        for (String studyId : callerStudies) {
+            when(studyService.getStudy(APP.getIdentifier(), studyId, false)).thenReturn(Study.create());
         }
-        for (String substudyId : participantSubstudies) {
-            when(substudyService.getSubstudy(APP.getIdentifier(), substudyId, false)).thenReturn(Substudy.create());
+        for (String studyId : participantStudies) {
+            when(studyService.getStudy(APP.getIdentifier(), studyId, false)).thenReturn(Study.create());
         }
         return builder;
     }
     
-    private Enrollment findBySubstudyId(Account account, String substudyId) {
+    private Enrollment findByStudyId(Account account, String studyId) {
         for (Enrollment enrollment : account.getEnrollments()) {
-            if (enrollment.getSubstudyId().equals(substudyId)) {
+            if (enrollment.getStudyId().equals(studyId)) {
                 return enrollment;
             }
         }

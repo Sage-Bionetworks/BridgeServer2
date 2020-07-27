@@ -114,10 +114,10 @@ public class HealthDataRecordTest {
     }
     
     @Test
-    public void emptySubstudyMembershipsConvertedToNull() {
+    public void emptyStudyMembershipsConvertedToNull() {
         HealthDataRecord record = makeValidRecord();
-        record.setUserSubstudyMemberships(ImmutableMap.of());
-        assertNull(record.getUserSubstudyMemberships());
+        record.setUserStudyMemberships(ImmutableMap.of());
+        assertNull(record.getUserStudyMemberships());
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)

@@ -118,7 +118,7 @@ public class ABTestScheduleStrategyTest {
         strategy.addGroup(20, TestUtils.getSchedule("A Schedule"));
         
         Errors errors = Validate.getErrorsFor(plan);
-        strategy.validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, taskIdentifiers, errors);
+        strategy.validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS, taskIdentifiers, errors);
         Map<String,List<String>> map = Validate.convertErrorsToSimpleMap(errors);
         
         List<String> errorMessages = map.get("scheduleGroups");

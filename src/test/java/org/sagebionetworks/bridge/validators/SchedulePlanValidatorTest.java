@@ -33,7 +33,7 @@ public class SchedulePlanValidatorTest {
 
     @BeforeMethod
     public void before() throws Exception {
-        validator = new SchedulePlanValidator(TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS,
+        validator = new SchedulePlanValidator(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS,
                 TASK_IDENTIFIERS);
     }
 
@@ -47,7 +47,7 @@ public class SchedulePlanValidatorTest {
         
         validator.validate((Object)plan, errors);
         
-        verify(strategy).validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_SUBSTUDY_IDS, TASK_IDENTIFIERS,
+        verify(strategy).validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS, TASK_IDENTIFIERS,
                 errors);
     }
     

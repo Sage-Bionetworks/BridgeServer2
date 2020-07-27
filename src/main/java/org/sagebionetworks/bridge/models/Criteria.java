@@ -46,19 +46,19 @@ public interface Criteria extends BridgeEntity {
     
     /**
      * The object associated with these criteria should be matched only if the user is associated to 
-     * all of the substudies in this set of substudy IDs. If the set is empty, there are no required 
-     * substudies. 
+     * all of the studies in this set of study IDs. If the set is empty, there are no required 
+     * studies. 
      */
-    Set<String> getAllOfSubstudyIds();
-    void setAllOfSubstudyIds(Set<String> substudyIds);
+    Set<String> getAllOfStudyIds();
+    void setAllOfStudyIds(Set<String> studyIds);
     
     /**
      * The object associated with these criteria should be matched only if the user is associated to 
-     * none of the substudies contained in this set of substudy IDs. If the set is empty, there are 
-     * no prohibited substudies. 
+     * none of the studies contained in this set of study IDs. If the set is empty, there are 
+     * no prohibited studies. 
      */
-    Set<String> getNoneOfSubstudyIds();
-    void setNoneOfSubstudyIds(Set<String> substudyIds);
+    Set<String> getNoneOfStudyIds();
+    void setNoneOfStudyIds(Set<String> studyIds);
     
     /**
      * Minimum required app version for this criteria to match, specified for an operating system. If 

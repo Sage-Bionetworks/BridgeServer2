@@ -880,6 +880,33 @@ public class AppControllerTest extends Mockito {
         controller.getAppMemberships();
     }
     
+    @Test
+    public void getAppMembershipsForSuperadminNoSynapseId() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(SUPERADMIN)).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isInRole(SUPERADMIN)).thenReturn(true);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+        
+        App app1 = App.create();
+        app1.setName("Name1");
+        app1.setActive(true);
+        App app2 = App.create();
+        app2.setActive(true);
+        app2.setName("Name2");
+        
+        when(mockAppService.getApps()).thenReturn(ImmutableList.of(app1, app2));
+        
+        String returnValue = controller.getAppMemberships();
+        ResourceList<App> list = BridgeObjectMapper.get().readValue(returnValue, new TypeReference<ResourceList<App>>() {});
+        
+        assertEquals(list.getItems().size(), 2);
+        assertEquals(list.getItems().get(0).getName(), "Name1");
+        assertEquals(list.getItems().get(1).getName(), "Name2");
+        
+        verify(mockAppService, never()).getApp(any());
+    }
+    
     private App mockApp(String name, String appId, boolean active) {
         App app = App.create();
         app.setName(name);
