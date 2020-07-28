@@ -37,6 +37,7 @@ public class UserAdminService {
     private AccountService accountService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
+    private HealthDataEx3Service healthDataEx3Service;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
@@ -70,6 +71,10 @@ public class UserAdminService {
     @Autowired
     final void setHealthDataService(HealthDataService healthDataService) {
         this.healthDataService = healthDataService;
+    }
+    @Autowired
+    final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
+        this.healthDataEx3Service = healthDataEx3Service;
     }
     @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
@@ -201,6 +206,7 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
+            healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
             notificationsService.deleteAllRegistrations(app.getIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);

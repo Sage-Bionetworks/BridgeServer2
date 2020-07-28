@@ -75,6 +75,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerStatus;
@@ -398,6 +399,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper healthDataDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoHealthDataRecord.class);
+    }
+
+    @Bean(name = "healthDataEx3DdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataEx3DdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthDataRecordEx3.class);
     }
 
     @Bean(name = "activityEventDdbMapper")
