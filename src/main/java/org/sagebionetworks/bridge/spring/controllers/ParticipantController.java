@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -287,7 +288,12 @@ public class ParticipantController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
         
-        return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        // Return the health code if this is an administrative account. This is because developers 
+        // should call this method to retrieve their own account.
+        ObjectWriter writer = (session.isInRole(ADMINISTRATIVE_ROLES)) ?
+                StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
+                StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        return writer.writeValueAsString(participant);
     }
 
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})

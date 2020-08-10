@@ -21,6 +21,7 @@ import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.UNENCRYPTED_HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
@@ -679,19 +680,17 @@ public class ParticipantControllerTest extends Mockito {
     public void getSelfParticipantNoConsentHistories() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
-
         when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
 
         String result = controller.getSelfParticipant(false);
-
+        
         verify(mockParticipantService).getSelfParticipant(eq(app), contextCaptor.capture(), eq(false));
         assertEquals(contextCaptor.getValue().getUserId(), USER_ID);
 
-        StudyParticipant deserParticipant = MAPPER.readValue(result, StudyParticipant.class);
-
-        assertEquals(deserParticipant.getFirstName(), "Test");
-        assertNull(deserParticipant.getHealthCode());
-        assertNull(deserParticipant.getEncryptedHealthCode());
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("firstName").textValue(), "Test");
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
+        assertNull(node.get("encryptedHealthCode"));
     }
 
     @Test
@@ -725,9 +724,10 @@ public class ParticipantControllerTest extends Mockito {
 
         StudyParticipant deserParticipant = MAPPER.treeToValue(nodeParticipant, StudyParticipant.class);
 
-        assertEquals(deserParticipant.getFirstName(), "Test");
-        assertNull(deserParticipant.getHealthCode());
-        assertNull(deserParticipant.getEncryptedHealthCode());
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("firstName").textValue(), "Test");
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
+        assertNull(node.get("encryptedHealthCode"));
 
         List<UserConsentHistory> deserHistories = deserParticipant.getConsentHistories().get("guid");
         assertEquals(deserHistories.size(), 1);
@@ -742,6 +742,33 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(deserHistory.getSignedOn(), timestamp.getMillis());
         assertEquals(deserHistory.getWithdrewOn(), new Long(timestamp.getMillis()));
         assertTrue(deserHistory.isHasSignedActiveConsent());
+    }
+    
+    @Test
+    public void getSelfParticipantReturnsNoHealthCode() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
+
+        String result = controller.getSelfParticipant(false);
+        
+        JsonNode node = MAPPER.readTree(result);
+        assertNull(node.get("healthCode"));
+        assertNull(node.get("encryptedHealthCode"));
+    }
+    
+    @Test
+    public void getSelfParticipantReturnsHealthCodeForAdmins() throws Exception {
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
+
+        String result = controller.getSelfParticipant(false);
+        
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
     }
 
     @Test
