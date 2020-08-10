@@ -413,40 +413,41 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test
-    public void getParticipantForSelfReturnsNoHealthCodeForDeveloper() throws Exception {
-        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER))
+    public void getParticipantReturnsNoHealthCodeForDeveloper() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
                 .withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
         session.setParticipant(participant);
         
         app.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
-                .withId(USER_ID).withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant("self", true);
+        String json = controller.getParticipant("aUser", true);
 
         StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
 
-        assertEquals(retrievedParticipant.getFirstName(), "Test");
-        assertNull(retrievedParticipant.getHealthCode());
+        // You do not get the health code, because export of the health code is not enabled and
+        // the caller is not an admin.
+        assertNull(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
     @Test
-    public void getParticipantForSelfReturnsHealthCodeForAdmin() throws Exception {
-        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN))
+    public void getParticipantReturnsHealthCodeForAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN, RESEARCHER))
                 .withId(USER_ID).withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
         session.setParticipant(participant);
 
         app.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
-                .withId(USER_ID).withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant("self", true);
+        String json = controller.getParticipant("aUser", true);
 
         StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
 
-        assertEquals(retrievedParticipant.getFirstName(), "Test");
+        // You still get the health code, even though export of the health code is not enabled.
         assertEquals(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
