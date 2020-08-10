@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -181,12 +182,14 @@ public class CRCController extends BaseController {
         // This is temporary so we can start using the CRC system in production, 
         // while continuing to test. The calling code should not update the state of
         // the user if it receives a 400.
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new BadRequestException("Production accounts are not yet enabled.");
-        }
-        createLabOrder(account);
+//        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+//            throw new BadRequestException("Production accounts are not yet enabled.");
+//        }
+        // All the code related to requesting a lab order will be removed once we've 
+        // confirmed that this is Columbia's final approach to the integration.
+        // createLabOrder(account);
 
-        updateState(account, AccountStates.TESTS_REQUESTED);
+        updateState(account, SELECTED);
         accountService.updateAccount(account, null);
         return new StatusMessage("Participant updated.");
     }
@@ -201,6 +204,16 @@ public class CRCController extends BaseController {
 
         String userId = findUserId(appointment);
         
+        // They send appointment when it is booked, cancelled, or (rarely) enteredinerror.
+        String apptStatus = data.get("status").asText();
+        AccountStates state = TESTS_SCHEDULED;
+        if ("entered-in-error".equals(apptStatus)) {
+            deleteReportAndUpdateState(app, userId);
+            return ResponseEntity.ok(new StatusMessage("Appointment deleted."));
+        } else if ("cancelled".equals(apptStatus)) {
+            state = TESTS_CANCELLED;
+        }
+        
         // Columbia wants us to call back to them to get information about the location.
         // And UI team wants geocoding of location to render a map. 
         String locationString = findLocation(appointment);
@@ -212,12 +225,6 @@ public class CRCController extends BaseController {
             }
             addLocation(data, account, locationString);
         }
-        
-        // They send appointment when it is booked and when it is cancelled. They may send it
-        // other times, as there are more statuses in the AppointmentStatus enum. I am asking
-        // about that now.
-        String apptStatus = data.get("status").asText();
-        AccountStates state = ("cancelled".equals(apptStatus)) ? TESTS_CANCELLED : TESTS_SCHEDULED;
         
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state);
         if (status == 200) {
@@ -507,6 +514,22 @@ public class CRCController extends BaseController {
         updateState(account, state);
         accountService.updateAccount(account, null);
         return status;
+    }
+    
+    private int deleteReportAndUpdateState(App app, String userId) {
+        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+
+        reportService.deleteParticipantReportRecord(app.getIdentifier(), APPOINTMENT_REPORT, 
+                JAN1.toString(), account.getHealthCode());
+
+        updateState(account, SELECTED);
+        accountService.updateAccount(account, null);
+        return 200;
     }
 
     private void updateState(Account account, AccountStates state) {

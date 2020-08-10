@@ -247,7 +247,6 @@ public class ParticipantControllerTest extends Mockito {
         session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -384,9 +383,9 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
 
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant(USER_ID, true);
+        String json = controller.getParticipant("aUser", true);
         JsonNode node = MAPPER.readTree(json);
 
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
@@ -395,22 +394,61 @@ public class ParticipantControllerTest extends Mockito {
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
 
-        verify(mockParticipantService).getParticipant(app, USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
-
+    
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         app.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant(USER_ID, true);
+        String json = controller.getParticipant("aUser", true);
 
         StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
 
         assertEquals(retrievedParticipant.getFirstName(), "Test");
         assertNull(retrievedParticipant.getHealthCode());
+    }
+
+    @Test
+    public void getParticipantReturnsNoHealthCodeForDeveloper() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
+                .withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+        
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You do not get the health code, because export of the health code is not enabled and
+        // the caller is not an admin.
+        assertNull(retrievedParticipant.getHealthCode(), HEALTH_CODE);
+    }
+    
+    @Test
+    public void getParticipantReturnsHealthCodeForAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN, RESEARCHER))
+                .withId(USER_ID).withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You still get the health code, even though export of the health code is not enabled.
+        assertEquals(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -852,7 +890,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cannotResetPasswordIfNotResearcher() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).build();
+                .withId("notUserId").withRoles(ImmutableSet.of(DEVELOPER)).build();
         session.setParticipant(participant);
 
         controller.requestResetPassword(USER_ID);
@@ -1311,11 +1349,11 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", false)).thenReturn(studyParticipant);
 
-        controller.getParticipant(USER_ID, false);
+        controller.getParticipant("aUser", false);
 
-        verify(mockParticipantService).getParticipant(app, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, "aUser", false);
     }
 
     @Test
@@ -1420,7 +1458,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.ADMIN))
-                .build();
+                .withId("notUserId").build();
         session.setParticipant(participant);
 
         controller.deleteTestParticipant(USER_ID);
