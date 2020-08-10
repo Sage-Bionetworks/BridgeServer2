@@ -57,8 +57,8 @@ public class AssessmentResourceValidator implements Validator {
             }
         }
         if (resource.getMinRevision() != null && resource.getMaxRevision() != null && 
-                resource.getMinRevision() < resource.getMaxRevision()) {
-            errors.rejectValue("minRevision", "should not be less than maxRevision");
+                resource.getMinRevision() > resource.getMaxRevision()) {
+            errors.rejectValue("minRevision", "should not be greater than maxRevision");
         }
         if (resource.getCategory() == ResourceCategory.RELEASE_NOTE && 
                 resource.getMinRevision() != null && 
