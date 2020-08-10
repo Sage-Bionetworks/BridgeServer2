@@ -247,7 +247,6 @@ public class ParticipantControllerTest extends Mockito {
         session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -397,7 +396,7 @@ public class ParticipantControllerTest extends Mockito {
 
         verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
-
+    
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         app.setHealthCodeExportEnabled(false);
@@ -411,6 +410,44 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(retrievedParticipant.getFirstName(), "Test");
         assertNull(retrievedParticipant.getHealthCode());
+    }
+
+    @Test
+    public void getParticipantForSelfReturnsNoHealthCodeForDeveloper() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER))
+                .withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+        
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId(USER_ID).withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("self", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        assertEquals(retrievedParticipant.getFirstName(), "Test");
+        assertNull(retrievedParticipant.getHealthCode());
+    }
+    
+    @Test
+    public void getParticipantForSelfReturnsHealthCodeForAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN))
+                .withId(USER_ID).withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId(USER_ID).withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(true))).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("self", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        assertEquals(retrievedParticipant.getFirstName(), "Test");
+        assertEquals(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
