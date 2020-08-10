@@ -388,3 +388,10 @@ CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
   CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- Fix this (one value is missing).
+ALTER TABLE `ExternalResources`
+MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY', 
+    'SCIENCE_DOCUMENTATION', 'DEVELOPER_DOCUMENTATION', 'LICENSE', 
+    'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
+    'SCREENSHOT', 'VIDEO_PREVIEW', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
+    'OTHER') NOT NULL;
