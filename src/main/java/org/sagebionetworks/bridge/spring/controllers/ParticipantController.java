@@ -295,7 +295,6 @@ public class ParticipantController extends BaseController {
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
 
-        checkSelfOrResearcherAndThrow(userId);
         App app = appService.getApp(session.getAppId());
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
