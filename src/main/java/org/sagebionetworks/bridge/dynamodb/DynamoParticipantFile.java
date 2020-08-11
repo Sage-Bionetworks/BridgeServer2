@@ -25,14 +25,18 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private DateTime createdOn;
 
-    public DynamoParticipantFile(String fileId, String userId, DateTime createdOn) {
-        this.fileId = fileId;
+    public DynamoParticipantFile(String userId, String fileId, DateTime createdOn) {
         this.userId = userId;
+        this.fileId = fileId;
         this.createdOn = createdOn;
     }
 
-    public DynamoParticipantFile(String fileId, String userId) {
+    public DynamoParticipantFile(String userId, String fileId) {
         this(fileId, userId, null);
+    }
+
+    public DynamoParticipantFile(String userId) {
+        this(userId, null, null);
     }
 
     public void setFileId(String fileId) {

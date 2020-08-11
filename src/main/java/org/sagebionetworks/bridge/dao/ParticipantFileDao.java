@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
@@ -7,17 +8,20 @@ import java.util.Optional;
 
 public interface ParticipantFileDao {
     /**
-     * Get a paged resource list of ParticipantFiles from the given userId.
+     * Get a ForwardCursorPagedResourceList of ParticipantFiles from the given userId, with nextPageOffsetKey set.
+     * If nextPageOffsetKey is null, then the list reached the end and there does not exist next page.
      *
      * @param userId the id of the StudyParticipant
-     * @param start the start of the result page
-     * @param offset the offset of the result page
-     * @return a paged resource list of items in the interval [start, start+offset] from the given userId.
+     * @param offsetKey the exclusive starting offset of the query, if null, then query from the start
+     * @param pageSize the number of items in the result page
+     * @return a ForwardCursorPagedResourceList of ParticipantFiles
+     * @throws org.sagebionetworks.bridge.exceptions.BadRequestException if pageSize is less than 1 or greater
+     *         than API_MAXIMUM_PAGE_SIZE
      */
-    PagedResourceList<ParticipantFile> getParticipantFiles(String userId, int start, int offset);
+    ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize);
 
     /**
-     * Returns the ParticipantFile from the given criteria. If no such file exists, return empty.
+     * Returns the ParticipantFile from the given criteria. If no such file exists, returns Optional.empty.
      *
      * @param userId the id of the StudyParticipant
      * @param fileId the id of file from the user.
