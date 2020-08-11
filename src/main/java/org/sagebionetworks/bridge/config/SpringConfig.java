@@ -274,6 +274,13 @@ public class SpringConfig {
         return AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true).withRegion(US_EAST_1)
                 .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
     }
+
+    @Bean(name = "participantFileS3Client")
+    @Resource(name = "awsCredentials")
+    public AmazonS3 participantFileS3Client(BasicAWSCredentials awsCredentials) {
+        return AmazonS3ClientBuilder.standard().withRegion(US_EAST_1)
+                .withCredentials(new AWSStaticCredentialsProvider(awsCredentials)).build();
+    }
     
     @Bean(name ="uploadTokenServiceClient")
     @Resource(name = "s3UploadCredentials")
