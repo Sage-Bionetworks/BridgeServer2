@@ -18,10 +18,10 @@ public class HibernateEnrollmentTest {
     
     @Test
     public void test() {
-        HibernateEnrollment enrollment = new HibernateEnrollment(TEST_APP_ID, "substudyId", "accountId", "externalId");
+        HibernateEnrollment enrollment = new HibernateEnrollment(TEST_APP_ID, "studyId", "accountId", "externalId");
         
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), "substudyId");
+        assertEquals(enrollment.getStudyId(), "studyId");
         assertEquals(enrollment.getAccountId(), "accountId");
         assertEquals(enrollment.getExternalId(), "externalId");
     }

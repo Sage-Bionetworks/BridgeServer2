@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.upload;
 
 import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
-import static org.sagebionetworks.bridge.BridgeUtils.mapSubstudyMemberships;
+import static org.sagebionetworks.bridge.BridgeUtils.mapStudyMemberships;
 
 import java.util.Set;
 
@@ -54,7 +54,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             record.setUserSharingScope(account.getSharingScope());
             record.setUserExternalId(externalId);
             record.setUserDataGroups(account.getDataGroups());
-            record.setUserSubstudyMemberships( mapSubstudyMemberships(account) );
+            record.setUserStudyMemberships( mapStudyMemberships(account) );
 
             // Calculate dayInStudy.
             // Snap to a calendar date in the local time zone. For example, a participant has an

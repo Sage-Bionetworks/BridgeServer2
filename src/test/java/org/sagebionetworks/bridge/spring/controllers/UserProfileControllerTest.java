@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -224,15 +224,15 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(
-                ImmutableSet.of("substudyA")).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(
+                ImmutableSet.of("studyA")).build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("existingHealthCode")
                 .withExternalId("originalId")
                 .withFirstName("OldFirstName")
                 .withLastName("OldLastName")
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withStudyIds(ImmutableSet.of("studyA"))
                 .withId(USER_ID).build();
         
         StudyParticipant updatedParticipant = new StudyParticipant.Builder()
@@ -271,15 +271,15 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
-        setRequestContext(new RequestContext.Builder().withCallerSubstudies(
-                ImmutableSet.of("substudyA")).build());
+        setRequestContext(new RequestContext.Builder().withCallerStudies(
+                ImmutableSet.of("studyA")).build());
         
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
         // that healthCode (as well as something like firstName) are in the session. 
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(USER_ID)
-                .withSubstudyIds(USER_SUBSTUDY_IDS) // which includes substudyA
+                .withStudyIds(USER_STUDY_IDS) // which includes studyA
                 .withFirstName("First").build();
         doReturn(existing).when(mockParticipantService).getParticipant(app, USER_ID, false);
         session.setParticipant(existing);
@@ -299,13 +299,13 @@ public class UserProfileControllerTest extends Mockito {
         assertEquals(participant.getId(), USER_ID);
         assertEquals(participant.getDataGroups(), dataGroupSet);
         assertEquals(participant.getFirstName(), "First");
-        assertEquals(participant.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(participant.getStudyIds(), USER_STUDY_IDS);
         assertEquals(contextCaptor.getValue().getUserDataGroups(), dataGroupSet);
-        assertEquals(contextCaptor.getValue().getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(contextCaptor.getValue().getUserStudyIds(), USER_STUDY_IDS);
         
         // Session continues to be initialized
         assertEquals(session.getParticipant().getDataGroups(), dataGroupSet);
-        assertEquals(session.getParticipant().getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(session.getParticipant().getStudyIds(), USER_STUDY_IDS);
         assertEquals(session.getParticipant().getHealthCode(), HEALTH_CODE);
         assertEquals(session.getParticipant().getFirstName(), "First");
     }
@@ -348,12 +348,12 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings({ "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        setRequestContext(new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyA")).build());
+        setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)
                 .withId(USER_ID)
-                .withSubstudyIds(ImmutableSet.of("substudyA"))
+                .withStudyIds(ImmutableSet.of("studyA"))
                 .withFirstName("First").build();
         doReturn(existing).when(mockParticipantService).getParticipant(app, USER_ID, false);
         session.setParticipant(existing);

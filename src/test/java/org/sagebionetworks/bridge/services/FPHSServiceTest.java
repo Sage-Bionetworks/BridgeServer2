@@ -26,7 +26,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -95,7 +95,7 @@ public class FPHSServiceTest {
         
         Enrollment enrollment = Iterables.getFirst(enrollments, null);
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
-        assertEquals(enrollment.getSubstudyId(), "harvard");
+        assertEquals(enrollment.getStudyId(), "harvard");
         assertEquals(enrollment.getExternalId(), EXTERNAL_ID);
     }
     

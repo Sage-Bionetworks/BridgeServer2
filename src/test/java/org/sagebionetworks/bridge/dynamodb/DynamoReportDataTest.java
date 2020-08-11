@@ -40,7 +40,7 @@ public class DynamoReportDataTest {
         reportData.setKey(key.getKeyString());
         reportData.setDateTime(DATETIME);
         reportData.setData(objNode);
-        reportData.setSubstudyIds(TestConstants.USER_SUBSTUDY_IDS);
+        reportData.setStudyIds(TestConstants.USER_STUDY_IDS);
         
         String json = MAPPER.writeValueAsString(reportData);
         
@@ -51,8 +51,8 @@ public class DynamoReportDataTest {
         assertTrue(node.get("data").get("a").booleanValue());
         assertEquals(node.get("data").get("b").textValue(), "string");
         assertEquals(node.get("data").get("c").intValue(), 10);
-        assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
-        assertEquals(node.get("substudyIds").get(1).textValue(), "substudyB");
+        assertEquals(node.get("studyIds").get(0).textValue(), "studyA");
+        assertEquals(node.get("studyIds").get(1).textValue(), "studyB");
         assertEquals(node.get("type").textValue(), "ReportData");
         assertEquals(node.size(), 5);
         
@@ -62,7 +62,7 @@ public class DynamoReportDataTest {
         assertEquals(deser.getDate(), DATETIME.toString());
         assertTrue(deser.getData().get("a").asBoolean());
         assertEquals(deser.getData().get("b").asText(), "string");
-        assertEquals(deser.getSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(deser.getStudyIds(), TestConstants.USER_STUDY_IDS);
         assertEquals(deser.getData().get("c").asInt(), 10);
     }
     

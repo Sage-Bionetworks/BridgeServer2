@@ -21,7 +21,7 @@ import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.UNCONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
@@ -400,7 +400,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setIpAddress(IP_ADDRESS);
         session.setParticipant(new StudyParticipant.Builder()
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withLanguages(LANGUAGES).withHealthCode(HEALTH_CODE).withId(USER_ID).build());
         
         CriteriaContext context = controller.getCriteriaContext(session);
@@ -410,7 +410,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(context.getAppId(), TEST_APP_ID);
     }
 
@@ -490,7 +490,7 @@ public class BaseControllerTest extends Mockito {
         
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).withLanguages(LANGUAGES)
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withTimeZone(TIMEZONE_MSK).build());
 
         RequestInfo info = controller.getRequestInfoBuilder(session).build();
@@ -500,7 +500,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(info.getUserAgent(), UA);
         assertEquals(info.getLanguages(), LANGUAGES);
         assertEquals(info.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(info.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(info.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(info.getTimeZone(), TIMEZONE_MSK);
         assertEquals(info.getAppId(), TEST_APP_ID);
     }
@@ -748,13 +748,13 @@ public class BaseControllerTest extends Mockito {
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
         assertNotNull(context.getId());
         assertNull(context.getCallerAppId());
-        assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
+        assertEquals(ImmutableSet.of(), context.getCallerStudies());
         assertFalse(context.isAdministrator());
         BridgeUtils.setRequestContext(context);
         
         Set<Roles> roles = ImmutableSet.of(DEVELOPER);
         
-        StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
+        StudyParticipant participant = new StudyParticipant.Builder().withStudyIds(USER_STUDY_IDS)
                 .withRoles(roles).withId(USER_ID).withOrgMembership(TEST_ORG_ID).build();
         session.setParticipant(participant);
         session.setAuthenticated(true);
@@ -768,7 +768,7 @@ public class BaseControllerTest extends Mockito {
         context = BridgeUtils.getRequestContext();
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
-        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getCallerStudies(), USER_STUDY_IDS);
         assertTrue(context.isAdministrator());
         assertTrue(context.isInRole(DEVELOPER));
         assertEquals(context.getCallerUserId(), USER_ID);

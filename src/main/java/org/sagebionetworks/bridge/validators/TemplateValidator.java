@@ -12,11 +12,11 @@ import org.sagebionetworks.bridge.models.templates.Template;
 public class TemplateValidator implements Validator {
 
     private final Set<String> dataGroups;
-    private final Set<String> substudyIds;
+    private final Set<String> studyIds;
 
-    public TemplateValidator(Set<String> dataGroups, Set<String> substudyIds) {
+    public TemplateValidator(Set<String> dataGroups, Set<String> studyIds) {
         this.dataGroups = dataGroups;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
     }
     
     @Override
@@ -35,7 +35,7 @@ public class TemplateValidator implements Validator {
             errors.rejectValue("templateType", "is required");
         }
         if (template.getCriteria() != null) {
-            CriteriaUtils.validate(template.getCriteria(), dataGroups, substudyIds, errors);    
+            CriteriaUtils.validate(template.getCriteria(), dataGroups, studyIds, errors);    
         }
     }
 

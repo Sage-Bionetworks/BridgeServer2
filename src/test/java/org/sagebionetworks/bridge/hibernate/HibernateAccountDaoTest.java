@@ -49,7 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class HibernateAccountDaoTest extends Mockito {
     private static final String ACCOUNT_ID = "account-id";
@@ -72,8 +72,8 @@ public class HibernateAccountDaoTest extends Mockito {
     private static final AccountId ACCOUNT_ID_WITH_SYNID = AccountId.forSynapseUserId(TEST_APP_ID,
             SYNAPSE_USER_ID);
 
-    private static final String SUBSTUDY_A = "substudyA";
-    private static final String SUBSTUDY_B = "substudyB";
+    private static final String STUDY_A = "studyA";
+    private static final String STUDY_B = "studyB";
     private static final Map<String, Object> APP_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
             .put("appId", TEST_APP_ID).put("orgId", TEST_ORG_ID).build();
     private static final Map<String, Object> EMAIL_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
@@ -457,8 +457,8 @@ public class HibernateAccountDaoTest extends Mockito {
                 +":orgId";
         
         Set<Enrollment> set = ImmutableSet.of(
-                Enrollment.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
-                Enrollment.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
+                Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
+                Enrollment.create(TEST_APP_ID, STUDY_B, ACCOUNT_ID));
 
         // mock hibernate
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
@@ -501,12 +501,12 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummaryList.get(0).getId(), "account-1");
         assertEquals(accountSummaryList.get(0).getAppId(), TEST_APP_ID);
         assertEquals(accountSummaryList.get(0).getEmail(), "email1@example.com");
-        assertEquals(accountSummaryList.get(0).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
+        assertEquals(accountSummaryList.get(0).getStudyIds(), ImmutableSet.of(STUDY_A, STUDY_B));
 
         assertEquals(accountSummaryList.get(1).getId(), "account-2");
         assertEquals(accountSummaryList.get(1).getAppId(), TEST_APP_ID);
         assertEquals(accountSummaryList.get(1).getEmail(), "email2@example.com");
-        assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A, SUBSTUDY_B));
+        assertEquals(accountSummaryList.get(1).getStudyIds(), ImmutableSet.of(STUDY_A, STUDY_B));
 
         // verify hibernate calls
         verify(mockHibernateHelper).queryGet(eq(expQuery), eq(APP_QUERY_PARAMS), eq(10), eq(5), eq(String.class));
@@ -516,13 +516,13 @@ public class HibernateAccountDaoTest extends Mockito {
     }
 
     @Test
-    public void getPagedRemovesSubstudiesNotInCaller() throws Exception {
+    public void getPagedRemovesStudiesNotInCaller() throws Exception {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of(SUBSTUDY_A)).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of(STUDY_A)).build());
         
         Set<Enrollment> set = ImmutableSet.of(
-                Enrollment.create(TEST_APP_ID, SUBSTUDY_A, ACCOUNT_ID),
-                Enrollment.create(TEST_APP_ID, SUBSTUDY_B, ACCOUNT_ID));
+                Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
+                Enrollment.create(TEST_APP_ID, STUDY_B, ACCOUNT_ID));
 
         HibernateAccount hibernateAccount1 = makeValidHibernateAccount(false);
         hibernateAccount1.setId("account-1");
@@ -539,9 +539,9 @@ public class HibernateAccountDaoTest extends Mockito {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
         List<AccountSummary> accountSummaryList = accountSummaryResourceList.getItems();
 
-        // substudy B is not there
-        assertEquals(accountSummaryList.get(0).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A));
-        assertEquals(accountSummaryList.get(1).getSubstudyIds(), ImmutableSet.of(SUBSTUDY_A));
+        // study B is not there
+        assertEquals(accountSummaryList.get(0).getStudyIds(), ImmutableSet.of(STUDY_A));
+        assertEquals(accountSummaryList.get(1).getStudyIds(), ImmutableSet.of(STUDY_A));
     }
 
     @Test
@@ -645,13 +645,13 @@ public class HibernateAccountDaoTest extends Mockito {
     }
 
     @Test
-    public void getPagedWithOptionalParamsRespectsSubstudy() throws Exception {
+    public void getPagedWithOptionalParamsRespectsStudy() throws Exception {
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE "
-                + "acct.appId = :appId AND enrollment.substudyId IN (:substudies)";
-        Set<String> substudyIds = ImmutableSet.of("substudyA", "substudyB");
+                + "acct.appId = :appId AND enrollment.studyId IN (:studies)";
+        Set<String> studyIds = ImmutableSet.of("studyA", "studyB");
         try {
-            RequestContext context = new RequestContext.Builder().withCallerSubstudies(substudyIds).build();
+            RequestContext context = new RequestContext.Builder().withCallerStudies(studyIds).build();
             BridgeUtils.setRequestContext(context);
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
@@ -659,7 +659,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
             verify(mockHibernateHelper).queryCount(eq(expCountQuery), paramCaptor.capture());
             Map<String, Object> params = paramCaptor.getValue();
-            assertEquals(params.get("substudies"), substudyIds);
+            assertEquals(params.get("studies"), studyIds);
             assertEquals(params.get("appId"), TEST_APP_ID);
         } finally {
             BridgeUtils.setRequestContext(null);
@@ -744,8 +744,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummarySuccess() {
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ACCOUNT_ID, "externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
@@ -766,7 +766,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummary.getAppId(), TEST_APP_ID);
         assertEquals(accountSummary.getEmail(), EMAIL);
         assertEquals(accountSummary.getPhone(), PHONE);
-        assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("substudyA", "externalIdA", "substudyB", "externalIdB"));
+        assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("studyA", "externalIdA", "studyB", "externalIdB"));
         assertEquals(accountSummary.getFirstName(), FIRST_NAME);
         assertEquals(accountSummary.getLastName(), LAST_NAME);
         assertEquals(accountSummary.getStatus(), ENABLED);
@@ -784,12 +784,12 @@ public class HibernateAccountDaoTest extends Mockito {
     }
 
     @Test
-    public void unmarshallAccountSummaryFiltersSubstudies() throws Exception {
+    public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+                .withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
 
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", ACCOUNT_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", ACCOUNT_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ACCOUNT_ID, "externalIdB");
         
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();
@@ -800,14 +800,14 @@ public class HibernateAccountDaoTest extends Mockito {
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
-        assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("substudyB", "externalIdB"));
-        assertEquals(accountSummary.getSubstudyIds(), ImmutableSet.of("substudyB"));
+        assertEquals(accountSummary.getExternalIds(), ImmutableMap.of("studyB", "externalIdB"));
+        assertEquals(accountSummary.getStudyIds(), ImmutableSet.of("studyB"));
     }
 
     @Test
     public void unmarshallAccountSummaryStillReturnsOldExternalId() throws Exception {
         BridgeUtils.setRequestContext(
-                new RequestContext.Builder().withCallerSubstudies(ImmutableSet.of("substudyB", "substudyC")).build());
+                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();

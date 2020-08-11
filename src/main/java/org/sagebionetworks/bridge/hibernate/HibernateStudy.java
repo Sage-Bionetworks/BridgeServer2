@@ -9,16 +9,16 @@ import javax.persistence.Version;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.models.substudies.SubstudyId;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "Substudies")
-@IdClass(SubstudyId.class)
-@BridgeTypeName("Substudy")
-public class HibernateSubstudy implements Substudy {
+@IdClass(StudyId.class)
+@BridgeTypeName("Study")
+public class HibernateStudy implements Study {
     @Id
     private String id;
     @Id

@@ -2,14 +2,15 @@ package org.sagebionetworks.bridge.hibernate;
 
 import java.util.Objects;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
-import org.sagebionetworks.bridge.models.substudies.EnrollmentId;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentId;
 
 @Entity
 @Table(name = "AccountsSubstudies")
@@ -17,9 +18,11 @@ import org.sagebionetworks.bridge.models.substudies.EnrollmentId;
 public final class HibernateEnrollment implements Enrollment {
 
     @Id
+    @Column(name = "studyId")
     private String appId;
     @Id
-    private String substudyId;
+    @Column(name = "substudyId")
+    private String studyId;
     @Id
     @JoinColumn(name = "account_id")
     private String accountId;
@@ -29,9 +32,9 @@ public final class HibernateEnrollment implements Enrollment {
     public HibernateEnrollment() {
     }
     
-    public HibernateEnrollment(String appId, String substudyId, String accountId, String externalId) {
+    public HibernateEnrollment(String appId, String studyId, String accountId, String externalId) {
         this.appId = appId;
-        this.substudyId = substudyId;
+        this.studyId = studyId;
         this.accountId = accountId;
         this.externalId = externalId;
     }
@@ -39,8 +42,8 @@ public final class HibernateEnrollment implements Enrollment {
     public String getAppId() {
         return appId;
     }
-    public String getSubstudyId() {
-        return substudyId;
+    public String getStudyId() {
+        return studyId;
     }
     public String getAccountId() {
         return accountId;
@@ -51,7 +54,7 @@ public final class HibernateEnrollment implements Enrollment {
 
     @Override
     public int hashCode() {
-        return Objects.hash(accountId, externalId, appId, substudyId);
+        return Objects.hash(accountId, externalId, appId, studyId);
     }
 
     @Override
@@ -64,12 +67,12 @@ public final class HibernateEnrollment implements Enrollment {
         return Objects.equals(accountId, other.accountId) && 
                Objects.equals(externalId, other.externalId) && 
                Objects.equals(appId, other.appId) && 
-               Objects.equals(substudyId, other.substudyId);
+               Objects.equals(studyId, other.studyId);
     }
 
     @Override
     public String toString() {
-        return "HibernateEnrollment [appId=" + appId + ", substudyId=" + substudyId + ", accountId="
+        return "HibernateEnrollment [appId=" + appId + ", studyId=" + studyId + ", accountId="
                 + accountId + ", externalId=" + externalId + "]";
     }
 }

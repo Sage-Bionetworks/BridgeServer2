@@ -19,23 +19,23 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyParticipantValidator implements Validator {
 
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
-    private final SubstudyService substudyService;
+    private final StudyService studyService;
     private final OrganizationDao organizationDao;
     private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, SubstudyService substudyService,
+    public StudyParticipantValidator(ExternalIdService externalIdService, StudyService studyService,
             OrganizationDao organizationDao, App app, boolean isNew) {
         this.externalIdService = externalIdService;
-        this.substudyService = substudyService;
+        this.studyService = studyService;
         this.organizationDao = organizationDao;
         this.app = app;
         this.isNew = isNew;
@@ -98,10 +98,10 @@ public class StudyParticipantValidator implements Validator {
             }
         }
 
-        for (String substudyId : participant.getSubstudyIds()) {
-            Substudy substudy = substudyService.getSubstudy(app.getIdentifier(), substudyId, false);
-            if (substudy == null) {
-                errors.rejectValue("substudyIds["+substudyId+"]", "is not a substudy");
+        for (String studyId : participant.getStudyIds()) {
+            Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
+            if (study == null) {
+                errors.rejectValue("studyIds["+studyId+"]", "is not a study");
             }
         }
         

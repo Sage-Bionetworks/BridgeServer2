@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.STUDY;
 import static org.testng.Assert.assertEquals;
@@ -148,7 +148,7 @@ public class StudyReportControllerTest extends Mockito {
         
         // There are some tests that need to clear this for the call to work correctly.
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(USER_SUBSTUDY_IDS).build());
+                .withCallerStudies(USER_STUDY_IDS).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

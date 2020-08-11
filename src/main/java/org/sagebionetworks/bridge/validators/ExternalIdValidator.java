@@ -5,7 +5,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -13,11 +13,11 @@ public class ExternalIdValidator implements Validator {
 
     private static final String IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
-    private SubstudyService substudyService;
+    private StudyService studyService;
     private boolean isV3;
     
-    public ExternalIdValidator(SubstudyService substudyService, boolean isV3) {
-        this.substudyService = substudyService;
+    public ExternalIdValidator(StudyService studyService, boolean isV3) {
+        this.studyService = studyService;
         this.isV3 = isV3;
     }
     
@@ -31,7 +31,7 @@ public class ExternalIdValidator implements Validator {
         ExternalIdentifier extId = (ExternalIdentifier)object;
 
         String callerAppId = BridgeUtils.getRequestContext().getCallerAppId();
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
+        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
         
         if (StringUtils.isBlank(extId.getIdentifier())) {
             errors.rejectValue("identifier", "cannot be null or blank");
@@ -40,14 +40,13 @@ public class ExternalIdValidator implements Validator {
             errors.rejectValue("identifier", msg);
         }
         if (!isV3) {
-            String appId = StringUtils.isBlank(extId.getAppId()) ? 
-                    null : extId.getAppId();
-            if (StringUtils.isBlank(extId.getSubstudyId())) {
-                errors.rejectValue("substudyId", "cannot be null or blank");
-            } else if (substudyService.getSubstudy(appId, extId.getSubstudyId(), false) == null) {
-                errors.rejectValue("substudyId", "is not a valid substudy");
-            } else if (!callerSubstudies.isEmpty() && !callerSubstudies.contains(extId.getSubstudyId())) {
-                errors.rejectValue("substudyId", "is not a valid substudy");
+            String appId = StringUtils.isBlank(extId.getAppId()) ? null : extId.getAppId();
+            if (StringUtils.isBlank(extId.getStudyId())) {
+                errors.rejectValue("studyId", "cannot be null or blank");
+            } else if (studyService.getStudy(appId, extId.getStudyId(), false) == null) {
+                errors.rejectValue("studyId", "is not a valid study");
+            } else if (!callerStudies.isEmpty() && !callerStudies.contains(extId.getStudyId())) {
+                errors.rejectValue("studyId", "is not a valid study");
             }
         }
         if (StringUtils.isBlank(extId.getAppId())) {

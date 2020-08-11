@@ -18,14 +18,14 @@ public interface ExternalIdDao {
 
     /**
      * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
-     * substudy membership.
+     * study membership.
      */
     Optional<ExternalIdentifier> getExternalId(String appId, String externalId);
 
     /**
      * Get a forward-only cursor page of results. All external IDs for the app are returned, however, if a 
-     * given substudy ID association is a substudy that the user is not associated to (if the caller is associated 
-     * to any substudies), then the external ID will have a substudy of null. 
+     * given study ID association is a study that the user is not associated to (if the caller is associated 
+     * to any studies), then the external ID will have a study of null. 
      */
     ForwardCursorPagedResourceList<ExternalIdentifierInfo> getExternalIds(String appId,
             String offsetKey, int pageSize, String idFilter, Boolean assignmentFilter);

@@ -189,7 +189,7 @@ public abstract class BaseController {
         builder.withCallerLanguages(getLanguages(session));
         builder.withCallerAppId(session.getAppId());
         builder.withCallerOrgMembership(session.getParticipant().getOrgMembership());
-        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
+        builder.withCallerStudies(session.getParticipant().getStudyIds());
         builder.withCallerRoles(session.getParticipant().getRoles());
         builder.withCallerUserId(session.getParticipant().getId());
         RequestContext reqContext = builder.build();
@@ -289,7 +289,7 @@ public abstract class BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+                .withUserStudyIds(session.getParticipant().getStudyIds())
                 .withAppId(session.getAppId())
                 .build();
 
@@ -317,7 +317,7 @@ public abstract class BaseController {
             .withHealthCode(session.getHealthCode())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
-            .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+            .withUserStudyIds(session.getParticipant().getStudyIds())
             .withAppId(session.getAppId())
             .build();
     }
@@ -382,7 +382,7 @@ public abstract class BaseController {
         builder.withUserAgent(request().getHeader(USER_AGENT));
         builder.withLanguages(getLanguages(session));
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
-        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
+        builder.withUserStudyIds(session.getParticipant().getStudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
         builder.withAppId(session.getAppId());
         return builder;

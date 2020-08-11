@@ -62,8 +62,8 @@ public class CriteriaUtils {
         checkNotNull(criteria);
         checkNotNull(criteria.getAllOfGroups());
         checkNotNull(criteria.getNoneOfGroups());
-        checkNotNull(criteria.getAllOfSubstudyIds());
-        checkNotNull(criteria.getNoneOfSubstudyIds());
+        checkNotNull(criteria.getAllOfStudyIds());
+        checkNotNull(criteria.getNoneOfStudyIds());
         
         Integer appVersion = context.getClientInfo().getAppVersion();
         String appOs = context.getClientInfo().getOsName();
@@ -82,11 +82,11 @@ public class CriteriaUtils {
         if (!Collections.disjoint(dataGroups, criteria.getNoneOfGroups())) {
             return false;
         }
-        Set<String> substudies = context.getUserSubstudyIds();
-        if (!substudies.containsAll(criteria.getAllOfSubstudyIds())) {
+        Set<String> studies = context.getUserStudyIds();
+        if (!studies.containsAll(criteria.getAllOfStudyIds())) {
             return false;
         }
-        if (!Collections.disjoint(substudies, criteria.getNoneOfSubstudyIds())) {
+        if (!Collections.disjoint(studies, criteria.getNoneOfStudyIds())) {
             return false;
         }
         if (languageDoesNotMatch(context.getLanguages(), criteria.getLanguage())) {
@@ -99,7 +99,7 @@ public class CriteriaUtils {
      * Validate that the criteria are correct (e.g. including the same data group in both required and prohibited sets,
      * or having a min-max version range out of order, are obviously incorrect because they can never match).
      */
-    public static void validate(Criteria criteria, Set<String> dataGroups, Set<String> substudyIds, Errors errors) {
+    public static void validate(Criteria criteria, Set<String> dataGroups, Set<String> studyIds, Errors errors) {
         for (String osName : criteria.getAppVersionOperatingSystems()) {
             Integer minAppVersion = criteria.getMinAppVersion(osName);
             Integer maxAppVersion = criteria.getMaxAppVersion(osName);
@@ -127,10 +127,10 @@ public class CriteriaUtils {
         validateSetItemsDoNotOverlap(errors, "data groups", "allOfGroups", criteria.getAllOfGroups(),
                 criteria.getNoneOfGroups());
         
-        validateSetItemsExist(errors, "allOfSubstudyIds", substudyIds, criteria.getAllOfSubstudyIds());
-        validateSetItemsExist(errors, "noneOfSubstudyIds", substudyIds, criteria.getNoneOfSubstudyIds());
-        validateSetItemsDoNotOverlap(errors, "substudies", "allOfSubstudyIds", criteria.getAllOfSubstudyIds(),
-                criteria.getNoneOfSubstudyIds());
+        validateSetItemsExist(errors, "allOfStudyIds", studyIds, criteria.getAllOfStudyIds());
+        validateSetItemsExist(errors, "noneOfStudyIds", studyIds, criteria.getNoneOfStudyIds());
+        validateSetItemsDoNotOverlap(errors, "studies", "allOfStudyIds", criteria.getAllOfStudyIds(),
+                criteria.getNoneOfStudyIds());
     }
     
     private static void pushSubpathError(Errors errors, String subpath, String errorKey, String error) {

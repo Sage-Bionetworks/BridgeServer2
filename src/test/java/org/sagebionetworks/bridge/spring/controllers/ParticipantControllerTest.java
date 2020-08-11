@@ -23,7 +23,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -138,7 +138,7 @@ public class ParticipantControllerTest extends Mockito {
 
     private static final Set<Roles> CALLER_ROLES = ImmutableSet.of(RESEARCHER);
 
-    private static final Set<String> CALLER_SUBS = ImmutableSet.of("substudyA");
+    private static final Set<String> CALLER_STUDIES = ImmutableSet.of("studyA");
 
     private static final String ACTIVITY_GUID = ACTIVITY_1.getGuid();
 
@@ -241,13 +241,12 @@ public class ParticipantControllerTest extends Mockito {
         app.setUserProfileAttributes(Sets.newHashSet("foo", "baz"));
         app.setIdentifier(TEST_APP_ID);
 
-        participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withSubstudyIds(CALLER_SUBS)
+        participant = new StudyParticipant.Builder().withRoles(CALLER_ROLES).withStudyIds(CALLER_STUDIES)
                 .withId(USER_ID).build();
 
         session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -384,9 +383,9 @@ public class ParticipantControllerTest extends Mockito {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).build();
 
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant(USER_ID, true);
+        String json = controller.getParticipant("aUser", true);
         JsonNode node = MAPPER.readTree(json);
 
         // StudyParticipant will encrypt the healthCode when you ask for it, so validate the
@@ -395,22 +394,61 @@ public class ParticipantControllerTest extends Mockito {
         assertTrue(node.has("healthCode"));
         assertFalse(node.has("encryptedHealthCode"));
 
-        verify(mockParticipantService).getParticipant(app, USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
-
+    
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         app.setHealthCodeExportEnabled(false);
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
                 .withHealthCode(HEALTH_CODE).build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
 
-        String json = controller.getParticipant(USER_ID, true);
+        String json = controller.getParticipant("aUser", true);
 
         StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
 
         assertEquals(retrievedParticipant.getFirstName(), "Test");
         assertNull(retrievedParticipant.getHealthCode());
+    }
+
+    @Test
+    public void getParticipantReturnsNoHealthCodeForDeveloper() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
+                .withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+        
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You do not get the health code, because export of the health code is not enabled and
+        // the caller is not an admin.
+        assertNull(retrievedParticipant.getHealthCode(), HEALTH_CODE);
+    }
+    
+    @Test
+    public void getParticipantReturnsHealthCodeForAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN, RESEARCHER))
+                .withId(USER_ID).withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You still get the health code, even though export of the health code is not enabled.
+        assertEquals(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -472,7 +510,7 @@ public class ParticipantControllerTest extends Mockito {
         StatusMessage result = controller.updateParticipant(USER_ID);
         assertEquals(result.getMessage(), "Participant updated.");
 
-        // Both the caller roles and the caller's substudies are passed to participantService
+        // Both the caller roles and the caller's studies are passed to participantService
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
 
         StudyParticipant participant = participantCaptor.getValue();
@@ -709,13 +747,13 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void updateSelfParticipant() throws Exception {
         BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB")).build());
+                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(TestUtils.getStudyParticipant(ParticipantControllerTest.class)).withId(USER_ID)
                 .withLanguages(LANGUAGES).withRoles(ImmutableSet.of(DEVELOPER)) // <-- should not be passed along
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withHealthCode(HEALTH_CODE).build();
         session.setParticipant(participant);
         session.setIpAddress(IP_ADDRESS); // if this is not the same as request, you get an authentication error
@@ -735,7 +773,7 @@ public class ParticipantControllerTest extends Mockito {
         
         InOrder inOrder = inOrder(mockParticipantService);
         inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, false);
-        // No roles are passed in this method, and the substudies of the user are passed
+        // No roles are passed in this method, and the studies of the user are passed
         inOrder.verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         inOrder.verify(mockParticipantService).getParticipant(app, USER_ID, true);
         
@@ -746,7 +784,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getSharingScope(), ALL_QUALIFIED_RESEARCHERS);
         assertTrue(captured.isNotifyByEmail());
         assertEquals(captured.getDataGroups(), USER_DATA_GROUPS);
-        assertEquals(captured.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(captured.getStudyIds(), USER_STUDY_IDS);
         assertEquals(captured.getAttributes().get("can_be_recontacted"), "true");
 
         verify(mockConsentService).getConsentStatuses(contextCaptor.capture());
@@ -756,7 +794,7 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(context.getLanguages(), LANGUAGES);
     }
     
@@ -852,7 +890,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cannotResetPasswordIfNotResearcher() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(Roles.DEVELOPER)).build();
+                .withId("notUserId").withRoles(ImmutableSet.of(DEVELOPER)).build();
         session.setParticipant(participant);
 
         controller.requestResetPassword(USER_ID);
@@ -1311,11 +1349,11 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(studyParticipant);
+        when(mockParticipantService.getParticipant(app, "aUser", false)).thenReturn(studyParticipant);
 
-        controller.getParticipant(USER_ID, false);
+        controller.getParticipant("aUser", false);
 
-        verify(mockParticipantService).getParticipant(app, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, "aUser", false);
     }
 
     @Test
@@ -1420,7 +1458,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.ADMIN))
-                .build();
+                .withId("notUserId").build();
         session.setParticipant(participant);
 
         controller.deleteTestParticipant(USER_ID);

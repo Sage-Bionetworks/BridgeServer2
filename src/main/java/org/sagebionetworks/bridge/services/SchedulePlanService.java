@@ -31,7 +31,7 @@ public class SchedulePlanService {
     
     private SchedulePlanDao schedulePlanDao;
     private SurveyService surveyService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
 
     @Autowired
     public final void setSchedulePlanDao(SchedulePlanDao schedulePlanDao) {
@@ -42,8 +42,8 @@ public class SchedulePlanService {
         this.surveyService = surveyService;
     }
     @Autowired
-    public final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
 
     public List<SchedulePlan> getSchedulePlans(ClientInfo clientInfo, String appId,
@@ -77,10 +77,10 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
         Validate.entityThrowingException(
-                new SchedulePlanValidator(app.getDataGroups(), substudyIds, app.getTaskIdentifiers()), plan);
+                new SchedulePlanValidator(app.getDataGroups(), studyIds, app.getTaskIdentifiers()), plan);
 
         lookupSurveyReferenceIdentifiers(app.getIdentifier(), plan);
         return schedulePlanDao.createSchedulePlan(app.getIdentifier(), plan);
@@ -111,10 +111,10 @@ public class SchedulePlanService {
                 }
             }
         }
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
         Validate.entityThrowingException(
-                new SchedulePlanValidator(app.getDataGroups(), substudyIds, app.getTaskIdentifiers()), plan);
+                new SchedulePlanValidator(app.getDataGroups(), studyIds, app.getTaskIdentifiers()), plan);
         
         lookupSurveyReferenceIdentifiers(plan.getAppId(), plan);
         return schedulePlanDao.updateSchedulePlan(plan.getAppId(), plan);

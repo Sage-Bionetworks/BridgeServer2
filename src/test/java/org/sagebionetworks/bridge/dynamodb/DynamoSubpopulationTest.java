@@ -67,9 +67,9 @@ public class DynamoSubpopulationTest {
                 node.get("dataGroupsAssignedWhileConsented").get(1).textValue());                
         assertEquals(dataGroups, TestConstants.USER_DATA_GROUPS);
         
-        Set<String> substudyIds = ImmutableSet.of(node.get("substudyIdsAssignedOnConsent").get(0).textValue(),
-                node.get("substudyIdsAssignedOnConsent").get(1).textValue());
-        assertEquals(substudyIds, TestConstants.USER_SUBSTUDY_IDS);
+        Set<String> studyIds = ImmutableSet.of(node.get("studyIdsAssignedOnConsent").get(0).textValue(),
+                node.get("studyIdsAssignedOnConsent").get(1).textValue());
+        assertEquals(studyIds, TestConstants.USER_STUDY_IDS);
         assertEquals(node.get("type").textValue(), "Subpopulation");
         
         JsonNode critNode = node.get("criteria");
@@ -114,7 +114,7 @@ public class DynamoSubpopulationTest {
         subpop.setAutoSendConsentSuppressed(true);
         subpop.setVersion(3L);
         subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
-        subpop.setSubstudyIdsAssignedOnConsent(TestConstants.USER_SUBSTUDY_IDS);
+        subpop.setStudyIdsAssignedOnConsent(TestConstants.USER_STUDY_IDS);
         return subpop;
     }
     
@@ -123,14 +123,14 @@ public class DynamoSubpopulationTest {
         Subpopulation subpop = new DynamoSubpopulation();
         // Set some values to verify that null resets these to the empty set
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("A"));
-        subpop.setSubstudyIdsAssignedOnConsent(ImmutableSet.of("B"));
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of("B"));
         assertEquals(subpop.getDataGroupsAssignedWhileConsented(), ImmutableSet.of("A"));
-        assertEquals(subpop.getSubstudyIdsAssignedOnConsent(), ImmutableSet.of("B"));
+        assertEquals(subpop.getStudyIdsAssignedOnConsent(), ImmutableSet.of("B"));
         
         subpop.setDataGroupsAssignedWhileConsented(null);
-        subpop.setSubstudyIdsAssignedOnConsent(null);
+        subpop.setStudyIdsAssignedOnConsent(null);
         assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
-        assertTrue(subpop.getSubstudyIdsAssignedOnConsent().isEmpty());
+        assertTrue(subpop.getStudyIdsAssignedOnConsent().isEmpty());
     }
     
     @Test

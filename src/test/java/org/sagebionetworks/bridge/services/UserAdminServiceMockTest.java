@@ -43,8 +43,8 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.Enrollment;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -316,8 +316,8 @@ public class UserAdminServiceMockTest {
         
         AccountId accountId = AccountId.forId(app.getIdentifier(),  "userId");
 
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "substudyA", "userId", "subAextId");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "substudyB", "userId", "subBextId");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", "userId", "subAextId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", "userId", "subBextId");
         Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
         
         doReturn("userId").when(account).getId();

@@ -20,7 +20,7 @@ public interface ReportIndexDao {
     /**
      * Add an index item for a report, so the identifier of the report can be retrieved in a list of such identifiers.
      */
-    void addIndex(ReportDataKey key, Set<String> substudies);
+    void addIndex(ReportDataKey key, Set<String> studies);
     
     /**
      * Update an existing index metadata.

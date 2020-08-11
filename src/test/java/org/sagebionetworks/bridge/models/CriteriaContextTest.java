@@ -30,7 +30,7 @@ public class CriteriaContextTest {
         assertEquals(context.getClientInfo(), ClientInfo.UNKNOWN_CLIENT);
         assertEquals(context.getLanguages(), ImmutableList.of());
         assertEquals(context.getUserDataGroups(), ImmutableList.of());
-        assertEquals(context.getUserSubstudyIds(), ImmutableList.of());
+        assertEquals(context.getUserStudyIds(), ImmutableList.of());
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -45,19 +45,19 @@ public class CriteriaContextTest {
                 .withUserId(USER_ID)
                 .withClientInfo(CLIENT_INFO)
                 .withUserDataGroups(TestConstants.USER_DATA_GROUPS)
-                .withUserSubstudyIds(TestConstants.USER_SUBSTUDY_IDS).build();
+                .withUserStudyIds(TestConstants.USER_STUDY_IDS).build();
         
         // There are defaults
         assertEquals(context.getClientInfo(), CLIENT_INFO);
         assertEquals(context.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(context.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
         
         CriteriaContext copy = new CriteriaContext.Builder().withContext(context).build();
         assertEquals(copy.getClientInfo(), CLIENT_INFO);
         assertEquals(copy.getAppId(), TEST_APP_ID);
         assertEquals(copy.getUserId(), USER_ID);
         assertEquals(copy.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(copy.getUserSubstudyIds(), TestConstants.USER_SUBSTUDY_IDS);
+        assertEquals(copy.getUserStudyIds(), TestConstants.USER_STUDY_IDS);
     }
     
     @Test

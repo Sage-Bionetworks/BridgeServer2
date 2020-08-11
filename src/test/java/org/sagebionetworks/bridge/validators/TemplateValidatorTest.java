@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
 
 import org.mockito.Mockito;
@@ -18,7 +18,7 @@ public class TemplateValidatorTest extends Mockito {
     
     @BeforeMethod
     public void beforeMethod() {
-        validator = new TemplateValidator(USER_DATA_GROUPS, USER_SUBSTUDY_IDS);
+        validator = new TemplateValidator(USER_DATA_GROUPS, USER_STUDY_IDS);
     }
 
     @Test

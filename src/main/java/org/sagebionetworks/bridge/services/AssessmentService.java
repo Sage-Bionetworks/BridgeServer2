@@ -263,11 +263,11 @@ public class AssessmentService {
 
     /**
      * Takes a reference to an assessment in the caller's context (appId), and creates an 
-     * assessment in the shared context. Stores the full substudy identifier (appId + 
-     * substudyId) as the "ownerId" in shared context for authorization checks on 
-     * operations in the shared context (only owners can edit their shared assessments).
-     * The caller must be associated to the organization that own's the assessment 
-     * locally.
+     * assessment in the shared context. Stores a scoped organization identifier (appId + 
+     * orgId) as the "ownerId" in the sshared context for authorization checks on 
+     * operations in the shared context (only members of the owning organization in the 
+     * origin app can edit their shared assessments). The caller must be associated to 
+     * the organization that own's the assessment locally.
      */
     public Assessment publishAssessment(String appId, String newIdentifier, String guid) {
         checkArgument(isNotBlank(appId));
