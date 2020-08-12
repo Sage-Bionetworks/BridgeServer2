@@ -195,6 +195,13 @@ public class AssessmentServiceTest extends Mockito {
     public void createAssessmentUnauthorized() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
+        
+        when(mockDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
+            .thenReturn(mockOrganization);
+        
         Assessment assessment = AssessmentTest.createAssessment();
         service.createAssessment(TEST_APP_ID, assessment);
     }
@@ -209,7 +216,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(mockOrganization);
         when(mockDao.getAssessmentRevisions(any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(assessment), 1));
-    
+        
         service.createAssessment(TEST_APP_ID, assessment);
     }
     
@@ -272,11 +279,21 @@ public class AssessmentServiceTest extends Mockito {
         assertNotNull(config.getConfig());
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentRevisionUnauthorized() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyD")).build());
+        
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
+            .thenReturn(mockOrganization);
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        existing.setOwnerId(OWNER_ID);
+        when(mockDao.getAssessment(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         service.createAssessmentRevision(TEST_APP_ID, GUID, assessment);
     }
 
@@ -1208,7 +1225,15 @@ public class AssessmentServiceTest extends Mockito {
     public void createAssessmentChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
+        
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
+            .thenReturn(mockOrganization);
+        
+        when(mockDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setIdentifier(IDENTIFIER);
         service.createAssessment(TEST_APP_ID, assessment);
     }
     
@@ -1217,6 +1242,13 @@ public class AssessmentServiceTest extends Mockito {
     public void createAssessmentRevisionChecksOwnership() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
+        
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
+            .thenReturn(mockOrganization);
+        
+        Assessment existing = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        
         Assessment assessment = AssessmentTest.createAssessment();
         service.createAssessmentRevision(TEST_APP_ID, GUID, assessment);
     }
