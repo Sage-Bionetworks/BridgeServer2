@@ -101,6 +101,7 @@ public class HealthDataEx3ControllerTest {
 
         HealthDataRecordEx3 result = controller.createOrUpdateRecord();
         assertEquals(result.getId(), RECORD_ID);
+        assertEquals(result.getAppId(), TestConstants.TEST_APP_ID);
 
         verify(mockHealthDataEx3Service).createOrUpdateRecord(same(result));
         verify(mockMetrics).setRecordId(RECORD_ID);

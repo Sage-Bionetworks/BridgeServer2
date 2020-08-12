@@ -44,8 +44,9 @@ public class HealthDataEx3Controller extends BaseController {
     /** Create or update health data record. Returns the created or updated record. */
     @PostMapping(path="/v1/admin/exporter3/healthdata")
     public HealthDataRecordEx3 createOrUpdateRecord() {
-        getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
         HealthDataRecordEx3 record = parseJson(HealthDataRecordEx3.class);
+        record.setAppId(session.getAppId());
         HealthDataRecordEx3 savedRecord = healthDataEx3Service.createOrUpdateRecord(record);
 
         // Write record ID into the metrics, for logging and diagnostics.
