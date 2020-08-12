@@ -63,8 +63,9 @@ public class AssessmentResourceValidator implements Validator {
             errors.rejectValue("minRevision", MIN_OVER_MAX_ERROR);
         }
         if (resource.getCategory() == ResourceCategory.RELEASE_NOTE) {
+            // findbugs doesn't like comparison operator with Integer, convert it
             if (resource.getMinRevision() == null || resource.getMaxRevision() == null ||
-                    resource.getMinRevision() != resource.getMaxRevision()) {
+                    resource.getMinRevision().intValue() != resource.getMaxRevision().intValue()) {
                 errors.rejectValue("category", RELEASE_NOTE_REVISION_ERROR);
             }
         }
