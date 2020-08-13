@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -166,7 +167,7 @@ public class UploadController extends BaseController {
     
     @GetMapping("/v3/uploads/{uploadId}")
     public UploadView getUpload(@PathVariable String uploadId) {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];
@@ -176,19 +177,26 @@ public class UploadController extends BaseController {
             if (record == null) {
                 throw new EntityNotFoundException(HealthDataRecord.class);
             }
-            
-            if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getAppId().equals(record.getAppId())) {
-                throw new UnauthorizedException("App admin cannot retrieve upload in another app.");
-            }
             uploadId = record.getUploadId();
         }
 
         UploadView uploadView = uploadService.getUploadView(uploadId);
-        if (!session.isInRole(EnumSet.of(SUPERADMIN, WORKER)) &&
-                !session.getAppId().equals(uploadView.getUpload().getAppId())) {
-            throw new UnauthorizedException("App admin cannot retrieve upload in another app.");
+        
+        // Upload access is allowed (from least to most restrictive):
+        // 1. for workers or superadmins in any app
+        // 2. for admins in their own app
+        // 3. for developers in their own accounts
+        
+        Upload upload = uploadView.getUpload();
+        if (session.isInRole(EnumSet.of(SUPERADMIN, WORKER))) {
+            return uploadView;
+        } else if (session.isInRole(ADMIN) && session.getAppId().equals(upload.getAppId())) {
+            return uploadView;
+        } else if (session.isInRole(DEVELOPER) && session.getHealthCode().equals(upload.getHealthCode())) {
+            // this in effect also tests that we're in the right app, because health code
+            // is globally uniques
+            return uploadView;
         }
-        return uploadView;
+        throw new UnauthorizedException("Caller does not have permission to access upload.");
     }
 }

@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.CANCELLED;
+import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.ENTEREDINERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -50,6 +53,7 @@ import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
+import org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.Identifier;
@@ -98,6 +102,8 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 
+import ca.uhn.fhir.parser.IParser;
+
 public class CRCControllerTest extends Mockito {
 
     private static final String LOCATION_NS = "Location/";
@@ -137,13 +143,13 @@ public class CRCControllerTest extends Mockito {
             +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
             +"'subpremise' ] } ], 'status' : 'OK' }");
     static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
-    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','participant'"
+    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','status':'booked','participant'"
             +":[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':"
             +"'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':"
             +"'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
             +"'value':'userId'}}}]}");
     static final String APPOINTMENT_JSON_FULLY_RESOLVED = TestUtils.createJson("{'resourceType':'Appointment',"
-            +"'participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
             +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
             +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
             +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
@@ -151,6 +157,74 @@ public class CRCControllerTest extends Mockito {
             +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
             +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
             +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String VALID_SERUM_OBSERVATION_JSON = TestUtils.createJson("{'id':'3101000022_1665167373_484670513','meta':"
+            +"{'id':'Observation/3101000022_1665167373_484670513','versionId':'1','lastUpdated':'2020-08-10T09:46:29."
+            +"601-04:00','tag':[{'system':'source','code':'sage'}]},'contained':[{'resourceType':'Specimen','type':{"
+            +"'text':'Blood'},'collection':{'collectedDateTime':'2020-08-08T09:42:00-04:00'}},{'id':'3101000022',"
+            +"'extension':[{'extension':[{'url':'ombCategory','valueCoding':{'code':'DECLINED','display':'Declined'}}],"
+            +"'url':'us-core-race'},{'extension':[{'url':'ombCategory','valueCoding':{'code':'DEC','display':'Refused "
+            +"/ Declined'}}],'url':'us-core-ethnicity'}],'meta':{'id':'Patient/3101000022','versionId':'1','lastUpdated'"
+            +":'2020-08-05T12:43:07.310-04:00','tag':[{'system':'source','code':'sage'}]},'resourceType':'Patient',"
+            +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':"
+            +"true,'name':[{'family':'Alex','given':['Alex']}],'telecom':[{'system':'email','value':'email@gmail.com'},"
+            +"{'system':'phone','value':'111 222 333'}],'gender':'other','birthDate':'1910-01-01T05:00:00.000Z','address'"
+            +":[{'line':['617 W 169 street'],'city':'New York','state':'NY','postalCode':'10032'}],'contact':[{"
+            +"'relationship':[{'coding':[{'code':'E','display':'doctor'}]}],'telecom':[{'system':'phone','value':'111 222 "
+            +"333','use':'home'}],'address':{'line':['Brodaway '],'city':'New York','state':'NY','postalCode':'10032',"
+            +"'country':'US'},'organization':{'display':'Columbia'}}],'managingOrganization':{'reference':'CovidRecovery',"
+            +"'display':'Covid Recovery Corp'}}],'resourceType':'Observation','status':'final','code':{'coding':[{'code':"
+            +"'484670513','display':'COVID-19 Sero Interp'}]},'subject':{'reference':'Patient/3101000022','identifier':"
+            +"{'system':'https://ws.sagebridge.org/#userId','value':'userId'},'display':'Alex, Alex'},"
+            +"'context':{'id':'Encounter/COVIDRECOVERY01'},'effectiveDateTime':'2020-08-10T09:45:00-04:00','issued':"
+            +"'2020-08-10T09:46:27-04:00','performer':[{'extension':[{'valueString':'Spitalnik,Steven','valueCode':"
+            +"'33D0664187','valueAddress':{'text':'630 West 168th Street New York NY 10032'}}],'display':'NYP_Columbia'}],"
+            +"'valueString':'Indeterminate','valueRange':{'extension':[{'valueString':'Negative'}]},'interpretation':"
+            +"{'coding':[{'code':'A','display':'Abnormal'}]},'comment':''}");
+    static final String INVALID_SERUM_OBSERVATION_JSON = TestUtils.createJson("{'id':'3101000022_1665167373_484670513','meta':"
+            +"{'id':'Observation/3101000022_1665167373_484670513','versionId':'1','lastUpdated':'2020-08-10T09:46:29."
+            +"601-04:00','tag':[{'system':'source','code':'sage'}]},'contained':[{'resourceType':'Specimen','type':{"
+            +"'text':'Blood'},'collection':{'collectedDateTime':'2020-08-08T09:42:00-04:00'}},{'id':'3101000022',"
+            +"'extension':[{'extension':[{'url':'ombCategory','valueCoding':{'code':'DECLINED','display':'Declined'}}],"
+            +"'url':'us-core-race'},{'extension':[{'url':'ombCategory','valueCoding':{'code':'DEC','display':'Refused "
+            +"/ Declined'}}],'url':'us-core-ethnicity'}],'meta':{'id':'Patient/3101000022','versionId':'1','lastUpdated'"
+            +":'2020-08-05T12:43:07.310-04:00','tag':[{'system':'source','code':'sage'}]},'resourceType':'Patient',"
+            +"'identifier':[{'system':'https://ws.sagebridge.org/#userId','value':'userId'}],'active':"
+            +"true,'name':[{'family':'Alex','given':['Alex']}],'telecom':[{'system':'email','value':'email@gmail.com'},"
+            +"{'system':'phone','value':'111 222 333'}],'gender':'other','birthDate':'1910-01-01T05:00:00.000Z','address'"
+            +":[{'line':['617 W 169 street'],'city':'New York','state':'NY','postalCode':'10032'}],'contact':[{"
+            +"'relationship':[{'coding':[{'code':'E','display':'doctor'}]}],'telecom':[{'system':'phone','value':'111 222 "
+            +"333','use':'home'}],'address':{'line':['Brodaway '],'city':'New York','state':'NY','postalCode':'10032',"
+            +"'country':'US'},'organization':{'display':'Columbia'}}],'managingOrganization':{'reference':'CovidRecovery',"
+            +"'display':'Covid Recovery Corp'}}],'resourceType':'Observation','status':'final','code':{'coding':[{'code':"
+            +"'484670513','display':'COVID-19 Sero Interp'}]},'subject':{'reference':'Patient/3101000022','identifier':"
+            +"{'system':'https://ws.sagebridge.org/#userId','value':'userId'},'display':'Alex, Alex'},"
+            +"'context':{'id':'Encounter/COVIDRECOVERY01'},'effectiveDateTime':'2020-08-10T09:45:00-04:00','issued':"
+            +"'2020-08-10T09:46:27-04:00','performer':[{'extension':[{'valueString':'Spitalnik,Steven','valueCode':"
+            +"'33D0664187','valueAddress':{'text':'630 West 168th Street New York NY 10032'}}],'display':'NYP_Columbia'}],"
+            +"'valueString':'Bad Value','valueRange':{'extension':[{'valueString':'Bad Value'}]},'interpretation':"
+            +"{'coding':[{'code':'A','display':'Abnormal'}]},'comment':''}");
+    static final String VALID_PCR_OBSERVATION_JSON = TestUtils.createJson("{'id':'3101000005_1665149453_467420433','meta':"
+            +"{'id':'Observation/3101000005_1665149453_467420433','versionId':'1','lastUpdated':'2020-07-31T13:47:30.168-04:00',"
+            +"'tag':[{'system':'source','code':'sage'}]},'contained':[{'resourceType':'Specimen','type':{'text':'NP Swab'},"
+            +"'collection':{'collectedDateTime':'2020-07-28T19:39:00-04:00'}},{'id':'3101000005','resourceType':'Patient',"
+            +"'identifier':[{'value':'3101000005'}],'name':[{'family':'Person','given':['Man']}],'gender':'male','birthDate':"
+            +"'1979-12-09','address':[{'extension':[{'valueString':','}],'text':'Main St','city':'Corona Del Mar','state':'CA',"
+            +"'postalCode':'92625'}]}],'resourceType':'Observation','status':'registered','code':{'coding':[{'code':"
+            +"'467420433','display':'SARS-CoV-2 PCR'}]},'subject':{'reference':'Patient/3101000005','identifier':{'system':"
+            +"'https://ws.sagebridge.org/#userId','value':'userId'}},'context':{'id':'Encounter/"
+            +"COVIDRECOVERY01'},'effectiveDateTime':'2020-07-31T13:32:00-04:00','issued':'2020-07-31T13:40:07-04:00','performer'"
+            +":[{'extension':[{'valueString':'Spitalnik,Steven','valueCode':'33D0664187','valueAddress':{'text':'630 West 168th "
+            +"Street New York NY 10032'}}],'display':'NYP_Columbia'}],'valueString':'Indeterminate','valueRange':{'extension':["
+            +"{'valueString':'Not Detected'}]},'interpretation':{'coding':[{'code':'A','display':'Abnormal'}]},'comment':''}");
     
     @Mock
     ParticipantService mockParticipantService;
@@ -252,9 +326,9 @@ public class CRCControllerTest extends Mockito {
     public void getUserAgentDefault() {
         assertEquals(controller.getUserAgent(), "<Unknown>");
     }
-    
+
     @Test
-    public void updateParticipantCallsExternalTest() throws Exception {
+    public void updateParticipantSetsSelected() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         
@@ -271,48 +345,12 @@ public class CRCControllerTest extends Mockito {
         assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
         verify(mockAccountService).updateAccount(account, null);
-        verify(controller).createLabOrder(account);
-        verify(controller).put(any(), stringCaptor.capture(), any());
+        verify(controller, never()).createLabOrder(account);
 
-        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
-                +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
-                +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
-                +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
-                +"'COVID Recovery Corps'}}]}"));
+        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
         assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
     }
     
-    @Test
-    public void updateParticipantCallsExternalProd() throws Exception {
-        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        
-        account.setDataGroups(ImmutableSet.of("group1", TEST_USER_GROUP));
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
-        
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(200);
-                
-        doReturn(mockResponse).when(controller).put(any(), any(), any());
-        
-        StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
-        assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
-
-        verify(mockAccountService).updateAccount(account, null);
-        verify(controller).createLabOrder(account);
-        verify(controller).put(any(), stringCaptor.capture(), any());
-
-        assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_REQUESTED, "group1"));
-        assertEquals(stringCaptor.getValue(), TestUtils.createJson("{'resourceType':'Patient','id':'userId',"
-                +"'meta':{'tag':[{'system':'source','code':'sage'}]},'identifier':[{'system':"
-                +"'https://ws.sagebridge.org/#userId','value':'userId'}],'active':true,'gender':'unknown',"
-                +"'address':[{'state':'NY'}],'contact':[{'organization':{'reference':'CUZUCK','display':"
-                +"'COVID Recovery Corps'}}]}"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
-    }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
@@ -320,18 +358,6 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
                 
-        controller.updateParticipant("healthcode:"+HEALTH_CODE);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = "Production accounts are not yet enabled.")
-    public void updateParticipantFailsOnProductionAccount() throws Exception {
-        account.setDataGroups(ImmutableSet.of());
-        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
-        
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
     }
 
@@ -460,7 +486,7 @@ public class CRCControllerTest extends Mockito {
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
-
+        appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, "Location/foo");
         addAppointmentSageId(appointment, USER_ID);
@@ -469,7 +495,7 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         ResponseEntity<StatusMessage> retValue = controller.postAppointment();
-        assertEquals(retValue.getBody().getMessage(), "Appointment created.");
+        assertEquals(retValue.getBody().getMessage(), "Appointment created (status = booked).");
         assertEquals(retValue.getStatusCodeValue(), 201);
         
         verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
@@ -512,6 +538,7 @@ public class CRCControllerTest extends Mockito {
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
         addAppointmentSageId(appointment, USER_ID);
@@ -520,8 +547,10 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         ResponseEntity<StatusMessage> retValue = controller.postAppointment();
-        assertEquals(retValue.getBody().getMessage(), "Appointment updated.");
+        assertEquals(retValue.getBody().getMessage(), "Appointment updated (status = booked).");
         assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("tests_scheduled"));
         
         verify(controller).addLocation(any(), eq(account), eq("foo"));
         verify(controller).get("http://testServer/location/foo", account);
@@ -532,6 +561,67 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
+    }
+    
+    @Test
+    public void postAppointmentCancelled() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        mockGetLocation();
+        mockGetGeocoding();
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(CANCELLED);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment updated (status = cancelled).");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("tests_cancelled"));
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED);
+    }
+    
+    @Test
+    public void postAppointmentMistakeRollsBackAccount() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(ENTEREDINERROR);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment deleted.");
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        
+        assertTrue(account.getDataGroups().contains("selected"));
+        
+        verify(mockAccountService).updateAccount(account, null);
+        verify(mockReportService).deleteParticipantReportRecord(APP_ID, APPOINTMENT_REPORT, 
+                JAN1.toString(), HEALTH_CODE);
     }
     
     @Test
@@ -548,6 +638,7 @@ public class CRCControllerTest extends Mockito {
         when(mockStatusLine.getStatusCode()).thenReturn(500);
         
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
         addAppointmentSageId(appointment, USER_ID);
         
@@ -573,6 +664,7 @@ public class CRCControllerTest extends Mockito {
                 APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
 
         Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
         addAppointmentSageId(appointment, USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
@@ -654,7 +746,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        String json = makeObservation();
+        String json = makeObservation(VALID_SERUM_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
@@ -691,6 +783,90 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getData().toString(), json);
     }
     
+    @Test
+    public void postObservationFailsOnUnknownTestCode() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        String json = makeObservation(VALID_PCR_OBSERVATION_JSON);
+        mockRequestBody(mockRequest, json);
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postObservation();
+        assertEquals(retValue.getBody().getMessage(), "Observation created.");
+        assertEquals(retValue.getStatusCodeValue(), 201);
+        
+        verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
+        SignIn capturedSignIn = signInCaptor.getValue();
+        assertEquals(capturedSignIn.getAppId(), APP_ID);
+        assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
+        assertEquals(capturedSignIn.getPassword(), "dummy-password");
+        
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
+                reportCaptor.capture());
+        ReportData capturedReport = reportCaptor.getValue();
+        assertEquals(capturedReport.getDate(), "1970-01-01");
+        verifySubject(capturedReport.getData());
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        
+        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        Account capturedAcct = accountCaptor.getValue();
+        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN, "group1"));
+        assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
+    }
+    
+    @Test
+    public void postObservationFailsOnInvalidSerumTestValue() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        String json = makeObservation(INVALID_SERUM_OBSERVATION_JSON);
+        mockRequestBody(mockRequest, json);
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        ResponseEntity<StatusMessage> retValue = controller.postObservation();
+        assertEquals(retValue.getBody().getMessage(), "Observation created.");
+        assertEquals(retValue.getStatusCodeValue(), 201);
+        
+        verify(mockAccountService).authenticate(eq(app), signInCaptor.capture());
+        SignIn capturedSignIn = signInCaptor.getValue();
+        assertEquals(capturedSignIn.getAppId(), APP_ID);
+        assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
+        assertEquals(capturedSignIn.getPassword(), "dummy-password");
+        
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
+                reportCaptor.capture());
+        ReportData capturedReport = reportCaptor.getValue();
+        assertEquals(capturedReport.getDate(), "1970-01-01");
+        verifySubject(capturedReport.getData());
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        
+        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        Account capturedAcct = accountCaptor.getValue();
+        assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN, "group1"));
+        assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
+        
+        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+        HealthDataSubmission healthData = dataCaptor.getValue();
+        assertEquals(healthData.getAppVersion(), "v1");
+        assertEquals(healthData.getCreatedOn(), TIMESTAMP);
+        assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+OBSERVATION_REPORT+"\"}");
+        assertEquals(healthData.getData().toString(), json);
+    }
+    
     private void verifySubject(JsonNode node) {
         String ns = node.get("subject").get("identifier").get("system").textValue();
         String value = node.get("subject").get("identifier").get("value").textValue();
@@ -703,7 +879,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        String json = makeObservation();
+        String json = makeObservation(VALID_SERUM_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
@@ -874,7 +1050,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment(null));
+        mockRequestBody(mockRequest, makeAppointment(null, BOOKED));
         
         mockGetLocation();
         
@@ -887,7 +1063,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        mockRequestBody(mockRequest, makeAppointment("not-the-right-id"));
+        mockRequestBody(mockRequest, makeAppointment("not-the-right-id", BOOKED));
         
         mockGetLocation();
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
@@ -965,7 +1141,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         mockGetLocation();
         
         controller.postAppointment();
@@ -975,7 +1151,7 @@ public class CRCControllerTest extends Mockito {
     public void callerUserNameIncorrect() throws Exception {
         String auth = new String(Base64.getEncoder().encode(("foo:dummy-password").getBytes()));
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn("Basic " + auth);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         
         controller.postProcedureRequest();
     }
@@ -1051,7 +1227,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         mockGetLocation();
 
         // However, the request for geocoding information goes awry
@@ -1083,7 +1259,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID));
+        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
         mockGetLocation();
 
         // However, the request for geocoding information goes awry
@@ -1158,12 +1334,13 @@ public class CRCControllerTest extends Mockito {
         return ImmutableSet.of(state.name().toLowerCase(), unaffectedGroup, TEST_USER_GROUP);
     }
     
-    private String makeAppointment(String identifier) {
+    private String makeAppointment(String identifier, AppointmentStatus status) {
         Appointment appt = new Appointment();
         if (identifier != null) {
             addAppointmentSageId(appt, identifier);
         }
         addAppointmentParticipantComponent(appt, LOCATION_NS + "ny-location");
+        appt.setStatus(status);
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(appt);
     }
     
@@ -1181,16 +1358,9 @@ public class CRCControllerTest extends Mockito {
         return FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
     }
     
-    private String makeObservation() {
-        Observation obs = new Observation();
-        Identifier id = new Identifier();
-        id.setSystem(USER_ID_VALUE_NS);
-        id.setValue(USER_ID);
-        
-        Reference ref = new Reference();
-        ref.setIdentifier(id);
-
-        obs.setSubject(ref);
-        return FHIR_CONTEXT.newJsonParser().encodeResourceToString(obs);
+    private String makeObservation(String json) {
+        IParser parser = FHIR_CONTEXT.newJsonParser();
+        Observation observation = parser.parseResource(Observation.class, json);
+        return FHIR_CONTEXT.newJsonParser().encodeResourceToString(observation);
     }
 }
