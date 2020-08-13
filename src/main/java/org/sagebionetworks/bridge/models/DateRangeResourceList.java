@@ -16,18 +16,15 @@ public class DateRangeResourceList<T> extends ResourceList<T> {
     
     @Deprecated
     public LocalDate getStartDate() {
-        return v2 ? null : getLocalDate(START_DATE);
+        return getLocalDate(START_DATE);
     }
     @Deprecated
     public LocalDate getEndDate() {
-        return v2 ? null : getLocalDate(END_DATE);
+        return getLocalDate(END_DATE);
     }
     @Override
     @Deprecated
     public Integer getTotal() {
-        if (v2) {
-            return null;
-        }
         // This is necessary solely to keep current integration tests passing. 
         // The total property is going away on everything except PagedResourceList.
         Integer total = super.getTotal();

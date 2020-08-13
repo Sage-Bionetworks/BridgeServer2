@@ -69,7 +69,7 @@ public class PagedResourceListTest {
                 new TypeReference<PagedResourceList<AccountSummary>>() {});
 
         assertEquals(serPage.getTotal(), page.getTotal());
-        assertEquals(serPage.getPageSize(), (Integer)100);
+        assertEquals(serPage.getPageSize(), 100);
         assertEquals(serPage.getOffsetBy(), (Integer)123);
         assertEquals(serPage.getStartTime(), startTime);
         assertEquals(serPage.getEndTime(), endTime);

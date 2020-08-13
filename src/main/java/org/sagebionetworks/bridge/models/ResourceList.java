@@ -16,10 +16,7 @@ import com.google.common.collect.ImmutableMap;
 
 /**
  * Basic list of items, not paged, as calculated based on the parameters that were 
- * sent to the server and are included in the <code>ResourceList</code>. As a step 
- * toward eliminating the deprecated properties on this class, it now takes a flag
- * that causes these fields to be null and thus, they will be excluded from JSON 
- * payloads.
+ * sent to the server and are included in the <code>ResourceList</code>.
  */
 public class ResourceList<T> {
     
@@ -59,17 +56,12 @@ public class ResourceList<T> {
     
     private final List<T> items;
     private final Map<String,Object> requestParams = new HashMap<>();
-    protected final boolean v2;
 
-    public ResourceList(@JsonProperty(ITEMS) List<T> items, boolean v2) {
+    @JsonCreator
+    public ResourceList(@JsonProperty(ITEMS) List<T> items) {
         checkNotNull(items);
         this.items = items;
         this.requestParams.put(TYPE, REQUEST_PARAMS);
-        this.v2 = v2;
-    }
-    @JsonCreator
-    public ResourceList(@JsonProperty(ITEMS) List<T> items) {
-        this(items, false);
     }
     public List<T> getItems() {
         return items;
@@ -91,7 +83,7 @@ public class ResourceList<T> {
     }
     @Deprecated
     public Integer getTotal() {
-        return (v2 || items.isEmpty()) ? null : items.size();
+        return (items.isEmpty()) ? null : items.size();
     }
     protected DateTime getDateTime(String fieldName) {
         String value = (String)requestParams.get(fieldName);

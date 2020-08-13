@@ -39,7 +39,7 @@ public class HibernateSponsorDao implements SponsorDao {
         
         List<Organization> studies = hibernateStudies.stream().map(o -> (Organization)o).collect(toList());
         
-        return new PagedResourceList<Organization>(studies, total, true);
+        return new PagedResourceList<Organization>(studies, total);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class HibernateSponsorDao implements SponsorDao {
         
         List<Study> studies = hibernateStudies.stream().map(s -> (Study)s).collect(toList());
         
-        return new PagedResourceList<Study>(studies, total, true);
+        return new PagedResourceList<Study>(studies, total);
     }
 
     @Override

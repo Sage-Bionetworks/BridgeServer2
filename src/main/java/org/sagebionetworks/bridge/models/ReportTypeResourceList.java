@@ -15,7 +15,7 @@ public class ReportTypeResourceList<T> extends ResourceList<T> {
     }
     @Deprecated
     public ReportType getReportType() {
-        return v2 ? null : (ReportType)getRequestParams().get(REPORT_TYPE);
+        return (ReportType)getRequestParams().get(REPORT_TYPE);
     }
     public ReportTypeResourceList<T> withRequestParam(String key, Object value) {
         super.withRequestParam(key, value);
