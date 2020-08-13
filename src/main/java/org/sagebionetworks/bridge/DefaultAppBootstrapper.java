@@ -99,7 +99,7 @@ public class DefaultAppBootstrapper  implements ApplicationListener<ContextRefre
             StudyParticipant admin = new StudyParticipant.Builder()
                     .withEmail(config.get("admin.email"))
                     .withPassword(config.get("admin.password"))
-                    .withRoles(ImmutableSet.of(ADMIN, RESEARCHER)).build();
+                    .withRoles(ImmutableSet.of(SUPERADMIN, RESEARCHER)).build();
             userAdminService.createUser(app, admin, API_SUBPOP, false, false);
 
             StudyParticipant dev = new StudyParticipant.Builder()

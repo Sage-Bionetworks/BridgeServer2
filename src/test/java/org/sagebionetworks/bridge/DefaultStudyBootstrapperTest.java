@@ -123,7 +123,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         assertEquals(SHARED_SUBPOP, subpopCaptor.getAllValues().get(2));
         
         StudyParticipant admin = participantCaptor.getAllValues().get(0);
-        assertEquals(admin.getRoles(), ImmutableSet.of(ADMIN, RESEARCHER));
+        assertEquals(admin.getRoles(), ImmutableSet.of(SUPERADMIN, RESEARCHER));
         assertEquals(admin.getEmail(), config.get("admin.email"));
         assertEquals(admin.getPassword(), config.get("admin.password"));
         
