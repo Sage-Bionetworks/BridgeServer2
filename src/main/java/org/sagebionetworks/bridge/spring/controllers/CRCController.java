@@ -278,7 +278,7 @@ public class CRCController extends BaseController {
         String valueString = getObservationValue(observation);
         if (code == null || valueString == null || !SERUM_TEST_CODES.contains(code) || !SERUM_TEST_STATES.contains(valueString)) {
             state = TESTS_AVAILABLE_TYPE_UNKNOWN;
-            LOG.error("CRC observation in unknown format: code=" + code + ", valueString=" + valueString);
+            LOG.warn("CRC observation in unknown format: code=" + code + ", valueString=" + valueString);
         }
 
         String userId = findUserId(observation.getSubject());
