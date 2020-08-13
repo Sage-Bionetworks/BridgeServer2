@@ -15,10 +15,6 @@ public class BridgeConstants {
     public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
     public static final TypeReference<Map<String, Map<String, JsonNode>>> UPDATES_TYPEREF = new TypeReference<Map<String, Map<String, JsonNode>>>() {};
 
-    /** In APIs, the keyword "self" can substitute for other identifiers by reference to the identity
-     * of the caller.
-     */
-    public static final String SELF_ID = "self";
     public static final String ID_FIELD_NAME = "identifier";
     public static final String TYPE_FIELD_NAME = "type";
     
