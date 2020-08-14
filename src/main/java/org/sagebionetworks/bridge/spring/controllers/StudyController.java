@@ -44,7 +44,7 @@ public class StudyController extends BaseController {
 
         List<Study> studies = service.getStudies(session.getAppId(), includeDeleted);
 
-        return new ResourceList<>(studies).withRequestParam(INCLUDE_DELETED, includeDeleted);
+        return new ResourceList<>(studies, true).withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
 
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})

@@ -101,6 +101,36 @@ public class ForwardCursorPagedResourceListTest {
     }
     
     @Test
+    public void canSerializeWithoutDeprecated() throws Exception {
+        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
+        accounts.add(SUMMARY1);
+        accounts.add(SUMMARY2);
+        
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        
+        ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
+                accounts, "nextOffsetKey", true)
+                .withRequestParam(ResourceList.OFFSET_KEY, "offsetKey")
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_START, startTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_END, endTime)
+                .withRequestParam(ResourceList.PAGE_SIZE, 100)
+                .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
+        
+        assertNull(node.get("offsetKey"));
+        assertNull(node.get("startTime"));
+        assertNull(node.get("endTime"));
+        assertNull(node.get("scheduledOnStart"));
+        assertNull(node.get("scheduledOnEnd"));
+        assertNull(node.get("pageSize"));
+        assertNull(node.get("total"));
+    }
+    
+    @Test
     public void hasNext() {
         ForwardCursorPagedResourceList<AccountSummary> list;
         JsonNode node;
