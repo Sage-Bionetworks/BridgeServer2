@@ -24,41 +24,44 @@ public class ForwardCursorPagedResourceList<T> extends ResourceList<T> {
     
     private final @Nullable String nextPageOffsetKey;
 
-    @JsonCreator
-    public ForwardCursorPagedResourceList(
-            @JsonProperty(ITEMS) List<T> items, 
-            @JsonProperty(NEXT_PAGE_OFFSET_KEY) String nextPageOffsetKey) {
-        super(items);
+    public ForwardCursorPagedResourceList(List<T> items, String nextPageOffsetKey, boolean suppressDeprecated) {
+        super(items, suppressDeprecated);
         this.nextPageOffsetKey = nextPageOffsetKey;
+    }
+
+    @JsonCreator
+    public ForwardCursorPagedResourceList(@JsonProperty(ITEMS) List<T> items,
+            @JsonProperty(NEXT_PAGE_OFFSET_KEY) String nextPageOffsetKey) {
+        this(items, nextPageOffsetKey, false);
     }
     
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return getDateTime(START_TIME);
+        return (suppressDeprecated) ? null : getDateTime(START_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return getDateTime(END_TIME);
+        return (suppressDeprecated) ? null : getDateTime(END_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOnStart() {
-        return getDateTime(SCHEDULED_ON_START);
+        return (suppressDeprecated) ? null : getDateTime(SCHEDULED_ON_START);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getScheduledOnEnd() {
-        return getDateTime(SCHEDULED_ON_END);
+        return (suppressDeprecated) ? null : getDateTime(SCHEDULED_ON_END);
     }
     @Deprecated
     public String getOffsetKey() {
-        return nextPageOffsetKey;
+        return (suppressDeprecated) ? null : nextPageOffsetKey;
     }
     @Deprecated
     public Integer getPageSize() {
-        return (Integer)getRequestParams().get(PAGE_SIZE);
+        return (suppressDeprecated) ? null : (Integer)getRequestParams().get(PAGE_SIZE);
     }
     public String getNextPageOffsetKey() {
         return nextPageOffsetKey;

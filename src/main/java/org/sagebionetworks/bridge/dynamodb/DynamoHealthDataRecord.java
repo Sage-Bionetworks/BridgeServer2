@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonFilter;
 
 import java.util.Map;
@@ -121,6 +122,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
 
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "healthCode", globalSecondaryIndexName = "healthCode-createdOn-index")
+    @DynamoProjection(projectionType = ProjectionType.ALL, globalSecondaryIndexName = "healthCode-createdOn-index")
     @Override
     public String getHealthCode() {
         return healthCode;

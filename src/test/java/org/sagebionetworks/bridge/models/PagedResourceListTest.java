@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SUMMARY2;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class PagedResourceListTest {
                 new TypeReference<PagedResourceList<AccountSummary>>() {});
 
         assertEquals(serPage.getTotal(), page.getTotal());
-        assertEquals(serPage.getPageSize(), 100);
+        assertEquals(serPage.getPageSize(), (Integer)100);
         assertEquals(serPage.getOffsetBy(), (Integer)123);
         assertEquals(serPage.getStartTime(), startTime);
         assertEquals(serPage.getEndTime(), endTime);
@@ -80,6 +81,31 @@ public class PagedResourceListTest {
         assertEquals(serParams, params);
         
         assertEquals(serPage.getItems(), page.getItems());
+    }
+    
+    @Test
+    public void canSerializeWithoutDeprecatedFields() throws Exception {
+        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
+        accounts.add(SUMMARY1);
+        accounts.add(SUMMARY2);
+
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        
+        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(accounts, 2, true)
+                .withRequestParam("offsetBy", 123)
+                .withRequestParam("pageSize", 100)
+                .withRequestParam("startTime", startTime)
+                .withRequestParam("endTime", endTime)
+                .withRequestParam("emailFilter", "filterString");
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
+        assertEquals(node.get("total").intValue(), 2);
+        assertNull(node.get("offsetBy"));
+        assertNull(node.get("pageSize"));
+        assertNull(node.get("emailFilter"));
+        assertNull(node.get("startTime"));
+        assertNull(node.get("endTime"));
     }
     
     @Test(expectedExceptions = NullPointerException.class)

@@ -183,7 +183,7 @@ public class AppController extends BaseController {
                 .filter(s -> s.isActive() && appIds.contains(s.getIdentifier()));
         }
         List<App> apps = stream.sorted(APP_COMPARATOR).collect(toList());
-        return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps));
+        return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps, true));
     }
 
     @PostMapping(path = {"/v1/apps", "/v3/studies"})
