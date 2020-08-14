@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_SCHEDULED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -32,6 +34,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
@@ -43,8 +46,10 @@ import org.apache.http.message.BasicHeader;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
+import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.ContactPoint;
+import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.dstu3.model.HumanName;
@@ -54,7 +59,9 @@ import org.hl7.fhir.dstu3.model.Observation;
 import org.hl7.fhir.dstu3.model.Patient;
 import org.hl7.fhir.dstu3.model.Patient.ContactComponent;
 import org.hl7.fhir.dstu3.model.ProcedureRequest;
+import org.hl7.fhir.dstu3.model.Range;
 import org.hl7.fhir.dstu3.model.Reference;
+import org.hl7.fhir.instance.model.api.IPrimitiveType;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
@@ -125,6 +132,8 @@ public class CRCController extends BaseController {
             CUIMC_USERNAME, APP_ID, 
             SYN_USERNAME, APP_ID,
             TEST_USERNAME, API_APP_ID);
+    static final Set<String> SERUM_TEST_CODES = ImmutableSet.of("484670513");
+    static final Set<String> SERUM_TEST_STATES = ImmutableSet.of("Negative", "Positive", "Indeterminate");
 
     static enum AccountStates {
         ENROLLED, 
@@ -134,7 +143,8 @@ public class CRCController extends BaseController {
         TESTS_SCHEDULED,
         TESTS_CANCELLED, 
         TESTS_COLLECTED, 
-        TESTS_AVAILABLE
+        TESTS_AVAILABLE,
+        TESTS_AVAILABLE_TYPE_UNKNOWN
     }
 
     private static final Set<String> ALL_STATES = Arrays.stream(AccountStates.values()).map(e -> e.name().toLowerCase())
@@ -228,10 +238,10 @@ public class CRCController extends BaseController {
         
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state);
         if (status == 200) {
-            return ResponseEntity.ok(new StatusMessage("Appointment updated (to " + apptStatus + ")."));
+            return ResponseEntity.ok(new StatusMessage("Appointment updated (status = " + apptStatus + ")."));
         }
         return ResponseEntity.created(URI.create("/v1/cuimc/appointments/" + userId))
-                .body(new StatusMessage("Appointment created."));
+                .body(new StatusMessage("Appointment created (status = " + apptStatus + ")."));
     }
     
     @PutMapping("/v1/cuimc/procedurerequests")
@@ -259,15 +269,55 @@ public class CRCController extends BaseController {
         IParser parser = FHIR_CONTEXT.newJsonParser();
         JsonNode data = parseJson(JsonNode.class);
         Observation observation = parser.parseResource(Observation.class, data.toString());
+        
+        AccountStates state = TESTS_AVAILABLE;
+        // There are two conditions under which the type of report is considered to be unknown. Either the code 
+        // is for a test other than the serum test, or the result value is not recognized by our client application,
+        // and that's also treated as an unknown type of report.
+        String code = getObservationCoding(observation);
+        String valueString = getObservationValue(observation);
+        if (code == null || valueString == null || !SERUM_TEST_CODES.contains(code) || !SERUM_TEST_STATES.contains(valueString)) {
+            state = TESTS_AVAILABLE_TYPE_UNKNOWN;
+            LOG.warn("CRC observation in unknown format: code=" + code + ", valueString=" + valueString);
+        }
 
         String userId = findUserId(observation.getSubject());
 
-        int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, AccountStates.TESTS_AVAILABLE);
+        int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, state);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("Observation updated."));
         }
         return ResponseEntity.created(URI.create("/v1/cuimc/observations/" + userId))
                 .body(new StatusMessage("Observation created."));
+    }
+    
+    String getObservationCoding(Observation observation) {
+        CodeableConcept code = observation.getCode();
+        if (code != null) {
+            List<Coding> codings = code.getCoding();
+            if (codings != null && !codings.isEmpty()) {
+                Coding coding = codings.get(0);
+                if (coding != null) {
+                    return coding.getCode();
+                }
+            }
+        }
+        return null;
+    }
+    
+    String getObservationValue(Observation observation) {
+        Range range = observation.getValueRange();
+        if (range != null) {
+            List<Extension> extensions = range.getExtension();
+            if (extensions != null && !extensions.isEmpty()) {
+                @SuppressWarnings("rawtypes")
+                IPrimitiveType ptype = extensions.get(0).getValueAsPrimitive();
+                if (ptype != null) {
+                    return ptype.getValueAsString();
+                }
+            }
+        }
+        return null;
     }
 
     void createLabOrder(Account account) {

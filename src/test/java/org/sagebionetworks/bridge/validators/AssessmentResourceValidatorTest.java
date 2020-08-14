@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.RELEASE_NOTE;
 import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.MIN_OVER_MAX_ERROR;
+import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.RELEASE_NOTE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
@@ -91,5 +94,36 @@ public class AssessmentResourceValidatorTest {
     public void publisherBlank() {
         resource.setPublishers(Lists.newArrayList("onePublisher", "  "));
         assertValidatorMessage(INSTANCE, resource, "publishers[1]", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void minHigherThanMax() {
+        resource.setMinRevision(3);
+        resource.setMaxRevision(2);
+        assertValidatorMessage(INSTANCE, resource, "minRevision", MIN_OVER_MAX_ERROR);
+    }
+    
+    @Test
+    public void releaseNotesSpecifyOneVersionMinNull() {
+        resource.setCategory(RELEASE_NOTE);
+        resource.setMinRevision(null);
+        resource.setMaxRevision(1);
+        assertValidatorMessage(INSTANCE, resource, "category", RELEASE_NOTE_REVISION_ERROR);
+    }
+
+    @Test
+    public void releaseNotesSpecifyOneVersionMaxNull() {
+        resource.setCategory(RELEASE_NOTE);
+        resource.setMinRevision(1);
+        resource.setMaxRevision(null);
+        assertValidatorMessage(INSTANCE, resource, "category", RELEASE_NOTE_REVISION_ERROR);
+    }
+
+    @Test
+    public void releaseNotesSpecifyOneVersion() {
+        resource.setCategory(RELEASE_NOTE);
+        resource.setMinRevision(1);
+        resource.setMaxRevision(2);
+        assertValidatorMessage(INSTANCE, resource, "category", RELEASE_NOTE_REVISION_ERROR);
     }
 }

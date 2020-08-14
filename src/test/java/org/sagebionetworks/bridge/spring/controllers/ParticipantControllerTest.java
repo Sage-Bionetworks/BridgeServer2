@@ -21,6 +21,7 @@ import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.UNENCRYPTED_HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
@@ -247,7 +248,6 @@ public class ParticipantControllerTest extends Mockito {
         session = new UserSession(participant);
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(participant);
 
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -397,7 +397,7 @@ public class ParticipantControllerTest extends Mockito {
 
         verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
-
+    
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         app.setHealthCodeExportEnabled(false);
@@ -411,6 +411,45 @@ public class ParticipantControllerTest extends Mockito {
 
         assertEquals(retrievedParticipant.getFirstName(), "Test");
         assertNull(retrievedParticipant.getHealthCode());
+    }
+
+    @Test
+    public void getParticipantReturnsNoHealthCodeForDeveloper() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER, RESEARCHER))
+                .withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+        
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You do not get the health code, because export of the health code is not enabled and
+        // the caller is not an admin.
+        assertNull(retrievedParticipant.getHealthCode(), HEALTH_CODE);
+    }
+    
+    @Test
+    public void getParticipantReturnsHealthCodeForAdmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN, RESEARCHER))
+                .withId(USER_ID).withStudyIds(CALLER_STUDIES).withId(USER_ID).build();
+        session.setParticipant(participant);
+
+        app.setHealthCodeExportEnabled(false);
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test")
+                .withId("aUser").withHealthCode(HEALTH_CODE).build();
+        when(mockParticipantService.getParticipant(app, "aUser", true)).thenReturn(studyParticipant);
+
+        String json = controller.getParticipant("aUser", true);
+
+        StudyParticipant retrievedParticipant = MAPPER.readValue(json, StudyParticipant.class);
+
+        // You still get the health code, even though export of the health code is not enabled.
+        assertEquals(retrievedParticipant.getHealthCode(), HEALTH_CODE);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -641,19 +680,17 @@ public class ParticipantControllerTest extends Mockito {
     public void getSelfParticipantNoConsentHistories() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
-
         when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
 
         String result = controller.getSelfParticipant(false);
-
+        
         verify(mockParticipantService).getSelfParticipant(eq(app), contextCaptor.capture(), eq(false));
         assertEquals(contextCaptor.getValue().getUserId(), USER_ID);
 
-        StudyParticipant deserParticipant = MAPPER.readValue(result, StudyParticipant.class);
-
-        assertEquals(deserParticipant.getFirstName(), "Test");
-        assertNull(deserParticipant.getHealthCode());
-        assertNull(deserParticipant.getEncryptedHealthCode());
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("firstName").textValue(), "Test");
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
+        assertNull(node.get("encryptedHealthCode"));
     }
 
     @Test
@@ -687,9 +724,10 @@ public class ParticipantControllerTest extends Mockito {
 
         StudyParticipant deserParticipant = MAPPER.treeToValue(nodeParticipant, StudyParticipant.class);
 
-        assertEquals(deserParticipant.getFirstName(), "Test");
-        assertNull(deserParticipant.getHealthCode());
-        assertNull(deserParticipant.getEncryptedHealthCode());
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("firstName").textValue(), "Test");
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
+        assertNull(node.get("encryptedHealthCode"));
 
         List<UserConsentHistory> deserHistories = deserParticipant.getConsentHistories().get("guid");
         assertEquals(deserHistories.size(), 1);
@@ -704,6 +742,33 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(deserHistory.getSignedOn(), timestamp.getMillis());
         assertEquals(deserHistory.getWithdrewOn(), new Long(timestamp.getMillis()));
         assertTrue(deserHistory.isHasSignedActiveConsent());
+    }
+    
+    @Test
+    public void getSelfParticipantReturnsNoHealthCode() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of()).build());
+        
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
+
+        String result = controller.getSelfParticipant(false);
+        
+        JsonNode node = MAPPER.readTree(result);
+        assertNull(node.get("healthCode"));
+        assertNull(node.get("encryptedHealthCode"));
+    }
+    
+    @Test
+    public void getSelfParticipantReturnsHealthCodeForAdmins() throws Exception {
+        StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(USER_ID)
+                .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
+        when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
+
+        String result = controller.getSelfParticipant(false);
+        
+        JsonNode node = MAPPER.readTree(result);
+        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
     }
 
     @Test

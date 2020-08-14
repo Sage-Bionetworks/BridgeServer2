@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -104,7 +105,7 @@ public class ParticipantController extends BaseController {
         participantService.createSmsRegistration(app, userId);
         return new StatusMessage("SMS notification registration created");
     }
-    
+
     @PostMapping("/v3/participants/self")
     public JsonNode updateSelfParticipant() {
         UserSession session = getAuthenticatedSession();
@@ -287,17 +288,19 @@ public class ParticipantController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
         
-        return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        // Return the health code if this is an administrative account. This is because developers 
+        // should call this method to retrieve their own account.
+        ObjectWriter writer = (session.isInRole(ADMINISTRATIVE_ROLES)) ?
+                StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
+                StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        return writer.writeValueAsString(participant);
     }
-    
+
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
-        if ("self".equals(userId)) {
-            userId = session.getId();
-        }
-        checkSelfOrResearcherAndThrow(userId);
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+
         App app = appService.getApp(session.getAppId());
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
@@ -307,13 +310,7 @@ public class ParticipantController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        StudyParticipant participant; 
-        if (session.getId().equals(userId)) {
-            CriteriaContext context = getCriteriaContext(session);
-            participant = participantService.getSelfParticipant(app, context, consents);
-        } else {
-            participant = participantService.getParticipant(app, userId, consents);
-        }
+        StudyParticipant participant = participantService.getParticipant(app, userId, consents);
         
         ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
