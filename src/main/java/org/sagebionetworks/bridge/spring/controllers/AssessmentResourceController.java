@@ -146,6 +146,6 @@ public class AssessmentResourceController extends BaseController {
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         
         List<AssessmentResource> resources = service.publishAssessmentResources(appId, assessmentId, resourceGuids);
-        return new ResourceList<AssessmentResource>(resources);
+        return new ResourceList<AssessmentResource>(resources, true);
     }
 }

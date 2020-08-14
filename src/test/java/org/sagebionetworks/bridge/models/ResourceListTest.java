@@ -24,9 +24,8 @@ public class ResourceListTest {
 
     @SuppressWarnings("deprecation")
     @Test
-    public void canSerialize() throws Exception {
-        
-        ResourceList<String> list = new ResourceList<>(ImmutableList.of("A","B","C"))
+    public void canSerializeWithDeprecated() throws Exception {
+        ResourceList<String> list = new ResourceList<>(ImmutableList.of("A","B","C"), false)
                 .withRequestParam("test", 13L);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
@@ -49,6 +48,15 @@ public class ResourceListTest {
         assertEquals(deser.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
     }
     
+    @Test
+    public void canSerializeWithoutDeprecated() throws Exception {
+        ResourceList<String> list = new ResourceList<>(ImmutableList.of("A","B","C"), true)
+                .withRequestParam("test", 13L);
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        assertNull(node.get("total"));
+    }
+
     @Test
     public void noTotalPropertyWhenListEmpty() {
         ResourceList<String> list = new ResourceList<>(ImmutableList.of());

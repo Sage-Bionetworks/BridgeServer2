@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import java.util.List;
 
@@ -43,4 +44,17 @@ public class DateTimeRangeResourceListTest {
         // We never deserialize this on the server side (only in the SDK).
     }
     
+    @Test
+    public void canSerializeWithoutDeprecated() {
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        List<String> items = Lists.newArrayList("1", "2", "3");
+        DateTimeRangeResourceList<String> list = new DateTimeRangeResourceList<>(items, true)
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime);
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        assertNull(node.get("startTime"));
+        assertNull(node.get("endTime"));
+    }
 }
