@@ -1,12 +1,13 @@
 package org.sagebionetworks.bridge.dao;
 
-import org.sagebionetworks.bridge.models.PagedResourceList;
+import java.util.List;
+
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface StudyDao {
     
-    PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted);
+    List<Study> getStudies(String appId, boolean includeDeleted);
     
     Study getStudy(String appId, String studyId);
     

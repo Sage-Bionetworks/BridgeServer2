@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
@@ -13,6 +12,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -23,19 +23,17 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableList;
 
 public class StudyServiceTest {
-    private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(ImmutableList.of(Study.create(), Study.create()), 5);
+    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
     
     @Mock
@@ -68,13 +66,13 @@ public class StudyServiceTest {
     @Test
     public void getStudyIds() {
         Study studyA = Study.create();
-        studyA.setIdentifier("studyA");
+        studyA.setId("studyA");
         
         Study studyB = Study.create();
-        studyB.setIdentifier("studyB");
-        PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 10); 
+        studyB.setId("studyB");
+        List<Study> studies = ImmutableList.of(studyA, studyB); 
         
-        when(studyDao.getStudies(TEST_APP_ID, 0, API_MAXIMUM_PAGE_SIZE, false)).thenReturn(studies);
+        when(studyDao.getStudies(TEST_APP_ID, false)).thenReturn(studies);
         
         Set<String> studyIds = service.getStudyIds(TEST_APP_ID);
         assertEquals(studyIds, USER_STUDY_IDS);
@@ -93,28 +91,28 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesIncludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
         
-        PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 50, true);
+        List<Study> returnedValue = service.getStudies(TEST_APP_ID, true);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, 0, 50, true);
+        verify(studyDao).getStudies(TEST_APP_ID, true);
     }
     
     @Test
     public void getStudiesExcludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, 0, 10, false)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
         
-        PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 10, false);
+        List<Study> returnedValue = service.getStudies(TEST_APP_ID, false);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, 0, 10, false);
+        verify(studyDao).getStudies(TEST_APP_ID, false);
     }
     
     @Test
     public void createStudy() {
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         study.setAppId("junk");
         study.setVersion(10L);
@@ -131,7 +129,7 @@ public class StudyServiceTest {
         verify(studyDao).createStudy(studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "oneId");
+        assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
         assertEquals(persisted.getAppId(), TEST_APP_ID);
         assertNull(persisted.getVersion());
@@ -148,7 +146,7 @@ public class StudyServiceTest {
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createStudyAlreadyExists() {
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
@@ -159,7 +157,7 @@ public class StudyServiceTest {
     @Test
     public void updateStudy() {
         Study existing = Study.create();
-        existing.setIdentifier("oneId");
+        existing.setId("oneId");
         existing.setName("oldName");
         existing.setCreatedOn(DateTime.now());
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
@@ -167,7 +165,7 @@ public class StudyServiceTest {
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("newName");
         
         VersionHolder versionHolder = service.updateStudy(TEST_APP_ID, study);
@@ -177,7 +175,7 @@ public class StudyServiceTest {
         
         Study returnedValue = studyCaptor.getValue();
         assertEquals(returnedValue.getAppId(), TEST_APP_ID);
-        assertEquals(returnedValue.getIdentifier(), "oneId");
+        assertEquals(returnedValue.getId(), "oneId");
         assertEquals(returnedValue.getName(), "newName");
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
@@ -191,7 +189,7 @@ public class StudyServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateStudyEntityNotFound() {
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         study.setDeleted(true);
 
@@ -205,7 +203,7 @@ public class StudyServiceTest {
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
 
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         study.setDeleted(true);
         

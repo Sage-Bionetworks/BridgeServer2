@@ -13,8 +13,8 @@ public interface Study extends BridgeEntity {
         return new HibernateStudy();
     }
 
-    String getIdentifier();
-    void setIdentifier(String id);
+    String getId();
+    void setId(String id);
     
     String getAppId();
     void setAppId(String appId);

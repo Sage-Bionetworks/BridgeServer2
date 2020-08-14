@@ -15,7 +15,7 @@ public class StudyValidatorTest {
     @Test
     public void valid() {
         study = Study.create();
-        study.setIdentifier("id");
+        study.setId("id");
         study.setAppId(TEST_APP_ID);
         study.setName("name");
         
@@ -31,7 +31,7 @@ public class StudyValidatorTest {
     @Test
     public void invalidIdentifier() {
         study = Study.create();
-        study.setIdentifier("id not valid");
+        study.setId("id not valid");
         
         TestUtils.assertValidatorMessage(VALIDATOR, study, "id", "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores");
     }

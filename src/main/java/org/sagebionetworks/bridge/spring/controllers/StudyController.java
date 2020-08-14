@@ -1,10 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -31,7 +30,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyController extends BaseController {
 
     static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
-    
+    private static final String INCLUDE_DELETED = "includeDeleted";
     private StudyService service;
 
     @Autowired
@@ -40,16 +39,12 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping(path = {"/v5/studies", "/v3/substudies"})
-    public PagedResourceList<Study> getStudies(
-            @RequestParam(required = false) String offsetBy, 
-            @RequestParam(required = false) String pageSize,            
-            @RequestParam(defaultValue = "false") boolean includeDeleted) {
+    public ResourceList<Study> getStudies(@RequestParam(defaultValue = "false") boolean includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
-        int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
-        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        List<Study> studies = service.getStudies(session.getAppId(), includeDeleted);
 
-        return service.getStudies(session.getAppId(), offsetByInt, pageSizeInt, includeDeleted);
+        return new ResourceList<>(studies).withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
 
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})

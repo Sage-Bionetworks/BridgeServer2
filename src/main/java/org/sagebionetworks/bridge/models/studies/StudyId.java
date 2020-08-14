@@ -14,27 +14,27 @@ public final class StudyId implements Serializable {
     private String appId;
 
     @Column(name = "id")
-    private String identifier;
+    private String id;
 
     public StudyId() {
     }
  
-    public StudyId(String appId, String identifier) {
+    public StudyId(String appId, String id) {
         this.appId = appId;
-        this.identifier = identifier;
+        this.id = id;
     }
     
     public String getAppId() {
         return appId;
     }
     
-    public String getIdentifier() {
-        return identifier;
+    public String getId() {
+        return id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(appId, identifier);
+        return Objects.hash(appId, id);
     }
 
     @Override
@@ -44,6 +44,6 @@ public final class StudyId implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
         StudyId other = (StudyId) obj;
-        return Objects.equals(appId, other.appId) && Objects.equals(identifier, other.identifier);
+        return Objects.equals(appId, other.appId) && Objects.equals(id, other.id);
     }
 }

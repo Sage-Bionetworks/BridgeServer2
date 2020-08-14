@@ -15,6 +15,8 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,7 +33,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -43,7 +44,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyControllerTest extends Mockito {
 
     private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
-    private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(ImmutableList.of(Study.create(), Study.create()), 2);
+    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
 
     @Mock
@@ -92,22 +93,26 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void getStudiesExcludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, 0, 50, false)).thenReturn(STUDIES);
+        when(service.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
 
-        PagedResourceList<Study> result = controller.getStudies("0", "50", false);
+        ResourceList<Study> result = controller.getStudies(false);
+
         assertEquals(result.getItems().size(), 2);
+        assertFalse((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, 0, 50, false);
+        verify(service).getStudies(TEST_APP_ID, false);
     }
 
     @Test
     public void getStudiesIncludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
+        when(service.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
 
-        ResourceList<Study> result = controller.getStudies("0", "50", true);
+        ResourceList<Study> result = controller.getStudies(true);
+
         assertEquals(result.getItems().size(), 2);
+        assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, 0, 50, true);
+        verify(service).getStudies(TEST_APP_ID, true);
     }
 
     @Test
@@ -115,7 +120,7 @@ public class StudyControllerTest extends Mockito {
         when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -125,21 +130,21 @@ public class StudyControllerTest extends Mockito {
         verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "oneId");
+        assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
     public void getStudy() throws Exception {
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         when(service.getStudy(TEST_APP_ID, "id", true)).thenReturn(study);
 
         Study result = controller.getStudy("id");
         assertEquals(result, study);
 
-        assertEquals(result.getIdentifier(), "oneId");
+        assertEquals(result.getId(), "oneId");
         assertEquals(result.getName(), "oneName");
 
         verify(service).getStudy(TEST_APP_ID, "id", true);
@@ -148,7 +153,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void updateStudy() throws Exception {
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setId("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -161,7 +166,7 @@ public class StudyControllerTest extends Mockito {
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "oneId");
+        assertEquals(persisted.getId(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 

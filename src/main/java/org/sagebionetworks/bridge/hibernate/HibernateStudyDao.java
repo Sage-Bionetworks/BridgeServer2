@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 import java.util.Map;
@@ -9,13 +8,13 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -28,7 +27,7 @@ public class HibernateStudyDao implements StudyDao {
     }
 
     @Override
-    public PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
+    public List<Study> getStudies(String appId, boolean includeDeleted) {
         checkNotNull(appId);
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
@@ -36,14 +35,8 @@ public class HibernateStudyDao implements StudyDao {
         if (!includeDeleted) {
             query += " and deleted != 1";
         }
-        
-        int total = hibernateHelper.queryCount("select count(*) " + query, parameters);
-        
-        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(query, parameters, 
-                offsetBy, pageSize, HibernateStudy.class);
-        List<Study> studies = hibStudies.stream().map(s -> (Study)s).collect(toList());
-        
-        return new PagedResourceList<>(studies, total);
+        return ImmutableList.copyOf(hibernateHelper.queryGet(query, parameters, 
+                null, null, HibernateStudy.class));
     }
 
     @Override
