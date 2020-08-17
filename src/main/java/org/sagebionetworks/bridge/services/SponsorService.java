@@ -96,6 +96,8 @@ public class SponsorService {
         checkNotNull(orgId);
         
         if (sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId)) {
+            // Currently we allow you to remove the last sponsor from a study. There is no 
+            // database constraint that prevents this.
             sponsorDao.removeStudySponsor(appId, studyId, orgId);
         } else {
             // Either one of the two entities is missing, or if they both exist, the org

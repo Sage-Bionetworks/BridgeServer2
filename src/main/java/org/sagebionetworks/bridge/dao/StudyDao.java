@@ -11,7 +11,7 @@ public interface StudyDao {
     
     Study getStudy(String appId, String studyId);
     
-    VersionHolder createStudy(Study study);
+    VersionHolder createStudy(String orgId, Study study);
     
     VersionHolder updateStudy(Study study);
     

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -117,7 +118,7 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void createStudy() throws Exception {
-        when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
+        when(service.createStudy(any(), any(), any())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
         study.setId("oneId");
@@ -127,7 +128,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder result = controller.createStudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(service).createStudy(eq(TEST_APP_ID), eq(TEST_ORG_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");

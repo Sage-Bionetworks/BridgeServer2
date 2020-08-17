@@ -4,6 +4,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -13,21 +14,25 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableList;
@@ -38,6 +43,9 @@ public class StudyServiceTest {
     
     @Mock
     private StudyDao studyDao;
+    
+    @Mock
+    private OrganizationDao organizationDao;
     
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
@@ -50,6 +58,7 @@ public class StudyServiceTest {
         
         service = new StudyService();
         service.setStudyDao(studyDao);
+        service.setOrganizationDao(organizationDao);
     }
     
     @Test
@@ -121,12 +130,13 @@ public class StudyServiceTest {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
 
-        when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
+        when(studyDao.createStudy(Mockito.eq(TEST_ORG_ID), any())).thenReturn(VERSION_HOLDER);
+        when(organizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.of(Organization.create()));
         
-        VersionHolder returnedValue = service.createStudy(TEST_APP_ID, study);
+        VersionHolder returnedValue = service.createStudy(TEST_APP_ID, TEST_ORG_ID, study);
         assertEquals(returnedValue, VERSION_HOLDER);
         
-        verify(studyDao).createStudy(studyCaptor.capture());
+        verify(studyDao).createStudy(Mockito.eq(TEST_ORG_ID), studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
@@ -140,7 +150,7 @@ public class StudyServiceTest {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createStudyInvalidStudy() {
-        service.createStudy(TEST_APP_ID, Study.create());
+        service.createStudy(TEST_APP_ID, TEST_ORG_ID, Study.create());
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
@@ -151,7 +161,7 @@ public class StudyServiceTest {
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
         
-        service.createStudy(TEST_APP_ID, study);
+        service.createStudy(TEST_APP_ID, TEST_ORG_ID, study);
     }
 
     @Test

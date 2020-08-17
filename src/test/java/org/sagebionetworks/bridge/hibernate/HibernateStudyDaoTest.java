@@ -6,6 +6,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -107,7 +108,7 @@ public class HibernateStudyDaoTest {
         Study study = Study.create();
         study.setVersion(2L);
         
-        VersionHolder holder = dao.createStudy(study);
+        VersionHolder holder = dao.createStudy(TEST_ORG_ID, study);
         assertEquals(holder.getVersion(), new Long(2));
         
         verify(hibernateHelper).create(studyCaptor.capture(), eq(null));

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.hibernate.HibernateSponsorDao.ADD_SPONSOR_SQL;
 
 import java.util.List;
 import java.util.Map;
@@ -49,10 +50,19 @@ public class HibernateStudyDao implements StudyDao {
     }
     
     @Override
-    public VersionHolder createStudy(Study study) {
+    public VersionHolder createStudy(String orgId, Study study) {
+        checkNotNull(orgId);
         checkNotNull(study);
         
         hibernateHelper.create(study, null);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(ADD_SPONSOR_SQL);
+        builder.getParameters().put("appId", study.getAppId());
+        builder.getParameters().put("studyId", study.getId());
+        builder.getParameters().put("orgId", orgId);
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
+        
         return new VersionHolder(study.getVersion());
     }
 
@@ -68,6 +78,12 @@ public class HibernateStudyDao implements StudyDao {
     public void deleteStudyPermanently(String appId, String id) {
         checkNotNull(appId);
         checkNotNull(id);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("DELETE FROM OrganizationsStudies WHERE appId = :appId AND studyId = :studyId");
+        builder.getParameters().put("appId", appId);
+        builder.getParameters().put("studyId", id);
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
         
         StudyId studyId = new StudyId(appId, id);
         hibernateHelper.deleteById(HibernateStudy.class, studyId);

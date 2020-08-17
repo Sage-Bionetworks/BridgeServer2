@@ -30,13 +30,13 @@ public class AuthUtils {
     }
     
     /**
-     * Unless you are a superadmin, you can only list the members of your own organization.
+     * Unless you are a admin, you can only list the members of your own organization.
      */
     public static boolean checkOrgMembership(String targetOrgId) {
         RequestContext context = BridgeUtils.getRequestContext();
         String callerOrgMembership = context.getCallerOrgMembership();
         
-        return context.isInRole(SUPERADMIN) || targetOrgId.equals(callerOrgMembership);
+        return context.isInRole(ADMIN) || callerOrgMembership.equals(targetOrgId);
     }
     
     public static void checkOrgMembershipAndThrow(String targetOrgId) {

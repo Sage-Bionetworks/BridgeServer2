@@ -17,6 +17,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 @Component
 public class HibernateSponsorDao implements SponsorDao {
     
+    public static String ADD_SPONSOR_SQL = "INSERT INTO OrganizationsStudies (appId, studyId, orgId) VALUES (:appId, :studyId, :orgId)";
+
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "sponsorHibernateHelper")
@@ -31,13 +33,13 @@ public class HibernateSponsorDao implements SponsorDao {
         builder.append("o.appId = :appId AND os.appId = :appId ", "appId", appId);
         builder.append("AND os.studyId = :studyId", "studyId", studyId);
 
-        int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), 
-                builder.getParameters());
+        int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
 
-        List<HibernateOrganization> hibernateStudies = hibernateHelper.nativeQueryGet("SELECT * " + builder.getQuery(), 
-                builder.getParameters(), offsetBy, pageSize, HibernateOrganization.class);
-        
-        List<Organization> studies = hibernateStudies.stream().map(o -> (Organization)o).collect(toList());
+        List<Organization> studies = hibernateHelper
+                .nativeQueryGet("SELECT * " + builder.getQuery(), builder.getParameters(), 
+                        offsetBy, pageSize, HibernateOrganization.class)
+                .stream()
+                .map(o -> (Organization)o).collect(toList());
         
         return new PagedResourceList<Organization>(studies, total);
     }
@@ -49,13 +51,12 @@ public class HibernateSponsorDao implements SponsorDao {
         builder.append("s.studyId = :appId AND os.appId = :appId ", "appId", appId);
         builder.append("AND os.orgId = :orgId", "orgId", orgId);
 
-        int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), 
-                builder.getParameters());
+        int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
 
-        List<HibernateStudy> hibernateStudies = hibernateHelper.nativeQueryGet("SELECT * " + builder.getQuery(), 
-                builder.getParameters(), offsetBy, pageSize, HibernateStudy.class);
-        
-        List<Study> studies = hibernateStudies.stream().map(s -> (Study)s).collect(toList());
+        List<Study> studies = hibernateHelper.nativeQueryGet("SELECT * " + builder.getQuery(), builder.getParameters(), 
+                    offsetBy, pageSize, HibernateStudy.class)
+                .stream()
+                .map(s -> (Study)s).collect(toList());
         
         return new PagedResourceList<Study>(studies, total);
     }
@@ -63,7 +64,7 @@ public class HibernateSponsorDao implements SponsorDao {
     @Override
     public void addStudySponsor(String appId, String studyId, String orgId) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("INSERT INTO OrganizationsStudies (appId, studyId, orgId) VALUES (:appId, :studyId, :orgId)");
+        builder.append(ADD_SPONSOR_SQL);
         builder.getParameters().put("appId", appId);
         builder.getParameters().put("studyId", studyId);
         builder.getParameters().put("orgId", orgId);
