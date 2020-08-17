@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembershipAndThrow;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -84,8 +85,7 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
-        // The persistence exception handler correctly detects when the org or study doesn't exist,
-        // or the association already exists.
+        checkOrgMembershipAndThrow(orgId);
         
         sponsorDao.addStudySponsor(appId, studyId, orgId);    
     }
@@ -95,6 +95,8 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
+        checkOrgMembershipAndThrow(orgId);
+
         if (sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId)) {
             // Currently we allow you to remove the last sponsor from a study. There is no 
             // database constraint that prevents this.

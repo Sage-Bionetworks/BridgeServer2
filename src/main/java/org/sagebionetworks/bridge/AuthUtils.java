@@ -29,14 +29,11 @@ public class AuthUtils {
         }
     }
     
-    /**
-     * Unless you are a admin, you can only list the members of your own organization.
-     */
     public static boolean checkOrgMembership(String targetOrgId) {
         RequestContext context = BridgeUtils.getRequestContext();
         String callerOrgMembership = context.getCallerOrgMembership();
         
-        return context.isInRole(ADMIN) || callerOrgMembership.equals(targetOrgId);
+        return context.isInRole(ADMIN) || targetOrgId.equals(callerOrgMembership);
     }
     
     public static void checkOrgMembershipAndThrow(String targetOrgId) {
@@ -74,7 +71,7 @@ public class AuthUtils {
         checkNotNull(ownerId);
 
         RequestContext rc = BridgeUtils.getRequestContext();
-        if (rc.isInRole(ImmutableSet.of(SUPERADMIN))) {
+        if (rc.isInRole(ImmutableSet.of(ADMIN))) {
             return;
         }
         String[] parts = ownerId.split(":", 2);

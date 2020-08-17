@@ -33,7 +33,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -142,7 +141,7 @@ public class SponsorControllerTest extends Mockito {
     public void addStudySponsorOkForSuperuser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         StatusMessage retValue = controller.addStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
         
@@ -155,7 +154,7 @@ public class SponsorControllerTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         StatusMessage retValue = controller.addStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
         
@@ -163,21 +162,23 @@ public class SponsorControllerTest extends Mockito {
         assertEquals(retValue.getMessage(), ADD_MSG);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Caller is not a member of test-org-id")
-    public void addStudySponsorNotOkForAdminNotInOrg() {
+    @Test
+    public void addStudySponsorOkForAdminNotInOrg() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerOrgMembership("some-other-org").build());
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         controller.addStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
+        
+        verify(mockService).addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
     }
     
     @Test
     public void removeStudySponsorOkForSuperuser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         StatusMessage retValue = controller.removeStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
         
@@ -190,7 +191,7 @@ public class SponsorControllerTest extends Mockito {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         StatusMessage retValue = controller.removeStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
         
@@ -198,13 +199,15 @@ public class SponsorControllerTest extends Mockito {
         assertEquals(retValue.getMessage(), REMOVE_MSG);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Caller is not a member of test-org-id")
-    public void removeStudySponsorNotOkForAdminNotInOrg() {
+    @Test
+    public void removeStudySponsorOkForAdminNotInOrg() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, SUPERADMIN);
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerOrgMembership("another-org").build());
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         controller.removeStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
+        
+        verify(mockService).removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
     }
 }

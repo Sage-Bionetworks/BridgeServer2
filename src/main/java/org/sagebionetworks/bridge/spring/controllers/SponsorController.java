@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembershipAndThrow;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,9 +70,7 @@ public class SponsorController extends BaseController {
     public StatusMessage addStudySponsor(
             @PathVariable(name = "studyId") String studyId, 
             @PathVariable(name = "orgId") String orgId) {
-        UserSession session = getAuthenticatedSession(ADMIN, SUPERADMIN);
-        
-        checkOrgMembershipAndThrow(orgId);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         sponsorService.addStudySponsor(session.getAppId(), studyId, orgId);
         return new StatusMessage(String.format(ADD_SPONSOR_MSG, orgId, studyId));
@@ -85,9 +81,7 @@ public class SponsorController extends BaseController {
     public StatusMessage removeStudySponsor(
             @PathVariable(name = "studyId") String studyId,
             @PathVariable(name = "orgId") String orgId) {
-        UserSession session = getAuthenticatedSession(ADMIN, SUPERADMIN);
-        
-        checkOrgMembershipAndThrow(orgId);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         sponsorService.removeStudySponsor(session.getAppId(), studyId, orgId);
         return new StatusMessage(String.format(REMOVE_SPONSOR_MSG, orgId, studyId));
