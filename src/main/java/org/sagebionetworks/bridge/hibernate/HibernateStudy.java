@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -21,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @BridgeTypeName("Study")
 public class HibernateStudy implements Study {
     @Id
+    @Column(name = "id")
     private String identifier;
     @Id
     private String appId;

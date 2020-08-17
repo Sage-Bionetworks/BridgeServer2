@@ -75,20 +75,11 @@ public class StudyServiceTest {
         Study studyB = Study.create();
         studyB.setIdentifier("studyB");
         
-        Study studyC = Study.create();
-        studyC.setIdentifier("studyC");
-        
-        Study studyD = Study.create();
-        studyD.setIdentifier("studyD");
-        
-        // Test that multiple pages are assembled into one set.
-        PagedResourceList<Study> studies1 = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 4); 
-        PagedResourceList<Study> studies2 = new PagedResourceList<>(ImmutableList.of(studyC, studyD), 4);
-        when(studyDao.getStudies(TEST_APP_ID, 0, 100, false)).thenReturn(studies1);
-        when(studyDao.getStudies(TEST_APP_ID, 100, 100, false)).thenReturn(studies2);
+        PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 2); 
+        when(studyDao.getStudies(TEST_APP_ID, null, null, false)).thenReturn(studies);
         
         Set<String> studyIds = service.getStudyIds(TEST_APP_ID);
-        assertEquals(studyIds, ImmutableSet.of("studyA","studyB","studyC","studyD"));
+        assertEquals(studyIds, ImmutableSet.of("studyA","studyB"));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -135,6 +126,16 @@ public class StudyServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudiesPageSizeTooLarge() { 
         service.getStudies(TEST_APP_ID, 0, API_MAXIMUM_PAGE_SIZE+1, false);
+    }
+    
+    @Test
+    public void getStudiesWithNullParams() {
+        when(studyDao.getStudies(TEST_APP_ID, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+    
+        service.getStudies(TEST_APP_ID, null, null, false);
+        
+        verify(studyDao).getStudies(TEST_APP_ID, null, null, false);
     }
     
     @Test

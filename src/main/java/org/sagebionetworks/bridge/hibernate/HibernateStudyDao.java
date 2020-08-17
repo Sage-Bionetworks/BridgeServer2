@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -28,7 +28,8 @@ public class HibernateStudyDao implements StudyDao {
     }
 
     @Override
-    public PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize,
+            boolean includeDeleted) {
         checkNotNull(appId);
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
@@ -40,8 +41,8 @@ public class HibernateStudyDao implements StudyDao {
 
         List<HibernateStudy> hibStudies = hibernateHelper.queryGet(query, parameters, 
                 offsetBy, pageSize, HibernateStudy.class);
-        List<Study> studies = hibStudies.stream().map(s -> (Study)s).collect(toList());
-
+        List<Study> studies = ImmutableList.copyOf(hibStudies);
+        
         return new PagedResourceList<>(studies, total);
     }
 

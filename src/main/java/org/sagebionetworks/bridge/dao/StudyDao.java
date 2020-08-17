@@ -6,7 +6,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface StudyDao {
     
-    PagedResourceList<Study> getStudies(String appId, int offsetBy, int pageSize, boolean includeDeleted);
+    PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize, boolean includeDeleted);
     
     Study getStudy(String appId, String studyId);
     
