@@ -96,7 +96,7 @@ public class StudyService {
         organizationDao.getOrganization(appId, orgId)
             .orElseThrow(() -> new BadRequestException("Sponsoring organization not found."));
 
-        return studyDao.createStudy(orgId, study);
+        return studyDao.createStudy(study, orgId);
     }
 
     public VersionHolder updateStudy(String appId, Study study) {

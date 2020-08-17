@@ -50,19 +50,18 @@ public class HibernateStudyDao implements StudyDao {
     }
     
     @Override
-    public VersionHolder createStudy(String orgId, Study study) {
+    public VersionHolder createStudy(Study study, String orgId) {
         checkNotNull(orgId);
         checkNotNull(study);
         
-        hibernateHelper.create(study, null);
-        
-        QueryBuilder builder = new QueryBuilder();
-        builder.append(ADD_SPONSOR_SQL);
-        builder.getParameters().put("appId", study.getAppId());
-        builder.getParameters().put("studyId", study.getId());
-        builder.getParameters().put("orgId", orgId);
-        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
-        
+        hibernateHelper.create(study, (createdStudy) -> {
+            QueryBuilder builder = new QueryBuilder();
+            builder.append(ADD_SPONSOR_SQL);
+            builder.getParameters().put("appId", study.getAppId());
+            builder.getParameters().put("studyId", study.getId());
+            builder.getParameters().put("orgId", orgId);
+            hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
+        });
         return new VersionHolder(study.getVersion());
     }
 

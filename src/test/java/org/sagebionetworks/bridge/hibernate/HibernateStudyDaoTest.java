@@ -1,22 +1,21 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.hibernate.HibernateSponsorDao.ADD_SPONSOR_SQL;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.persistence.PersistenceException;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -27,7 +26,7 @@ import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.google.common.collect.ImmutableList;
 
-public class HibernateStudyDaoTest {
+public class HibernateStudyDaoTest extends Mockito {
     private static final List<HibernateStudy> STUDIES = ImmutableList.of(new HibernateStudy(),
             new HibernateStudy());
     
@@ -105,16 +104,30 @@ public class HibernateStudyDaoTest {
     
     @Test
     public void createStudy() {
-        Study study = Study.create();
+        HibernateStudy study = new HibernateStudy();
+        study.setId(TEST_STUDY_ID);
+        study.setAppId(TEST_APP_ID);
         study.setVersion(2L);
+
+        doAnswer((invocation) -> {
+            Consumer<HibernateStudy> cons = invocation.getArgument(1);
+            cons.accept(study);
+            return study;
+        }).when(hibernateHelper).create(any(), any());
         
-        VersionHolder holder = dao.createStudy(TEST_ORG_ID, study);
+        VersionHolder holder = dao.createStudy(study, TEST_ORG_ID);
         assertEquals(holder.getVersion(), new Long(2));
         
-        verify(hibernateHelper).create(studyCaptor.capture(), eq(null));
+        verify(hibernateHelper).create(studyCaptor.capture(), any());
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getVersion(), new Long(2));
+        
+        verify(hibernateHelper).nativeQueryUpdate(queryCaptor.capture(), paramsCaptor.capture());
+        assertEquals(queryCaptor.getValue(), ADD_SPONSOR_SQL);
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_ID);
+        assertEquals(paramsCaptor.getValue().get("orgId"), TEST_ORG_ID);
     }
 
     @Test

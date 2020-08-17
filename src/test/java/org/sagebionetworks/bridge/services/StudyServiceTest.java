@@ -130,13 +130,13 @@ public class StudyServiceTest {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
 
-        when(studyDao.createStudy(Mockito.eq(TEST_ORG_ID), any())).thenReturn(VERSION_HOLDER);
+        when(studyDao.createStudy(any(), Mockito.eq(TEST_ORG_ID))).thenReturn(VERSION_HOLDER);
         when(organizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.of(Organization.create()));
         
         VersionHolder returnedValue = service.createStudy(TEST_APP_ID, TEST_ORG_ID, study);
         assertEquals(returnedValue, VERSION_HOLDER);
         
-        verify(studyDao).createStudy(Mockito.eq(TEST_ORG_ID), studyCaptor.capture());
+        verify(studyDao).createStudy(studyCaptor.capture(), Mockito.eq(TEST_ORG_ID));
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getId(), "oneId");
