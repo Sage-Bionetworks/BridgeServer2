@@ -25,6 +25,11 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private DateTime createdOn;
 
+    /**
+     * The media type of this file.
+     */
+    private String mimeType;
+
     public DynamoParticipantFile(String userId, String fileId, DateTime createdOn) {
         this.userId = userId;
         this.fileId = fileId;
@@ -51,6 +56,10 @@ public class DynamoParticipantFile implements ParticipantFile {
         this.createdOn = createdOn;
     }
 
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
     @Override
     @DynamoDBRangeKey(attributeName = "fileId")
     public String getFileId() {
@@ -61,6 +70,12 @@ public class DynamoParticipantFile implements ParticipantFile {
     @DynamoDBHashKey(attributeName = "userId")
     public String getUserId() {
         return this.userId;
+    }
+
+    @Override
+    @DynamoDBAttribute(attributeName = "mimeType")
+    public String getMimeType() {
+        return this.mimeType;
     }
 
     @Override
