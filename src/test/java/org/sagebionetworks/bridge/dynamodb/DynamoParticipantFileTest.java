@@ -12,7 +12,10 @@ public class DynamoParticipantFileTest {
 
     @Test
     public void canSerialize() throws Exception {
-        DynamoParticipantFile pFile = new DynamoParticipantFile("userId", "fileId", TestConstants.TIMESTAMP);
+        DynamoParticipantFile pFile = new DynamoParticipantFile("userId", "fileId");
+        pFile.setAppId("api_test");
+        pFile.setCreatedOn(TestConstants.TIMESTAMP);
+        pFile.setMimeType("image/jpeg");
 
         String json = MAPPER.writeValueAsString(pFile);
         JsonNode node = MAPPER.readTree(json);
@@ -20,6 +23,8 @@ public class DynamoParticipantFileTest {
         assertEquals(node.get("userId").textValue(), "userId");
         assertEquals(node.get("fileId").textValue(), "fileId");
         assertEquals(node.get("createdOn").textValue(), TestConstants.TIMESTAMP.toString());
-        assertEquals(node.size(), 4);
+        assertEquals(node.get("mimeType").textValue(), "image/jpeg");
+        assertEquals(node.get("appId").textValue(), "api_test");
+        assertEquals(node.size(), 6);
     }
 }

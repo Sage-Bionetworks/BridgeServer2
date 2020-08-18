@@ -4,6 +4,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
@@ -25,18 +26,27 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private DateTime createdOn;
 
-    public DynamoParticipantFile(String userId, String fileId, DateTime createdOn) {
-        this.userId = userId;
-        this.fileId = fileId;
-        this.createdOn = createdOn;
+    /**
+     * The media type of this file.
+     */
+    private String mimeType;
+
+    /**
+     * The App ID of this file.
+     */
+    private String appId;
+
+    @JsonIgnore
+    private String uploadUrl;
+    @JsonIgnore
+    private String downloadUrl;
+
+    public DynamoParticipantFile() {
     }
 
     public DynamoParticipantFile(String userId, String fileId) {
-        this(fileId, userId, null);
-    }
-
-    public DynamoParticipantFile(String userId) {
-        this(userId, null, null);
+        this.userId = userId;
+        this.fileId = fileId;
     }
 
     public void setFileId(String fileId) {
@@ -52,6 +62,26 @@ public class DynamoParticipantFile implements ParticipantFile {
     }
 
     @Override
+    public void setDownloadUrl(String url) {
+        this.downloadUrl = url;
+    }
+
+    @Override
+    public void setUploadUrl(String url) {
+        this.uploadUrl = url;
+    }
+
+    @Override
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
+    @Override
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
+
+    @Override
     @DynamoDBRangeKey(attributeName = "fileId")
     public String getFileId() {
         return this.fileId;
@@ -64,8 +94,29 @@ public class DynamoParticipantFile implements ParticipantFile {
     }
 
     @Override
+    @DynamoDBAttribute(attributeName = "mimeType")
+    public String getMimeType() {
+        return this.mimeType;
+    }
+
+    @Override
     @DynamoDBAttribute(attributeName = "createdOn")
     public DateTime getCreatedOn() {
         return this.createdOn;
     }
+
+    @Override
+    @DynamoDBAttribute(attributeName = "appId")
+    public String getAppId() { return this.appId; }
+
+    @Override
+    public String getDownloadUrl() {
+        return this.downloadUrl;
+    }
+
+    @Override
+    public String getUploadUrl() {
+        return this.uploadUrl;
+    }
+
 }
