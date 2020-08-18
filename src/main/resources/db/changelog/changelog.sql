@@ -377,8 +377,7 @@ CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`)
 
 -- changeset bridge:18
 
--- Sponsors. Named consistent with other associative tables. Needed to adjust col size of Organizations
--- to match studies (nee substudies) table.
+-- Sponsors. Named consistent with other associative tables.
 CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
   `appId` varchar(255) NOT NULL,
   `studyId` varchar(255) NOT NULL,

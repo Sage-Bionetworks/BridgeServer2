@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 
 import java.util.List;
 
@@ -32,7 +33,6 @@ import org.sagebionetworks.bridge.services.StudyService;
 public class StudyController extends BaseController {
 
     static final StatusMessage DELETED_MSG = new StatusMessage("Study deleted.");
-    private static final String INCLUDE_DELETED = "includeDeleted";
     private StudyService service;
 
     @Autowired

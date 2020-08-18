@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
@@ -148,6 +149,12 @@ public class StudyServiceTest {
         assertNotEquals(persisted.getModifiedOn(), timestamp);
     }
     
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "Sponsor orgId is required.")
+    public void createStudyRequiresOrgId() { 
+        service.createStudy(TEST_APP_ID, null, Study.create());
+    }
+    
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createStudyInvalidStudy() {
         service.createStudy(TEST_APP_ID, TEST_ORG_ID, Study.create());
@@ -160,6 +167,25 @@ public class StudyServiceTest {
         study.setName("oneName");
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
+        
+        service.createStudy(TEST_APP_ID, TEST_ORG_ID, study);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = "Sponsoring organization not found.")
+    public void createStudyOrgNotFound() { 
+        Study study = Study.create();
+        study.setId("oneId");
+        study.setName("oneName");
+        study.setAppId("junk");
+        study.setVersion(10L);
+        study.setDeleted(true);
+        DateTime timestamp = DateTime.now().minusHours(2);
+        study.setCreatedOn(timestamp);
+        study.setModifiedOn(timestamp);
+
+        when(studyDao.createStudy(any(), Mockito.eq(TEST_ORG_ID))).thenReturn(VERSION_HOLDER);
+        when(organizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
         
         service.createStudy(TEST_APP_ID, TEST_ORG_ID, study);
     }
