@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
@@ -24,9 +25,11 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.USER_ID_VALUE_NS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Set;
 
@@ -35,10 +38,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.hl7.fhir.dstu3.model.Address;
@@ -71,8 +77,11 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -106,54 +115,64 @@ public class CRCControllerTest extends Mockito {
     static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
-//    static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
-//            +"'versionId': '1', 'lastUpdated': '2020-06-12T01:38:24.841Z' }, 'resourceType': 'Location', "
-//            +"'status': 'active', 'name': 'ColSite1', 'type': { 'coding': [ { 'code': 'HUSCS', 'display': "
-//            +"'Collection Site' } ] }, 'telecom': [ { 'system': 'phone', 'value': '1231231235', 'use': "
-//            +"'work' } ], 'address': { 'line': [ '123 east 165' ], 'city': 'New York', 'state': 'NY', "
-//            +"'postalCode': '10021' } }");
-//    static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
-//            +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
-//            +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
-//            +" 'short_name' : '3rd Ave', 'types' : [ 'route' ] }, { 'long_name' : 'Downtown Seattle', "
-//            +"'short_name' : 'Downtown Seattle', 'types' : [ 'neighborhood', 'political' ] }, { 'long_name' "
-//            +": 'Seattle', 'short_name' : 'Seattle', 'types' : [ 'locality', 'political' ] }, { 'long_name' "
-//            +": 'King County', 'short_name' : 'King County', 'types' : [ 'administrative_area_level_2', "
-//            +"'political' ] }, { 'long_name' : 'Washington', 'short_name' : 'WA', 'types' : [ "
-//            +"'administrative_area_level_1', 'political' ] }, { 'long_name' : 'United States', 'short_name' "
-//            +": 'US', 'types' : [ 'country', 'political' ] }, { 'long_name' : '98121', 'short_name' : "
-//            +"'98121', 'types' : [ 'postal_code' ] } ], 'formatted_address' : '2901 3rd Ave #330, Seattle, "
-//            +"WA 98121, USA', 'geometry' : { 'bounds' : { 'northeast' : { 'lat' : 47.6184148, 'lng' : "
-//            +"-122.3510372 }, 'southwest' : { 'lat' : 47.617759, 'lng' : -122.3525807 } }, 'location' : { "
-//            +"'lat' : 47.6180007, 'lng' : -122.3516149 }, 'location_type' : 'ROOFTOP', 'viewport' : { "
-//            +"'northeast' : { 'lat' : 47.6194358802915, 'lng' : -122.3504599697085 }, 'southwest' : { 'lat' "
-//            +": 47.6167379197085, 'lng' : -122.3531579302915 } } }, 'place_id' : 'EikyOTAxIDNyZCBBdmUgIzMzMC"
-//            +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
-//            +"'subpremise' ] } ], 'status' : 'OK' }");
-//    static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
-//    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','status':'booked','participant'"
-//            +":[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':"
-//            +"'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':"
-//            +"'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-//            +"'value':'userId'}}}]}");
-//    static final String APPOINTMENT_JSON_FULLY_RESOLVED2 = TestUtils.createJson("{'resourceType':'Appointment',"
-//            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
-//            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
-//            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
-//            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
-//            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
-//            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
-//            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-//            +"'value':'userId'}}}]}");
-//    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED = TestUtils.createJson("{'resourceType':'Appointment',"
-//            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
-//            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
-//            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
-//            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
-//            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
-//            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
-//            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
-//            +"'value':'userId'}}}]}");
+    static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
+            +"'versionId': '1', 'lastUpdated': '2020-06-12T01:38:24.841Z' }, 'resourceType': 'Location', "
+            +"'status': 'active', 'name': 'ColSite1', 'type': { 'coding': [ { 'code': 'HUSCS', 'display': "
+            +"'Collection Site' } ] }, 'telecom': [ { 'system': 'phone', 'value': '1231231235', 'use': "
+            +"'work' } ], 'address': { 'line': [ '123 east 165' ], 'city': 'New York', 'state': 'NY', "
+            +"'postalCode': '10021' } }");
+    static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
+            +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
+            +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
+            +" 'short_name' : '3rd Ave', 'types' : [ 'route' ] }, { 'long_name' : 'Downtown Seattle', "
+            +"'short_name' : 'Downtown Seattle', 'types' : [ 'neighborhood', 'political' ] }, { 'long_name' "
+            +": 'Seattle', 'short_name' : 'Seattle', 'types' : [ 'locality', 'political' ] }, { 'long_name' "
+            +": 'King County', 'short_name' : 'King County', 'types' : [ 'administrative_area_level_2', "
+            +"'political' ] }, { 'long_name' : 'Washington', 'short_name' : 'WA', 'types' : [ "
+            +"'administrative_area_level_1', 'political' ] }, { 'long_name' : 'United States', 'short_name' "
+            +": 'US', 'types' : [ 'country', 'political' ] }, { 'long_name' : '98121', 'short_name' : "
+            +"'98121', 'types' : [ 'postal_code' ] } ], 'formatted_address' : '2901 3rd Ave #330, Seattle, "
+            +"WA 98121, USA', 'geometry' : { 'bounds' : { 'northeast' : { 'lat' : 47.6184148, 'lng' : "
+            +"-122.3510372 }, 'southwest' : { 'lat' : 47.617759, 'lng' : -122.3525807 } }, 'location' : { "
+            +"'lat' : 47.6180007, 'lng' : -122.3516149 }, 'location_type' : 'ROOFTOP', 'viewport' : { "
+            +"'northeast' : { 'lat' : 47.6194358802915, 'lng' : -122.3504599697085 }, 'southwest' : { 'lat' "
+            +": 47.6167379197085, 'lng' : -122.3531579302915 } } }, 'place_id' : 'EikyOTAxIDNyZCBBdmUgIzMzMC"
+            +"wgU2VhdHRsZSwgV0EgOTgxMjEsIFVTQSIfGh0KFgoUChIJidPohE8VkFQRVpUgA1LwJYcSAzMzMA', 'types' : [ "
+            +"'subpremise' ] } ], 'status' : 'OK' }");
+    static final String EXPECTED_GEOCODING_URL = "https://maps.googleapis.com/maps/api/geocode/json?address=123+east+165+New+York+NY+10021&key=GEOKEY";
+    static final String APPOINTMENT_JSON = TestUtils.createJson("{'resourceType':'Appointment','status':'booked','participant'"
+            +":[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone','value':"
+            +"'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York','state':"
+            +"'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_W_GEOCODING = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED_W_GEOCODING = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
+            +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
+            +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
+            +"47.6194358802915,'lng':-122.3504599697085},'southwest':{'lat':47.6167379197085,'lng':"
+            +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
     static final String VALID_SERUM_OBSERVATION_JSON = TestUtils.createJson("{'id':'3101000022_1665167373_484670513','meta':"
             +"{'id':'Observation/3101000022_1665167373_484670513','versionId':'1','lastUpdated':'2020-08-10T09:46:29."
             +"601-04:00','tag':[{'system':'source','code':'sage'}]},'contained':[{'resourceType':'Specimen','type':{"
@@ -466,7 +485,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-//        mockGetLocation();
+        mockGetLocation();
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
@@ -509,7 +528,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), json);
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
     }
     
     @Test
@@ -518,7 +537,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-//        mockGetLocation();
+        mockGetLocation();
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
@@ -540,15 +559,15 @@ public class CRCControllerTest extends Mockito {
         
         assertTrue(account.getDataGroups().contains("tests_scheduled"));
         
-//        verify(controller).addLocation(any(), eq(account), eq("foo"));
-//        verify(controller).get("http://testServer/location/foo", account);
+        verify(controller).addLocation(any(), eq(account), eq("foo"));
+        verify(controller).get("http://testServer/location/foo", account);
         verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
         
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), json);
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED);
     }
     
     @Test
@@ -557,7 +576,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-//        mockGetLocation();
+        mockGetLocation();
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
@@ -584,7 +603,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+APPOINTMENT_REPORT+"\"}");
-        assertEquals(healthData.getData().toString(), json);
+        assertEquals(healthData.getData().toString(), APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED);
     }
     
     @Test
@@ -612,57 +631,57 @@ public class CRCControllerTest extends Mockito {
                 JAN1.toString(), HEALTH_CODE);
     }
     
-//    @Test
-//    public void postAppointmentFailsWhenLocationCallFails() throws Exception {
-//        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-//        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-//        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-//        
-//        HttpResponse mockResponse = mock(HttpResponse.class);
-//        doReturn(mockResponse).when(controller).get(any(), any());
-//        
-//        StatusLine mockStatusLine = mock(StatusLine.class);
-//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-//        when(mockStatusLine.getStatusCode()).thenReturn(500);
-//        
-//        Appointment appointment = new Appointment();
-//        appointment.setStatus(BOOKED);
-//        addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
-//        addAppointmentSageId(appointment, USER_ID);
-//        
-//        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
-//        mockRequestBody(mockRequest, json);
-//        
-//        try {
-//            controller.postAppointment();
-//            fail("Should have thrown exception");
-//        } catch(BridgeServiceException e) {
-//        }
-//        verify(mockHealthDataService, never()).submitHealthData(any(), any(), any());
-//    }
+    @Test
+    public void postAppointmentFailsWhenLocationCallFails() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any(), any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(500);
+        
+        Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
+        addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        try {
+            controller.postAppointment();
+            fail("Should have thrown exception");
+        } catch(BridgeServiceException e) {
+        }
+        verify(mockHealthDataService, never()).submitHealthData(any(), any(), any());
+    }
     
-//    @Test
-//    public void postAppointmentSkipsLocationIfNotPresent() throws Exception {
-//        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-//        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-//        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-//        
-//        DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
-//        doReturn(results).when(mockReportService).getParticipantReport(
-//                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
-//
-//        Appointment appointment = new Appointment();
-//        appointment.setStatus(BOOKED);
-//        addAppointmentSageId(appointment, USER_ID);
-//        
-//        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
-//        mockRequestBody(mockRequest, json);
-//        
-//        controller.postAppointment();
-//        verify(controller, never()).get(any(), any());
-//        verify(mockHealthDataService).submitHealthData(any(), any(), any());        
-//    }
-//    
+    @Test
+    public void postAppointmentSkipsLocationIfNotPresent() throws Exception {
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+
+        Appointment appointment = new Appointment();
+        appointment.setStatus(BOOKED);
+        addAppointmentSageId(appointment, USER_ID);
+        
+        String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
+        mockRequestBody(mockRequest, json);
+        
+        controller.postAppointment();
+        verify(controller, never()).get(any(), any());
+        verify(mockHealthDataService).submitHealthData(any(), any(), any());        
+    }
+    
     @Test
     public void postProcedureCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
@@ -900,18 +919,18 @@ public class CRCControllerTest extends Mockito {
         assertEquals(captured.getPassword(), "dummy-password");
     }
     
-//    void mockGetLocation() throws Exception {
-//        HttpResponse mockResponse = mock(HttpResponse.class);
-//        doReturn(mockResponse).when(controller).get(any(), any());
-//        
-//        StatusLine mockStatusLine = mock(StatusLine.class);
-//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-//        when(mockStatusLine.getStatusCode()).thenReturn(200);
-//
-//        HttpEntity mockEntity = mock(HttpEntity.class);
-//        when(mockResponse.getEntity()).thenReturn(mockEntity);
-//        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
-//    }
+    void mockGetLocation() throws Exception {
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any(), any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
+    }
     
 //    void mockGetGeocoding() throws Exception {
 //        HttpResponse mockResponse = mock(HttpResponse.class);
@@ -1040,7 +1059,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeAppointment(null, BOOKED));
         
-//        mockGetLocation();
+        mockGetLocation();
         
         controller.postAppointment();
     }
@@ -1053,7 +1072,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeAppointment("not-the-right-id", BOOKED));
         
-//        mockGetLocation();
+        mockGetLocation();
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         controller.postAppointment();
@@ -1130,7 +1149,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
         mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
-//        mockGetLocation();
+        mockGetLocation();
         
         controller.postAppointment();
     }
@@ -1188,16 +1207,16 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
     
-//    @Test(expectedExceptions = ServiceUnavailableException.class)
-//    public void addLocationIOException() throws Exception {
-//        JsonNode node = BridgeObjectMapper.get().readTree("{}");
-//        Account account = Account.create();
-//        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
-//        
-//        doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
-//        
-//        controller.addLocation(node, account, location);
-//    }
+    @Test(expectedExceptions = ServiceUnavailableException.class)
+    public void addLocationIOException() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree("{}");
+        Account account = Account.create();
+        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+        
+        doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
+        
+        controller.addLocation(node, account, location);
+    }
 
 //    @Test
 //    public void addGeocodingInformationIOException() throws Exception {
@@ -1274,34 +1293,34 @@ public class CRCControllerTest extends Mockito {
 //                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
 //    }
 //
-//    @Test
-//    public void combineLocationJsonWorks() throws Exception {
-//        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
-//        JsonNode actor = appointment.get("participant").get(0).get("actor");
-//        
-//        String result = controller.combineLocationJson(actor);
-//        assertEquals(result, "123+east+165+New+York+NY+10021");
-//    }
-//
-//    @Test
-//    public void combineLocationJsonIgnoresNull() throws Exception {
-//        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
-//        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
-//        actor.remove("address");
-//        
-//        String result = controller.combineLocationJson(actor);
-//        assertNull(result);
-//    }
-//    
-//    @Test
-//    public void combineLocationJsonIgnoresMissingFields() throws Exception {
-//        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
-//        JsonNode actor = appointment.get("participant").get(0).get("actor");
-//        ((ObjectNode)actor.get("address")).remove("city");
-//        
-//        String result = controller.combineLocationJson(actor);
-//        assertEquals(result, "123+east+165+NY+10021");
-//    }    
+    @Test
+    public void combineLocationJsonWorks() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+New+York+NY+10021");
+    }
+
+    @Test
+    public void combineLocationJsonIgnoresNull() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+        actor.remove("address");
+        
+        String result = controller.combineLocationJson(actor);
+        assertNull(result);
+    }
+    
+    @Test
+    public void combineLocationJsonIgnoresMissingFields() throws Exception {
+        JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));
+        JsonNode actor = appointment.get("participant").get(0).get("actor");
+        ((ObjectNode)actor.get("address")).remove("city");
+        
+        String result = controller.combineLocationJson(actor);
+        assertEquals(result, "123+east+165+NY+10021");
+    }    
     
     private void verifyParticipant(JsonNode payload) {
         ArrayNode identifiers = (ArrayNode)payload.get("participant");

@@ -3,8 +3,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
+import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
+import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN;
@@ -15,6 +20,7 @@ import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -23,15 +29,20 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
+import org.apache.http.message.BasicHeader;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
@@ -71,6 +82,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -88,14 +101,19 @@ import org.sagebionetworks.bridge.upload.UploadValidationException;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 
+
+/**
+ * NOTE: There are references to some properties in the config file that can be removed now 
+ * that we are not calling Columbia's servers. These should also be removed.
+ */
 @CrossOrigin
 @RestController
 public class CRCController extends BaseController {
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
 
-//    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
-//    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
-//    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
+    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
+    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
+    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
     static final String GEOCODING_API = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s";
     static final String GEOCODE_KEY = "crc.geocode.api.key";
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
@@ -179,9 +197,9 @@ public class CRCController extends BaseController {
         // This is temporary so we can start using the CRC system in production, 
         // while continuing to test. The calling code should not update the state of
         // the user if it receives a 400.
-//        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-//            throw new BadRequestException("Production accounts are not yet enabled.");
-//        }
+        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new BadRequestException("Production accounts are not yet enabled.");
+        }
         // All the code related to requesting a lab order will be removed once we've 
         // confirmed that this is Columbia's final approach to the integration.
         // createLabOrder(account);
@@ -213,7 +231,6 @@ public class CRCController extends BaseController {
         
         // Columbia wants us to call back to them to get information about the location.
         // And UI team wants geocoding of location to render a map.
-        /*
         String locationString = findLocation(appointment);
         if (locationString != null) {
             AccountId accountId = parseAccountId(app.getIdentifier(), userId);
@@ -223,7 +240,6 @@ public class CRCController extends BaseController {
             }
             addLocation(data, account, locationString);
         }
-        */
         
         int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state);
         if (status == 200) {
@@ -308,7 +324,7 @@ public class CRCController extends BaseController {
         }
         return null;
     }
-    /*
+/*
     void createLabOrder(Account account) {
         // Call external partner here and submit the patient record
         // this will trigger workflow at Columbia.
@@ -330,7 +346,7 @@ public class CRCController extends BaseController {
         }
         LOG.info("Patient record submitted to CUIMC for user " + account.getId());
     }
-
+*/
     void addLocation(JsonNode node, Account account, String location) {
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
@@ -359,7 +375,7 @@ public class CRCController extends BaseController {
                             }
                             if (address != null) {
                                 actor.set("address", address);
-                                addGeocodingInformation(actor);                            
+                                //addGeocodingInformation(actor);                            
                             }
                             break;
                         }
@@ -423,7 +439,7 @@ public class CRCController extends BaseController {
         }
         return null;
     }
-    /*
+
     private void throwExceptions(HttpResponse response, String userId) {
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode != 200 && statusCode != 201) {
@@ -443,12 +459,11 @@ public class CRCController extends BaseController {
         request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
     }
-    */
     
     HttpResponse get(String url) throws IOException {
         return Request.Get(url).execute().returnResponse();
     }
-    /*
+
     HttpResponse get(String url, Account account) throws IOException {
         Request request = Request.Get(url);
         request = addAuthorizationHeader(request, account);
@@ -485,7 +500,7 @@ public class CRCController extends BaseController {
             }
         }
         return null;
-    }*/
+    }
     
     private String findUserId(Appointment appt) {
         if (appt != null && appt.getParticipant() != null) {
