@@ -101,6 +101,11 @@ import org.sagebionetworks.bridge.upload.UploadValidationException;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 
+
+/**
+ * NOTE: There are references to some properties in the config file that can be removed now 
+ * that we are not calling Columbia's servers. These should also be removed.
+ */
 @CrossOrigin
 @RestController
 public class CRCController extends BaseController {
@@ -192,9 +197,9 @@ public class CRCController extends BaseController {
         // This is temporary so we can start using the CRC system in production, 
         // while continuing to test. The calling code should not update the state of
         // the user if it receives a 400.
-//        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-//            throw new BadRequestException("Production accounts are not yet enabled.");
-//        }
+        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new BadRequestException("Production accounts are not yet enabled.");
+        }
         // All the code related to requesting a lab order will be removed once we've 
         // confirmed that this is Columbia's final approach to the integration.
         // createLabOrder(account);
@@ -215,8 +220,8 @@ public class CRCController extends BaseController {
         String userId = findUserId(appointment);
         
         // They send appointment when it is booked, cancelled, or (rarely) enteredinerror.
-        String apptStatus = data.get("status").asText();
         AccountStates state = TESTS_SCHEDULED;
+        String apptStatus = data.get("status").asText();
         if ("entered-in-error".equals(apptStatus)) {
             deleteReportAndUpdateState(app, userId);
             return ResponseEntity.ok(new StatusMessage("Appointment deleted."));
@@ -225,7 +230,7 @@ public class CRCController extends BaseController {
         }
         
         // Columbia wants us to call back to them to get information about the location.
-        // And UI team wants geocoding of location to render a map. 
+        // And UI team wants geocoding of location to render a map.
         String locationString = findLocation(appointment);
         if (locationString != null) {
             AccountId accountId = parseAccountId(app.getIdentifier(), userId);
@@ -319,7 +324,7 @@ public class CRCController extends BaseController {
         }
         return null;
     }
-
+/*
     void createLabOrder(Account account) {
         // Call external partner here and submit the patient record
         // this will trigger workflow at Columbia.
@@ -341,8 +346,7 @@ public class CRCController extends BaseController {
         }
         LOG.info("Patient record submitted to CUIMC for user " + account.getId());
     }
-
-    
+*/
     void addLocation(JsonNode node, Account account, String location) {
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
@@ -371,7 +375,7 @@ public class CRCController extends BaseController {
                             }
                             if (address != null) {
                                 actor.set("address", address);
-                                addGeocodingInformation(actor);                            
+                                //addGeocodingInformation(actor);                            
                             }
                             break;
                         }
@@ -410,7 +414,7 @@ public class CRCController extends BaseController {
             }
         }
     }
-    
+
     String combineLocationJson(JsonNode actor) {
         if (actor.has("address")) {
             List<String> elements = Lists.newArrayList();
@@ -459,7 +463,7 @@ public class CRCController extends BaseController {
     HttpResponse get(String url) throws IOException {
         return Request.Get(url).execute().returnResponse();
     }
-    
+
     HttpResponse get(String url, Account account) throws IOException {
         Request request = Request.Get(url);
         request = addAuthorizationHeader(request, account);
@@ -482,7 +486,7 @@ public class CRCController extends BaseController {
         }
         return request;
     }
-    
+
     private String findLocation(Appointment appt) {
         if (appt != null && appt.getParticipant() != null) {
             for (AppointmentParticipantComponent component : appt.getParticipant()) {

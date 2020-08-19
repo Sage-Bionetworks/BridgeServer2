@@ -11,8 +11,8 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
@@ -46,10 +46,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
-import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.message.BasicStatusLine;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.Appointment;
 import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
@@ -151,6 +148,11 @@ public class CRCControllerTest extends Mockito {
     static final String APPOINTMENT_JSON_FULLY_RESOLVED = TestUtils.createJson("{'resourceType':'Appointment',"
             +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
             +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_W_GEOCODING = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'booked','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
             +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
             +"'lng':-122.3510372},'southwest':{'lat':47.617759,'lng':-122.3525807}},'location':{'lat':"
             +"47.6180007,'lng':-122.3516149},'location_type':'ROOFTOP','viewport':{'northeast':{'lat':"
@@ -158,6 +160,11 @@ public class CRCControllerTest extends Mockito {
             +"-122.3531579302915}}}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
             +"'value':'userId'}}}]}");
     static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED = TestUtils.createJson("{'resourceType':'Appointment',"
+            +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
+            +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
+            +"'state':'NY','postalCode':'10021'}}},{'actor':{'identifier':{'system':'https://ws.sagebridge.org/#userId',"
+            +"'value':'userId'}}}]}");
+    static final String APPOINTMENT_JSON_FULLY_RESOLVED_CANCELLED_W_GEOCODING = TestUtils.createJson("{'resourceType':'Appointment',"
             +"'status':'cancelled','participant':[{'actor':{'reference':'Location/foo','telecom':[{'system':'phone',"
             +"'value':'1231231235','use':'work'}],'address':{'line':['123 east 165'],'city':'New York',"
             +"'state':'NY','postalCode':'10021'},'geocoding':{'bounds':{'northeast':{'lat':47.6184148,"
@@ -339,13 +346,13 @@ public class CRCControllerTest extends Mockito {
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
         when(mockStatusLine.getStatusCode()).thenReturn(200);
                 
-        doReturn(mockResponse).when(controller).put(any(), any(), any());
+        // doReturn(mockResponse).when(controller).put(any(), any(), any());
         
         StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
         assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
         verify(mockAccountService).updateAccount(account, null);
-        verify(controller, never()).createLabOrder(account);
+        // verify(controller, never()).createLabOrder(account);
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
         assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
@@ -368,7 +375,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
         when(mockApp.getIdentifier()).thenReturn(APP_ID);
         when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
-        mockExternalService(200, "OK");
+//        mockExternalService(200, "OK");
         
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
         
@@ -386,7 +393,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
         when(mockApp.getIdentifier()).thenReturn(APP_ID);
         when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
-        mockExternalService(200, "OK");
+//        mockExternalService(200, "OK");
         
         controller.updateParticipant("healthcode:"+HEALTH_CODE);
         
@@ -394,63 +401,63 @@ public class CRCControllerTest extends Mockito {
         assertEquals(signInCaptor.getValue().getEmail(), SYN_USERNAME);
     }
     
-    @Test
-    public void createLabOrderOK() throws Exception {
-        mockExternalService(200, "OK");
-        // no errors
-        controller.createLabOrder(account);
-        
-        // Currently in production we are also using the test values
-        verify(controller).put(eq("http://testServer/userId"), any(), any());
-    }
+//    @Test
+//    public void createLabOrderOK() throws Exception {
+//        mockExternalService(200, "OK");
+//        // no errors
+//        controller.createLabOrder(account);
+//        
+//        // Currently in production we are also using the test values
+//        verify(controller).put(eq("http://testServer/userId"), any(), any());
+//    }
+//    
+//    @Test
+//    public void createLabOrderOKInTest() throws Exception {
+//        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+//        mockExternalService(200, "OK");
+//        // no errors
+//        controller.createLabOrder(account);
+//        
+//        verify(controller).put(eq("http://testServer/userId"), any(), any());
+//    }
+//
+//    @Test
+//    public void createLabOrderCreated() throws Exception { 
+//        mockExternalService(201, "Created");
+//        // no errors
+//        controller.createLabOrder(account);
+//    }
+//    
+//    @Test(expectedExceptions = BridgeServiceException.class, 
+//            expectedExceptionsMessageRegExp = "Internal Service Error")
+//    public void createLabOrderBadRequest() throws Exception { 
+//        mockExternalService(400, "Bad Request");
+//        controller.createLabOrder(account);
+//    }
+//    
+//    @Test(expectedExceptions = BridgeServiceException.class)
+//    public void createLabOrderInternalServerError() throws Exception { 
+//        mockExternalService(500, "Internal Server Error");
+//        controller.createLabOrder(account);
+//    }
+//    
+//    @Test(expectedExceptions = BridgeServiceException.class)
+//    public void createLabOrderServiceUnavailable() throws Exception { 
+//        mockExternalService(503, "Service Unavailable");
+//        controller.createLabOrder(account);
+//    }
+//    
+//    @Test(expectedExceptions = BridgeServiceException.class)
+//    public void createLabOrderIOException() throws Exception {
+//        doThrow(new IOException()).when(controller).put(any(), any(), any());
+//        controller.createLabOrder(account);
+//    }
     
-    @Test
-    public void createLabOrderOKInTest() throws Exception {
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        mockExternalService(200, "OK");
-        // no errors
-        controller.createLabOrder(account);
-        
-        verify(controller).put(eq("http://testServer/userId"), any(), any());
-    }
-
-    @Test
-    public void createLabOrderCreated() throws Exception { 
-        mockExternalService(201, "Created");
-        // no errors
-        controller.createLabOrder(account);
-    }
-    
-    @Test(expectedExceptions = BridgeServiceException.class, 
-            expectedExceptionsMessageRegExp = "Internal Service Error")
-    public void createLabOrderBadRequest() throws Exception { 
-        mockExternalService(400, "Bad Request");
-        controller.createLabOrder(account);
-    }
-    
-    @Test(expectedExceptions = BridgeServiceException.class)
-    public void createLabOrderInternalServerError() throws Exception { 
-        mockExternalService(500, "Internal Server Error");
-        controller.createLabOrder(account);
-    }
-    
-    @Test(expectedExceptions = BridgeServiceException.class)
-    public void createLabOrderServiceUnavailable() throws Exception { 
-        mockExternalService(503, "Service Unavailable");
-        controller.createLabOrder(account);
-    }
-    
-    @Test(expectedExceptions = BridgeServiceException.class)
-    public void createLabOrderIOException() throws Exception {
-        doThrow(new IOException()).when(controller).put(any(), any(), any());
-        controller.createLabOrder(account);
-    }
-    
-    private void mockExternalService(int statusCode, String statusReason) throws Exception {
-        StatusLine statusLine = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 2), statusCode, statusReason);
-        HttpResponse response = new BasicHttpResponse(statusLine);
-        doReturn(response).when(controller).put(any(), any(), any());
-    }
+//    private void mockExternalService(int statusCode, String statusReason) throws Exception {
+//        StatusLine statusLine = new BasicStatusLine(new ProtocolVersion("HTTP", 1, 2), statusCode, statusReason);
+//        HttpResponse response = new BasicHttpResponse(statusLine);
+//        doReturn(response).when(controller).put(any(), any(), any());
+//    }
 
     private void addAppointmentSageId(Appointment appointment, String value) {
         AppointmentParticipantComponent comp = new AppointmentParticipantComponent();
@@ -479,7 +486,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
-        mockGetGeocoding();
+//        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -531,7 +538,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
-        mockGetGeocoding();
+//        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -570,7 +577,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         mockGetLocation();
-        mockGetGeocoding();
+//        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -925,18 +932,18 @@ public class CRCControllerTest extends Mockito {
         when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
     }
     
-    void mockGetGeocoding() throws Exception {
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(EXPECTED_GEOCODING_URL);
-        
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(200);
-
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(GEOCODE_JSON));
-    }
+//    void mockGetGeocoding() throws Exception {
+//        HttpResponse mockResponse = mock(HttpResponse.class);
+//        doReturn(mockResponse).when(controller).get(EXPECTED_GEOCODING_URL);
+//        
+//        StatusLine mockStatusLine = mock(StatusLine.class);
+//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+//        when(mockStatusLine.getStatusCode()).thenReturn(200);
+//
+//        HttpEntity mockEntity = mock(HttpEntity.class);
+//        when(mockResponse.getEntity()).thenReturn(mockEntity);
+//        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(GEOCODE_JSON));
+//    }
     
     @Test
     public void authenticationPopulatesRequestContext() {
@@ -1211,81 +1218,81 @@ public class CRCControllerTest extends Mockito {
         controller.addLocation(node, account, location);
     }
 
-    @Test
-    public void addGeocodingInformationIOException() throws Exception {
-        JsonNode appointment = BridgeObjectMapper.get().readTree(APPOINTMENT_JSON);
-        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
-        doThrow(new IOException("Bad")).when(controller).get(any());
-        
-        controller.addGeocodingInformation(actor);
-        // JSON remains unchanged because request for geocoding failed.
-        assertEquals(appointment.toString(), APPOINTMENT_JSON);
-    }
-    
-    @Test
-    public void addGeocodingInformationHttpErrorResponse() throws Exception {
-        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
-        mockGetLocation();
-
-        // However, the request for geocoding information goes awry
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any());
-        
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(400);
-
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(""));
-
-        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
-      
-        controller.addLocation(node, account, location);
-        // JSON remains unchanged because request for geocoding failed.
-        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
-                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
-                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
-    }
-
-    @Test
-    public void addGeocodingInformationBadPayload() throws Exception {
-        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
-        mockGetLocation();
-
-        // However, the request for geocoding information goes awry
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any());
-        
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(200);
-
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("{\"foo\":\"bar\"}"));
-
-        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
-        
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
-      
-        controller.addLocation(node, account, location);
-        // Again, no error beyond logging, and JSON is unchanged.
-        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
-                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
-                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
-    }
-
+//    @Test
+//    public void addGeocodingInformationIOException() throws Exception {
+//        JsonNode appointment = BridgeObjectMapper.get().readTree(APPOINTMENT_JSON);
+//        ObjectNode actor = (ObjectNode)appointment.get("participant").get(0).get("actor");
+//        doThrow(new IOException("Bad")).when(controller).get(any());
+//        
+//        controller.addGeocodingInformation(actor);
+//        // JSON remains unchanged because request for geocoding failed.
+//        assertEquals(appointment.toString(), APPOINTMENT_JSON);
+//    }
+//    
+//    @Test
+//    public void addGeocodingInformationHttpErrorResponse() throws Exception {
+//        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+//        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+//        when(mockAccountService.getAccount(any())).thenReturn(null);
+//        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+//        mockGetLocation();
+//
+//        // However, the request for geocoding information goes awry
+//        HttpResponse mockResponse = mock(HttpResponse.class);
+//        doReturn(mockResponse).when(controller).get(any());
+//        
+//        StatusLine mockStatusLine = mock(StatusLine.class);
+//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+//        when(mockStatusLine.getStatusCode()).thenReturn(400);
+//
+//        HttpEntity mockEntity = mock(HttpEntity.class);
+//        when(mockResponse.getEntity()).thenReturn(mockEntity);
+//        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(""));
+//
+//        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+//        
+//        JsonNode node = BridgeObjectMapper.get().readTree(json);
+//        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+//      
+//        controller.addLocation(node, account, location);
+//        // JSON remains unchanged because request for geocoding failed.
+//        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+//                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+//                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+//    }
+//
+//    @Test
+//    public void addGeocodingInformationBadPayload() throws Exception {
+//        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+//        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+//        when(mockAccountService.getAccount(any())).thenReturn(null);
+//        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+//        mockGetLocation();
+//
+//        // However, the request for geocoding information goes awry
+//        HttpResponse mockResponse = mock(HttpResponse.class);
+//        doReturn(mockResponse).when(controller).get(any());
+//        
+//        StatusLine mockStatusLine = mock(StatusLine.class);
+//        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+//        when(mockStatusLine.getStatusCode()).thenReturn(200);
+//
+//        HttpEntity mockEntity = mock(HttpEntity.class);
+//        when(mockResponse.getEntity()).thenReturn(mockEntity);
+//        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("{\"foo\":\"bar\"}"));
+//
+//        String json = createJson("{'participant':[{'actor':{'reference':'Location/foo'}}]}");
+//        
+//        JsonNode node = BridgeObjectMapper.get().readTree(json);
+//        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+//      
+//        controller.addLocation(node, account, location);
+//        // Again, no error beyond logging, and JSON is unchanged.
+//        assertEquals(node.toString(), createJson("{'participant':[{'actor':{'reference':'Location/foo',"+
+//                "'telecom':[{'system':'phone','value':'1231231235','use':'work'}],'address':{'line':"
+//                +"['123 east 165'],'city':'New York','state':'NY','postalCode':'10021'}}}]}"));
+//    }
+//
     @Test
     public void combineLocationJsonWorks() throws Exception {
         JsonNode appointment = BridgeObjectMapper.get().readTree(createJson(APPOINTMENT_JSON));

@@ -20,9 +20,9 @@ public class StudyValidator implements Validator {
     public void validate(Object object, Errors errors) {
         Study study = (Study)object;
         
-        if (isBlank(study.getId())) {
+        if (isBlank(study.getIdentifier())) {
             errors.rejectValue("id", "is required");
-        } else if (!study.getId().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
+        } else if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
             errors.rejectValue("id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
         }
         if (isBlank(study.getAppId())) {
