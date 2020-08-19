@@ -14,8 +14,8 @@ public class OrganizationPersistenceExceptionConverter implements PersistenceExc
     
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        Throwable throwable = exception.getCause();
-        if (throwable instanceof org.hibernate.exception.ConstraintViolationException) {
+        Throwable throwable = PersistenceExceptionConverter.getConstraintViolation(exception);
+        if (throwable != null) {
             String message = Throwables.getRootCause(throwable).getMessage();
             if (message.matches(".*a foreign key constraint fails.*fk_os_organization.*")) {
                 message = CONSTRAINT_ERROR;

@@ -44,14 +44,14 @@ public class SponsorService {
         this.sponsorDao = sponsorDao;
     }
     
-    public PagedResourceList<Organization> getStudySponsors(String appId, String studyId, int offsetBy, int pageSize) {
+    public PagedResourceList<Organization> getStudySponsors(String appId, String studyId, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        if (offsetBy < 0) {
+        if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         // Throw an exception if this doesn't exist.
@@ -62,14 +62,14 @@ public class SponsorService {
                 .withRequestParam(PAGE_SIZE, pageSize);
     }
 
-    public PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, int offsetBy, int pageSize) {
+    public PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         checkNotNull(orgId);
         
-        if (offsetBy < 0) {
+        if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         // Throw an exception if this doesn't exist.
@@ -86,6 +86,10 @@ public class SponsorService {
         checkNotNull(orgId);
         
         checkOrgMembershipAndThrow(orgId);
+        
+        // The database constraints are thrown and converted to EntityNotFoundExceptions
+        // if either the organization or the study do not exist, or if the org already
+        // sponsors the study, that is also caught as a constraint violation.
         
         sponsorDao.addStudySponsor(appId, studyId, orgId);    
     }

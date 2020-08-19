@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembership;
 
 import java.util.List;
 import java.util.Set;
@@ -11,7 +9,6 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -29,16 +26,9 @@ public class StudyService {
     
     private StudyDao studyDao;
     
-    private OrganizationDao organizationDao;
-    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
-    }
-    
-    @Autowired
-    final void setOrganizationDao(OrganizationDao organizationDao) {
-        this.organizationDao = organizationDao;
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -68,15 +58,10 @@ public class StudyService {
         return studyDao.getStudies(appId, includeDeleted);
     }
     
-    public VersionHolder createStudy(String appId, String orgId, Study study) {
+    public VersionHolder createStudy(String appId, Study study) {
         checkNotNull(appId);
         checkNotNull(study);
         
-        if (isBlank(orgId)) {
-            throw new BadRequestException("Sponsor orgId is required.");
-        } else {
-            checkOrgMembership(orgId);
-        }
         study.setAppId(appId);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
@@ -88,15 +73,9 @@ public class StudyService {
         
         Study existing = studyDao.getStudy(appId, study.getId());
         if (existing != null) {
-            throw new EntityAlreadyExistsException(Study.class,
-                    ImmutableMap.of("id", existing.getId()));
+            throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getId()));
         }
-        // I wanted to change the error message because "Organization not found" in this context
-        // seems confusing to end users.
-        organizationDao.getOrganization(appId, orgId)
-            .orElseThrow(() -> new BadRequestException("Sponsoring organization not found."));
-
-        return studyDao.createStudy(study, orgId);
+        return studyDao.createStudy(study);
     }
 
     public VersionHolder updateStudy(String appId, Study study) {

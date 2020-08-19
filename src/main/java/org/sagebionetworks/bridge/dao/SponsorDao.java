@@ -9,13 +9,13 @@ public interface SponsorDao {
      * Get the organizations that are sponsoring this study. Members of this organization have additional permissions
      * vis-a-vis the study.
      */
-    PagedResourceList<Organization> getStudySponsors(String appId, String studyId, int offsetBy, int pageSize);
+    PagedResourceList<Organization> getStudySponsors(String appId, String studyId, Integer offsetBy, Integer pageSize);
     
     /**
      * Get the studies that this organization sponsors. Members of this organization have additional permissions
      * vis-a-vis these studies.
      */
-    PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, int offsetBy, int pageSize);
+    PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, Integer offsetBy, Integer pageSize);
     
     /**
      * Add a sponsoring organization to  a study.

@@ -7,8 +7,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -54,17 +51,9 @@ public class StudyController extends BaseController {
     public VersionHolder createStudy() {
         UserSession session = getAuthenticatedSession(ADMIN);
 
-        JsonNode node = parseJson(JsonNode.class);
-        Study study = parseJson(node, Study.class);
+        Study study = parseJson(Study.class);
         
-        // We will validate this value is set in the service, but practically, most people
-        // can only create studies for their own organization. Admins and Superadmins would
-        // be an exception.
-        String orgId = JsonUtils.asText(node, "orgId");
-        if (orgId == null) {
-            orgId = session.getParticipant().getOrgMembership();
-        }
-        return service.createStudy(session.getAppId(), orgId, study);
+        return service.createStudy(session.getAppId(), study);
     }
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})

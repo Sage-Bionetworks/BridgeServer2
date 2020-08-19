@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static java.util.stream.Collectors.toList;
-
 import java.util.List;
 
 import javax.annotation.Resource;
+
+import com.google.common.collect.ImmutableList;
 
 import org.springframework.stereotype.Component;
 
@@ -27,7 +27,7 @@ public class HibernateSponsorDao implements SponsorDao {
     }
 
     @Override
-    public PagedResourceList<Organization> getStudySponsors(String appId, String studyId, int offsetBy, int pageSize) {
+    public PagedResourceList<Organization> getStudySponsors(String appId, String studyId, Integer offsetBy, Integer pageSize) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Organizations o INNER JOIN OrganizationsStudies os ON o.identifier = os.orgId AND ");
         builder.append("o.appId = :appId AND os.appId = :appId ", "appId", appId);
@@ -35,17 +35,15 @@ public class HibernateSponsorDao implements SponsorDao {
 
         int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
 
-        List<Organization> studies = hibernateHelper
-                .nativeQueryGet("SELECT * " + builder.getQuery(), builder.getParameters(), 
-                        offsetBy, pageSize, HibernateOrganization.class)
-                .stream()
-                .map(o -> (Organization)o).collect(toList());
+        List<HibernateOrganization> organizations = hibernateHelper.nativeQueryGet(
+                "SELECT * " + builder.getQuery(), builder.getParameters(), 
+                offsetBy, pageSize, HibernateOrganization.class);
         
-        return new PagedResourceList<Organization>(studies, total);
+        return new PagedResourceList<Organization>(ImmutableList.copyOf(organizations), total);
     }
 
     @Override
-    public PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, int offsetBy, int pageSize) {
+    public PagedResourceList<Study> getSponsoredStudies(String appId, String orgId, Integer offsetBy, Integer pageSize) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM Substudies s INNER JOIN OrganizationsStudies os ON s.id = os.studyId AND ");
         builder.append("s.studyId = :appId AND os.appId = :appId ", "appId", appId);
@@ -53,12 +51,11 @@ public class HibernateSponsorDao implements SponsorDao {
 
         int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
 
-        List<Study> studies = hibernateHelper.nativeQueryGet("SELECT * " + builder.getQuery(), builder.getParameters(), 
-                    offsetBy, pageSize, HibernateStudy.class)
-                .stream()
-                .map(s -> (Study)s).collect(toList());
+        List<HibernateStudy> studies = hibernateHelper.nativeQueryGet(
+                "SELECT * " + builder.getQuery(), builder.getParameters(), 
+                offsetBy, pageSize, HibernateStudy.class);
         
-        return new PagedResourceList<Study>(studies, total);
+        return new PagedResourceList<Study>(ImmutableList.copyOf(studies), total);
     }
 
     @Override

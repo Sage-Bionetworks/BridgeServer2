@@ -109,25 +109,13 @@ public class HibernateStudyDaoTest extends Mockito {
         study.setAppId(TEST_APP_ID);
         study.setVersion(2L);
 
-        doAnswer((invocation) -> {
-            Consumer<HibernateStudy> cons = invocation.getArgument(1);
-            cons.accept(study);
-            return study;
-        }).when(hibernateHelper).create(any(), any());
-        
-        VersionHolder holder = dao.createStudy(study, TEST_ORG_ID);
+        VersionHolder holder = dao.createStudy(study);
         assertEquals(holder.getVersion(), new Long(2));
         
-        verify(hibernateHelper).create(studyCaptor.capture(), any());
+        verify(hibernateHelper).create(studyCaptor.capture(), eq(null));
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getVersion(), new Long(2));
-        
-        verify(hibernateHelper).nativeQueryUpdate(queryCaptor.capture(), paramsCaptor.capture());
-        assertEquals(queryCaptor.getValue(), ADD_SPONSOR_SQL);
-        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
-        assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_ID);
-        assertEquals(paramsCaptor.getValue().get("orgId"), TEST_ORG_ID);
     }
 
     @Test

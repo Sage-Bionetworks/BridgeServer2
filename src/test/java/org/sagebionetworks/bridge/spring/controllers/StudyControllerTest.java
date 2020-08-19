@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -20,8 +19,6 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -35,7 +32,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -116,49 +112,6 @@ public class StudyControllerTest extends Mockito {
         assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
         verify(service).getStudies(TEST_APP_ID, true);
-    }
-
-    @Test
-    public void createStudyDefaultingOrgId() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
-        when(service.createStudy(any(), any(), any())).thenReturn(VERSION_HOLDER);
-
-        Study study = Study.create();
-        study.setId("oneId");
-        study.setName("oneName");
-        
-        mockRequestBody(mockRequest, study);
-
-        VersionHolder result = controller.createStudy();
-        assertEquals(result, VERSION_HOLDER);
-
-        verify(service).createStudy(eq(TEST_APP_ID), eq(TEST_ORG_ID), studyCaptor.capture());
-
-        Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
-        assertEquals(persisted.getName(), "oneName");
-    }
-    
-    @Test
-    public void createStudyWithOrgId() throws Exception {
-        when(service.createStudy(any(), any(), any())).thenReturn(VERSION_HOLDER);
-
-        Study study = Study.create();
-        study.setId("oneId");
-        study.setName("oneName");
-        JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        ((ObjectNode)node).put("orgId", TEST_ORG_ID);
-        
-        mockRequestBody(mockRequest, node.toString());
-
-        VersionHolder result = controller.createStudy();
-        assertEquals(result, VERSION_HOLDER);
-
-        verify(service).createStudy(eq(TEST_APP_ID), eq(TEST_ORG_ID), studyCaptor.capture());
-
-        Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
-        assertEquals(persisted.getName(), "oneName");        
     }
 
     @Test

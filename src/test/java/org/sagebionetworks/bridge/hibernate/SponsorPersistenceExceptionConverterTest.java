@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter.DUPLICATE_ERROR;
 import static org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter.DUPLICATE_MSG;
-import static org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter.ORG_ERROR;
-import static org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter.STUDY_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -22,6 +19,13 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 
 public class SponsorPersistenceExceptionConverterTest extends Mockito {
+    private static final String DUPLICATE_ERROR = "Duplicate entry 'api-study1-org2' for key 'PRIMARY'";
+    private static final String ORG_ERROR = "Cannot add or update a child row: a foreign key constraint fails "
+            +"(`bridgedb`.`organizationsstudies`, CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, "
+            +"`orgId`) REFERENCES `Organizations` (`appId`, `identifier`))";
+    private static final String STUDY_ERROR = "Cannot add or update a child row: a foreign key constraint fails "
+            +"(`bridgedb`.`organizationsstudies`, CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) "
+            +"REFERENCES `Substudies` (`id`, `studyId`))";
     
     private SponsorPersistenceExceptionConverter converter;
     
