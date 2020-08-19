@@ -29,7 +29,7 @@ public class AuthUtilsTest {
     }
     
     @Test
-    public void checkOrgMembershipSucceedsForSuperadmin() {
+    public void checkOrgMembershipSucceedsForAdmin() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
