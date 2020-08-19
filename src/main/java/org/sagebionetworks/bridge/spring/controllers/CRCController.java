@@ -194,15 +194,6 @@ public class CRCController extends BaseController {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        // This is temporary so we can start using the CRC system in production, 
-        // while continuing to test. The calling code should not update the state of
-        // the user if it receives a 400.
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new BadRequestException("Production accounts are not yet enabled.");
-        }
-        // All the code related to requesting a lab order will be removed once we've 
-        // confirmed that this is Columbia's final approach to the integration.
-        // createLabOrder(account);
 
         updateState(account, SELECTED);
         accountService.updateAccount(account, null);
