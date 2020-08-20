@@ -3,13 +3,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.entity.ContentType.APPLICATION_FORM_URLENCODED;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
-import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN;
@@ -317,23 +317,29 @@ public class CRCController extends BaseController {
      * ID in the appointment record. Do not fail the request if this fails, but log enough
      * to troubleshoot if the issue is on our side.
      */
-    void addLocation(JsonNode node, Account account, String location) {
+    void addLocation(JsonNode node, Account account, String locationId) {
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
         String url = bridgeConfig.get(cuimcUrl);
-        url = resolveTemplate(url, ImmutableMap.of("location", location));
+        String reqBody = "id=\"" + locationId + "\"";
 
         try {
-            HttpResponse response = get(url, account);
-            String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
+            HttpResponse response = post(url, account, reqBody);
+            String resBody = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
             
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200 && statusCode != 201) {
-                LOG.warn("Error retrieving location, status = " + statusCode + 
-                        ", response body = " + body);
+                LOG.warn("Error retrieving location, id = " + locationId + ", status = " + statusCode
+                        + ", response body = " + resBody);
                 return;
             }
-            JsonNode locationJson = BridgeObjectMapper.get().readTree(body);
+            JsonNode bundleJson = BridgeObjectMapper.get().readTree(resBody);
+            if (!bundleJson.has("entry") || ((ArrayNode)bundleJson.get("entry")).size() == 0) {
+                LOG.warn("Error retrieving location, id = " + locationId + ", status = " + statusCode
+                        + ", response body = " + resBody);
+                return;
+            }
+            JsonNode locationJson = bundleJson.get("entry").get(0).get("resource");
             JsonNode telecom = locationJson.get("telecom");
             JsonNode address = locationJson.get("address");
             
@@ -358,7 +364,7 @@ public class CRCController extends BaseController {
                 }
             }
         } catch (IOException e) {
-            LOG.warn("Error retrieving location: " + location, e);
+            LOG.warn("Error retrieving location, id = " + locationId, e);
             return;
         }
         LOG.info("Location added to appointment record for user " + account.getId());
@@ -425,8 +431,14 @@ public class CRCController extends BaseController {
         return Request.Get(url).execute().returnResponse();
     }
 
-    HttpResponse get(String url, Account account) throws IOException {
-        Request request = Request.Get(url);
+//    HttpResponse get(String url, Account account) throws IOException {
+//        Request request = Request.Get(url);
+//        request = addAuthorizationHeader(request, account);
+//        return request.execute().returnResponse();
+//    }
+    
+    HttpResponse post(String url, Account account, String body) throws IOException {
+        Request request = Request.Post(url).bodyString(body, APPLICATION_FORM_URLENCODED);
         request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
     }

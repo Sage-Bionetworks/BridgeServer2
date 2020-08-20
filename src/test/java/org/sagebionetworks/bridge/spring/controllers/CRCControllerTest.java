@@ -119,12 +119,19 @@ public class CRCControllerTest extends Mockito {
     static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", USER_ID);
     static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
-    static final String LOCATION_JSON = TestUtils.createJson("{ 'id': 'ColSite1', 'meta': { 'id': 'Location/ColSite1', "
-            +"'versionId': '1', 'lastUpdated': '2020-06-12T01:38:24.841Z' }, 'resourceType': 'Location', "
-            +"'status': 'active', 'name': 'ColSite1', 'type': { 'coding': [ { 'code': 'HUSCS', 'display': "
-            +"'Collection Site' } ] }, 'telecom': [ { 'system': 'phone', 'value': '1231231235', 'use': "
-            +"'work' } ], 'address': { 'line': [ '123 east 165' ], 'city': 'New York', 'state': 'NY', "
-            +"'postalCode': '10021' } }");
+    static final String LOCATION_JSON = TestUtils.createJson("{ 'id':'4b72216e-f638-4eb0-b901-e23ca2aa69de', "
+            +"'meta':{ 'lastUpdated':'2020-08-20T12:41:26Z' }, 'resourceType':'Bundle', 'type':'searchset', "
+            +"'total':1, 'entry':[ { 'resource':{ 'id':'CovidRecoveryChony', 'extension':[ { 'valueDuration':"
+            +"{ 'code':'0/15 8-17 * * MON-FRI' } } ], 'meta':{ 'id':'Location/CovidRecoveryChony', 'versionId':"
+            +"'1', 'lastUpdated':'2020-08-07T14:58:05.088-04:00' }, 'contained':[ { 'id':'CovidRecovery', "
+            +"'resourceType':'Organization', 'name':'Covid Recovery Corp' } ], 'resourceType':'Location', "
+            +"'status':'active', 'name':'CovidRecoveryChony', 'type':{ 'coding':[ { 'code':'HUSCS', 'display':"
+            +"'Collection Site' } ] }, 'telecom':[ { 'system':'phone', 'value':'1231231235', 'use':'work' } ], "
+            +"'address':{ 'line':[ '123 east 165' ], 'city':'New York', 'state':'NY', 'postalCode':'10021' } "
+            +"}, 'search':{ 'mode':'match' } } ] }");
+    // Errors are returned 200 with no entries in the bundle response (not 400 or whatever). 
+    static final String LOCATION_JSON_ERROR = TestUtils.createJson("{'id':'40bd082a-5182-4a30-a6ff-50f3daa85435',"
+            +"'resourceType':'Bundle','type':'searchset','total':0}");
     static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
             +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
             +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
@@ -318,11 +325,11 @@ public class CRCControllerTest extends Mockito {
         doReturn(TestConstants.TIMESTAMP).when(controller).getTimestamp();
         
         when(mockConfig.get("cuimc.test.url")).thenReturn("http://testServer/${patientId}");
-        when(mockConfig.get("cuimc.test.location.url")).thenReturn("http://testServer/location/${location}");
+        when(mockConfig.get("cuimc.test.location.url")).thenReturn("http://testServer/location/_search");
         when(mockConfig.get("cuimc.test.username")).thenReturn("testUsername");
         when(mockConfig.get("cuimc.test.password")).thenReturn("testPassword");
         when(mockConfig.get("cuimc.prod.url")).thenReturn("http://prodServer/${patientId}");
-        when(mockConfig.get("cuimc.prod.location.url")).thenReturn("http://testServer/location/${location}");
+        when(mockConfig.get("cuimc.prod.location.url")).thenReturn("http://testServer/location/_search");
         when(mockConfig.get("cuimc.prod.username")).thenReturn("prodUsername");
         when(mockConfig.get("cuimc.prod.password")).thenReturn("prodPassword");
         when(mockConfig.get("crc.geocode.api.key")).thenReturn("GEOKEY");
@@ -575,7 +582,7 @@ public class CRCControllerTest extends Mockito {
         assertTrue(account.getDataGroups().contains("tests_scheduled"));
         
         verify(controller).addLocation(any(), eq(account), eq("foo"));
-        verify(controller).get("http://testServer/location/foo", account);
+        verify(controller).post("http://testServer/location/_search", account, "id=\"foo\"");
         verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
         
         HealthDataSubmission healthData = dataCaptor.getValue();
@@ -668,7 +675,7 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any(), any());
+        doReturn(mockResponse).when(controller).post(any(), any(), any());
         
         StatusLine mockStatusLine = mock(StatusLine.class);
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
@@ -687,7 +694,7 @@ public class CRCControllerTest extends Mockito {
         
         assertEquals(loggingEvent.getLevel(), Level.WARN);
         assertEquals(loggingEvent.getFormattedMessage(), 
-                "Error retrieving location, status = 400, response body = This was an error.");
+                "Error retrieving location, id = foo, status = 400, response body = This was an error.");
     }
     
     @Test
@@ -708,7 +715,7 @@ public class CRCControllerTest extends Mockito {
         mockRequestBody(mockRequest, json);
         
         controller.postAppointment();
-        verify(controller, never()).get(any(), any());
+        verify(controller, never()).post(any(), any(), any());
         verify(mockHealthDataService).submitHealthData(any(), any(), any());        
     }
     
@@ -951,7 +958,7 @@ public class CRCControllerTest extends Mockito {
     
     void mockGetLocation() throws Exception {
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any(), any());
+        doReturn(mockResponse).when(controller).post(any(), any(), any());
         
         StatusLine mockStatusLine = mock(StatusLine.class);
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
@@ -960,6 +967,19 @@ public class CRCControllerTest extends Mockito {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockResponse.getEntity()).thenReturn(mockEntity);
         when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
+    }
+    
+    void mockGetLocationWithBadLocation() throws Exception {
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).post(any(), any(), any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(200);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON_ERROR));
     }
     
 //    void mockGetGeocoding() throws Exception {
@@ -1241,17 +1261,35 @@ public class CRCControllerTest extends Mockito {
     public void addLocationIOException() throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree("{}");
         Account account = Account.create();
-        String location = BridgeUtils.encodeURIComponent("123 east 165 New York NY 10021");
+        String locationId = BridgeUtils.encodeURIComponent("badLocation");
         
-        doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
+        doThrow(new IOException("Something wrong")).when(controller).post(any(), any(), any());
         
-        controller.addLocation(node, account, location);
+        controller.addLocation(node, account, locationId);
         
         verify(mockAppender).doAppend(loggingEventCaptor.capture());
         final LoggingEvent loggingEvent = loggingEventCaptor .getValue();
         
         assertEquals(loggingEvent.getLevel(), Level.WARN);
-        assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location: " + location);
+        assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location, id = " + locationId);
+    }
+    
+    @Test
+    public void addLocationNoLocationReturned() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree("{}");
+        Account account = Account.create();
+        String locationId = "badLocation";
+        
+        mockGetLocationWithBadLocation();
+        
+        controller.addLocation(node, account, locationId);
+        
+        verify(mockAppender).doAppend(loggingEventCaptor.capture());
+        final LoggingEvent loggingEvent = loggingEventCaptor .getValue();
+        
+        assertEquals(loggingEvent.getLevel(), Level.WARN);
+        assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location, id = " + locationId
+                + ", status = 200, response body = " + LOCATION_JSON_ERROR);
     }
 
 //    @Test
