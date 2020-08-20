@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -14,7 +13,6 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -33,7 +31,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableList;
@@ -158,7 +155,6 @@ public class StudyServiceTest {
         study.setModifiedOn(timestamp);
 
         when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
-        when(organizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.of(Organization.create()));
         
         VersionHolder returnedValue = service.createStudy(TEST_APP_ID, study);
         assertEquals(returnedValue, VERSION_HOLDER);

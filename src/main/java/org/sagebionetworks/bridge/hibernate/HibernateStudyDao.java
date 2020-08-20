@@ -76,12 +76,6 @@ public class HibernateStudyDao implements StudyDao {
         checkNotNull(appId);
         checkNotNull(id);
         
-        QueryBuilder builder = new QueryBuilder();
-        builder.append("DELETE FROM OrganizationsStudies WHERE appId = :appId AND studyId = :studyId");
-        builder.getParameters().put("appId", appId);
-        builder.getParameters().put("studyId", id);
-        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
-        
         StudyId studyId = new StudyId(appId, id);
         hibernateHelper.deleteById(HibernateStudy.class, studyId);
     }

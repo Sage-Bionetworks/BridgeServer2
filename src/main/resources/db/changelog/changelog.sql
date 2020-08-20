@@ -383,8 +383,8 @@ CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
   `studyId` varchar(255) NOT NULL,
   `orgId` varchar(255) NOT NULL,
   PRIMARY KEY (`appId`,`studyId`,`orgId`),
-  CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`),
-  CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
+  CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`) ON DELETE CASCADE,
+  CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- Fix this (one value is missing).

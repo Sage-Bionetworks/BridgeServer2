@@ -44,13 +44,13 @@ public class SponsorPersistenceExceptionConverterTest extends Mockito {
         PersistenceException pe = new PersistenceException(cve);
         
         RuntimeException retValue = converter.convert(pe, Organization.create());
-        assertEquals(retValue.getClass().getName(), "org.sagebionetworks.bridge.exceptions.ConstraintViolationException");
+        assertEquals(retValue.getClass(), ConstraintViolationException.class);
         assertSame(retValue.getMessage(), "Some error");
     }
     
     @Test
     public void repackagesDuplicateConstraintViolation() {
-        constraintTests(org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class, DUPLICATE_ERROR, DUPLICATE_MSG);
+        constraintTests(ConstraintViolationException.class, DUPLICATE_ERROR, DUPLICATE_MSG);
     }
 
     @Test
@@ -70,7 +70,7 @@ public class SponsorPersistenceExceptionConverterTest extends Mockito {
         
         RuntimeException retValue = converter.convert(pe, null);
         
-        assertEquals(retValue.getClass().getName(), clazz.getCanonicalName());
+        assertEquals(retValue.getClass(), clazz);
         assertEquals(retValue.getMessage(), finalMessage);
     }
     
