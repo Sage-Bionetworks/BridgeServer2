@@ -66,6 +66,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -77,10 +78,8 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -100,6 +99,11 @@ import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 
 import ca.uhn.fhir.parser.IParser;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.Appender;
 
 public class CRCControllerTest extends Mockito {
 
@@ -263,6 +267,12 @@ public class CRCControllerTest extends Mockito {
     @Mock
     HealthDataService mockHealthDataService;
     
+    @Mock
+    private Appender<ILoggingEvent> mockAppender;
+
+    @Captor
+    private ArgumentCaptor<LoggingEvent> loggingEventCaptor;
+    
     @Captor
     ArgumentCaptor<SignIn> signInCaptor;
     
@@ -316,6 +326,11 @@ public class CRCControllerTest extends Mockito {
         when(mockConfig.get("cuimc.prod.username")).thenReturn("prodUsername");
         when(mockConfig.get("cuimc.prod.password")).thenReturn("prodPassword");
         when(mockConfig.get("crc.geocode.api.key")).thenReturn("GEOKEY");
+        
+        // Mock logging to ensure it's called
+        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.addAppender(mockAppender);
+        root.setLevel(Level.DEBUG);
     }
     
     @AfterMethod
@@ -637,27 +652,42 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).get(any(), any());
+//        mockGetGeocoding();
         
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(500);
+        DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
-        addAppointmentParticipantComponent(appointment, LOCATION_NS + "some-other-id");
+        // add a wrong participant to verify we go through them all and look for ours
+        addAppointmentParticipantComponent(appointment, "Location/foo");
         addAppointmentSageId(appointment, USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
         
-        try {
-            controller.postAppointment();
-            fail("Should have thrown exception");
-        } catch(BridgeServiceException e) {
-        }
-        verify(mockHealthDataService, never()).submitHealthData(any(), any(), any());
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(controller).get(any(), any());
+        
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        when(mockStatusLine.getStatusCode()).thenReturn(400);
+
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        when(mockResponse.getEntity()).thenReturn(mockEntity);
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("This was an error."));
+        
+        ResponseEntity<StatusMessage> retValue = controller.postAppointment();
+        assertEquals(retValue.getBody().getMessage(), "Appointment created (status = booked).");
+        assertEquals(retValue.getStatusCodeValue(), 201);
+        
+        verify(mockAppender).doAppend(loggingEventCaptor.capture());
+        final LoggingEvent loggingEvent = loggingEventCaptor .getValue();
+        
+        assertEquals(loggingEvent.getLevel(), Level.WARN);
+        assertEquals(loggingEvent.getFormattedMessage(), 
+                "Error retrieving location, status = 400, response body = This was an error.");
     }
     
     @Test
@@ -1207,7 +1237,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(patient.getTelecom().get(0).getSystem(), ContactPointSystem.SMS);
     }
     
-    @Test(expectedExceptions = ServiceUnavailableException.class)
+    @Test
     public void addLocationIOException() throws Exception {
         JsonNode node = BridgeObjectMapper.get().readTree("{}");
         Account account = Account.create();
@@ -1216,6 +1246,12 @@ public class CRCControllerTest extends Mockito {
         doThrow(new IOException("Something wrong")).when(controller).get(any(), any());
         
         controller.addLocation(node, account, location);
+        
+        verify(mockAppender).doAppend(loggingEventCaptor.capture());
+        final LoggingEvent loggingEvent = loggingEventCaptor .getValue();
+        
+        assertEquals(loggingEvent.getLevel(), Level.WARN);
+        assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location: " + location);
     }
 
 //    @Test

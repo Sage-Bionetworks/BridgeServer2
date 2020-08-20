@@ -82,7 +82,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -111,9 +110,6 @@ import ca.uhn.fhir.parser.IParser;
 public class CRCController extends BaseController {
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
 
-    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
-    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
-    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
     static final String GEOCODING_API = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s";
     static final String GEOCODE_KEY = "crc.geocode.api.key";
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
@@ -315,29 +311,12 @@ public class CRCController extends BaseController {
         }
         return null;
     }
-/*
-    void createLabOrder(Account account) {
-        // Call external partner here and submit the patient record
-        // this will trigger workflow at Columbia.
-        Patient patient = createPatient(account);
-        IParser parser = FHIR_CONTEXT.newJsonParser();
-        String json = parser.encodeResourceToString(patient);
 
-        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
-        String cuimcUrl = "cuimc." + cuimcEnv + ".url";
-        String url = bridgeConfig.get(cuimcUrl);
-        url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
-
-        try {
-            HttpResponse response = put(url, json, account);
-            throwExceptions(response, account.getId());
-        } catch (IOException e) {
-            LOG.error(INT_ERROR + account.getId(), e);
-            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
-        }
-        LOG.info("Patient record submitted to CUIMC for user " + account.getId());
-    }
-*/
+    /**
+     * This is a nice-to-have addition of address information for the location given by an 
+     * ID in the appointment record. Do not fail the request if this fails, but log enough
+     * to troubleshoot if the issue is on our side.
+     */
     void addLocation(JsonNode node, Account account, String location) {
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
@@ -346,9 +325,14 @@ public class CRCController extends BaseController {
 
         try {
             HttpResponse response = get(url, account);
-            throwExceptions(response, account.getId());
-            
             String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
+            
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200 && statusCode != 201) {
+                LOG.warn("Error retrieving location, status = " + statusCode + 
+                        ", response body = " + body);
+                return;
+            }
             JsonNode locationJson = BridgeObjectMapper.get().readTree(body);
             JsonNode telecom = locationJson.get("telecom");
             JsonNode address = locationJson.get("address");
@@ -374,8 +358,8 @@ public class CRCController extends BaseController {
                 }
             }
         } catch (IOException e) {
-            LOG.error(INT_ERROR + account.getId(), e);
-            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
+            LOG.warn("Error retrieving location: " + location, e);
+            return;
         }
         LOG.info("Location added to appointment record for user " + account.getId());
     }
@@ -429,20 +413,6 @@ public class CRCController extends BaseController {
             return encodeURIComponent(SPACE_JOINER.join(elements));
         }
         return null;
-    }
-
-    private void throwExceptions(HttpResponse response, String userId) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200 && statusCode != 201) {
-            // This is a transient server error from the external service and we
-            // can communicate this back to the caller. Not sure we should log
-            // this.
-            if (statusCode == 503) {
-                throw new ServiceUnavailableException("Service Unavailable");
-            }
-            LOG.error(EXT_ERROR + userId + ", status code: " + statusCode);
-            throw new BridgeServiceException("Internal Service Error");
-        }
     }
 
     HttpResponse put(String url, String bodyJson, Account account) throws IOException {
