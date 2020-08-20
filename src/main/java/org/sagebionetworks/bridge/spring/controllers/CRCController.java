@@ -3,13 +3,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.http.entity.ContentType.APPLICATION_FORM_URLENCODED;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
-import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN;
@@ -82,7 +82,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
-import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -111,9 +110,6 @@ import ca.uhn.fhir.parser.IParser;
 public class CRCController extends BaseController {
     private static final Logger LOG = LoggerFactory.getLogger(CRCController.class);
 
-    private static final String UNAVAILABLE_ERROR = "The server encountered an error";
-    private static final String INT_ERROR = "Error calling CUIMC to submit patient record, user ";
-    private static final String EXT_ERROR = "Received non-2xx series response when submitting patient record for user ";
     static final String GEOCODING_API = "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s";
     static final String GEOCODE_KEY = "crc.geocode.api.key";
     static final String TIMESTAMP_FIELD = "state_change_timestamp";
@@ -315,43 +311,39 @@ public class CRCController extends BaseController {
         }
         return null;
     }
-/*
-    void createLabOrder(Account account) {
-        // Call external partner here and submit the patient record
-        // this will trigger workflow at Columbia.
-        Patient patient = createPatient(account);
-        IParser parser = FHIR_CONTEXT.newJsonParser();
-        String json = parser.encodeResourceToString(patient);
 
-        String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
-        String cuimcUrl = "cuimc." + cuimcEnv + ".url";
-        String url = bridgeConfig.get(cuimcUrl);
-        url = resolveTemplate(url, ImmutableMap.of("patientId", account.getId()));
-
-        try {
-            HttpResponse response = put(url, json, account);
-            throwExceptions(response, account.getId());
-        } catch (IOException e) {
-            LOG.error(INT_ERROR + account.getId(), e);
-            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
-        }
-        LOG.info("Patient record submitted to CUIMC for user " + account.getId());
-    }
-*/
-    void addLocation(JsonNode node, Account account, String location) {
+    /**
+     * This is a nice-to-have addition of address information for the location given by an 
+     * ID in the appointment record. Do not fail the request if this fails, but log enough
+     * to troubleshoot if the issue is on our side.
+     */
+    void addLocation(JsonNode node, Account account, String locationId) {
         String cuimcEnv = (account.getDataGroups().contains(TEST_USER_GROUP)) ? "test" : "prod";
         String cuimcUrl = "cuimc." + cuimcEnv + ".location.url";
         String url = bridgeConfig.get(cuimcUrl);
-        url = resolveTemplate(url, ImmutableMap.of("location", location));
+        String reqBody = "id=\"" + locationId + "\"";
 
         try {
-            HttpResponse response = get(url, account);
-            throwExceptions(response, account.getId());
+            HttpResponse response = post(url, account, reqBody);
+            String resBody = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
             
-            String body = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
-            JsonNode locationJson = BridgeObjectMapper.get().readTree(body);
-            JsonNode telecom = locationJson.get("telecom");
-            JsonNode address = locationJson.get("address");
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200 && statusCode != 201) {
+                logWarningMessage(locationId, statusCode, resBody);
+                return;
+            }
+            JsonNode bundleJson = BridgeObjectMapper.get().readTree(resBody);
+            if (!bundleJson.has("entry") || ((ArrayNode)bundleJson.get("entry")).size() == 0) {
+                logWarningMessage(locationId, statusCode, resBody);
+                return;
+            }
+            JsonNode resJson = bundleJson.get("entry").get(0).get("resource");
+            if (resJson == null) {
+                logWarningMessage(locationId, statusCode, resBody);
+                return;
+            }
+            JsonNode telecom = resJson.get("telecom");
+            JsonNode address = resJson.get("address");
             
             ArrayNode participants = (ArrayNode)node.get("participant");
             if (participants != null) {
@@ -374,10 +366,17 @@ public class CRCController extends BaseController {
                 }
             }
         } catch (IOException e) {
-            LOG.error(INT_ERROR + account.getId(), e);
-            throw new ServiceUnavailableException(UNAVAILABLE_ERROR);
+            LOG.warn("Error retrieving location, id = " + locationId, e);
+            return;
         }
         LOG.info("Location added to appointment record for user " + account.getId());
+    }
+
+    private void logWarningMessage(String locationId, int statusCode, String resBody) {
+        // May or may not be utilized
+        String errorMsg = "Error retrieving location, id = " + locationId + ", status = " + statusCode
+                + ", response body = " + resBody;
+        LOG.warn(errorMsg);
     }
 
     void addGeocodingInformation(ObjectNode actor) {
@@ -431,20 +430,6 @@ public class CRCController extends BaseController {
         return null;
     }
 
-    private void throwExceptions(HttpResponse response, String userId) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 200 && statusCode != 201) {
-            // This is a transient server error from the external service and we
-            // can communicate this back to the caller. Not sure we should log
-            // this.
-            if (statusCode == 503) {
-                throw new ServiceUnavailableException("Service Unavailable");
-            }
-            LOG.error(EXT_ERROR + userId + ", status code: " + statusCode);
-            throw new BridgeServiceException("Internal Service Error");
-        }
-    }
-
     HttpResponse put(String url, String bodyJson, Account account) throws IOException {
         Request request = Request.Put(url).bodyString(bodyJson, APPLICATION_JSON);
         request = addAuthorizationHeader(request, account);
@@ -455,8 +440,14 @@ public class CRCController extends BaseController {
         return Request.Get(url).execute().returnResponse();
     }
 
-    HttpResponse get(String url, Account account) throws IOException {
-        Request request = Request.Get(url);
+//    HttpResponse get(String url, Account account) throws IOException {
+//        Request request = Request.Get(url);
+//        request = addAuthorizationHeader(request, account);
+//        return request.execute().returnResponse();
+//    }
+    
+    HttpResponse post(String url, Account account, String body) throws IOException {
+        Request request = Request.Post(url).bodyString(body, APPLICATION_FORM_URLENCODED);
         request = addAuthorizationHeader(request, account);
         return request.execute().returnResponse();
     }
