@@ -7,6 +7,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -17,8 +18,8 @@ public class DynamoParticipantFileDaoTest {
     private static final ParticipantFile KEY =
             new DynamoParticipantFile("test_user", "test_file");
 
-    private static final ParticipantFile RESULT =
-            new DynamoParticipantFile("test_user", "test_file", DateTime.parse("2010-06-30T01:20"));
+    private static final DynamoParticipantFile RESULT =
+            new DynamoParticipantFile("test_user", "test_file");
 
     @Mock
     DynamoDBMapper mapper;
@@ -32,6 +33,7 @@ public class DynamoParticipantFileDaoTest {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+        RESULT.setCreatedOn(TestConstants.TIMESTAMP);
     }
 
     @Test
