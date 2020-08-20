@@ -329,19 +329,21 @@ public class CRCController extends BaseController {
             
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200 && statusCode != 201) {
-                LOG.warn("Error retrieving location, id = " + locationId + ", status = " + statusCode
-                        + ", response body = " + resBody);
+                logWarningMessage(locationId, statusCode, resBody);
                 return;
             }
             JsonNode bundleJson = BridgeObjectMapper.get().readTree(resBody);
             if (!bundleJson.has("entry") || ((ArrayNode)bundleJson.get("entry")).size() == 0) {
-                LOG.warn("Error retrieving location, id = " + locationId + ", status = " + statusCode
-                        + ", response body = " + resBody);
+                logWarningMessage(locationId, statusCode, resBody);
                 return;
             }
-            JsonNode locationJson = bundleJson.get("entry").get(0).get("resource");
-            JsonNode telecom = locationJson.get("telecom");
-            JsonNode address = locationJson.get("address");
+            JsonNode resJson = bundleJson.get("entry").get(0).get("resource");
+            if (resJson == null) {
+                logWarningMessage(locationId, statusCode, resBody);
+                return;
+            }
+            JsonNode telecom = resJson.get("telecom");
+            JsonNode address = resJson.get("address");
             
             ArrayNode participants = (ArrayNode)node.get("participant");
             if (participants != null) {
@@ -368,6 +370,13 @@ public class CRCController extends BaseController {
             return;
         }
         LOG.info("Location added to appointment record for user " + account.getId());
+    }
+
+    private void logWarningMessage(String locationId, int statusCode, String resBody) {
+        // May or may not be utilized
+        String errorMsg = "Error retrieving location, id = " + locationId + ", status = " + statusCode
+                + ", response body = " + resBody;
+        LOG.warn(errorMsg);
     }
 
     void addGeocodingInformation(ObjectNode actor) {

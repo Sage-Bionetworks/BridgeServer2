@@ -132,6 +132,9 @@ public class CRCControllerTest extends Mockito {
     // Errors are returned 200 with no entries in the bundle response (not 400 or whatever). 
     static final String LOCATION_JSON_ERROR = TestUtils.createJson("{'id':'40bd082a-5182-4a30-a6ff-50f3daa85435',"
             +"'resourceType':'Bundle','type':'searchset','total':0}");
+    static final String LOCATION_JSON_NO_RESOURCE = TestUtils.createJson("{ 'id':'4b72216e-f638-4eb0-b901-e23ca2aa69de', "
+            +"'meta':{ 'lastUpdated':'2020-08-20T12:41:26Z' }, 'resourceType':'Bundle', 'type':'searchset', "
+            +"'total':1, 'entry':[ { } ] }");
     static final String GEOCODE_JSON = TestUtils.createJson("{ 'results' : [ { 'address_components' : [ "
             +"{ 'long_name' : '330', 'short_name' : '330', 'types' : [ 'subpremise' ] }, { 'long_name' : "
             +"'2901', 'short_name' : '2901', 'types' : [ 'street_number' ] }, { 'long_name' : '3rd Avenue',"
@@ -507,7 +510,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
@@ -559,7 +562,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
@@ -598,7 +601,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
@@ -956,30 +959,18 @@ public class CRCControllerTest extends Mockito {
         assertEquals(captured.getPassword(), "dummy-password");
     }
     
-    void mockGetLocation() throws Exception {
+    void mockGetLocation(String payload) throws Exception {
         HttpResponse mockResponse = mock(HttpResponse.class);
         doReturn(mockResponse).when(controller).post(any(), any(), any());
         
         StatusLine mockStatusLine = mock(StatusLine.class);
         when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
+        // Search failures do come back as 200s 
         when(mockStatusLine.getStatusCode()).thenReturn(200);
 
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON));
-    }
-    
-    void mockGetLocationWithBadLocation() throws Exception {
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(controller).post(any(), any(), any());
-        
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(mockResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(200);
-
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(LOCATION_JSON_ERROR));
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(payload));
     }
     
 //    void mockGetGeocoding() throws Exception {
@@ -1109,7 +1100,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeAppointment(null, BOOKED));
         
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
         
         controller.postAppointment();
     }
@@ -1122,7 +1113,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         mockRequestBody(mockRequest, makeAppointment("not-the-right-id", BOOKED));
         
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
         
         controller.postAppointment();
@@ -1199,7 +1190,7 @@ public class CRCControllerTest extends Mockito {
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
         mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
-        mockGetLocation();
+        mockGetLocation(LOCATION_JSON);
         
         controller.postAppointment();
     }
@@ -1280,7 +1271,7 @@ public class CRCControllerTest extends Mockito {
         Account account = Account.create();
         String locationId = "badLocation";
         
-        mockGetLocationWithBadLocation();
+        mockGetLocation(LOCATION_JSON_ERROR);
         
         controller.addLocation(node, account, locationId);
         
@@ -1290,6 +1281,24 @@ public class CRCControllerTest extends Mockito {
         assertEquals(loggingEvent.getLevel(), Level.WARN);
         assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location, id = " + locationId
                 + ", status = 200, response body = " + LOCATION_JSON_ERROR);
+    }
+    
+    @Test
+    public void addLocationNoResource() throws Exception {
+        JsonNode node = BridgeObjectMapper.get().readTree("{}");
+        Account account = Account.create();
+        String locationId = "badLocation";
+        
+        mockGetLocation(LOCATION_JSON_NO_RESOURCE);
+        
+        controller.addLocation(node, account, locationId);
+        
+        verify(mockAppender).doAppend(loggingEventCaptor.capture());
+        final LoggingEvent loggingEvent = loggingEventCaptor .getValue();
+        
+        assertEquals(loggingEvent.getLevel(), Level.WARN);
+        assertEquals(loggingEvent.getFormattedMessage(), "Error retrieving location, id = " + locationId
+                + ", status = 200, response body = " + LOCATION_JSON_NO_RESOURCE);        
     }
 
 //    @Test
