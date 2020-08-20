@@ -4,6 +4,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -19,6 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
 @Component
@@ -35,12 +38,14 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
         checkNotNull(userId);
         checkArgument(isNotBlank(userId));
 
-        if (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        ParticipantFile key = new DynamoParticipantFile(userId);
+        ParticipantFile key = new DynamoParticipantFile(userId, null);
         DynamoDBQueryExpression<ParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
-        queryExpression.withHashKeyValues(key).withLimit(pageSize);
+        queryExpression.withHashKeyValues(key)
+                .withLimit(pageSize)
+                .setConsistentRead(true);
         if (offsetKey != null) {
             HashMap<String, AttributeValue> startKey = new HashMap<>();
             startKey.put("fileId", new AttributeValue().withS(offsetKey));

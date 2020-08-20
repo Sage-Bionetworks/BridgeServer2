@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -30,18 +31,14 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private String mimeType;
 
-    public DynamoParticipantFile(String userId, String fileId, DateTime createdOn) {
-        this.userId = userId;
-        this.fileId = fileId;
-        this.createdOn = createdOn;
-    }
+    /**
+     * The App ID of this file.
+     */
+    private String appId;
 
     public DynamoParticipantFile(String userId, String fileId) {
-        this(fileId, userId, null);
-    }
-
-    public DynamoParticipantFile(String userId) {
-        this(userId, null, null);
+        this.userId = userId;
+        this.fileId = fileId;
     }
 
     public void setFileId(String fileId) {
@@ -58,6 +55,10 @@ public class DynamoParticipantFile implements ParticipantFile {
 
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
+    }
+
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
     @Override
@@ -83,4 +84,8 @@ public class DynamoParticipantFile implements ParticipantFile {
     public DateTime getCreatedOn() {
         return this.createdOn;
     }
+
+    @Override
+    @DynamoDBAttribute(attributeName = "appId")
+    public String getAppId() { return this.appId; }
 }

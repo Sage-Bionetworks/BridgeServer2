@@ -7,5 +7,6 @@ public interface ParticipantFile extends BridgeEntity {
     String getFileId();
     String getUserId();
     String getMimeType();
+    String getAppId();
     DateTime getCreatedOn();
 }
