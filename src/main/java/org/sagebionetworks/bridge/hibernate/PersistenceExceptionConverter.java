@@ -6,19 +6,22 @@ import javax.persistence.PersistenceException;
 
 import com.google.common.base.Throwables;
 
+import org.hibernate.exception.ConstraintViolationException;
+
 public interface PersistenceExceptionConverter {
     
     /**
-     * With Hibernate, it appears that PersistenceException wraps HQL queries, but not native queries. 
-     * This leads to inconsistent exception unwrapping in the converters, which this method eliminates. 
-     * If a DAO mixes the two types of queries, the converter should work for both.
+     * If this PersistenceException wraps a Hibernate ConstraintViolationException, it returns that 
+     * exception, or it returns null (with Hibernate, it appears that PersistenceException wraps 
+     * HQL queries, but not native queries, leading to inconsistent exception unwrapping in the 
+     * converters). If a DAO mixes the two types of queries, the converter should work for both.
      */
-    public static org.hibernate.exception.ConstraintViolationException getConstraintViolation(PersistenceException exception) {
+    public static ConstraintViolationException getConstraintViolation(PersistenceException exception) {
         List<Throwable> chain = Throwables.getCausalChain(exception);
         for (int i=0; i < chain.size(); i++) {
             Throwable throwable = chain.get(i);
-            if (throwable instanceof org.hibernate.exception.ConstraintViolationException) {
-                return (org.hibernate.exception.ConstraintViolationException)throwable;
+            if (throwable instanceof ConstraintViolationException) {
+                return (ConstraintViolationException)throwable;
             }
         }
         return null;
