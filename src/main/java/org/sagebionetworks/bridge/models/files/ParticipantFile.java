@@ -9,8 +9,14 @@ public interface ParticipantFile extends BridgeEntity {
     String getMimeType();
     String getAppId();
     DateTime getCreatedOn();
+    String getDownloadUrl();
+    String getUploadUrl();
 
+    void setFileId(String fileId);
+    void setUserId(String userId);
     void setMimeType(String type);
     void setAppId(String appId);
     void setCreatedOn(DateTime createdOn);
+    void setDownloadUrl(String url);
+    void setUploadUrl(String url);
 }

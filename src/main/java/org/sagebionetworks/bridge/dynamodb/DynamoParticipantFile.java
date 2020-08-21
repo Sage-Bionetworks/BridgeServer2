@@ -36,6 +36,9 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private String appId;
 
+    private String uploadUrl;
+    private String downloadUrl;
+
     public DynamoParticipantFile(String userId, String fileId) {
         this.userId = userId;
         this.fileId = fileId;
@@ -53,10 +56,22 @@ public class DynamoParticipantFile implements ParticipantFile {
         this.createdOn = createdOn;
     }
 
+    @Override
+    public void setDownloadUrl(String url) {
+        this.downloadUrl = url;
+    }
+
+    @Override
+    public void setUploadUrl(String url) {
+        this.uploadUrl = url;
+    }
+
+    @Override
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
     }
 
+    @Override
     public void setAppId(String appId) {
         this.appId = appId;
     }
@@ -88,4 +103,15 @@ public class DynamoParticipantFile implements ParticipantFile {
     @Override
     @DynamoDBAttribute(attributeName = "appId")
     public String getAppId() { return this.appId; }
+
+    @Override
+    public String getDownloadUrl() {
+        return this.downloadUrl;
+    }
+
+    @Override
+    public String getUploadUrl() {
+        return this.uploadUrl;
+    }
+
 }

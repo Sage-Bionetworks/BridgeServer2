@@ -78,15 +78,15 @@ public class ParticipantFileService {
     }
 
     /**
-     * Returns the S3 pre-signed URL of this ParticipantFile for download. If this file does not exist,
+     * Returns this ParticipantFile metadata for download. If this file does not exist,
      * throws EntityNotFoundException.
      *
      * @param userId the userId to be queried
      * @param fileId the fileId of the file
-     * @return the S3 pre-signed URL of this ParticipantFile for download if this file exists
+     * @return the ParticipantFile for download if this file exists
      * @throws EntityNotFoundException if the file does not exist.
      */
-    public String getParticipantFileUrl(String userId, String fileId) {
+    public ParticipantFile getParticipantFile(String userId, String fileId) {
         checkNotNull(userId);
         checkNotNull(fileId);
         checkArgument(isNotBlank(userId));
@@ -94,19 +94,20 @@ public class ParticipantFileService {
 
         ParticipantFile file = participantFileDao.getParticipantFile(userId, fileId)
                 .orElseThrow(() -> new EntityNotFoundException(ParticipantFile.class));
-        return getDownloadURL(file);
+        file.setDownloadUrl(getDownloadUrl(file));
+        return file;
     }
 
     /**
-     * Logs the metadata in the database, and then returns a pre-signed URL for S3 file upload.
-     * If the file or the file metadata already exists, throws EntityAlreadyExistsException.
+     * Logs the metadata in the database, and then returns the passed-in ParticipantFile with pre-signed URL
+     * for S3 file upload. If the file or the file metadata already exists, throws EntityAlreadyExistsException.
      *
      * @param file the file metadata to be upload
-     * @return a pre-signed S3 URL for file upload.
+     * @return the ParticipantFile with pre-signed S3 URL for file upload.
      * @throws org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException
      *         if the file already exists.
      */
-    public URL createParticipantFile(ParticipantFile file) {
+    public ParticipantFile createParticipantFile(ParticipantFile file) {
         Validate.entityThrowingException(INSTANCE, file);
 
         participantFileDao.getParticipantFile(file.getUserId(), file.getFileId()).ifPresent(
@@ -117,7 +118,6 @@ public class ParticipantFileService {
                 }
         );
 
-        // file.setCreatedOn(new DateTime().withZone(UTC));
         Date expiration = new DateTime().withZone(UTC).plusMinutes(EXPIRATION_IN_MINUTES).toDate();
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, getFilePath(file), PUT);
         request.setExpiration(expiration);
@@ -126,7 +126,9 @@ public class ParticipantFileService {
                 .withContentDisposition("attachment; filename=\""+getFilePath(file)+"\"");
         request.setResponseHeaders(headers);
 
-        return s3Client.generatePresignedUrl(request);
+        URL uploadUrl = s3Client.generatePresignedUrl(request);
+        file.setUploadUrl(uploadUrl.toExternalForm());
+        return file;
     }
 
     /**
@@ -154,7 +156,7 @@ public class ParticipantFileService {
      * @param file the file whose URL is returned
      * @return the download URL for the given ParticipantFile.
      */
-    protected String getDownloadURL(ParticipantFile file) {
+    protected String getDownloadUrl(ParticipantFile file) {
         String protocol = (env == LOCAL) ? "http" : "https";
         return protocol + "://" + bucketName + "/" + getFilePath(file);
     }
