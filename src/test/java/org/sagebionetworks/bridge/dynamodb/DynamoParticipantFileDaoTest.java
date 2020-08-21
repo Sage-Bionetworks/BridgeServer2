@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.BeforeMethod;
@@ -68,6 +69,16 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(resultList.size(), 1);
         ParticipantFile resultFile = resultList.get(0);
         assertEquals(resultFile, RESULT);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantFilesPageSizeTooSmall() {
+        dao.getParticipantFiles("test_user", "dummy-key", 1);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantFilesPageSizeTooLarge() {
+        dao.getParticipantFiles("test_user", "dummy-key", 5000);
     }
 
     @Test

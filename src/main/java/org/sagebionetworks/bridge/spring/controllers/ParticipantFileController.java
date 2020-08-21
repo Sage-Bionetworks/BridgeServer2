@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -9,12 +10,14 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.sagebionetworks.bridge.services.ParticipantFileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.joda.time.DateTimeZone.UTC;
@@ -44,6 +47,7 @@ public class ParticipantFileController extends BaseController {
     }
 
     @GetMapping("v3/participants/self/files/{fileId}")
+    @ResponseStatus(HttpStatus.FOUND)
     public ParticipantFile getParticipantFile(@PathVariable String fileId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         String userId = session.getParticipant().getId();
@@ -56,7 +60,7 @@ public class ParticipantFileController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         String userId = session.getParticipant().getId();
 
-        ParticipantFile file = parseJson(ParticipantFile.class);
+        ParticipantFile file = parseJson(DynamoParticipantFile.class);
         file.setUserId(userId);
         file.setCreatedOn(new DateTime().withZone(UTC));
         file.setFileId(fileId);

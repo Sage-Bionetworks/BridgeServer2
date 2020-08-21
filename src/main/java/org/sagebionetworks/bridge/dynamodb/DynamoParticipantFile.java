@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
@@ -36,8 +36,13 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     private String appId;
 
+    @JsonIgnore
     private String uploadUrl;
+    @JsonIgnore
     private String downloadUrl;
+
+    public DynamoParticipantFile() {
+    }
 
     public DynamoParticipantFile(String userId, String fileId) {
         this.userId = userId;
