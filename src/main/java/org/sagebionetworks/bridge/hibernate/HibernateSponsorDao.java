@@ -17,7 +17,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 @Component
 public class HibernateSponsorDao implements SponsorDao {
     
-    public static String ADD_SPONSOR_SQL = "INSERT INTO OrganizationsStudies (appId, studyId, orgId) VALUES (:appId, :studyId, :orgId)";
+    public static final String ADD_SPONSOR_SQL = "INSERT INTO OrganizationsStudies (appId, studyId, orgId) VALUES (:appId, :studyId, :orgId)";
 
     private HibernateHelper hibernateHelper;
     
