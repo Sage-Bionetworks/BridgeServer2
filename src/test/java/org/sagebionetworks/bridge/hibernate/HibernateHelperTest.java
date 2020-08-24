@@ -631,5 +631,22 @@ public class HibernateHelperTest {
         
         verify(mockQuery).setFirstResult(100);
         verify(mockQuery).setMaxResults(25);
-    }    
+    }
+    
+    @Test
+    public void nativeQueryUpdate() {
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
+        
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        when(mockQuery.executeUpdate()).thenReturn(3);
+        
+        int retValue = helper.nativeQueryUpdate(QUERY, ImmutableMap.of("a", "b", "c", "d"));
+        assertEquals(retValue, 3);
+        
+        verify(mockQuery).setParameter("a", "b");
+        verify(mockQuery).setParameter("c", "d");
+        verify(mockQuery).executeUpdate();
+    }
 }

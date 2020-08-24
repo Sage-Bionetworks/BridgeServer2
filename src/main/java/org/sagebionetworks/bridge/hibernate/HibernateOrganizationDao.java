@@ -32,7 +32,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "basicHibernateHelper")
+    @Resource(name = "organizationHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

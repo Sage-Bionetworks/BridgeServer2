@@ -23,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -42,6 +43,9 @@ public class StudyServiceTest {
     
     @Mock
     private StudyDao studyDao;
+    
+    @Mock
+    private OrganizationDao organizationDao;
     
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
@@ -182,7 +186,7 @@ public class StudyServiceTest {
         
         service.createStudy(TEST_APP_ID, study);
     }
-
+    
     @Test
     public void updateStudy() {
         Study existing = Study.create();

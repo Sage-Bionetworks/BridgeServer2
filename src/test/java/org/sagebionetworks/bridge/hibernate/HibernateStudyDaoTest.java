@@ -1,11 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
@@ -15,6 +11,7 @@ import javax.persistence.PersistenceException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -26,7 +23,7 @@ import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.google.common.collect.ImmutableList;
 
-public class HibernateStudyDaoTest {
+public class HibernateStudyDaoTest extends Mockito {
     private static final PagedResourceList<HibernateStudy> STUDIES = new PagedResourceList<>(
             ImmutableList.of(new HibernateStudy(), new HibernateStudy()), 2);
     
@@ -108,9 +105,11 @@ public class HibernateStudyDaoTest {
     
     @Test
     public void createStudy() {
-        Study study = Study.create();
+        HibernateStudy study = new HibernateStudy();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setAppId(TEST_APP_ID);
         study.setVersion(2L);
-        
+
         VersionHolder holder = dao.createStudy(study);
         assertEquals(holder.getVersion(), new Long(2));
         
