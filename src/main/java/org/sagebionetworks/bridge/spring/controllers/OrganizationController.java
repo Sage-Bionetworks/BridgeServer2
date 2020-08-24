@@ -24,8 +24,10 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.services.OrganizationService;
+import org.sagebionetworks.bridge.services.ParticipantService;
 
 @CrossOrigin
 @RestController
@@ -33,9 +35,16 @@ public class OrganizationController extends BaseController {
 
     private OrganizationService service;
     
+    private ParticipantService participantService;
+    
     @Autowired
     final void setOrganizationService(OrganizationService service) {
         this.service = service;
+    }
+    
+    @Autowired
+    final void setParticipantService(ParticipantService participantService) {
+        this.participantService = participantService;
     }
     
     @GetMapping("/v1/organizations")
@@ -117,4 +126,24 @@ public class OrganizationController extends BaseController {
         
         return new StatusMessage("User removed as a member.");
     }
+    
+    /**
+     * This search allows non-researchers to see the unassigned admin roles in the system.
+     * They should also be able to see everyone in their own organization, given the membership
+     * APIs.
+     */
+    @PostMapping("/v1/organizations/nonmembers")
+    public PagedResourceList<AccountSummary> getUnassignedAdmins() {
+        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        
+        AccountSummarySearch initial = parseJson(AccountSummarySearch.class);
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+            .copyOf(initial)
+            .withAdminOnly(true)
+            .withOrgMembership("<none>").build();
+        
+        App app = appService.getApp(session.getAppId());
+        return participantService.getPagedAccountSummaries(app, search);
+    }
+
 }

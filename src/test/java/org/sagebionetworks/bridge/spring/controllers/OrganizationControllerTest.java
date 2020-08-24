@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -36,8 +37,11 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.OrganizationService;
+import org.sagebionetworks.bridge.services.ParticipantService;
 
 public class OrganizationControllerTest extends Mockito {
     
@@ -48,6 +52,12 @@ public class OrganizationControllerTest extends Mockito {
     
     @Mock
     HttpServletRequest mockRequest;
+    
+    @Mock
+    AppService mockAppService;
+    
+    @Mock
+    ParticipantService mockParticipantService;
 
     @InjectMocks
     @Spy
@@ -85,6 +95,7 @@ public class OrganizationControllerTest extends Mockito {
         assertPost(OrganizationController.class, "getMembers");
         assertPost(OrganizationController.class, "addMember");
         assertDelete(OrganizationController.class, "removeMember");
+        assertPost(OrganizationController.class, "getUnassignedAdmins");
     }
     
     @Test
@@ -211,5 +222,29 @@ public class OrganizationControllerTest extends Mockito {
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(TEST_APP_ID, accountId.getAppId());
         assertEquals(USER_ID, accountId.getId());
+    }
+    
+    @Test
+    public void getUnassignedAdmins() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        
+        AccountSummarySearch initial = new AccountSummarySearch.Builder()
+            .withOrgMembership("something-to-be-overridden")
+            .withEmailFilter("sagebase.org").build();
+        mockRequestBody(mockRequest, initial);
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        PagedResourceList<AccountSummary> results = new PagedResourceList<>(ImmutableList.of(), 10);
+        when(mockParticipantService.getPagedAccountSummaries(eq(app), any())).thenReturn(results);
+        
+        PagedResourceList<AccountSummary> retValue = controller.getUnassignedAdmins();
+        assertSame(retValue, results);
+        
+        verify(mockParticipantService).getPagedAccountSummaries(eq(app), searchCaptor.capture());
+        assertEquals("sagebase.org", searchCaptor.getValue().getEmailFilter());
+        assertEquals("<none>", searchCaptor.getValue().getOrgMembership());
+        assertTrue(searchCaptor.getValue().isAdminOnly());
     }
 }
