@@ -40,7 +40,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -174,6 +173,8 @@ public class BaseControllerTest extends Mockito {
 
         UserSession returnedSession = controller.getSessionIfItExists();
         assertEquals(returnedSession, session);
+
+        verify(mockRequest).setAttribute(eq(BaseController.USER_SESSION_FLAG), any(UserSession.class));
     }
 
     @Test
@@ -468,84 +469,17 @@ public class BaseControllerTest extends Mockito {
         Metrics retrievedMetrics = controller.getMetrics();
         assertEquals(retrievedMetrics, metrics);
     }
-
-    @Test
-    public void writeSessionInfoToMetrics() {
-        // Mock metrics
-        Metrics metrics = new Metrics(REQUEST_ID);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        session.setInternalSessionToken("internalSessionToken");
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        session.setAppId(TEST_APP_ID);
-        
-        controller.writeSessionInfoToMetrics(session);
-        
-        ObjectNode node = metrics.getJson();
-        assertEquals(node.get("session_id").textValue(), "internalSessionToken");
-        assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("app_id").textValue(), TEST_APP_ID);
-    }
     
     @Test
-    public void writeSessionInfoToMetricsNoSession() {
-        // Mock metrics
-        Metrics metrics = mock(Metrics.class);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
-    }
-
-    @Test
-    public void writeSessionInfoToMetricsNoMetrics() {
-        Metrics metrics = mock(Metrics.class);
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
-    }
-    
-    @Test
-    public void setCookieAndRecordMetrics() {
+    public void updateRequestInfoFromSessionTest() {
         session.setSessionToken(SESSION_TOKEN);
         session.setAppId(TEST_APP_ID);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getValue(), SESSION_TOKEN);
-        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
-        assertEquals(cookie.getDomain(), "localhost");
-        
-        verify(controller).writeSessionInfoToMetrics(session);
+        controller.updateRequestInfoFromSession(session);
+
         verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());
-    }
-    
-    @Test
-    public void setCookieAndRecordMetricsNoCookieOutsideLocal() throws Exception {
-        session.setSessionToken(SESSION_TOKEN);
-        session.setAppId(TEST_APP_ID);
-        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
-        when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
-        
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse, never()).addCookie(any());
-        
-        verify(controller).writeSessionInfoToMetrics(session);
-        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());        
     }
 
     @Test
