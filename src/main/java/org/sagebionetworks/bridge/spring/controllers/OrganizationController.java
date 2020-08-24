@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -62,7 +62,7 @@ public class OrganizationController extends BaseController {
     @PostMapping("/v1/organizations")
     @ResponseStatus(HttpStatus.CREATED)
     public Organization createOrganization() {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         Organization organization = parseJson(Organization.class);
         organization.setAppId(session.getAppId());
@@ -74,7 +74,7 @@ public class OrganizationController extends BaseController {
     public Organization updateOrganization(@PathVariable String orgId) {
         // A study admin caller will also be able to edit some fields of their own organization.
         // The association of accounts to organizations has to be completed first.
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         Organization organization = parseJson(Organization.class);
         organization.setAppId(session.getAppId());
@@ -87,14 +87,14 @@ public class OrganizationController extends BaseController {
     public Organization getOrganization(@PathVariable String orgId) {
         // A study admin caller will be able to retrieve their own organization.
         // The association of accounts to organizations has to be completed first.
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
         
         return service.getOrganization(session.getAppId(), orgId);
     }
     
     @DeleteMapping("/v1/organizations/{orgId}")
     public StatusMessage deleteOrganization(@PathVariable String orgId) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
         service.deleteOrganization(session.getAppId(), orgId);
         return new StatusMessage("Organization deleted.");
     }
@@ -108,6 +108,7 @@ public class OrganizationController extends BaseController {
     }
     
     @PostMapping("/v1/organizations/{orgId}/members/{userId}")
+    @ResponseStatus(code = CREATED)
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         

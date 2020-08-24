@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -15,7 +14,6 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -93,8 +91,7 @@ public class StudyService {
         
         Study existing = studyDao.getStudy(appId, study.getIdentifier());
         if (existing != null) {
-            throw new EntityAlreadyExistsException(Study.class,
-                    ImmutableMap.of("id", existing.getIdentifier()));
+            throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
         }
         return studyDao.createStudy(study);
     }

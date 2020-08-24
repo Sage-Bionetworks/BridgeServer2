@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -53,22 +52,23 @@ public class StudyController extends BaseController {
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         Study study = parseJson(Study.class);
+        
         return service.createStudy(session.getAppId(), study);
     }
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         return service.getStudy(session.getAppId(), id, true);
     }
 
     @PostMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public VersionHolder updateStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         Study study = parseJson(Study.class);
         return service.updateStudy(session.getAppId(), study);
@@ -77,7 +77,7 @@ public class StudyController extends BaseController {
     @DeleteMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public StatusMessage deleteStudy(@PathVariable String id,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         if (physical) {
             service.deleteStudyPermanently(session.getAppId(), id);
